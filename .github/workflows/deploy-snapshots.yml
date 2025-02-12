@@ -10,7 +10,7 @@ env:
 jobs:
   build-and-deploy:
     name: "Build and deploy"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
       MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
@@ -25,18 +25,24 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Get Date
-        id: get-date
+      - name: Generate cache key
+        id: cache-key
         run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
-        shell: bash
-      - name: Cache Maven Repository
-        id: cache-maven
-        uses: actions/cache@v3
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every month to avoid unlimited growth
-          key: deploy-snapshots-${{ steps.get-date.outputs.date }}
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
@@ -49,21 +55,17 @@ jobs:
             -Dno-test-modules \
             -Dgradle.cache.local.enabled=false \
             -Ddokka \
-            -DskipDocs \
+            -Prelocations \
             clean deploy
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
 
-      - name: Report
+      - name: Report status
         if: always()
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=12111 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 12111

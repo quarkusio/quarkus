@@ -12,7 +12,7 @@ env:
 jobs:
   cache:
     name: Build and save artifacts
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven repository
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: maven-repo
           path: maven-repo.tgz
@@ -35,7 +35,7 @@ jobs:
   kubernetes:
     name: Kubernetes Integration Tests
     needs: cache
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false
@@ -49,7 +49,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.10.0
+        uses: manusa/actions-setup-minikube@v2.13.1
         with:
           minikube version: v1.16.0
           kubernetes version: ${{ matrix.kubernetes }}
@@ -76,22 +76,18 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dkubernetes-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=26581 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 26581
 
   knative:
     name: Knative Integration Tests
     needs: cache
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false
@@ -106,7 +102,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -130,17 +126,13 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_INSECURE=true
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dknative-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=31837 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 31837
 
 
   openshift:
@@ -160,7 +152,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -187,14 +179,10 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PASSWORD=${{ secrets.QUAY_QUARKUSCI_PASSWORD }}
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dopenshift-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=26582 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 26582

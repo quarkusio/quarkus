@@ -8,7 +8,7 @@ env:
 jobs:
   build:
     name: "Prepare release"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
       MAVEN_OPTS: -Xmx2560m
@@ -30,21 +30,21 @@ jobs:
         run: |
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
+            -Dscan=false \
+            -Dno-build-cache \
+            -Dgradle.cache.local.enabled=false \
+            -Dgradle.cache.remote.enabled=false \
             -Prelease \
             -DskipTests -DskipITs \
             -Ddokka \
-            -Dmaven.repo.local=$HOME/release/repository \
+            -Dno-test-modules \
             -Dgpg.skip \
             clean install
-      - name: Report
+      - name: Report status
         if: always()
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=13058 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 13058

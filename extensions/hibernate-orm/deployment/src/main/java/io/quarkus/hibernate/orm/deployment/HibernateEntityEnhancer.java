@@ -17,7 +17,6 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.integration.QuarkusEnhancementContext;
 import net.bytebuddy.ClassFileVersion;
-import net.bytebuddy.dynamic.ClassFileLocator;
 
 /**
  * Used to transform bytecode by registering to
@@ -37,11 +36,15 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             ClassFileVersion.JAVA_V17);
 
     //Choose this set to include Jakarta annotations, basic Java types such as String and Map, Hibernate annotations, and Panache supertypes:
-    private static final CoreTypePool CORE_POOL = new CoreTypePool("jakarta.persistence.", "java.",
+    private static final CoreTypePool CORE_POOL = new CoreTypePool(
+            "java.",
+            "jakarta.",
+            "org.hibernate.bytecode.enhance.spi.",
+            "org.hibernate.engine.spi.",
             "org.hibernate.annotations.",
-            "io.quarkus.hibernate.reactive.panache.", "io.quarkus.hibernate.orm.panache.",
-            "org.hibernate.search.mapper.pojo.mapping.definition.annotation.",
-            "jakarta.validation.constraints.");
+            "io.quarkus.hibernate.reactive.panache.",
+            "io.quarkus.hibernate.orm.panache.",
+            "org.hibernate.search.mapper.pojo.mapping.definition.annotation.");
 
     private final EnhancerHolder enhancerHolder = new EnhancerHolder();
 
@@ -99,45 +102,13 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             if (actualEnhancer == null) {
                 synchronized (this) {
                     if (actualEnhancer == null) {
-                        actualEnhancer = PROVIDER.getEnhancer(QuarkusEnhancementContext.INSTANCE, new ThreadsafeLocator());
+                        EnhancerClassLocator enhancerClassLocator = ModelTypePool
+                                .buildModelTypePool(QuarkusClassFileLocator.INSTANCE, CORE_POOL);
+                        actualEnhancer = PROVIDER.getEnhancer(QuarkusEnhancementContext.INSTANCE, enhancerClassLocator);
                     }
                 }
             }
             return actualEnhancer;
-        }
-    }
-
-    private static final class ThreadsafeLocator implements EnhancerClassLocator {
-
-        final ThreadLocal<EnhancerClassLocator> localLocator = ThreadLocal
-                .withInitial(() -> ModelTypePool.buildModelTypePool(QuarkusClassFileLocator.INSTANCE,
-                        CORE_POOL));
-
-        @Override
-        public void registerClassNameAndBytes(String s, byte[] bytes) {
-            localLocator.get().registerClassNameAndBytes(s, bytes);
-        }
-
-        @Override
-        public void deregisterClassNameAndBytes(String s) {
-            localLocator.get().deregisterClassNameAndBytes(s);
-        }
-
-        @Override
-        public ClassFileLocator asClassFileLocator() {
-            return localLocator.get().asClassFileLocator();
-        }
-
-        @Override
-        public Resolution describe(String s) {
-            return localLocator.get().describe(s);
-        }
-
-        @Override
-        public void clear() {
-            //not essential as it gets discarded, but could help:
-            localLocator.get().clear();
-            localLocator.remove();
         }
     }
 

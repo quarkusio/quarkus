@@ -467,6 +467,26 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ContainerDTO(NestedInterface.INSTANCE);
     }
 
+    @GET
+    @Path("/item")
+    public Item getItem() {
+        Item item = new Item();
+        item.setName("Name");
+        item.setEmail("E-mail");
+        return item;
+    }
+
+    @GET
+    @Path("/item-extended")
+    public ItemExtended getItemExtended() {
+        ItemExtended item = new ItemExtended();
+        item.setName("Name");
+        item.setEmail("E-mail");
+        item.setNameExtended("Name-Extended");
+        item.setEmailExtended("E-mail-Extended");
+        return item;
+    }
+
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

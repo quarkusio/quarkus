@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -37,7 +38,7 @@ public class SimpleJsonTest {
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
                                     NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
-                                    Fruit.class, Price.class, DogRecord.class)
+                                    Fruit.class, Price.class, DogRecord.class, ItemExtended.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -781,5 +782,29 @@ public class SimpleJsonTest {
                 .contentType("application/json")
                 .body("name", Matchers.is("test"))
                 .body("properties", Matchers.nullValue());
+    }
+
+    @Test
+    public void testItem() {
+        RestAssured
+                .with()
+                .get("/simple/item")
+                .then()
+                .statusCode(200)
+                .body("name", Matchers.is("Name"))
+                .body("email", Matchers.is("E-mail"));
+    }
+
+    @Test
+    public void testItemExtended() {
+        RestAssured
+                .with()
+                .get("/simple/item-extended")
+                .then()
+                .statusCode(200)
+                .body("name", Matchers.is("Name"))
+                .body("email", Matchers.is("E-mail"))
+                .body("nameExtended", Matchers.is("Name-Extended"))
+                .body("emailExtended", Matchers.is(emptyOrNullString()));
     }
 }

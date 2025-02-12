@@ -12,6 +12,7 @@ import java.util.logging.Handler;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.handlers.OutputStreamHandler;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -77,6 +78,10 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                     throwable.printStackTrace();
                 }
             }
+            prepareResult = null;
+        }
+        if (isNewTestClass && extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            // we need to rerun the augmentor in this case
             prepareResult = null;
         }
         if (prepareResult == null) {

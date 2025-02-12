@@ -1190,7 +1190,7 @@ In this case, just add `_isolated=false` or `_unisolated` argument to the call s
 ===== Arguments
 
 Named arguments can be accessed directly in the tag template.
-However, the first argument does not need to define a name and it can be accessed using the `it` alias.
+However, the first argument does not need to define a name, and it can be accessed using the `it` alias.
 Furthermore, if an argument does not have a name defined and the value is a single identifier, such as `foo`, then the name is defaulted to the value identifier, e.g. `{#myTag foo /}` becomes `{#myTag foo=foo /}`.
 In other words, the argument value `foo` is resolved and can be accessed using `{foo}` in the tag template.
 
@@ -2044,8 +2044,8 @@ public class ItemResource {
 You can also define a type-safe <<fragments,fragment>> in your Java code.
 A _native static_ method with the name that contains a dollar sign `$` denotes a method that represents a fragment of a type-safe template.
 The name of the fragment is derived from the annotated method name.
-The part before the last occurence of a dollar sign `$` is the method name of the related type-safe template.
-The part after the last occurence of a dollar sign is the fragment identifier.
+The part before the last occurrence of a dollar sign `$` is the method name of the related type-safe template.
+The part after the last occurrence of a dollar sign is the fragment identifier.
 The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
 
 .Type-safe Fragment Example
@@ -2200,18 +2200,18 @@ static BigDecimal discountedPrice(Item item) {
 }
 ----
 
-A special constant - `TemplateExtension#ANY`/`*` - can be used to specify that the extension method matches any name.
+A special constant - `TemplateExtension#ANY` - can be used to specify that the extension method matches any name.
 
 .`TemplateExtension#ANY` Example
 [source,java]
 ----
-@TemplateExtension(matchName = "*")
+@TemplateExtension(matchName = TemplateExtension.ANY)
 static String itemProperty(Item item, String name) { <1>
    // this method matches {item.foo} if "item" resolves to an object assignable to "Item"
    // the value of the "name" argument is "foo"
 }
 ----
-<1> A additional string method parameter is used to pass the actual property name.
+<1> An additional string method parameter is used to pass the actual property name.
 
 It's also possible to match the name against a regular expression specified in `matchRegex()`.
 
@@ -2224,7 +2224,7 @@ static String itemProperty(Item item, String name) { <1>
    // the value of the "name" argument is "foo" or "bar"
 }
 ----
-<1> A additional string method parameter is used to pass the actual property name.
+<1> An additional string method parameter is used to pass the actual property name.
 
 Finally, `matchNames()` can be used to specify a collection of matching names.
 An additional string method parameter is mandatory as well.
@@ -2832,7 +2832,7 @@ In the development mode, all files located in `src/main/resources/templates` are
 By default, a template modification results in an application restart that also triggers build-time validations.
 
 However, it's possible to use the `quarkus.qute.dev-mode.no-restart-templates` configuration property to specify the templates for which the application is not restarted.
-The configration value is a regular expression that matches the template path relative from the `templates` directory and `/` is used as a path separator.
+The configuration value is a regular expression that matches the template path relative from the `templates` directory and `/` is used as a path separator.
 For example, `quarkus.qute.dev-mode.no-restart-templates=templates/foo.html` matches the template `src/main/resources/templates/foo.html`.
 The matching templates are reloaded and only runtime validations are performed.
 
@@ -2938,7 +2938,7 @@ However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specif
 Additionally, there are two ways to define a localized bundle:
 
 1. Create an interface that extends the default interface that is annotated with `@Localized`
-2. Create an UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
+2. Create a UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
 
 TIP: While a localized interface enables easy refactoring, an external file might be more convenient in many situations.
 

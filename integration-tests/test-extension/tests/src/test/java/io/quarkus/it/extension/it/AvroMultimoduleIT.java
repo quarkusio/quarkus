@@ -20,7 +20,7 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  */
 @Disabled("https://github.com/quarkusio/quarkus/issues/27057")
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-public class TestAvroMultimoduleIT extends MojoTestBase {
+public class AvroMultimoduleIT extends MojoTestBase {
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, InterruptedException {
         File testDir = initProject("projects/avro-multimodule-project", "projects/avro-multimodule-project-build");

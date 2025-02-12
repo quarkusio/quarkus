@@ -22,7 +22,7 @@
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>3.2.3</jandex.version>
+        <jandex.version>3.2.6</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.7</parsson.version>
@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.8.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.4</quarkus-http.version>
-        <micrometer.version>1.14.3</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.14.4</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -57,7 +57,7 @@
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.18.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.18.1</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.26.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.3</jakarta.activation.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>2.6.0.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.2.Final</jboss-marshalling.version>
         <jboss-threads.version>3.8.0.Final</jboss-threads.version>
-        <vertx.version>4.5.12</vertx.version>
+        <vertx.version>4.5.13</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -132,7 +132,7 @@
         <infinispan.version>15.0.13.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.1.8</caffeine.version>
-        <netty.version>4.1.117.Final</netty.version>
+        <netty.version>4.1.118.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
@@ -199,7 +199,7 @@
         <docker-java.version>3.4.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.2</opensearch-testcontainers.version>
-        <com.dajudge.kindcontainer>1.4.7</com.dajudge.kindcontainer>
+        <com.dajudge.kindcontainer>1.4.8</com.dajudge.kindcontainer>
         <aesh.version>2.8.2</aesh.version>
         <aesh-readline.version>2.6</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->

@@ -148,16 +148,24 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
-            <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
-            <quarkus.dymmy>test</quarkus.dymmy>
-          </systemPropertyVariables>
-          <environmentVariables>
-            <DUMMY_AGE>70</DUMMY_AGE>  <!-- Used to test that env vars are propagated -->
-          </environmentVariables>
-        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <systemPropertyVariables>
+                <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
+                <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
+                <quarkus.dymmy>test</quarkus.dymmy>
+              </systemPropertyVariables>
+              <environmentVariables>
+                <DUMMY_AGE>70</DUMMY_AGE>  <!-- Used to test that env vars are propagated -->
+              </environmentVariables>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

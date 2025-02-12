@@ -22,7 +22,7 @@ import io.quarkus.runtime.LaunchMode;
  */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 @Disabled("The base function now works via quarkus:test, but the test infrastructure for seeing how many tests ran needs the dev ui to be running")
-public class TestParameterTestModeIT extends RunAndCheckMojoTestBase {
+public class ParameterTestModeIT extends RunAndCheckMojoTestBase {
 
     @Override
     protected LaunchMode getDefaultLaunchMode() {

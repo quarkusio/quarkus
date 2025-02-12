@@ -521,7 +521,7 @@ public class KeycloakDevServicesProcessor {
             if (useSharedNetwork) {
                 hostName = ConfigureUtil.configureSharedNetwork(this, "keycloak");
                 if (keycloakX) {
-                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "localhost");
+                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "http://" + hostName);
                 } else {
                     addEnv(KEYCLOAK_WILDFLY_FRONTEND_URL, "http://localhost:" + fixedExposedPort.getAsInt());
                 }
@@ -550,7 +550,7 @@ public class KeycloakDevServicesProcessor {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
                 withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
-                        + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
+                        + (useSharedNetwork ? " --hostname-backchannel-dynamic true" : ""));
                 addUpConfigResource();
                 if (isHttps()) {
                     addExposedPort(KEYCLOAK_HTTPS_PORT);

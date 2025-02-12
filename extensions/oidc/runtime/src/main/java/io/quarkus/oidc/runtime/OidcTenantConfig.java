@@ -1007,7 +1007,7 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * For this option be effective the `authentication.session-age-extension` property should also be set to a nonzero
          * value since the refresh token is currently kept in the user session.
          *
-         * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}}.
+         * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}.
          *
          * This property is enabled if `quarkus.oidc.token.refresh-token-time-skew` is configured,
          * you do not need to enable this property manually in this case.
@@ -1032,7 +1032,7 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
 
         /**
          * Custom HTTP header that contains a bearer token.
-         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}}.
+         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}.
          */
         Optional<String> header();
 

@@ -35,6 +35,12 @@ public interface WebSocketsClientRuntimeConfig {
     OptionalInt maxMessageSize();
 
     /**
+     * The maximum size of a frame in bytes. The default values is
+     * {@value io.vertx.core.http.HttpClientOptions#DEFAULT_MAX_WEBSOCKET_FRAME_SIZEX}.
+     */
+    OptionalInt maxFrameSize();
+
+    /**
      * The interval after which, when set, the client sends a ping message to a connected server automatically.
      * <p>
      * Ping messages are not sent automatically by default.

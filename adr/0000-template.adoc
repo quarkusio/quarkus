@@ -5,14 +5,20 @@
 
 == Context and Problem Statement
 
-Coding guidelines delta: https://github.com/quarkusio/quarkus/issues/45898
+Considering the sophisticated ruleset `eclipse-format.xml`, there is a clear intent on how the code should look and feel.
 
-Condiering the suphiostiacted ruleset is seesm there is a clear intent how the code should look and feel. Howevery there is always a missallighment if not suggested or enrofeced like known with eslint ktlint and others as its always the same patterns. Sometimes these rules and conventions are not just for some cosmestic oissues but rather enablkiong ensuring smooth git operationas accrott mutple systems  mentioning line-endings=ln as example from wildcard imnports which are highly prevered to me avoided to enable precompile compitmuzoation whicih is imhgo one of the main golas of the projekt to prever perpfrmamnce no matter what to really get to the fullest.
+However, there is often a misalignment if these guidelines are not suggested or enforced, as seen with tools like ESLint and Ktlint.
+These tools address recurring patterns, and sometimes the rules and conventions are not just for cosmetic issues but rather for enabling smooth Git operations across multiple systems. 
+For example, ensuring consistent line endings (`line-endings=lf`) or avoiding `unused/wildcard` imports, which are highly preferred to be avoided to enable precompile optimization.
+This is one of the main goals of the project: to prioritize performance at all costs.
 
-This high promkis and expectation comes with a price and as everyting is kind of relations wiht everhting it has an impoact to the while story. MOst common sollution is siumnply oinitrucition some kind of linter framework in this case checkstyle as its hightly used and profound.
+This high promise and expectation comes with a price, and as everything is interrelated, it impacts the entire workflow.
+The most common solution is to introduce some kind of linter framework—in this case, Checkstyle, as it is highly used and well-established.
 
-This aalthou would adhere the  convention over configuration principle  and  imrpove the onaboard of new devs as well as the reoccuring costs of mentions the ocnidg guifdelines or explaing how the plugin need to be configured.
+This approach would adhere to the `convention-over-configuration` principle and improve the onboarding of new developers, as well as reduce the recurring costs of mentioning coding guidelines or explaining how the plugin needs to be configured.
 
+A simple example is `AvoidStarImport` and `UnusedImports`, as both address simple cases that should be avoided.
+It is really hard to check imports manually without the computer's assistance. From these rules, we could build up and migrate from an optional formatting approach to ensuring the desired format is consistently applied.
 
 https://github.com/quarkusio/quarkus/blob/main/independent-projects/ide-config/src/main/resources/eclipse-format.xml
 
@@ -33,12 +39,12 @@ List of the considered options, if any.
 
 What is the change that we're proposing and/or doing?
 
-apply coding guigslines
-ensure certian lvl of quality and avoid old isses from occuring again
-reduce friction and effort in PR to oversee and discuss codiign guidelines
+* Reduce friction and effort in PR reviews by automating the enforcement of coding guidelines.
+* Ensure a certain level of code quality.
+* Avoid recurring issues from the past.
 
 == Consequences
 
-little more build time for lesser human interaction time to communicate apply and observe guidelines 
-
-What becomes easier or more difficult to do because of this change?
+* **Build Time**: Slightly increased build time due to linting checks.
+* **Human Interaction**: Reduced time spent communicating, applying, and observing guidelines manually.
+* **Ease of Development**: Easier to maintain consistent code quality and onboard new developers. No initial setup is required, as Checkstyle works out of the box and will run with the build. There is also a CLI mode to apply fixes for misaligned coding, and easy-to-fix issues are resolved by automation, which helps reduce costs further.

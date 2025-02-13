@@ -137,3 +137,8 @@ Additionally, any additional arguments can be provided to the binding's definiti
 ----
 quarkus.rabbitmq.devservices.bindings.a-binding.arguments.non-std-option=value
 ----
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-rabbitmq_quarkus.rabbitmq.devservices.adoc[opts=optional, leveloffset=+1]

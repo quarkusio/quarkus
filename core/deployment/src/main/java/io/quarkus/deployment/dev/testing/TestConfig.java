@@ -261,6 +261,16 @@ public interface TestConfig {
     @WithDefault("false")
     boolean enableCallbacksForIntegrationTests();
 
+    /**
+     * Used to override the artifact type against which a {@code @QuarkusIntegrationTest} or {@code @QuarkusMainIntegrationTest}
+     * run.
+     * For example, if the application's artifact is a container build from a jar, this property could be used to test the jar
+     * instead of the container.
+     * <p>
+     * Allowed values are: jar, native
+     */
+    Optional<String> integrationTestArtifactType();
+
     interface Profile {
         /**
          * A comma separated list of profiles (dev, test, prod or custom profiles) to use when testing using @QuarkusTest

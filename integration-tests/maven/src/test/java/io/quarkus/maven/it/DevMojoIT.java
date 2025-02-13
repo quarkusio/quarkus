@@ -1666,4 +1666,12 @@ public class DevMojoIT extends LaunchMojoTestBase {
         run(true);
         assertThat(devModeClient.getHttpResponse("/")).isEqualTo("Big");
     }
+
+    @Test
+    public void testNonParentAggregator() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/non-parent-aggregator");
+        run(true, "-f", "aggregator");
+        assertThat(devModeClient.getHttpResponse("/model")).isEqualTo("Hello model");
+        assertThat(devModeClient.getHttpResponse("/service")).isEqualTo("Hello service");
+    }
 }

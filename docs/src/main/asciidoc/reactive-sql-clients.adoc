@@ -524,33 +524,28 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 [[reactive-sql-clients-details]]
 == Database Clients details
 
-[cols="10,40,40,10"]
+[cols="15,70,15"]
 |===
-|Database |Extension name |Pool class name |Placeholders
+|Database |Extension name |Placeholders
 
 |IBM Db2
 |`quarkus-reactive-db2-client`
-|`io.vertx.mutiny.db2client.DB2Pool`
 |`?`
 
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
-|`io.vertx.mutiny.sqlclient.Pool`
 |`?`
 
 |Microsoft SQL Server
 |`quarkus-reactive-mssql-client`
-|`io.vertx.mutiny.sqlclient.Pool`
 |`@p1`, `@p2`, etc.
 
 |Oracle
 |`quarkus-reactive-oracle-client`
-|`io.vertx.mutiny.sqlclient.Pool`
 |`?`
 
 |PostgreSQL
 |`quarkus-reactive-pg-client`
-|`io.vertx.mutiny.sqlclient.Pool`
 |`$1`, `$2`, etc.
 |===
 

@@ -1,0 +1,41 @@
+# Linting by Coding Guidelines ([Quarkus Issue #45898](https://github.com/quarkusio/quarkus/issues/45898))
+
+- **Status**: [Review | Proposed | Accepted | Deprecated - Reason: ... | Superseded by [0005](0005-example.md)]
+- **Date**: [YYYY-MM-DD when last updated]
+
+---
+
+## Context and Problem Statement
+
+The [Quarkus Contribution Guidelines](https://github.com/quarkusio/quarkus/blob/main/CONTRIBUTING.md#formatting) outline formatting requirements, yet without enforcement, adherence is inconsistent. Based on experience, formatting is rarely followed unless automated.
+
+Currently, formatting requires manual effort and discussion in PRs. Automating this process eliminates friction, ensuring consistency across the codebase. The [`eclipse-format.xml`](https://github.com/quarkusio/quarkus/blob/main/independent-projects/ide-config/src/main/resources/eclipse-format.xml) ruleset provides a structure, but without enforcement, it is often overlooked. Tools like ESLint and Ktlint solve similar issues, addressing both aesthetic and functional concerns such as:
+
+- Enforcing consistent line endings (`line-endings=lf`).
+- Preventing `unused/wildcard` imports, which impact precompile optimization.
+
+To maintain performance while minimizing workflow disruption, adopting a linter framework—such as Checkstyle—ensures consistency with minimal configuration. This aligns with the `convention-over-configuration` approach, streamlining onboarding and reducing time spent discussing formatting issues.
+
+Rules like `AvoidStarImport` and `UnusedImports` provide a foundation for moving from optional to mandatory formatting enforcement.
+
+### References
+- [Quarkus PR #46238](https://github.com/quarkusio/quarkus/pull/46238)
+
+---
+
+## Decision
+
+### Proposed Changes
+- Enforce coding guidelines automatically to improve PR efficiency.
+- Maintain consistent code quality.
+- Eliminate recurring formatting issues.
+
+---
+
+## Consequences
+
+- **Less PR Overhead**: Reduces discussions and manual formatting.
+- **Minimal Build Time Impact**: Slight increase due to linting.
+- **Improved Development Experience**:
+  - Checkstyle requires no setup and integrates with the build.
+  - CLI support for auto-fixing misaligned code, further reducing manual effort.

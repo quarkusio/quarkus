@@ -6,9 +6,7 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_MAPPING_VALIDATE
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
@@ -24,6 +22,12 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
+    public static final String QUARKUS_PROFILE = "quarkus.profile";
+    public static final String QUARKUS_CONFIG_LOCATIONS = "quarkus.config.locations";
+    public static final String QUARKUS_CONFIG_PROFILE_PARENT = "quarkus.config.profile.parent";
+    public static final String QUARKUS_CONFIG_MAPPING_VALIDATE_UNKNOWN = "quarkus.config.mapping.validate-unknown";
+    public static final String QUARKUS_CONFIG_LOG_VALUES = "quarkus.config.log.values";
+
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         LaunchMode launchMode = LaunchMode.current();
@@ -32,7 +36,12 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return new RelocateConfigSourceInterceptor(Map.of(SMALLRYE_CONFIG_PROFILE, launchMode.getProfileKey()));
+                return new RelocateConfigSourceInterceptor(new Function<String, String>() {
+                    @Override
+                    public String apply(final String name) {
+                        return SMALLRYE_CONFIG_PROFILE.equals(name) ? launchMode.getProfileKey() : name;
+                    };
+                });
             }
 
             @Override
@@ -44,29 +53,31 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                Map<String, String> relocations = new HashMap<>();
-                relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
-                relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
-                relocations.put(SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN, "quarkus.config.mapping.validate-unknown");
-                relocations.put(SMALLRYE_CONFIG_LOG_VALUES, "quarkus.config.log.values");
-
                 // Also adds relocations to all profiles
                 return new RelocateConfigSourceInterceptor(new Function<String, String>() {
                     @Override
                     public String apply(final String name) {
-                        String relocate = relocations.get(name);
-                        if (relocate != null) {
-                            return relocate;
+                        if (SMALLRYE_CONFIG_LOCATIONS.equals(name)) {
+                            return QUARKUS_CONFIG_LOCATIONS;
+                        }
+                        if (SMALLRYE_CONFIG_PROFILE_PARENT.equals(name)) {
+                            return QUARKUS_CONFIG_PROFILE_PARENT;
+                        }
+                        if (SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN.equals(name)) {
+                            return QUARKUS_CONFIG_MAPPING_VALIDATE_UNKNOWN;
+                        }
+                        if (SMALLRYE_CONFIG_LOG_VALUES.equals(name)) {
+                            return QUARKUS_CONFIG_LOG_VALUES;
                         }
 
                         if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_LOCATIONS)) {
                             io.smallrye.config.NameIterator ni = new io.smallrye.config.NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.locations";
+                            return ni.getNextSegment() + "." + QUARKUS_CONFIG_LOCATIONS;
                         }
 
                         if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_PROFILE_PARENT)) {
                             io.smallrye.config.NameIterator ni = new NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.profile.parent";
+                            return ni.getNextSegment() + "." + QUARKUS_CONFIG_PROFILE_PARENT;
                         }
 
                         return name;
@@ -89,13 +100,27 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                Map<String, String> fallbacks = new HashMap<>();
-                fallbacks.put("quarkus.profile", SMALLRYE_CONFIG_PROFILE);
-                fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
-                fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
-                fallbacks.put("quarkus.config.mapping.validate-unknown", SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN);
-                fallbacks.put("quarkus.config.log.values", SMALLRYE_CONFIG_LOG_VALUES);
-                return new FallbackConfigSourceInterceptor(fallbacks) {
+                return new FallbackConfigSourceInterceptor(new Function<String, String>() {
+                    @Override
+                    public String apply(final String name) {
+                        if (QUARKUS_PROFILE.equals(name)) {
+                            return SMALLRYE_CONFIG_PROFILE;
+                        }
+                        if (QUARKUS_CONFIG_LOCATIONS.equals(name)) {
+                            return SMALLRYE_CONFIG_LOCATIONS;
+                        }
+                        if (QUARKUS_CONFIG_PROFILE_PARENT.equals(name)) {
+                            return SMALLRYE_CONFIG_PROFILE_PARENT;
+                        }
+                        if (QUARKUS_CONFIG_MAPPING_VALIDATE_UNKNOWN.equals(name)) {
+                            return SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN;
+                        }
+                        if (QUARKUS_CONFIG_LOG_VALUES.equals(name)) {
+                            return SMALLRYE_CONFIG_LOG_VALUES;
+                        }
+                        return name;
+                    }
+                }) {
                     @Override
                     public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
                         return context.iterateNames();

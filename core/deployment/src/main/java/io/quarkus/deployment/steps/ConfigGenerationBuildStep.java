@@ -82,6 +82,10 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.paths.PathCollection;
+import io.quarkus.runtime.BuildAnalyticsConfig;
+import io.quarkus.runtime.BuilderConfig;
+import io.quarkus.runtime.CommandLineRuntimeConfig;
+import io.quarkus.runtime.DebugRuntimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.AbstractConfigBuilder;
@@ -94,6 +98,8 @@ import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
+import io.smallrye.config.ConfigMappingLoader;
+import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
@@ -257,15 +263,34 @@ public class ConfigGenerationBuildStep {
         Set<String> secretKeyHandlerFactories = discoverService(SecretKeysHandlerFactory.class, reflectiveClass);
         Set<String> configCustomizers = discoverService(SmallRyeConfigBuilderCustomizer.class, reflectiveClass);
 
+        // TODO - introduce a way to ignore mappings that are only used for documentation or to prevent warnings
+        Set<ConfigClass> ignoreMappings = new HashSet<>();
+        ignoreMappings.add(ConfigClass.configClass(BuildAnalyticsConfig.class, "quarkus.analytics"));
+        ignoreMappings.add(ConfigClass.configClass(BuilderConfig.class, "quarkus.builder"));
+        ignoreMappings.add(ConfigClass.configClass(CommandLineRuntimeConfig.class, "quarkus"));
+        ignoreMappings.add(ConfigClass.configClass(DebugRuntimeConfig.class, "quarkus.debug"));
+
+        Set<ConfigClass> allMappings = new HashSet<>();
+        allMappings.addAll(staticSafeConfigMappings(configMappings));
+        allMappings.addAll(runtimeConfigMappings(configMappings));
+        allMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        allMappings.addAll(configItem.getReadResult().getRunTimeMappings());
+        allMappings.removeAll(ignoreMappings);
+
+        // Shared components
+        Map<Object, FieldDescriptor> sharedFields = generateSharedConfig(generatedClass, converters, allMappings);
+
         // For Static Init Config
         Set<ConfigClass> staticMappings = new HashSet<>();
         staticMappings.addAll(staticSafeConfigMappings(configMappings));
         staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        staticMappings.removeAll(ignoreMappings);
         Set<String> staticCustomizers = new HashSet<>(staticSafeServices(configCustomizers));
         staticCustomizers.add(StaticInitConfigBuilder.class.getName());
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_STATIC_NAME,
                 combinedIndex,
+                sharedFields,
                 defaultValues,
                 converters,
                 interceptors,
@@ -275,6 +300,7 @@ public class ConfigGenerationBuildStep {
                 staticSafeServices(configSourceFactories),
                 secretKeyHandlers,
                 staticSafeServices(secretKeyHandlerFactories),
+                Set.of(),
                 staticMappings,
                 staticCustomizers,
                 staticInitConfigBuilders.stream().map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
@@ -285,11 +311,13 @@ public class ConfigGenerationBuildStep {
         runTimeMappings.addAll(runtimeConfigMappings(configMappings));
         runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
+        runTimeMappings.removeAll(ignoreMappings);
         Set<String> runtimeCustomizers = new HashSet<>(configCustomizers);
         runtimeCustomizers.add(RuntimeConfigBuilder.class.getName());
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_RUNTIME_NAME,
                 combinedIndex,
+                sharedFields,
                 defaultValues,
                 converters,
                 interceptors,
@@ -299,6 +327,7 @@ public class ConfigGenerationBuildStep {
                 configSourceFactories,
                 secretKeyHandlers,
                 secretKeyHandlerFactories,
+                staticMappings,
                 runTimeMappings,
                 runtimeCustomizers,
                 runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
@@ -532,12 +561,12 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor BUILDER_CUSTOMIZER = MethodDescriptor.ofMethod(SmallRyeConfigBuilderCustomizer.class,
             "configBuilder",
             void.class, SmallRyeConfigBuilder.class);
-
-    private static final MethodDescriptor WITH_DEFAULT = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
-            "withDefaultValue",
-            void.class, SmallRyeConfigBuilder.class, String.class, String.class);
+    private static final MethodDescriptor WITH_DEFAULTS = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withDefaultValues",
+            void.class, SmallRyeConfigBuilder.class, Map.class);
     private static final MethodDescriptor WITH_CONVERTER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
-            "withConverter", void.class, SmallRyeConfigBuilder.class, String.class, int.class, Converter.class);
+            "withConverter",
+            void.class, SmallRyeConfigBuilder.class, String.class, int.class, Converter.class);
     private static final MethodDescriptor WITH_INTERCEPTOR = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withInterceptor",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceInterceptor.class);
@@ -554,27 +583,86 @@ public class ConfigGenerationBuildStep {
             "withSource",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceFactory.class);
     private static final MethodDescriptor WITH_SECRET_HANDLER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
-            "withSecretKeyHandler", void.class, SmallRyeConfigBuilder.class, SecretKeysHandler.class);
+            "withSecretKeyHandler",
+            void.class, SmallRyeConfigBuilder.class, SecretKeysHandler.class);
     private static final MethodDescriptor WITH_SECRET_HANDLER_FACTORY = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
-            "withSecretKeyHandler", void.class, SmallRyeConfigBuilder.class, SecretKeysHandlerFactory.class);
+            "withSecretKeyHandler",
+            void.class, SmallRyeConfigBuilder.class, SecretKeysHandlerFactory.class);
     private static final MethodDescriptor WITH_MAPPING = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withMapping",
-            void.class, SmallRyeConfigBuilder.class, String.class, String.class);
+            void.class, SmallRyeConfigBuilder.class, ConfigClass.class);
+    private static final MethodDescriptor WITH_MAPPING_INSTANCE = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "withMappingInstance",
+            void.class, SmallRyeConfigBuilder.class, ConfigClass.class);
     private static final MethodDescriptor WITH_CUSTOMIZER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withCustomizer",
             void.class, SmallRyeConfigBuilder.class, SmallRyeConfigBuilderCustomizer.class);
     private static final MethodDescriptor WITH_BUILDER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withBuilder",
             void.class, SmallRyeConfigBuilder.class, ConfigBuilder.class);
+    private static final MethodDescriptor CONFIG_CLASS = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "configClass",
+            ConfigClass.class, String.class, String.class);
+    private static final MethodDescriptor ENSURE_LOADED = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
+            "ensureLoaded",
+            void.class, String.class);
 
     private static final DotName CONVERTER_NAME = DotName.createSimple(Converter.class.getName());
     private static final DotName PRIORITY_NAME = DotName.createSimple(Priority.class.getName());
+
+    private static Map<Object, FieldDescriptor> generateSharedConfig(
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            Set<String> converters,
+            Set<ConfigClass> mappings) {
+
+        Map<Object, FieldDescriptor> fields = new HashMap<>();
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
+                .className("io.quarkus.runtime.generated.SharedConfig")
+                .superClass(AbstractConfigBuilder.class)
+                .setFinal(true)
+                .build()) {
+
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+
+            int converterIndex = 0;
+            for (String converter : converters) {
+                String fieldName = "conv$" + converterIndex++;
+                FieldDescriptor converterField = classCreator.getFieldCreator(fieldName, Converter.class)
+                        .setModifiers(Opcodes.ACC_STATIC).getFieldDescriptor();
+                clinit.writeStaticField(converterField, clinit.newInstance(MethodDescriptor.ofConstructor(converter)));
+                fields.put(converter, converterField);
+            }
+
+            int mappingIndex = 0;
+            for (ConfigClass mapping : mappings) {
+                FieldDescriptor mappingField = classCreator.getFieldCreator("mapping$" + mappingIndex++, ConfigClass.class)
+                        .setModifiers(Opcodes.ACC_STATIC).getFieldDescriptor();
+                clinit.writeStaticField(mappingField, clinit.invokeStaticMethod(CONFIG_CLASS,
+                        clinit.load(mapping.getType().getName()), clinit.load(mapping.getPrefix())));
+
+                List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader
+                        .getConfigMappingsMetadata(mapping.getType());
+                for (ConfigMappingMetadata configMappingMetadata : configMappingsMetadata) {
+                    clinit.invokeStaticMethod(ENSURE_LOADED, clinit.load(configMappingMetadata.getInterfaceType().getName()));
+                }
+
+                fields.put(mapping, mappingField);
+            }
+
+            clinit.returnVoid();
+        }
+
+        return fields;
+    }
 
     private static void generateConfigBuilder(
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             String className,
             CombinedIndexBuildItem combinedIndex,
+            Map<Object, FieldDescriptor> sharedFields,
             Map<String, String> defaultValues,
             Set<String> converters,
             Set<String> interceptors,
@@ -584,6 +672,7 @@ public class ConfigGenerationBuildStep {
             Set<String> configSourceFactories,
             Set<String> secretKeyHandlers,
             Set<String> secretKeyHandlerFactories,
+            Set<ConfigClass> mappingsInstances,
             Set<ConfigClass> mappings,
             Set<String> configCustomizers,
             Set<String> configBuilders) {
@@ -597,23 +686,33 @@ public class ConfigGenerationBuildStep {
                 .setFinal(true)
                 .build()) {
 
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class);
+            clinit.setModifiers(Opcodes.ACC_STATIC);
+
             MethodCreator method = classCreator.getMethodCreator(BUILDER_CUSTOMIZER);
             ResultHandle configBuilder = method.getMethodParam(0);
 
+            FieldDescriptor defaultsField = classCreator.getFieldCreator("defaults", Map.class).setModifiers(Opcodes.ACC_STATIC)
+                    .getFieldDescriptor();
+            clinit.writeStaticField(defaultsField, clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class, int.class),
+                    clinit.load((int) ((float) defaultValues.size() / 0.75f + 1.0f))));
+            MethodDescriptor put = MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class);
             for (Map.Entry<String, String> entry : defaultValues.entrySet()) {
-                method.invokeStaticMethod(WITH_DEFAULT, configBuilder, method.load(entry.getKey()),
-                        method.load(entry.getValue()));
+                clinit.invokeVirtualMethod(put, clinit.readStaticField(defaultsField), clinit.load(entry.getKey()),
+                        clinit.load(entry.getValue()));
             }
+            method.invokeStaticMethod(WITH_DEFAULTS, configBuilder, method.readStaticField(defaultsField));
 
             for (String converter : converters) {
                 ClassInfo converterClass = combinedIndex.getComputingIndex().getClassByName(converter);
                 Type type = getConverterType(converterClass, combinedIndex);
                 AnnotationInstance priorityAnnotation = converterClass.annotation(PRIORITY_NAME);
                 int priority = priorityAnnotation != null ? priorityAnnotation.value().asInt() : 100;
+
                 method.invokeStaticMethod(WITH_CONVERTER, configBuilder,
                         method.load(type.name().toString()),
                         method.load(priority),
-                        method.newInstance(MethodDescriptor.ofConstructor(converter)));
+                        method.readStaticField(sharedFields.get(converter)));
             }
 
             for (String interceptor : interceptors) {
@@ -651,11 +750,17 @@ public class ConfigGenerationBuildStep {
                         method.newInstance(MethodDescriptor.ofConstructor(secretKeyHandlerFactory)));
             }
 
-            for (ConfigClass mapping : mappings) {
-                method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.load(mapping.getKlass().getName()),
-                        method.load(mapping.getPrefix()));
+            for (ConfigClass mappingInstance : mappingsInstances) {
+                method.invokeStaticMethod(WITH_MAPPING_INSTANCE, configBuilder,
+                        method.readStaticField(sharedFields.get(mappingInstance)));
             }
 
+            mappings.removeAll(mappingsInstances);
+            for (ConfigClass mapping : mappings) {
+                method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));
+            }
+
+            clinit.returnVoid();
             method.returnVoid();
         }
 

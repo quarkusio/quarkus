@@ -7,7 +7,7 @@ import jakarta.ws.rs.Path;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -21,7 +21,7 @@ public class HibernateReactiveMySQLTestEndpoint {
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
     @Inject
-    MySQLPool mysqlPool;
+    Pool mysqlPool;
 
     @GET
     @Path("/reactiveFindMutiny")

@@ -535,7 +535,7 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
-|`io.vertx.mutiny.mysqlclient.MySQLPool`
+|`io.vertx.mutiny.sqlclient.Pool`
 |`?`
 
 |Microsoft SQL Server

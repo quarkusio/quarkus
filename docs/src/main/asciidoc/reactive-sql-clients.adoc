@@ -545,7 +545,7 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 
 |Oracle
 |`quarkus-reactive-oracle-client`
-|`io.vertx.mutiny.oracleclient.OraclePool`
+|`io.vertx.mutiny.sqlclient.Pool`
 |`?`
 
 |PostgreSQL

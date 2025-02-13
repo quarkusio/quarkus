@@ -2,6 +2,8 @@ package io.quarkus.reactive.oracle.client.deployment;
 
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifier;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
+import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,9 +14,10 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
@@ -56,6 +59,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.oracle.client.OraclePoolCreator;
 import io.quarkus.reactive.oracle.client.runtime.DataSourcesReactiveOracleConfig;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
+import io.quarkus.reactive.oracle.client.runtime.OraclePoolSupport;
 import io.quarkus.reactive.oracle.client.runtime.OracleServiceBindingConverter;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
@@ -65,11 +69,12 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveOracleClientProcessor {
 
-    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(
-            DotName.createSimple(Instance.class),
-            new Type[] { ClassType.create(DotName.createSimple(OraclePoolCreator.class.getName())) }, null);
+    private static final Type ORACLE_POOL_CREATOR = ClassType.create(DotName.createSimple(OraclePoolCreator.class.getName()));
+    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
+            new Type[] { ORACLE_POOL_CREATOR }, null);
+
     private static final DotName VERTX_ORACLE_POOL = DotName.createSimple(OraclePool.class);
-    private static final Type VERTX_ORACLE_POOL_TYPE = Type.create(VERTX_ORACLE_POOL, Type.Kind.CLASS);
+    private static final Type VERTX_ORACLE_POOL_TYPE = ClassType.create(VERTX_ORACLE_POOL);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -91,12 +96,28 @@ class ReactiveOracleClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_ORACLE_CLIENT));
 
+        Stream.Builder<String> oraclePoolNamesBuilder = Stream.builder();
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, oraclePool, syntheticBeans,
-                    dataSourceName,
-                    dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourcesReactiveRuntimeConfig, dataSourcesReactiveOracleConfig, defaultDataSourceDbKindBuildItems,
-                    curateOutcomeBuildItem);
+
+            if (!isReactiveOraclePoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
+                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+                continue;
+            }
+
+            createPool(recorder, vertx, eventLoopCount, shutdown, oraclePool, syntheticBeans, dataSourceName,
+                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveOracleConfig);
+
+            oraclePoolNamesBuilder.add(dataSourceName);
+        }
+
+        Set<String> oraclePoolNames = oraclePoolNamesBuilder.build().collect(toSet());
+        if (!oraclePoolNames.isEmpty()) {
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(OraclePoolSupport.class)
+                    .scope(Singleton.class)
+                    .unremovable()
+                    .runtimeValue(recorder.createOraclePoolSupport(oraclePoolNames))
+                    .setRuntimeInit()
+                    .done());
         }
 
         // Enable SSL support by default
@@ -176,25 +197,16 @@ class ReactiveOracleClientProcessor {
                         dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
-    private void createPoolIfDefined(OraclePoolRecorder recorder,
+    private void createPool(OraclePoolRecorder recorder,
             VertxBuildItem vertx,
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<OraclePoolBuildItem> oraclePool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        if (!isReactiveOraclePoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
-            return;
-        }
+            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig) {
 
         Function<SyntheticCreationalContext<OraclePool>, OraclePool> poolFunction = recorder.configureOraclePool(
                 vertx.getVertx(),
@@ -282,8 +294,6 @@ class ReactiveOracleClientProcessor {
     }
 
     private static class OraclePoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {
-        private static final Type ORACLE_POOL_CREATOR = Type.create(DotName.createSimple(OraclePoolCreator.class.getName()),
-                Type.Kind.CLASS);
 
         @Override
         public boolean test(Set<Type> types) {

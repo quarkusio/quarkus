@@ -1103,15 +1103,15 @@ public final class HibernateOrmProcessor {
             p.put(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
 
-        // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
-        // if there is any issue when bootstrapping Hibernate Validator.
-        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
-            if (persistenceUnitConfig.validation().enabled()) {
-                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE,
-                        ValidationMode.CALLBACK.name());
-            } else {
-                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
-            }
+        if (!persistenceUnitConfig.validation().enabled()) {
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+        } else {
+            descriptor.getProperties().setProperty(
+                    AvailableSettings.JAKARTA_VALIDATION_MODE,
+                    persistenceUnitConfig.validation().mode()
+                            .stream()
+                            .map(Enum::name)
+                            .collect(Collectors.joining(",")));
         }
 
         // Discriminator Column

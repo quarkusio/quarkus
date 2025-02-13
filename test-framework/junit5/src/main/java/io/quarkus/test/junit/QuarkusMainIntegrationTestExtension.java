@@ -6,6 +6,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
+import static io.quarkus.test.junit.IntegrationTestUtil.getEffectiveArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
@@ -101,11 +102,9 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusMainIntegrationTest");
 
         quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
-        String artifactType = quarkusArtifactProperties.getProperty("type");
-        if (artifactType == null) {
-            throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
-        }
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        String artifactType = getEffectiveArtifactType(quarkusArtifactProperties, config);
+
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
         boolean isDockerLaunch = isContainer(artifactType)

@@ -540,7 +540,7 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 
 |Microsoft SQL Server
 |`quarkus-reactive-mssql-client`
-|`io.vertx.mutiny.mssqlclient.MSSQLPool`
+|`io.vertx.mutiny.sqlclient.Pool`
 |`@p1`, `@p2`, etc.
 
 |Oracle

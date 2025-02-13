@@ -54,15 +54,19 @@ import com.mongodb.connection.ConnectionPoolSettings;
 import com.mongodb.connection.ServerSettings;
 import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
+import com.mongodb.connection.TransportSettings;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
@@ -86,13 +90,15 @@ public class MongoClients {
     private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
     private final Instance<ReactiveContextProvider> reactiveContextProviders;
     private final Instance<MongoClientCustomizer> customizers;
+    private final Vertx vertx;
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             Instance<PropertyCodecProvider> propertyCodecProviders,
             Instance<CommandListener> commandListeners,
             Instance<ReactiveContextProvider> reactiveContextProviders,
-            @Any Instance<MongoClientCustomizer> customizers) {
+            @Any Instance<MongoClientCustomizer> customizers,
+            Vertx vertx) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
@@ -100,6 +106,7 @@ public class MongoClients {
         this.commandListeners = commandListeners;
         this.reactiveContextProviders = reactiveContextProviders;
         this.customizers = customizers;
+        this.vertx = vertx;
 
         try {
             //JDK bug workaround
@@ -254,6 +261,18 @@ public class MongoClients {
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
 
+        switch (config.reactiveTransport()) {
+            case NETTY:
+                // we supports just NIO for now
+                if (!vertx.isNativeTransportEnabled()) {
+                    configureNettyTransport(settings);
+                }
+                break;
+            case MONGO:
+                // no-op since this is the default behaviour
+                break;
+        }
+
         if (isReactive) {
             reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
         }
@@ -327,6 +346,14 @@ public class MongoClients {
         settings = customize(name, settings);
 
         return settings.build();
+    }
+
+    private void configureNettyTransport(MongoClientSettings.Builder settings) {
+        var nettyStreaming = TransportSettings.nettyBuilder()
+                .allocator(VertxByteBufAllocator.POOLED_ALLOCATOR)
+                .eventLoopGroup(vertx.nettyEventLoopGroup())
+                .socketChannelClass(NioSocketChannel.class).build();
+        settings.transportSettings(nettyStreaming);
     }
 
     private boolean doesNotHaveClientNameQualifier(Bean<?> bean) {

@@ -49,6 +49,7 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.StrEvalNamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
@@ -194,6 +195,9 @@ public class EngineProducer {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             builder.addNamespaceResolver(namespaceResolver);
         }
+        // str:eval
+        StrEvalNamespaceResolver strEvalNamespaceResolver = new StrEvalNamespaceResolver();
+        builder.addNamespaceResolver(strEvalNamespaceResolver);
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -268,6 +272,9 @@ public class EngineProducer {
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
+
+        // Init resolver for str:eval
+        strEvalNamespaceResolver.setEngine(engine);
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();

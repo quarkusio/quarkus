@@ -70,6 +70,11 @@ public interface ResolutionContext {
     Object getAttribute(String key);
 
     /**
+     * @return the current template
+     */
+    Template getTemplate();
+
+    /**
      *
      * @return the evaluator
      */

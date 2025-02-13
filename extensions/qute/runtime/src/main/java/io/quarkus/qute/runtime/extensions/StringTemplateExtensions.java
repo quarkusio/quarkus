@@ -1,6 +1,9 @@
 package io.quarkus.qute.runtime.extensions;
 
+import static io.quarkus.qute.TemplateExtension.ANY;
+
 import java.util.Locale;
+import java.util.Objects;
 
 import jakarta.enterprise.inject.Vetoed;
 
@@ -70,6 +73,66 @@ public class StringTemplateExtensions {
     @TemplateExtension(matchName = "+")
     static String plus(String str, Object val) {
         return str + val;
+    }
+
+    /**
+     * E.g. {@code str:concat("Hello ",name)}. The priority must be lower than {@link #fmt(String, String, Object...)}.
+     *
+     * @param args
+     */
+    @TemplateExtension(namespace = STR, priority = 1)
+    static String concat(Object... args) {
+        StringBuilder b = new StringBuilder(args.length * 10);
+        for (Object obj : args) {
+            b.append(obj.toString());
+        }
+        return b.toString();
+    }
+
+    /**
+     * E.g. {@code str:join("_", "Hello",name)}. The priority must be lower than {@link #concat(Object...)}.
+     *
+     * @param delimiter
+     * @param args
+     */
+    @TemplateExtension(namespace = STR, priority = 0)
+    static String join(String delimiter, Object... args) {
+        CharSequence[] elements = new CharSequence[args.length];
+        for (int i = 0; i < args.length; i++) {
+            elements[i] = args[i].toString();
+        }
+        return String.join(delimiter, elements);
+    }
+
+    /**
+     * E.g. {@code str:builder}. The priority must be lower than {@link #join(String, Object...)}.
+     */
+    @TemplateExtension(namespace = STR, priority = -1)
+    static StringBuilder builder() {
+        return new StringBuilder();
+    }
+
+    /**
+     * E.g. {@code str:builder('Hello')}. The priority must be lower than {@link #builder()}.
+     */
+    @TemplateExtension(namespace = STR, priority = -2)
+    static StringBuilder builder(Object val) {
+        return new StringBuilder(Objects.toString(val));
+    }
+
+    /**
+     * E.g. {@code str:['Foo and bar']}. The priority must be lower than any other {@code str:} resolver.
+     *
+     * @param name
+     */
+    @TemplateExtension(namespace = STR, priority = -10, matchName = ANY)
+    static String self(String name) {
+        return name;
+    }
+
+    @TemplateExtension(matchName = "+")
+    static StringBuilder plus(StringBuilder builder, Object val) {
+        return builder.append(val);
     }
 
 }

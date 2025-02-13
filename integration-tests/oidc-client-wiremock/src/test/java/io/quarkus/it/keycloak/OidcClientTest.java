@@ -63,7 +63,7 @@ public class OidcClientTest {
         assertEquals("access_token_without_expires_in", data[0]);
 
         long now = System.currentTimeMillis() / 1000;
-        long expectedExpiresAt = now + 5;
+        long expectedExpiresAt = now + 7;
         long accessTokenExpiresAt = Long.valueOf(data[1]);
         assertTrue(accessTokenExpiresAt >= expectedExpiresAt
                 && accessTokenExpiresAt <= expectedExpiresAt + 4);

@@ -26,6 +26,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private final Grant grant;
         private final boolean absoluteExpiresIn;
         private final Optional<Duration> accessTokenExpiresIn;
+        private final Optional<Duration> accessTokenExpirySkew;
         private final Optional<Duration> refreshTokenTimeSkew;
         private final Optional<List<String>> scopes;
         private final boolean clientEnabled;
@@ -39,6 +40,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
             this.grant = builder.grant;
             this.absoluteExpiresIn = builder.absoluteExpiresIn;
             this.accessTokenExpiresIn = builder.accessTokenExpiresIn;
+            this.accessTokenExpirySkew = builder.accessTokenExpirySkew;
             this.refreshTokenTimeSkew = builder.refreshTokenTimeSkew;
             this.scopes = builder.scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.scopes));
             this.clientEnabled = builder.clientEnabled;
@@ -68,6 +70,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         @Override
         public Optional<Duration> accessTokenExpiresIn() {
             return accessTokenExpiresIn;
+        }
+
+        @Override
+        public Optional<Duration> accessTokenExpirySkew() {
+            return accessTokenExpirySkew;
         }
 
         @Override
@@ -103,6 +110,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Grant grant;
     private boolean absoluteExpiresIn;
     private Optional<Duration> accessTokenExpiresIn;
+    private Optional<Duration> accessTokenExpirySkew;
     private Optional<Duration> refreshTokenTimeSkew;
     private boolean clientEnabled;
     private Optional<String> id;
@@ -118,6 +126,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         this.grant = config.grant();
         this.absoluteExpiresIn = config.absoluteExpiresIn();
         this.accessTokenExpiresIn = config.accessTokenExpiresIn();
+        this.accessTokenExpirySkew = config.accessTokenExpirySkew();
         this.refreshTokenTimeSkew = config.refreshTokenTimeSkew();
         this.clientEnabled = config.clientEnabled();
         this.id = config.id();
@@ -216,6 +225,15 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcClientConfigBuilder accessTokenExpiresIn(Duration accessTokenExpiresIn) {
         this.accessTokenExpiresIn = Optional.ofNullable(accessTokenExpiresIn);
+        return this;
+    }
+
+    /**
+     * @param accessTokenExpirySkew {@link OidcClientConfig#accessTokenExpirySkew()}
+     * @return this builder
+     */
+    public OidcClientConfigBuilder accessTokenExpirySkew(Duration accessTokenExpirySkew) {
+        this.accessTokenExpirySkew = Optional.ofNullable(accessTokenExpirySkew);
         return this;
     }
 

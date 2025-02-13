@@ -55,3 +55,7 @@ quarkus.kubernetes-client.devservices.api-version=1.22
 `api-only` only starts a Kubernetes API Server. If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. Note that they both requires to run in Docker privileged mode.
 
 If `api-version` is not set, the latest version for the given flavor will be used. Otherwise, the version must match a https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json[version supported by the given flavor].
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-kubernetes-client_quarkus.kubernetes-client.devservices.adoc[opts=optional, leveloffset=+1]

@@ -146,7 +146,7 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(ClusterSettings.Builder builder) {
@@ -180,8 +180,8 @@ public class MongoClients {
             this.connectionPoolListeners = connectionPoolListeners;
         }
 
-        private MongoClientConfig config;
-        private List<ConnectionPoolListener> connectionPoolListeners;
+        private final MongoClientConfig config;
+        private final List<ConnectionPoolListener> connectionPoolListeners;
 
         @Override
         public void apply(ConnectionPoolSettings.Builder builder) {
@@ -211,8 +211,8 @@ public class MongoClients {
             this.disableSslSupport = disableSslSupport;
         }
 
-        private MongoClientConfig config;
-        private boolean disableSslSupport;
+        private final MongoClientConfig config;
+        private final boolean disableSslSupport;
 
         @Override
         public void apply(SslSettings.Builder builder) {
@@ -225,7 +225,7 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(SocketSettings.Builder builder) {
@@ -243,7 +243,7 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(ServerSettings.Builder builder) {
@@ -466,8 +466,8 @@ public class MongoClients {
             usernamePassword = new UsernamePassword(null, null);
         }
         // Create the MongoCredential instance.
-        String username = usernamePassword.getUsername();
-        char[] password = usernamePassword.getPassword();
+        String username = usernamePassword.username();
+        char[] password = usernamePassword.password();
         MongoCredential credential;
         if (mechanism == GSSAPI) {
             credential = MongoCredential.createGSSAPICredential(username);
@@ -540,21 +540,6 @@ public class MongoClients {
         }
     }
 
-    private static class UsernamePassword {
-        private final String username;
-        private final char[] password;
-
-        public UsernamePassword(String username, char[] password) {
-            this.username = username;
-            this.password = password;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public char[] getPassword() {
-            return password;
-        }
+    private record UsernamePassword(String username, char[] password) {
     }
 }

@@ -15,12 +15,12 @@ jobs:
         with:
           repository: quarkusio/quarkusio.github.io
       - name: Download PR Artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          workflow: ${{ github.event.workflow_run.workflow_id }}
-          workflow_conclusion: success
+          run-id: ${{ github.event.workflow_run.id }}
           name: documentation
           path: documentation-temp
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Store PR id as variable
         id: pr
         run: |

@@ -70,7 +70,7 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
@@ -194,7 +194,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -202,7 +202,7 @@ jobs:
       - name: Delete snapshots artifacts from cache
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -351,7 +351,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -378,14 +378,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -396,7 +396,7 @@ jobs:
             LICENSE.txt
           retention-days: 7
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
@@ -448,7 +448,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -475,7 +475,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
@@ -489,7 +489,7 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
@@ -540,7 +540,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -568,7 +568,7 @@ jobs:
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
@@ -622,7 +622,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -648,14 +648,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
@@ -708,7 +708,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -734,14 +734,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-kubernetes-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -781,7 +781,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -805,7 +805,7 @@ jobs:
           git clone -b 3.8 https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
@@ -840,7 +840,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -871,7 +871,7 @@ jobs:
         run: |
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -913,7 +913,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -938,14 +938,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-MicroProfile TCKs Tests"
@@ -1016,7 +1016,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -1038,14 +1038,14 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -1063,7 +1063,7 @@ jobs:
     needs: [build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

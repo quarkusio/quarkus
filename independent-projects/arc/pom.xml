@@ -49,6 +49,7 @@
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
         <version.mutiny>2.8.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
+        <version.smallrye-common>2.10.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.3</version.assertj>
         <version.junit5>5.10.5</version.junit5>
@@ -77,6 +78,13 @@
     <dependencyManagement>
 
         <dependencies>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${version.smallrye-common}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <dependency>
                 <groupId>io.quarkus.arc</groupId>

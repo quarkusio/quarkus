@@ -812,7 +812,7 @@ public class MessageBundleProcessor {
                                 messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
                                         .add("name", Message.DEFAULT_NAME).build();
                             }
-                            return getMessageAnnotationValue(messageAnnotation) != null;
+                            return getMessageAnnotationValue(messageAnnotation, false) != null;
                         })
                         .map(MethodInfo::name)
                         .forEach(keyToTemplate::remove);
@@ -1013,13 +1013,13 @@ public class MessageBundleProcessor {
             boolean generatedTemplate = false;
             String messageTemplate = messageTemplates.get(method.name());
             if (messageTemplate == null) {
-                messageTemplate = getMessageAnnotationValue(messageAnnotation);
+                messageTemplate = getMessageAnnotationValue(messageAnnotation, true);
             }
 
             if (messageTemplate == null && defaultBundleInterface != null) {
                 // method is annotated with @Message without value() -> fallback to default locale
                 messageTemplate = getMessageAnnotationValue((defaultBundleInterface.method(method.name(),
-                        method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE));
+                        method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE), true);
             }
 
             // We need some special handling for enum message bundle methods
@@ -1215,11 +1215,19 @@ public class MessageBundleProcessor {
     /**
      * @return {@link Message#value()} if value was provided
      */
-    private String getMessageAnnotationValue(AnnotationInstance messageAnnotation) {
+    private String getMessageAnnotationValue(AnnotationInstance messageAnnotation, boolean useDefault) {
         var messageValue = messageAnnotation.value();
         if (messageValue == null || messageValue.asString().equals(Message.DEFAULT_VALUE)) {
             // no value was provided in annotation
-            return null;
+            if (useDefault) {
+                var defaultMessageValue = messageAnnotation.value("defaultValue");
+                if (defaultMessageValue == null || defaultMessageValue.asString().equals(Message.DEFAULT_VALUE)) {
+                    return null;
+                }
+                return defaultMessageValue.asString();
+            } else {
+                return null;
+            }
         }
         return messageValue.asString();
     }

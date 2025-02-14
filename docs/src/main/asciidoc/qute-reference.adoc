@@ -3082,8 +3082,10 @@ TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a conve
 
 ==== Message Templates
 
-Every method of a message bundle interface must define a message template. The value is normally defined by `io.quarkus.qute.i18n.Message#value()`,
-but for convenience, there is also an option to define the value in a localized file.
+Every method of a message bundle interface must define a message template. 
+The value is normally defined by `io.quarkus.qute.i18n.Message#value()`, but for convenience, there is also an option to define the value in a localized file.
+Message templates are validated during the build. 
+If a missing message template is detected, an exception is thrown and the build fails.
 
 .Example of the Message Bundle Interface without the value
 [source,java]
@@ -3114,8 +3116,23 @@ goodbye=Best regards, {name} <1>
 ----
 <1> The value is ignored as `io.quarkus.qute.i18n.Message#value()` is always prioritized.
 
-Message templates are validated during the build. If a missing message template is detected, an exception is thrown and build fails.
+It is also possible to define a _default message template_.
+The default template is only used if the `Message#value()` is not specified and no relevant message template is defined in a localized file.
 
+.Example of the Message Bundle Interface with a default value
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle
+public interface AppMessages {
+
+    @Message(defaultValue = "Goodbye {name}!") <1>
+    String goodbye(String name);
+}
+----
+<1> The annotation value is only used if no message template is defined in a localized file.
 
 === Configuration Reference
 

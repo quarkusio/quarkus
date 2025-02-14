@@ -70,7 +70,7 @@
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.12</jacoco.version>
         <kubernetes-client.version>7.1.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.5.0</rest-assured.version>
+        <rest-assured.version>5.5.1</rest-assured.version>
         <hibernate-orm.version>6.6.8.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->

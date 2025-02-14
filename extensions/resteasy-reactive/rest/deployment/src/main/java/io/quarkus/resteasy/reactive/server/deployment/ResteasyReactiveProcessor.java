@@ -562,6 +562,8 @@ public class ResteasyReactiveProcessor {
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
                                     : Collections.emptyMap())
                     .setResourceMethodCallback(new Consumer<>() {
+                        Boolean filtersAccessResourceMethod;
+
                         @Override
                         public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
                             MethodInfo method = entry.getMethodInfo();
@@ -588,6 +590,11 @@ public class ResteasyReactiveProcessor {
                                         .build());
                             }
 
+                            if (filtersAccessResourceMethod == null) {
+                                filtersAccessResourceMethod = filtersAccessResourceMethod(
+                                        resourceInterceptorsBuildItem.getResourceInterceptors());
+                            }
+
                             boolean paramsRequireReflection = false;
                             for (short i = 0; i < method.parametersCount(); i++) {
                                 Type parameterType = method.parameterType(i);
@@ -611,12 +618,12 @@ public class ResteasyReactiveProcessor {
                                 }
                             }
 
-                            if (paramsRequireReflection ||
+                            if (filtersAccessResourceMethod ||
+                                    paramsRequireReflection ||
                                     MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     REST_MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     LEGACY_PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
-                                    filtersAccessResourceMethod(resourceInterceptorsBuildItem.getResourceInterceptors()) ||
                                     entry.additionalRegisterClassForReflectionCheck()) {
                                 minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
                             }

@@ -5,6 +5,8 @@ import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -97,6 +99,12 @@ public final class OidcUtils {
     public static final String STATE_COOKIE_NAME = "q_auth";
     public static final String JWT_THUMBPRINT = "jwt_thumbprint";
     public static final String INTROSPECTION_THUMBPRINT = "introspection_thumbprint";
+    public static final String DPOP_JWT_THUMBPRINT = "dpop_jwt_thumbprint";
+    public static final String DPOP_INTROSPECTION_THUMBPRINT = "dpop_introspection_thumbprint";
+    public static final String DPOP_PROOF = "dpop_proof";
+    public static final String DPOP_PROOF_JWT_HEADERS = "dpop_proof_jwt_headers";
+    public static final String DPOP_PROOF_JWT_CLAIMS = "dpop_proof_jwt_claims";
+
     private static final String APPLICATION_JWT = "application/jwt";
 
     // Browsers enforce that the total Set-Cookie expression such as
@@ -568,6 +576,14 @@ public final class OidcUtils {
             return oidcTenantConfig;
         }
 
+    }
+
+    public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {
+        return getSha256Digest(value, StandardCharsets.UTF_8);
+    }
+
+    public static byte[] getSha256Digest(String value, Charset charset) throws NoSuchAlgorithmException {
+        return getSha256Digest(value.getBytes(charset));
     }
 
     public static byte[] getSha256Digest(byte[] value) throws NoSuchAlgorithmException {

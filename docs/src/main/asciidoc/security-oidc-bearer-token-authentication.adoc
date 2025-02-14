@@ -1309,7 +1309,30 @@ If you set `quarkus.oidc.client-id`, but your endpoint does not require remote a
 Quarkus `web-app` applications always require the `quarkus.oidc.client-id` property.
 ====
 
-== Mutual TLS token binding
+== Sender-constraining access tokens
+
+=== Demonstrating Proof of Possession (DPoP)
+
+https://datatracker.ietf.org/doc/html/rfc9449[RFC9449] describes a Demonstrating Proof of Possession (DPoP) mechanism for cryprographically binding an access token to the current client, preventing the access token loss and replay.
+
+Single page application (SPA) public clients generate DPoP proof tokens and use them to acquire and submit access tokens which are cryptograhically bound to DPoP proofs. 
+
+Enabling DPoP support in Quarkus requires a single property.
+
+For example:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=${your_oidc_provider_url}
+quarkus.oidc.token.authorization-scheme=dpop <1>
+----
+<1> Require that the access tokens are provided using HTTP `Authorization DPoP` scheme value.
+
+After accepting such tokens, Quarkus will go through the full https://datatracker.ietf.org/doc/html/rfc9449#name-checking-dpop-proofs[DPoP token verification process].
+
+Support for custom DPoP nonce providers may be offered in the future.
+
+=== Mutual TLS token binding
 
 https://datatracker.ietf.org/doc/html/rfc8705[RFC8705] describes a mechanism for binding access tokens to Mutual TLS (mTLS) client authentication certificates.
 It requires that a client certificate's SHA256 thumbprint matches a JWT token or token introspection confirmation `x5t#S256` certificate thumbprint.

@@ -8,7 +8,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndP
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
-import static io.quarkus.test.junit.IntegrationTestUtil.getArtifactType;
+import static io.quarkus.test.junit.IntegrationTestUtil.getEffectiveArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
@@ -190,9 +190,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             throws Throwable {
         JBossVersion.disableVersionLogging();
 
-        String artifactType = getArtifactType(quarkusArtifactProperties);
-
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        String artifactType = getEffectiveArtifactType(quarkusArtifactProperties, config);
+
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));

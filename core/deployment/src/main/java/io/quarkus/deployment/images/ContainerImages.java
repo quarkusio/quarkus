@@ -52,10 +52,20 @@ public class ContainerImages {
     public static final String UBI9_MINIMAL_VERSION = UBI9_VERSION;
     public static final String UBI9_MINIMAL = UBI9_MINIMAL_IMAGE_NAME + ":" + UBI9_MINIMAL_VERSION;
 
-    // Quarkus Micro image - https://quay.io/repository/quarkus/quarkus-micro-image?tab=tags
-    public static final String QUARKUS_MICRO_IMAGE_NAME = "quay.io/quarkus/quarkus-micro-image";
-    public static final String QUARKUS_MICRO_VERSION = "2.0";
-    public static final String QUARKUS_MICRO_IMAGE = QUARKUS_MICRO_IMAGE_NAME + ":" + QUARKUS_MICRO_VERSION;
+    // UBI 8 Quarkus Micro image - https://quay.io/repository/quarkus/quarkus-micro-image?tab=tags
+    public static final String UBI8_QUARKUS_MICRO_IMAGE_NAME = "quay.io/quarkus/quarkus-micro-image";
+    public static final String UBI8_QUARKUS_MICRO_VERSION = "2.0";
+    public static final String UBI8_QUARKUS_MICRO_IMAGE = UBI8_QUARKUS_MICRO_IMAGE_NAME + ":" + UBI8_QUARKUS_MICRO_VERSION;
+
+    // UBI 9 Quarkus Micro image - https://quay.io/repository/quarkus/ubi9-quarkus-micro-image?tab=tags
+    public static final String UBI9_QUARKUS_MICRO_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-micro-image";
+    public static final String UBI9_QUARKUS_MICRO_VERSION = "2.0";
+    public static final String UBI9_QUARKUS_MICRO_IMAGE = UBI9_QUARKUS_MICRO_IMAGE_NAME + ":" + UBI9_QUARKUS_MICRO_VERSION;
+
+    // default Quarkus Micro image - https://quay.io/repository/quarkus/quarkus-micro-image?tab=tags
+    public static final String QUARKUS_MICRO_IMAGE_NAME = UBI9_QUARKUS_MICRO_IMAGE_NAME;
+    public static final String QUARKUS_MICRO_VERSION = UBI9_QUARKUS_MICRO_VERSION;
+    public static final String QUARKUS_MICRO_IMAGE = UBI9_QUARKUS_MICRO_IMAGE;
 
     // === Runtime images for containers (JVM)
 

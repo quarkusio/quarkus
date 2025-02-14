@@ -427,7 +427,7 @@ public class QuteProcessor {
                     continue;
                 }
                 MethodInfo canonicalConstructor = recordClass.method(MethodDescriptor.INIT,
-                        recordClass.unsortedRecordComponents().stream().map(RecordComponentInfo::type)
+                        recordClass.recordComponentsInDeclarationOrder().stream().map(RecordComponentInfo::type)
                                 .toArray(Type[]::new));
 
                 AnnotationInstance checkedTemplateAnnotation = recordClass.declaredAnnotation(Names.CHECKED_TEMPLATE);
@@ -2185,6 +2185,7 @@ public class QuteProcessor {
     @BuildStep
     void collectTemplates(ApplicationArchivesBuildItem applicationArchives,
             CurateOutcomeBuildItem curateOutcome,
+            List<TemplatePathExcludeBuildItem> templatePathExcludes,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -2205,6 +2206,12 @@ public class QuteProcessor {
             }
         }).build());
 
+        List<Pattern> excludePatterns = new ArrayList<>(templatePathExcludes.size() + 1);
+        excludePatterns.add(config.templatePathExclude());
+        for (TemplatePathExcludeBuildItem exclude : templatePathExcludes) {
+            excludePatterns.add(Pattern.compile(exclude.getRegexPattern()));
+        }
+
         final Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
         final Set<ArtifactKey> appArtifactKeys = new HashSet<>(allApplicationArchives.size());
         for (var archive : allApplicationArchives) {
@@ -2215,12 +2222,13 @@ public class QuteProcessor {
             // Skip extension archives that are also application archives
             if (!appArtifactKeys.contains(artifact.getKey())) {
                 scanPathTree(artifact.getContentTree(), templateRoots, watchedPaths, templatePaths, nativeImageResources,
-                        config);
+                        config, excludePatterns);
             }
         }
         for (ApplicationArchive archive : allApplicationArchives) {
             archive.accept(
-                    tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config));
+                    tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
+                            excludePatterns));
         }
     }
 
@@ -2228,7 +2236,7 @@ public class QuteProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            QuteConfig config) {
+            QuteConfig config, List<Pattern> excludePatterns) {
         for (String templateRoot : templateRoots) {
             if (PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot)) {
                 pathTree.walkIfContains(templateRoot, visit -> {
@@ -2241,9 +2249,11 @@ public class QuteProcessor {
                         // remove templateRoot + /
                         final String relativePath = visit.getRelativePath();
                         String templatePath = relativePath.substring(templateRoot.length() + 1);
-                        if (config.templatePathExclude().matcher(templatePath).matches()) {
-                            LOGGER.debugf("Template file excluded: %s", visit.getPath());
-                            return;
+                        for (Pattern p : excludePatterns) {
+                            if (p.matcher(templatePath).matches()) {
+                                LOGGER.debugf("Template file excluded: %s", visit.getPath());
+                                return;
+                            }
                         }
                         produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
                                 relativePath, templatePath, visit.getPath(), config);
@@ -2568,7 +2578,7 @@ public class QuteProcessor {
     @Record(value = STATIC_INIT)
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<TemplatePathBuildItem> templatePaths, Optional<TemplateVariantsBuildItem> templateVariants,
-            TemplateRootsBuildItem templateRoots) {
+            TemplateRootsBuildItem templateRoots, List<TemplatePathExcludeBuildItem> templatePathExcludes) {
 
         List<String> templates = new ArrayList<>();
         List<String> tags = new ArrayList<>();
@@ -2592,11 +2602,17 @@ public class QuteProcessor {
             variants = Collections.emptyMap();
         }
 
+        List<String> excludePatterns = new ArrayList<>(templatePathExcludes.size());
+        for (TemplatePathExcludeBuildItem exclude : templatePathExcludes) {
+            excludePatterns.add(exclude.getRegexPattern());
+        }
+
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
                 .scope(BuiltinScope.SINGLETON.getInfo())
                 .supplier(recorder.createContext(templates,
                         tags, variants,
-                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()), templateContents))
+                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()), templateContents,
+                        excludePatterns))
                 .done());
     }
 
@@ -3529,8 +3545,7 @@ public class QuteProcessor {
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String resourcePath,
-            String templatePath,
-            Path originalPath, QuteConfig config) {
+            String templatePath, Path originalPath, QuteConfig config) {
         if (templatePath.isEmpty()) {
             return;
         }
@@ -3544,9 +3559,10 @@ public class QuteProcessor {
         }
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(resourcePath, restartNeeded));
         nativeImageResources.produce(new NativeImageResourceBuildItem(resourcePath));
-        templatePaths.produce(
-                new TemplatePathBuildItem(templatePath, originalPath,
-                        readTemplateContent(originalPath, config.defaultCharset())));
+        templatePaths.produce(TemplatePathBuildItem.builder()
+                .path(templatePath)
+                .fullPath(originalPath)
+                .content(readTemplateContent(originalPath, config.defaultCharset())).build());
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {

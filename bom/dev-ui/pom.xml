@@ -25,7 +25,7 @@
         <polymer.version>3.5.1</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
-        <vaadin-router.version>1.7.5</vaadin-router.version>
+        <vaadin-router.version>2.0.0</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.6.0</echarts.version>
         <es-module-shims.version>2.0.9</es-module-shims.version>

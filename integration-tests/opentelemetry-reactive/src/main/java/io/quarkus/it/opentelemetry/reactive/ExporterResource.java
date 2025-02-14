@@ -93,7 +93,9 @@ public class ExporterResource {
 
         @Override
         public CompletableResultCode export(Collection<SpanData> spans) {
-            return delegate.export(spans.stream().filter(sd -> !InternalAttributes.containsTraceless(sd.getAttributes()))
+            return delegate.export(spans.stream()
+                    .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
+                    .filter(sd -> !InternalAttributes.containsTraceless(sd.getAttributes()))
                     .collect(Collectors.toList()));
         }
 

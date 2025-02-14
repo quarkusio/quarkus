@@ -12,6 +12,7 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanEventAttrs;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -359,6 +360,25 @@ public class OpenTelemetryReactiveTest {
                 .body(Matchers.is("Not-@Traceless"));
 
         await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+    }
+
+    @Test
+    public void tracelessWithClient() {
+        given().when().get("/reactive/traceless-with-client")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("Hello jack"));
+        await().atMost(500, SECONDS).until(() -> getSpans().size() == 3);
+
+        List<Map<String, Object>> spans = getSpans();
+        //GET traceless-with-client missing
+        assertEquals("helloGet", spans.get(0).get("name"));
+        assertEquals("INTERNAL", spans.get(0).get("kind"));
+        assertEquals("GET /reactive", spans.get(1).get("name"));
+        assertEquals("SERVER", spans.get(1).get("kind"));
+        assertEquals("GET /reactive", spans.get(2).get("name"));
+        assertEquals("CLIENT", spans.get(2).get("kind"));// FIXME this Span refers a sampled out span.
+
     }
 
     @Test

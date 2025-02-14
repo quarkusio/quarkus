@@ -118,4 +118,11 @@ public class ReactiveResource {
     public String notTraceless() {
         return "Not-@Traceless";
     }
+
+    @GET
+    @Path("traceless-with-client")
+    @Traceless
+    public String tracelessWithClient() {
+        return client.helloGet("jack").await().atMost(Duration.ofSeconds(2));
+    }
 }

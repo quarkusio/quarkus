@@ -28,3 +28,7 @@ The default service name is `mongodb`.
 
 Sharing is enabled by default in dev mode, but disabled in test mode.
 You can disable the sharing with `quarkus.mongodb.devservices.shared=false`.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]

@@ -432,6 +432,10 @@ image::dev-ui-oidc-dev-svc-login-for-custom-users.png[alt=Dev Services for OIDC 
 
 Whichever user you choose, no password is required.
 
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+
 == References
 
 * xref:dev-ui.adoc[Dev UI]

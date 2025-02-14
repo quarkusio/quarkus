@@ -9,9 +9,9 @@ include::_attributes.adoc[]
 :topics: docker,podman,images
 
 To ease the containerization of native executables, Quarkus provides a base image providing the requirements to run these executables.
-The `quarkus-micro-image:2.0` image is:
+The `ubi9-quarkus-micro-image:2.0` image is:
 
-* small (based on `ubi8-micro`)
+* small (based on `ubi9-micro`)
 * designed for containers
 * contains the right set of dependencies (glibc, libstdc++, zlib)
 * support upx-compressed executables (more details on the xref:upx.adoc[enabling compression documentation])

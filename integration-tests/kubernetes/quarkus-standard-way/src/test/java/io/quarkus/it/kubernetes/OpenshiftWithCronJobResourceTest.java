@@ -50,6 +50,7 @@ public class OpenshiftWithCronJobResourceTest {
                 });
 
                 assertThat(s.getSpec().getSchedule()).isEqualTo("0 0 0 0 *");
+                assertThat(s.getSpec().getTimeZone()).isEqualTo("Etc/UTC");
 
                 assertThat(s.getSpec().getJobTemplate().getSpec()).satisfies(jobSpec -> {
                     assertThat(jobSpec.getParallelism()).isEqualTo(10);

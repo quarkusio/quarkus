@@ -59,6 +59,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.PortSystemProperties;
+import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.AbstractVerticle;
@@ -91,6 +92,29 @@ public class GrpcServerRecorder {
 
     public static List<GrpcServiceDefinition> getServices() {
         return services;
+    }
+
+    public void addMainRouterErrorHandlerIfSameServer(RuntimeValue<Router> mainRouter, GrpcConfiguration config) {
+        if (!config.server().useSeparateServer()) {
+            mainRouter.getValue().route().last().failureHandler(new Handler<>() {
+
+                private final Handler<RoutingContext> errorHandler = new QuarkusErrorHandler(LaunchMode.current().isDevOrTest(),
+                        false, Optional.empty());
+
+                @Override
+                public void handle(RoutingContext event) {
+                    if (isGrpc(event)) {
+                        // this is for failures before that occurred before gRPC started processing, it could be:
+                        // 1. authentication failure
+                        // 2. internal error raised during authentication
+                        // 3. unrelated failure
+                        // if there is an exception on the gRPC route, we should handle it because the most likely cause
+                        // of the failure is authentication; as for the '3.', this is better than having unhandled failures
+                        errorHandler.handle(event);
+                    }
+                }
+            });
+        }
     }
 
     public void initializeGrpcServer(RuntimeValue<Vertx> vertxSupplier,
@@ -198,12 +222,13 @@ public class GrpcServerRecorder {
         if (securityHandlers != null) {
             for (Map.Entry<Integer, Handler<RoutingContext>> e : securityHandlers.entrySet()) {
                 Handler<RoutingContext> handler = e.getValue();
+                boolean isAuthenticationHandler = e.getKey() == -200;
                 Route route = router.route().order(e.getKey()).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext ctx) {
                         if (!isGrpc(ctx)) {
                             ctx.next();
-                        } else if (ctx.get(HttpAuthenticator.class.getName()) != null) {
+                        } else if (isAuthenticationHandler && ctx.get(HttpAuthenticator.class.getName()) != null) {
                             // this IF branch shouldn't be invoked with current implementation
                             // when gRPC is attached to the main router when the root path is not '/'
                             // because HTTP authenticator and authorizer handlers are not added by default on the main

@@ -31,6 +31,10 @@ public class BasicGrpcSecurityMechanism implements GrpcSecurityMechanism {
             String userName = plainChallenge.substring(0, colonPos);
             char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
             return new UsernamePasswordAuthenticationRequest(userName, new PasswordCredential(password));
+        } else if (!plainChallenge.isEmpty()) {
+            // this is illegal argument exception because ATM when Basic HTTP Auth mechanism doesn't throw auth exception
+            // for the same credentials, so let's simulate the same situation in this test
+            throw new IllegalArgumentException("Empty authentication request");
         } else {
             return null;
         }

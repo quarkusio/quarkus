@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 
+import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -31,11 +32,15 @@ import com.example.security.SecuredService;
 import com.example.security.Security;
 
 import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
+import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
@@ -105,6 +110,37 @@ public abstract class GrpcAuthTestBase {
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
+    }
+
+    @Test
+    void shouldHandleAuthenticationFailure() {
+        Metadata headers = new Metadata();
+        headers.put(AUTHORIZATION, "Basic wrongcredentials");
+        SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
+        AtomicInteger authenticationFailedCount = new AtomicInteger();
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
+                .subscribe().with(ti -> {
+                }, error -> {
+                    if (error instanceof StatusRuntimeException statusException) {
+                        if (Status.UNAUTHENTICATED.getCode().equals(statusException.getStatus().getCode())) {
+                            authenticationFailedCount.incrementAndGet();
+                        } else {
+                            Assertions.fail("Expected unauthenticated response status, got " + statusException.getStatus());
+                        }
+                    } else {
+                        Assertions.fail("Expected 'StatusRuntimeException' exception, got " + error);
+                    }
+                });
+
+        await().atMost(10, TimeUnit.SECONDS).until(() -> authenticationFailedCount.get() == 1);
+        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            AuthenticationFailureEvent authFailureEvent = securityEventObserver.getStorage().stream()
+                    .filter(e -> e instanceof AuthenticationFailureEvent)
+                    .map(e -> (AuthenticationFailureEvent) e)
+                    .findFirst().orElse(null);
+            Assertions.assertNotNull(authFailureEvent);
+            Assertions.assertInstanceOf(AuthenticationFailedException.class, authFailureEvent.getAuthenticationFailure());
+        });
     }
 
     @Test
@@ -192,6 +228,8 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> error.get() != null);
+        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) error.get();
+        Assertions.assertEquals(Status.PERMISSION_DENIED, statusRuntimeException.getStatus());
 
         // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate server
         assertFalse(securityEventObserver.getStorage().isEmpty());

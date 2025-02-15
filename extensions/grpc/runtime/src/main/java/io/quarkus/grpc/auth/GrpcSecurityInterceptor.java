@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -29,10 +30,12 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
@@ -179,6 +182,7 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                     securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(authFailedEx, null));
                 }
                 identityAssociation.setIdentity(Uni.createFrom().failure(authFailedEx));
+                identityAssociationNotSet = false;
             }
         }
         if (identityAssociationNotSet && notUsingSeparateGrpcServer) {
@@ -188,9 +192,25 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                 if (capturedContext.getLocal(IDENTITY_KEY) != null) {
                     identityAssociation.setIdentity(capturedContext.<SecurityIdentity> getLocal(IDENTITY_KEY));
                 } else if (capturedContext.getLocal(DEFERRED_IDENTITY_KEY) != null) {
-                    identityAssociation.setIdentity(capturedContext.<Uni<SecurityIdentity>> getLocal(DEFERRED_IDENTITY_KEY));
+                    Uni<SecurityIdentity> identityUni = capturedContext
+                            .<Uni<SecurityIdentity>> getLocal(DEFERRED_IDENTITY_KEY)
+                            .onFailure(new Predicate<Throwable>() {
+                                @Override
+                                public boolean test(Throwable t) {
+                                    return !(t instanceof AuthenticationException);
+                                }
+                            })
+                            // even if it were internal error, we must be able to identify exceptions
+                            // raised during authentication so that we don't append body by default, hence wrapping it
+                            .transform(AuthenticationFailedException::new);
+                    identityAssociation.setIdentity(identityUni);
                 }
+                identityAssociationNotSet = false;
             }
+        }
+        if (identityAssociationNotSet) {
+            Uni<SecurityIdentity> identityUni = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            identityAssociation.setIdentity(identityUni);
         }
         ServerCall.Listener<ReqT> listener = serverCallHandler.startCall(serverCall, metadata);
         return exceptionHandlerProvider.createHandler(listener, serverCall, metadata);
@@ -213,6 +233,10 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                 getCapturedVertxContext().putLocal(IDENTITY_KEY, existing.getSecurityIdentity());
             } else {
                 getCapturedVertxContext().putLocal(DEFERRED_IDENTITY_KEY, QuarkusHttpUser.getSecurityIdentity(event, null));
+                // we will handle failures ourselves, so that response is written once
+                // do this even if the authentication failure handler is not DefaultAuthFailureHandler because
+                // it might be the failure handler added by the Quarkus REST when it is present
+                event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
             }
         }
     }

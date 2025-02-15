@@ -425,7 +425,16 @@ public final class IntegrationTestUtil {
         }
     }
 
+    static String getEffectiveArtifactType(Properties quarkusArtifactProperties, SmallRyeConfig config) {
+        Optional<String> maybeType = config.getOptionalValue("quarkus.test.integration-test-artifact-type", String.class);
+        if (maybeType.isPresent()) {
+            return maybeType.get();
+        }
+        return getArtifactType(quarkusArtifactProperties);
+    }
+
     static String getArtifactType(Properties quarkusArtifactProperties) {
+
         String artifactType = quarkusArtifactProperties.getProperty("type");
         if (artifactType == null) {
             throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");

@@ -217,8 +217,8 @@ public class URLUtils {
         return s;
     }
 
-    private static RuntimeException failedToDecodeURL(String s, Charset enc, Throwable o) {
-        return new RuntimeException("Failed to decode URL " + s + " to " + enc, o);
+    private static IllegalArgumentException failedToDecodeURL(String s, Charset enc, Throwable o) {
+        return new IllegalArgumentException("Failed to decode URL " + s + " to " + enc, o);
     }
 
     private static byte[] expandBytes(byte[] bytes) {

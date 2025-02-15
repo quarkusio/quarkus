@@ -14,6 +14,11 @@ public interface CronJobConfig {
     Optional<String> schedule();
 
     /**
+     * The time zone for the job schedule. The default value is the local time of the kube-controller-manager.
+     */
+    Optional<String> timeZone();
+
+    /**
      * ConcurrencyPolicy describes how the job will be handled.
      */
     @WithDefault("Allow")

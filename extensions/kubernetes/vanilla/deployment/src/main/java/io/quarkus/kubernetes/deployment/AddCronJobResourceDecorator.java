@@ -83,6 +83,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         config.successfulJobsHistoryLimit().ifPresent(spec::withSuccessfulJobsHistoryLimit);
         config.failedJobsHistoryLimit().ifPresent(spec::withFailedJobsHistoryLimit);
         config.startingDeadlineSeconds().ifPresent(spec::withStartingDeadlineSeconds);
+        config.timeZone().ifPresent(spec::withTimeZone);
 
         jobTemplateSpec.withCompletionMode(config.completionMode().name());
         jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();

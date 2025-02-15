@@ -115,3 +115,8 @@ quarkus.kafka.devservices.redpanda.transaction-enabled=false
 ----
 
 NOTE: Redpanda transactions does not support exactly-once processing.
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-kafka-client_quarkus.kafka.devservices.adoc[opts=optional, leveloffset=+1]

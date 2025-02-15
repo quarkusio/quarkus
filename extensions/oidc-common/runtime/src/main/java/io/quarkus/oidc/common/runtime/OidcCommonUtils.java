@@ -782,6 +782,10 @@ public class OidcCommonUtils {
         return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 
+    public static String base64UrlEncode(byte[] bytes) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
     public static JsonObject decodeAsJsonObject(String encodedContent) {
         try {
             return new JsonObject(base64UrlDecode(encodedContent));

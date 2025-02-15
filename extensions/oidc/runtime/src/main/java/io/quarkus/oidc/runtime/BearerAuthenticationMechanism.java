@@ -4,6 +4,7 @@ import static io.quarkus.oidc.runtime.OidcUtils.extractBearerToken;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -14,12 +15,14 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
@@ -33,6 +36,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         if (token != null) {
             try {
                 setCertificateThumbprint(context, oidcTenantConfig);
+                setDPopProof(context, oidcTenantConfig);
             } catch (AuthenticationFailedException ex) {
                 return Uni.createFrom().failure(ex);
             }
@@ -51,6 +55,67 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             }
             context.put(OidcConstants.X509_SHA256_THUMBPRINT,
                     TrustStoreUtils.calculateThumprint((X509Certificate) cert));
+        }
+    }
+
+    private static void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
+        if (OidcConstants.DPOP_SCHEME.equals(oidcTenantConfig.token().authorizationScheme())) {
+
+            List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
+            if (proofs == null || proofs.isEmpty()) {
+                LOG.warn("DPOP proof header must be present to verify the DPOP access token binding");
+                throw new AuthenticationFailedException();
+            }
+            if (proofs.size() != 1) {
+                LOG.warn("Only a single DPOP proof header is accepted");
+                throw new AuthenticationFailedException();
+            }
+            String proof = proofs.get(0);
+
+            // Initial proof check:
+            JsonObject proofJwtHeaders = OidcUtils.decodeJwtHeaders(proof);
+            JsonObject proofJwtClaims = OidcCommonUtils.decodeJwtContent(proof);
+
+            if (!OidcConstants.DPOP_TOKEN_TYPE.equals(proofJwtHeaders.getString(OidcConstants.TOKEN_TYPE_HEADER))) {
+                LOG.warn("Invalid DPOP proof token type ('typ') header");
+                throw new AuthenticationFailedException();
+            }
+
+            // Check HTTP method and request URI
+            String proofHttpMethod = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_METHOD);
+            if (proofHttpMethod == null) {
+                LOG.warn("DPOP proof HTTP method claim is missing");
+                throw new AuthenticationFailedException();
+            }
+
+            String httpMethod = context.request().method().name();
+            if (!httpMethod.equals(proofHttpMethod)) {
+                LOG.warnf("DPOP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
+                        httpMethod);
+                throw new AuthenticationFailedException();
+            }
+
+            // Check HTTP request URI
+            String proofHttpRequestUri = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_REQUEST_URI);
+            if (proofHttpRequestUri == null) {
+                LOG.warn("DPOP proof HTTP request uri claim is missing");
+                throw new AuthenticationFailedException();
+            }
+
+            String httpRequestUri = context.request().absoluteURI();
+            int queryIndex = httpRequestUri.indexOf("?");
+            if (queryIndex > 0) {
+                httpRequestUri = httpRequestUri.substring(0, queryIndex);
+            }
+            if (!httpRequestUri.equals(proofHttpRequestUri)) {
+                LOG.warnf("DPOP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
+                        httpRequestUri);
+                throw new AuthenticationFailedException();
+            }
+
+            context.put(OidcUtils.DPOP_PROOF, proof);
+            context.put(OidcUtils.DPOP_PROOF_JWT_HEADERS, proofJwtHeaders);
+            context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);
         }
     }
 

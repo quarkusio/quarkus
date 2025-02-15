@@ -58,3 +58,8 @@ quarkus.amqp.devservices.image-name=quay.io/artemiscloud/activemq-artemis-broker
 IMPORTANT: The configured image must be _compatible_ with the `activemq-artemis-broker` one.
 The container is launched with the `AMQ_USER`, `AMQ_PASSWORD` and `AMQ_EXTRA_ARGS` environment variables.
 The ports 5672 and 8161 (web console) are exposed.
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-amqp_quarkus.amqp.devservices.adoc[opts=optional, leveloffset=+1]

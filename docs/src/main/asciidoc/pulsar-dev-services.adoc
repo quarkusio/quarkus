@@ -69,3 +69,8 @@ The following example enables transaction support:
 quarkus.pulsar.devservices.broker-config.transaction-coordinator-enabled=true
 quarkus.pulsar.devservices.broker-config.system-topic-enabled=true
 ----
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-pulsar_quarkus.pulsar.devservices.adoc[opts=optional, leveloffset=+1]

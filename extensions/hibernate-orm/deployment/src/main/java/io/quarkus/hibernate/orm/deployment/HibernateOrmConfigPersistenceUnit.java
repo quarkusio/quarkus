@@ -664,9 +664,38 @@ public interface HibernateOrmConfigPersistenceUnit {
 
         /**
          * Enables the Bean Validation integration.
+         *
+         * @deprecated Use {@link #mode()} instead.
          */
+        @Deprecated(since = "3.19", forRemoval = true)
         @WithDefault("true")
         boolean enabled();
+
+        /**
+         * Defines how the Bean Validation integration behaves.
+         */
+        @WithDefault("auto")
+        Set<ValidationMode> mode();
+
+        enum ValidationMode {
+            /**
+             * If a Bean Validation provider is present then behaves as if both {@link ValidationMode#CALLBACK} and
+             * {@link ValidationMode#DDL} modes are configured. Otherwise, same as {@link ValidationMode#NONE}.
+             */
+            AUTO,
+            /**
+             * Bean Validation will perform the lifecycle event validation.
+             */
+            CALLBACK,
+            /**
+             * Bean Validation constraints will be considered for the DDL operations.
+             */
+            DDL,
+            /**
+             * Bean Validation integration will be disabled.
+             */
+            NONE
+        }
     }
 
 }

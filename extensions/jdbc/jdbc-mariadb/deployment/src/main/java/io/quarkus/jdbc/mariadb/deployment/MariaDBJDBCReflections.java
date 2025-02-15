@@ -14,9 +14,9 @@ public final class MariaDBJDBCReflections {
         reflectiveClass
                 .produce(ReflectiveClassBuildItem.builder("org.mariadb.jdbc.Driver").build());
 
-        //MariaDB's connection process requires reflective read to all fields of Configuration and its Builder:
+        //MariaDB's connection process requires reflective access to both fields and methods of Configuration and its Builder:
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder("org.mariadb.jdbc.Configuration", "org.mariadb.jdbc.Configuration$Builder")
-                        .fields().build());
+                        .fields().methods().build());
     }
 }

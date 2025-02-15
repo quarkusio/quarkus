@@ -190,8 +190,7 @@ public class AugmentActionImpl implements AugmentAction {
             if (artifactResultBuildItems.isEmpty()) {
                 throw new IllegalStateException("No artifact results were produced");
             }
-            ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
-            writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
+            writeArtifactResultMetadataFile(buildSystemTargetBuildItem, artifactResultBuildItems);
 
             return new AugmentResult(artifactResultBuildItems.stream()
                     .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
@@ -241,14 +240,28 @@ public class AugmentActionImpl implements AugmentAction {
     }
 
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,
-            ArtifactResultBuildItem lastResult) {
+            List<ArtifactResultBuildItem> artifactResultBuildItems) {
+        ArtifactResultBuildItem lastArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
         Path quarkusArtifactMetadataPath = outputTargetBuildItem.getOutputDirectory().resolve("quarkus-artifact.properties");
         Properties properties = new Properties();
-        properties.put("type", lastResult.getType());
-        if (lastResult.getPath() != null) {
-            properties.put("path", outputTargetBuildItem.getOutputDirectory().relativize(lastResult.getPath()).toString());
+        properties.put("type", lastArtifact.getType());
+        if (lastArtifact.getPath() != null) {
+            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, lastArtifact));
+        } else {
+            if (lastArtifact.getType().endsWith("-container")) {
+                // in this case we write "path" as to contain the path to the artifact from which the container was built
+                try {
+                    ArtifactResultBuildItem baseArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 2);
+                    if (baseArtifact.getPath() != null) {
+                        properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, baseArtifact));
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    // this should never happen really as a container is always built from some other artifact
+                    log.debug(e);
+                }
+            }
         }
-        Map<String, String> metadata = lastResult.getMetadata();
+        Map<String, String> metadata = lastArtifact.getMetadata();
         if (metadata != null) {
             for (Map.Entry<String, String> entry : metadata.entrySet()) {
                 properties.put("metadata." + entry.getKey(), entry.getValue());
@@ -259,6 +272,11 @@ public class AugmentActionImpl implements AugmentAction {
         } catch (IOException e) {
             log.debug("Unable to write artifact result metadata file", e);
         }
+    }
+
+    private static String artifactPathForResultMetadata(BuildSystemTargetBuildItem outputTargetBuildItem,
+            ArtifactResultBuildItem artifactResultBuildItem) {
+        return outputTargetBuildItem.getOutputDirectory().relativize(artifactResultBuildItem.getPath()).toString();
     }
 
     @Override

@@ -13,10 +13,12 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-openshift
 
 As an application developer, you can deploy your applications to {openshift} by using the Docker build strategy as a deployment option.
-This functionality is provided by the `quarkus-openshift` extension.
 
+This stategy builds the artifacts outside the {openshift} cluster, locally or in a CI environment, and provides them to the {openshift} build system together with a Dockerfile.
+The artifacts include JAR files or a native executable.
 The {openshift} cluster builds the container and provides it as an image stream.
 
+This functionality is provided by the `quarkus-openshift` extension.
 If you want to use a custom Dockerfile, add the file to the `src/main/docker` directory or any location inside the module.
 Additionally, set the path to your Dockerfile by using the `quarkus.openshift.jvm-dockerfile` property.
 

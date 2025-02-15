@@ -520,6 +520,9 @@ public class ResteasyReactiveProcessor {
                 return false;
             };
 
+            final boolean filtersAccessResourceMethod = filtersAccessResourceMethod(
+                    resourceInterceptorsBuildItem.getResourceInterceptors());
+
             BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
                     function) -> bytecodeTransformerBuildItemBuildProducer
                             .produce(new BytecodeTransformerBuildItem(name, function));
@@ -562,8 +565,6 @@ public class ResteasyReactiveProcessor {
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
                                     : Collections.emptyMap())
                     .setResourceMethodCallback(new Consumer<>() {
-                        Boolean filtersAccessResourceMethod;
-
                         @Override
                         public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
                             MethodInfo method = entry.getMethodInfo();
@@ -588,11 +589,6 @@ public class ResteasyReactiveProcessor {
                                                 QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                         .source(source + " > " + method.returnType().name().toString())
                                         .build());
-                            }
-
-                            if (filtersAccessResourceMethod == null) {
-                                filtersAccessResourceMethod = filtersAccessResourceMethod(
-                                        resourceInterceptorsBuildItem.getResourceInterceptors());
                             }
 
                             boolean paramsRequireReflection = false;

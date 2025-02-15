@@ -676,19 +676,38 @@ If you want to use the legacy API, you need to add the following dependency to y
 implementation("org.mongodb:mongodb-driver-legacy")
 ----
 
-== Building a native executable
+== TLS configuration
 
-You can use the MongoDB client in a native executable.
-
-If you want to use SSL/TLS encryption, you need to add these properties in your `application.properties`:
+If you want to use SSL/TLS encryption, you need to add this property in your `application.properties`:
 
 [source,properties]
 ----
 quarkus.mongodb.tls=true
-quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 ----
 
-You can then build a native executable with the usual command:
+You can also configure the client to use a tls configuration from the TLS registry, this will enable tls:
+
+[source,properties]
+----
+quarkus.tls.mongo.trust-store.pem.certs=certa.pem,certb.pem
+quarkus.mongodb.tls-configuration-name=mongo
+----
+
+You can configure the client to trust servers with certificates with invalid hostnames:
+
+[source,properties]
+----
+quarkus.tls.mongo.hostname-verification-algorithm=NONE
+quarkus.mongodb.tls-configuration-name=mongo
+----
+
+
+== Building a native executable
+
+You can use the MongoDB client in a native executable.
+
+
+You can build a native executable with the usual command:
 
 include::{includes}/devtools/build-native.adoc[]
 

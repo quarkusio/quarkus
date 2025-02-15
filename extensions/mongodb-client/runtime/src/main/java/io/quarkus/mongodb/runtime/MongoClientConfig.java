@@ -122,8 +122,13 @@ public interface MongoClientConfig {
 
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
+     *
+     * @deprecated in favor of configuration at the tls registry level. See {@link #tlsConfigurationName()}
+     *             and quarkus tls registry hostname verification configuration
+     *             {@code quarkus.tls.hostname-verification-algorithm=NONE}.
      */
     @WithDefault("false")
+    @Deprecated(forRemoval = true, since = "3.21")
     boolean tlsInsecure();
 
     /**
@@ -131,6 +136,16 @@ public interface MongoClientConfig {
      */
     @WithDefault("false")
     boolean tls();
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
+     */
+    Optional<String> tlsConfigurationName();
 
     /**
      * Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set.

@@ -3,6 +3,7 @@ package io.quarkus.deployment.configuration;
 import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_AND_RUN_TIME_FIXED;
 import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
+import static io.smallrye.config.common.utils.StringUtil.skewer;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -1231,7 +1232,8 @@ public final class RunTimeConfigurationGenerator {
                     BranchResult nextEquals = hasNextTrue
                             .ifTrue(hasNextTrue.invokeStaticMethod(PU_IS_MAPPED, nameIterator, hasNextTrue.load(childName)));
                     try (BytecodeCreator nextEqualsTrue = nextEquals.trueBranch()) {
-                        String childMethodName = methodName + "$" + childName.replace("[*]", "-collection");
+                        childName = childName.replace("[*]", "-collection");
+                        String childMethodName = methodName + "$" + skewer(childName, '_');
                         if (child.getMatched() == null) {
                             generateIsMapped(childMethodName, child);
                             nextEqualsTrue.invokeVirtualMethod(NI_NEXT, nameIterator);

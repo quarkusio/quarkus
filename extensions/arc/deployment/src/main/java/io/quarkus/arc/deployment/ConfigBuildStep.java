@@ -502,7 +502,7 @@ public class ConfigBuildStep {
         // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
                 ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
-                configClass -> Stream.of(configClass.getKlass(), configClass.getPrefix())
+                configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
                         .collect(toList()));
 
         recorder.registerConfigProperties(

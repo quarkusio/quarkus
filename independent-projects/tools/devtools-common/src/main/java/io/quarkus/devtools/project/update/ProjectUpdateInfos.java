@@ -14,7 +14,6 @@ import io.quarkus.devtools.project.state.ProjectState;
 import io.quarkus.devtools.project.state.TopExtensionDependency;
 import io.quarkus.devtools.project.update.ExtensionMapBuilder.ExtensionUpdateInfoBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
@@ -58,15 +57,17 @@ public final class ProjectUpdateInfos {
             ProjectState recommendedState) {
         checkProjectState(currentState, recommendedState);
 
-        final Map<ArtifactKey, PlatformInfo> platformImports = new LinkedHashMap<>();
+        // we map the platform by artifact id because a given platform can for instance be in the community Platform
+        // and in the Red Hat Build of Quarkus Platform and we need to be able to switch between the two
+        final Map<String, PlatformInfo> platformImports = new LinkedHashMap<>();
         for (ArtifactCoords c : currentState.getPlatformBoms()) {
             final PlatformInfo info = new PlatformInfo(c, null);
-            platformImports.put(c.getKey(), info);
+            platformImports.put(c.getArtifactId(), info);
         }
         List<PlatformInfo> importVersionUpdates = new ArrayList<>();
         List<PlatformInfo> newImports = new ArrayList<>(0);
         for (ArtifactCoords c : recommendedState.getPlatformBoms()) {
-            final PlatformInfo importInfo = platformImports.compute(c.getKey(), (k, v) -> {
+            final PlatformInfo importInfo = platformImports.compute(c.getArtifactId(), (k, v) -> {
                 if (v == null) {
                     return new PlatformInfo(null, c);
                 }

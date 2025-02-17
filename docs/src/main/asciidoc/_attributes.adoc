@@ -3,6 +3,8 @@
 :project-name: Quarkus
 :quarkus-version: ${project.version}
 :quarkus-platform-groupid: io.quarkus.platform
+:openshift: OpenShift
+:openshift-long: OpenShift
 // .
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-community.version-for-documentation}

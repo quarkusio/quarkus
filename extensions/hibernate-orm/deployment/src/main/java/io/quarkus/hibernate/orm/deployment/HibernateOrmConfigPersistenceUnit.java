@@ -31,8 +31,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      * <p>
      * If undefined, it will use the default datasource.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> datasource();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> datasource();
 
     /**
      * The packages in which the entities affected to this persistence unit are located.
@@ -113,16 +112,14 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * Class name of the Hibernate PhysicalNamingStrategy implementation
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> physicalNamingStrategy();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> physicalNamingStrategy();
 
     /**
      * Pluggable strategy for applying implicit naming rules when an explicit name is not given.
      *
      * Class name of the Hibernate ImplicitNamingStrategy implementation
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> implicitNamingStrategy();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> implicitNamingStrategy();
 
     /**
      * Class name of a custom
@@ -140,8 +137,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> metadataBuilderContributor();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> metadataBuilderContributor();
 
     /**
      * XML files to configure the entity mapping, e.g. {@code META-INF/my-orm.xml}.
@@ -223,8 +219,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> multitenant();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> multitenant();
 
     /**
      * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
@@ -233,8 +228,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      * @deprecated Use {@link #datasource()} instead.
      */
     @Deprecated
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> multitenantSchemaDatasource();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> multitenantSchemaDatasource();
 
     /**
      * If hibernate is not auto generating the schema, and Quarkus is running in development mode
@@ -302,8 +296,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         @WithParentName
         @ConfigDocDefault("selected automatically for most popular databases")
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> dialect();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> dialect();
 
         /**
          * The storage engine to use when the dialect supports multiple storage engines.
@@ -312,8 +305,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> storageEngine();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> storageEngine();
 
         default boolean isAnyPropertySet() {
             return dialect().isPresent() || storageEngine().isPresent();
@@ -537,8 +529,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> timezone();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> timezone();
 
         /**
          * How many rows are fetched at a time by the JDBC driver.

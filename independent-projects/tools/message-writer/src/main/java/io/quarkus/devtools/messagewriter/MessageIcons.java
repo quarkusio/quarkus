@@ -4,8 +4,8 @@ import io.smallrye.common.os.OS;
 
 public enum MessageIcons {
 
-    UP_TO_DATE_ICON(toEmoji("U+2714"), "[UP-TO-DATE]"),
-    OUT_OF_DATE_ICON(toEmoji("U+26A0"), "[OUT-OF-DATE]"),
+    UP_TO_DATE_ICON(toEmoji("U+2714"), "v"),
+    OUT_OF_DATE_ICON(toEmoji("U+26A0"), "x"),
     SUCCESS_ICON(toEmoji("U+2705"), "[SUCCESS]"),
     FAILURE_ICON(toEmoji("U+274C"), "[FAILURE]"),
     NOOP_ICON(toEmoji("U+1F44D"), ""),

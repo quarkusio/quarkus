@@ -21,16 +21,16 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 /**
- * Log Quarkus-related recommended updates, such as new Quarkus platform BOM versions and
- * Quarkus extensions versions that aren't managed by the Quarkus platform BOMs.
+ * Suggest project updates and create a recipe with the possibility to apply it.
  */
 @Mojo(name = "update", requiresProject = true)
 public class UpdateMojo extends QuarkusProjectStateMojoBase {
 
     /**
-     * Display information per project module.
+     * Deprecated: this option was unused
      */
     @Parameter(property = "perModule")
+    @Deprecated
     boolean perModule;
 
     /**
@@ -47,13 +47,22 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private String rewritePluginVersion;
 
     /**
-     * Disable the rewrite feature.
+     * Run the suggested update recipe for this project.
      */
+    @Parameter(property = "rewrite", required = false)
+    private Boolean rewrite;
+
+    /**
+     * Disable the rewrite feature.
+     *
+     * Deprecated: use -Drewrite=false instead
+     */
+    @Deprecated
     @Parameter(property = "noRewrite", required = false, defaultValue = "false")
     private Boolean noRewrite;
 
     /**
-     * Rewrite in dry-mode.
+     * Do a dry run the suggested update recipe for this project.
      */
     @Parameter(property = "rewriteDryRun", required = false, defaultValue = "false")
     private Boolean rewriteDryRun;
@@ -115,7 +124,6 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
         invoker.targetPlatformVersion(platformVersion);
-        invoker.perModule(perModule);
         invoker.appModel(resolveApplicationModel());
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);
@@ -127,7 +135,15 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             invoker.rewriteAdditionalUpdateRecipes(rewriteAdditionalUpdateRecipes);
         }
         invoker.rewriteDryRun(rewriteDryRun);
-        invoker.noRewrite(noRewrite);
+
+        // backward compat
+        if (noRewrite != null && noRewrite) {
+            rewrite = false;
+        }
+
+        if (rewrite != null) {
+            invoker.rewrite(rewrite);
+        }
 
         try {
             final QuarkusCommandOutcome result = invoker.execute();

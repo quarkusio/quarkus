@@ -145,7 +145,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
                 ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
@@ -176,14 +176,16 @@ public class GradleRunner implements BuildSystemRunner {
         if (rewrite.additionalUpdateRecipes != null) {
             args.add("--additionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
-        if (rewrite.noRewrite) {
-            args.add("--noRewrite");
-        }
-        if (perModule) {
-            args.add("--perModule");
-        }
-        if (rewrite.dryRun) {
-            args.add("--rewriteDryRun");
+        if (rewrite.run != null) {
+            if (rewrite.run.yes) {
+                args.add("--rewrite");
+            }
+            if (rewrite.run.no) {
+                args.add("--rewrite=false");
+            }
+            if (rewrite.run.dryRun) {
+                args.add("--rewriteDryRun");
+            }
         }
         return run(prependExecutable(args));
 

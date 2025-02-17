@@ -3,6 +3,8 @@ package io.quarkus.devtools.project.update;
 import static io.quarkus.devtools.project.update.ExtensionUpdateInfo.VersionUpdateType.PLATFORM_MANAGED;
 import static io.quarkus.devtools.project.update.ExtensionUpdateInfo.VersionUpdateType.computeVersionUpdateType;
 
+import java.util.Objects;
+
 import io.quarkus.devtools.project.state.TopExtensionDependency;
 import io.quarkus.registry.catalog.Extension;
 
@@ -78,7 +80,7 @@ public final class ExtensionUpdateInfo {
     }
 
     public boolean isUpdateRecommended() {
-        return recommendedDep != currentDep;
+        return !Objects.equals(recommendedDep, currentDep);
     }
 
     public boolean shouldUpdateExtension() {

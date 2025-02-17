@@ -28,7 +28,7 @@ public class LiquibaseMongodbRecorder {
         return new Supplier<LiquibaseMongodbFactory>() {
             @Override
             public LiquibaseMongodbFactory get() {
-                return new LiquibaseMongodbFactory(config, buildTimeConfig, mongodbConfig.defaultMongoClientConfig());
+                return new LiquibaseMongodbFactory(config, buildTimeConfig, mongodbConfig);
             }
         };
     }

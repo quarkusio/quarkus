@@ -26,6 +26,7 @@ import java.util.concurrent.Flow.Publisher;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.Vetoed;
@@ -175,6 +176,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName APPLICATION_SCOPED = DotName.createSimple(ApplicationScoped.class.getName());
     public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
     public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());
+    public static final DotName DEPENDENT = DotName.createSimple(Dependent.class.getName());
     public static final DotName WEB_APPLICATION_EXCEPTION = DotName.createSimple(WebApplicationException.class.getName());
 
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());

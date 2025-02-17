@@ -654,7 +654,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Optional<@WithConverter(TrimmedStringConverter.class) List<String>> forwardParams() {
+            public Optional<List<@WithConverter(TrimmedStringConverter.class) String>> forwardParams() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FORWARD_PARAMS, true);
                 return Optional.empty();
             }

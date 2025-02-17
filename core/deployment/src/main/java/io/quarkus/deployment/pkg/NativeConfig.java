@@ -95,9 +95,8 @@ public interface NativeConfig {
      *
      * @deprecated Use the global quarkus.default-locale.
      */
-    @WithConverter(TrimmedStringConverter.class)
     @Deprecated
-    Optional<String> userLanguage();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> userLanguage();
 
     /**
      * Defines the user country used for building the native executable.
@@ -108,9 +107,8 @@ public interface NativeConfig {
      *
      * @deprecated Use the global quarkus.default-locale.
      */
-    @WithConverter(TrimmedStringConverter.class)
     @Deprecated
-    Optional<String> userCountry();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> userCountry();
 
     /**
      * Defines the file encoding as in {@code -Dfile.encoding=...}.

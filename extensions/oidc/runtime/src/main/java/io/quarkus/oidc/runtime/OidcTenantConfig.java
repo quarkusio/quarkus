@@ -676,7 +676,7 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         /**
          * Request URL query parameters which, if present, are added to the authentication redirect URI.
          */
-        Optional<@WithConverter(TrimmedStringConverter.class) List<String>> forwardParams();
+        Optional<List<@WithConverter(TrimmedStringConverter.class) String>> forwardParams();
 
         /**
          * If enabled the state, session, and post logout cookies have their `secure` parameter set to `true`

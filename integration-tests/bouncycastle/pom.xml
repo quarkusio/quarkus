@@ -24,6 +24,12 @@
             <artifactId>quarkus-security</artifactId>
         </dependency>
 
+        <!-- dependency for Netty SSL context loading test -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

@@ -748,7 +748,7 @@ public class KeycloakDevServicesProcessor {
                     .await().atMost(capturedDevServicesConfiguration.webClientTimeout());
         } catch (TimeoutException e) {
             LOG.error("Admin token can not be acquired due to a client connection timeout. " +
-                    "You may try increasing the `quarkus.oidc.devui.web-client-timeout` property.");
+                    "You may try increasing the `quarkus.keycloak.devservices.web-client-timeout` property.");
         } catch (Throwable t) {
             LOG.error("Admin token can not be acquired", t);
         }

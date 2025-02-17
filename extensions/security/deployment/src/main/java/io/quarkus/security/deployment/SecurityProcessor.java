@@ -123,7 +123,6 @@ import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
@@ -520,26 +519,6 @@ public class SecurityProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.createSecurityConstrainer(additionalEventsSupplier))
                 .done());
-    }
-
-    /**
-     * Transform deprecated {@link AdditionalSecuredClassesBuildItem} to {@link AdditionalSecuredMethodsBuildItem}.
-     */
-    @BuildStep
-    void transformAdditionalSecuredClassesToMethods(List<AdditionalSecuredClassesBuildItem> additionalSecuredClassesBuildItems,
-            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsBuildItemBuildProducer) {
-        for (AdditionalSecuredClassesBuildItem additionalSecuredClassesBuildItem : additionalSecuredClassesBuildItems) {
-            final Collection<MethodInfo> securedMethods = new ArrayList<>();
-            for (ClassInfo additionalSecuredClass : additionalSecuredClassesBuildItem.additionalSecuredClasses) {
-                for (MethodInfo method : additionalSecuredClass.methods()) {
-                    if (isPublicNonStaticNonConstructor(method)) {
-                        securedMethods.add(method);
-                    }
-                }
-            }
-            additionalSecuredMethodsBuildItemBuildProducer.produce(
-                    new AdditionalSecuredMethodsBuildItem(securedMethods, additionalSecuredClassesBuildItem.rolesAllowed));
-        }
     }
 
     /*

@@ -55,7 +55,7 @@ public class ImmutablePathMatcher<T> {
         if (hasExactPathMatches) {
             T match = exactPathMatches.get(path);
             if (match != null) {
-                return new PathMatch<>(path, "", match);
+                return new PathMatch<>(path, match);
             }
         }
 
@@ -64,7 +64,7 @@ public class ImmutablePathMatcher<T> {
             if (pathLength == length) {
                 SubstringMatch<T> next = paths.get(path, length);
                 if (next != null) {
-                    return new PathMatch<>(path, "", next.getValue());
+                    return new PathMatch<>(path, next.getValue());
                 }
             } else if (pathLength < length) {
                 char c = path.charAt(pathLength);
@@ -76,12 +76,12 @@ public class ImmutablePathMatcher<T> {
                     //String part = path.substring(0, pathLength);
                     SubstringMatch<T> next = paths.get(path, pathLength);
                     if (next != null) {
-                        return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
+                        return new PathMatch<>(next.getKey(), next.getValue());
                     }
                 }
             }
         }
-        return new PathMatch<>("", path, defaultHandler);
+        return new PathMatch<>("", defaultHandler);
     }
 
     public static <T> ImmutablePathMatcherBuilder<T> builder() {
@@ -90,23 +90,11 @@ public class ImmutablePathMatcher<T> {
 
     public static final class PathMatch<T> {
         private final String matched;
-        private final String remaining;
         private final T value;
 
-        public PathMatch(String matched, String remaining, T value) {
+        public PathMatch(String matched, T value) {
             this.matched = matched;
-            this.remaining = remaining;
             this.value = value;
-        }
-
-        /**
-         * @deprecated because it can't be supported with inner wildcard without cost. It's unlikely this method is
-         *             used by anyone as users don't get in touch with this class. If there is legit use case, please
-         *             open Quarkus issue.
-         */
-        @Deprecated
-        public String getRemaining() {
-            return remaining;
         }
 
         public String getMatched() {

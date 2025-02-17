@@ -129,24 +129,6 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public RuntimeValue<HttpSecurityPolicy> createNamedHttpSecurityPolicy(Supplier<HttpSecurityPolicy> policySupplier,
-            String name) {
-        return new RuntimeValue<>(new HttpSecurityPolicy() {
-            private final HttpSecurityPolicy delegate = policySupplier.get();
-
-            @Override
-            public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
-                    AuthorizationRequestContext requestContext) {
-                return delegate.checkPermission(request, identity, requestContext);
-            }
-
-            @Override
-            public String name() {
-                return name;
-            }
-        });
-    }
-
     public Supplier<Map<String, Object>> createAdditionalSecEventPropsSupplier() {
         return new Supplier<Map<String, Object>>() {
             @Override

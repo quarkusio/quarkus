@@ -12,7 +12,6 @@ import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -37,8 +36,4 @@ public class HeaderAuthenticator implements HttpAuthenticationMechanism {
         return Collections.emptySet();
     }
 
-    @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return null;
-    }
 }

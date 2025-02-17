@@ -1,17 +1,10 @@
-package io.quarkus.websockets.next.runtime.telemetry;
+package io.quarkus.micrometer.runtime.binder.websockets;
 
-public final class TelemetryConstants {
+public final class WebSocketMetricConstants {
 
-    private TelemetryConstants() {
+    private WebSocketMetricConstants() {
         // class with constants
     }
-
-    /**
-     * OpenTelemetry attributes added to spans created for opened and closed connections.
-     */
-    public static final String CONNECTION_ID_ATTR_KEY = "connection.id";
-    public static final String CONNECTION_ENDPOINT_ATTR_KEY = "connection.endpoint.id";
-    public static final String CONNECTION_CLIENT_ATTR_KEY = "connection.client.id";
 
     /**
      * Counts all the WebSockets client opened connections.

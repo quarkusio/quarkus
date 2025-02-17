@@ -12,7 +12,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
  * @deprecated create {@link io.quarkus.oidc.client.runtime.OidcClientConfig} with the {@link OidcClientConfigBuilder}
  *             for example, you can use the {@link io.quarkus.oidc.client.runtime.OidcClientConfig#builder()} method.
  */
-@Deprecated(since = "3.18")
+@Deprecated(since = "3.18", forRemoval = true)
 public class OidcClientConfig extends OidcClientCommonConfig implements io.quarkus.oidc.client.runtime.OidcClientConfig {
 
     public OidcClientConfig() {

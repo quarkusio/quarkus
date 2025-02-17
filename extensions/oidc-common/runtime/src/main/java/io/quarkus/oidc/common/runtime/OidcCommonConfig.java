@@ -34,7 +34,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #authServerUrl()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> authServerUrl = Optional.empty();
 
     /**
@@ -43,7 +43,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #discoveryEnabled()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Boolean> discoveryEnabled = Optional.empty();
 
     /**
@@ -52,7 +52,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #registrationPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> registrationPath = Optional.empty();
 
     /**
@@ -63,7 +63,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #connectionDelay()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
@@ -74,7 +74,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #connectionRetryCount()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public int connectionRetryCount = 3;
 
     /**
@@ -82,7 +82,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #connectionTimeout()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Duration connectionTimeout = Duration.ofSeconds(10);
 
     /**
@@ -91,7 +91,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #useBlockingDnsLookup()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean useBlockingDnsLookup;
 
     /**
@@ -99,7 +99,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #maxPoolSize()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public OptionalInt maxPoolSize = OptionalInt.empty();
 
     /**
@@ -109,7 +109,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #followRedirects()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean followRedirects = true;
 
     /**
@@ -117,7 +117,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #proxy()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Proxy proxy = new Proxy();
 
     /**
@@ -125,7 +125,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      *
      * @deprecated use {@link #tls()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Tls tls = new Tls();
 
     @Override
@@ -186,7 +186,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder} to create the TLS config
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Tls implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls {
 
         /**
@@ -444,7 +444,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder} to create the Proxy config
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Proxy implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy {
 
         /**
@@ -500,7 +500,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #connectionDelay()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Duration> getConnectionDelay() {
         return connectionDelay;
     }
@@ -508,7 +508,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setConnectionDelay(Duration connectionDelay) {
         this.connectionDelay = Optional.of(connectionDelay);
     }
@@ -516,7 +516,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #authServerUrl()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getAuthServerUrl() {
         return authServerUrl;
     }
@@ -524,7 +524,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setAuthServerUrl(String authServerUrl) {
         this.authServerUrl = Optional.of(authServerUrl);
     }
@@ -532,7 +532,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #registrationPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getRegistrationPath() {
         return registrationPath;
     }
@@ -540,7 +540,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setRegistrationPath(String registrationPath) {
         this.registrationPath = Optional.of(registrationPath);
     }
@@ -548,7 +548,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #discoveryEnabled()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Boolean> isDiscoveryEnabled() {
         return discoveryEnabled;
     }
@@ -556,7 +556,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setDiscoveryEnabled(boolean enabled) {
         this.discoveryEnabled = Optional.of(enabled);
     }
@@ -564,7 +564,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #proxy()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Proxy getProxy() {
         return proxy;
     }
@@ -572,7 +572,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setProxy(Proxy proxy) {
         this.proxy = proxy;
     }
@@ -580,7 +580,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #connectionTimeout()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Duration getConnectionTimeout() {
         return connectionTimeout;
     }
@@ -588,7 +588,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setConnectionTimeout(Duration connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
     }
@@ -596,7 +596,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #maxPoolSize()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public OptionalInt getMaxPoolSize() {
         return maxPoolSize;
     }
@@ -604,7 +604,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setMaxPoolSize(int maxPoolSize) {
         this.maxPoolSize = OptionalInt.of(maxPoolSize);
     }
@@ -612,7 +612,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use the {@link #discoveryEnabled()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Boolean> getDiscoveryEnabled() {
         return discoveryEnabled;
     }
@@ -620,7 +620,7 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     /**
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setDiscoveryEnabled(Boolean discoveryEnabled) {
         this.discoveryEnabled = Optional.of(discoveryEnabled);
     }

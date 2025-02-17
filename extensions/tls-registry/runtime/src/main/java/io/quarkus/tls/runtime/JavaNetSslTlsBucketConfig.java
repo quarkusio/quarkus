@@ -121,7 +121,7 @@ class JavaNetSslTlsBucketConfig implements TlsBucketConfig {
 
     @Override
     public Duration handshakeTimeout() {
-        return Duration.parse("10S");
+        return Duration.ofSeconds(10L);
     }
 
     @Override

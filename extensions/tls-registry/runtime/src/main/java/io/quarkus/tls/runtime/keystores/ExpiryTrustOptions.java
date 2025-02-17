@@ -7,6 +7,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.util.Objects;
 import java.util.function.Function;
 
 import javax.net.ssl.ManagerFactoryParameters;
@@ -147,5 +148,17 @@ public class ExpiryTrustOptions implements TrustOptions {
         public java.security.cert.X509Certificate[] getAcceptedIssuers() {
             return tm.getAcceptedIssuers();
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj != null && obj.getClass() == getClass()) {
+            ExpiryTrustOptions that = (ExpiryTrustOptions) obj;
+            return Objects.equals(delegate, that.delegate) &&
+                    Objects.equals(policy, that.policy);
+        }
+        return false;
     }
 }

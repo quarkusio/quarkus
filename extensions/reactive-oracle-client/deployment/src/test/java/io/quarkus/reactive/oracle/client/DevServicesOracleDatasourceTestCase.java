@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mutiny.oracleclient.OraclePool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 public class DevServicesOracleDatasourceTestCase {
 
@@ -29,7 +29,7 @@ public class DevServicesOracleDatasourceTestCase {
                     .isEmpty());
 
     @Inject
-    OraclePool pool;
+    Pool pool;
 
     @Test
     public void testDatasource() throws Exception {

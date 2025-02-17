@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,6 +43,7 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.pgclient.SslMode;
+import io.vertx.pgclient.spi.PgDriver;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
@@ -121,8 +123,7 @@ public class PgPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
             SyntheticCreationalContext<PgPool> context) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
-                dataSourceReactivePostgreSQLConfig);
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
         Supplier<Future<PgConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, pgConnectOptionsList,
@@ -146,9 +147,7 @@ public class PgPoolRecorder {
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -280,9 +279,9 @@ public class PgPoolRecorder {
                 qualifier(dataSourceName));
         if (instance.isResolvable()) {
             PgPoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList);
-            return instance.get().create(input);
+            return (PgPool) instance.get().create(input);
         }
-        return PgPool.pool(vertx, databases, poolOptions);
+        return (PgPool) PgDriver.INSTANCE.createPool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements PgPoolCreator.Input {
@@ -310,5 +309,9 @@ public class PgPoolRecorder {
         public List<PgConnectOptions> pgConnectOptionsList() {
             return pgConnectOptionsList;
         }
+    }
+
+    public RuntimeValue<PgPoolSupport> createPgPoolSupport(Set<String> pgPoolNames) {
+        return new RuntimeValue<>(new PgPoolSupport(pgPoolNames));
     }
 }

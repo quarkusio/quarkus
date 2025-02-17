@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mssqlclient.MSSQLPool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleMSSQLPoolCreatorsForSameDatasourceTest {
 
@@ -32,8 +32,8 @@ public class MultipleMSSQLPoolCreatorsForSameDatasourceTest {
     public static class AnotherMSSQLPoolCreator implements MSSQLPoolCreator {
 
         @Override
-        public MSSQLPool create(Input input) {
-            return MSSQLPool.pool(input.vertx(), input.msSQLConnectOptions(), input.poolOptions());
+        public Pool create(Input input) {
+            return Pool.pool(input.vertx(), input.msSQLConnectOptions(), input.poolOptions());
         }
     }
 

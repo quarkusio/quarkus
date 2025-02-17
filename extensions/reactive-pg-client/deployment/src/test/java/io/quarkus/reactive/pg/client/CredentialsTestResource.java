@@ -10,13 +10,13 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/test")
 public class CredentialsTestResource {
 
     @Inject
-    PgPool client;
+    Pool client;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

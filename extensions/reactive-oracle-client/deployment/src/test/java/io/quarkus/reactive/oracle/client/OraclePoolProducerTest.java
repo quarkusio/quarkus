@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.oracleclient.OraclePool;
+import io.vertx.sqlclient.Pool;
 
 public class OraclePoolProducerTest {
 
@@ -38,7 +38,7 @@ public class OraclePoolProducerTest {
     static class BeanUsingBareOracleClient {
 
         @Inject
-        OraclePool oracleClient;
+        Pool oracleClient;
 
         public CompletionStage<?> verify() {
             return oracleClient.query("SELECT 1 FROM DUAL").execute().toCompletionStage();
@@ -49,7 +49,7 @@ public class OraclePoolProducerTest {
     static class BeanUsingMutinyOracleClient {
 
         @Inject
-        io.vertx.mutiny.oracleclient.OraclePool oracleClient;
+        io.vertx.mutiny.sqlclient.Pool oracleClient;
 
         public CompletionStage<Void> verify() {
             return oracleClient.query("SELECT 1 FROM DUAL").execute()

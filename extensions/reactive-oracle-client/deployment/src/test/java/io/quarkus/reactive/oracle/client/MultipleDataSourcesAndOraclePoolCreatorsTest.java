@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.oracleclient.OraclePool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
@@ -45,7 +45,7 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
     static class BeanUsingDefaultDataSource {
 
         @Inject
-        OraclePool oracleClient;
+        Pool oracleClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -65,7 +65,7 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
         @Inject
         @ReactiveDataSource("hibernate")
-        OraclePool oracleClient;
+        Pool oracleClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -84,9 +84,9 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
     public static class DefaultOraclePoolCreator implements OraclePoolCreator {
 
         @Override
-        public OraclePool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(12345, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return OraclePool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
+            return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
                     input.poolOptions());
         }
     }
@@ -96,9 +96,9 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
     public static class HibernateOraclePoolCreator implements OraclePoolCreator {
 
         @Override
-        public OraclePool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(55555, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return OraclePool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
+            return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
                     input.poolOptions());
         }
     }

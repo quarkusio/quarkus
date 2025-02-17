@@ -14,6 +14,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,6 +43,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.mssqlclient.MSSQLPool;
+import io.vertx.mssqlclient.spi.MSSQLDriver;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
@@ -107,7 +109,7 @@ public class MSSQLPoolRecorder {
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyMSSQLPool(
             String dataSourceName) {
-        return new Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool>() {
+        return new Function<>() {
             @Override
             @SuppressWarnings("unchecked")
             public io.vertx.mutiny.mssqlclient.MSSQLPool apply(SyntheticCreationalContext context) {
@@ -123,8 +125,7 @@ public class MSSQLPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig,
             SyntheticCreationalContext<MSSQLPool> context) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
-                dataSourceReactiveMSSQLConfig);
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
         Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
@@ -148,10 +149,7 @@ public class MSSQLPoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -272,9 +270,9 @@ public class MSSQLPoolRecorder {
                 qualifier(dataSourceName));
         if (instance.isResolvable()) {
             MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mSSQLConnectOptions);
-            return instance.get().create(input);
+            return (MSSQLPool) instance.get().create(input);
         }
-        return MSSQLPool.pool(vertx, databases, poolOptions);
+        return (MSSQLPool) MSSQLDriver.INSTANCE.createPool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements MSSQLPoolCreator.Input {
@@ -302,5 +300,9 @@ public class MSSQLPoolRecorder {
         public MSSQLConnectOptions msSQLConnectOptions() {
             return mSSQLConnectOptions;
         }
+    }
+
+    public RuntimeValue<MSSQLPoolSupport> createMSSQLPoolSupport(Set<String> msSQLPoolNames) {
+        return new RuntimeValue<>(new MSSQLPoolSupport(msSQLPoolNames));
     }
 }

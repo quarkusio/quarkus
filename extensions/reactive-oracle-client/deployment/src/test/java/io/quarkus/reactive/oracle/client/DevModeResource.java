@@ -12,13 +12,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import io.vertx.oracleclient.OracleException;
-import io.vertx.oracleclient.OraclePool;
+import io.vertx.sqlclient.Pool;
 
 @Path("/dev")
 public class DevModeResource {
 
     @Inject
-    OraclePool client;
+    Pool client;
 
     @GET
     @Path("/error")

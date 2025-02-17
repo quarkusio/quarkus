@@ -3,12 +3,17 @@ package io.quarkus.reactive.datasource.deployment;
 import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 
 public final class ReactiveDataSourceBuildUtil {
+
+    public static final Type VERTX_POOL_TYPE = ClassType.create(ReactiveDataSourceDotNames.VERTX_POOL);
+
     private ReactiveDataSourceBuildUtil() {
     }
 

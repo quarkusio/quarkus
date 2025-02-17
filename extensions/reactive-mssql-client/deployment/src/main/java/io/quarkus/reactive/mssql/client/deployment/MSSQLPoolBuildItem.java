@@ -7,6 +7,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.vertx.mssqlclient.MSSQLPool;
 
+@Deprecated(forRemoval = true)
 public final class MSSQLPoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;

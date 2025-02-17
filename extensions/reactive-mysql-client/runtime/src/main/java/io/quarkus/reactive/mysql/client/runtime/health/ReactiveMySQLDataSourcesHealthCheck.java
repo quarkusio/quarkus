@@ -14,7 +14,8 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.reactive.datasource.runtime.ReactiveDatasourceHealthCheck;
-import io.vertx.mysqlclient.MySQLPool;
+import io.quarkus.reactive.mysql.client.runtime.MySQLPoolSupport;
+import io.vertx.sqlclient.Pool;
 
 @Readiness
 @ApplicationScoped
@@ -27,14 +28,16 @@ class ReactiveMySQLDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck 
     @PostConstruct
     protected void init() {
         ArcContainer container = Arc.container();
-        DataSourceSupport support = container.instance(DataSourceSupport.class).get();
-        Set<String> excludedNames = support.getHealthCheckExcludedNames();
-        for (InstanceHandle<MySQLPool> handle : container.select(MySQLPool.class, Any.Literal.INSTANCE).handles()) {
+        DataSourceSupport dataSourceSupport = container.instance(DataSourceSupport.class).get();
+        Set<String> excludedNames = dataSourceSupport.getHealthCheckExcludedNames();
+        MySQLPoolSupport mySQLPoolSupport = container.instance(MySQLPoolSupport.class).get();
+        Set<String> mySQLPoolNames = mySQLPoolSupport.getMySQLPoolNames();
+        for (InstanceHandle<Pool> handle : container.select(Pool.class, Any.Literal.INSTANCE).handles()) {
             if (!handle.getBean().isActive()) {
                 continue;
             }
             String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
-            if (excludedNames.contains(poolName)) {
+            if (!mySQLPoolNames.contains(poolName) || excludedNames.contains(poolName)) {
                 continue;
             }
             addPool(poolName, handle.get());

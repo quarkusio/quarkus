@@ -2,6 +2,8 @@ package io.quarkus.reactive.mysql.client.deployment;
 
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifier;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
+import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,9 +14,10 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
@@ -56,6 +59,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
 import io.quarkus.reactive.mysql.client.runtime.DataSourcesReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
+import io.quarkus.reactive.mysql.client.runtime.MySQLPoolSupport;
 import io.quarkus.reactive.mysql.client.runtime.MySQLServiceBindingConverter;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
@@ -65,11 +69,12 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveMySQLClientProcessor {
 
-    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(
-            DotName.createSimple(Instance.class),
-            new Type[] { ClassType.create(DotName.createSimple(MySQLPoolCreator.class.getName())) }, null);
+    private static final Type MYSQL_POOL_CREATOR = ClassType.create(DotName.createSimple(MySQLPoolCreator.class.getName()));
+    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
+            new Type[] { MYSQL_POOL_CREATOR }, null);
+
     private static final DotName VERTX_MYSQL_POOL = DotName.createSimple(MySQLPool.class);
-    private static final Type VERTX_MYSQL_POOL_TYPE = Type.create(VERTX_MYSQL_POOL, Type.Kind.CLASS);
+    private static final Type VERTX_MYSQL_POOL_TYPE = ClassType.create(VERTX_MYSQL_POOL);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -91,11 +96,28 @@ class ReactiveMySQLClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
+        Stream.Builder<String> mySQLPoolNamesBuilder = Stream.builder();
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, syntheticBeans, dataSourceName,
-                    dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems,
-                    curateOutcomeBuildItem);
+
+            if (!isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
+                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+                continue;
+            }
+
+            createPool(recorder, vertx, eventLoopCount, shutdown, mySQLPool, syntheticBeans, dataSourceName,
+                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMySQLConfig);
+
+            mySQLPoolNamesBuilder.add(dataSourceName);
+        }
+
+        Set<String> mySQLPoolNames = mySQLPoolNamesBuilder.build().collect(toSet());
+        if (!mySQLPoolNames.isEmpty()) {
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(MySQLPoolSupport.class)
+                    .scope(Singleton.class)
+                    .unremovable()
+                    .runtimeValue(recorder.createMySQLPoolSupport(mySQLPoolNames))
+                    .setRuntimeInit()
+                    .done());
         }
 
         // Enable SSL support by default
@@ -176,25 +198,16 @@ class ReactiveMySQLClientProcessor {
                         dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
-    private void createPoolIfDefined(MySQLPoolRecorder recorder,
+    private void createPool(MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<MySQLPoolBuildItem> mySQLPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        if (!isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
-            return;
-        }
+            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig) {
 
         Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> poolFunction = recorder.configureMySQLPool(vertx.getVertx(),
                 eventLoopCount.getEventLoopCount(),
@@ -282,8 +295,6 @@ class ReactiveMySQLClientProcessor {
     }
 
     private static class MySQLPoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {
-        private static final Type MYSQL_POOL_CREATOR = Type.create(DotName.createSimple(MySQLPoolCreator.class.getName()),
-                Type.Kind.CLASS);
 
         @Override
         public boolean test(Set<Type> types) {

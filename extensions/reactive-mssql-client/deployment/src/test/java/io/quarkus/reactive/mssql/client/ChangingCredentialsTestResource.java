@@ -12,13 +12,13 @@ import jakarta.ws.rs.core.Response;
 
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mssqlclient.MSSQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/test")
 public class ChangingCredentialsTestResource {
 
     @Inject
-    MSSQLPool client;
+    Pool client;
 
     @Inject
     ChangingCredentialsProvider credentialsProvider;

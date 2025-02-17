@@ -14,6 +14,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,6 +43,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.db2client.DB2ConnectOptions;
 import io.vertx.db2client.DB2Pool;
+import io.vertx.db2client.spi.DB2Driver;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
@@ -108,10 +110,9 @@ public class DB2PoolRecorder {
         return new Function<>() {
             @SuppressWarnings("unchecked")
             @Override
-            public io.vertx.mutiny.db2client.DB2Pool apply(
-                    SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool> context) {
-                DB2Pool db2Pool = context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName));
-                return io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
+            public io.vertx.mutiny.db2client.DB2Pool apply(SyntheticCreationalContext context) {
+                return io.vertx.mutiny.db2client.DB2Pool.newInstance(
+                        (DB2Pool) context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName)));
             }
         };
     }
@@ -123,8 +124,7 @@ public class DB2PoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
             SyntheticCreationalContext<DB2Pool> context) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
-                dataSourceReactiveDB2Config);
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
         Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(db2ConnectOptions),
@@ -147,10 +147,7 @@ public class DB2PoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -269,9 +266,9 @@ public class DB2PoolRecorder {
         Instance<DB2PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
             DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
-            return instance.get().create(input);
+            return (DB2Pool) instance.get().create(input);
         }
-        return DB2Pool.pool(vertx, databases, poolOptions);
+        return (DB2Pool) DB2Driver.INSTANCE.createPool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements DB2PoolCreator.Input {
@@ -299,5 +296,9 @@ public class DB2PoolRecorder {
         public DB2ConnectOptions db2ConnectOptions() {
             return dB2ConnectOptions;
         }
+    }
+
+    public RuntimeValue<DB2PoolSupport> createDB2PoolSupport(Set<String> db2PoolNames) {
+        return new RuntimeValue<>(new DB2PoolSupport(db2PoolNames));
     }
 }

@@ -3,6 +3,8 @@ package io.quarkus.tls;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +12,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,10 +29,52 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class JavaNetSslTlsBucketConfigTest {
-
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class));
+    static final QuarkusUnitTest config = createConfig();
+
+    static QuarkusUnitTest createConfig() {
+        final Path tsPath = defaultTrustStorePath();
+        String tsType = System.getProperty("javax.net.ssl.trustStoreType", KeyStore.getDefaultType())
+                .toLowerCase(Locale.US);
+        if (tsType.equals("pkcs12")) {
+            tsType = "p12";
+        }
+        final String password = System.getProperty("javax.net.ssl.trustStorePassword", "changeit");
+
+        return new QuarkusUnitTest()
+                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+                .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".path", tsPath.toString())
+                .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".password", password);
+
+    }
+
+    static Path defaultTrustStorePath() {
+        final String rawTsPath = System.getProperty("javax.net.ssl.trustStore");
+        if (rawTsPath != null && !rawTsPath.isEmpty()) {
+            return Path.of(rawTsPath);
+        }
+        final String javaHome = System.getProperty("java.home");
+        if (javaHome == null || javaHome.isEmpty()) {
+            throw new IllegalStateException(
+                    "Could not locate the default Java truststore because the 'java.home' property is not set");
+        }
+        final Path javaHomePath = Path.of(javaHome);
+        if (!Files.isDirectory(javaHomePath)) {
+            throw new IllegalStateException("Could not locate the default Java truststore because the 'java.home' path '"
+                    + javaHome + "' is not a directory");
+        }
+        final Path jssecacerts = javaHomePath.resolve("lib/security/jssecacerts");
+        if (Files.isRegularFile(jssecacerts)) {
+            return jssecacerts;
+        }
+        final Path cacerts = javaHomePath.resolve("lib/security/cacerts");
+        if (Files.isRegularFile(cacerts)) {
+            return cacerts;
+        }
+        throw new IllegalStateException(
+                "Could not locate the default Java truststore. Tried javax.net.ssl.trustStore system property, " + jssecacerts
+                        + " and " + cacerts);
+    }
 
     @Inject
     TlsConfigurationRegistry certificates;
@@ -81,5 +126,18 @@ public class JavaNetSslTlsBucketConfigTest {
                 throw lastException;
             }
         }
+    }
+
+    @Test
+    void checkDefaults() {
+        /*
+         * The javaNetSslLike named TLS bucket mimics what JavaNetSslTlsBucketConfig does programmatically.
+         * By asserting that their SSLOptions are equal, we make sure that all defaults set programmatically
+         * in JavaNetSslTlsBucketConfig are in sync with @WithDefault values defined in TlsBucketConfig
+         */
+        final TlsConfiguration javaNetSsl = certificates.get("javax.net.ssl").orElseThrow();
+        final TlsConfiguration javaNetSslLike = certificates.get("javaNetSslLike").orElseThrow();
+        assertThat(javaNetSsl.getSSLOptions()).isEqualTo(javaNetSslLike.getSSLOptions());
+
     }
 }

@@ -110,7 +110,7 @@ public interface BuildSystemRunner {
 
     Integer projectInfo(boolean perModule) throws Exception;
 
-    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception;
 
     BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);

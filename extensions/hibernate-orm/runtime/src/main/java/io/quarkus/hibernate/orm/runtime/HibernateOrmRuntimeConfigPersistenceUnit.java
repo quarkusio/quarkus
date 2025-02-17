@@ -89,14 +89,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         /**
          * The default catalog to use for the database objects.
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> defaultCatalog();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> defaultCatalog();
 
         /**
          * The default schema to use for the database objects.
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> defaultSchema();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> defaultSchema();
 
         /**
          * Whether Hibernate ORM should check on startup
@@ -175,14 +173,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         /**
          * Filename or URL where the database create DDL file should be generated.
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> createTarget();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> createTarget();
 
         /**
          * Filename or URL where the database drop DDL file should be generated.
          */
-        @WithConverter(TrimmedStringConverter.class)
-        Optional<String> dropTarget();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> dropTarget();
 
     }
 

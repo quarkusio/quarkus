@@ -24,7 +24,7 @@ public interface RedisClientBuildTimeConfig {
      * </ul>
      */
     @ConfigDocDefault("import.redis in DEV, TEST ; no-file otherwise")
-    Optional<@WithConverter(TrimmedStringConverter.class) List<String>> loadScript();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> loadScript();
 
     /**
      * When using {@code redisLoadScript}, indicates if the Redis database must be flushed (erased) before importing.

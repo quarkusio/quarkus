@@ -29,8 +29,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> imageName();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> imageName();
 
     /**
      * Environment variables that are passed to the container.
@@ -65,13 +64,12 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> command();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> command();
 
     /**
      * The database name to use if this Dev Service supports overriding it.
      */
-    Optional<String> dbName();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> dbName();
 
     /**
      * The username to use if this Dev Service supports overriding it.

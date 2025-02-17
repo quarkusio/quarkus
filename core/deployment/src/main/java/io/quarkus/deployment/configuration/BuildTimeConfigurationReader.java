@@ -220,6 +220,11 @@ public final class BuildTimeConfigurationReader {
                 assert phase == ConfigPhase.RUN_TIME;
                 runTimeRoots.add(definition);
             }
+
+            if (configRoot.getAnnotation(Deprecated.class) == null) {
+                log.warn(configRoot.getName()
+                        + " is considered legacy and should be moved to use an interface and @ConfigMapping");
+            }
         }
 
         // ConfigRoots

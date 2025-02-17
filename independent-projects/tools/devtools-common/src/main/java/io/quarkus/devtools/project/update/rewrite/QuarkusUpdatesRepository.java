@@ -99,7 +99,7 @@ public final class QuarkusUpdatesRepository {
                 }
 
                 log.info(String.format(
-                        "Resolved %s with %s recipe(s) to update from %s to %s (initially made for OpenRewrite %s plugin version: %s) ",
+                        "Resolved %s with %s specific recipe(s) to update from %s to %s (initially made for OpenRewrite %s plugin version: %s) ",
                         gav,
                         recipes.size(),
                         currentVersion,

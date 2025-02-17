@@ -2,6 +2,7 @@ package io.quarkus.devtools.project.state;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -161,5 +162,19 @@ public class TopExtensionDependency {
 
     public String getProviderKey() {
         return providerKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+        TopExtensionDependency that = (TopExtensionDependency) o;
+        return transitive == that.transitive && Objects.equals(coords, that.coords)
+                && Objects.equals(catalogMetadata, that.catalogMetadata) && Objects.equals(providerKey, that.providerKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(coords, catalogMetadata, transitive, providerKey);
     }
 }

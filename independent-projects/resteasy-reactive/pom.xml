@@ -491,7 +491,7 @@
                                 <!-- if the used Java version is too new, don't fail, just do nothing: -->
                                 <failOnUnsupportedJava>false</failOnUnsupportedJava>
                                 <signaturesFiles>
-                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                                    <signaturesFile>${session.rootDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
                                 </signaturesFiles>
                                 <failOnMissingClasses>false</failOnMissingClasses>
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>

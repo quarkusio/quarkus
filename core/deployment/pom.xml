@@ -241,7 +241,7 @@
                         <configuration>
                             <signaturesFiles>
                                 <signaturesFile>./banned-signatures.txt</signaturesFile>
-                                <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                                <signaturesFile>${session.rootDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
                             </signaturesFiles>
                         </configuration>
                     </execution>

@@ -40,9 +40,6 @@ public class SerializedApplication {
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 2;
 
-    private static final ClassLoadingResource[] EMPTY_ARRAY = new ClassLoadingResource[0];
-    private static final JarResource SENTINEL = new JarResource(null, Path.of("wqxehxivam"));
-
     private final RunnerClassLoader runnerClassLoader;
     private final String mainClass;
 
@@ -127,13 +124,7 @@ public class SerializedApplication {
                 allClassLoadingResources[pathCount] = resource;
                 int numDirs = in.readUnsignedShort();
                 for (int i = 0; i < numDirs; ++i) {
-                    String dir = in.readUTF();
-                    int j = dir.indexOf('/');
-                    while (j >= 0) {
-                        resourceDirectoryTracker.addResourceDir(dir.substring(0, j), resource);
-                        j = dir.indexOf('/', j + 1);
-                    }
-                    resourceDirectoryTracker.addResourceDir(dir, resource);
+                    resourceDirectoryTracker.addResourceDirs(in.readUTF(), resource);
                 }
             }
             int packages = in.readUnsignedShort();
@@ -327,38 +318,60 @@ public class SerializedApplication {
      * The reason for doing it this way to only create Sets when needed (which is only a fraction of the cases)
      */
     private static class ResourceDirectoryTracker {
+        private static final JarResource[] OVERRIDDEN_JARS = new JarResource[0];
+        private static final ClassLoadingResource[] EMPTY_ARRAY = new ClassLoadingResource[0];
+
         private final Map<String, ClassLoadingResource[]> result = new HashMap<>();
         private final Map<String, Set<ClassLoadingResource>> overrides = new HashMap<>();
 
-        void addResourceDir(String dir, JarResource resource) {
-            ClassLoadingResource[] existing = result.get(dir);
-            if (existing == null) {
-                // this is the first the dir was ever tracked
-                result.put(dir, new JarResource[] { resource });
+        void addResourceDirs(String dir, JarResource resource) {
+            int j = dir.indexOf('/');
+            JarResource[] dirResources = null;
+            while (j >= 0) {
+                dirResources = addResourceDir(resource, dir.substring(0, j), dirResources);
+                j = dir.indexOf('/', j + 1);
+            }
+            addResourceDir(resource, dir, dirResources);
+        }
+
+        private JarResource[] addResourceDir(JarResource resource, String currentDir, JarResource[] singleResourceArray) {
+            final var currentResources = (JarResource[]) result.get(currentDir);
+            if (currentResources == null) {
+                // this is the first time the dir was ever tracked
+                if (singleResourceArray == null) {
+                    singleResourceArray = new JarResource[] { resource };
+                }
+                result.put(currentDir, singleResourceArray);
             } else {
-                ClassLoadingResource existingResource = existing[0];
+                addToOverrides(currentDir, resource, currentResources);
+            }
+            return singleResourceArray;
+        }
+
+        private void addToOverrides(String dir, JarResource resource, ClassLoadingResource[] existing) {
+            if (existing != OVERRIDDEN_JARS) {
+                var existingResource = existing[0];
                 if (existingResource.equals(resource)) {
                     // we don't need to do anything as the resource has already been tracked and an attempt
                     // to add it again was made
-                } else {
-                    Set<ClassLoadingResource> dirOverrides = overrides.get(dir);
-                    if (dirOverrides == null) {
-                        // we need to create the override set as this is the first time we find a resource for the dir
-                        // that is not the same as the one in the array
-                        dirOverrides = new LinkedHashSet<>(2);
-                        dirOverrides.add(existingResource);
-                        dirOverrides.add(resource);
-                        overrides.put(dir, dirOverrides);
-
-                        //replace the value in the original array with a sentinel in order to allow for quick comparisons
-                        existing[0] = SENTINEL;
-                    } else {
-                        // in this case, overrides has already been created in a previous invocation so all we need to
-                        // do is add the new resource
-                        dirOverrides.add(resource);
-                    }
+                    return;
                 }
+                assert !overrides.containsKey(dir);
+                // we need to create the override set as this is the first time we find a resource for the dir
+                // that is not the same as the one in the array
+                var dirOverrides = new LinkedHashSet<ClassLoadingResource>(2);
+                dirOverrides.add(existingResource);
+                dirOverrides.add(resource);
+                overrides.put(dir, dirOverrides);
+                //mark the existing resources as overridden
+                result.put(dir, OVERRIDDEN_JARS);
+                return;
             }
+            var dirOverrides = overrides.get(dir);
+            assert dirOverrides != null && dirOverrides.size() >= 2;
+            // in this case, overrides has already been created in a previous invocation so all we need to
+            // do is add the new resource
+            dirOverrides.add(resource);
         }
 
         Map<String, ClassLoadingResource[]> getResult() {

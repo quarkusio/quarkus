@@ -91,10 +91,22 @@ public class ContainerImages {
 
     // === Source To Image images
 
-    // Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi-quarkus-native-binary-s2i?tab=tags
-    public static final String QUARKUS_BINARY_S2I_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-native-binary-s2i";
-    public static final String QUARKUS_BINARY_S2I_VERSION = "2.0";
-    public static final String QUARKUS_BINARY_S2I = QUARKUS_BINARY_S2I_IMAGE_NAME + ":" + QUARKUS_BINARY_S2I_VERSION;
+    // UBI 8 Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi-quarkus-native-binary-s2i?tab=tags
+    public static final String UBI8_QUARKUS_BINARY_S2I_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-native-binary-s2i";
+    public static final String UBI8_QUARKUS_BINARY_S2I_VERSION = "2.0";
+    public static final String UBI8_QUARKUS_BINARY_S2I = UBI8_QUARKUS_BINARY_S2I_IMAGE_NAME + ":"
+            + UBI8_QUARKUS_BINARY_S2I_VERSION;
+
+    // UBI 9 Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi9-quarkus-native-binary-s2i?tab=tags
+    public static final String UBI9_QUARKUS_BINARY_S2I_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-native-binary-s2i";
+    public static final String UBI9_QUARKUS_BINARY_S2I_VERSION = "2.0";
+    public static final String UBI9_QUARKUS_BINARY_S2I = UBI9_QUARKUS_BINARY_S2I_IMAGE_NAME + ":"
+            + UBI9_QUARKUS_BINARY_S2I_VERSION;
+
+    // default Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi9-quarkus-native-binary-s2i?tab=tags
+    public static final String QUARKUS_BINARY_S2I_IMAGE_NAME = UBI9_QUARKUS_BINARY_S2I_IMAGE_NAME;
+    public static final String QUARKUS_BINARY_S2I_VERSION = UBI9_QUARKUS_BINARY_S2I_VERSION;
+    public static final String QUARKUS_BINARY_S2I = UBI9_QUARKUS_BINARY_S2I;
 
     // Java 17 Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-17/61ee7c26ed74b2ffb22b07f6
     public static final String S2I_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17";

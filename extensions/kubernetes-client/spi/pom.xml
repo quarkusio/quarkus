@@ -44,6 +44,10 @@
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-httpclient-vertx</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dajudge.kindcontainer</groupId>
+            <artifactId>kindcontainer</artifactId>
+        </dependency>
 
     </dependencies>
     <build>

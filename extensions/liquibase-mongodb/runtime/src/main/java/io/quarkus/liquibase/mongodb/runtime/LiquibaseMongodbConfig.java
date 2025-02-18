@@ -24,6 +24,11 @@ public interface LiquibaseMongodbConfig {
     boolean enabled();
 
     /**
+     * Mongodb client name to use to connect to database, defaults to the default mongodb client.
+     */
+    Optional<String> mongoClientName();
+
+    /**
      * The migrate at start flag
      */
     @WithDefault("false")

@@ -84,7 +84,7 @@ public final class TestResourceUtil {
             // The class we are given could be in the app classloader, so swap it over
             // All this reflective classloading is a bit wasteful, so it would be ideal if the implementation was less picky about classloaders (that's not just moving the reflection further down the line)
             try {
-                if (nextTestClassProfile.getClassLoader() != TestResourceUtil.class.getClassLoader()) {
+                if (!QuarkusTestProfile.class.isAssignableFrom(nextTestClassProfile)) {
                     nextTestClassProfile = (Class<? extends QuarkusTestProfile>) Class.forName(nextTestClassProfile.getName());
                 }
                 return nextTestClassProfile.getConstructor().newInstance();

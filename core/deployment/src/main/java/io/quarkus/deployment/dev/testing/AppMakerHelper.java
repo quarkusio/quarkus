@@ -42,7 +42,7 @@ import io.quarkus.test.junit.TestBuildChainFunction;
 
 public class AppMakerHelper {
 
-    // Copied from superclass of thing we copied
+    // TODO Copied from superclass of thing we copied
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
     protected static final String TEST_PROFILE = "test-profile";
@@ -96,30 +96,45 @@ public class AppMakerHelper {
 
         QuarkusTestProfile profileInstance = null;
         if (profile != null) {
-            profileInstance = profile.getConstructor()
+
+            // this.getClass().getClassloader - works in cli, is AUgmentation CL in continuous testing, cannot see profile classes
+            // if we use app classloader, in continuous testing, it cannot see profile classes
+            // TCCL cannot see QuarkusTestProfile??
+            //            profile = (Class<? extends QuarkusTestProfile>) Thread.currentThread().getContextClassLoader()
+            //                    .loadClass(profile.getName());
+
+            Object uncast = profile.getConstructor()
                     .newInstance();
-            // TODO we make this twice, also in abstractjvmextension can we streamline that?
-            // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
-            additional.putAll(profileInstance.getConfigOverrides());
-            if (!profileInstance.getEnabledAlternatives()
-                    .isEmpty()) {
-                additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
-                        .stream()
-                        .peek((c) -> {
-                            if (!c.isAnnotationPresent(Alternative.class)) {
-                                throw new RuntimeException(
-                                        "Enabled alternative " + c + " is not annotated with @Alternative");
-                            }
-                        })
-                        .map(Class::getName)
-                        .collect(Collectors.joining(",")));
+            if (uncast instanceof QuarkusTestProfile) {
+                profileInstance = (QuarkusTestProfile) uncast;
+                // TODO we make this twice, also in abstractjvmextension can we streamline that?
+                // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
+                additional.putAll(profileInstance.getConfigOverrides());
+                if (!profileInstance.getEnabledAlternatives()
+                        .isEmpty()) {
+                    additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
+                            .stream()
+                            .peek((c) -> {
+                                if (!c.isAnnotationPresent(Alternative.class)) {
+                                    throw new RuntimeException(
+                                            "Enabled alternative " + c + " is not annotated with @Alternative");
+                                }
+                            })
+                            .map(Class::getName)
+                            .collect(Collectors.joining(",")));
+                }
+                if (profileInstance.disableApplicationLifecycleObservers()) {
+                    additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+                }
+                if (profileInstance.getConfigProfile() != null) {
+                    additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
+                }
+            } else {
+                // TODO fill this in
+                // FIXME we clearly can't just ignore the profile in continuous testing
             }
-            if (profileInstance.disableApplicationLifecycleObservers()) {
-                additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
-            }
-            if (profileInstance.getConfigProfile() != null) {
-                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
-            }
+            // TODO fix this duplication, do wrapper methods or something
+
             //we just use system properties for now
             //it's a lot simpler
             // TODO this is really ugly, set proper config on the app
@@ -317,10 +332,9 @@ public class AppMakerHelper {
     // should have been freshly created
     // TODO maybe don't even accept one?
     public StartupAction getStartupAction(Class testClass, CuratedApplication curatedApplication,
-            boolean isContinuousTesting, Class ignoredProfile)
+            boolean isContinuousTesting, Class profile)
             throws Exception {
 
-        Class<? extends QuarkusTestProfile> profile = ignoredProfile;
         // TODO do we want any of these?
         Collection shutdownTasks = new HashSet();
         // TODO work out a good display name

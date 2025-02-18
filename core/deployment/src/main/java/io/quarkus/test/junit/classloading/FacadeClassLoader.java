@@ -81,7 +81,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private Set<String> quarkusTestClasses;
     private Set<String> quarkusMainTestClasses;
     private boolean isAuxiliaryApplication;
-    private QuarkusClassLoader keyMakerClassLoader;
+    private ClassLoader keyMakerClassLoader;
 
     private static volatile FacadeClassLoader instance;
 
@@ -162,7 +162,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     // TODO this is dumb, we are only loading it so that other stuff can discover a classpath from it
                     fromCanary = otherLoader
                             .loadClass(name);
-                } catch (ClassNotFoundException e) {
+                } catch (ClassNotFoundException | NoClassDefFoundError e) {
+
                     System.out.println("Could not load with the OTHER loader " + name);
                     System.out.println("Used class path " + classesPath);
                     return super.loadClass(name);
@@ -182,6 +183,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             String profileName = "no-profile";
             Class<?> profile = null;
+            // TODO diagnostic
             if (profiles != null) {
                 // TODO the good is that we're re-using what JUnitRunner already worked out, the bad is that this is seriously clunky with multiple code paths, brittle information sharing ...
                 // TODO at the very least, should we have a test landscape holder class?
@@ -194,6 +196,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 if (profileName == null) {
                     profileName = "no-profile";
                 }
+
             } else {
                 // TODO JUnitRunner already worked all this out for the dev mode case, could we share some logic?
 
@@ -249,14 +252,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
             }
 
-            if (!"no-profile".equals(profileName)) {
-                //TODO is this the right classloader to use?
-                profile = Class.forName(profileName);
-            }
-
             // increment the key unconditionally, we just need uniqueness
             mainC++;
 
+            // TODO move this into the getclassloade method
             String profileKey = isQuarkusTest ? "QuarkusTest" + "-" + profileName
                     : isMainTest ? "MainTest" + mainC : "vanilla";
             // TODO do we need to do extra work to make sure all of the quarkus app is in the cp? We'll return versions from the parent otherwise
@@ -267,8 +266,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             if (isQuarkusTest && !isIntegrationTest) {
 
-                preloadTestResourceClasses(fromCanary, profileKey, profile);
-                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, fromCanary, profile);
+                preloadTestResourceClasses(fromCanary);
+                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, fromCanary, profileName);
+                System.out.println("HOLLY made classloader " + runtimeClassLoader);
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
 
@@ -309,7 +309,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * resource to work differently?
      *
      */
-    private void preloadTestResourceClasses(Class<?> fromCanary, String profileKey, Class<?> profile) {
+    private void preloadTestResourceClasses(Class<?> fromCanary) {
         try {
             Class<Annotation> ca = (Class<Annotation>) canaryLoader.loadClass("io.quarkus.test.common.QuarkusTestResource");
             List<Annotation> ans = AnnotationSupport.findRepeatableAnnotations(fromCanary, ca);
@@ -365,44 +365,77 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         return false;
     }
 
-    private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, Class profile) {
+    private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, String profileName) {
         try {
-            StartupAction holder;
+            Class profile = null;
+
+            StartupAction startupAction;
             String key;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
             if (keyMakerClassLoader == null) {
+
+                // TODO this cannot be in this loop, it needs to be elsewhere, and also if we are loaded with system CL just use that
+                if (profileName != null && !"no-profile".equals(profileName)) {
+                    profile = ClassLoader.getSystemClassLoader()
+                            .loadClass(profileName);
+                }
+                System.out.println("HOLLY WAHOO did load a profile");
                 // Making a classloader uses the profile key to look up a curated application
-                holder = makeClassLoader(profileKey, requiredTestClass, profile);
-                keyMakerClassLoader = holder.getClassLoader();
+                // TODO this may need to be a dummy startup action with no profile,
+                //so must not re-use it unless confirmed profile is null
+                startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
+                keyMakerClassLoader = startupAction.getClassLoader();
+                // TODO are there any bad side effects of using the system classloader?
+                // TODO if we do keep it as the system classloader, all this can become much simpler
+                // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
+                //   keyMakerClassLoader = ClassLoader.getSystemClassLoader();
 
                 // Now make sure to get the right key, so that the next test along can compare to see if it needs a restart
                 final String resourceKey = getResourceKey(requiredTestClass, profile);
                 key = profileKey + resourceKey;
             } else {
-                final String resourceKey = getResourceKey(requiredTestClass, profile);
 
-                // The resource key might be null, and that's ok
-                key = profileKey + resourceKey;
-                System.out.println("HOLLY With resources, key is " + key);
+                // TODO this is simplified if the profile util takes a string
+                if (profileName != null && !"no-profile".equals(profileName)) {
+                    //TODO is this the right classloader to use?
 
-                holder = runtimeClassLoaders.get(key);
-                System.out.println("HOLLY seen this key before " + holder);
-
-                if (holder == null) {
-                    // TODO can we make this less confusing?
-
-                    // Making a classloader uses the profile key to look up a curated application
-                    holder = makeClassLoader(profileKey, requiredTestClass, profile);
+                    //
+                    profile = keyMakerClassLoader.loadClass(profileName);
                 }
+                // TODO do something with these comments
+                // In continuous testing, the facade classloader will be loaded with the augment classloader
+                // TODO or should we just use system classloader in both cases?
+                //                        System.out.println("HOLLY fallback");
+                //                        // In normal mode, loading with the canary loader is a bad idea, TODO  re-confirm that
+                //                        // TODO what classloader is best to use? can we get away without loading it?
+                //                        profile = ClassLoader.getSystemClassLoader().loadClass(profileName);
+
+            }
+
+            final String resourceKey = getResourceKey(requiredTestClass, profile);
+
+            // The resource key might be null, and that's ok
+            key = profileKey + resourceKey;
+            System.out.println("HOLLY With resources, key is " + key);
+
+            // TODO only do this and the next bit if the keymaker classloader is not suitable
+            startupAction = runtimeClassLoaders.get(key);
+            System.out.println("HOLLY seen this key before " + startupAction);
+
+            if (startupAction == null) {
+                // TODO can we make this less confusing?
+
+                // Making a classloader uses the profile key to look up a curated application
+                startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
             }
 
             // If we didn't have a classloader and didn't get a resource key
 
-            runtimeClassLoaders.put(key, holder);
+            runtimeClassLoaders.put(key, startupAction);
 
-            return holder.getClassLoader();
+            return startupAction.getClassLoader();
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             // TODO what's the best way to do this?

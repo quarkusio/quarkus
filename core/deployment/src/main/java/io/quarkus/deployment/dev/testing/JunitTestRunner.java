@@ -659,6 +659,24 @@ public class JunitTestRunner {
             }
         }
 
+        Map<String, String> profiles = new HashMap<>();
+
+        for (AnnotationInstance i : index.getAnnotations(TEST_PROFILE)) {
+
+            DotName name = i.target()
+                    .asClass()
+                    .name();
+            // We could do the value as a class, but it wouldn't be in the right classloader
+            profiles.put(name.toString(), i.value().asString());
+            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                if (!integrationTestClasses.contains(clazz.name()
+                        .toString())) {
+                    quarkusTestClasses.add(clazz.name()
+                            .toString());
+                }
+            }
+        }
+
         Set<String> quarkusMainTestClasses = new HashSet<>();
         // TODO looping over these twice is silly
         for (var a : Arrays.asList(QUARKUS_MAIN_TEST)) {
@@ -681,7 +699,6 @@ public class JunitTestRunner {
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
         Set<DotName> allTestClasses = new HashSet<>();
         Map<DotName, DotName> enclosingClasses = new HashMap<>();
-        Map<String, String> profiles = new HashMap<>();
         for (DotName annotation : allTestAnnotations) {
             for (AnnotationInstance instance : index.getAnnotations(annotation)) {
                 if (instance.target()
@@ -737,22 +754,6 @@ public class JunitTestRunner {
             if (Modifier.isAbstract(clazz.flags())) {
                 continue;
             }
-            AnnotationInstance testProfile = clazz.declaredAnnotation(TEST_PROFILE);
-            // TODO is there a cleaner way to do this? probably!
-            if (testProfile == null) {
-                profiles.put(name, "no-profile");
-            } else {
-                System.out.println(
-                        "HOLLY profile is " + testProfile + testProfile.value()
-                                .asString()
-                                + testProfile.value()
-                                        .asClass()
-                                + testProfile.value()
-                                        .name());
-                profiles.put(name,
-                        testProfile.value()
-                                .asString());
-            }
             unitTestClasses.add(name);
         }
 
@@ -796,12 +797,13 @@ public class JunitTestRunner {
 
         for (String i : quarkusTestClasses) {
             // ClassLoader old = Thread.currentThread().getContextClassLoader();
-            String profileName = profiles.get(i);
-            if (profileName == null) {
-                profileName = "no-profile";
-            }
-            // TODO get rid of all the profile stuff, we are doing it twice
-            System.out.println("HOLLY profile name is " + profileName);
+            // TODO this code is useless?
+            //            String profileName = profiles.get(i);
+            //            if (profileName == null) {
+            //                profileName = "no-profile";
+            //            }
+            //            // TODO get rid of all the profile stuff, we are doing it twice
+            //            System.out.println("HOLLY profile name is " + profileName);
             try {
                 // We could load these classes directly, since we know the profile and we have a handy interception point;
                 // but we need to signal to the downstream interceptor that it shouldn't interfere with the classloading

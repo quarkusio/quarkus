@@ -23,7 +23,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated Use {@link #builder()} to create this config
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public OidcTenantConfig() {
 
     }
@@ -61,7 +61,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #tenantId()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> tenantId = Optional.empty();
 
     /**
@@ -74,7 +74,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #tenantEnabled()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean tenantEnabled = true;
 
     /**
@@ -82,7 +82,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #applicationType()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<ApplicationType> applicationType = Optional.empty();
 
     /**
@@ -93,7 +93,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #authorizationPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
@@ -104,7 +104,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #userInfoPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> userInfoPath = Optional.empty();
 
     /**
@@ -116,7 +116,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #introspectionPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> introspectionPath = Optional.empty();
 
     /**
@@ -127,7 +127,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #jwksPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> jwksPath = Optional.empty();
 
     /**
@@ -138,7 +138,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #endSessionPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> endSessionPath = Optional.empty();
 
     /**
@@ -148,7 +148,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #tenantPaths()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<List<String>> tenantPaths = Optional.empty();
 
     /**
@@ -157,7 +157,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #publicKey()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> publicKey = Optional.empty();
 
     /**
@@ -167,7 +167,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #introspectionCredentials()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public IntrospectionCredentials introspectionCredentials = new IntrospectionCredentials();
 
     /**
@@ -175,7 +175,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link OidcTenantConfigBuilder.IntrospectionCredentialsBuilder}
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class IntrospectionCredentials implements io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials {
         /**
          * Name
@@ -243,7 +243,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #roles()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Roles roles = new Roles();
 
     /**
@@ -251,7 +251,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #token()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Token token = new Token();
 
     /**
@@ -259,7 +259,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #logout()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Logout logout = new Logout();
 
     /**
@@ -279,13 +279,13 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use {@link #certificateChain()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public CertificateChain certificateChain = new CertificateChain();
 
     /**
      * @deprecated use the {@link OidcTenantConfigBuilder.CertificateChainBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class CertificateChain implements io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain {
         /**
          * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
@@ -395,7 +395,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #authentication()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Authentication authentication = new Authentication();
 
     /**
@@ -403,7 +403,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #codeGrant()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public CodeGrant codeGrant = new CodeGrant();
 
     /**
@@ -411,7 +411,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #tokenStateManager()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public TokenStateManager tokenStateManager = new TokenStateManager();
 
     /**
@@ -422,7 +422,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #allowTokenIntrospectionCache()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean allowTokenIntrospectionCache = true;
 
     /**
@@ -433,7 +433,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #allowUserInfoCache()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean allowUserInfoCache = true;
 
     /**
@@ -448,13 +448,13 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #cacheUserInfoInIdtoken()} method
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Boolean> cacheUserInfoInIdtoken = Optional.empty();
 
     /**
      * @deprecated use the {@link LogoutConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Logout implements io.quarkus.oidc.runtime.OidcTenantConfig.Logout {
 
         /**
@@ -583,7 +583,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link OidcTenantConfigBuilder.BackchannelBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Backchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
@@ -695,13 +695,13 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #jwks()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Jwks jwks = new Jwks();
 
     /**
      * @deprecated use the {@link OidcTenantConfigBuilder.JwksBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Jwks implements io.quarkus.oidc.runtime.OidcTenantConfig.Jwks {
         /**
          * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
@@ -815,7 +815,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link LogoutConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Frontchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel {
         /**
          * The relative path of the Front-Channel Logout endpoint at the application.
@@ -845,7 +845,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link OidcTenantConfigBuilder.TokenStateManagerBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class TokenStateManager implements io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager {
 
         @Override
@@ -1007,7 +1007,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #authorizationPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getAuthorizationPath() {
         return authorizationPath();
     }
@@ -1015,7 +1015,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setAuthorizationPath(String authorizationPath) {
         this.authorizationPath = Optional.of(authorizationPath);
     }
@@ -1023,7 +1023,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #userInfoPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getUserInfoPath() {
         return userInfoPath();
     }
@@ -1031,7 +1031,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setUserInfoPath(String userInfoPath) {
         this.userInfoPath = Optional.of(userInfoPath);
     }
@@ -1039,7 +1039,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #introspectionPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getIntrospectionPath() {
         return introspectionPath();
     }
@@ -1047,7 +1047,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setIntrospectionPath(String introspectionPath) {
         this.introspectionPath = Optional.of(introspectionPath);
     }
@@ -1055,7 +1055,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #jwksPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getJwksPath() {
         return jwksPath();
     }
@@ -1063,7 +1063,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setJwksPath(String jwksPath) {
         this.jwksPath = Optional.of(jwksPath);
     }
@@ -1071,7 +1071,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #endSessionPath()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getEndSessionPath() {
         return endSessionPath();
     }
@@ -1079,7 +1079,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setEndSessionPath(String endSessionPath) {
         this.endSessionPath = Optional.of(endSessionPath);
     }
@@ -1087,7 +1087,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #publicKey()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getPublicKey() {
         return publicKey();
     }
@@ -1095,7 +1095,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setPublicKey(String publicKey) {
         this.publicKey = Optional.of(publicKey);
     }
@@ -1103,7 +1103,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #roles()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Roles getRoles() {
         return roles;
     }
@@ -1111,7 +1111,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setRoles(Roles roles) {
         this.roles = roles;
     }
@@ -1119,7 +1119,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #token()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Token getToken() {
         return token;
     }
@@ -1127,7 +1127,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setToken(Token token) {
         this.token = token;
     }
@@ -1135,7 +1135,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #authentication()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Authentication getAuthentication() {
         return authentication;
     }
@@ -1143,7 +1143,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
     }
@@ -1151,7 +1151,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #tenantId()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<String> getTenantId() {
         return tenantId();
     }
@@ -1159,7 +1159,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setTenantId(String tenantId) {
         this.tenantId = Optional.of(tenantId);
     }
@@ -1167,7 +1167,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #tenantEnabled()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean isTenantEnabled() {
         return tenantEnabled();
     }
@@ -1175,7 +1175,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setTenantEnabled(boolean enabled) {
         this.tenantEnabled = enabled;
     }
@@ -1183,7 +1183,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setLogout(Logout logout) {
         this.logout = logout;
     }
@@ -1191,7 +1191,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #logout()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Logout getLogout() {
         return logout;
     }
@@ -1199,7 +1199,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link OidcTenantConfigBuilder.RolesBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Roles implements io.quarkus.oidc.runtime.OidcTenantConfig.Roles {
 
         public static Roles fromClaimPath(List<String> path) {
@@ -1305,7 +1305,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link AuthenticationConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Authentication implements io.quarkus.oidc.runtime.OidcTenantConfig.Authentication {
 
         @Override
@@ -2081,7 +2081,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link OidcTenantConfigBuilder.CodeGrantBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class CodeGrant implements io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant {
 
         /**
@@ -2154,7 +2154,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link TokenConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Token implements io.quarkus.oidc.runtime.OidcTenantConfig.Token {
 
         public static Token fromIssuer(String issuer) {
@@ -2678,7 +2678,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link TokenConfigBuilder.BindingConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public static class Binding implements io.quarkus.oidc.runtime.OidcTenantConfig.Binding {
 
         /**
@@ -2727,7 +2727,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      *
      * @deprecated use the {@link #provider()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Provider> provider = Optional.empty();
 
     public static enum Provider {
@@ -2751,7 +2751,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #provider()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Provider> getProvider() {
         return provider;
     }
@@ -2759,7 +2759,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setProvider(Provider provider) {
         this.provider = Optional.of(provider);
     }
@@ -2767,7 +2767,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #applicationType()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<ApplicationType> getApplicationType() {
         return applicationType;
     }
@@ -2775,7 +2775,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setApplicationType(ApplicationType type) {
         this.applicationType = Optional.of(type);
     }
@@ -2783,7 +2783,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #allowTokenIntrospectionCache()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean isAllowTokenIntrospectionCache() {
         return allowTokenIntrospectionCache();
     }
@@ -2791,7 +2791,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setAllowTokenIntrospectionCache(boolean allowTokenIntrospectionCache) {
         this.allowTokenIntrospectionCache = allowTokenIntrospectionCache;
     }
@@ -2799,7 +2799,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #allowUserInfoCache()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public boolean isAllowUserInfoCache() {
         return allowUserInfoCache();
     }
@@ -2807,7 +2807,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setAllowUserInfoCache(boolean allowUserInfoCache) {
         this.allowUserInfoCache = allowUserInfoCache;
     }
@@ -2815,7 +2815,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #cacheUserInfoInIdtoken()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public Optional<Boolean> isCacheUserInfoInIdtoken() {
         return cacheUserInfoInIdtoken();
     }
@@ -2823,7 +2823,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setCacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
         this.cacheUserInfoInIdtoken = Optional.of(cacheUserInfoInIdtoken);
     }
@@ -2831,7 +2831,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #introspectionCredentials()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public IntrospectionCredentials getIntrospectionCredentials() {
         return introspectionCredentials;
     }
@@ -2839,7 +2839,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setIntrospectionCredentials(IntrospectionCredentials introspectionCredentials) {
         this.introspectionCredentials = introspectionCredentials;
     }
@@ -2847,7 +2847,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #codeGrant()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public CodeGrant getCodeGrant() {
         return codeGrant;
     }
@@ -2855,7 +2855,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setCodeGrant(CodeGrant codeGrant) {
         this.codeGrant = codeGrant;
     }
@@ -2863,7 +2863,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated use the {@link #certificateChain()} method instead
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public CertificateChain getCertificateChain() {
         return certificateChain;
     }
@@ -2871,7 +2871,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     /**
      * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
      */
-    @Deprecated(since = "3.18")
+    @Deprecated(since = "3.18", forRemoval = true)
     public void setCertificateChain(CertificateChain certificateChain) {
         this.certificateChain = certificateChain;
     }

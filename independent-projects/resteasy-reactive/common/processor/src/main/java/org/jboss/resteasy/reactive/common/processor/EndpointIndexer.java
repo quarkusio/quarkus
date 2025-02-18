@@ -238,6 +238,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
     private SerializerScanningResult serializerScanningResult;
+    protected final Set<DotName> alreadyHandledRequestScopedResources;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -262,6 +263,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.targetJavaVersion = builder.targetJavaVersion;
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
+        this.alreadyHandledRequestScopedResources = builder.alreadyHandledRequestScopedResources;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -310,6 +312,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             if (injectableBean.isInjectionRequired()) {
+                if (path != null) { // we don't want to verify subresources
+                    verifyClassThatRequiresFieldInjection(classInfo);
+                }
                 clazz.setPerRequestResource(true);
             }
 
@@ -319,6 +324,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
+            if (e instanceof DeploymentException) {
+                throw (DeploymentException) e;
+            }
             if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
                 //kinda bogus, but we just ignore failed interfaces for now
                 //they can have methods that are not valid until they are actually extended by a concrete type
@@ -327,6 +335,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             throw new RuntimeException(e);
         }
+    }
+
+    protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {
+
     }
 
     private String sanitizePath(String path) {
@@ -1664,6 +1676,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
+        private Set<DotName> alreadyHandledRequestScopedResources = new HashSet<>();
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
         private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
@@ -1798,6 +1811,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public B setSkipMethodParameter(
                 Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
             this.skipMethodParameter = skipMethodParameter;
+            return (B) this;
+        }
+
+        public B alreadyHandledRequestScopedResources(Set<DotName> alreadyHandledRequestScopedResources) {
+            this.alreadyHandledRequestScopedResources = alreadyHandledRequestScopedResources;
             return (B) this;
         }
 

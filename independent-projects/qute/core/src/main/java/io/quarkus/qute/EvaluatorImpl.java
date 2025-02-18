@@ -292,6 +292,11 @@ class EvaluatorImpl implements Evaluator {
         }
 
         @Override
+        public ResolutionContext resolutionContext() {
+            return resolutionContext;
+        }
+
+        @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("NamespaceEvalContextImpl [name=")
@@ -403,6 +408,11 @@ class EvaluatorImpl implements Evaluator {
 
         boolean tryParent() {
             return true;
+        }
+
+        @Override
+        public ResolutionContext resolutionContext() {
+            return resolutionContext;
         }
 
         @Override

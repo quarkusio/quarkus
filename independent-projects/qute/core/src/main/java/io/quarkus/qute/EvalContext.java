@@ -57,4 +57,10 @@ public interface EvalContext {
      */
     Object getAttribute(String key);
 
+    /**
+     *
+     * @return the current resolution context
+     */
+    ResolutionContext resolutionContext();
+
 }

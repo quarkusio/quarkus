@@ -144,6 +144,14 @@ public final class HibernateReactiveProcessor {
         DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
                 .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
+        // TODO This is currently using the reactive flag (which is expected but somehow not mapped)
+        // We could check the reactive url instead?
+        boolean reactive = defaultDataSourceBuildTimeConfig.reactive();
+        if (!reactive) {
+            LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
+            return;
+        }
+
         Optional<String> explicitDialect = hibernateOrmConfig.defaultPersistenceUnit().dialect().dialect();
         Optional<String> explicitDbMinVersion = defaultDataSourceBuildTimeConfig.dbVersion();
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(

@@ -19,8 +19,8 @@ public class TestHTTPResourceManager {
         try {
             return ConfigProvider.getConfig().getValue("test.url", String.class);
         } catch (IllegalStateException e) {
-            // massive hack for dev mode tests, dev mode has not started yet
-            // so we don't have any way to load this correctly from config
+            //massive hack for dev mode tests, dev mode has not started yet
+            //so we don't have any way to load this correctly from config
             return "http://localhost:8080";
         }
     }
@@ -29,8 +29,8 @@ public class TestHTTPResourceManager {
         try {
             return ConfigProvider.getConfig().getValue("test.management.url", String.class);
         } catch (IllegalStateException e) {
-            // massive hack for dev mode tests, dev mode has not started yet
-            // so we don't have any way to load this correctly from config
+            //massive hack for dev mode tests, dev mode has not started yet
+            //so we don't have any way to load this correctly from config
             return "http://localhost:9000";
         }
     }
@@ -59,23 +59,30 @@ public class TestHTTPResourceManager {
         Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
-            TestHTTPEndpoint classEndpointAnnotation = c.getAnnotation(TestHTTPEndpoint.class);
             for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
-                TestHTTPEndpoint fieldEndpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
-                if (resource != null || classEndpointAnnotation != null || fieldEndpointAnnotation != null) {
+                if (resource != null) {
                     TestHTTPResourceProvider<?> provider = providers.get(f.getType());
                     if (provider == null) {
                         throw new RuntimeException(
                                 "Unable to inject TestHTTPResource field " + f + " as no provider exists for the type");
                     }
-                    String path = resource != null ? resource.value() : "";
+                    String path = resource.value();
                     String endpointPath = null;
-                    boolean management = resource != null && resource.management();
-                    if (fieldEndpointAnnotation != null) {
-                        endpointPath = getEndpointPath(endpointProviders, f, fieldEndpointAnnotation);
-                    } else if (classEndpointAnnotation != null) {
-                        endpointPath = getEndpointPath(endpointProviders, f, classEndpointAnnotation);
+                    boolean management = resource.management();
+                    TestHTTPEndpoint endpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
+                    if (endpointAnnotation != null) {
+                        for (Function<Class<?>, String> func : endpointProviders) {
+                            endpointPath = func.apply(endpointAnnotation.value());
+                            if (endpointPath != null) {
+                                break;
+                            }
+                        }
+                        if (endpointPath == null) {
+                            throw new RuntimeException(
+                                    "Could not determine the endpoint path for " + endpointAnnotation.value() + " to inject "
+                                            + f);
+                        }
                     }
                     if (!path.isEmpty() && endpointPath != null) {
                         if (!endpointPath.endsWith("/")) {
@@ -87,7 +94,7 @@ public class TestHTTPResourceManager {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource != null && (resource.ssl() || resource.tls())) {
+                    if (resource.ssl() || resource.tls()) {
                         if (management) {
                             if (path.startsWith("/")) {
                                 val = getManagementSslUri() + path;
@@ -136,18 +143,4 @@ public class TestHTTPResourceManager {
         }
         return Collections.unmodifiableMap(map);
     }
-
-    private static String getEndpointPath(List<Function<Class<?>, String>> endpointProviders, Field field,
-            TestHTTPEndpoint endpointAnnotation) {
-        for (Function<Class<?>, String> func : endpointProviders) {
-            String endpointPath = func.apply(endpointAnnotation.value());
-            if (endpointPath != null) {
-                return endpointPath;
-            }
-        }
-        throw new RuntimeException(
-                "Could not determine the endpoint path for " + endpointAnnotation.value()
-                        + " to inject " + field);
-    }
-
 }

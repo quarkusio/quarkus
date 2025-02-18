@@ -776,6 +776,11 @@ public class ResteasyReactiveProcessor {
                         // to share method and annotations between Resource classes
                         continue;
                     }
+
+                    if (resourceClassImplCount == 0 && index.getKnownDirectImplementors(classInfo.name()).isEmpty()
+                            && result.getClientInterfaces().containsKey(classInfo.name())) {
+                        continue;
+                    }
                 }
 
                 Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(classInfo, false);

@@ -364,11 +364,11 @@ public class BootstrapAppModelFactory {
     }
 
     private Path resolveCachedCpPath(LocalProject project) {
-        if (devMode) {
-            return BootstrapUtils.resolveSerializedAppModelPath(project.getOutputDir());
-        }
         if (test) {
             return BootstrapUtils.getSerializedTestAppModelPath(project.getOutputDir());
+        }
+        if (devMode) {
+            return BootstrapUtils.resolveSerializedAppModelPath(project.getOutputDir());
         }
         return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(APP_MODEL_DAT);
     }

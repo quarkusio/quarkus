@@ -8,6 +8,7 @@ import static io.quarkus.devtools.project.update.ProjectUpdateInfos.resolveRecom
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -60,7 +61,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
         final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
-        final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
         final ProjectState currentState = resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
         final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
@@ -80,10 +80,9 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 recommendedState);
         boolean shouldUpdate = logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo,
                 extensionsUpdateInfo,
-                false, perModule,
                 quarkusProject.log());
         final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
-        if (shouldUpdate && !noRewrite) {
+        if (shouldUpdate) {
             final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
             String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
             final Optional<Integer> updateJavaVersion = resolveUpdateJavaVersion(extensionsUpdateInfo, projectJavaVersion);
@@ -96,8 +95,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     extensionsUpdateInfo);
             Path recipe = null;
             try {
-
-                recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
+                final Path buildDir = invocation.getQuarkusProject().getProjectDirPath()
+                        .resolve(invocation.getQuarkusProject().getBuildTool().getBuildDirectory());
+                recipe = buildDir.resolve("update-recipes").resolve("update-" + Instant.now().toEpochMilli() + ".yaml");
+                Files.createDirectories(recipe.getParent());
                 final String quarkusUpdateRecipes = invocation.getValue(
                         UpdateProject.REWRITE_QUARKUS_UPDATE_RECIPES,
                         QuarkusUpdatesRepository.DEFAULT_UPDATE_RECIPES_VERSION);
@@ -107,21 +108,31 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 final FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(), recipe,
                         QuarkusProjectHelper.artifactResolver(), buildTool, quarkusUpdateRecipes,
                         additionalUpdateRecipes, request);
-                invocation.log().info("OpenRewrite recipe generated: %s", recipe);
-                log.info("Running OpenRewrite recipe...");
-                log.info("");
+                quarkusProject.log().info("");
+                quarkusProject.log().info(
+                        "We have generated a recipe file to update your project (versions + specific recipes):");
+                quarkusProject.log().info(invocation.getQuarkusProject().getProjectDirPath().relativize(recipe).toString());
+                quarkusProject.log().info("");
+                if (noRewrite) {
+                    quarkusProject.log().info("Skipping running recipe (no rewrite).");
+                    printSeparator(quarkusProject.log());
+                } else {
+                    String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
+                            fetchResult.getRewritePluginVersion());
+                    quarkusProject.log().info("Running recipe with OpenRewrite %s...", rewritePluginVersion);
+                    quarkusProject.log().info("");
 
-                String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
-                        fetchResult.getRewritePluginVersion());
-                boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
-                QuarkusUpdateCommand.handle(
-                        invocation.log(),
-                        buildTool,
-                        quarkusProject.getProjectDirPath(),
-                        rewritePluginVersion,
-                        fetchResult.getRecipesGAV(),
-                        recipe,
-                        rewriteDryRun);
+                    boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+                    QuarkusUpdateCommand.handle(
+                            invocation.log(),
+                            buildTool,
+                            quarkusProject.getProjectDirPath(),
+                            rewritePluginVersion,
+                            fetchResult.getRecipesGAV(),
+                            recipe,
+                            rewriteDryRun);
+
+                }
 
             } catch (IOException e) {
                 throw new QuarkusCommandException("Error while generating the project update script", e);
@@ -157,8 +168,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
     private static boolean logUpdates(QuarkusProject project, ProjectState currentState, ProjectState recommendedState,
             ProjectPlatformUpdateInfo platformUpdateInfo,
-            ProjectExtensionsUpdateInfo extensionsUpdateInfo, boolean recommendState,
-            boolean perModule, MessageWriter log) {
+            ProjectExtensionsUpdateInfo extensionsUpdateInfo,
+            MessageWriter log) {
         printSeparator(log);
         if (currentState.getPlatformBoms().isEmpty()) {
             log.info("The project does not import any Quarkus platform BOM");
@@ -172,12 +183,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         }
         if (currentState == recommendedState) {
             log.info("The project is up-to-date");
-            printSeparator(log);
-            return false;
-        }
-
-        if (recommendState) {
-            ProjectInfoCommandHandler.logState(recommendedState, perModule, false, log);
             printSeparator(log);
             return false;
         }
@@ -291,15 +296,19 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         return true;
     }
 
-    private static void printSeparator(MessageWriter log) {
+    private static String updateInfo(ExtensionUpdateInfo u) {
+        return updateInfo(u.getCurrentDep().getArtifact(), u.getRecommendedDependency().getVersion());
+    }
+
+    static void printSeparator(MessageWriter log) {
         log.info("");
         log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         log.info("");
     }
 
-    private static String updateInfo(ExtensionUpdateInfo e) {
-        return e.getCurrentDep().getArtifact().getKey().toGacString() + ":[" + e.getCurrentDep().getVersion() + " -> "
-                + e.getRecommendedDependency().getVersion() + "]";
+    static String updateInfo(ArtifactCoords current, String newVersion) {
+        return current.getKey().toGacString() + ":[" + current.getVersion() + " -> "
+                + newVersion + "]";
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

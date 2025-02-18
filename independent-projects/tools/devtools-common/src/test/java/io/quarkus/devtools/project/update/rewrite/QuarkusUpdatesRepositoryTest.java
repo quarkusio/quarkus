@@ -15,6 +15,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.loader.json.ClassPathResourceLoader;
 
 class QuarkusUpdatesRepositoryTest {
@@ -33,7 +34,8 @@ class QuarkusUpdatesRepositoryTest {
         recipeDirectoryNames.put("core", new String[] { "2.7", "3.1" });
         recipeDirectoryNames.put("org.apache.camel.quarkus:camel-quarkus-core", new String[] { "2.7", "3.0" });
         ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader();
-        Map<String, String> recipes = fetchUpdateRecipes(resourceLoader, "dir/quarkus-update", recipeDirectoryNames);
+        Map<String, String> recipes = fetchUpdateRecipes(MessageWriter.info(), resourceLoader, "dir/quarkus-update",
+                recipeDirectoryNames);
         int noOfRecipes = recipes.size();
         assertEquals(3, noOfRecipes);
     }
@@ -44,7 +46,8 @@ class QuarkusUpdatesRepositoryTest {
         recipeDirectoryNames.put("core", new String[] { "2.7", "3.1" });
         recipeDirectoryNames.put("org.apache.camel.quarkus:camel-quarkus-file", new String[] { "2.7", "3.0" });
         ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader();
-        Map<String, String> recipes = fetchUpdateRecipes(resourceLoader, "dir/quarkus-update", recipeDirectoryNames);
+        Map<String, String> recipes = fetchUpdateRecipes(MessageWriter.info(), resourceLoader, "dir/quarkus-update",
+                recipeDirectoryNames);
         int noOfRecipes = recipes.size();
         assertEquals(3, noOfRecipes);
     }
@@ -57,7 +60,8 @@ class QuarkusUpdatesRepositoryTest {
         recipeDirectoryNames.put("org.apache.camel.quarkus:camel-quarkus-ftp", new String[] { "2.7", "3.1" });
         recipeDirectoryNames.put("org.apache.camel.quarkus:camel-quarkus-fhir", new String[] { "2.7", "3.1" });
         ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader();
-        Map<String, String> recipes = fetchUpdateRecipes(resourceLoader, "dir/quarkus-update", recipeDirectoryNames);
+        Map<String, String> recipes = fetchUpdateRecipes(MessageWriter.info(), resourceLoader, "dir/quarkus-update",
+                recipeDirectoryNames);
         int noOfRecipes = recipes.size();
         assertEquals(3, noOfRecipes);
     }

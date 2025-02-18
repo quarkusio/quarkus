@@ -52,6 +52,7 @@ public final class QuarkusUpdatesRepository {
 
         gavs.add(quarkusUpdateRecipes.contains(":") ? quarkusUpdateRecipes
                 : QUARKUS_UPDATE_RECIPES_GA + ":" + quarkusUpdateRecipes);
+
         if (additionalUpdateRecipes != null) {
             gavs.addAll(Arrays.stream(additionalUpdateRecipes.split(",")).map(String::strip).toList());
         }
@@ -59,9 +60,10 @@ public final class QuarkusUpdatesRepository {
         List<String> artifacts = new ArrayList<>();
         Map<String, String> recipes = new LinkedHashMap<>();
         String propRewritePluginVersion = null;
+        log.info("");
 
         for (String gav : gavs) {
-
+            log.info("Resolving recipes from '%s':", gav.replace(":LATEST", ""));
             Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
             recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });
             for (ExtensionUpdateInfo dep : topExtensionDependency) {
@@ -76,7 +78,8 @@ public final class QuarkusUpdatesRepository {
                 artifacts.add(resolvedGAV);
                 final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                         artifact.getFile());
-                Map<String, String> newRecipes = fetchUpdateRecipes(resourceLoader, "quarkus-updates", recipeDirectoryNames);
+                Map<String, String> newRecipes = fetchUpdateRecipes(log, resourceLoader, "quarkus-updates",
+                        recipeDirectoryNames);
                 recipes.putAll(newRecipes);
                 final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
                     final Properties properties = new Properties();
@@ -97,15 +100,17 @@ public final class QuarkusUpdatesRepository {
                             "quarkus update artifacts require multiple rewrite plugin versions: " + propRewritePluginVersion
                                     + " and " + pluginVersion);
                 }
-
-                log.info(String.format(
-                        "Resolved %s with %s specific recipe(s) to update from %s to %s (initially made for OpenRewrite %s plugin version: %s) ",
-                        gav,
-                        recipes.size(),
-                        currentVersion,
-                        targetVersion,
-                        buildTool,
-                        propRewritePluginVersion));
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format(
+                            "=> %d specific recipe(s) found (compatible with OpenRewrite %s plugin version: %s)",
+                            recipes.size(),
+                            buildTool,
+                            propRewritePluginVersion));
+                } else {
+                    log.info(String.format(
+                            "=> %d specific recipe(s) found",
+                            recipes.size()));
+                }
 
             } catch (BootstrapMavenException e) {
                 throw new RuntimeException("Failed to resolve artifact: " + gav, e);
@@ -165,7 +170,7 @@ public final class QuarkusUpdatesRepository {
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
     }
 
-    static Map<String, String> fetchUpdateRecipes(ResourceLoader resourceLoader, String location,
+    static Map<String, String> fetchUpdateRecipes(MessageWriter log, ResourceLoader resourceLoader, String location,
             Map<String, String[]> recipeDirectoryNames) throws IOException {
         return resourceLoader.loadResourceAsPath(location,
                 path -> {
@@ -173,6 +178,7 @@ public final class QuarkusUpdatesRepository {
                         return pathStream
                                 .filter(Files::isDirectory)
                                 .flatMap(dir -> applyStartsWith(toKey(path, dir), recipeDirectoryNames).stream()
+                                        .peek(key -> log.info("- matching recipes directory '%s' found.", dir))
                                         .flatMap(key -> {
                                             String versions[] = recipeDirectoryNames.get(key);
                                             if (versions != null && versions.length != 0) {
@@ -186,6 +192,8 @@ public final class QuarkusUpdatesRepository {
                                                             .sorted(RecipeVersionComparator.INSTANCE)
                                                             .map(p -> {
                                                                 try {
+                                                                    log.info("- matching recipe '%s' found for [%s -> %s]", p,
+                                                                            versions[0], versions[1]);
                                                                     return new String[] { p.toString(),
                                                                             new String(Files.readAllBytes(p)) };
                                                                 } catch (IOException e) {
@@ -235,8 +243,10 @@ public final class QuarkusUpdatesRepository {
     }
 
     static List<String> applyStartsWith(String key, Map<String, String[]> recipeDirectoryNames) {
+        if (key.isBlank()) {
+            return List.of();
+        }
         //list for all keys, that matches dir (could be more items in case of wildcard at the end
-        List<String> matchedRecipeKeys;
         //Current implementation detects whether key starts with an existing recipe folder
         return recipeDirectoryNames.keySet().stream()
                 .filter(k -> k.startsWith(key))

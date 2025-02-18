@@ -18,14 +18,11 @@ public class Update extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(order = 1, heading = "%nRewrite:%n", exclusive = false)
     RewriteGroup rewrite = new RewriteGroup();
 
-    @CommandLine.Option(order = 2, names = { "--per-module" }, description = "Display information per project module.")
-    public boolean perModule = false;
-
     @Override
     public Integer call() throws Exception {
         try {
             final BuildSystemRunner runner = getRunner();
-            return runner.updateProject(targetQuarkusVersion, rewrite, perModule);
+            return runner.updateProject(targetQuarkusVersion, rewrite);
         } catch (Exception e) {
             return output.handleCommandException(e, "Unable to run Quarkus project update : " + e.getMessage());
         }

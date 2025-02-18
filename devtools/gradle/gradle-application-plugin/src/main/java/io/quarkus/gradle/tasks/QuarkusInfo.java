@@ -42,9 +42,5 @@ public abstract class QuarkusInfo extends QuarkusPlatformTask {
         } catch (Exception e) {
             throw new GradleException("Failed to collect Quarkus project information", e);
         }
-        if (outcome.getValue(ProjectInfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
-            getLogger().warn(
-                    "Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'gradle quarkusUpdate --rectify'");
-        }
     }
 }

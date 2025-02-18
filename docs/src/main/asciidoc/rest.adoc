@@ -1627,11 +1627,26 @@ public User userPrivate() {
 When the result the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
 
-===== Reflection-free Jackson serialization
+===== Reflection-free Jackson serialization and deserialization
 
-Out-of-the-box Jackson serialization converts objects into their JSON representation by introspecting them through a heavy use of reflection. However, the general Quarkus philosophy is to avoid reflection as much as possible, often replacing it with build time code generation. For this reason it is possible to automatically generate at build time implementations of the Jackson `StdSerializer`, one for each class to be converted in JSON. These generated serializers can be subsequently used by Quarkus at runtime to perform the JSON serialization of the objects returned by a REST endpoint without any use of reflection.
+By default, Jackson uses reflection to convert objects to and from JSON.
+However, {project-name} follows a build-time optimization philosophy.
+To align with this approach, configure your application to minimize reflection by using the link:https://quarkus.io/extensions/io.quarkus/quarkus-rest-jackson[`quarkus-rest-jackson`] extension.
 
-This feature is turned off by default, but it can be enabled by setting the configuration property `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
+This feature is introduced as a Technology Preview and is disabled by default.
+
+By eliminating reliance on reflection during deserialization, applications can achieve better performance and reduced memory consumption, particularly for native applications where reflection can introduce overhead.
+If you implement this feature, run tests to assess its effect on your applications.
+
+To enable this feature, set the following configuration property to `true`:
+
+`quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
+
+Setting this property applies reflection-free optimization to deserialization and serialization.
+
+When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` implementations at build time for each class requiring JSON conversion. The application then processes objects returned by REST endpoints using these generated serializers and deserializers, eliminating reliance on reflection and improving performance.
+
+Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
 
 ===== Completely customized per method serialization/deserialization
 

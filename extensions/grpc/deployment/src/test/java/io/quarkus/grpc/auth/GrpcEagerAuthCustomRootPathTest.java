@@ -4,7 +4,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class GrpcAuthCustomRootPathTest extends GrpcAuthTestBase {
+public class GrpcEagerAuthCustomRootPathTest extends GrpcAuthTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = createQuarkusUnitTest("""

@@ -719,6 +719,9 @@ public class GrpcServerProcessor {
                             .filter(filter -> filter.getPriority() == FilterBuildItem.AUTHENTICATION
                                     || filter.getPriority() == FilterBuildItem.AUTHORIZATION)
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
+                    // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
+                    // sure that exceptions raised during proactive authentication or HTTP authorization are handled
+                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue, config);
                 }
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();

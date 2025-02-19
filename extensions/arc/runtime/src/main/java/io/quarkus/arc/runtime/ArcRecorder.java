@@ -113,7 +113,7 @@ public class ArcRecorder {
 
         fireLifecycleEvent(container, new StartupEvent(), mockBeanClasses);
 
-        context.addShutdownTask(new Runnable() {
+        context.addShutdownTask(ShutdownContext.SHUTDOWN_EVENT_PRIORITY, new Runnable() {
             @Override
             public void run() {
                 fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);

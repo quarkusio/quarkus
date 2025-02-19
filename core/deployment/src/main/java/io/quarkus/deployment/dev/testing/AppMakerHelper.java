@@ -4,6 +4,7 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -103,37 +104,36 @@ public class AppMakerHelper {
             //            profile = (Class<? extends QuarkusTestProfile>) Thread.currentThread().getContextClassLoader()
             //                    .loadClass(profile.getName());
 
-            Object uncast = profile.getConstructor()
-                    .newInstance();
-            if (uncast instanceof QuarkusTestProfile) {
-                profileInstance = (QuarkusTestProfile) uncast;
-                // TODO we make this twice, also in abstractjvmextension can we streamline that?
-                // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
-                additional.putAll(profileInstance.getConfigOverrides());
-                if (!profileInstance.getEnabledAlternatives()
-                        .isEmpty()) {
-                    additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
-                            .stream()
-                            .peek((c) -> {
-                                if (!c.isAnnotationPresent(Alternative.class)) {
+            profileInstance = new ClassCoercingTestProfile(profile.getConstructor()
+                    .newInstance());
+            // TODO we make this twice, also in abstractjvmextension can we streamline that?
+            // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
+            additional.putAll(profileInstance.getConfigOverrides());
+            if (!profileInstance.getEnabledAlternatives()
+                    .isEmpty()) {
+                additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
+                        .stream()
+                        .peek((c) -> {
+                            try {
+                                // TODO is string comparison more efficient?
+                                if (!c.isAnnotationPresent((Class<? extends Annotation>) profile.getClassLoader()
+                                        .loadClass(Alternative.class.getName()))) {
                                     throw new RuntimeException(
                                             "Enabled alternative " + c + " is not annotated with @Alternative");
                                 }
-                            })
-                            .map(Class::getName)
-                            .collect(Collectors.joining(",")));
-                }
-                if (profileInstance.disableApplicationLifecycleObservers()) {
-                    additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
-                }
-                if (profileInstance.getConfigProfile() != null) {
-                    additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
-                }
-            } else {
-                // TODO fill this in
-                // FIXME we clearly can't just ignore the profile in continuous testing
+                            } catch (ClassNotFoundException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .map(Class::getName)
+                        .collect(Collectors.joining(",")));
             }
-            // TODO fix this duplication, do wrapper methods or something
+            if (profileInstance.disableApplicationLifecycleObservers()) {
+                additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+            }
+            if (profileInstance.getConfigProfile() != null) {
+                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
+            }
 
             //we just use system properties for now
             //it's a lot simpler

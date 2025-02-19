@@ -28,12 +28,6 @@ import io.quarkus.registry.catalog.PlatformStreamCoords;
 public class UpdateMojo extends QuarkusProjectStateMojoBase {
 
     /**
-     * Display information per project module.
-     */
-    @Parameter(property = "perModule")
-    boolean perModule;
-
-    /**
      * Version of the target platform (e.g: 2.0.0.Final)
      * You may instead use stream to target the latest version of a specific platform stream.
      */
@@ -115,7 +109,6 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
         invoker.targetPlatformVersion(platformVersion);
-        invoker.perModule(perModule);
         invoker.appModel(resolveApplicationModel());
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);

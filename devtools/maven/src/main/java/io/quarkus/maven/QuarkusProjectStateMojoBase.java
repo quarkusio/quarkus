@@ -102,7 +102,8 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                     }
                     try {
                         Files.createDirectories(classesDir);
-                        createdDirs.add(topDirToCreate);
+                        // We keep the root target dir because it is used to store the update recipes
+                        //createdDirs.add(topDirToCreate);
                     } catch (IOException e) {
                         throw new MojoExecutionException("Failed to create " + classesDir, e);
                     }

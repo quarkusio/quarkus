@@ -149,7 +149,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
@@ -181,9 +181,6 @@ public class MavenRunner implements BuildSystemRunner {
         }
         if (rewrite.dryRun) {
             args.add("-DrewriteDryRun");
-        }
-        if (perModule) {
-            args.add("-DperModule");
         }
         args.add("-ntp");
         return run(prependExecutable(args));

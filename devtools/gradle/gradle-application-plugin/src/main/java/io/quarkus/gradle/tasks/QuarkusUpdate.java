@@ -17,8 +17,6 @@ import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
-    private boolean perModule = false;
-
     private boolean noRewrite;
 
     private boolean rewriteDryRun;
@@ -53,16 +51,6 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     public QuarkusUpdate setRewriteDryRun(Boolean rewriteDryRun) {
         this.rewriteDryRun = rewriteDryRun;
         return this;
-    }
-
-    @Input
-    public boolean getPerModule() {
-        return perModule;
-    }
-
-    @Option(description = "Log project's state per module.", option = "perModule")
-    public void setPerModule(boolean perModule) {
-        this.perModule = perModule;
     }
 
     @Input
@@ -165,7 +153,6 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         invoker.targetPlatformVersion(targetPlatformVersion);
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);
-        invoker.perModule(perModule);
         invoker.appModel(extension().getApplicationModel());
         try {
             invoker.execute();

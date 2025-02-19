@@ -20,7 +20,6 @@ public class UpdateProject {
 
     public static final String APP_MODEL = "quarkus.update-project.app-model";
     public static final String TARGET_CATALOG = "quarkus.update-project.target-catalog";
-    public static final String PER_MODULE = "quarkus.update-project.per-module";
     public static final String NO_REWRITE = "quarkus.update-project.rewrite.disabled";
     public static final String TARGET_PLATFORM_VERSION = "quarkus.update-project.target-platform-version";
     public static final String REWRITE_PLUGIN_VERSION = "quarkus.update-project.rewrite.plugin-version";
@@ -72,11 +71,6 @@ public class UpdateProject {
 
     public UpdateProject rewriteDryRun(boolean rewriteDryRun) {
         invocation.setValue(REWRITE_DRY_RUN, rewriteDryRun);
-        return this;
-    }
-
-    public UpdateProject perModule(boolean perModule) {
-        invocation.setValue(PER_MODULE, perModule);
         return this;
     }
 

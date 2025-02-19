@@ -75,8 +75,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         final CliDriver.Result updateResult = run(projectDir, "update", "--no-rewrite");
         assertThat(updateResult.getExitCode()).isEqualTo(0);
         assertQuarkusPlatformBoms(updateResult.stdout,
-                "org.acme.quarkus.platform:quarkus-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage(),
-                "org.acme.quarkus.platform:acme-bom:pom:2.0.0 " + UP_TO_DATE_ICON.iconOrMessage());
+                "The project is up-to-date " + UP_TO_DATE_ICON.iconOrMessage());
     }
 
     @Test
@@ -108,13 +107,13 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
 
         assertThat(rectifyResult.stdout)
                 .contains(
-                        "[INFO] Update: org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0 -> drop version (managed by platform)");
+                        "org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0 -> drop version (managed by platform)");
 
         final CliDriver.Result updateResult = run(projectDir, "update", "-Dquarkus.platform.version=1.0.0", "--no-rewrite");
         assertThat(updateResult.getExitCode()).isEqualTo(0);
         assertQuarkusPlatformBomUpdates(updateResult.stdout,
-                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "1.0.0 -> 2.0.0"),
-                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "1.0.0 -> 2.0.0"));
+                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[1.0.0 -> 2.0.0]"),
+                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "[1.0.0 -> 2.0.0]"));
     }
 
     private static void assertPlatformBomExtensions(String output, ArtifactCoords bom, String... extensions) {

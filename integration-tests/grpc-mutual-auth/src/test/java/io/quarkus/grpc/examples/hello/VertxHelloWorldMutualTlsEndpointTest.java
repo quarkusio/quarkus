@@ -44,7 +44,7 @@ class VertxHelloWorldMutualTlsEndpointTest extends VertxHelloWorldMutualTlsEndpo
             request = client.get(8444, "localhost", "/hello/blocking-admin/neo");
             fr = request.send();
             assertThat(fr.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS).bodyAsString())
-                    .contains("io.quarkus.security.ForbiddenException");
+                    .contains("io.grpc.StatusRuntimeException: PERMISSION_DENIED");
         } finally {
             if (client != null) {
                 client.close();
@@ -67,7 +67,7 @@ class VertxHelloWorldMutualTlsEndpointTest extends VertxHelloWorldMutualTlsEndpo
             request = client.get(8444, "localhost", "/hello/mutiny-admin/neo");
             fr = request.send();
             assertThat(fr.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS).bodyAsString())
-                    .contains("io.quarkus.security.ForbiddenException");
+                    .contains("io.grpc.StatusRuntimeException: PERMISSION_DENIED");
         } finally {
             if (client != null) {
                 client.close();

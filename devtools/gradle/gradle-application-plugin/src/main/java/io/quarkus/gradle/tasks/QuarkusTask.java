@@ -8,8 +8,16 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import io.quarkus.gradle.GradleUtils;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Nested;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.workers.ProcessWorkerSpec;
 import org.gradle.workers.WorkQueue;
@@ -24,6 +32,7 @@ public abstract class QuarkusTask extends DefaultTask {
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;
     protected final File buildDir;
+    private final Property<JavaLauncher> javaLauncher;
 
     QuarkusTask(String description) {
         this(description, false);
@@ -36,6 +45,15 @@ public abstract class QuarkusTask extends DefaultTask {
         this.projectDir = getProject().getProjectDir();
         this.buildDir = getProject().getBuildDir();
 
+        ObjectFactory objectFactory = getObjectFactory();
+        JavaToolchainService javaToolchainService = getJavaToolchainService();
+        Provider<JavaLauncher> javaLauncherConvention = getProviderFactory()
+                .provider(() -> GradleUtils.getExecutableOverrideToolchainSpec(objectFactory))
+                .flatMap(javaToolchainService::launcherFor)
+                .orElse(javaToolchainService.launcherFor(it -> {
+                }));
+        this.javaLauncher = objectFactory.property(JavaLauncher.class).convention(javaLauncherConvention);
+
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.
         if (!configurationCacheCompatible) {
@@ -44,7 +62,21 @@ public abstract class QuarkusTask extends DefaultTask {
     }
 
     @Inject
+    protected abstract ObjectFactory getObjectFactory();
+
+    @Inject
+    protected abstract ProviderFactory getProviderFactory();
+
+    @Inject
+    protected abstract JavaToolchainService getJavaToolchainService();
+
+    @Inject
     protected abstract WorkerExecutor getWorkerExecutor();
+
+    @Nested
+    public Property<JavaLauncher> getJavaLauncher() {
+        return javaLauncher;
+    }
 
     QuarkusPluginExtension extension() {
         return extension;
@@ -60,13 +92,17 @@ public abstract class QuarkusTask extends DefaultTask {
         }
 
         return workerExecutor.processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec,
-                configMap, forkOptionsSupplier));
+                configMap, forkOptionsSupplier, getJavaLauncher().get()));
     }
 
     private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, Map<String, String> configMap,
-            List<Action<? super JavaForkOptions>> customizations) {
+            List<Action<? super JavaForkOptions>> customizations, JavaLauncher launcher) {
         JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
         customizations.forEach(a -> a.execute(forkOptions));
+
+        if (launcher != null) {
+            forkOptions.executable(launcher.getExecutablePath().getAsFile().getAbsolutePath());
+        }
 
         // Propagate user.dir to load config sources that use it (instead of the worker user.dir)
         String userDir = configMap.get("user.dir");

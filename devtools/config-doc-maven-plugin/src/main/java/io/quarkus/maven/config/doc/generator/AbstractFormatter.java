@@ -79,11 +79,11 @@ abstract class AbstractFormatter implements Formatter {
                                     .transform(javadocElement.get().description(), javadocElement.get().format(),
                                             javadocFormat()));
                         })
-                        .collect(Collectors.joining(", "));
+                        .collect(Collectors.joining("\n- ", "- ", ""));
             } else {
                 typeContent = configProperty.getEnumAcceptedValues().values().values().stream()
                         .map(v -> v.configValue())
-                        .collect(Collectors.joining("`, `", "`", "`"));
+                        .collect(Collectors.joining("`\n- `", "- `", "`"));
             }
         } else {
             typeContent = configProperty.getTypeDescription();

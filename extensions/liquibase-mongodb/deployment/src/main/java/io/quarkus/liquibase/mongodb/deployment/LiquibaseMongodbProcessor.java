@@ -112,6 +112,7 @@ class LiquibaseMongodbProcessor {
 
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
+                liquibase.ext.mongodb.change.AbstractMongoChange.class.getName(),
                 liquibase.database.jvm.JdbcConnection.class.getName())
                 .methods().build());
 

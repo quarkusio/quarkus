@@ -70,29 +70,6 @@
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>io.github.gitflow-incremental-builder</groupId>
-                <artifactId>gitflow-incremental-builder</artifactId>
-                <version>${gitflow-incremental-builder.version}</version>
-                <extensions>true</extensions>
-                <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
-                     General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
-                     See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
-                <configuration>
-                    <!-- these metadata file can't affect the build -->
-                    <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
-                    <!-- pointless to attempt incremental build if something like mvnw was changed
-                         (and also potentially wrong, given that independent-projects might not be built) -->
-                    <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
-                    <!-- Note: *Upstream* is only relevant in case of:
-                         -am or
-                         -Dgib.buildUpstream=always|true or
-                         -Dgib.buildAll=true or
-                         -Dgib.forceBuildModules=... -->
-                    <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
-                    <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
-                </configuration>
-            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>

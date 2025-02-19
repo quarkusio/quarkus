@@ -7,7 +7,6 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 
 public abstract class QuarkusInfo extends QuarkusPlatformTask {

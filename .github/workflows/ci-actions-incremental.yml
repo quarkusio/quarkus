@@ -92,7 +92,7 @@ jobs:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     steps:
       - name: Build
         run: sleep 30
@@ -343,7 +343,7 @@ jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     needs: build-jdk17
     env:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
@@ -413,7 +413,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -429,12 +429,12 @@ jobs:
           echo "GE_TAGS=jdk-${{matrix.java.java-version}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=${{ matrix.java.name }}" >> "$GITHUB_ENV"
       - name: Stop mysql
-        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: |
           ss -ln
           sudo service mysql stop || true
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.java.os-name, 'windows')"
+        if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
@@ -444,15 +444,15 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
-        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
-        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: .github/ci-prerequisites.sh
 
       - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
-        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
+        if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -577,7 +577,7 @@ jobs:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     timeout-minutes: 130
     strategy:
       fail-fast: false
@@ -599,7 +599,7 @@ jobs:
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Maven Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.java.os-name, 'windows')"
+        if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
@@ -686,7 +686,7 @@ jobs:
       MAVEN_OPTS: -Xmx1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -708,7 +708,7 @@ jobs:
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Gradle Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.java.os-name, 'windows')"
+        if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
@@ -735,7 +735,7 @@ jobs:
           cache: 'gradle'
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') }}
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.3
@@ -774,7 +774,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 60
@@ -803,7 +803,7 @@ jobs:
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Devtools Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.java.os-name, 'windows')"
+        if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
@@ -873,7 +873,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 40
@@ -902,7 +902,7 @@ jobs:
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Kubernetes Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.java.os-name, 'windows')"
+        if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
@@ -972,7 +972,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 90
@@ -1068,7 +1068,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn || matrix.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: ${{matrix.timeout}}
@@ -1147,7 +1147,7 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -1240,7 +1240,7 @@ jobs:
       MAVEN_OPTS: -Xmx1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    if: needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
@@ -1254,7 +1254,7 @@ jobs:
           echo "GE_TAGS=native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.os-name, 'windows')"
+        if: startsWith(matrix.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Reclaim Disk Space

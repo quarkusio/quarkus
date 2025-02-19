@@ -34,6 +34,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
     private volatile TlsCertificateUpdater reloader;
     private volatile Vertx vertx;
+    private volatile TlsConfig config;
 
     /**
      * Validate the certificate configuration.
@@ -51,6 +52,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
             RuntimeValue<Vertx> vertx,
             ShutdownContext shutdownContext) {
         this.vertx = vertx.getValue();
+        this.config = config;
         // Verify the default config
         if (config.defaultCertificateConfig().isPresent()) {
             verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx.getValue(), TlsConfig.DEFAULT_NAME);
@@ -176,8 +178,8 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     public Optional<TlsConfiguration> get(String name) {
         if (TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME.equals(name)) {
             final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME, k -> {
-                return verifyCertificateConfigInternal(new JavaNetSslTlsBucketConfig(), vertx,
-                        TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME);
+                final TrustStoreAndTrustOptions ts = JavaxNetSslTrustStoreProvider.getTrustStore(vertx);
+                return new VertxCertificateHolder(vertx, k, config.namedCertificateConfig().get(k), null, ts);
             });
             return Optional.ofNullable(result);
         }

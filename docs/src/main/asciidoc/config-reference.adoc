@@ -91,15 +91,37 @@ configuration name to its most likely dotted format. This works fine for fixed c
 names that contain dynamic segments. In this case, Quarkus is unable to determine if `DATASOURCE_NAME` should be
 converted to `datasource.name` or `datasource-name` (or any other special character separator).
 
-For this reason, such properties always require their dotted version name in another source (the value can be left
-empty) to disambiguate the Environment Variable name. It will provide additional information to perform a two-way
-conversion and match the property names together.
+For this reason, such properties always require their dotted version name in another source to disambiguate the
+Environment Variable name. It will provide additional information to perform a two-way conversion and match the
+property names together.
 
 [source,properties]
 ----
-# value can be left empty
-quarkus.datasource."datasource-name".jdbc.url=
+# value cannot be left empty
+quarkus.datasource."datasource-name".jdbc.url=value
 ----
+
+If the value is not known until runtime, the key name can still be provided using the `io.smallrye.config.WithKeys` annotation.
+
+[source,java]
+----
+@ConfigMapping(prefix = "com.example")
+public interface ExampleConfig {
+
+    @WithKeys(KeySupplier.class)
+    Map<String, String> deployments();
+
+
+    class KeySupplier implements Supplier<Iterable<String>> {
+        @Override
+        public Iterable<String> get() {
+            return List.of("fake-deployment-name-2", "fake-deployment-name-1");
+        }
+    }
+}
+----
+
+However, a values for these keys **must** then be provided at runtime. Configuration key disambiguation is not supported for optional properties.
 
 [source,bash]
 ----

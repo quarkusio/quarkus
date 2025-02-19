@@ -317,6 +317,7 @@ If you also need to customize your instance, you can do so using `@ManagedExecut
     ThreadContext sameContext;
 ----
 
+[[context-propagation-for-cdi]]
 == Context Propagation for CDI
 
 In terms of CDI, `@RequestScoped`, `@ApplicationScoped` and `@Singleton` beans get propagated and are available in other threads.

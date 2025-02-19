@@ -22,7 +22,7 @@
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>3.2.6</jandex.version>
+        <jandex.version>3.2.7</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.7</parsson.version>
@@ -211,7 +211,7 @@
         <java-buildpack-client.version>0.0.12</java-buildpack-client.version>
         <org-crac.version>0.1.3</org-crac.version>
         <sshd-common.version>2.12.1</sshd-common.version>
-        <mime4j.version>0.8.11</mime4j.version>
+        <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.1.0</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>
         <async-http-client.version>2.12.4</async-http-client.version>

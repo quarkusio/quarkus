@@ -33,8 +33,7 @@ public interface DataSourceRuntimeConfig {
     /**
      * The credentials provider name
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> credentialsProvider();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -45,6 +44,5 @@ public interface DataSourceRuntimeConfig {
      * <p>
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> credentialsProviderName();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
 }

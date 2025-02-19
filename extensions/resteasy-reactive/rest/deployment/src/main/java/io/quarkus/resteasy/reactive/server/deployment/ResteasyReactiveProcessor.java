@@ -520,6 +520,9 @@ public class ResteasyReactiveProcessor {
                 return false;
             };
 
+            final boolean filtersAccessResourceMethod = filtersAccessResourceMethod(
+                    resourceInterceptorsBuildItem.getResourceInterceptors());
+
             BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
                     function) -> bytecodeTransformerBuildItemBuildProducer
                             .produce(new BytecodeTransformerBuildItem(name, function));
@@ -611,12 +614,12 @@ public class ResteasyReactiveProcessor {
                                 }
                             }
 
-                            if (paramsRequireReflection ||
+                            if (filtersAccessResourceMethod ||
+                                    paramsRequireReflection ||
                                     MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     REST_MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     LEGACY_PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
-                                    filtersAccessResourceMethod(resourceInterceptorsBuildItem.getResourceInterceptors()) ||
                                     entry.additionalRegisterClassForReflectionCheck()) {
                                 minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
                             }

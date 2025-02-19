@@ -49,6 +49,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         SCOPES,
         REFRESH_TOKEN_TIME_SKEW,
         ACCESS_TOKEN_EXPIRES_IN,
+        ACCESS_TOKEN_EXPIRY_SKEW,
         ABSOLUTE_EXPIRES_IN,
         GRANT,
         GRANT_TYPE,
@@ -335,6 +336,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     @Override
     public Optional<Duration> accessTokenExpiresIn() {
         invocationsRecorder.put(ConfigMappingMethods.ACCESS_TOKEN_EXPIRES_IN, true);
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Duration> accessTokenExpirySkew() {
+        invocationsRecorder.put(ConfigMappingMethods.ACCESS_TOKEN_EXPIRY_SKEW, true);
         return Optional.empty();
     }
 

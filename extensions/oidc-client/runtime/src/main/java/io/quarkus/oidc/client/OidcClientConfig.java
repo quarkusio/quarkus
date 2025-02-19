@@ -26,6 +26,7 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
         scopes = mapping.scopes();
         refreshTokenTimeSkew = mapping.refreshTokenTimeSkew();
         accessTokenExpiresIn = mapping.accessTokenExpiresIn();
+        accessTokenExpirySkew = mapping.accessTokenExpirySkew();
         absoluteExpiresIn = mapping.absoluteExpiresIn();
         grant.addConfigMappingValues(mapping.grant());
         grantOptions = mapping.grantOptions();
@@ -65,6 +66,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     public Optional<Duration> accessTokenExpiresIn = Optional.empty();
 
     /**
+     * Access token expiry time skew that can be added to the calculated token expiry time.
+     */
+    public Optional<Duration> accessTokenExpirySkew = Optional.empty();
+
+    /**
      * If the access token 'expires_in' property should be checked as an absolute time value
      * as opposed to a duration relative to the current time.
      */
@@ -95,6 +101,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public Optional<Duration> accessTokenExpiresIn() {
         return accessTokenExpiresIn;
+    }
+
+    @Override
+    public Optional<Duration> accessTokenExpirySkew() {
+        return accessTokenExpirySkew;
     }
 
     @Override

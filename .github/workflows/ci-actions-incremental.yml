@@ -440,7 +440,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         run: |
           if [[ "${{ matrix.java.category }}" == *"Integration"* ]]; then
-            PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR -Dgib.logImpactedTo=gib-impacted.log
+            PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR -Dgib.logImpactedTo=gib-impacted.log -Dgib.disableSelectedProjectsHandling
           else
             PL=$JVM_TEST_NORMAL_TESTS_SELECTOR
           fi

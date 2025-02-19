@@ -89,7 +89,7 @@ public class ClientImpl implements Client {
     private static final Logger log = Logger.getLogger(ClientImpl.class);
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-    private static final int DEFAULT_CONNECTION_POOL_SIZE = 20;
+    private static final int DEFAULT_CONNECTION_POOL_SIZE = 50;
 
     final ClientContext clientContext;
     final boolean closeVertx;

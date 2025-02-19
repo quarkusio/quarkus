@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-test-locales-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.19.0</version>
     </parent>
     <artifactId>quarkus-integration-test-locales-some</artifactId>
     <name>Quarkus - Integration Tests - Locales - Some</name>

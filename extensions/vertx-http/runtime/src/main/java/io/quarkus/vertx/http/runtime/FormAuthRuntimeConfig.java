@@ -58,7 +58,7 @@ public interface FormAuthRuntimeConfig {
      *             if there is no landing page.
      */
     @WithDefault("true")
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "2.16")
     boolean redirectAfterLogin();
 
     /**

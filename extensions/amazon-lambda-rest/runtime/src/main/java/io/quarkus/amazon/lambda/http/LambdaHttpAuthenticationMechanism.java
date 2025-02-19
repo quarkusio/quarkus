@@ -18,7 +18,6 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
@@ -94,8 +93,4 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
         return credentialTypes;
     }
 
-    @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return null;
-    }
 }

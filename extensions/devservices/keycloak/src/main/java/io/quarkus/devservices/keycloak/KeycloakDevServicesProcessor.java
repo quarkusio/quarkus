@@ -881,7 +881,7 @@ public class KeycloakDevServicesProcessor {
         client.setImplicitFlowEnabled(true);
         client.setEnabled(true);
         client.setRedirectUris(List.of("*"));
-        client.setDefaultClientScopes(List.of("microprofile-jwt"));
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }

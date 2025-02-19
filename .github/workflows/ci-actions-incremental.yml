@@ -137,7 +137,7 @@ jobs:
     name: "Populate cache"
     needs: [ configure ]
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'quarkusio/quarkus' && github.event_name == 'push' }}
+    if: github.repository == 'quarkusio/quarkus' && github.event_name == 'push'
     steps:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -161,8 +161,6 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
           runs-on: false
       - name: Populate the cache
-        # only populate the cache if it's not a pull request as we only store the cache in this case
-        if: github.event_name != 'pull_request'
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
 
@@ -170,7 +168,7 @@ jobs:
     name: "Populate cache on RunsOn"
     needs: [ configure ]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
-    if: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'] }} && github.repository == 'quarkusio/quarkus' && github.event_name == 'push'
+    if: fromJson(needs.configure.outputs.config).runners['ubuntu-latest'] && github.repository == 'quarkusio/quarkus' && github.event_name == 'push'
     steps:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -194,8 +192,6 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
           runs-on: true
       - name: Populate the cache
-        # only populate the cache if it's not a pull request as we only store the cache in this case
-        if: github.event_name != 'pull_request'
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
 

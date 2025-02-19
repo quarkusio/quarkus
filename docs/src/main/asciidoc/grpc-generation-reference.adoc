@@ -188,16 +188,16 @@ To do this, define the following properties in the `<properties>` section:
 
 These properties configure the gRPC version and the `protoc` version.
 
-Then, add the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration to the `build` section:
+Then, add the `os-detector-maven-plugin` extension and the `protobuf-maven-plugin` configuration to the `build` section:
 
 [source,xml]
 ----
 <build>
     <extensions>
         <extension>
-            <groupId>kr.motd.maven</groupId>
-            <artifactId>os-maven-plugin</artifactId>
-            <version>${os-maven-plugin-version}</version>
+            <groupId>com.tisonkun.os</groupId>
+            <artifactId>os-detector-maven-plugin</artifactId>
+            <version>${os-detector-maven-plugin.version}</version>
         </extension>
     </extensions>
 
@@ -244,7 +244,7 @@ Then, add the `os-maven-plugin` extension and the `protobuf-maven-plugin` config
 ----
 
 <1> The `protobuf-maven-plugin` generates stub classes from your gRPC service definition (`proto` files).
-<2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the `os-maven-plugin` to target the executable compatible with the operating system.
+<2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the `os-detector-maven-plugin` to target the executable compatible with the operating system.
 
 Note: This configuration instructs the `protobuf-maven-plugin` to generate default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
 

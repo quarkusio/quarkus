@@ -441,11 +441,12 @@ jobs:
         run: |
           if [[ "${{ matrix.java.category }}" == *"Integration"* ]]; then
             PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR
+            WORKAROUND=-Dgib.buildAll=true
           else
             PL=$JVM_TEST_NORMAL_TESTS_SELECTOR
           fi
           # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }} $WORKAROUND
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp

@@ -440,14 +440,14 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         run: |
           if [[ "${{ matrix.java.category }}" == *"Integration"* ]]; then
-            PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR -Dgib.logImpactedTo=gib-impacted.log -Dgib.disableSelectedProjectsHandling
+            PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR
           else
             PL=$JVM_TEST_NORMAL_TESTS_SELECTOR
           fi
           # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean  -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean  -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}  -Dgib.logImpactedTo=gib-impacted.log -Dgib.disableSelectedProjectsHandling
           cat gib-impacted.log
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log -Dgib.disableSelectedProjectsHandling
 
       - name: Clean Gradle temp directory
         if: always()

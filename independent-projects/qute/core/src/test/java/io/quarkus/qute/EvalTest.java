@@ -40,4 +40,21 @@ public class EvalTest {
                 .withMessageContainingAll("Parser error in the evaluated template", "unterminated expression");
     }
 
+    @Test
+    public void testStrEvalNamespace() {
+        StrEvalNamespaceResolver eval = new StrEvalNamespaceResolver();
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
+                .addNamespaceResolver(eval)
+                .build();
+        eval.setEngine(engine);
+        assertEquals("Hello world!",
+                engine.parse("{str:eval('Hello {name}!')}").data("name", "world").render());
+        assertEquals("Hello world!",
+                engine.parse("{str:eval(t1)}").data("t1", "Hello {name}!", "name", "world").render());
+        assertEquals("&lt;p&gt;",
+                engine.parse("{str:eval('{foo}')}", Variant.forContentType(Variant.TEXT_HTML)).data("foo", "<p>").render());
+    }
+
 }

@@ -40,6 +40,7 @@ import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
+import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParserHook;
@@ -48,6 +49,7 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.StrEvalNamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
@@ -82,7 +84,7 @@ public class EngineProducer {
     private final List<String> suffixes;
     private final Set<String> templateRoots;
     private final Map<String, String> templateContents;
-    private final Pattern templatePathExclude;
+    private final List<Pattern> templatePathExcludes;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
     private final ArcContainer container;
@@ -97,10 +99,16 @@ public class EngineProducer {
         this.templateRoots = context.getTemplateRoots();
         this.templateContents = Map.copyOf(context.getTemplateContents());
         this.tags = context.getTags();
-        this.templatePathExclude = config.templatePathExclude();
         this.defaultLocale = locales.defaultLocale().orElse(Locale.getDefault());
         this.defaultCharset = config.defaultCharset();
         this.container = Arc.container();
+
+        ImmutableList.Builder<Pattern> excludesBuilder = ImmutableList.<Pattern> builder()
+                .add(config.templatePathExclude());
+        for (String p : context.getExcludePatterns()) {
+            excludesBuilder.add(Pattern.compile(p));
+        }
+        this.templatePathExcludes = excludesBuilder.build();
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
@@ -187,6 +195,9 @@ public class EngineProducer {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             builder.addNamespaceResolver(namespaceResolver);
         }
+        // str:eval
+        StrEvalNamespaceResolver strEvalNamespaceResolver = new StrEvalNamespaceResolver();
+        builder.addNamespaceResolver(strEvalNamespaceResolver);
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -261,6 +272,9 @@ public class EngineProducer {
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
+
+        // Init resolver for str:eval
+        strEvalNamespaceResolver.setEngine(engine);
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();
@@ -342,8 +356,17 @@ public class EngineProducer {
         }
     }
 
+    private boolean isExcluded(String path) {
+        for (Pattern p : templatePathExcludes) {
+            if (p.matcher(path).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Optional<TemplateLocation> locate(String path) {
-        if (templatePathExclude.matcher(path).matches()) {
+        if (isExcluded(path)) {
             return Optional.empty();
         }
         // First try to locate file-based templates
@@ -356,7 +379,7 @@ public class EngineProducer {
                 // Try path with suffixes
                 for (String suffix : suffixes) {
                     String pathWithSuffix = path + "." + suffix;
-                    if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                    if (isExcluded(pathWithSuffix)) {
                         continue;
                     }
                     templatePath = templateRoot + pathWithSuffix;
@@ -377,7 +400,7 @@ public class EngineProducer {
             // Try path with suffixes
             for (String suffix : suffixes) {
                 String pathWithSuffix = path + "." + suffix;
-                if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                if (isExcluded(pathWithSuffix)) {
                     continue;
                 }
                 content = templateContents.get(pathWithSuffix);

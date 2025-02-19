@@ -533,7 +533,18 @@ public class BootstrapMavenContext {
         DefaultSettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
         decrypt.setProxies(settings.getProxies());
         decrypt.setServers(settings.getServers());
+        // need to set `settings-security.xml` location extra, because it isn't discovered
+        // by BeanBag when constructing `DefaultSecDispatcher`
+        File settingsSecurityXml = null;
+        boolean setSettingsSecurity = !System.getProperties().containsKey(SETTINGS_SECURITY)
+                && (settingsSecurityXml = new File(getUserMavenConfigurationHome(), "settings-security.xml")).exists();
+        if (setSettingsSecurity) {
+            System.setProperty(SETTINGS_SECURITY, settingsSecurityXml.toString());
+        }
         SettingsDecryptionResult decrypted = getSettingsDecrypter().decrypt(decrypt);
+        if (setSettingsSecurity) {
+            System.clearProperty(SETTINGS_SECURITY);
+        }
 
         if (!decrypted.getProblems().isEmpty() && log.isDebugEnabled()) {
             for (SettingsProblem problem : decrypted.getProblems()) {

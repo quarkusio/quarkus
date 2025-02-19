@@ -46,6 +46,43 @@ public class StringTemplateExtensionsTest {
                 engine.parse("{foo + 'bar' + 1}")
                         .data("foo", "bar")
                         .render());
+        assertEquals("barbar1",
+                engine.parse("{str:concat(foo, 'bar', 1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder(foo).append('bar').append(1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder.append(foo).append('bar').append(1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder(foo) + 'bar' + 1}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder + foo + 'bar' + 1}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("Qute-is-cool",
+                engine.parse("{str:join('-', 'Qute', 'is', foo)}")
+                        .data("foo", "cool")
+                        .render());
+        assertEquals("Qute is cool!",
+                engine.parse("{str:Qute + ' is ' + foo + '!'}")
+                        .data("foo", "cool")
+                        .render());
+        assertEquals("Qute is cool!",
+                engine.parse("{str:['Qute'] + ' is ' + foo + '!'}")
+                        .data("foo", "cool")
+                        .render());
+        // note that this is not implemented as a template extension but a ns resolver
+        assertEquals("Hello fool!",
+                engine.parse("{str:eval('Hello {name}!')}")
+                        .data("name", "fool")
+                        .render());
     }
 
 }

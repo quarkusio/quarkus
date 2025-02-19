@@ -21,8 +21,7 @@ public interface DataSourceJdbcBuildTimeConfig {
     /**
      * The datasource driver class name
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> driver();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> driver();
 
     /**
      * Whether we want to use regular JDBC transactions, XA, or disable all transactional capabilities.

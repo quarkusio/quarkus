@@ -41,7 +41,7 @@
         <compiler.plugin.version>3.13.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
-        <jandex.version>3.2.6</jandex.version>
+        <jandex.version>3.2.7</jandex.version>
 
         <junit.jupiter.version>5.10.5</junit.jupiter.version>
         <junit.testkit.version>1.10.3</junit.testkit.version>

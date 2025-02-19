@@ -97,13 +97,21 @@ public @interface Message {
 
     /**
      * This value has higher priority over a message template specified in a localized file, and it's
-     * considered a good practice to specify it. In case the value is not provided and there is no
-     * match in the localized file too, the build fails.
+     * considered a good practice to specify it. In case the value is not provided, there is no
+     * match in the localized file and the {@link #defaultValue()} is not specified, the build fails.
      * <p>
      * There is a convenient way to localize enums. See the javadoc of {@link Message}.
      *
      * @return the message template
      */
     String value() default DEFAULT_VALUE;
+
+    /**
+     * The default template is only used if {@link #value()} is not specified and a message template is not defined in a
+     * localized file.
+     *
+     * @return the default message template
+     */
+    String defaultValue() default DEFAULT_VALUE;
 
 }

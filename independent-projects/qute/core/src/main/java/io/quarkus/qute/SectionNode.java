@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qute.ResolutionContextImpl.ChildResolutionContext;
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 
 /**
@@ -245,8 +246,14 @@ public class SectionNode implements TemplateNode {
 
         @Override
         public ResolutionContext newResolutionContext(Object data, Map<String, SectionBlock> extendingBlocks) {
-            return new ResolutionContextImpl(data, resolutionContext.getEvaluator(), extendingBlocks,
-                    resolutionContext::getAttribute);
+            if (resolutionContext instanceof ResolutionContextImpl rc) {
+                return new ResolutionContextImpl(data, resolutionContext.getEvaluator(), extendingBlocks,
+                        rc.getTemplateInstance());
+            } else if (resolutionContext instanceof ChildResolutionContext child) {
+                return new ResolutionContextImpl(data, resolutionContext.getEvaluator(), extendingBlocks,
+                        child.getTemplateInstance());
+            }
+            throw new IllegalStateException();
         }
 
         @Override

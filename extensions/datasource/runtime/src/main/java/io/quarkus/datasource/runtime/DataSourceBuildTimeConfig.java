@@ -14,8 +14,7 @@ public interface DataSourceBuildTimeConfig {
     /**
      * The kind of database we will connect to (e.g. h2, postgresql...).
      */
-    @WithConverter(DatabaseKindConverter.class)
-    Optional<String> dbKind();
+    Optional<@WithConverter(DatabaseKindConverter.class) String> dbKind();
 
     /**
      * The version of the database we will connect to (e.g. '10.0').
@@ -46,8 +45,7 @@ public interface DataSourceBuildTimeConfig {
      *
      * @asciidoclet
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> dbVersion();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> dbVersion();
 
     /**
      * Dev Services.

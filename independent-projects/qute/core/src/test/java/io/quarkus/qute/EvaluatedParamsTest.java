@@ -65,6 +65,11 @@ public class EvaluatedParamsTest {
             }
 
             @Override
+            public ResolutionContext resolutionContext() {
+                return null;
+            }
+
+            @Override
             public CompletionStage<Object> evaluate(Expression expression) {
                 if (expression.toOriginalString().equals("foo.bar")) {
                     return CompletedStage.of("foo");

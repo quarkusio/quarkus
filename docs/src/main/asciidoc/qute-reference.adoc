@@ -2367,12 +2367,34 @@ TIP: A list element can be accessed directly via an index: `{list.10}` or even `
 * `fmt` or `format`: Formats the string instance via `java.lang.String.format()`
 ** `{myStr.fmt("arg1","arg2")}`
 ** `{myStr.format(locale,arg1)}`
+
+* `+`: Infix notation for concatenation, works with `String` and `StringBuilder` base objects
+** `{item.name + '_' + mySuffix}`
+** `{name + 10}`
+
+* `str:['<value>']`: Returns the string value, e.g. to easily concatenate another string value
+** `{str:['/path/to/'] + fileName}`
+  
 * `str:fmt` or `str:format`: Formats the supplied string value via `java.lang.String.format()`
 ** `{str:format("Hello %s!",name)}`
 ** `{str:fmt(locale,'%tA',now)}`
-* `+`: Concatenation
-** `{item.name + '_' + mySuffix}`
-** `{name + 10}`
+** `{str:fmt('/path/to/%s', fileName)}`
+
+* `str:concat`: Concatenates the string representations of the specified arguments.
+** `{str:concat("Hello ",name,"!")}` yields `Hello Foo!` if `name` resolves to `Foo`
+** `{str:concat('/path/to/', fileName)}`
+
+* `str:join`: Joins the string representations of the specified arguments together with a delimiter. 
+** `{str:join('_','Qute','is','cool')}` yields `Qute_is_cool`
+
+* `str:builder`: Returns a new string builder. 
+** `{str:builder('Qute').append("is").append("cool!")}` yields `Qute is cool!`
+** `{str:builder('Qute') + "is" + whatisqute + "!"}` yields `Qute is cool!` if `whatisqute` resolves to `cool`
+
+* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>. 
+** `{str:eval('Hello {name}!')` yields `Hello lovely!` if `name` resolves to `lovely`
+** `{str:eval(myTemplate)}` yields `Hello lovely!` if `myTemplate` resolves to `Hello {name}!` and `name` resolves to `lovely`
+** `{str:eval('/path/to/{fileName}')}` yields `/path/to/file.txt` if `fileName` resolves to `file.txt`
 
 ===== Config
 
@@ -3082,8 +3104,10 @@ TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a conve
 
 ==== Message Templates
 
-Every method of a message bundle interface must define a message template. The value is normally defined by `io.quarkus.qute.i18n.Message#value()`,
-but for convenience, there is also an option to define the value in a localized file.
+Every method of a message bundle interface must define a message template. 
+The value is normally defined by `io.quarkus.qute.i18n.Message#value()`, but for convenience, there is also an option to define the value in a localized file.
+Message templates are validated during the build. 
+If a missing message template is detected, an exception is thrown and the build fails.
 
 .Example of the Message Bundle Interface without the value
 [source,java]
@@ -3114,8 +3138,23 @@ goodbye=Best regards, {name} <1>
 ----
 <1> The value is ignored as `io.quarkus.qute.i18n.Message#value()` is always prioritized.
 
-Message templates are validated during the build. If a missing message template is detected, an exception is thrown and build fails.
+It is also possible to define a _default message template_.
+The default template is only used if the `Message#value()` is not specified and no relevant message template is defined in a localized file.
 
+.Example of the Message Bundle Interface with a default value
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle
+public interface AppMessages {
+
+    @Message(defaultValue = "Goodbye {name}!") <1>
+    String goodbye(String name);
+}
+----
+<1> The annotation value is only used if no message template is defined in a localized file.
 
 === Configuration Reference
 

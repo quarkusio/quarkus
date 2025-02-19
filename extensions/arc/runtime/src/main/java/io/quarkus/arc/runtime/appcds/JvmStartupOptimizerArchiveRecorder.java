@@ -6,12 +6,12 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.init.InitializationTaskRecorder;
 
 @Recorder
-public class AppCDSRecorder {
+public class JvmStartupOptimizerArchiveRecorder {
 
     public void controlGenerationAndExit() {
         if (ApplicationLifecycleManager.isAppCDSGeneration()) {
             InitializationTaskRecorder.preventFurtherRecorderSteps(5,
-                    "Unable to properly shutdown Quarkus application when creating AppCDS",
+                    "Unable to properly shutdown Quarkus application when creating JVM startup archive",
                     PreventFurtherStepsException::new);
         }
     }

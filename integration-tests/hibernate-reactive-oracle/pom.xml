@@ -14,7 +14,7 @@
     <description>Hibernate Reactive related tests running with the Oracle database</description>
 
     <properties>
-        <reactive-oracle.url>vertx-reactive:oracle:thin:@localhost:1520/hibernate_orm_test</reactive-oracle.url>
+        <reactive-oracle.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracle.url>
     </properties>
 
     <dependencies>
@@ -186,36 +186,40 @@
                             <images>
                                 <image>
                                     <name>${oracle.image}</name>
-                                    <alias>oracle</alias>
                                     <run>
-                                        <env>
-                                            <ORACLE_DATABASE>hibernate_orm_test</ORACLE_DATABASE>
-                                            <ORACLE_PASSWORD>hibernate_orm_test</ORACLE_PASSWORD>
-                                            <APP_USER>hibernate_orm_test</APP_USER>
-                                            <APP_USER_PASSWORD>hibernate_orm_test</APP_USER_PASSWORD>
-                                        </env>
                                         <ports>
-                                            <port>1520:1521</port>
+                                            <port>1521:1521</port>
                                         </ports>
+                                        <env>
+                                            <ORACLE_PASSWORD>hibernate_orm_test</ORACLE_PASSWORD>
+                                        </env>
                                         <log>
-                                            <prefix>ORACLE:</prefix>
+                                            <prefix>Oracle Database: </prefix>
                                             <date>default</date>
-                                            <color>cyan</color>
+                                            <color>red</color>
                                         </log>
+                                        <wait>
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
+                                            <time>60000</time>
+                                            <!-- leverage the healthcheck in the image we use -->
+                                            <healthy>yes</healthy>
+                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
+                                            <!--<log>DATABASE IS READY TO USE!</log>-->
+                                        </wait>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all Oracle images currently running, not just those we just started.
+                            <!--Stops all Oracle DB images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
                         <executions>
                             <execution>
                                 <id>docker-start</id>
-                                <phase>pre-integration-test</phase>
+                                <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
-                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>
@@ -243,6 +247,61 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- In general, we want to avoid os- or arch-based guards on tests, but the Oracle
+         db would not start on M1 - see https://stackoverflow.com/questions/68605011/oracle-12c-docker-setup-on-apple-m1 -->
+        <profile>
+            <id>mac-m1</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>${oracle.image}</name>
+                                    <run>
+                                        <skip>true</skip>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Disabled pending fix of #33094 -->
+        <profile>
+            <id>podman</id>
+            <activation>
+                <property>
+                    <name>env.IS_PODMAN</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

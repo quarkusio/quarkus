@@ -17,10 +17,13 @@ import io.vertx.ext.web.RoutingContext;
 public class EagerSecurityInterceptorStorage {
 
     private final Map<MethodDescription, Consumer<RoutingContext>> methodToInterceptor;
+    private final Map<String, Consumer<RoutingContext>> classNameToInterceptor;
 
     EagerSecurityInterceptorStorage(
-            Map<MethodDescription, Consumer<RoutingContext>> methodToInterceptor) {
-        this.methodToInterceptor = Map.copyOf(methodToInterceptor);
+            Map<MethodDescription, Consumer<RoutingContext>> methodToInterceptor,
+            Map<String, Consumer<RoutingContext>> classNameToInterceptor) {
+        this.methodToInterceptor = methodToInterceptor.isEmpty() ? Map.of() : Map.copyOf(methodToInterceptor);
+        this.classNameToInterceptor = classNameToInterceptor.isEmpty() ? Map.of() : Map.copyOf(classNameToInterceptor);
     }
 
     /**
@@ -31,5 +34,16 @@ public class EagerSecurityInterceptorStorage {
      */
     public Consumer<RoutingContext> getInterceptor(MethodDescription endpoint) {
         return methodToInterceptor.get(endpoint);
+    }
+
+    /**
+     * This method should be invoked prior to any security check is run if proactive auth is disabled.
+     * Class-level security interceptors are applied when security is applied once per class, for example per HTTP upgrade.
+     *
+     * @param className with security annotation
+     * @return return class security interceptor
+     */
+    public Consumer<RoutingContext> getClassInterceptor(String className) {
+        return classNameToInterceptor.get(className);
     }
 }

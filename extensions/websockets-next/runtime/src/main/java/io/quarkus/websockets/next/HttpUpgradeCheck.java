@@ -43,12 +43,22 @@ public interface HttpUpgradeCheck {
         return true;
     }
 
-    /**
-     * @param httpRequest {@link HttpServerRequest}; the HTTP 1.X request employing the 'Upgrade' header
-     * @param securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
-     * @param endpointId {@link WebSocket#endpointId()}
-     */
-    record HttpUpgradeContext(HttpServerRequest httpRequest, Uni<SecurityIdentity> securityIdentity, String endpointId) {
+    interface HttpUpgradeContext {
+
+        /**
+         * @return httpRequest {@link HttpServerRequest}; the HTTP 1.X request employing the 'Upgrade' header
+         */
+        HttpServerRequest httpRequest();
+
+        /**
+         * @return securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
+         */
+        Uni<SecurityIdentity> securityIdentity();
+
+        /**
+         * @return {@link WebSocket#endpointId()}
+         */
+        String endpointId();
     }
 
     final class CheckResult {

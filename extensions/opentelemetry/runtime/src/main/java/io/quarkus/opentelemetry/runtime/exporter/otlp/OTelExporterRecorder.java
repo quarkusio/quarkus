@@ -262,7 +262,7 @@ public class OTelExporterRecorder {
 
     public Function<SyntheticCreationalContext<LogRecordExporter>, LogRecordExporter> createLogRecordExporter(
             OTelRuntimeConfig otelRuntimeConfig, OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
-        final URI baseUri = getMetricsUri(exporterRuntimeConfig);
+        final URI baseUri = getLogsUri(exporterRuntimeConfig);
 
         return new Function<>() {
             @Override
@@ -398,7 +398,15 @@ public class OTelExporterRecorder {
     }
 
     private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        String endpoint = resolveMetricEndpoint(exporterRuntimeConfig);
+        if (endpoint.isEmpty()) {
+            return null;
+        }
+        return ExporterBuilderUtil.validateEndpoint(endpoint);
+    }
+
+    private URI getLogsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveLogsEndpoint(exporterRuntimeConfig);
         if (endpoint.isEmpty()) {
             return null;
         }
@@ -416,6 +424,15 @@ public class OTelExporterRecorder {
 
     static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
         String endpoint = runtimeConfig.metrics().endpoint()
+                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    static String resolveLogsEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.logs().endpoint()
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)

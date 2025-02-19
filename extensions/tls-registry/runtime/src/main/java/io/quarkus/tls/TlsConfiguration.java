@@ -19,7 +19,7 @@ public interface TlsConfiguration {
         if (name.isPresent()) {
             Optional<TlsConfiguration> maybeConfiguration = registry.get(name.get());
             if (maybeConfiguration.isEmpty()) {
-                throw new IllegalStateException("Unable to find the TLS configuration for name " + name + ".");
+                throw new IllegalStateException("Unable to find the TLS configuration for name " + name.get() + ".");
             }
             return maybeConfiguration;
         }

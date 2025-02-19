@@ -40,6 +40,7 @@ import com.mongodb.AuthenticationMechanism;
 import com.mongodb.Block;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoConfigurationException;
 import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
 import com.mongodb.ReadConcern;
@@ -65,6 +66,8 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
@@ -83,6 +86,7 @@ public class MongoClients {
     private final MongodbConfig mongodbConfig;
     private final MongoClientSupport mongoClientSupport;
     private final Instance<CodecProvider> codecProviders;
+    private final TlsConfigurationRegistry tlsConfigurationRegistry;
     private final Instance<PropertyCodecProvider> propertyCodecProviders;
     private final Instance<CommandListener> commandListeners;
 
@@ -94,6 +98,7 @@ public class MongoClients {
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
+            TlsConfigurationRegistry tlsConfigurationRegistry,
             Instance<PropertyCodecProvider> propertyCodecProviders,
             Instance<CommandListener> commandListeners,
             Instance<ReactiveContextProvider> reactiveContextProviders,
@@ -102,6 +107,7 @@ public class MongoClients {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
+        this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         this.propertyCodecProviders = propertyCodecProviders;
         this.commandListeners = commandListeners;
         this.reactiveContextProviders = reactiveContextProviders;
@@ -206,17 +212,33 @@ public class MongoClients {
     }
 
     private static class SslSettingsBuilder implements Block<SslSettings.Builder> {
-        public SslSettingsBuilder(MongoClientConfig config, boolean disableSslSupport) {
-            this.config = config;
-            this.disableSslSupport = disableSslSupport;
-        }
+        private final TlsConfigurationRegistry tlsConfigurationRegistry;
 
         private final MongoClientConfig config;
         private final boolean disableSslSupport;
 
+        public SslSettingsBuilder(MongoClientConfig config,
+                TlsConfigurationRegistry tlsConfigurationRegistry,
+                boolean disableSslSupport) {
+            this.config = config;
+            this.disableSslSupport = disableSslSupport;
+            this.tlsConfigurationRegistry = tlsConfigurationRegistry;
+        }
+
         @Override
         public void apply(SslSettings.Builder builder) {
             builder.enabled(!disableSslSupport).invalidHostNameAllowed(config.tlsInsecure());
+            if (!disableSslSupport) {
+                Optional<TlsConfiguration> tlsConfig = TlsConfiguration.from(tlsConfigurationRegistry,
+                        config.tlsConfigurationName());
+                if (tlsConfig.isPresent()) {
+                    try {
+                        builder.context(tlsConfig.get().createSSLContext());
+                    } catch (Exception e) {
+                        throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry", e);
+                    }
+                }
+            }
         }
     }
 
@@ -323,8 +345,10 @@ public class MongoClients {
             settings.writeConcern(concern);
             settings.retryWrites(wc.retryWrites());
         }
-        if (config.tls()) {
-            settings.applyToSslSettings(new SslSettingsBuilder(config, mongoClientSupport.isDisableSslSupport()));
+        if (config.tls() || config.tlsConfigurationName().isPresent()) {
+            settings.applyToSslSettings(new SslSettingsBuilder(config,
+                    tlsConfigurationRegistry,
+                    mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
         settings.applyToConnectionPoolSettings(

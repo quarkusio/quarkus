@@ -187,10 +187,23 @@ by modifying the compiler plugin configuration in the project's `pom.xml` file a
 
 With Gradle, this is done by adding the following line to the `build.gradle` file:
 
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy]
 ----
 annotationProcessor "com.datastax.oss.quarkus:cassandra-quarkus-mapper-processor:${cassandra-quarkus.version}"
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+annotationProcessor("com.datastax.oss.quarkus:cassandra-quarkus-mapper-processor:${cassandra-quarkus.version}")
+----
+****
 
 IMPORTANT: Verify that you are enabling the right annotation processor! The Cassandra driver ships
 with its Object Mapper annotation processor, called `java-driver-mapper-processor`. But the

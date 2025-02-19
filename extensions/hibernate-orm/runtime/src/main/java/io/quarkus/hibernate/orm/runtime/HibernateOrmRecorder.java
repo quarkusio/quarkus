@@ -33,6 +33,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -96,8 +97,18 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config) {
-        return () -> new JPAConfig(config);
+    public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config, ShutdownContext shutdownContext) {
+        return () -> {
+            JPAConfig jpaConfig = new JPAConfig(config);
+            shutdownContext.addShutdownTask(
+                    ShutdownContext.DEFAULT_PRIORITY + 1, new Runnable() {
+                        @Override
+                        public void run() {
+                            jpaConfig.shutdown();
+                        }
+                    });
+            return jpaConfig;
+        };
     }
 
     public void startAllPersistenceUnits(BeanContainer beanContainer) {

@@ -14,9 +14,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 import jakarta.persistence.AttributeConverter;
 import jakarta.transaction.TransactionManager;
@@ -40,7 +38,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.ClassVisitor;
 
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -65,6 +62,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -158,6 +156,7 @@ public class HibernateOrmCdiProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void generateJpaConfigBean(HibernateOrmRecorder recorder,
             Capabilities capabilities,
+            ShutdownContextBuildItem shutdownContextBuildItem,
             HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
@@ -166,32 +165,15 @@ public class HibernateOrmCdiProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig))
-                .destroyer(JPAConfig.Destroyer.class);
-
-        // Add a synthetic dependency from JPAConfig to any datasource/pool,
-        // so that JPAConfig is destroyed before the datasource/pool.
-        // The alternative would be adding an application destruction observer
-        // (@Observes @BeforeDestroyed(ApplicationScoped.class)) to JPAConfig,
-        // but that would force initialization of JPAConfig upon application shutdown,
-        // which may cause cascading failures if the shutdown happened before JPAConfig was initialized.
-        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple("io.vertx.sqlclient.Pool")) }, null),
-                    AnnotationInstance.builder(Any.class).build());
-        } else {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple(AgroalDataSource.class)) }, null),
-                    AnnotationInstance.builder(Any.class).build());
-        }
+                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig, shutdownContextBuildItem));
 
         syntheticBeanBuildItemBuildProducer.produce(configurator.done());
     }
 
     // These beans must be initialized at runtime because their initialization
     // depends on runtime configuration (to activate/deactivate a persistence unit)
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     void generateDataSourceBeans(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType,

@@ -72,12 +72,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * // TODO we need to close this when we're done
      * //If we use the parent loader, does that stop the quarkus classloaders getting a crack at some classes?
      */
-    private final ClassLoader canaryLoader;
+    private final URLClassLoader canaryLoader;
     // TODO better mechanism; every QuarkusMainTest  gets its own application
     private int mainC = 0;
     private Map<String, String> profiles;
     private String classesPath;
-    private ClassLoader otherLoader;
+    private URLClassLoader otherLoader;
     private Set<String> quarkusTestClasses;
     private Set<String> quarkusMainTestClasses;
     private boolean isAuxiliaryApplication;
@@ -611,6 +611,18 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         for (CuratedApplication curatedApplication : curatedApplications.values()) {
             curatedApplication.close();
         }
+        try {
+            if (otherLoader != null) {
+                otherLoader.close();
+            }
+            if (canaryLoader != null) {
+                canaryLoader.close();
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     public void setProfiles(Map<String, String> profiles) {

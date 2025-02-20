@@ -20,14 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
-import jakarta.interceptor.Interceptor;
-
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.All;
@@ -39,6 +31,7 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.FragmentNamespaceResolver;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
@@ -65,6 +58,13 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor;
 
 @Startup(Interceptor.Priority.PLATFORM_BEFORE)
 @Singleton
@@ -196,8 +196,7 @@ public class EngineProducer {
             builder.addNamespaceResolver(namespaceResolver);
         }
         // str:eval
-        StrEvalNamespaceResolver strEvalNamespaceResolver = new StrEvalNamespaceResolver();
-        builder.addNamespaceResolver(strEvalNamespaceResolver);
+        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -272,9 +271,6 @@ public class EngineProducer {
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
-
-        // Init resolver for str:eval
-        strEvalNamespaceResolver.setEngine(engine);
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();

@@ -42,13 +42,11 @@ public class EvalTest {
 
     @Test
     public void testStrEvalNamespace() {
-        StrEvalNamespaceResolver eval = new StrEvalNamespaceResolver();
         Engine engine = Engine.builder()
                 .addDefaults()
                 .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
-                .addNamespaceResolver(eval)
+                .addNamespaceResolver(new StrEvalNamespaceResolver())
                 .build();
-        eval.setEngine(engine);
         assertEquals("Hello world!",
                 engine.parse("{str:eval('Hello {name}!')}").data("name", "world").render());
         assertEquals("Hello world!",

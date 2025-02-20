@@ -10,8 +10,13 @@ include::_attributes.adoc[]
 :topics: observability,grafana,lgtm,otlp,opentelemetry,devservices,micrometer
 :extensions: io.quarkus:quarkus-observability-devservices
 
-This Dev Service provides the https://github.com/grafana/docker-otel-lgtm[Grafana OTel-LGTM], an `all-in-one` Docker image containing an https://opentelemetry.io/docs/collector[OpenTelemetry Collector] receiving and then forwarding telemetry data to https://prometheus.io/[Prometheus] (metrics), https://github.com/grafana/tempo[Tempo] (traces) and https://github.com/grafana/loki[Loki] (logs).
-This data can then be visualized by https://github.com/grafana/grafana[Grafana].
+This Dev Service provides the https://github.com/grafana/docker-otel-lgtm[Grafana OTel-LGTM], an `all-in-one` Docker image containing an https://opentelemetry.io/docs/collector[OpenTelemetry Collector] receiving and then forwarding telemetry data to Prometheus (metrics), Tempo (traces) and Loki (logs).
+This data can then be visualized by https://github.com/grafana/grafana[Grafana]. The LGTM abbreviation stands for:
+
+- L -> https://github.com/grafana/loki[Loki] (logs)
+- G -> https://github.com/grafana/grafana[Grafana] (metrics visualization)
+- T -> https://github.com/grafana/tempo[Tempo] (traces)
+- M -> https://grafana.com/oss/mimir[Mimir] (long term storage for Prometheus)
 
 == Configuring your project
 

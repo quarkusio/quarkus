@@ -36,7 +36,21 @@ public class HibernateReactiveRecorder {
         return new Function<SyntheticCreationalContext<Mutiny.SessionFactory>, Mutiny.SessionFactory>() {
             @Override
             public Mutiny.SessionFactory apply(SyntheticCreationalContext<Mutiny.SessionFactory> context) {
-                SessionFactory sessionFactory = context.getInjectedReference(JPAConfig.class)
+                JPAConfig jpaConfig = context.getInjectedReference(JPAConfig.class);
+
+                // This logic is already in JPAConfig, but we want to specialize the error message
+                // If we don't do so the error message will say
+                // "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit"
+                // See io/quarkus/hibernate/orm/runtime/JPAConfig.getEntityManagerFactory:96
+                if (jpaConfig.getDeactivatedPersistenceUnitNames()
+                        .contains(HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME)) {
+                    throw new IllegalStateException(
+                            "Cannot retrieve the Mutiny.SessionFactory for persistence unit "
+                                    + HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME
+                                    + ": Hibernate Reactive was deactivated through configuration properties");
+                }
+
+                SessionFactory sessionFactory = jpaConfig
                         .getEntityManagerFactory(persistenceUnitName)
                         .unwrap(SessionFactory.class);
 

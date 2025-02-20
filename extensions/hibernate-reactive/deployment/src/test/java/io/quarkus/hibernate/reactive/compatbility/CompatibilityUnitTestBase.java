@@ -8,9 +8,11 @@ import java.util.Optional;
 import jakarta.persistence.EntityManager;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.test.vertx.UniAsserter;
 
@@ -59,8 +61,9 @@ public abstract class CompatibilityUnitTestBase {
     }
 
     public void testBlockingDisabled() {
-        SessionFactory hibernateSessionFactory = Arc.container().instance(SessionFactory.class).get();
+        SessionFactory sessionFactory = Arc.container().instance(SessionFactory.class).get();
 
-        assertThat(hibernateSessionFactory).isNull();
+        var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        assertThat(DialectVersions.toString(version)).isEqualTo("12.0.0");
     }
 }

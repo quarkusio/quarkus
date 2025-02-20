@@ -231,8 +231,14 @@ public class HibernateOrmCdiProcessor {
                     SESSION_FACTORY_EXPOSED_TYPES,
                     true);
 
-            // Reactive beans are registered inside HibernateReactiveCdiProcessor
-            if (!isReactive) {
+            // A few cases here:
+            // - We only have a PersistenceUnitDescriptorBuildItem, and it's blocking, we create the SessionFactory
+            // - We only have a PersistenceUnitDescriptorBuildItem, and it's reactive, we create the Blocking SessionFactory anyway, as it might be used
+            //   to gather metadata such as the configuration from it see io/quarkus/hibernate/reactive/compatbility/CompatibilityUnitTestBase.testBlockingDisabled
+            //   The Mutiny.SessionFactory API doesn't expose every method the Hibernate SessionFactory does, hence this hack
+            // - We have multiple PersistenceUnitDescriptorBuildItem, (Reactive + Hibernate scenario), we want to make sure this is created only once
+            //   with the correct info from the blocking PersistenceUnitDescriptorBuildItem
+            if (persistenceUnitDescriptors.size() == 1 || !isReactive && persistenceUnitDescriptors.size() > 1) {
                 syntheticBeanBuildItemBuildProducer
                         .produce(persistenceUnitBean
                                 .createWith(recorder.sessionFactorySupplier(persistenceUnitName))

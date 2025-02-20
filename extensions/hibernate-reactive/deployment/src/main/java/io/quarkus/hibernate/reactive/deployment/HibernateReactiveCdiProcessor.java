@@ -9,7 +9,6 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 
-import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;

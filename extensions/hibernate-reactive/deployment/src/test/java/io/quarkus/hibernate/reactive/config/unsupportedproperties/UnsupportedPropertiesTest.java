@@ -3,11 +3,11 @@ package io.quarkus.hibernate.reactive.config.unsupportedproperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
+import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -15,15 +15,13 @@ import jakarta.persistence.Id;
 import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class UnsupportedPropertiesTest {
@@ -35,9 +33,6 @@ public class UnsupportedPropertiesTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(SpyingIdentifierGeneratorEntity.class)
                     .addClass(SettingsSpyingIdentifierGenerator.class))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.jdbc.statement-batch-size", "10")
             // This should be taken into account by Hibernate ORM
@@ -84,6 +79,12 @@ public class UnsupportedPropertiesTest {
                                 "The custom value will be ignored"));
             });
 
+    @Inject
+    SessionFactory ormSessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
+
+    @Inject
+    Mutiny.SessionFactory sessionFactory;
+
     @Test
     public void testPropertiesPropagatedToStaticInit() {
         assertThat(SettingsSpyingIdentifierGenerator.collectedSettings).hasSize(1);
@@ -95,8 +96,6 @@ public class UnsupportedPropertiesTest {
 
     @Test
     public void testPropertiesPropagatedToRuntimeInit() {
-        SessionFactory ormSessionFactory = Arc.container().instance(SessionFactory.class).get();
-
         assertThat(ormSessionFactory.getProperties())
                 .contains(entry("hibernate.order_inserts", "true"),
                         // Also test a property that Quarkus cannot possibly know about

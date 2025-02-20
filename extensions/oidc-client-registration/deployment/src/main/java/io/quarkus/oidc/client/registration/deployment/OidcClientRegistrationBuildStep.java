@@ -17,7 +17,7 @@ import io.quarkus.oidc.client.registration.OidcClientRegistration;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
 import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationRecorder;
 import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OidcClientRegistrationBuildStep.IsEnabled.class)

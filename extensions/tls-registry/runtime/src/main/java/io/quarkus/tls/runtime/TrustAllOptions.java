@@ -1,4 +1,4 @@
-package io.quarkus.tls.runtime.keystores;
+package io.quarkus.tls.runtime;
 
 import java.security.KeyStore;
 import java.security.Provider;

@@ -24,7 +24,6 @@ import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.tls.runtime.keystores.JKSKeyStores;
 import io.quarkus.tls.runtime.keystores.P12KeyStores;
 import io.quarkus.tls.runtime.keystores.PemKeyStores;
-import io.quarkus.tls.runtime.keystores.TrustAllOptions;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 

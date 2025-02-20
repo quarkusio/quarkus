@@ -1,4 +1,4 @@
-package io.quarkus.tls;
+package io.quarkus.tls.deployment;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;

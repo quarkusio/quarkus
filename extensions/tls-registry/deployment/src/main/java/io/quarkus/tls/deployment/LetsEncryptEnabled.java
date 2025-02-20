@@ -1,4 +1,4 @@
-package io.quarkus.tls;
+package io.quarkus.tls.deployment;
 
 import java.util.function.BooleanSupplier;
 

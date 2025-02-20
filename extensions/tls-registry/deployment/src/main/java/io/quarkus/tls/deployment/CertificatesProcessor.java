@@ -1,4 +1,4 @@
-package io.quarkus.tls;
+package io.quarkus.tls.deployment;
 
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +20,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.tls.runtime.CertificateRecorder;
 import io.quarkus.tls.runtime.KeyStoreProvider;
 import io.quarkus.tls.runtime.LetsEncryptRecorder;

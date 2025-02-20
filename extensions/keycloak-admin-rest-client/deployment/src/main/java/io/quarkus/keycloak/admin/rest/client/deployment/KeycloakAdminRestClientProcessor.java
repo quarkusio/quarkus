@@ -25,7 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.admin.rest.client.runtime.KeycloakAdminRestClientProvider;
 import io.quarkus.keycloak.admin.rest.client.runtime.KeycloakAdminRestClientRecorder;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 
 public class KeycloakAdminRestClientProcessor {
 

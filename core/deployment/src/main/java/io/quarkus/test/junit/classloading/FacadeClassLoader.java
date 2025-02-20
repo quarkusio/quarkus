@@ -422,6 +422,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                                 .loadClass(profileName);
                     }
                 }
+                final String resourceKey = getResourceKey(requiredTestClass, profile);
+
+                // The resource key might be null, and that's ok
+                key = profileKey + resourceKey;
                 // TODO only do this and the next bit if the keymaker classloader is not suitable
                 startupAction = runtimeClassLoaders.get(key);
                 System.out.println("HOLLY seen this key before " + startupAction);
@@ -432,10 +436,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     // Making a classloader uses the profile key to look up a curated application
                     startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
                 }
-                final String resourceKey = getResourceKey(requiredTestClass, profile);
 
-                // The resource key might be null, and that's ok
-                key = profileKey + resourceKey;
             }
 
             System.out.println("HOLLY With resources, key is " + key);

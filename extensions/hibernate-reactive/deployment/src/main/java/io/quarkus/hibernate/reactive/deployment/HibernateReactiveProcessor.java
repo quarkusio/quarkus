@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
@@ -109,6 +110,7 @@ public final class HibernateReactiveProcessor {
     public void buildReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig, CombinedIndexBuildItem index,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
@@ -144,14 +146,6 @@ public final class HibernateReactiveProcessor {
         DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
                 .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
-        // TODO This is currently using the reactive flag (which is expected but somehow not mapped)
-        // We could check the reactive url instead?
-        boolean reactive = defaultDataSourceBuildTimeConfig.reactive();
-        if (!reactive) {
-            LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
-            return;
-        }
-
         Optional<String> explicitDialect = hibernateOrmConfig.defaultPersistenceUnit().dialect().dialect();
         Optional<String> explicitDbMinVersion = defaultDataSourceBuildTimeConfig.dbVersion();
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(
@@ -166,29 +160,38 @@ public final class HibernateReactiveProcessor {
                     "The default datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
                     Set.of("quarkus.datasource.db-kind", "quarkus.datasource.username",
                             "quarkus.datasource.password"));
-        } else {
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
-            QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
-                    dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
-                    launchMode.getLaunchMode(),
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
-
-            //Some constant arguments to the following method:
-            // - this is Reactive
-            // - we don't support starting Hibernate Reactive from a persistence.xml
-            // - we don't support Hibernate Envers with Hibernate Reactive
-            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
-                    new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                            dbKindOptional, Optional.empty(),
-                            persistenceUnitConfig.dialect().dialect(),
-                            io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
-                            hibernateOrmConfig.database().ormCompatibilityVersion(),
-                            persistenceUnitConfig.unsupportedProperties()),
-                    null,
-                    jpaModel.getXmlMappings(reactivePU.getName()),
-                    false, capabilities));
         }
+
+        // We only support Hibernate Reactive with a reactive data source, otherwise we don't configure the PU
+        DataSourcesReactiveBuildTimeConfig.DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveBuildTimeConfig =
+                dataSourcesReactiveBuildTimeConfig.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+
+        if (dataSourceReactiveBuildTimeConfig == null || !dataSourceReactiveBuildTimeConfig.reactive().enabled()) {
+            LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
+            return;
+        }
+            
+        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
+        QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
+                hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
+                dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
+                launchMode.getLaunchMode(),
+                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
+
+        //Some constant arguments to the following method:
+        // - this is Reactive
+        // - we don't support starting Hibernate Reactive from a persistence.xml
+        // - we don't support Hibernate Envers with Hibernate Reactive
+        persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
+                new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        dbKindOptional, Optional.empty(),
+                        persistenceUnitConfig.dialect().dialect(),
+                        io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
+                        hibernateOrmConfig.database().ormCompatibilityVersion(),
+                        persistenceUnitConfig.unsupportedProperties()),
+                null,
+                jpaModel.getXmlMappings(reactivePU.getName()),
+                false, capabilities));
     }
 
     @BuildStep

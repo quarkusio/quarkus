@@ -8,10 +8,6 @@ import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.builder.Version;
-import io.quarkus.maven.dependency.Dependency;
-import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -19,13 +15,15 @@ import jakarta.persistence.Id;
 import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class UnsupportedPropertiesTest {
@@ -85,8 +83,6 @@ public class UnsupportedPropertiesTest {
                                 "Quarkus already set that property independently",
                                 "The custom value will be ignored"));
             });
-
-
 
     @Test
     public void testPropertiesPropagatedToStaticInit() {

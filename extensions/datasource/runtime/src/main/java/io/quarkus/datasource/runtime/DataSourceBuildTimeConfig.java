@@ -64,10 +64,4 @@ public interface DataSourceBuildTimeConfig {
     @WithDefault("false")
     boolean healthExclude();
 
-    /**
-     * Whether this particular data source is used in a reactive scenario or not
-     */
-    @WithDefault("false")
-    boolean reactive();
-
 }

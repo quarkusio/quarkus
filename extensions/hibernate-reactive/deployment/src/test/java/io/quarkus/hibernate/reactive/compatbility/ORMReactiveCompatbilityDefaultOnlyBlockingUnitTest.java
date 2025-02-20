@@ -20,7 +20,7 @@ public class ORMReactiveCompatbilityDefaultOnlyBlockingUnitTest extends Compatib
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-                    ))
+            ))
             .overrideConfigKey("quarkus.hibernate-orm.database.generation", DATABASE_GENERATION)
             .overrideConfigKey("quarkus.datasource.reactive", "false")
             .overrideConfigKey("quarkus.datasource.jdbc.url", POSTGRES_BLOCKING_URL)

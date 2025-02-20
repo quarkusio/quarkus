@@ -21,7 +21,7 @@ public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUni
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-                    ))
+            ))
             .overrideConfigKey("quarkus.hibernate-orm.database.generation", DATABASE_GENERATION)
             .overrideConfigKey("quarkus.datasource.reactive", "true")
             .overrideConfigKey("quarkus.datasource.reactive.url", POSTGRES_REACTIVE_URL)

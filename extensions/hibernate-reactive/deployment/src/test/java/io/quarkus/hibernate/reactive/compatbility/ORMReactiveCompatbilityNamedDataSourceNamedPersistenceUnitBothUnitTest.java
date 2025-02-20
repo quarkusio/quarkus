@@ -3,15 +3,16 @@ package io.quarkus.hibernate.reactive.compatbility;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
+
 import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
@@ -28,7 +29,7 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-                    ))
+            ))
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".database.generation", DATABASE_GENERATION)
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".datasource", "named-datasource")
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".packages", "io.quarkus.hibernate.reactive.entities")
@@ -37,20 +38,18 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".jdbc.url", POSTGRES_BLOCKING_URL)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD);
+            .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD)
+            .assertException(t -> assertThat(t)
+                    .isInstanceOf(ConfigurationException.class)
+                    .hasMessageContainingAll(
+                            // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
+                            // so it will just notice the default datasource is not configured!
+                            "The default datasource must be configured for Hibernate Reactive",
+                            "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
-    @RunOnVertxContext
-    public void testReactive() {
-        testReactiveDisabled(); // Reactive supports only the default persistence unit see https://quarkus.io/guides/hibernate-reactive#hr-limitations
-    }
-
-    @Inject
-    @PersistenceUnit("named-pu")
-    SessionFactory hibernateSessionFactory;
-
-    @Test
-    public void testBlocking() {
-        testBlockingWorks(Optional.of(hibernateSessionFactory));
+    public void test() {
+        // deployment exception should happen first
+        Assertions.fail();
     }
 }

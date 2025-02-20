@@ -248,6 +248,10 @@ The files are reloaded from the same location as they were initially loaded from
 If there is no content change, the reloading is a no-op.
 It the reloading fails, the server will continue to use the previous certificates.
 
+=== Preventing client renegotiation
+
+See xref:./tls-registry-reference.adoc#client-renegotiation[Preventing client renegotiation] for more information.
+
 == Additional HTTP Headers
 
 To enable HTTP headers to be sent on every response, add the following properties:

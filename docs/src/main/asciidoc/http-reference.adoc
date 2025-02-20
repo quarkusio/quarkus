@@ -40,8 +40,7 @@ Look at the xref:web-dependency-locator.adoc[Web dependency locator] guide for d
 
 Static resources can be served from a local directory by installing an additional route in the Vert.x router.
 
-For instance, to serve resources from the `static/` directory relative to the current path at http://localhost:8080/static/,
-you can install the following route:
+For instance, to serve resources from the `static/` directory relative to the current path at http://localhost:8080/static/, you can install the following route:
 
 [source,java]
 ----

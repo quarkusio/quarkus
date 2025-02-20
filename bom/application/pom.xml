@@ -157,7 +157,7 @@
         <dekorate.version>4.1.4</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
-        <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <flyway.version>11.3.4</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->

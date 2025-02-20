@@ -1,22 +1,19 @@
 package io.quarkus.websockets.next.runtime.telemetry;
 
-import io.micrometer.core.instrument.Counter;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
+import io.quarkus.websockets.next.runtime.spi.telemetry.WebSocketMetricsInterceptorProducer.WebSocketMetricsInterceptor;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 
 final class MetricsForwardingWebSocketEndpoint extends ForwardingWebSocketEndpoint {
 
-    private final Counter onMessageReceivedCounter;
-    private final Counter onMessageReceivedBytesCounter;
-    private final Counter onConnectionClosedCounter;
+    private final WebSocketMetricsInterceptor interceptor;
+    private final String path;
 
-    MetricsForwardingWebSocketEndpoint(WebSocketEndpoint delegate, Counter onMessageReceivedCounter,
-            Counter onMessageReceivedBytesCounter, Counter onConnectionClosedCounter) {
+    MetricsForwardingWebSocketEndpoint(WebSocketEndpoint delegate, WebSocketMetricsInterceptor interceptor, String path) {
         super(delegate);
-        this.onMessageReceivedCounter = onMessageReceivedCounter;
-        this.onMessageReceivedBytesCounter = onMessageReceivedBytesCounter;
-        this.onConnectionClosedCounter = onConnectionClosedCounter;
+        this.interceptor = interceptor;
+        this.path = path;
     }
 
     @Override
@@ -45,23 +42,19 @@ final class MetricsForwardingWebSocketEndpoint extends ForwardingWebSocketEndpoi
 
     @Override
     public Future<Void> onClose() {
-        onConnectionClosedCounter.increment();
+        interceptor.onConnectionClosed(path);
         return delegate.onClose();
     }
 
     private void addMetricsIfMessageIsString(Object message) {
         if (message instanceof String stringMessage) {
-            onMessageReceivedCounter.increment();
-            double bytesNum = stringMessage.getBytes().length;
-            onMessageReceivedBytesCounter.increment(bytesNum);
+            interceptor.onMessageReceived(stringMessage.getBytes(), path);
         }
     }
 
     private void addMetricsIfMessageIsBuffer(Object message) {
         if (message instanceof Buffer bufferMessage) {
-            onMessageReceivedCounter.increment();
-            double bytesNum = bufferMessage.getBytes().length;
-            onMessageReceivedBytesCounter.increment(bytesNum);
+            interceptor.onMessageReceived(bufferMessage.getBytes(), path);
         }
     }
 }

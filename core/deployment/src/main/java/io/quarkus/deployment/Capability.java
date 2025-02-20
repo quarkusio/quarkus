@@ -134,6 +134,7 @@ public interface Capability {
     String VERTX_CORE = VERTX + ".core";
     String VERTX_HTTP = VERTX + ".http";
     String VERTX_WEBSOCKETS = VERTX + ".websockets";
+    String VERTX_WEBSOCKETS_NEXT = VERTX + ".websockets-next";
 
     String APICURIO_REGISTRY = QUARKUS_PREFIX + ".apicurio.registry";
     String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";

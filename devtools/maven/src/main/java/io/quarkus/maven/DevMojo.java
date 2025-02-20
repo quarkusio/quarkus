@@ -430,6 +430,37 @@ public class DevMojo extends AbstractMojo {
     ExtensionDevModeJvmOptionFilter extensionJvmOptions;
 
     /**
+     * Selects given test(s) for continuous testing. This is an alternative to {@code quarkus.test.include-pattern}
+     * and {@code quarkus.test.exclude-pattern}; if set, the {@code quarkus.test.[include|exclude]-pattern} configuration
+     * is ignored.
+     * <p>
+     * The format of this configuration property is the same as the Maven Surefire {@code -Dtest=...}
+     * <a href="https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#test">format</a>.
+     * Specifically: it is a comma ({@code ,}) separated list of globs of class file paths and/or
+     * method names. Each glob can potentially be prefixed with an exclamation mark ({@code !}), which makes
+     * it an exclusion filter instead of an inclusion filter. Exclusions have higher priority than inclusions.
+     * The class file path glob is separated from the method name glob by the hash sign ({@code #}) and multiple
+     * method name globs may be present, separated by the plus sign ({@code +}).
+     * <p>
+     * For example:
+     * <ul>
+     * <li>{@code Basic*}: all classes starting with {@code Basic}</li>
+     * <li>{@code ???Test}: all classes named with 3 arbitrary characters followed by {@code Test}</li>
+     * <li>{@code !Unstable*}: all classes except classes starting with {@code Unstable}</li>
+     * <li>{@code pkg/**}{@code /Ci*leTest}: all classes in the package {@code pkg} and subpackages, starting
+     * with {@code Ci} and ending with {@code leTest}</li>
+     * <li>{@code *Test#test*One+testTwo?????}: all classes ending with {@code Test}, and in them, only methods
+     * starting with {@code test} and ending with {@code One}, or starting with {@code testTwo} and followed
+     * by 5 arbitrary characters</li>
+     * <li>{@code #fast*+slowTest}: all classes, and in them, only methods starting with {@code fast} or methods
+     * named {@code slowTest}</li>
+     * </ul>
+     * Note that the syntax {@code %regex[...]} and {@code %ant[...]} is <em>NOT</em> supported.
+     */
+    @Parameter(property = "test")
+    String test;
+
+    /**
      * console attributes, used to restore the console state
      */
     private Attributes attributes;
@@ -1312,6 +1343,9 @@ public class DevMojo extends AbstractMojo {
         setJvmArgs(builder);
         if (windowsColorSupport) {
             builder.jvmArgs("-Dio.quarkus.force-color-support=true");
+        }
+        if (test != null) {
+            builder.jvmArgs("-Dquarkus-internal.test.specific-selection=maven:" + test);
         }
 
         if (openJavaLang) {

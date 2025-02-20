@@ -56,6 +56,7 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
+                        .setSpecificSelection(testSupport.specificSelection)
                         .setIncludeEngines(testSupport.includeEngines)
                         .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)

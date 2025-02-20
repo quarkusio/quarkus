@@ -103,6 +103,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     private final Property<Boolean> openJavaLang;
     private final ListProperty<String> modules;
     private final ListProperty<String> compilerArgs;
+    private final ListProperty<String> tests;
 
     private final Set<File> filesIncludedInClasspath = new HashSet<>();
 
@@ -139,6 +140,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         openJavaLang = objectFactory.property(Boolean.class);
         openJavaLang.convention(false);
         modules = objectFactory.listProperty(String.class);
+        tests = objectFactory.listProperty(String.class);
     }
 
     /**
@@ -311,6 +313,17 @@ public abstract class QuarkusDev extends QuarkusTask {
         return this;
     }
 
+    @Input
+    public ListProperty<String> getTests() {
+        return tests;
+    }
+
+    @SuppressWarnings("unused")
+    @Option(description = "Sets test class or method name to be included (for continuous testing), '*' is supported.", option = "tests")
+    public void setTests(List<String> tests) {
+        getTests().set(tests);
+    }
+
     @TaskAction
     public void startDev() {
         if (!sourcesExist()) {
@@ -418,6 +431,10 @@ public abstract class QuarkusDev extends QuarkusTask {
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
             builder.jvmArgs("-Dquarkus.console.basic=true")
                     .jvmArgs("-Dio.quarkus.force-color-support=true");
+        }
+        if (!getTests().get().isEmpty()) {
+            builder.jvmArgs("-Dquarkus-internal.test.specific-selection=gradle:"
+                    + String.join(",", getTests().get()));
         }
 
         if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {

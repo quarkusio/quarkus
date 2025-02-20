@@ -14,6 +14,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Contains tests that we expect to pass with both quarkus:dev and quarkus:test
@@ -70,4 +71,17 @@ public abstract class LaunchMojoTestBase extends RunAndCheckMojoTestBase {
 
     }
 
+    @Test
+    public void testSelection() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/test-selection");
+        run(true, "-Dtest=Ba*ic,Enabled?Test,NotEnabled*#executeAnyway*,!NotEnabledHardDisabled,#alwaysExecute,!#neverExecute");
+
+        if (getDefaultLaunchMode() == LaunchMode.DEVELOPMENT) {
+            // ignore outcome, just wait for the application to start
+            devModeClient.getHttpResponse();
+        }
+
+        ContinuousTestingMavenTestUtils.TestStatus tests = getTestingTestUtils().waitForNextCompletion();
+        assertEquals(7, tests.getTestsPassed());
+    }
 }

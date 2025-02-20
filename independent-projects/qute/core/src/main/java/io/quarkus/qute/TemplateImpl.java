@@ -119,6 +119,11 @@ class TemplateImpl implements Template {
         return root.findNodes(predicate);
     }
 
+    @Override
+    public SectionNode getRootNode() {
+        return root;
+    }
+
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
         if (section.name.equals(Parser.ROOT_HELPER_NAME)) {
             // Initialize the lazy map for root sections only

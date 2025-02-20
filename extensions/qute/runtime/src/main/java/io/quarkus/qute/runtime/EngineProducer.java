@@ -20,6 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.All;
@@ -35,6 +43,7 @@ import io.quarkus.qute.FragmentNamespaceResolver;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
+import io.quarkus.qute.NamedArgument;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
@@ -58,13 +67,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
-import jakarta.interceptor.Interceptor;
 
 @Startup(Interceptor.Priority.PLATFORM_BEFORE)
 @Singleton
@@ -129,6 +131,8 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.orEmpty());
         // Note that arrays are handled specifically during validation
         builder.addValueResolver(ValueResolvers.arrayResolver());
+        // Named arguments for fragment namespace resolver
+        builder.addValueResolver(new NamedArgument.SetValueResolver());
         // Additional value resolvers
         for (ValueResolver valueResolver : valueResolvers) {
             builder.addValueResolver(valueResolver);
@@ -197,6 +201,12 @@ public class EngineProducer {
         }
         // str:eval
         builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+        // Fragment namespace resolvers
+        builder.addNamespaceResolver(new NamedArgument.ParamNamespaceResolver());
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRAGMENT));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRG));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAPTURE));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAP));
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {

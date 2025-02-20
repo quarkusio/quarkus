@@ -84,7 +84,7 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
     }
 
     private void resolve(CompletableFuture<Object> ret, EvalContext context, Template template) {
-        ((TemplateImpl) template).root.resolve(context.resolutionContext()).whenComplete((r, t) -> {
+        template.getRootNode().resolve(context.resolutionContext()).whenComplete((r, t) -> {
             if (t != null) {
                 ret.completeExceptionally(t);
             } else {

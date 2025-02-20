@@ -37,7 +37,7 @@ public class IncludeSectionHelper implements SectionHelper {
         if (parameters.isEmpty() && optimizeIfNoParams()) {
             // No params
             Template t = template.get();
-            SectionNode root = ((TemplateImpl) t).root;
+            SectionNode root = t.getRootNode();
             ResolutionContext resolutionContext;
             if (isIsolated) {
                 resolutionContext = context.newResolutionContext(null, extendingBlocks);

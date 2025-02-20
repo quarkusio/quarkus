@@ -151,7 +151,7 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 List.of()).start();
         try {
-            Assertions.assertEquals("builder-image is customized", devModeClient.getHttpResponse("/hello"));
+            Assertions.assertEquals("deliberate failure builder-image is customized", devModeClient.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }

@@ -73,7 +73,6 @@ import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
@@ -90,27 +89,8 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecurityProcessor {
 
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
-    private static final DotName BASIC_AUTH_MECH_NAME = DotName.createSimple(BasicAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
-
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    void produceNamedHttpSecurityPolicies(List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItems,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            HttpSecurityRecorder recorder) {
-        if (!httpSecurityPolicyBuildItems.isEmpty()) {
-            httpSecurityPolicyBuildItems.forEach(item -> syntheticBeanProducer
-                    .produce(SyntheticBeanBuildItem
-                            .configure(HttpSecurityPolicy.class)
-                            .named(HttpSecurityPolicy.class.getName() + "." + item.getName())
-                            .runtimeValue(recorder.createNamedHttpSecurityPolicy(item.getPolicySupplier(), item.getName()))
-                            .addType(HttpSecurityPolicy.class)
-                            .scope(Singleton.class)
-                            .unremovable()
-                            .done()));
-        }
-    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

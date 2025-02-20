@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.ValidationMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -435,6 +436,17 @@ public final class HibernateReactiveProcessor {
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
             p.put(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+        }
+
+        if (!persistenceUnitConfig.validation().enabled()) {
+            desc.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+        } else {
+            desc.getProperties().setProperty(
+                    AvailableSettings.JAKARTA_VALIDATION_MODE,
+                    persistenceUnitConfig.validation().mode()
+                            .stream()
+                            .map(Enum::name)
+                            .collect(Collectors.joining(",")));
         }
 
         return desc;

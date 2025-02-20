@@ -369,65 +369,76 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         try {
 
             StartupAction startupAction;
-            String key;
+            String key = null;
+            Class profile = null;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
+
+            // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that TODO issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
 
                 System.out.println("HOLLY WAHOO did load a profile");
                 // Making a classloader uses the profile key to look up a curated application
                 // TODO this may need to be a dummy startup action with no profile,
                 //so must not re-use it unless confirmed profile is null
-                //                Class profile = null;
-                //                if (profileName != null && !"no-profile".equals(profileName)) {
-                //
-                //                    profile = ClassLoader.getSystemClassLoader()
-                //                            .loadClass(profileName);
-                //                }
+                if (profileName != null && !"no-profile".equals(profileName)) {
+
+                    // TODO consolidate these two loaders
+                    // TODO if we can make this work we could go back to passing a class
+                    if (otherLoader != null) {
+                        profile = otherLoader.loadClass(profileName);
+                    } else {
+                        profile = canaryLoader.loadClass(profileName);
+                    }
+                }
 
                 // Instantiating a profile is hard if we don't already have some quarkus classloader
                 //
 
-                keyMakerClassLoader = makeClassLoader(profileKey, requiredTestClass, null).getClassLoader();
+                keyMakerClassLoader = makeClassLoader(profileKey, requiredTestClass, profile).getClassLoader();
                 // TODO are there any bad side effects of using the system classloader?
                 // TODO if we do keep it as the system classloader, all this can become much simpler
                 // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
                 //   keyMakerClassLoader = ClassLoader.getSystemClassLoader();
 
-            }
+                startupAction = keyMakerClassLoader.getStartupAction();
+                final String resourceKey = getResourceKey(requiredTestClass, profile);
 
-            // TODO do not load it twice
-            //  // if we are loaded with system CL just use that
-            Class profile = null;
-            if (profileName != null && !"no-profile".equals(profileName)) {
-                //       In continuous testing, the facade classloader will be loaded with the augment classloader
-                if (this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
-                    profile = ClassLoader.getSystemClassLoader()
-                            .loadClass(profileName);
-                } else {
-                    profile = keyMakerClassLoader
-                            .loadClass(profileName);
+                // The resource key might be null, and that's ok
+                key = profileKey + resourceKey;
+            } else {
+
+                // TODO do not load it twice
+                //  // if we are loaded with system CL just use that
+                if (profileName != null && !"no-profile".equals(profileName)) {
+                    //       In continuous testing, the facade classloader will be loaded with the augment classloader
+                    if (this.getClass()
+                            .getClassLoader() == ClassLoader.getSystemClassLoader()) {
+                        profile = ClassLoader.getSystemClassLoader()
+                                .loadClass(profileName);
+                    } else {
+                        profile = keyMakerClassLoader
+                                .loadClass(profileName);
+                    }
                 }
+                // TODO only do this and the next bit if the keymaker classloader is not suitable
+                startupAction = runtimeClassLoaders.get(key);
+                System.out.println("HOLLY seen this key before " + startupAction);
 
+                if (startupAction == null) {
+                    // TODO can we make this less confusing?
+
+                    // Making a classloader uses the profile key to look up a curated application
+                    startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
+                }
+                final String resourceKey = getResourceKey(requiredTestClass, profile);
+
+                // The resource key might be null, and that's ok
+                key = profileKey + resourceKey;
             }
 
-            final String resourceKey = getResourceKey(requiredTestClass, profile);
-
-            // The resource key might be null, and that's ok
-            key = profileKey + resourceKey;
             System.out.println("HOLLY With resources, key is " + key);
-
-            // TODO only do this and the next bit if the keymaker classloader is not suitable
-            startupAction = runtimeClassLoaders.get(key);
-            System.out.println("HOLLY seen this key before " + startupAction);
-
-            if (startupAction == null) {
-                // TODO can we make this less confusing?
-
-                // Making a classloader uses the profile key to look up a curated application
-                startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
-            }
 
             // If we didn't have a classloader and didn't get a resource key
 

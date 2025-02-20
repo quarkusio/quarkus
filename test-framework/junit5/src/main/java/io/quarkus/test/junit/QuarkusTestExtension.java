@@ -273,6 +273,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .run(profileInstance == null ? new String[0] : profileInstance.commandLineParameters());
             } else {
 
+                // TODO we should be able to skip this reflection now, because we are the right CL
                 Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
                         startupAction.getClassLoader());
                 lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,

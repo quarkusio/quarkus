@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
@@ -76,6 +75,7 @@ import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenc
 import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -163,14 +163,14 @@ public final class HibernateReactiveProcessor {
         }
 
         // We only support Hibernate Reactive with a reactive data source, otherwise we don't configure the PU
-        DataSourcesReactiveBuildTimeConfig.DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveBuildTimeConfig =
-                dataSourcesReactiveBuildTimeConfig.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+        DataSourcesReactiveBuildTimeConfig.DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
+                .dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
         if (dataSourceReactiveBuildTimeConfig == null || !dataSourceReactiveBuildTimeConfig.reactive().enabled()) {
             LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
             return;
         }
-            
+
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
         QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
                 hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,

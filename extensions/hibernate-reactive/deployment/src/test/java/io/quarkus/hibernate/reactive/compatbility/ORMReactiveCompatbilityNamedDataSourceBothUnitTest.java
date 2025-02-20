@@ -1,8 +1,9 @@
 package io.quarkus.hibernate.reactive.compatbility;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
-import io.quarkus.runtime.configuration.ConfigurationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -10,10 +11,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.vertx.RunOnVertxContext;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ORMReactiveCompatbilityNamedDataSourceBothUnitTest extends CompatibilityUnitTestBase {
 

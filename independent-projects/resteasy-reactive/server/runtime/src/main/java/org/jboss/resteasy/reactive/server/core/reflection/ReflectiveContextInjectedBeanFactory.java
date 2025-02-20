@@ -90,7 +90,10 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
                 //we need better SPI's around this
                 //we don't handle conversion at all
                 QueryParam param = i.getAnnotation(QueryParam.class);
-                constructorParams.add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false));
+
+                constructorParams
+                        .add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false, null, false));
+
             } else if (i.isAnnotationPresent(HeaderParam.class)) {
                 HeaderParam param = i.getAnnotation(HeaderParam.class);
                 constructorParams.add(() -> CurrentRequestManager.get().getHeader(param.value(), true));

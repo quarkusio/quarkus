@@ -201,13 +201,13 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
-    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
            github.event_name != 'pull_request' || (
              github.event.pull_request.draft == false &&
              github.event.pull_request.state != 'closed' &&
              github.event.action != 'edited'
            )
-         )
+        ) }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     outputs:
@@ -339,7 +339,7 @@ jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) }}
     needs: build-jdk17
     env:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
@@ -409,7 +409,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -574,7 +574,7 @@ jobs:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     timeout-minutes: 130
     strategy:
       fail-fast: false
@@ -683,7 +683,7 @@ jobs:
       MAVEN_OPTS: -Xmx1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -771,7 +771,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 60
@@ -870,7 +870,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 40
@@ -969,7 +969,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 90
@@ -1065,7 +1065,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn || matrix.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: ${{matrix.timeout}}
@@ -1144,7 +1144,7 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
     env:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -1237,7 +1237,7 @@ jobs:
       MAVEN_OPTS: -Xmx1g
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:

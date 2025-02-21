@@ -138,8 +138,18 @@ public class VertxHttpResponse implements HttpResponse {
 
     public void finish() throws IOException {
         checkException();
-        if (finished || response.ended() || response.closed())
+
+        if (finished || response.ended() || response.closed()) {
+            if (os != null) {
+                try {
+                    os.close();
+                    os = null;
+                } catch (Exception ignored) {
+
+                }
+            }
             return;
+        }
         try {
             if (os != null) {
                 os.close(); // this will end() vertx response

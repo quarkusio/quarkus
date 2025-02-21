@@ -10,19 +10,19 @@ import io.smallrye.config.WithDefault;
 
 public interface ServerLimitsConfig {
     /**
-     * The maximum length of all headers.
+     * The maximum length of all headers, up to {@code Integer.MAX_VALUE} bytes.
      */
     @WithDefault("20K")
     MemorySize maxHeaderSize();
 
     /**
-     * The maximum size of a request body.
+     * The maximum size of a request body, up to {@code Long.MAX_VALUE} bytes.
      */
     @WithDefault("10240K")
     Optional<MemorySize> maxBodySize();
 
     /**
-     * The max HTTP chunk size
+     * The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.
      */
     @WithDefault("8192")
     MemorySize maxChunkSize();
@@ -34,7 +34,7 @@ public interface ServerLimitsConfig {
     int maxInitialLineLength();
 
     /**
-     * The maximum length of a form attribute.
+     * The maximum length of a form attribute, up to {@code Integer.MAX_VALUE} bytes.
      */
     @WithDefault("2048")
     MemorySize maxFormAttributeSize();
@@ -47,7 +47,7 @@ public interface ServerLimitsConfig {
 
     /**
      * Set the maximum number of bytes a server can buffer when decoding a form.
-     * Set to {@code -1} to allow unlimited length
+     * Set to {@code -1} to allow unlimited length, up to {@code Integer.MAX_VALUE} bytes.
      **/
     @WithDefault("1K")
     MemorySize maxFormBufferedBytes();

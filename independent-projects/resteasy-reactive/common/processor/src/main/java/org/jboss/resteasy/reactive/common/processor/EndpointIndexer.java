@@ -1219,21 +1219,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     /**
      * Analyzes an endpoint parameter and encapsulates its details into a `PARAM` object.
      *
-     * <p>Steps performed:</p>
+     * <p>
+     * Steps performed:
+     * </p>
      * <ul>
-     *   <li><b>Initialization:</b> Creates a `PARAM` object with basic information about the class, method, and annotations.</li>
-     *   <li><b>Parameter type identification:</b> Retrieves annotations like `@PathParam`, `@QueryParam`, `@FormParam`, etc.
-     *       If multiple such annotations are present, an error is thrown. The parameter type is set accordingly.</li>
-     *   <li><b>Special processing based on type:</b> Handles collections (`List`, `Set`, `Map`, `Optional`) differently
-     *       and applies specific rules for `byte[]`, `SseEventSink`, and `AsyncResponse`.</li>
-     *   <li><b>Conversion and compatibility:</b> Searches for registered converters if the parameter is convertible,
-     *       configuring handlers for lists, maps, or primitive types.</li>
-     *   <li><b>Finalization:</b> Determines if the parameter is single or multiple. If it does not match previous cases,
-     *       it is treated as the request body (`@Body`).</li>
+     * <li><b>Initialization:</b> Creates a `PARAM` object with basic information about the class, method, and annotations.</li>
+     * <li><b>Parameter type identification:</b> Retrieves annotations like `@PathParam`, `@QueryParam`, `@FormParam`, etc.
+     * If multiple such annotations are present, an error is thrown. The parameter type is set accordingly.</li>
+     * <li><b>Special processing based on type:</b> Handles collections (`List`, `Set`, `Map`, `Optional`) differently
+     * and applies specific rules for `byte[]`, `SseEventSink`, and `AsyncResponse`.</li>
+     * <li><b>Conversion and compatibility:</b> Searches for registered converters if the parameter is convertible,
+     * configuring handlers for lists, maps, or primitive types.</li>
+     * <li><b>Finalization:</b> Determines if the parameter is single or multiple. If it does not match previous cases,
+     * it is treated as the request body (`@Body`).</li>
      * </ul>
      *
-     * <p>In short, this method identifies, classifies, and configures an endpoint parameter,
-     * ensuring proper conversion and handling.</p>
+     * <p>
+     * In short, this method identifies, classifies, and configures an endpoint parameter,
+     * ensuring proper conversion and handling.
+     * </p>
      */
 
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,

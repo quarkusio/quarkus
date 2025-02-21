@@ -2,7 +2,7 @@
 .CLI
 ----
 ifdef::build-additional-parameters[]
-quarkus build {build-additional-parameters}
+quarkus build quarkus deploy openshift
 endif::[]
 ifndef::build-additional-parameters[]
 quarkus build

@@ -443,88 +443,82 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private StartupAction makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
 
-        try {
-            // This interception is only actually needed in limited circumstances; when
-            // - running in normal mode
-            // - *and* there is a @QuarkusTest to run
+        // This interception is only actually needed in limited circumstances; when
+        // - running in normal mode
+        // - *and* there is a @QuarkusTest to run
 
-            // This class sets a Thead Context Classloader, which JUnit uses to load classes.
-            // However, in continuous testing mode, setting a TCCL here isn't sufficient for the
-            // tests to come in with our desired classloader;
-            // downstream code sets the classloader to the deployment classloader, so we then need
-            // to come in *after* that code.
+        // This class sets a Thead Context Classloader, which JUnit uses to load classes.
+        // However, in continuous testing mode, setting a TCCL here isn't sufficient for the
+        // tests to come in with our desired classloader;
+        // downstream code sets the classloader to the deployment classloader, so we then need
+        // to come in *after* that code.
 
-            // TODO sometimes this is called in dev mode and sometimes it isn't? Ah, it's only not
-            //  called if we die early, before we get to this
+        // TODO sometimes this is called in dev mode and sometimes it isn't? Ah, it's only not
+        //  called if we die early, before we get to this
 
-            // In continuous testing mode, the runner code will have executed before this
-            // interceptor, so
-            // this interceptor doesn't need to do anything.
-            // TODO what if we removed the changes in the runner code?
+        // In continuous testing mode, the runner code will have executed before this
+        // interceptor, so
+        // this interceptor doesn't need to do anything.
+        // TODO what if we removed the changes in the runner code?
 
-            //  TODO I think all these comments are wrong? Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
-            // of detecting it
+        //  TODO I think all these comments are wrong? Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
+        // of detecting it
 
-            // TODO alternate way of detecting it ? Needs the build item, though
-            // TODO could the extension pass this through to us? no, I think we're invoked before anything quarkusy, and junit5 isn't even an extension
-            //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
-            //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
-            //            return;
-            //        }
+        // TODO alternate way of detecting it ? Needs the build item, though
+        // TODO could the extension pass this through to us? no, I think we're invoked before anything quarkusy, and junit5 isn't even an extension
+        //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
+        //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
+        //            return;
+        //        }
 
-            // Some places do this, but that assumes we already have a classloader!         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
+        // Some places do this, but that assumes we already have a classloader!         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
 
-            Thread currentThread = Thread.currentThread();
+        Thread currentThread = Thread.currentThread();
 
-            AppMakerHelper appMakerHelper = new AppMakerHelper();
+        AppMakerHelper appMakerHelper = new AppMakerHelper();
 
-            CuratedApplication curatedApplication = curatedApplications.get(key);
+        CuratedApplication curatedApplication = curatedApplications.get(key);
 
-            if (curatedApplication == null) {
-                Collection shutdownTasks = new HashSet();
+        if (curatedApplication == null) {
+            Collection shutdownTasks = new HashSet();
 
-                String displayName = "JUnit" + key; // TODO come up with a good display name
-                curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
-                        isAuxiliaryApplication,
-                        shutdownTasks);
-                curatedApplications.put(key, curatedApplication);
+            String displayName = "JUnit" + key; // TODO come up with a good display name
+            curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
+                    isAuxiliaryApplication,
+                    shutdownTasks);
+            curatedApplications.put(key, curatedApplication);
 
-            }
-
-            // TODO are all these args used?
-            StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
-                    curatedApplication, isAuxiliaryApplication, profile);
-
-            ClassLoader original = Thread.currentThread()
-                    .getContextClassLoader();
-            try {
-                // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
-                Thread.currentThread()
-                        .setContextClassLoader(ClassLoader.getSystemClassLoader());
-
-                QuarkusClassLoader loader = startupAction.getClassLoader();
-
-                Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
-
-                Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-                Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
-                        .newInstance(loader);
-
-                configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
-                        .invoke(null,
-                                testConfigProviderResolver);
-            } finally {
-                Thread.currentThread()
-                        .setContextClassLoader(original);
-            }
-
-            System.out.println("HOLLY at end of classload TCCL is " + currentThread.getContextClassLoader());
-            return startupAction;
-        } catch (Exception e) {
-            System.out.println("HOLLY ARGH");
-            e.printStackTrace();
-            throw new RuntimeException(e);
         }
+
+        // TODO are all these args used?
+        StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
+                curatedApplication, isAuxiliaryApplication, profile);
+
+        ClassLoader original = Thread.currentThread()
+                .getContextClassLoader();
+        try {
+            // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
+            Thread.currentThread()
+                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+
+            QuarkusClassLoader loader = startupAction.getClassLoader();
+
+            Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
+
+            Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
+            Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
+                    .newInstance(loader);
+
+            configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
+                    .invoke(null,
+                            testConfigProviderResolver);
+        } finally {
+            Thread.currentThread()
+                    .setContextClassLoader(original);
+        }
+
+        System.out.println("HOLLY at end of classload TCCL is " + currentThread.getContextClassLoader());
+        return startupAction;
 
     }
 

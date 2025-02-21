@@ -84,8 +84,6 @@ public class AppMakerHelper {
             Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
 
-        System.out.println("HOLLY WAHOO creating augmentor for " + requiredTestClass);
-
         if (curatedApplication == null) {
             curatedApplication = makeCuratedApplication(requiredTestClass, displayName, isContinuousTesting, shutdownTasks);
         }

@@ -84,9 +84,11 @@ public final class TestResourceUtil {
             // The class we are given could be in the app classloader, so swap it over
             // All this reflective classloading is a bit wasteful, so it would be ideal if the implementation was less picky about classloaders (that's not just moving the reflection further down the line)
             // TODO this may not be necessary with changes in FacadeClassLoader, check
+            // TODO not only is it not necessary, it actually cannot work because we've lost access to the runtime classloader which we need to load app classes
             try {
                 if (!QuarkusTestProfile.class.isAssignableFrom(nextTestClassProfile)) {
-                    nextTestClassProfile = (Class<? extends QuarkusTestProfile>) Class.forName(nextTestClassProfile.getName());
+                    nextTestClassProfile = (Class<? extends QuarkusTestProfile>) TestResourceUtil.class.getClassLoader()
+                            .loadClass(nextTestClassProfile.getName());
                 }
                 return nextTestClassProfile.getConstructor().newInstance();
             } catch (Exception e) {

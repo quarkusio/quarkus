@@ -1396,7 +1396,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
                             currentMethodInfo);
                 }
-            } else if ((pt.name().equals(MAP) || pt.name().equals(MULTI_VALUED_MAP)) && type != ParameterType.BODY) {
+            } else if ((pt.name().equals(MAP) || pt.name().equals(MULTI_VALUED_MAP)) && type != ParameterType.BODY
+                    && type != ParameterType.FORM) {
+                //Map and Multimap are typically used to represent query parameters or headers, not structured data in a request body or form.
+                //Body and form are often mapped to POJOs or richer structures.
                 typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);

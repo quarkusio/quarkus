@@ -33,7 +33,8 @@ final class JacksonUtil {
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            var key = new ResolverMapKey(context.getConfiguration(), context.getInvokedMethod().getDeclaringClass());
+            var key = new ResolverMapKey(context.getConfiguration(),
+                    context.getInvokedMethod() != null ? context.getInvokedMethod().getDeclaringClass() : null);
             return contextResolverMap.computeIfAbsent(key, new Function<>() {
                 @Override
                 public ObjectMapper apply(ResolverMapKey resolverMapKey) {

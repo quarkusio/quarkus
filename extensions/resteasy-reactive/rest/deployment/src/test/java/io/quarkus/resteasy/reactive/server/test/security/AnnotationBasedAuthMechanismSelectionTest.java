@@ -17,7 +17,9 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
+import org.jboss.logmanager.Level;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -117,7 +119,22 @@ public class AnnotationBasedAuthMechanismSelectionTest {
                                             quarkus.http.auth.permission.deny1.paths=/annotated-http-permissions/deny,/unannotated-http-permissions/deny
                                             quarkus.http.auth.permission.deny1.policy=deny
                                             """),
-                            "application.properties"));
+                            "application.properties"))
+            // with lazy authentication when request is issued to the POST location, we trigger authentication
+            // in past we experienced issue that response has already been sent because we called `next` on
+            // the RoutingContext that was already ended, this ensures the issue is gone
+            .setLogRecordPredicate(logRecord -> {
+                if (Level.ERROR == logRecord.getLevel() && logRecord.getMessage() != null) {
+                    String message = logRecord.getMessage().toLowerCase();
+                    if (message.contains("request") && message.contains("failed")) {
+                        Throwable thrown = logRecord.getThrown();
+                        return thrown != null && thrown.getMessage() != null
+                                && thrown.getMessage().toLowerCase().contains("response head already sent");
+                    }
+                }
+                return false;
+            })
+            .assertLogRecords(logRecords -> Assertions.assertTrue(logRecords.isEmpty()));
 
     @BeforeAll
     public static void setupUsers() {

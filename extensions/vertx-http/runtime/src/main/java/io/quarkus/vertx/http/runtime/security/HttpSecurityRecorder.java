@@ -101,12 +101,20 @@ public class HttpSecurityRecorder {
 
                     @Override
                     public void onItem(SecurityIdentity securityIdentity) {
-                        event.next();
+                        // we expect that form-based authentication mechanism to recognize the post-location,
+                        // authenticate and if user provided credentials in form attribute, response will be ended
+                        if (!event.response().ended()) {
+                            event.response().end();
+                        }
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        event.fail(throwable);
+                        // with current builtin implementation if only form-based authentication mechanism the event here
+                        // won't be ended or failed, but we check in case there is custom implementation that differs
+                        if (!event.response().ended() && !event.failed()) {
+                            event.fail(throwable);
+                        }
                     }
                 });
             }

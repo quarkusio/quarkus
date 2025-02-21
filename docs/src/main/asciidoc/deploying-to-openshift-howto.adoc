@@ -12,13 +12,13 @@ include::_attributes.adoc[]
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift
 
-As an application developer, you build and deploy your {project-name} applications to {openshift} in a single step, by running with one command:
+As an application developer, you build and deploy your {project-name} applications to {openshift} in a single step, by running either of the folllowing commands:
 
-:build-additional-parameters: quarkus deploy openshift
+:build-additional-parameters: -Dquarkus.openshift.deploy=true
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
-By running this command, you build your application locally, trigger a container image build, and apply the generated {openshift} resources automatically.
+With these commands, you build your application locally, trigger a container image build, and apply the generated {openshift} resources automatically.
 
 The generated resources use a Kubernetes `Deployment`, but still make use of OpenShift-specific resources, such as `Route`, `BuildConfig`, and so on.
 
@@ -38,7 +38,7 @@ To run this deployment, it is not necessary to have the `quarkus-openshift` exte
 
 . Trigger a build and deployment in a single step:
 
-:build-additional-parameters: quarkus deploy openshift
+:build-additional-parameters: -Dquarkus.openshift.deploy=true
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 

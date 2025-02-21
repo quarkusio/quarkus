@@ -1755,8 +1755,21 @@ The code uses the following pieces:
 As previously mentioned, the body parameter needs to be properly crafted by the application code to conform to the service's requirements.
 
 === Receiving compressed messages
-REST Client also supports receiving compressed messages using GZIP. You can enable the HTTP compression support by adding the property `quarkus.http.enable-compression=true`.
+REST Client also supports receiving compressed messages using GZIP and can be enabled via configuration.
 When this feature is enabled and a server returns a response that includes the header `Content-Encoding: gzip`, REST Client will automatically decode the content and proceed with the message handling.
+
+An example configuration could be:
+
+[source,properties]
+----
+# global configuration is used for all clients
+quarkus.rest-client.enable-compression=true
+
+# per-client configuration overrides the global settings for a specific client
+quarkus.rest-client.my-client.enable-compression=true
+----
+
+The REST Client falls back onto the Quarkus wide `quarkus.http.enable-compression` configuration property (which defaults to `false`) if no REST Client specific property is set.
 
 == Proxy support
 REST Client supports sending requests through a proxy.

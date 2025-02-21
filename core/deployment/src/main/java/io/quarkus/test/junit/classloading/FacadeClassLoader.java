@@ -55,6 +55,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private final ClassLoader parent;
+    private static final String NO_PROFILE = "no-profile";
 
     /*
      * It seems kind of wasteful to load every class twice; that's true, but it's been the case (by a different mechanism)
@@ -181,8 +182,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // One reason not to use it is that it needs an annotation class, but we can load one with the canary
             // It looks up the hierarchy which our current logic doesn't, which is risky
 
-            String profileName = "no-profile";
-            Class<?> profile = null;
+            String profileName = null;
+            Class<?> profile;
             if (profiles != null) {
                 // TODO the good is that we're re-using what JUnitRunner already worked out, the bad is that this is seriously clunky with multiple code paths, brittle information sharing ...
                 // TODO at the very least, should we have a test landscape holder class?
@@ -192,9 +193,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 isQuarkusTest = quarkusTestClasses.contains(name) && !isMainTest;
 
                 profileName = profiles.get(name);
-                if (profileName == null) {
-                    profileName = "no-profile";
-                }
 
             } else {
                 // TODO JUnitRunner already worked all this out for the dev mode case, could we share some logic?
@@ -248,6 +246,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                             .getMethod("value");
                     // We don't make use of the actual class object because it will be in the canary loader, and not much use to anything elsewhere
                     profile = (Class) m.invoke(profileAnnotation.get()); // TODO extends quarkustestprofile
+                    // TODO it would be better to not recreate it; on the junitrunner path we get a string, on this path we get a class - convert to a class on the way in?
                     profileName = profile.getName();
                 }
             }
@@ -256,7 +255,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             mainC++;
 
             // TODO move this into the getclassloade method
-            String profileKey = isQuarkusTest ? "QuarkusTest" + "-" + profileName
+            String profileKey = isQuarkusTest ? "QuarkusTest" + "-" + profileName == null ? NO_PROFILE : profileName
                     : isMainTest ? "MainTest" + mainC : "vanilla";
             // TODO do we need to do extra work to make sure all of the quarkus app is in the cp? We'll return versions from the parent otherwise
             // TODO think we need to make a 'first' runtime cl, and then switch for each new test?
@@ -382,7 +381,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 // Making a classloader uses the profile key to look up a curated application
                 // TODO this may need to be a dummy startup action with no profile,
                 //so must not re-use it unless confirmed profile is null
-                if (profileName != null && !"no-profile".equals(profileName)) {
+                if (profileName != null) {
 
                     // TODO consolidate these two loaders
                     // TODO if we can make this work we could go back to passing a class
@@ -411,7 +410,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 // TODO do not load it twice
                 //  // if we are loaded with system CL just use that
-                if (profileName != null && !"no-profile".equals(profileName)) {
+                if (profileName != null) {
                     //       In continuous testing, the facade classloader will be loaded with the augment classloader
                     if (this.getClass()
                             .getClassLoader() == ClassLoader.getSystemClassLoader()) {

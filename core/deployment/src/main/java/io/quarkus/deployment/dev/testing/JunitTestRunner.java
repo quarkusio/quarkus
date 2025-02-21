@@ -796,14 +796,6 @@ public class JunitTestRunner {
                 .setContextClassLoader(facadeClassLoader);
 
         for (String i : quarkusTestClasses) {
-            // ClassLoader old = Thread.currentThread().getContextClassLoader();
-            // TODO this code is useless?
-            //            String profileName = profiles.get(i);
-            //            if (profileName == null) {
-            //                profileName = "no-profile";
-            //            }
-            //            // TODO get rid of all the profile stuff, we are doing it twice
-            //            System.out.println("HOLLY profile name is " + profileName);
             try {
                 // We could load these classes directly, since we know the profile and we have a handy interception point;
                 // but we need to signal to the downstream interceptor that it shouldn't interfere with the classloading

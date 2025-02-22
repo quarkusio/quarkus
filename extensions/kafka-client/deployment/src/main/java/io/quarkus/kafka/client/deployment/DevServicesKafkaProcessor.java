@@ -228,7 +228,7 @@ public class DevServicesKafkaProcessor {
             switch (config.provider) {
                 case REDPANDA:
                     RedpandaKafkaContainer redpanda = new RedpandaKafkaContainer(
-                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
+                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("redpandadata/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork, config.redpanda);

@@ -192,7 +192,8 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
                 .map(r -> {
                     if (r == null || !r.toString().equals("QUEUED")) {
                         this.tx.discard();
-                        throw new IllegalStateException("Unable to enqueue command into the current transaction");
+                        return Uni.createFrom()
+                                .failure(new IllegalStateException("Unable to enqueue command into the current transaction"));
                     }
                     return r;
                 })

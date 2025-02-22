@@ -194,10 +194,10 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         for (String channel : channels) {
             if (channel == null) {
-                throw new IllegalArgumentException("Channels must not be null");
+                return Uni.createFrom().failure(new IllegalArgumentException("Channels must not be null"));
             }
             if (channel.isBlank()) {
-                throw new IllegalArgumentException("Channels cannot be blank");
+                return Uni.createFrom().failure(new IllegalArgumentException("Channels cannot be blank"));
             }
         }
 

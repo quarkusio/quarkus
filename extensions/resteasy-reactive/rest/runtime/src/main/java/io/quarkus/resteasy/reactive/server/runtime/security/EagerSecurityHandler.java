@@ -50,7 +50,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        if (!EagerSecurityContext.instance.authorizationController.isAuthorizationEnabled()) {
+        if (!EagerSecurityContext.isAuthorizationEnabled()) {
             return;
         }
 
@@ -69,7 +69,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
         final Uni<?> check;
         if (checkRequiringIdentity == null) {
-            if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
+            if (EagerSecurityContext.doNotRunPermissionSecurityCheck()) {
                 // either permit all security check or no check at all
                 return;
             } else {
@@ -77,21 +77,21 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
                     @Override
                     public Uni<?> get() {
-                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null, invokedMethodDesc);
+                        return EagerSecurityContext.getInstance().getPermissionCheck(requestContext, null, invokedMethodDesc);
                     }
                 });
             }
         } else {
-            if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
+            if (EagerSecurityContext.doNotRunPermissionSecurityCheck()) {
                 // only security check that requires identity
-                check = EagerSecurityContext.instance.getDeferredIdentity().chain(checkRequiringIdentity);
+                check = EagerSecurityContext.getInstance().getDeferredIdentity().chain(checkRequiringIdentity);
             } else {
                 // both security check that requires identity and HTTP permission check
-                check = EagerSecurityContext.instance.getDeferredIdentity()
+                check = EagerSecurityContext.getInstance().getDeferredIdentity()
                         .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                                return EagerSecurityContext.instance.getPermissionCheck(requestContext, securityIdentity,
+                                return EagerSecurityContext.getInstance().getPermissionCheck(requestContext, securityIdentity,
                                         invokedMethodDesc);
                             }
                         })
@@ -126,7 +126,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
             SecurityCheck check, MethodDescription invokedMethodDesc) {
         if (check.isPermitAll()) {
             preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
-            if (EagerSecurityContext.instance.eventHelper.fireEventOnSuccess()) {
+            if (EagerSecurityContext.getEventHelper().fireEventOnSuccess()) {
                 requestContext.requireCDIRequestScope();
 
                 // add the identity only if authentication has already finished
@@ -138,7 +138,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                     identity = null;
                 }
 
-                EagerSecurityContext.instance.eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(identity,
+                EagerSecurityContext.getEventHelper().fireSuccessEvent(new AuthorizationSuccessEvent(identity,
                         check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
             }
             return null;
@@ -146,11 +146,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return new Function<SecurityIdentity, Uni<?>>() {
                 @Override
                 public Uni<?> apply(SecurityIdentity securityIdentity) {
-                    if (EagerSecurityContext.instance.isProactiveAuthDisabled) {
+                    if (EagerSecurityContext.isProactiveAuthDisabled()) {
                         // if proactive auth is disabled, then accessing SecurityIdentity would be a blocking
                         // operation if we don't set it; this will allow to access the identity without blocking
                         // from secured endpoints
-                        EagerSecurityContext.instance.identityAssociation.get().setIdentity(securityIdentity);
+                        EagerSecurityContext.getCurrentIdentityAssociation().setIdentity(securityIdentity);
                     }
 
                     if (check.requiresMethodArguments()) {
@@ -158,8 +158,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         // however we only allow to pass authenticated requests to avoid security risks
                         if (securityIdentity == null || securityIdentity.isAnonymous()) {
                             var unauthorizedException = new UnauthorizedException();
-                            if (EagerSecurityContext.instance.eventHelper.fireEventOnFailure()) {
-                                EagerSecurityContext.instance.eventHelper
+                            if (EagerSecurityContext.getEventHelper().fireEventOnFailure()) {
+                                EagerSecurityContext.getEventHelper()
                                         .fireFailureEvent(new AuthorizationFailureEvent(securityIdentity, unauthorizedException,
                                                 check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext),
                                                 invokedMethodDesc));
@@ -169,7 +169,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         // security check will be performed by CDI interceptor
                         return Uni.createFrom().nullItem();
                     } else {
-                        return EagerSecurityContext.instance.runSecurityCheck(check, invokedMethodDesc, requestContext,
+                        return EagerSecurityContext.getInstance().runSecurityCheck(check, invokedMethodDesc, requestContext,
                                 securityIdentity);
                     }
                 }

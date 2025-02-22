@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
+import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.getCurrentIdentityAssociation;
+
 import java.security.Permission;
 import java.security.Principal;
 import java.util.Collections;
@@ -121,8 +123,9 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
     }
 
     private static CurrentIdentityAssociation getIdentityAssociation() {
-        if (EagerSecurityContext.instance != null) {
-            return EagerSecurityContext.instance.identityAssociation.orElse(null);
+        CurrentIdentityAssociation currentIdentityAssociation = getCurrentIdentityAssociation();
+        if (currentIdentityAssociation != null) {
+            return currentIdentityAssociation;
         }
         // this should only happen when Quarkus Security extension is not present
         // but user implements security themselves, like in their own JAX-RS filter

@@ -24,7 +24,7 @@ final class SecurityCheckWithMethodArgsHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) {
-        if (!EagerSecurityContext.instance.authorizationController.isAuthorizationEnabled()) {
+        if (!EagerSecurityContext.isAuthorizationEnabled()) {
             return;
         }
 
@@ -32,8 +32,8 @@ final class SecurityCheckWithMethodArgsHandler implements ServerRestHandler {
         requestContext.suspend();
 
         // no need to use deferred identity as we require request to be authenticated on pre-match and set identity
-        SecurityIdentity securityIdentity = EagerSecurityContext.instance.identityAssociation.get().getIdentity();
-        EagerSecurityContext.instance
+        SecurityIdentity securityIdentity = EagerSecurityContext.getCurrentIdentityAssociation().getIdentity();
+        EagerSecurityContext.getInstance()
                 .runSecurityCheck(securityCheck, invokedMethodDesc, requestContext, securityIdentity)
                 .subscribe().withSubscriber(new UniSubscriber<Object>() {
                     @Override

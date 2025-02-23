@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.fire;
 import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.createLoginEvent;
+import static io.quarkus.vertx.http.runtime.security.RoutingContextAwareSecurityIdentity.addRoutingCtxToIdentityIfMissing;
 
 import java.net.URI;
 import java.security.SecureRandom;
@@ -9,9 +10,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -41,11 +44,13 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
 
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
     private static final String FORM = "form";
-
+    private static final String COOKIE_NAME = "io.quarkus.vertx.http.runtime.security.form.cookie-name";
+    private static final String COOKIE_PATH = "io.quarkus.vertx.http.runtime.security.form.cookie-path";
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
     private final String loginPage;
@@ -261,7 +266,16 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             //we always re-auth if it is a post to the auth URL
             context.put(HttpAuthenticationMechanism.class.getName(), this);
-            return runFormAuth(context, identityProviderManager);
+            return runFormAuth(context, identityProviderManager)
+                    .onItem().ifNotNull().transform(new Function<SecurityIdentity, SecurityIdentity>() {
+                        @Override
+                        public SecurityIdentity apply(SecurityIdentity identity) {
+                            // used for logout
+                            context.put(COOKIE_NAME, loginManager.getCookieName());
+                            context.put(COOKIE_PATH, cookiePath);
+                            return addRoutingCtxToIdentityIfMissing(identity, context);
+                        }
+                    });
         } else {
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
@@ -273,6 +287,14 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                     @Override
                     public void accept(SecurityIdentity securityIdentity) {
                         loginManager.save(securityIdentity, context, result, context.request().isSSL());
+                    }
+                }).onItem().ifNotNull().transform(new Function<SecurityIdentity, SecurityIdentity>() {
+                    @Override
+                    public SecurityIdentity apply(SecurityIdentity identity) {
+                        // used for logout
+                        context.put(COOKIE_NAME, loginManager.getCookieName());
+                        context.put(COOKIE_PATH, cookiePath);
+                        return addRoutingCtxToIdentityIfMissing(identity, context);
                     }
                 });
             }
@@ -309,6 +331,21 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
+    }
+
+    public static void logout(SecurityIdentity securityIdentity) {
+        RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(securityIdentity);
+        logout(routingContext);
+    }
+
+    public static void logout(RoutingContext routingContext) {
+        Objects.requireNonNull(routingContext);
+        String cookieName = Objects.requireNonNull(routingContext.get(COOKIE_NAME));
+        String cookiePath = Objects.requireNonNull(routingContext.get(COOKIE_PATH));
+        Cookie cookie = new CookieImpl(cookieName, "");
+        cookie.setMaxAge(0);
+        cookie.setPath(cookiePath);
+        routingContext.response().addCookie(cookie);
     }
 
     private static String startWithSlash(String page) {

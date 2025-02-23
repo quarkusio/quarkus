@@ -122,7 +122,8 @@ public class HttpSecurityRecorder {
     }
 
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
-            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor) {
+            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor,
+            Map<String, Consumer<RoutingContext>> classNameToInterceptor) {
 
         final Map<MethodDescription, Consumer<RoutingContext>> endpointToInterceptor = new HashMap<>();
         for (var entry : endpointRuntimeValToInterceptor.entrySet()) {
@@ -132,7 +133,7 @@ public class HttpSecurityRecorder {
         return new Supplier<EagerSecurityInterceptorStorage>() {
             @Override
             public EagerSecurityInterceptorStorage get() {
-                return new EagerSecurityInterceptorStorage(endpointToInterceptor);
+                return new EagerSecurityInterceptorStorage(endpointToInterceptor, classNameToInterceptor);
             }
         };
     }

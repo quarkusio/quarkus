@@ -163,4 +163,6 @@ public interface Capability {
     String REACTIVE_DB2_CLIENT = QUARKUS_PREFIX + ".reactive-db2-client";
 
     String GRPC = QUARKUS_PREFIX + ".grpc";
+
+    String WEBSOCKETS_NEXT = QUARKUS_PREFIX + ".websockets.next";
 }

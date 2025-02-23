@@ -688,6 +688,7 @@ quarkus.http.auth.permission.bearer.auth-mechanism=bearer
 
 Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer`, or `form`.
 
+[[use-annotations-for-path-based-auth]]
 ==== Use annotations to enable path-based authentication for Jakarta REST endpoints
 
 It is possible to use annotations to select an authentication mechanism specific to each Jakarta REST endpoint.

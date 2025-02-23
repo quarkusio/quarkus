@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
+import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
 import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,9 +62,12 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
@@ -283,13 +288,20 @@ public class HttpSecurityProcessor {
     void registerAuthMechanismSelectionInterceptor(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, HttpSecurityRecorder recorder,
             BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
+            BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
             List<HttpAuthMechanismAnnotationBuildItem> additionalHttpAuthMechAnnotations,
             CombinedIndexBuildItem combinedIndexBuildItem) {
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            return;
+        }
+
         // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
         // when there is no other RBAC annotation applied
         // then by default @HttpAuthenticationMechanism("any-value") == @Authenticated
         Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
 
+        Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
         DotName[] mechNames = Stream
                 .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
                 .flatMap(mechName -> {
@@ -299,7 +311,14 @@ public class HttpSecurityProcessor {
                         methodsWithoutRbacAnnotations
                                 .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances)));
                         methodsWithoutRbacAnnotations
-                                .addAll(collectClassMethodsWithoutRbacAnnotation(collectAnnotatedClasses(instances)));
+                                .addAll(collectClassMethodsWithoutRbacAnnotation(collectAnnotatedClasses(instances,
+                                        useClassLevelSecurity.negate())));
+                        // class-level security; this registers @Authenticated if no RBAC is explicitly declared
+                        collectAnnotatedClasses(instances, useClassLevelSecurity).stream()
+                                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                                .forEach(c -> registerClassSecurityCheckProducer.produce(
+                                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                                                .builder(Authenticated.class).buildWithTarget(c))));
                         return Stream.of(mechName);
                     } else {
                         return Stream.empty();
@@ -328,7 +347,9 @@ public class HttpSecurityProcessor {
     @BuildStep
     void collectInterceptedMethods(CombinedIndexBuildItem indexBuildItem,
             List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
-            BuildProducer<EagerSecurityInterceptorMethodsBuildItem> methodsProducer) {
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            BuildProducer<EagerSecurityInterceptorMethodsBuildItem> methodsProducer,
+            BuildProducer<EagerSecurityInterceptorClassesBuildItem> classesProducer) {
         if (!interceptorBindings.isEmpty()) {
             Map<DotName, Boolean> bindingToRequiresSecCheckFlag = interceptorBindings.stream()
                     .flatMap(ib -> Arrays
@@ -336,14 +357,24 @@ public class HttpSecurityProcessor {
                             .map(b -> Map.entry(b, ib.requiresSecurityCheck())))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             var index = indexBuildItem.getIndex();
-            Map<MethodInfo, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
+            Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
             Map<DotName, Map<String, List<MethodInfo>>> result = new HashMap<>();
-            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.METHOD, result, cache);
-            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.CLASS, result, cache);
+            Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+            // these are classes with class-level security, where interceptor runs once per class, not on every method
+            Map<DotName, Map<String, Set<String>>> classResult = new HashMap<>();
+            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.METHOD, result, cache,
+                    useClassLevelSecurity, classResult);
+            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.CLASS, result, cache,
+                    useClassLevelSecurity, classResult);
             if (!result.isEmpty()) {
                 result.forEach((annotationBinding, bindingValueToInterceptedMethods) -> methodsProducer.produce(
                         new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods, annotationBinding,
                                 bindingToRequiresSecCheckFlag.get(annotationBinding))));
+            }
+            if (!classResult.isEmpty()) {
+                classResult.forEach((annotationBinding, bindingValueToInterceptedClasses) -> classesProducer
+                        .produce(new EagerSecurityInterceptorClassesBuildItem(bindingValueToInterceptedClasses,
+                                annotationBinding)));
             }
         }
     }
@@ -353,8 +384,9 @@ public class HttpSecurityProcessor {
     void produceEagerSecurityInterceptorStorage(HttpSecurityRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> producer,
             List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
+            List<EagerSecurityInterceptorClassesBuildItem> interceptorClasses,
             List<EagerSecurityInterceptorMethodsBuildItem> interceptorMethods) {
-        if (!interceptorMethods.isEmpty()) {
+        if (!interceptorMethods.isEmpty() || !interceptorClasses.isEmpty()) {
             final var bindingNameToInterceptorCreator = interceptorBindings
                     .stream()
                     .flatMap(binding -> Arrays.stream(binding.getAnnotationBindings())
@@ -388,10 +420,25 @@ public class HttpSecurityProcessor {
                 }
             }
 
+            final var classNameToInterceptor = new HashMap<String, Consumer<RoutingContext>>();
+            for (EagerSecurityInterceptorClassesBuildItem interceptorClass : interceptorClasses) {
+                var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorClass.interceptorBinding);
+                interceptorClass.bindingValueToInterceptedClasses.forEach((annotationValue, annotatedClasses) -> {
+                    Consumer<RoutingContext> interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator,
+                            annotationValue);
+                    for (String annotatedClass : annotatedClasses) {
+                        // add (class name -> interceptor) to the storage
+                        classNameToInterceptor.compute(annotatedClass,
+                                (c, existingInterceptor) -> existingInterceptor == null ? interceptor
+                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
+                    }
+                });
+            }
+
             producer.produce(SyntheticBeanBuildItem
                     .configure(EagerSecurityInterceptorStorage.class)
                     .scope(ApplicationScoped.class)
-                    .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor))
+                    .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor, classNameToInterceptor))
                     .unremovable()
                     .done());
         }
@@ -585,9 +632,10 @@ public class HttpSecurityProcessor {
             VertxHttpBuildTimeConfig buildTimeConfig,
             DotName[] annotationNames) {
         if (buildTimeConfig.auth().proactive()
-                || (!capabilities.isPresent(Capability.RESTEASY_REACTIVE) && !capabilities.isPresent(Capability.RESTEASY))) {
+                || (capabilities.isMissing(Capability.RESTEASY_REACTIVE) && capabilities.isMissing(Capability.RESTEASY)
+                        && capabilities.isMissing(Capability.WEBSOCKETS_NEXT))) {
             throw new ConfigurationException("Annotations '" + Arrays.toString(annotationNames) + "' can only be used when"
-                    + " proactive authentication is disabled and either RESTEasy Reactive or RESTEasy Classic"
+                    + " proactive authentication is disabled and either Quarkus REST, RESTEasy Classic or WebSockets Next"
                     + " extension is present");
         }
     }
@@ -614,12 +662,14 @@ public class HttpSecurityProcessor {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances) {
+    private static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
+            Predicate<ClassInfo> filter) {
         return instances
                 .stream()
                 .map(AnnotationInstance::target)
                 .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
                 .map(AnnotationTarget::asClass)
+                .filter(filter)
                 .collect(Collectors.toSet());
     }
 
@@ -649,16 +699,41 @@ public class HttpSecurityProcessor {
 
     private static void addInterceptedEndpoints(List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
             IndexView index, AnnotationTarget.Kind appliesTo, Map<DotName, Map<String, List<MethodInfo>>> result,
-            Map<MethodInfo, List<EagerSecurityInterceptorBindingBuildItem>> cache) {
+            Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache,
+            Predicate<ClassInfo> hasClassLevelSecurity,
+            Map<DotName, Map<String, Set<String>>> classResult) {
         for (EagerSecurityInterceptorBindingBuildItem interceptorBinding : interceptorBindings) {
             for (DotName annotationBinding : interceptorBinding.getAnnotationBindings()) {
                 Map<String, List<MethodInfo>> bindingValueToInterceptedMethods = new HashMap<>();
+                Map<String, Set<String>> bindingValueToInterceptedClasses = new HashMap<>();
                 for (AnnotationInstance annotation : index.getAnnotations(annotationBinding)) {
                     if (annotation.target().kind() != appliesTo) {
                         continue;
                     }
                     if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                        for (MethodInfo method : annotation.target().asClass().methods()) {
+                        ClassInfo interceptedClass = annotation.target().asClass();
+
+                        if (hasClassLevelSecurity.test(interceptedClass)) {
+                            // endpoint can only be annotated with one of @Basic, @Form, ...
+                            // however combining @CodeFlow and @Tenant is supported
+                            var appliedBindings = cache.computeIfAbsent(interceptedClass, a -> new ArrayList<>());
+                            if (appliedBindings.contains(interceptorBinding)) {
+                                throw new RuntimeException(
+                                        "Only one of the '%s' annotations can be applied on the '%s' class".formatted(
+                                                Arrays.toString(interceptorBinding.getAnnotationBindings()), interceptedClass));
+                            } else {
+                                appliedBindings.add(interceptorBinding);
+                            }
+
+                            // don't apply security interceptor on individual methods, but on the class-level instead
+                            bindingValueToInterceptedClasses
+                                    .computeIfAbsent(interceptorBinding.getBindingValue(annotation, annotationBinding,
+                                            interceptedClass), s -> new HashSet<>())
+                                    .add(interceptedClass.name().toString());
+                            continue;
+                        }
+
+                        for (MethodInfo method : interceptedClass.methods()) {
                             if (hasProperEndpointModifiers(method)) {
                                 // avoid situation when resource method is annotated with @Basic, class is annotated
                                 // with @Bearer, and we apply the @Bearer annotation
@@ -680,7 +755,15 @@ public class HttpSecurityProcessor {
                         if (appliedBindings.contains(interceptorBinding)) {
                             throw new RuntimeException(
                                     "Only one of the '%s' annotations can be applied on the '%s' method".formatted(
-                                            interceptorBinding.getAnnotationBindings(), mi.declaringClass().name() + "#" + mi));
+                                            Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                            mi.declaringClass().name() + "#" + mi));
+                        } else if (hasClassLevelSecurity.test(mi.declaringClass())) {
+                            throw new RuntimeException(
+                                    ("Security annotations '%s' cannot be applied on the '%s' method, "
+                                            + "please move the annotations to the class-level instead").formatted(
+                                                    Arrays.toString(Arrays.stream(interceptorBinding.getAnnotationBindings())
+                                                            .toArray()),
+                                                    mi.declaringClass().name() + "#" + mi));
                         } else {
                             appliedBindings.add(interceptorBinding);
                         }
@@ -696,6 +779,17 @@ public class HttpSecurityProcessor {
                         } else {
                             bindingValueToInterceptedMethods.forEach((annotationValue, methods) -> existingMap
                                     .computeIfAbsent(annotationValue, a -> new ArrayList<>()).addAll(methods));
+                            return existingMap;
+                        }
+                    });
+                }
+                if (!bindingValueToInterceptedClasses.isEmpty()) {
+                    classResult.compute(annotationBinding, (key, existingMap) -> {
+                        if (existingMap == null) {
+                            return bindingValueToInterceptedClasses;
+                        } else {
+                            bindingValueToInterceptedClasses.forEach((annotationValue, classes) -> existingMap
+                                    .computeIfAbsent(annotationValue, a -> new HashSet<>()).addAll(classes));
                             return existingMap;
                         }
                     });

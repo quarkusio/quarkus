@@ -846,6 +846,37 @@ quarkus.http.auth.permission.http-upgrade.paths=/end
 quarkus.http.auth.permission.http-upgrade.policy=authenticated
 ----
 
+Security annotations used during authentication must be placed on an endpoint class as well, for the `SecurityIdentity` is created before the websocket connection is opened.
+
+.Select Bearer token authentication mechanism
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.oidc.BearerTokenAuthentication;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@BearerTokenAuthentication <1>
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    @OnTextMessage
+    String echo(String message) {
+        return message;
+    }
+
+}
+----
+<1> Require that an opening WebSocket handshake request is authenticated using the bearer token authentication.
+See the xref:security-authentication-mechanisms.adoc#use-annotations-for-path-based-auth[Authentication mechanisms in Quarkus] guide for more information about selecting authentication mechanisms with annotations.
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false <1>
+----
+<1> Start authenticating an opening WebSocket handshake request only when the `io.quarkus.oidc.BearerTokenAuthentication` annotation is detected.
+
 [[secure-callback-methods]]
 ==== Secure WebSocket endpoint callback methods
 
@@ -937,7 +968,7 @@ public class PermissionChecker {
 
     @PermissionChecker("product:premium")
     public boolean canGetPremiumProduct(SecurityIdentity securityIdentity) { <1>
-        String username = currentIdentity.getPrincipal().getName();
+        String username = securityIdentity.getPrincipal().getName();
 
         RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(securityIdentity);
         String initialHttpUpgradePath = routingContext == null ? null : routingContext.normalizedPath();

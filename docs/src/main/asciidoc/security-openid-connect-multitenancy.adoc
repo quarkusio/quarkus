@@ -664,6 +664,13 @@ quarkus.http.auth.permission.authenticated.applies-to=JAXRS <1>
 <1> Tell Quarkus to run the HTTP permission check after the tenant has been selected with the `@Tenant` annotation.
 ====
 
+[NOTE]
+====
+The `io.quarkus.oidc.Tenant` annotation can be used to select tenant for a WebSockets Next server endpoint.
+The annotation must be placed on the endpoint class, because the `SecurityIdentity` is created before the HTTP connection is upgraded to a WebSocket connection.
+For more information about the HTTP upgrade security, see the xref:websockets-next-reference.adoc#secure-http-upgrade[Secure HTTP upgrade] section of the Quarkus "WebSockets Next reference" guide.
+====
+
 [[tenant-config-resolver]]
 === Dynamic tenant configuration resolution
 

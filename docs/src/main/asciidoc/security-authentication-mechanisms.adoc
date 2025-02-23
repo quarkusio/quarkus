@@ -194,8 +194,10 @@ code to destroy the cookie.
 
 [source,java]
 ----
-@ConfigProperty(name = "quarkus.http.auth.form.cookie-name")
-String cookieName;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.POST;
 
 @Inject
 CurrentIdentityAssociation identity;
@@ -205,15 +207,11 @@ public Response logout() {
     if (identity.getIdentity().isAnonymous()) {
         throw new UnauthorizedException("Not authenticated");
     }
-    final NewCookie removeCookie = new NewCookie.Builder(cookieName)
-            .maxAge(0)
-            .expiry(Date.from(Instant.EPOCH))
-            .path("/")
-            .build();
-    return Response.noContent().cookie(removeCookie).build();
+    FormAuthenticationMechanism.logout(identity.getIdentity()); <1>
+    return Response.noContent().build();
 }
-
 ----
+<1> Perform the logout by removing the session cookie.
 
 The following properties can be used to configure form-based authentication:
 

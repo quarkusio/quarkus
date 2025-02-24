@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
 
@@ -44,6 +45,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     protected static final String JAVA = "java.";
 
     private static final String NAME = "FacadeLoader";
+    private static final String IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION = "io.quarkus.test.junit.QuarkusTestExtension";
     // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
     // TODO and if we don't, how do we get a re-usable deployment classloader?
 
@@ -64,11 +66,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/
      * ClassLoaderReplacingLauncherSessionListener.java#L23-L44
      * does use a similar approach, although they have a default loader rather than a canary loader.
-     * // TODO should we use the canary loader, or the parent loader?
-     * // TODO we need to close this when we're done
-     * //If we use the parent loader, does that stop the quarkus classloaders getting a crack at some classes?
      */
     private final URLClassLoader peekingClassLoader;
+    private final Class<? extends Annotation> quarkusTestAnnotation;
+    private final Class<? extends Annotation> quarkusIntegrationTestAnnotation;
+    private final Class<? extends Annotation> profileAnnotation;
+    private final Class<? extends Annotation> extendWithAnnotation;
+    private final Class<? extends Annotation> registerExtensionAnnotation;
     private Map<String, Class<?>> profiles;
     private String classesPath;
     private Set<String> quarkusTestClasses;
@@ -84,7 +88,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         instance = null;
     }
 
-    // TODO does it make sense to have a parent here when it is sometimes ignored?
     // We don't ever want more than one FacadeClassLoader active, especially since config gets initialised on it.
     // The gradle test execution can make more than one, perhaps because of its threading model.
     public static FacadeClassLoader instance(ClassLoader parent) {
@@ -138,6 +141,22 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 })
                 .toArray(URL[]::new);
         peekingClassLoader = new ParentLastURLClassLoader(urls, parent);
+        try {
+            extendWithAnnotation = (Class<? extends Annotation>) peekingClassLoader.loadClass(ExtendWith.class.getName());
+            registerExtensionAnnotation = (Class<? extends Annotation>) peekingClassLoader
+                    .loadClass(RegisterExtension.class.getName());
+            quarkusTestAnnotation = (Class<? extends Annotation>) peekingClassLoader
+                    .loadClass("io.quarkus.test.junit.QuarkusTest");
+            // TODO if this was in the right module, could use class getname
+            quarkusIntegrationTestAnnotation = (Class<? extends Annotation>) peekingClassLoader
+                    .loadClass("io.quarkus.test.junit.QuarkusIntegrationTest");
+            profileAnnotation = (Class<? extends Annotation>) peekingClassLoader
+                    .loadClass("io.quarkus.test.junit.TestProfile");
+        } catch (ClassNotFoundException e) {
+            // TODO do we want to allow these to not be on the classpath?
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
 
         if (profileNames != null) {
             this.profiles = new HashMap<>();
@@ -163,30 +182,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         boolean isQuarkusTest = false;
 
         boolean isIntegrationTest = false;
-        // TODO hack that didn't even work
-        //        if (runtimeClassLoader != null && name.contains("QuarkusTestProfileAwareClass")) {
-        //            return runtimeClassLoader.loadClass(name);
-        //        } else if (name.contains("QuarkusTestProfileAwareClass")) {
-        //            return this.getClass().getClassLoader().loadClass(name);
-        //
-        //        }
-        // TODO we can almost get away with using a string, except for type safety - maybe a dotname?
-        // TODO since of course avoiding the classload would be ideal
-        // Lots of downstream logic uses the class to work back to the classpath, so we can't just get rid of it (yet)
-        // ... but of course at this stage we don't know anything more about the classpath than anyone else, and are just using the system property
-        // ... so anything using this to get the right information will be disappointed
-        // TODO we should just pass through the moduleInfo, right?
-        Class<?> fromCanary = null;
+        Class<?> inspectionClass = null;
 
         try {
-            if (peekingClassLoader != null) {
-                try {
-                    fromCanary = peekingClassLoader
-                            .loadClass(name);
-                } catch (ClassNotFoundException | NoClassDefFoundError e) {
-                    return super.loadClass(name);
-                }
-            }
 
             // TODO  should we use JUnit's AnnotationSupport? It searches class hierarchies. Unless we have a good reason not to use it, perhaps we should?
             // See, for example, https://github.com/marcphilipp/gradle-sandbox/blob/baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/ClassLoaderReplacingLauncherSessionListener.java#L23-L44
@@ -195,57 +193,54 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             Class<?> profile = null;
             if (profiles != null) {
-                // TODO the good is that we're re-using what JUnitRunner already worked out, the bad is that this is seriously clunky with multiple code paths, brittle information sharing ...
-                // TODO at the very least, should we have a test landscape holder class?
-                // The JUnitRunner counts main tests as quarkus tests
+
                 isQuarkusTest = quarkusTestClasses.contains(name);
+                isIntegrationTest = false;
 
                 profile = profiles.get(name);
 
-            } else {
-                // TODO JUnitRunner already worked all this out for the dev mode case, could we share some logic?
+                // In continuous testing, only load an inspection version of the class if it's a QuarkusTest
+                if (isQuarkusTest) {
+                    try {
+                        inspectionClass = peekingClassLoader
+                                .loadClass(name);
+                    } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                        return super.loadClass(name);
+                    }
+                }
 
-                // TODO make this test cleaner + more rigorous
+            } else {
+                try {
+                    inspectionClass = peekingClassLoader
+                            .loadClass(name);
+                } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                    return super.loadClass(name);
+                }
+
                 // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
                 // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass - except that fails for things whose superclass isn't on the classpath, like javax.tools subclasses
-                // TODO we probably need to walk the class hierarchy for the annotations, too? or do they get added to getAnnotations?
-                isQuarkusTest = !fromCanary.isAnnotation() && Arrays.stream(fromCanary.getAnnotations())
-                        .anyMatch(annotation -> annotation.annotationType()
-                                .getName()
-                                .endsWith("QuarkusTest"))
-                        || Arrays.stream(fromCanary.getAnnotations())
-                                .anyMatch(annotation -> annotation.annotationType()
-                                        .getName()
-                                        .endsWith("org.junit.jupiter.api.extension.ExtendWith")
-                                        && annotation.toString()
-                                                .contains(
-                                                        "io.quarkus.test.junit.QuarkusTestExtension")) // TODO should this be an equals(), for performance? Probably can do a better check than toString, which adds an @ and a .class
-                        // (I think)
-                        || registersQuarkusTestExtension(fromCanary);
+                isQuarkusTest = !inspectionClass.isAnnotation()
+                        && (AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where an class is annotated with an annotation which itself includes the annotation we care about
+                                || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
+                                || registersQuarkusTestExtensionOnField(inspectionClass));
 
-                // TODO want to exclude quarkus component test, and exclude quarkusmaintest - what about quarkusunittest? and quarkusintegrationtest?
-                // TODO knowledge of test annotations leaking in to here, although JUnitTestRunner also has the same leak - should we have a superclass that lives in this package that we check for?
-                // TODO be tighter with the names we check for
-                // TODO this would be way easier if this was in the same module as the profile, could just do clazz.getAnnotation(TestProfile.class)
+                if (isQuarkusTest) {
+                    // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
+                    isIntegrationTest = !inspectionClass.isAnnotation()
+                            && (AnnotationSupport.isAnnotated(inspectionClass, quarkusIntegrationTestAnnotation));
 
-                isIntegrationTest = Arrays.stream(fromCanary.getAnnotations())
-                        .anyMatch(annotation -> annotation.annotationType()
-                                .getName()
-                                .endsWith("QuarkusIntegrationTest"));
+                    Optional<? extends Annotation> profileDeclaration = AnnotationSupport.findAnnotation(
+                            inspectionClass,
+                            profileAnnotation);
+                    if (profileDeclaration.isPresent()) {
 
-                Optional<Annotation> profileAnnotation = Arrays.stream(fromCanary.getAnnotations())
-                        .filter(annotation -> annotation.annotationType()
-                                .getName()
-                                .endsWith("TestProfile"))
-                        .findFirst();
-                if (profileAnnotation.isPresent()) {
-
-                    // TODO could do getAnnotationsByType if we were in the same module
-                    Method m = profileAnnotation.get()
-                            .getClass()
-                            .getMethod("value");
-                    // We can't be specific about what the class extends, because it's loaded with another classloader
-                    profile = (Class<?>) m.invoke(profileAnnotation.get());
+                        // TODO could do getAnnotationsByType if we were in the same module
+                        Method m = profileDeclaration.get()
+                                .getClass()
+                                .getMethod("value");
+                        // We can't be specific about what the class extends, because it's loaded with another classloader
+                        profile = (Class<?>) m.invoke(profileDeclaration.get());
+                    }
                 }
             }
 
@@ -262,8 +257,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             if (isQuarkusTest && !isIntegrationTest) {
 
-                preloadTestResourceClasses(fromCanary);
-                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, fromCanary, profile);
+                preloadTestResourceClasses(inspectionClass);
+                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, inspectionClass, profile);
                 System.out.println("HOLLY made classloader " + runtimeClassLoader);
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
@@ -284,6 +279,25 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private boolean registersQuarkusTestExtensionWithExtendsWith(Class<?> inspectionClass) {
+
+        Optional a = (AnnotationSupport.findAnnotation(inspectionClass, extendWithAnnotation));
+        // This toString looks sloppy, but we cannot do an equals() because there might be multiple JUnit extensions, and getting the annotation value would need a reflective call, which may not be any cheaper or prettier than doing the string
+        return (a.isPresent() && a.get().toString().contains(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
+
+    }
+
+    private boolean hasQuarkusTestAnnotation(Class<?> inspectionClass) {
+        Class<?> clazz = inspectionClass;
+        while (clazz != null) {
+            if (clazz.getDeclaredAnnotation(quarkusTestAnnotation) != null) {
+                return true;
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return false;
     }
 
     /*
@@ -322,37 +336,21 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    private boolean registersQuarkusTestExtension(Class<?> fromCanary) {
-        Class<?> clazz = fromCanary;
-        try {
-            while (clazz != null) {
-                // TODO this call is not safe in our nobbled classloader, which is sort of surprising since I thought declared meant 'on this class' but I guess it needs to be able to access the parent
-                for (Field field : clazz.getDeclaredFields()) {
-                    // We can't use isAnnotationPresent because the classloader of the JUnit classes will be wrong (the canary classloader rather than our classloader)
-                    // TODO will all this searching be dreadfully slow?
-                    // TODO redo the canary loader to load JUnit classes with the same classloader as this?
-
-                    if (Arrays.stream(field.getAnnotations())
-                            .anyMatch(annotation -> annotation.annotationType()
-                                    .getName()
-                                    .equals(RegisterExtension.class.getName()))) {
-                        if (field.getType()
-                                .getName()
-                                .equals("io.quarkus.test.junit.QuarkusTestExtension")) {
-                            return true;
-                        }
+    private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {
+        Class<?> clazz = inspectionClass;
+        while (clazz != null) {
+            // We have to use getDeclaredFields and crawl the hierarchy, because getFields only looks at public fields, not package-private ones
+            for (Field field : clazz.getDeclaredFields()) {
+                Annotation rea = field.getAnnotation(registerExtensionAnnotation);
+                if (rea != null) {
+                    if (field.getType()
+                            .getName()
+                            .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION)) {
+                        return true;
                     }
                 }
-
-                clazz = clazz.getSuperclass();
             }
-        } catch (NoClassDefFoundError e) {
-            // Because the canary loader doesn't have a parent, this is possible
-            // We also see this error in getDeclaredFields(), which is more surprising to me
-            // If it happens, assume it's ok
-            // It's very unlikely something on the app classloader will extend quarkus test
-            // TODO suppress error once we know this is safe
-            System.out.println("HOLLY could not get parent of " + clazz.getName() + " got error " + e);
+            clazz = clazz.getSuperclass();
         }
 
         return false;
@@ -424,7 +422,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // TODO we can probably just use it without reflectively invoking it? Ah, no, wrong module - which brings us back to wanting to get this into the JUnit5 module
         //TODO does it need to be the key maker, or can it be our classloader? That'd be a lot simpler ...
         // TODO cache this?
-        ClassLoader classLoader = keyMakerClassLoader; // TODO profile == null ? keyMakerClassLoader : profile.getClassLoader();
+        ClassLoader classLoader = keyMakerClassLoader;
         Method method = Class
                 .forName("io.quarkus.test.junit.TestResourceUtil", true, classLoader) // TODO use class, not string, but that would need us to be in a different module
                 .getMethod("getReloadGroupIdentifier", Class.class, Class.class);

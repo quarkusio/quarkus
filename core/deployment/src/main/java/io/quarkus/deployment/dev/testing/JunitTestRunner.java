@@ -659,6 +659,25 @@ public class JunitTestRunner {
             }
         }
 
+        // The FacadeClassLoader approach of loading test classes with the classloader we will use to run them can only work for `@QuarkusTest` and not main or integration tests
+        // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
+
+        Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
+        for (var a : Arrays.asList(QUARKUS_TEST)) {
+            for (AnnotationInstance i : index.getAnnotations(a)) {
+                DotName name = i.target()
+                        .asClass()
+                        .name();
+                quarkusTestClassesForFacadeClassLoader.add(name.toString());
+                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                    if (!integrationTestClasses.contains(clazz.name()
+                            .toString())) {
+                        quarkusTestClassesForFacadeClassLoader.add(clazz.name()
+                                .toString());
+                    }
+                }
+            }
+        }
         Map<String, String> profiles = new HashMap<>();
 
         for (AnnotationInstance i : index.getAnnotations(TEST_PROFILE)) {
@@ -668,32 +687,6 @@ public class JunitTestRunner {
                     .name();
             // We could do the value as a class, but it wouldn't be in the right classloader
             profiles.put(name.toString(), i.value().asString());
-            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                if (!integrationTestClasses.contains(clazz.name()
-                        .toString())) {
-                    quarkusTestClasses.add(clazz.name()
-                            .toString());
-                }
-            }
-        }
-
-        Set<String> quarkusMainTestClasses = new HashSet<>();
-        // TODO looping over these twice is silly
-        for (var a : Arrays.asList(QUARKUS_MAIN_TEST)) {
-            for (AnnotationInstance i : index.getAnnotations(a)) {
-
-                DotName name = i.target()
-                        .asClass()
-                        .name();
-                quarkusTestClasses.add(name.toString());
-                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                    if (!integrationTestClasses.contains(clazz.name()
-                            .toString())) {
-                        quarkusMainTestClasses.add(clazz.name()
-                                .toString());
-                    }
-                }
-            }
         }
 
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
@@ -760,27 +753,13 @@ public class JunitTestRunner {
         List<Class<?>> itClasses = new ArrayList<>();
         List<Class<?>> utClasses = new ArrayList<>();
 
-        // TODO batch by profile and start once for each profile
-
         // TODO guard to only do this once? is this guard sufficient? see "wrongprofile" in QuarkusTestExtension
 
-        System.out.println(
-                "HOLLY after the re-add or whatever? quarkus test classes is " + Arrays.toString(quarkusTestClasses.toArray()));
-        System.out.println("classload thread is " + Thread.currentThread());
-
-        // TODO what is the right parent? this way of getting an app classloader is super-fragile
-        // ... but is the system one the one we want? surefire sometimes uses an isolated classloader, other launchers might too, but in dev mode we shoud be safe
-        //        ClassLoader parent = this.getClass()
-        //                .getClassLoader()
-        //                .getParent();
-        // TODO this seems logical, but DOES NOT makes integration-test/test-extension/tests fail
-        ClassLoader parent = ClassLoader.getSystemClassLoader();
-        System.out.println("HOLLY using parent for facade loader " + parent);
         FacadeClassLoader.clearSingleton();
-        // TODO passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
+        // Passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
 
         FacadeClassLoader facadeClassLoader = FacadeClassLoader.instance(this.getClass().getClassLoader(), true, profiles,
-                quarkusTestClasses, moduleInfo.getMain()
+                quarkusTestClassesForFacadeClassLoader, moduleInfo.getMain()
                         .getClassesPath(),
                 moduleInfo.getTest()
                         .get()
@@ -796,6 +775,7 @@ public class JunitTestRunner {
                 // While we're doing that, we may as well share the classloading logic
                 itClasses.add(facadeClassLoader.loadClass(i));
             } catch (Exception e) {
+                // TODO how handle this?
                 e.printStackTrace();
                 System.out.println("HOLLY BAD BAD" + e);
                 log.warnf(

@@ -77,8 +77,6 @@ public class CycloneDxSbomGenerator {
     private static final String FORMAT_XML = "xml";
     private static final String DEFAULT_FORMAT = FORMAT_JSON;
     private static final List<String> SUPPORTED_FORMATS = List.of(FORMAT_JSON, FORMAT_XML);
-    private static final String SCOPE_RUNTIME = "runtime";
-    private static final String SCOPE_DEVELOPMENT = "development";
 
     public static CycloneDxSbomGenerator newInstance() {
         return new CycloneDxSbomGenerator();
@@ -216,7 +214,8 @@ public class CycloneDxSbomGenerator {
         final List<Property> props = new ArrayList<>(2);
         String quarkusScope = component.getScope();
         if (quarkusScope == null) {
-            quarkusScope = dep == null || dep.isRuntimeCp() ? SCOPE_RUNTIME : SCOPE_DEVELOPMENT;
+            quarkusScope = dep == null || dep.isRuntimeCp() ? ApplicationComponent.SCOPE_RUNTIME
+                    : ApplicationComponent.SCOPE_DEVELOPMENT;
         }
         addProperty(props, QUARKUS_COMPONENT_SCOPE, quarkusScope);
         if (component.getDistributionPath() != null) {

@@ -606,7 +606,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 .toArray(URL[]::new);
         System.out.println("HOLLY urls is  " + Arrays.toString(urls));
         // TODO add a parent and use the canary loader on the normal path, too
-        otherLoader = new CanaryLoader(urls, parent);
+        otherLoader = new ParentLastURLClassLoader(urls, parent);
     }
 
     public void setQuarkusTestClasses(Set<String> quarkusTestClasses) {

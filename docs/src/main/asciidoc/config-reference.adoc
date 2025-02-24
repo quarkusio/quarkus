@@ -97,31 +97,9 @@ property names together.
 
 [source,properties]
 ----
-# value cannot be left empty
-quarkus.datasource."datasource-name".jdbc.url=value
+# value can be left empty but must be supplied by another source at runtime (or be an optional)
+quarkus.datasource."datasource-name".jdbc.url=
 ----
-
-If the value is not known until runtime, the key name can still be provided using the `io.smallrye.config.WithKeys` annotation.
-
-[source,java]
-----
-@ConfigMapping(prefix = "com.example")
-public interface ExampleConfig {
-
-    @WithKeys(KeySupplier.class)
-    Map<String, String> deployments();
-
-
-    class KeySupplier implements Supplier<Iterable<String>> {
-        @Override
-        public Iterable<String> get() {
-            return List.of("fake-deployment-name-2", "fake-deployment-name-1");
-        }
-    }
-}
-----
-
-However, a values for these keys **must** then be provided at runtime. Configuration key disambiguation is not supported for optional properties.
 
 [source,bash]
 ----

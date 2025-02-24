@@ -204,7 +204,7 @@ public class GrpcServerRecorder {
         boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
 
         if (reflectionServiceEnabled) {
-            LOGGER.info("Registering gRPC reflection service");
+            LOGGER.debug("Registering gRPC reflection service");
             ReflectionServiceV1 reflectionServiceV1 = new ReflectionServiceV1(definitions);
             ReflectionServiceV1alpha reflectionServiceV1alpha = new ReflectionServiceV1alpha(definitions);
             ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(reflectionServiceV1, globalInterceptors);
@@ -215,8 +215,6 @@ public class GrpcServerRecorder {
             GrpcServiceBridge bridgeAlpha = GrpcServiceBridge.bridge(serviceDefinitionAlpha);
             bridgeAlpha.bind(server);
         }
-
-        initHealthStorage();
 
         Router router = routerSupplier.getValue();
         if (securityHandlers != null) {
@@ -257,6 +255,7 @@ public class GrpcServerRecorder {
         }
 
         LOGGER.info("Starting new Quarkus gRPC server (using Vert.x transport)...");
+
         Route route = router.route().handler(ctx -> {
             if (!isGrpc(ctx)) {
                 ctx.next();
@@ -611,7 +610,7 @@ public class GrpcServerRecorder {
         }
 
         if (reflectionServiceEnabled) {
-            LOGGER.info("Registering gRPC reflection service");
+            LOGGER.debug("Registering gRPC reflection service");
             builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1(definitions), globalInterceptors));
             builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1alpha(definitions), globalInterceptors));
         }

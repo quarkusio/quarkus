@@ -7,7 +7,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.vertx.db2client.DB2Pool;
 
-@Deprecated(forRemoval = true)
+@Deprecated(since = "3.21", forRemoval = true)
 public final class DB2PoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;

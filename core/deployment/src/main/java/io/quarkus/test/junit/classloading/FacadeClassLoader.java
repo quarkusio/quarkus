@@ -284,6 +284,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     /*
      * What's this for?
+     * It's a bit like detecting the location in an privacy test or detecting the lab environment in an emissions test and then
+     * deciding how to behave.
+     * We're special-casing behaviour for a hard-coded selection of test packages. Yuck!
      * TODO Hopefully, once https://github.com/quarkusio/quarkus/issues/45785 is done, it will not be needed.
      * Some tests, especially in kubernetes-client and openshift-client, check config to decide whether to start a dev service.
      * That happens at augmentation, which happens before test execution.
@@ -602,8 +605,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 })
                 .toArray(URL[]::new);
         System.out.println("HOLLY urls is  " + Arrays.toString(urls));
-        // TODO this is different from the roll-our-own path because we put on a parent
-        otherLoader = new URLClassLoader(urls, parent);
+        // TODO add a parent and use the canary loader on the normal path, too
+        otherLoader = new CanaryLoader(urls, parent);
     }
 
     public void setQuarkusTestClasses(Set<String> quarkusTestClasses) {

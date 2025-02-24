@@ -8,12 +8,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+import io.quarkus.qute.EngineBuilder.EngineListener;
+
 /**
  * Evaluates the string representation of the the first parameter as a template, e.g. {@code str:eval('Hello {name}!')}.
  *
  * @see EvalSectionHelper
  */
-public class StrEvalNamespaceResolver implements NamespaceResolver {
+public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListener {
 
     private volatile Engine engine;
 
@@ -29,7 +31,8 @@ public class StrEvalNamespaceResolver implements NamespaceResolver {
         this.priority = priority;
     }
 
-    public void setEngine(Engine engine) {
+    @Override
+    public void engineBuilt(Engine engine) {
         this.engine = engine;
     }
 
@@ -81,7 +84,7 @@ public class StrEvalNamespaceResolver implements NamespaceResolver {
     }
 
     private void resolve(CompletableFuture<Object> ret, EvalContext context, Template template) {
-        ((TemplateImpl) template).root.resolve(context.resolutionContext()).whenComplete((r, t) -> {
+        template.getRootNode().resolve(context.resolutionContext()).whenComplete((r, t) -> {
             if (t != null) {
                 ret.completeExceptionally(t);
             } else {

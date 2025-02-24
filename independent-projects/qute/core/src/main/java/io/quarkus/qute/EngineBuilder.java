@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
 
 /**
  * Builder for {@link Engine}.
@@ -24,6 +27,8 @@ import java.util.function.Supplier;
  */
 public final class EngineBuilder {
 
+    private static final Logger LOG = Logger.getLogger(EngineBuilder.class);
+
     final Map<String, SectionHelperFactory<?>> sectionHelperFactories;
     final List<ValueResolver> valueResolvers;
     final List<NamespaceResolver> namespaceResolvers;
@@ -37,6 +42,7 @@ public final class EngineBuilder {
     String iterationMetadataPrefix;
     long timeout;
     boolean useAsyncTimeout;
+    final List<EngineListener> listeners;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -51,6 +57,7 @@ public final class EngineBuilder {
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
         this.timeout = 10_000;
         this.useAsyncTimeout = true;
+        this.listeners = new ArrayList<>();
     }
 
     /**
@@ -103,10 +110,22 @@ public final class EngineBuilder {
                 new FragmentSectionHelper.Factory());
     }
 
+    /**
+     *
+     * @param resolverSupplier
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {
         return addValueResolver(resolverSupplier.get());
     }
 
+    /**
+     *
+     * @param resolvers
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolvers(ValueResolver... resolvers) {
         for (ValueResolver valueResolver : resolvers) {
             addValueResolver(valueResolver);
@@ -114,9 +133,15 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param resolver
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolver(ValueResolver resolver) {
         this.valueResolvers.add(resolver);
-        return this;
+        return addListener(resolver);
     }
 
     /**
@@ -150,6 +175,7 @@ public final class EngineBuilder {
      * @param resolver
      * @return self
      * @throws IllegalArgumentException if there is a resolver of the same priority for the given namespace
+     * @see EngineListener
      */
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
         String namespace = Namespaces.requireValid(resolver.getNamespace());
@@ -163,7 +189,7 @@ public final class EngineBuilder {
             }
         }
         this.namespaceResolvers.add(resolver);
-        return this;
+        return addListener(resolver);
     }
 
     /**
@@ -300,11 +326,30 @@ public final class EngineBuilder {
     }
 
     /**
+     * Value and namespace resolvers that also implement {@link EngineListener} are registered automatically.
+     *
+     * @param listener
+     * @return self
+     */
+    public EngineBuilder addEngineListener(EngineListener listener) {
+        this.listeners.add(Objects.requireNonNull(listener));
+        return this;
+    }
+
+    /**
      *
      * @return a new engine instance
      */
     public Engine build() {
-        return new EngineImpl(this);
+        EngineImpl engine = new EngineImpl(this);
+        for (EngineListener listener : listeners) {
+            try {
+                listener.engineBuilt(engine);
+            } catch (Throwable e) {
+                LOG.warnf("Engine listener error: " + e);
+            }
+        }
+        return engine;
     }
 
     private SectionHelperFactory<?> cachedFactory(SectionHelperFactory<?> factory) {
@@ -312,6 +357,25 @@ public final class EngineBuilder {
             return factory;
         }
         return new CachedConfigSectionHelperFactory<>(factory);
+    }
+
+    private EngineBuilder addListener(Object obj) {
+        if (obj instanceof EngineListener listener) {
+            listeners.add(listener);
+        }
+        return this;
+    }
+
+    /**
+     * Receives notifications about Engine lifecycle.
+     * <p>
+     * Value and namespace resolvers that also implement {@link EngineListener} are registered automatically.
+     */
+    public interface EngineListener {
+
+        default void engineBuilt(Engine engine) {
+        }
+
     }
 
     static class CachedConfigSectionHelperFactory<T extends SectionHelper> implements SectionHelperFactory<T> {

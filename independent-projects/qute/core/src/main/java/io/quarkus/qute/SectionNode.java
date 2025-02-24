@@ -210,7 +210,9 @@ public class SectionNode implements TemplateNode {
             }
             List<SectionBlock> blocks = builder.build();
             return new SectionNode(helperName, blocks,
-                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorInitializer, currentTemlate)), origin);
+                    factory.initialize(
+                            new SectionInitContextImpl(engine, blocks, errorInitializer, currentTemlate, helperName)),
+                    origin);
         }
 
     }

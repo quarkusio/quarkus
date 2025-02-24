@@ -39,9 +39,11 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.FragmentNamespaceResolver;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
+import io.quarkus.qute.NamedArgument;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
@@ -129,6 +131,8 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.orEmpty());
         // Note that arrays are handled specifically during validation
         builder.addValueResolver(ValueResolvers.arrayResolver());
+        // Named arguments for fragment namespace resolver
+        builder.addValueResolver(new NamedArgument.SetValueResolver());
         // Additional value resolvers
         for (ValueResolver valueResolver : valueResolvers) {
             builder.addValueResolver(valueResolver);
@@ -196,8 +200,13 @@ public class EngineProducer {
             builder.addNamespaceResolver(namespaceResolver);
         }
         // str:eval
-        StrEvalNamespaceResolver strEvalNamespaceResolver = new StrEvalNamespaceResolver();
-        builder.addNamespaceResolver(strEvalNamespaceResolver);
+        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+        // Fragment namespace resolvers
+        builder.addNamespaceResolver(new NamedArgument.ParamNamespaceResolver());
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRAGMENT));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRG));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAPTURE));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAP));
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -272,9 +281,6 @@ public class EngineProducer {
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
-
-        // Init resolver for str:eval
-        strEvalNamespaceResolver.setEngine(engine);
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();

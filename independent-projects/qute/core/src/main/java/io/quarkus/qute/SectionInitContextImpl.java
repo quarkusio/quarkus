@@ -13,13 +13,19 @@ final class SectionInitContextImpl implements SectionInitContext {
     private final List<SectionBlock> blocks;
     private final ErrorInitializer errorInitializer;
     private final Supplier<Template> currentTemplate;
+    private final String name;
 
     SectionInitContextImpl(EngineImpl engine, List<SectionBlock> blocks, ErrorInitializer errorInitializer,
-            Supplier<Template> currentTemplate) {
+            Supplier<Template> currentTemplate, String name) {
         this.engine = engine;
         this.blocks = blocks;
         this.errorInitializer = errorInitializer;
         this.currentTemplate = currentTemplate;
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 
     /**

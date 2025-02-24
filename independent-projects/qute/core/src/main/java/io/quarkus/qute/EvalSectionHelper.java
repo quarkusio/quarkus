@@ -55,10 +55,10 @@ public class EvalSectionHelper implements SectionHelper {
     }
 
     private void parseAndResolve(CompletableFuture<ResultNode> ret, String contents, ResolutionContext resolutionContext) {
-        TemplateImpl template;
+        Template template;
         try {
-            template = (TemplateImpl) engine.parse(contents);
-            template.root
+            template = engine.parse(contents);
+            template.getRootNode()
                     .resolve(resolutionContext)
                     .whenComplete((resultNode, t2) -> {
                         if (t2 != null) {

@@ -1258,8 +1258,8 @@ This is {#insert title}my title{/title}! <1>
 [[fragments]]
 ==== Fragments
 
-A fragment represents a part of the template that can be treated as a separate template, i.e. rendered separately.
-One of the main motivations to introduce this feature was to support use cases like https://htmx.org/essays/template-fragments/[htmx fragments].
+A fragment represents a part of a template that can be treated as a separate template, i.e. rendered separately.
+One of the main motivations to introduce this feature was the support of use cases like https://htmx.org/essays/template-fragments/[htmx fragments].
 
 Fragments can be defined with the `{#fragment}` section.
 Each fragment has an identifier that can only consist of alphanumeric characters and underscores.
@@ -1285,7 +1285,7 @@ NOTE: Note that a fragment identifier must be unique in a template.
 </ol>
 {/fragment}
 ----
-<1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier.
+<1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier. The name of the first parameter can be omitted - `{#fragment item_aliases}` is fine too. 
 
 You can obtain a fragment programmatically via the `io.quarkus.qute.Template.getFragment(String)` method.
 
@@ -1318,49 +1318,63 @@ The snippet above should render something like:
 TIP: In Quarkus, it is also possible to define a <<type_safe_fragments,type-safe fragment>>.
 
 You can also include a fragment with an `{#include}` section inside another template or the template that defines the fragment.
+A fragment can be also used in expressions with the `frg:`/`fragment:` namespaces.
 
 .Including a Fragment in `user.html`
 [source,html]
 ----
 <h1>User - {user.name}</h1>
 
+<p>
+{#fragment fullname}
+{name} <strong>{surname}</strong>
+{/fragment}
+</p>
+
 <p>This document contains a detailed info about a user.</p>
 
 {#include item$item_aliases aliases=user.aliases /} <1><2>
+
+{frg:fullname} is a happy user! <3>
 ----
 <1> A template identifier that contains a dollar sign `$` denotes a fragment. The `item$item_aliases` value is translated as: _Use the fragment `item_aliases` from the template `item`._
 <2> The `aliases` parameter is used to pass the relevant data. We need to make sure that the data are set correctly. In this particular case the fragment will use the expression `user.aliases` as the value of `aliases` in the `{#for alias in aliases}` section.
+<3> The `{frg:username}` expression outputs the fragment content. `frg:` can be replaced with `fragment:`.
 
 TIP: If you want to reference a fragment from the same template, skip the part before `$`, i.e. something like `{#include $item_aliases /}`.
 
 NOTE: You can specify `{#include item$item_aliases _ignoreFragments=true /}` in order to disable this feature, i.e. a dollar sign `$` in the template identifier does not result in a fragment lookup.
 
-===== Hidden Fragments
+
+===== Hidden Fragments (Capture)
 
 By default, a fragment is normally rendered as a part of the original template.
-However, sometimes it might be useful to mark a fragment as _hidden_ with `rendered=false`.
-An interesting use case would be a fragment that can be used multiple-times inside the template that defines it.
+However, sometimes it might be useful to mark a fragment as _hidden_.
+The regular fragment section has the `capture` alias that implies a hidden fragment.
+Alternatively, you can "hide" a fragment either with `rendered=false` or `_hidden` parameters.
+An interesting use case could be a fragment that can be used multiple-times inside the template that defines it.
 
-.Fragment Definition in `item.html`
+.Hidden Fragment Definition in `item.html`
 [source,html]
 ----
-{#fragment id=strong rendered=false} <1>
+{#capture strong} <1>
 <strong>{val}</strong>
-{/fragment}
+{/capture}
 
 <h1>My page</h1>
 <p>This document
 {#include $strong val='contains' /} <2>
 a lot of
-{#include $strong val='information' /} <3>
+{capture:strong(param:val = 'information')} <3> <4>
 !</p>
 ----
 <1> Defines a hidden fragment with identifier `strong`.
-In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter.
-However, it's possible to use any expression there.
+`{#capture strong}` can be replaced with `{#fragment strong rendered=false}` or `{#fragment strong _hidden}`.
+The `rendered` parameter can use any expression, e.g. `{#fragment strong rendered=config.isRendered}`.
 <2> Include the fragment `strong` and pass the value.
 Note the syntax `$strong` which is translated to include the fragment `strong` from the current template.
-<3> Include the fragment `strong` and pass the value.
+<3> A namespace resolver can be used to access a hidden fragment too. `capture:` can be replaced with `cap:`.
+<4> `param:val = 'information'` is used to pass a named parameter to the fragment. 
 
 The snippet above renders something like:
 
@@ -1373,6 +1387,8 @@ a lot of
 <strong>information</strong>
 !</p>
 ----
+
+TIP: In Quarkus, the namespace resolvers are automatically registered for namespaces `frg`, `fragment`, `cap` and `capture`.
 
 ==== Eval Section
 

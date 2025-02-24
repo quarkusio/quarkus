@@ -39,9 +39,13 @@ public class FragmentSectionHelper implements SectionHelper {
         if (isAlwaysExecuted(context)) {
             return context.execute();
         }
-        return context.resolutionContext().evaluate(rendered).thenCompose(r -> {
-            return Booleans.isFalsy(r) ? ResultNode.NOOP : context.execute();
-        });
+        if (rendered.isLiteral()) {
+            return Booleans.isFalsy(rendered.getLiteral()) ? ResultNode.NOOP : context.execute();
+        } else {
+            return context.resolutionContext().evaluate(rendered).thenCompose(r -> {
+                return Booleans.isFalsy(r) ? ResultNode.NOOP : context.execute();
+            });
+        }
     }
 
     private boolean isAlwaysExecuted(SectionResolutionContext context) {
@@ -60,12 +64,14 @@ public class FragmentSectionHelper implements SectionHelper {
         static final Pattern FRAGMENT_PATTERN = Pattern.compile("[a-zA-Z0-9_]+");
 
         static final String RENDERED = "rendered";
+        static final String HIDDEN = "_hidden";
+        static final String CAPTURE = "capture";
 
         private final Map<String, Map<String, Origin>> templateToFragments = new ConcurrentHashMap<>();
 
         @Override
         public List<String> getDefaultAliases() {
-            return ImmutableList.of("fragment");
+            return ImmutableList.of("fragment", CAPTURE);
         }
 
         @Override
@@ -73,6 +79,7 @@ public class FragmentSectionHelper implements SectionHelper {
             return ParametersInfo.builder()
                     .addParameter(ID)
                     .addParameter(Parameter.builder(RENDERED).ignoreUnnamedValues().optional().build())
+                    .addParameter(Parameter.builder(HIDDEN).optional().valuePredicate(HIDDEN::equals).build())
                     .build();
         }
 
@@ -109,7 +116,15 @@ public class FragmentSectionHelper implements SectionHelper {
                             .build();
                 }
             }
-            return new FragmentSectionHelper(id, context.getExpression(RENDERED), generatedId);
+            Expression rendered = null;
+            if (context.getName().equals(CAPTURE)) {
+                rendered = ExpressionImpl.literalFrom(-1, "false");
+            } else if (context.hasParameter(RENDERED)) {
+                rendered = context.getExpression(RENDERED);
+            } else if (context.hasParameter(HIDDEN)) {
+                rendered = ExpressionImpl.literalFrom(-1, "false");
+            }
+            return new FragmentSectionHelper(id, rendered, generatedId);
         }
 
         @Override

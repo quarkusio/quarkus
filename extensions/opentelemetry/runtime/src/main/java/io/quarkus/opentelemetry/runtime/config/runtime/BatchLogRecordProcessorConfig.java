@@ -10,16 +10,16 @@ import io.smallrye.config.WithName;
 public interface BatchLogRecordProcessorConfig {
 
     /**
-     * The interval, in milliseconds, between two consecutive exports.
+     * The Batch Log Record Processor interval {@link Duration} between two consecutive exports.
      * <p>
-     * Default is `1000`.
+     * Default is `1S`.
      */
     @WithName("schedule.delay")
     @WithDefault("1s")
     Duration scheduleDelay();
 
     /**
-     * The maximum queue size.
+     * The Batch Log Record Processor maximum queue size.
      * <p>
      * Default is `2048`.
      */
@@ -28,7 +28,7 @@ public interface BatchLogRecordProcessorConfig {
     Integer maxQueueSize();
 
     /**
-     * The maximum batch size.
+     * The Batch Log Record Processor maximum batch size.
      * <p>
      * Default is `512`.
      */
@@ -37,7 +37,7 @@ public interface BatchLogRecordProcessorConfig {
     Integer maxExportBatchSize();
 
     /**
-     * The maximum allowed time, in milliseconds, to export data.
+     * The Batch Log Record Processor maximum allowed time {@link Duration} to export data.
      * <p>
      * Default is `30s`.
      */

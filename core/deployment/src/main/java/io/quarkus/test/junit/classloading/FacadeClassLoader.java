@@ -50,7 +50,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     // TODO does this need to be a thread safe maps?
     private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
-    private final ClassLoader parent;
     private static final String NO_PROFILE = "no-profile";
 
     /*
@@ -69,14 +68,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * // TODO we need to close this when we're done
      * //If we use the parent loader, does that stop the quarkus classloaders getting a crack at some classes?
      */
-    private final URLClassLoader canaryLoader;
-    // TODO better mechanism; every QuarkusMainTest  gets its own application
-    private int mainC = 0;
-    private Map<String, Class> profiles;
+    private final URLClassLoader peekingClassLoader;
+    private Map<String, Class<?>> profiles;
     private String classesPath;
-    private URLClassLoader otherLoader;
     private Set<String> quarkusTestClasses;
-    private Set<String> quarkusMainTestClasses;
     private boolean isAuxiliaryApplication;
     private QuarkusClassLoader keyMakerClassLoader;
 
@@ -99,20 +94,35 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         return instance;
     }
 
+    public static FacadeClassLoader instance(ClassLoader parent, boolean isAuxiliaryApplication, Map<String, String> profiles,
+            Set<String> quarkusTestClasses, String... classesPath) {
+        if (instance == null) {
+            instance = new FacadeClassLoader(parent, isAuxiliaryApplication, profiles, quarkusTestClasses, classesPath);
+        }
+        return instance;
+    }
+
     public FacadeClassLoader(ClassLoader parent) {
-        // We need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
+        // TODO update this commentWe need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
         // It seems something in that path is using a method other than loadClass(), and so the inherited method can't do the right thing without a parent
-        super(parent);
-        // TODO in dev mode, sometimes this is the deployment classloader, which doesn't seem right?
-        this.parent = parent;
         // TODO if this is launched with a launcher, java.class.path may not be correct - see https://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
         // TODO paths with spaces in them break this - and at the moment, no test catches that
-        String classPath = System.getProperty("java.class.path");
-        // This manipulation is needed to work in IDEs
-        URL[] urls = Arrays.stream(classPath.split(File.pathSeparator))
+
+        this(parent, false, null, null, System.getProperty("java.class.path"));
+    }
+
+    public FacadeClassLoader(ClassLoader parent, boolean isAuxiliaryApplication, Map<String, String> profileNames,
+            Set<String> quarkusTestClasses,
+            String... classPaths) {
+        super(parent);
+        this.quarkusTestClasses = quarkusTestClasses;
+        this.isAuxiliaryApplication = isAuxiliaryApplication;
+
+        this.classesPath = String.join(File.pathSeparator, classPaths);
+        URL[] urls = Arrays.stream(classesPath.split(File.pathSeparator))
                 .map(spec -> {
                     try {
-                        // TODO is this adjustment even needed?
+                        // This manipulation is needed to work in IDEs
                         if (!spec.endsWith("jar") && !spec.endsWith(File.separator)) {
                             spec = spec + File.separator;
                         }
@@ -120,22 +130,38 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         return Path.of(spec)
                                 .toUri()
                                 .toURL();
-
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 })
                 .toArray(URL[]::new);
+        peekingClassLoader = new ParentLastURLClassLoader(urls, parent);
 
-        canaryLoader = new URLClassLoader(urls, null);
+        if (profileNames != null) {
+            this.profiles = new HashMap<>();
+
+            profileNames.forEach((k, profileName) -> {
+                Class profile;
+                if (profileName != null) {
+                    try {
+                        profile = peekingClassLoader.loadClass(profileName);
+                    } catch (ClassNotFoundException e1) {
+                        throw new RuntimeException(e1);
+                    }
+                    this.profiles.put(k, profile);
+                }
+
+            });
+        }
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         System.out.println("HOLLY facade classloader loading " + name);
         boolean isQuarkusTest = false;
-        // TODO we need to set this properly
-        boolean isMainTest = false;
+
         boolean isIntegrationTest = false;
         // TODO hack that didn't even work
         //        if (runtimeClassLoader != null && name.contains("QuarkusTestProfileAwareClass")) {
@@ -153,22 +179,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         Class<?> fromCanary = null;
 
         try {
-            if (otherLoader != null) {
+            if (peekingClassLoader != null) {
                 try {
-                    // TODO this is dumb, we are only loading it so that other stuff can discover a classpath from it
-                    fromCanary = otherLoader
+                    fromCanary = peekingClassLoader
                             .loadClass(name);
                 } catch (ClassNotFoundException | NoClassDefFoundError e) {
-
-                    System.out.println("Could not load with the OTHER loader " + name);
-                    System.out.println("Used class path " + classesPath);
                     return super.loadClass(name);
-                }
-            } else {
-                try {
-                    fromCanary = canaryLoader.loadClass(name);
-                } catch (ClassNotFoundException e) {
-                    return parent.loadClass(name);
                 }
             }
 
@@ -181,9 +197,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (profiles != null) {
                 // TODO the good is that we're re-using what JUnitRunner already worked out, the bad is that this is seriously clunky with multiple code paths, brittle information sharing ...
                 // TODO at the very least, should we have a test landscape holder class?
-                isMainTest = quarkusMainTestClasses.contains(name);
                 // The JUnitRunner counts main tests as quarkus tests
-                isQuarkusTest = quarkusTestClasses.contains(name) && !isMainTest;
+                isQuarkusTest = quarkusTestClasses.contains(name);
 
                 profile = profiles.get(name);
 
@@ -208,18 +223,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         // (I think)
                         || registersQuarkusTestExtension(fromCanary);
 
-                // TODO want to exclude quarkus component test, but include quarkusmaintest - what about quarkusunittest? and quarkusintegrationtest?
+                // TODO want to exclude quarkus component test, and exclude quarkusmaintest - what about quarkusunittest? and quarkusintegrationtest?
                 // TODO knowledge of test annotations leaking in to here, although JUnitTestRunner also has the same leak - should we have a superclass that lives in this package that we check for?
                 // TODO be tighter with the names we check for
                 // TODO this would be way easier if this was in the same module as the profile, could just do clazz.getAnnotation(TestProfile.class)
-
-                // TODO QuarkusMainTest should not be included in here, since it runs tests the 'old' way
-                // ... but if we doo include it, need to count ExtendWith
-
-                isMainTest = Arrays.stream(fromCanary.getAnnotations())
-                        .anyMatch(annotation -> annotation.annotationType()
-                                .getName()
-                                .endsWith("QuarkusMainTest"));
 
                 isIntegrationTest = Arrays.stream(fromCanary.getAnnotations())
                         .anyMatch(annotation -> annotation.annotationType()
@@ -241,9 +248,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     profile = (Class<?>) m.invoke(profileAnnotation.get());
                 }
             }
-
-            // increment the key unconditionally, we just need uniqueness
-            mainC++;
 
             // TODO move this into the getclassloade method
             // TODO would we ever load if it's not a quarkus test?
@@ -299,7 +303,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      */
     private void preloadTestResourceClasses(Class<?> fromCanary) {
         try {
-            Class<Annotation> ca = (Class<Annotation>) canaryLoader.loadClass("io.quarkus.test.common.QuarkusTestResource");
+            Class<Annotation> ca = (Class<Annotation>) peekingClassLoader
+                    .loadClass("io.quarkus.test.common.QuarkusTestResource");
             List<Annotation> ans = AnnotationSupport.findRepeatableAnnotations(fromCanary, ca);
             for (Annotation a : ans) {
                 Method m = a
@@ -308,7 +313,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 Class resourceClass = (Class) m.invoke(a);
                 // Only do this hack for the resources we know need it, since it can cause failures in other areas
                 if (resourceClass.getName().contains("Kubernetes")) {
-                    parent.loadClass(resourceClass.getName());
+                    getParent().loadClass(resourceClass.getName());
                 }
             }
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
@@ -536,11 +541,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             curatedApplication.close();
         }
         try {
-            if (otherLoader != null) {
-                otherLoader.close();
-            }
-            if (canaryLoader != null) {
-                canaryLoader.close();
+
+            if (peekingClassLoader != null) {
+                peekingClassLoader.close();
             }
 
         } catch (IOException e) {
@@ -549,75 +552,4 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     }
 
-    public void setProfiles(Map<String, String> profileNames) {
-        this.profiles = new HashMap<>();
-
-        try {
-            profileNames.forEach((k, profileName) -> {
-                Class profile = null;
-                if (profileName != null) {
-
-                    // TODO consolidate these two loaders
-                    if (otherLoader != null) {
-                        try {
-                            profile = otherLoader.loadClass(profileName);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
-                    } else {
-                        try {
-                            profile = canaryLoader.loadClass(profileName);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    profiles.put(k, profile);
-                }
-
-            });
-        } catch (Exception e) {
-            // TODO
-            System.out.println("HOLLY NOOOOOOOO " + e);
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void setClassPath(String... classPaths) {
-
-        this.classesPath = String.join(File.pathSeparator, classPaths);
-        System.out.println("HOLLY setting other classpath to " + classesPath);
-        URL[] urls = Arrays.stream(classesPath.split(File.pathSeparator))
-                .map(spec -> {
-                    try {
-                        if (!spec.endsWith("jar") && !spec.endsWith(File.separator)) {
-                            spec = spec + File.separator;
-                        }
-
-                        return Path.of(spec)
-                                .toUri()
-                                .toURL();
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toArray(URL[]::new);
-        System.out.println("HOLLY urls is  " + Arrays.toString(urls));
-        // TODO add a parent and use the canary loader on the normal path, too
-        otherLoader = new ParentLastURLClassLoader(urls, parent);
-    }
-
-    public void setQuarkusTestClasses(Set<String> quarkusTestClasses) {
-        this.quarkusTestClasses = quarkusTestClasses;
-    }
-
-    public void setQuarkusMainTestClasses(Set<String> quarkusMainTestClasses) {
-        this.quarkusMainTestClasses = quarkusMainTestClasses;
-    }
-
-    public void setAuxiliaryApplication(boolean b) {
-        this.isAuxiliaryApplication = b;
-    }
 }

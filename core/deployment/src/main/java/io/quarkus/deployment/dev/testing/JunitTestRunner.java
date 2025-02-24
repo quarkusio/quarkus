@@ -777,20 +777,14 @@ public class JunitTestRunner {
         ClassLoader parent = ClassLoader.getSystemClassLoader();
         System.out.println("HOLLY using parent for facade loader " + parent);
         FacadeClassLoader.clearSingleton();
-        FacadeClassLoader facadeClassLoader = FacadeClassLoader.instance(this.getClass().getClassLoader()); // TODO ideally it would be in a different module, but that is hard CollaboratingClassLoader.construct(parent);
+        // TODO passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
 
-        facadeClassLoader.setAuxiliaryApplication(true);
-        // TODO clumsy hack, consolidate logic properly; this path is nicer if we can do it, because it has the moduleinfo
-        facadeClassLoader.setClassPath(moduleInfo.getMain()
-                .getClassesPath(),
+        FacadeClassLoader facadeClassLoader = FacadeClassLoader.instance(this.getClass().getClassLoader(), true, profiles,
+                quarkusTestClasses, moduleInfo.getMain()
+                        .getClassesPath(),
                 moduleInfo.getTest()
                         .get()
-                        .getClassesPath());
-        facadeClassLoader.setProfiles(profiles);
-
-        // TODO this is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
-        facadeClassLoader.setQuarkusTestClasses(quarkusTestClasses);
-        facadeClassLoader.setQuarkusMainTestClasses(quarkusMainTestClasses);
+                        .getClassesPath()); // TODO ideally it would be in a different module, but that is hard CollaboratingClassLoader.construct(parent);
 
         Thread.currentThread()
                 .setContextClassLoader(facadeClassLoader);

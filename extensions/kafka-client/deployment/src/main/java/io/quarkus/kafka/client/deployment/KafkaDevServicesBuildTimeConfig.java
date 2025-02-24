@@ -33,7 +33,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
      * <p>
      * For Redpanda:
-     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/vectorized/redpanda
+     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/redpandadata/redpanda
      * <p>
      * For Strimzi:
      * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
@@ -47,7 +47,7 @@ public class KafkaDevServicesBuildTimeConfig {
     public Provider provider = Provider.REDPANDA;
 
     public enum Provider {
-        REDPANDA("docker.io/vectorized/redpanda:v22.3.4"),
+        REDPANDA("docker.io/redpandadata/redpanda:v22.3.4"),
         STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.2.1"),
         KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
 

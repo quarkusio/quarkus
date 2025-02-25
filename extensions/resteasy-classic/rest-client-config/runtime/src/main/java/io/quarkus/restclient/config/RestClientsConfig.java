@@ -282,6 +282,17 @@ public interface RestClientsConfig {
     Optional<MemorySize> maxChunkSize();
 
     /**
+     * Supports receiving compressed messages using GZIP.
+     * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+     * REST Client will automatically decode the content and proceed with the message handling.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<Boolean> enableCompression();
+
+    /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
      * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
      * use HTTP/1.1.
@@ -599,6 +610,15 @@ public interface RestClientsConfig {
          */
         @ConfigDocDefault("8K")
         Optional<MemorySize> maxChunkSize();
+
+        /**
+         * Supports receiving compressed messages using GZIP.
+         * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+         * REST Client will automatically decode the content and proceed with the message handling.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Boolean> enableCompression();
 
         /**
          * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the

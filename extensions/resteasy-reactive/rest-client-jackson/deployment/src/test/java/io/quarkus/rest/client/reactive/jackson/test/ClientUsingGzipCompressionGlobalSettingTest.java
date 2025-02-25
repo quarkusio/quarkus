@@ -15,12 +15,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.http.Compressed;
 
-public class ClientUsingGzipCompressionTest {
+public class ClientUsingGzipCompressionGlobalSettingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyResource.class, Message.class, MyClient.class))
-            .withConfigurationResource("client-using-gzip-application.properties");
+            .overrideConfigKey("quarkus.http.enable-compression", "true")
+            .overrideRuntimeConfigKey("quarkus.rest-client.my-client.url", "http://localhost:${quarkus.http.test-port:8081}");
 
     @RestClient
     MyClient client;

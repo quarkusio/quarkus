@@ -143,6 +143,11 @@ public class RestClientCDIDelegateBuilder<T> {
                 configRoot.multipart().maxChunkSize());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
+        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
+        if (enableCompressions.isPresent()) {
+            builder.enableCompression(enableCompressions.get());
+        }
+
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
 

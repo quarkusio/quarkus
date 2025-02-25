@@ -82,7 +82,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
-    private boolean enableCompression;
+    private Boolean enableCompression;
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -202,8 +202,8 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
-    public ClientBuilder enableCompression() {
-        this.enableCompression = true;
+    public ClientBuilder enableCompression(boolean enableCompression) {
+        this.enableCompression = enableCompression;
         return this;
     }
 
@@ -278,7 +278,7 @@ public class ClientBuilderImpl extends ClientBuilder {
             }
         }
 
-        if (enableCompression) {
+        if (Boolean.TRUE.equals(enableCompression)) {
             configuration.register(ClientGZIPDecodingInterceptor.class);
         }
 

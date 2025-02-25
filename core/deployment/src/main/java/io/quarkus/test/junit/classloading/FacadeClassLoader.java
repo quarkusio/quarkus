@@ -330,23 +330,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {
-        Class<?> clazz = inspectionClass;
-        while (clazz != null) {
-            // We have to use getDeclaredFields and crawl the hierarchy, because getFields only looks at public fields, not package-private ones
-            for (Field field : clazz.getDeclaredFields()) {
-                Annotation rea = field.getAnnotation(registerExtensionAnnotation);
-                if (rea != null) {
-                    if (field.getType()
-                            .getName()
-                            .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION)) {
-                        return true;
-                    }
-                }
-            }
-            clazz = clazz.getSuperclass();
-        }
 
-        return false;
+        List<Field> fields = AnnotationSupport.findAnnotatedFields(inspectionClass, registerExtensionAnnotation,
+                f -> f.getType().getName()
+                        .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
+
+        return fields != null && fields.size() > 0;
     }
 
     private QuarkusClassLoader getQuarkusClassLoader(Class requiredTestClass, Class<?> profile) {

@@ -115,7 +115,7 @@ public final class AmazonLambdaProcessor {
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
             reflectiveClassBuildItemBuildProducer
-                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
+                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().queryPublicMethods().build());
 
             String cdiName = null;
             AnnotationInstance named = info.declaredAnnotation(NAMED);

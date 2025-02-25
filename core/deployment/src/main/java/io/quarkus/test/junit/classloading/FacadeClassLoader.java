@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
@@ -72,6 +73,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     // Ideally these would be final, but we initialise them in a try-catch block and sometimes they will be caught
     private Class<? extends Annotation> quarkusTestAnnotation;
+    private Class<? extends Annotation> disabledAnnotation;
     private Class<? extends Annotation> quarkusIntegrationTestAnnotation;
     private Class<? extends Annotation> profileAnnotation;
     private Class<? extends Annotation> extendWithAnnotation;
@@ -161,11 +163,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // In the isolated classloader case, we actually never discover any quarkus tests, and a new instance gets created;
         // but to be safe, initialise our instance variables. We can't use the peekingClassLoader because it can't see JUnit classes, so just use the parent
         try {
-            quarkusTestAnnotation = (Class<? extends Annotation>) annotationLoader
-                    .loadClass("io.quarkus.test.junit.QuarkusTest");
             extendWithAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(ExtendWith.class.getName());
+            disabledAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Disabled.class.getName());
             registerExtensionAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(RegisterExtension.class.getName());
+            quarkusTestAnnotation = (Class<? extends Annotation>) annotationLoader
+                    .loadClass("io.quarkus.test.junit.QuarkusTest");
             // TODO if this was in the right module, could use class getname
             quarkusIntegrationTestAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass("io.quarkus.test.junit.QuarkusIntegrationTest");
@@ -201,7 +204,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         System.out.println("HOLLY facade classloader loading " + name);
         boolean isQuarkusTest = false;
-
         boolean isIntegrationTest = false;
         Class<?> inspectionClass = null;
 
@@ -232,27 +234,34 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         return super.loadClass(name);
                     }
 
-                    // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
-                    // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
-                    isQuarkusTest = !inspectionClass.isAnnotation()
-                            && (AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where an class is annotated with an annotation which itself includes the annotation we care about
-                                    || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
-                                    || registersQuarkusTestExtensionOnField(inspectionClass));
+                    boolean isEnabled = !AnnotationSupport.isAnnotated(inspectionClass, disabledAnnotation);
 
-                    if (isQuarkusTest) {
-                        // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
-                        isIntegrationTest = !inspectionClass.isAnnotation()
-                                && (AnnotationSupport.isAnnotated(inspectionClass, quarkusIntegrationTestAnnotation));
+                    // If a whole test class has an @Disabled annotation, do not bother creating a quarkus app for it
+                    // Pragmatically, this fixes a LinkageError in grpc-cli which only reproduces in CI, but it's also probably what users would expect
+                    if (isEnabled) {
+                        // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
+                        // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
+                        isQuarkusTest = !inspectionClass.isAnnotation()
+                                && (AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where an class is annotated with an annotation which itself includes the annotation we care about
+                                        || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
+                                        || registersQuarkusTestExtensionOnField(inspectionClass));
 
-                        Optional<? extends Annotation> profileDeclaration = AnnotationSupport.findAnnotation(inspectionClass,
-                                profileAnnotation);
-                        if (profileDeclaration.isPresent()) {
+                        if (isQuarkusTest) {
+                            // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
+                            isIntegrationTest = !inspectionClass.isAnnotation()
+                                    && (AnnotationSupport.isAnnotated(inspectionClass, quarkusIntegrationTestAnnotation));
 
-                            Method m = profileDeclaration.get()
-                                    .getClass()
-                                    .getMethod(VALUE);
-                            // We can't be specific about what the class extends, because it's loaded with another classloader
-                            profile = (Class<?>) m.invoke(profileDeclaration.get());
+                            Optional<? extends Annotation> profileDeclaration = AnnotationSupport.findAnnotation(
+                                    inspectionClass,
+                                    profileAnnotation);
+                            if (profileDeclaration.isPresent()) {
+
+                                Method m = profileDeclaration.get()
+                                        .getClass()
+                                        .getMethod(VALUE);
+                                // We can't be specific about what the class extends, because it's loaded with another classloader
+                                profile = (Class<?>) m.invoke(profileDeclaration.get());
+                            }
                         }
                     }
                 }
@@ -263,10 +272,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 preloadTestResourceClasses(inspectionClass);
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
                 System.out.println("HOLLY made classloader " + runtimeClassLoader);
-                Class thing = runtimeClassLoader.loadClass(name);
-                System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
+                Class clazz = runtimeClassLoader.loadClass(name);
+                System.out.println("HOLLY did load " + clazz + " using CL " + clazz.getClassLoader());
 
-                return thing;
+                return clazz;
             } else {
                 return super.loadClass(name);
             }

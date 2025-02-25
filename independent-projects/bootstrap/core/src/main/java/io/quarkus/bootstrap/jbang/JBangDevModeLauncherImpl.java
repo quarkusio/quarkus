@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -85,13 +86,15 @@ public class JBangDevModeLauncherImpl implements Closeable {
 
             Path srcDir = projectRoot.resolve("src/main/java");
             Files.createDirectories(srcDir);
-            Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile);
+            Path source = Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile);
             final LocalProject currentProject = LocalProject.loadWorkspace(projectRoot);
             final ResolvedDependency appArtifact = ResolvedDependencyBuilder.newInstance()
                     .setCoords(currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
                     .setResolvedPath(targetClasses)
                     .setWorkspaceModule(currentProject.toWorkspaceModule())
                     .build();
+
+            Properties configurationProperties = getConfigurationProperties(source);
 
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
@@ -117,7 +120,9 @@ public class JBangDevModeLauncherImpl implements Closeable {
                         return artifact;
                     }).collect(Collectors.toList()))
                     .setApplicationRoot(targetClasses)
-                    .setProjectRoot(projectRoot);
+                    .setProjectRoot(projectRoot)
+                    .setBuildSystemProperties(configurationProperties)
+                    .setRuntimeProperties(configurationProperties);
 
             Map<String, Object> context = new HashMap<>();
             context.put("app-project", currentProject);
@@ -173,5 +178,20 @@ public class JBangDevModeLauncherImpl implements Closeable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Properties getConfigurationProperties(final Path source) throws IOException {
+        Properties properties = new Properties();
+        for (String line : Files.readAllLines(source)) {
+            if (line.startsWith("//Q:CONFIG")) {
+                String conf = line.substring(10).trim();
+                int equals = conf.indexOf("=");
+                if (equals == -1) {
+                    throw new RuntimeException("invalid config  " + line);
+                }
+                properties.setProperty(conf.substring(0, equals), conf.substring(equals + 1));
+            }
+        }
+        return properties;
     }
 }

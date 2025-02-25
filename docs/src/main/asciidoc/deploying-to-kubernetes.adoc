@@ -301,7 +301,7 @@ of secret that contains the required credentials. Quarkus can automatically gene
 quarkus.kubernetes.generate-image-pull-secret=true
 ----
 
-More specifically a `Secret`like the one bellow is genrated:
+More specifically a `Secret` like the one below is generated:
 
 [source,yaml]
 ----
@@ -627,7 +627,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-config-map
 
 ==== Passing application configuration
 
-Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system property.
+Quarkus supports passing configuration from external locations (via SmallRye Config). This usually requires setting an additional environment variable or system property.
 When you need to use a secret or a config map for the purpose of application configuration, you need to:
 
 - define a volume
@@ -714,6 +714,27 @@ spec:
         - foo.com
         - bar.org
         ip: 10.0.0.0
+----
+
+=== Add nodeSelector
+To add a nodeSelector in the generated `Deployment` (more information can be found in https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes[Kubernetes documentation]), just apply the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.node-selector.key=diskType
+quarkus.kubernetes.node-selector.value=ssd
+----
+
+This would generate the following `nodeSelector` section in the `deployment` definition:
+
+[source,yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      nodeSelector:
+        diskType: ssd
 ----
 
 === Container Resources Management

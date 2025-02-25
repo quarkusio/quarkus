@@ -3,19 +3,26 @@ package io.quarkus.liquibase.mongodb;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+import com.mongodb.client.MongoClient;
+
+import io.quarkus.arc.Arc;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
+import io.quarkus.mongodb.runtime.MongoClients;
+import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
 import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
+import liquibase.ext.mongodb.database.MongoConnection;
+import liquibase.ext.mongodb.database.MongoLiquibaseDatabase;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.CompositeResourceAccessor;
 import liquibase.resource.DirectoryResourceAccessor;
@@ -23,19 +30,18 @@ import liquibase.resource.ResourceAccessor;
 
 public class LiquibaseMongodbFactory {
 
-    private final MongoClientConfig mongoClientConfig;
+    //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
+    private static final Pattern HAS_DB = Pattern
+            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
     private final LiquibaseMongodbConfig liquibaseMongodbConfig;
     private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
-
-    //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
-    Pattern HAS_DB = Pattern
-            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
+    private final MongodbConfig mongodbConfig;
 
     public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
-            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongoClientConfig mongoClientConfig) {
+            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongodbConfig mongodbConfig) {
         this.liquibaseMongodbConfig = config;
         this.liquibaseMongodbBuildTimeConfig = liquibaseMongodbBuildTimeConfig;
-        this.mongoClientConfig = mongoClientConfig;
+        this.mongodbConfig = mongodbConfig;
     }
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
@@ -44,20 +50,20 @@ public class LiquibaseMongodbFactory {
         compositeResourceAccessor
                 .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
-        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")
-                && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (!liquibaseMongodbBuildTimeConfig.changeLog().startsWith("filesystem:")
+                && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             return compositeResourceAccessor;
         }
 
-        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             compositeResourceAccessor.addResourceAccessor(
                     new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog, "filesystem:", ""))
+                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
                                     .getParent()));
             return compositeResourceAccessor;
         }
 
-        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath.get()) {
+        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath().get()) {
             compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
 
@@ -66,7 +72,7 @@ public class LiquibaseMongodbFactory {
 
     private String parseChangeLog(String changeLog) {
 
-        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
         }
 
@@ -83,58 +89,50 @@ public class LiquibaseMongodbFactory {
 
     public Liquibase createLiquibase() {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
-            String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog);
-            String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
-
-            // Every MongoDB client configuration must be added to the connection string, we didn't add all as it would be too much to support.
-            // For reference, all connections string options can be found here: https://www.mongodb.com/docs/manual/reference/connection-string/#connection-string-options.
-
+            MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
+            String mongoClientName;
+            MongoClientConfig mongoClientConfig;
+            if (liquibaseMongodbConfig.mongoClientName().isPresent()) {
+                mongoClientName = liquibaseMongodbConfig.mongoClientName().get();
+                mongoClientConfig = mongodbConfig.mongoClientConfigs().get(mongoClientName);
+                if (mongoClientConfig == null) {
+                    throw new IllegalArgumentException("Mongo client named '%s' not found".formatted(mongoClientName));
+                }
+            } else {
+                mongoClientConfig = mongodbConfig.defaultMongoClientConfig();
+                mongoClientName = MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
+            }
+            String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog());
+            String connectionString = mongoClientConfig.connectionString().orElse("mongodb://localhost:27017");
             Matcher matcher = HAS_DB.matcher(connectionString);
-            if (!matcher.matches() || matcher.group("db") == null || matcher.group("db").isEmpty()) {
-                connectionString = matcher.replaceFirst(
-                        "${prefix}${hosts}/"
-                                + this.mongoClientConfig.database
-                                        .orElseThrow(() -> new IllegalArgumentException("Config property " +
-                                                "'quarkus.mongodb.database' must be defined when no database exist in the connection string"))
-                                + "${options}");
-            }
-            if (mongoClientConfig.credentials.authSource.isPresent()) {
-                boolean alreadyHasQueryParams = connectionString.contains("?");
-                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authSource="
-                        + mongoClientConfig.credentials.authSource.get();
-            }
-            if (mongoClientConfig.credentials.authMechanism.isPresent()) {
-                boolean alreadyHasQueryParams = connectionString.contains("?");
-                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanism="
-                        + mongoClientConfig.credentials.authMechanism.get();
-            }
-            if (!mongoClientConfig.credentials.authMechanismProperties.isEmpty()) {
-                boolean alreadyHasQueryParams = connectionString.contains("?");
-                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanismProperties="
-                        + mongoClientConfig.credentials.authMechanismProperties.entrySet().stream()
-                                .map(prop -> prop.getKey() + ":" + prop.getValue()).collect(Collectors.joining(","));
-            }
-
-            Database database = DatabaseFactory.getInstance().openDatabase(connectionString,
-                    this.mongoClientConfig.credentials.username.orElse(null),
-                    this.mongoClientConfig.credentials.password.orElse(null),
-                    null, resourceAccessor);
-
-            if (database != null) {
-                liquibaseMongodbConfig.liquibaseCatalogName.ifPresent(database::setLiquibaseCatalogName);
-                liquibaseMongodbConfig.liquibaseSchemaName.ifPresent(database::setLiquibaseSchemaName);
-                liquibaseMongodbConfig.liquibaseTablespaceName.ifPresent(database::setLiquibaseTablespaceName);
-
-                if (liquibaseMongodbConfig.defaultCatalogName.isPresent()) {
-                    database.setDefaultCatalogName(liquibaseMongodbConfig.defaultCatalogName.get());
+            Optional<String> maybeDatabase = mongoClientConfig.database();
+            if (maybeDatabase.isEmpty()) {
+                if (matcher.matches() && !StringUtil.isNullOrEmpty(matcher.group("db"))) {
+                    maybeDatabase = Optional.of(matcher.group("db"));
+                } else {
+                    throw new IllegalArgumentException("Config property 'quarkus.mongodb.database' must " +
+                            "be defined when no database exist in the connection string");
                 }
-                if (liquibaseMongodbConfig.defaultSchemaName.isPresent()) {
-                    database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName.get());
-                }
+            }
+            Database database = createDatabase(mongoClients, mongoClientName, maybeDatabase.get());
+            if (liquibaseMongodbConfig.liquibaseCatalogName().isPresent()) {
+                database.setLiquibaseCatalogName(liquibaseMongodbConfig.liquibaseCatalogName().get());
+            }
+            if (liquibaseMongodbConfig.liquibaseSchemaName().isPresent()) {
+                database.setLiquibaseSchemaName(liquibaseMongodbConfig.liquibaseSchemaName().get());
+            }
+            if (liquibaseMongodbConfig.liquibaseTablespaceName().isPresent()) {
+                database.setLiquibaseTablespaceName(liquibaseMongodbConfig.liquibaseTablespaceName().get());
+            }
+            if (liquibaseMongodbConfig.defaultCatalogName().isPresent()) {
+                database.setDefaultCatalogName(liquibaseMongodbConfig.defaultCatalogName().get());
+            }
+            if (liquibaseMongodbConfig.defaultSchemaName().isPresent()) {
+                database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName().get());
             }
             Liquibase liquibase = new Liquibase(parsedChangeLog, resourceAccessor, database);
 
-            for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters.entrySet()) {
+            for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters().entrySet()) {
                 liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());
             }
 
@@ -143,6 +141,16 @@ public class LiquibaseMongodbFactory {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    private Database createDatabase(MongoClients clients, String clientName, String databaseName) {
+        MongoConnection databaseConnection = new MongoConnection();
+        MongoClient mongoClient = clients.createMongoClient(clientName);
+        databaseConnection.setMongoClient(mongoClient);
+        databaseConnection.setMongoDatabase(mongoClient.getDatabase(databaseName));
+        Database database = new MongoLiquibaseDatabase();
+        database.setConnection(databaseConnection);
+        return database;
     }
 
     public LiquibaseMongodbConfig getConfiguration() {
@@ -155,7 +163,7 @@ public class LiquibaseMongodbFactory {
      * @return the label expression
      */
     public LabelExpression createLabels() {
-        return new LabelExpression(liquibaseMongodbConfig.labels.orElse(null));
+        return new LabelExpression(liquibaseMongodbConfig.labels().orElse(null));
     }
 
     /**
@@ -164,6 +172,6 @@ public class LiquibaseMongodbFactory {
      * @return the contexts
      */
     public Contexts createContexts() {
-        return new Contexts(liquibaseMongodbConfig.contexts.orElse(null));
+        return new Contexts(liquibaseMongodbConfig.contexts().orElse(null));
     }
 }

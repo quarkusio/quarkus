@@ -17,6 +17,8 @@ include::_attributes.adoc[]
 Micrometer provides an abstraction layer for metrics collection.
 It defines an API for basic meter types, like counters, gauges, timers, and distribution summaries, along with a `MeterRegistry` API that generalizes metrics collection and propagation for different backend monitoring systems.
 
+include::{includes}/observability-include.adoc[]
+
 IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 
 NOTE: By default, the metrics are exposed on the main HTTP server.
@@ -181,8 +183,8 @@ Given the following declaration of a timer: `registry.timer("http.server.request
 Metrics, single numerical measurements, often have additional data captured with them. This ancillary data is used to group or aggregate metrics for analysis.
 The Micrometer API refers to this dimensional data as tags, but you may see it referred to as "labels" or "attributes" in other documentation sources.
 
-Micrometer is built primariliy for backend monitoring systems that support dimensional data (metric names that are enchriched with key/value pairs).
-For heirarchical systems that only support a flat metric name, Micrometer will flatten the set of key/value pairs (sorted by key) and add them to the name.
+Micrometer is built primarily for backend monitoring systems that support dimensional data (metric names that are enriched with key/value pairs).
+For hierarchical systems that only support a flat metric name, Micrometer will flatten the set of key/value pairs (sorted by key) and add them to the name.
 
 Tags can be specified when a meter is registered with a `MeterRegistry` or using a <<meter-filter,Meter Filter>>.
 
@@ -588,7 +590,9 @@ link:https://micrometer.io/docs/concepts[official documentation].
 
 === Use `HttpServerMetricsTagsContributor` for server HTTP requests
 
-By providing CDI beans that implement `io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor`, user code can contribute arbitrary tags based on the details of HTTP request
+By providing CDI beans that implement `io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor`, user code can contribute arbitrary tags based on the details of HTTP request and responses.
+
+CAUTION: When creating tags using this interface, it's important to limit the cardinality of the values, otherwise there is a risk of severely degrading the metrics system's capacity.
 
 === Use `HttpClientMetricsTagsContributor` for client HTTP requests
 
@@ -765,6 +769,7 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 ** Camel Messaging
 * https://quarkus.io/guides/stork-reference[`quarkus-smallrye-stork`]
 * https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+* xref:websockets-next-reference.adoc[`websockets-next`]
 
 == Configuration Reference
 

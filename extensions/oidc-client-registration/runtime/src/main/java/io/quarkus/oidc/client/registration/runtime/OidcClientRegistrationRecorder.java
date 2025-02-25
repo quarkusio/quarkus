@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.registration.runtime;
 
+import static io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig.getDefaultClientRegistration;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -41,15 +43,13 @@ public class OidcClientRegistrationRecorder {
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registrySupplier) {
 
         var tlsSupport = OidcTlsSupport.of(registrySupplier);
-        OidcClientRegistration defaultClientReg = createOidcClientRegistration(oidcClientRegsConfig.defaultClientRegistration,
+        OidcClientRegistration defaultClientReg = createOidcClientRegistration(
+                getDefaultClientRegistration(oidcClientRegsConfig),
                 tlsSupport, vertx);
 
         Map<String, OidcClientRegistration> staticOidcClientRegs = new HashMap<>();
-
-        for (Map.Entry<String, OidcClientRegistrationConfig> config : oidcClientRegsConfig.namedClientRegistrations
-                .entrySet()) {
-            staticOidcClientRegs.put(config.getKey(),
-                    createOidcClientRegistration(config.getValue(), tlsSupport, vertx));
+        for (var config : oidcClientRegsConfig.namedClientRegistrations().entrySet()) {
+            staticOidcClientRegs.put(config.getKey(), createOidcClientRegistration(config.getValue(), tlsSupport, vertx));
         }
 
         return new OidcClientRegistrationsImpl(defaultClientReg, staticOidcClientRegs,
@@ -62,8 +62,8 @@ public class OidcClientRegistrationRecorder {
     }
 
     private static boolean isEmptyMetadata(Metadata m) {
-        return m.clientName.isEmpty() && m.redirectUri.isEmpty()
-                && m.postLogoutUri.isEmpty() && m.extraProps.isEmpty();
+        return m.clientName().isEmpty() && m.redirectUri().isEmpty()
+                && m.postLogoutUri().isEmpty() && m.extraProps().isEmpty();
     }
 
     public Supplier<OidcClientRegistration> createOidcClientRegistrationBean(OidcClientRegistrations oidcClientRegs) {
@@ -89,36 +89,40 @@ public class OidcClientRegistrationRecorder {
     public static OidcClientRegistration createOidcClientRegistration(OidcClientRegistrationConfig oidcConfig,
             OidcTlsSupport tlsSupport, Supplier<Vertx> vertxSupplier) {
         return createOidcClientRegistrationUni(oidcConfig, tlsSupport, vertxSupplier).await()
-                .atMost(oidcConfig.connectionTimeout);
+                .atMost(oidcConfig.connectionTimeout());
     }
 
     public static Uni<OidcClientRegistration> createOidcClientRegistrationUni(OidcClientRegistrationConfig oidcConfig,
             OidcTlsSupport tlsSupport, Supplier<Vertx> vertxSupplier) {
-        if (!oidcConfig.registrationEnabled) {
+        if (!oidcConfig.registrationEnabled()) {
             String message = String.format("'%s' client registration configuration is disabled", "");
             LOG.debug(message);
             return Uni.createFrom().item(new DisabledOidcClientRegistration(message));
         }
 
         try {
-            if (oidcConfig.authServerUrl.isEmpty() && !OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath)) {
-                if (isEmptyMetadata(oidcConfig.metadata)) {
+            if (oidcConfig.authServerUrl().isEmpty() && !OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath())) {
+                if (isEmptyMetadata(oidcConfig.metadata())) {
                     return Uni.createFrom().nullItem();
                 }
+                var clientName = DEFAULT_ID.equals(oidcConfig.id().orElse(DEFAULT_ID)) ? "" : "." + oidcConfig.id().get();
                 throw new ConfigurationException(
-                        "Either 'quarkus.oidc-client-registration.auth-server-url' or absolute 'quarkus.oidc-client-registration.registration-path' URL must be set");
+                        "Either 'quarkus.oidc-client-registration" + clientName
+                                + ".auth-server-url' or absolute 'quarkus.oidc-client-registration" + clientName
+                                + ".registration-path' URL must be set");
             }
             OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
         } catch (Throwable t) {
             LOG.error(t.getMessage());
             String message = String.format("'%s' client registration configuration is not initialized",
-                    oidcConfig.id.orElse("Default"));
+                    oidcConfig.id().orElse("Default"));
             return Uni.createFrom().failure(new RuntimeException(message));
         }
 
         WebClientOptions options = new WebClientOptions();
-
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls));
+        options.setFollowRedirects(oidcConfig.followRedirects());
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options,
+                tlsSupport.forConfig(oidcConfig.tls().tlsConfigurationName()));
 
         final io.vertx.mutiny.core.Vertx vertx = new io.vertx.mutiny.core.Vertx(vertxSupplier.get());
         WebClient client = WebClient.create(vertx, options);
@@ -126,15 +130,15 @@ public class OidcClientRegistrationRecorder {
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
         Uni<OidcConfigurationMetadata> clientRegConfigUni = null;
-        if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath)) {
+        if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath())) {
             clientRegConfigUni = Uni.createFrom().item(
-                    new OidcConfigurationMetadata(oidcConfig.registrationPath.get()));
+                    new OidcConfigurationMetadata(oidcConfig.registrationPath().get()));
         } else {
             String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
-            if (!oidcConfig.getDiscoveryEnabled().orElse(true)) {
+            if (!oidcConfig.discoveryEnabled().orElse(true)) {
                 clientRegConfigUni = Uni.createFrom()
                         .item(new OidcConfigurationMetadata(
-                                OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath)));
+                                OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath())));
             } else {
                 clientRegConfigUni = discoverRegistrationUri(client, oidcRequestFilters, oidcResponseFilters,
                         authServerUriString.toString(), vertx,
@@ -157,10 +161,10 @@ public class OidcClientRegistrationRecorder {
 
                         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
 
-                        ClientMetadata clientMetadata = OidcClientRegistrationImpl.createMetadata(oidcConfig.metadata);
-                        if (!oidcConfig.registerEarly) {
+                        ClientMetadata clientMetadata = OidcClientRegistrationImpl.createMetadata(oidcConfig.metadata());
+                        if (!oidcConfig.registerEarly()) {
                             LOG.debugf("%s client registration is delayed",
-                                    oidcConfig.id.orElse(DEFAULT_ID));
+                                    oidcConfig.id().orElse(DEFAULT_ID));
                             return Uni.createFrom().item(new OidcClientRegistrationImpl(client,
                                     connectionDelayInMillisecs,
                                     metadata.clientRegistrationUri,
@@ -170,7 +174,7 @@ public class OidcClientRegistrationRecorder {
                                     oidcResponseFilters));
                         } else if (clientMetadata.getJsonObject().isEmpty()) {
                             LOG.debugf("%s client registration is skipped because its metadata is not configured",
-                                    oidcConfig.id.orElse(DEFAULT_ID));
+                                    oidcConfig.id().orElse(DEFAULT_ID));
                             return Uni.createFrom().item(new OidcClientRegistrationImpl(client,
                                     connectionDelayInMillisecs,
                                     metadata.clientRegistrationUri,
@@ -194,8 +198,8 @@ public class OidcClientRegistrationRecorder {
                                         public OidcClientRegistration apply(RegisteredClient r, Throwable t2) {
                                             RegisteredClient registeredClient;
                                             if (t2 != null) {
-                                                LOG.errorf("%s client registartion failed: %s, it can be retried later",
-                                                        oidcConfig.id.orElse(DEFAULT_ID), t2.getMessage());
+                                                LOG.errorf("%s client registration failed: %s, it can be retried later",
+                                                        oidcConfig.id().orElse(DEFAULT_ID), t2.getMessage());
                                                 registeredClient = null;
                                             } else {
                                                 registeredClient = r;
@@ -216,7 +220,7 @@ public class OidcClientRegistrationRecorder {
     }
 
     private static String getEndpointUrl(OidcClientRegistrationConfig oidcConfig) {
-        return oidcConfig.authServerUrl.isPresent() ? oidcConfig.authServerUrl.get() : oidcConfig.registrationPath.get();
+        return oidcConfig.authServerUrl().isPresent() ? oidcConfig.authServerUrl().get() : oidcConfig.registrationPath().get();
     }
 
     private static Uni<OidcConfigurationMetadata> discoverRegistrationUri(WebClient client,
@@ -228,7 +232,7 @@ public class OidcClientRegistrationRecorder {
                 .discoverMetadata(client, oidcRequestFilters, new OidcRequestContextProperties(),
                         oidcResponseFilters, authServerUrl,
                         connectionDelayInMillisecs, vertx,
-                        oidcConfig.useBlockingDnsLookup)
+                        oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("registration_endpoint")));
     }
 
@@ -269,12 +273,7 @@ public class OidcClientRegistrationRecorder {
 
     }
 
-    private static class OidcConfigurationMetadata {
-        private final String clientRegistrationUri;
-
-        OidcConfigurationMetadata(String clientRegistrationUri) {
-            this.clientRegistrationUri = clientRegistrationUri;
-        }
+    private record OidcConfigurationMetadata(String clientRegistrationUri) {
     }
 
 }

@@ -1,0 +1,102 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="extensions-faq"]
+= Frequently asked questions about writing extensions
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: extensions
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+== Should you write an extension?
+
+=== Why would I want to write an extension?
+
+See the xref:writing-extensions.adoc#extension-philosophy[extension philosophy].
+The xref:extension-maturity-matrix.adoc[extension maturity matrix] shows the kinds of capabilities extensions can offer.
+Another useful thing extensions can do is bundle other extensions.
+Have a look at the link:https://quarkus.io/extensions/io.quarkiverse.microprofile/quarkus-microprofile/[Quarkus MicroProfile extension] for an example of aggregator extensions.
+
+=== Are there cases an extension isn't necessary?
+
+Not every problem needs an extension!
+ If you're just bundling up external libraries (that aren't already extensions) and making minor adjustments, you might not need an extension.
+ For example, plain libraries can create new configuration elements and register classes with Jandex (this link:https://www.loicmathieu.fr/wordpress/en/informatique/quarkus-tip-comment-ne-pas-creer-une-extension-quarkus/[blog shows how]).
+
+
+== How do I know what kind of capabilities I might want to include in an extension?
+
+Have a look at the xref:extension-maturity-matrix.adoc[extension maturity matrix].
+
+
+== Bytecode transformation
+
+=== How can I change the code of things on the classpath?
+
+A `BytecodeTransformerBuildItem` can be used to manipulate bytecode.
+For example, see this link:https://quarkus.io/blog/solving-problems-with-extensions/[blog about removed problematic bridge methods from a dependency].
+
+== CDI
+
+=== I'm working with CDI, and I don't know how to ...
+
+The xref:cdi-integration.adoc[CDI integration guide] presents solutions to a number of CDI-related use cases for extension authors.
+
+=== I have transformed a user class to add an injected field, but CDI isn't working
+
+What happens if an extension transforms a user class using `BytecodeTransformerBuildItem`, and replaces `@jakarta.annotation.Resource` with `@jakarta.inject.Inject`? The field will not be injected by Arc.
+Debugging will show the transformed class being loaded in the app, but it looks like Arc doesn't see the new code.
+
+Arc-related transformations should generally be done with link:https://github.com/quarkusio/quarkus/blob/main/extensions/arc/deployment/src/main/java/io/quarkus/arc/deployment/AnnotationsTransformerBuildItem.java[AnnotationsTransformerBuildItem].
+The reason is that _all_ Quarkus's bytecode transformations are done after Jandex indexing. This means changes are never reflected back in Jandex.
+
+Most extensions use Jandex as a source of truth to find out what to do. Those extensions won't see new/modified endpoints in the bytecode itself.
+The solution to this limitation is annotation transformers. You should also be aware that while Arc and Quarkus REST honour annotation transformers, not all extensions do.
+
+=== Something in my classpath has @Inject annotations, which are confusing CDI. How can I fix that?
+
+You will need to implement an `AnnotationsTransformer` and strip out out the problematic injection sites. (Remember, if the use case involves CDI, it needs to be an `AnnotationsTransformer`, not a BytecodeTransformer`.) See link:https://quarkus.io/blog/solving-problems-with-extensions-2/[this blog] about on using an `AnnotationsTransformer` extension to clean non `@Inject` annotations from the Airline library so that it can be used in CDI-enabled runtimes.
+
+== Cross-cutting concerns
+
+=== How can I redirect application logging to an external service?
+
+A `LogHandlerBuildItem` is a convenient way to redirect application logs. See this link:https://quarkus.io/blog/quarkus-aws-cloudwatch_extension/[worked example of an extension which directs output to AWS CloudWatch].
+
+== Build and hosting infrastructure for extensions
+
+=== Can I use Gradle to build my extension?
+
+Yes, but it's not the most typical pattern.
+See the xref:building-my-first-extension.adoc#gradle-setup[Building Your First Extension Guide] for instructions on setting up a Gradle extension. Have a look at the link:https://quarkus.io/extensions/org.jobrunr/quarkus-jobrunr/[JobRunr extension] for an example implementation.
+
+=== If I want my extension to be in code.quarkus.io, does it have to be in the Quarkiverse GitHub org?
+
+Registering an extension in the catalog is independent from where the source code is.
+The link:https://hub.quarkiverse.io[quarkiverse repository] has some shortcuts to make releasing and testing extensions easier, but any extension can link:https://hub.quarkiverse.io/checklistfornewprojects/#make-your-extension-available-in-the-tooling[register into the catalog].
+
+=== My extension isn't showing up on extensions.quarkus.io
+
+Every extension in the link:https://github.com/quarkusio/quarkus-extension-catalog/tree/main/extensions[extension catalog] should appear in http://code.quarkus.io, http://extensions.quarkus.io, and the command line tools.
+The web pages at http://extensions.quarkus.io are refreshed a few times a delay, so there may be a delay in new extensions showing up there.
+To debug a missing extension, first:
+
+- Check your extension is present in link:https://central.sonatype.com/[Maven Central]
+- Check the extension is included the link:https://github.com/quarkusio/quarkus-extension-catalog/tree/main/extensions[extensions catalog list] (it only needs to be included once, and future versions will be automatically detected)
+- Check if the extension is listed in the http://https://registry.quarkus.io/q/swagger-ui/#/Client/get_client_extensions_all[Quarkus registry] list of all known extensions
+- Check if there has been a green link:https://github.com/quarkusio/extensions/actions/workflows/build_and_publish.yml[build of the extensions site] since updating the catalog
+
+== Other topics
+
+
+=== What's the difference between a quickstart and a codestart?
+
+Both codestarts and quickstarts are designed to help users get coding quickly.
+A codestarts is a generated application and a quickstart is browsable source code.
+Codestarts allow the creation of customised apps, which makes them quite powerful.

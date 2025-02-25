@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedSet;
@@ -24,8 +23,6 @@ import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
 
 public class KnownPathResourceManager implements ResourceManager {
-
-    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     private final NavigableSet<String> files;
     private final NavigableSet<String> directories;
@@ -69,6 +66,9 @@ public class KnownPathResourceManager implements ResourceManager {
         if (directories.contains(path)) {
             return new DirectoryResource(path);
         }
+        if (!files.contains(path)) {
+            return null;
+        }
         return underlying.getResource(path);
     }
 
@@ -86,7 +86,7 @@ public class KnownPathResourceManager implements ResourceManager {
         }
 
         private String evaluatePath(String path) {
-            return path.replaceAll("\\\\", "/");
+            return path.replace('\\', '/');
         }
 
         @Override
@@ -127,9 +127,7 @@ public class KnownPathResourceManager implements ResourceManager {
         public List<Resource> list() {
             List<Resource> ret = new ArrayList<>();
             String slashPath = path.isEmpty() ? path : path + "/";
-            if (IS_WINDOWS) {
-                slashPath = slashPath.replaceAll("/", "\\\\"); // correct Windows paths
-            }
+
             SortedSet<String> fileSet = files.tailSet(slashPath);
             SortedSet<String> dirSet = directories.tailSet(slashPath);
 

@@ -82,6 +82,22 @@ public class Injection {
                                 "but was detected in: " + injectionPointInfo.getTargetInfo());
             }
 
+            // If a Decorator<T> instance is injected into a bean instance other than a decorator instance,
+            // the container automatically detects the problem and treats it as a definition error.
+            if (injectionPointInfo.getType().name().equals(DotNames.DECORATOR)) {
+                throw new DefinitionException("Invalid injection of Decorator<T> bean, can only be used in decorators " +
+                        "but was detected in: " + injectionPointInfo.getTargetInfo());
+            }
+
+            // If a Bean instance with qualifier @Decorated is injected into a bean instance other than a decorator
+            // instance, the container automatically detects the problem and treats it as a definition error.
+            if (injectionPointInfo.getType().name().equals(DotNames.BEAN)
+                    && injectionPointInfo.getRequiredQualifier(DotNames.DECORATED) != null) {
+                throw new DefinitionException(
+                        "Invalid injection of @Decorated Bean<T>, can only be injected into decorators " +
+                                "but was detected in: " + injectionPointInfo.getTargetInfo());
+            }
+
             // the injection point is a field, an initializer method parameter or a bean constructor, with qualifier
             // @Default, then the type parameter of the injected Bean, or Interceptor must be the same as the type
             // declaring the injection point
@@ -152,6 +168,36 @@ public class Injection {
                                     "injection point. Problematic injection point: " + injectionPointInfo.getTargetInfo());
                 }
             }
+        }
+        if (beanType == BeanType.DECORATOR) {
+            // the injection point is a field, an initializer method parameter or a bean constructor, with qualifier
+            // @Default, then the type parameter of the injected Decorator must be the same as the type
+            // declaring the injection point
+            if (injectionPointInfo.getRequiredType().name().equals(DotNames.DECORATOR)
+                    && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE
+                    && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1) {
+                Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
+                AnnotationTarget ipTarget = injectionPointInfo.getAnnotationTarget();
+                DotName expectedType = null;
+                if (ipTarget.kind() == Kind.FIELD) {
+                    expectedType = ipTarget.asField().declaringClass().name();
+                } else if (ipTarget.kind() == Kind.METHOD_PARAMETER) {
+                    expectedType = ipTarget.asMethodParameter().method().declaringClass().name();
+                }
+                if (expectedType != null
+                        // This is very rudimentary check, might need to be expanded?
+                        && !expectedType.equals(actualType.name())) {
+                    throw new DefinitionException(
+                            "Type of injected Decorator<T> does not match the type of the bean declaring the " +
+                                    "injection point. Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                }
+            }
+
+            // the injection point is a field, an initializer method parameter or a bean constructor of a decorator,
+            // with qualifier @Decorated, then the type parameter of the injected Bean must be the same as the delegate type
+            //
+            // a validation for the specification text above would naturally belong here, but we don't have
+            // access to the delegate type yet, so this is postponed to `Beans.validateInterceptorDecorator()`
         }
     }
 

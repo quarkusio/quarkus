@@ -1,14 +1,7 @@
 package io.quarkus.panache.hibernate.common.runtime;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.hibernate.grammars.hql.HqlLexer;
-import org.hibernate.grammars.hql.HqlParser;
-import org.hibernate.grammars.hql.HqlParser.SelectStatementContext;
 
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -35,80 +28,6 @@ public class PanacheJpaUtil {
     // match a leading WITH
     static final Pattern WITH_PATTERN = Pattern.compile("^\\s*WITH\\s+.*",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /**
-     * This turns an HQL (already expanded from Panache-QL) query into a count query, using text manipulation
-     * if we can, because it's faster, or fall back to using the ORM HQL parser in {@link #getCountQueryUsingParser(String)}
-     */
-    public static String getFastCountQuery(String query) {
-        // try to generate a good count query from the existing query
-        String countQuery;
-        // there are no fast ways to get rid of fetches, or WITH
-        if (FETCH_PATTERN.matcher(query).matches()
-                || WITH_PATTERN.matcher(query).matches()) {
-            return getCountQueryUsingParser(query);
-        }
-        // if it starts with select, we can optimise
-        Matcher selectMatcher = SELECT_PATTERN.matcher(query);
-        if (selectMatcher.matches()) {
-            // this one cannot be null
-            String firstSelection = selectMatcher.group(1).trim().toLowerCase(Locale.ROOT);
-            if (firstSelection.startsWith("distinct")) {
-                // if firstSelection matched distinct only, we have something wrong in our selection list, probably functions/parens
-                // so bail out
-                if (firstSelection.length() == 8) {
-                    return getCountQueryUsingParser(query);
-                }
-                // this one can be null
-                String secondSelection = selectMatcher.group(2);
-                // we can only count distinct single columns
-                if (secondSelection != null && !secondSelection.trim().isEmpty()) {
-                    throw new PanacheQueryException("Count query not supported for select query: " + query);
-                }
-                countQuery = "SELECT COUNT(" + firstSelection + ") " + selectMatcher.group(3);
-            } else {
-                // it's not distinct, forget the column list
-                countQuery = "SELECT COUNT(*) " + selectMatcher.group(3);
-            }
-        } else if (LONE_SELECT_PATTERN.matcher(query).matches()) {
-            // a select anywhere else in there might be tricky
-            return getCountQueryUsingParser(query);
-        } else if (FROM_PATTERN.matcher(query).matches()) {
-            countQuery = "SELECT COUNT(*) " + query;
-        } else {
-            throw new PanacheQueryException("Count query not supported for select query: " + query);
-        }
-
-        // remove the order by clause
-        String lcQuery = countQuery.toLowerCase();
-        int orderByIndex = lcQuery.lastIndexOf(" order by ");
-        if (orderByIndex != -1) {
-            countQuery = countQuery.substring(0, orderByIndex);
-        }
-        return countQuery;
-    }
-
-    /**
-     * This turns an HQL (already expanded from Panache-QL) query into a count query, using the
-     * ORM HQL parser. Slow version, see {@link #getFastCountQuery(String)} for the fast version.
-     */
-    public static String getCountQueryUsingParser(String query) {
-        HqlLexer lexer = new HqlLexer(CharStreams.fromString(query));
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        HqlParser parser = new HqlParser(tokens);
-        SelectStatementContext statement = parser.selectStatement();
-        try {
-            CountParserVisitor visitor = new CountParserVisitor();
-            statement.accept(visitor);
-            return visitor.result();
-        } catch (RequiresSubqueryException x) {
-            // no luck
-            SubQueryAliasParserVisitor visitor = new SubQueryAliasParserVisitor();
-            statement.accept(visitor);
-            String ret = visitor.result();
-            return "select count( * ) from ( " + ret + " )";
-        }
-    }
 
     public static String getEntityName(Class<?> entityClass) {
         // FIXME: not true?
@@ -167,33 +86,31 @@ public class PanacheJpaUtil {
         return query.charAt(0) == '#';
     }
 
-    public static String createCountQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+    public static String createQueryForCount(Class<?> entityClass, String query, int paramCount) {
+        if (query == null || query.isEmpty())
+            return "FROM " + getEntityName(entityClass);
 
         String trimmedForAnalysis = trimForAnalysis(query);
         if (trimmedForAnalysis.isEmpty())
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+            return "FROM " + getEntityName(entityClass);
 
         // assume these have valid select clauses and let them through
         if (trimmedForAnalysis.startsWith("select ")
-                || trimmedForAnalysis.startsWith("with ")) {
+                || trimmedForAnalysis.startsWith("with ")
+                || trimmedForAnalysis.startsWith("from ")) {
             return query;
         }
-        if (trimmedForAnalysis.startsWith("from ")) {
-            return "SELECT COUNT(*) " + query;
-        }
         if (trimmedForAnalysis.startsWith("where ")) {
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " " + query;
+            return "FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedForAnalysis.startsWith("order by ")) {
             // ignore it
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+            return "FROM " + getEntityName(entityClass);
         }
         if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
+        return "FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
     public static String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {

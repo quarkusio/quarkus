@@ -207,6 +207,12 @@ public interface Template {
     Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate);
 
     /**
+     *
+     * @return the root section node
+     */
+    SectionNode getRootNode();
+
+    /**
      * A fragment represents a part of the template that can be treated as a separate template.
      */
     interface Fragment extends Template {

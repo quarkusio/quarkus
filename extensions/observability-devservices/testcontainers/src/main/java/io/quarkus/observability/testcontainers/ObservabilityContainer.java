@@ -7,22 +7,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.observability.common.config.ContainerConfig;
 
 @SuppressWarnings("resource")
 public abstract class ObservabilityContainer<T extends ObservabilityContainer<T, C>, C extends ContainerConfig>
         extends GenericContainer<T> {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    private final Logger dockerLog = LoggerFactory.getLogger(getClass().getName() + ".docker");
+
+    protected final Logger log = Logger.getLogger(getClass());
 
     public ObservabilityContainer(C config) {
         super(DockerImageName.parse(config.imageName()));
@@ -35,8 +36,16 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
         }
     }
 
+    protected abstract String prefix();
+
+    protected Predicate<OutputFrame> getLoggingFilter() {
+        return f -> true;
+    }
+
     protected Consumer<OutputFrame> frameConsumer() {
-        return frame -> logger().debug(frame.getUtf8String().stripTrailing());
+        return new JBossLoggingConsumer(log)
+                .withPrefix(prefix())
+                .withLoggingFilter(getLoggingFilter());
     }
 
     protected byte[] getResourceAsBytes(String resource) {
@@ -49,24 +58,19 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
 
     @SuppressWarnings("OctalInteger")
     protected void addFileToContainer(byte[] content, String pathInContainer) {
-        logger().info("Content [{}]: \n{}", pathInContainer, new String(content, StandardCharsets.UTF_8));
-        copyFileToContainer(Transferable.of(content, 0777), pathInContainer);
-    }
-
-    @Override
-    protected Logger logger() {
-        return dockerLog;
+        log.debugf("Content [%s]: \n%s", pathInContainer, new String(content, StandardCharsets.UTF_8));
+        withCopyToContainer(Transferable.of(content, 0777), pathInContainer);
     }
 
     @Override
     public void start() {
-        log.info("Starting {} ...", getClass().getSimpleName());
+        log.infof("Starting %s ...", prefix());
         super.start();
     }
 
     @Override
     public void stop() {
-        log.info("Stopping {}...", getClass().getSimpleName());
+        log.infof("Stopping %s...", prefix());
         super.stop();
     }
 }

@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.container.*;
@@ -310,6 +311,7 @@ class ApplicationTest {
         }
     }
 
+    @ApplicationPath("whatever")
     public static abstract class AppTest2 extends Application {
 
     }

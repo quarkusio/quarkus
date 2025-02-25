@@ -14,13 +14,17 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
+import io.quarkus.maven.config.doc.GenerateConfigDocMojo.Context;
+import io.quarkus.maven.config.doc.generator.GenerationReport.ConfigPropertyGenerationViolation;
 
 abstract class AbstractFormatter implements Formatter {
 
+    protected final GenerationReport generationReport;
     protected final JavadocRepository javadocRepository;
     protected final boolean enableEnumTooltips;
 
-    AbstractFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+    AbstractFormatter(GenerationReport generationReport, JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+        this.generationReport = generationReport;
         this.javadocRepository = javadocRepository;
         this.enableEnumTooltips = enableEnumTooltips;
     }
@@ -36,16 +40,21 @@ abstract class AbstractFormatter implements Formatter {
 
     @Override
     public String formatDescription(ConfigProperty configProperty) {
-        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceClass(),
-                configProperty.getSourceName());
+        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceType(),
+                configProperty.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
+            generationReport.addError(new ConfigPropertyGenerationViolation(configProperty.getSourceType(),
+                    configProperty.getSourceElementName(), configProperty.getSourceElementType(), "Missing Javadoc"));
             return null;
         }
 
         String description = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
                 javadocFormat());
         if (description == null || description.isBlank()) {
+            generationReport.addError(new ConfigPropertyGenerationViolation(configProperty.getSourceType(),
+                    configProperty.getSourceElementName(), configProperty.getSourceElementType(),
+                    "Transformed Javadoc is empty"));
             return null;
         }
 
@@ -53,22 +62,29 @@ abstract class AbstractFormatter implements Formatter {
     }
 
     @Override
-    public String formatTypeDescription(ConfigProperty configProperty) {
+    public String formatTypeDescription(ConfigProperty configProperty, Context context) {
         String typeContent = "";
 
-        if (configProperty.isEnum() && enableEnumTooltips) {
-            typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
-                    .map(e -> {
-                        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
-                                e.getKey());
-                        if (javadocElement.isEmpty()) {
-                            return "`" + e.getValue().configValue() + "`";
-                        }
+        if (configProperty.isEnum()) {
+            if (enableEnumTooltips) {
+                typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
+                        .map(e -> {
+                            Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
+                                    e.getKey());
+                            if (javadocElement.isEmpty()) {
+                                return "`" + e.getValue().configValue() + "`";
+                            }
 
-                        return tooltip(e.getValue().configValue(), JavadocTransformer
-                                .transform(javadocElement.get().description(), javadocElement.get().format(), javadocFormat()));
-                    })
-                    .collect(Collectors.joining(", "));
+                            return tooltip(e.getValue().configValue(), JavadocTransformer
+                                    .transform(javadocElement.get().description(), javadocElement.get().format(),
+                                            javadocFormat()));
+                        })
+                        .collect(Collectors.joining(", "));
+            } else {
+                typeContent = configProperty.getEnumAcceptedValues().values().values().stream()
+                        .map(v -> v.configValue())
+                        .collect(Collectors.joining("`, `", "`", "`"));
+            }
         } else {
             typeContent = configProperty.getTypeDescription();
             if (configProperty.getJavadocSiteLink() != null) {
@@ -80,9 +96,9 @@ abstract class AbstractFormatter implements Formatter {
         }
 
         if (Duration.class.getName().equals(configProperty.getType())) {
-            typeContent += " " + moreInformationAboutType("duration-note-anchor", Duration.class.getSimpleName());
+            typeContent += " " + moreInformationAboutType(context, "duration-note-anchor", Duration.class.getSimpleName());
         } else if (Types.MEMORY_SIZE_TYPE.equals(configProperty.getType())) {
-            typeContent += " " + moreInformationAboutType("memory-size-note-anchor", "MemorySize");
+            typeContent += " " + moreInformationAboutType(context, "memory-size-note-anchor", "MemorySize");
         }
 
         return typeContent;
@@ -192,19 +208,24 @@ abstract class AbstractFormatter implements Formatter {
 
     @Override
     public String formatSectionTitle(ConfigSection configSection) {
-        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configSection.getSourceClass(),
-                configSection.getSourceName());
+        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configSection.getSourceType(),
+                configSection.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
-            throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
+            generationReport.addError(new ConfigPropertyGenerationViolation(configSection.getSourceType(),
+                    configSection.getSourceElementName(), configSection.getSourceElementType(), "Missing Javadoc"));
+
+            return null;
         }
 
         String javadoc = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
                 javadocFormat());
         if (javadoc == null || javadoc.isBlank()) {
-            throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
+            generationReport.addError(new ConfigPropertyGenerationViolation(configSection.getSourceType(),
+                    configSection.getSourceElementName(), configSection.getSourceElementType(),
+                    "Transformed Javadoc is empty"));
+
+            return null;
         }
 
         return trimFinalDot(javadoc);
@@ -236,7 +257,7 @@ abstract class AbstractFormatter implements Formatter {
 
     protected abstract JavadocFormat javadocFormat();
 
-    protected abstract String moreInformationAboutType(String anchorRoot, String type);
+    protected abstract String moreInformationAboutType(Context context, String anchorRoot, String type);
 
     protected abstract String link(String href, String description);
 

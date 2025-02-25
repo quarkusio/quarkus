@@ -370,12 +370,14 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         }
 
         var pending = r.get(0).toLong();
-        var lowest = r.get(1).toString();
-        var highest = r.get(2).toString();
+        var lowest = r.get(1) != null ? r.get(1).toString() : null;
+        var highest = r.get(2) != null ? r.get(2).toString() : null;
 
         Map<String, Long> consumers = new HashMap<>();
-        for (Response nested : r.get(3)) {
-            consumers.put(nested.get(0).toString(), nested.get(1).toLong());
+        if (r.get(3) != null) {
+            for (Response nested : r.get(3)) {
+                consumers.put(nested.get(0).toString(), nested.get(1).toLong());
+            }
         }
 
         return new XPendingSummary(pending, lowest, highest, consumers);

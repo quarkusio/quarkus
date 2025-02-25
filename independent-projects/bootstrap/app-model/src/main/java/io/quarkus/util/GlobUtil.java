@@ -75,8 +75,13 @@ public class GlobUtil {
             switch (current) {
                 case '*':
                     if (i < length && glob.charAt(i) == '*') {
-                        result.append(".*");
                         i++;
+                        if (i < length && glob.charAt(i) == '/') {
+                            result.append("([^/]*/)*");
+                            i++;
+                        } else {
+                            result.append(".*");
+                        }
                     } else {
                         result.append("[^/]*");
                     }

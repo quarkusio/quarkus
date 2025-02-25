@@ -37,9 +37,7 @@ final class RestLinksProviderImpl implements RestLinksProvider {
         List<Link> links = new ArrayList<>(linkInfoList.size());
         for (LinkInfo linkInfo : linkInfoList) {
             if (linkInfo.getPathParameters().size() == 0) {
-                links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
-                        .rel(linkInfo.getRel())
-                        .build());
+                links.add(linkBuilderFor(linkInfo).build());
             }
         }
         return links;
@@ -52,11 +50,23 @@ final class RestLinksProviderImpl implements RestLinksProvider {
         List<LinkInfo> linkInfoList = linksContainer.getForClass(instance.getClass());
         List<Link> links = new ArrayList<>(linkInfoList.size());
         for (LinkInfo linkInfo : linkInfoList) {
-            links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
-                    .rel(linkInfo.getRel())
-                    .build(getPathParameterValues(linkInfo, instance)));
+            links.add(linkBuilderFor(linkInfo).build(getPathParameterValues(linkInfo, instance)));
         }
         return links;
+    }
+
+    private Link.Builder linkBuilderFor(LinkInfo linkInfo) {
+        Link.Builder builder = Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
+                .rel(linkInfo.getRel());
+        if (linkInfo.getTitle() != null) {
+            builder.title(linkInfo.getTitle());
+        }
+
+        if (linkInfo.getType() != null) {
+            builder.type(linkInfo.getType());
+        }
+
+        return builder;
     }
 
     private Object[] getPathParameterValues(LinkInfo linkInfo, Object instance) {

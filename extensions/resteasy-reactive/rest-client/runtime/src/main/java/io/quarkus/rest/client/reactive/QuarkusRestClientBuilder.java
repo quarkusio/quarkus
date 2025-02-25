@@ -299,6 +299,19 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder userAgent(String userAgent);
 
     /**
+     * If set to {@code true}, then this REST Client will not the default exception mapper which
+     * always throws an exception if HTTP response code >= 400
+     */
+    QuarkusRestClientBuilder disableDefaultMapper(Boolean disable);
+
+    /**
+     * Supports receiving compressed messages using GZIP.
+     * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+     * REST Client will automatically decode the content and proceed with the message handling.
+     */
+    QuarkusRestClientBuilder enableCompression(boolean enableCompression);
+
+    /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls
      * against.
      *

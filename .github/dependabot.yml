@@ -36,6 +36,7 @@ updates:
       - dependency-name: com.google.cloud.tools:jib-core
       - dependency-name: org.jboss.threads:jboss-threads
       - dependency-name: org.jboss.marshalling:*
+      - dependency-name: org.wildfly.common:*
       # Quarkus
       - dependency-name: io.quarkus.*:*
       - dependency-name: io.quarkus:*
@@ -92,6 +93,8 @@ updates:
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
       - dependency-name: org.jboss.narayana.stm:*
+      # Narayana - LRA
+      - dependency-name: org.jboss.narayana.lra:*
       # Agroal
       - dependency-name: io.agroal:*
       # WireMock
@@ -146,7 +149,6 @@ updates:
       - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
       - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
-      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
       # Dev UI web dependencies
       - dependency-name: org.mvnpm:*
@@ -166,7 +168,6 @@ updates:
       - dependency-name: io.dekorate:servicebinding-annotations
       - dependency-name: io.opentelemetry:*
       - dependency-name: io.opentelemetry.*:*
-      - dependency-name: io.opentracing.contrib:*
       - dependency-name: org.aesh:readline
       - dependency-name: org.checkerframework:checker-qual
       - dependency-name: org.jboss.metadata:jboss-metadata-web
@@ -189,11 +190,6 @@ updates:
       - dependency-name: io.fabric8:maven-model-helper
       - dependency-name: org.codejive:java-properties
     ignore:
-      # this one cannot be upgraded due to the usage of proxies in new versions
-      # the proxy implements interfaces in a random order which causes issues
-      # https://github.com/quarkusio/quarkus/issues/18033
-      # https://github.com/opentracing-contrib/java-jdbc/issues/116
-      - dependency-name: io.opentracing.contrib:opentracing-jdbc
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
@@ -211,8 +207,6 @@ updates:
       - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]

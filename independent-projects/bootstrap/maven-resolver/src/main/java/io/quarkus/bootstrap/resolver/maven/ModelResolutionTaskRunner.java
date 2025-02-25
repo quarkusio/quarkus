@@ -1,79 +1,40 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.Phaser;
-
-import org.jboss.logging.Logger;
-
-class ModelResolutionTaskRunner {
-
-    private static final Logger log = Logger.getLogger(ModelResolutionTaskRunner.class);
-
-    private final Phaser phaser = new Phaser(1);
+/**
+ * Task runner
+ */
+interface ModelResolutionTaskRunner {
 
     /**
-     * Errors caught while running tasks
+     * Returns an instance of a non-blocking task runner.
+     *
+     * @return an instance of a non-blocking task runner
      */
-    private final Collection<Exception> errors = new ConcurrentLinkedDeque<>();
+    static ModelResolutionTaskRunner getNonBlockingTaskRunner() {
+        return new NonBlockingModelResolutionTaskRunner();
+    }
 
     /**
-     * Runs a model resolution task asynchronously. This method may return before the task has completed.
+     * Returns an instance of a blocking task runner.
+     *
+     * @return an instance of a blocking task runner
+     */
+    static ModelResolutionTaskRunner getBlockingTaskRunner() {
+        return BlockingModelResolutionTaskRunner.getInstance();
+    }
+
+    /**
+     * Instructs a runner to run the passed in task.
+     * <p>
+     * Whether this method is blocking or not will depend on the implementation.
      *
      * @param task task to run
      */
-    void run(ModelResolutionTask task) {
-        phaser.register();
-        CompletableFuture.runAsync(() -> {
-            try {
-                task.run();
-            } catch (Exception e) {
-                errors.add(e);
-            } finally {
-                phaser.arriveAndDeregister();
-            }
-        });
-    }
+    void run(ModelResolutionTask task);
 
     /**
-     * Blocks until all the tasks have completed.
-     * <p>
-     * In case some tasks failed with errors, this method will log each error and throw a {@link RuntimeException}
-     * with a corresponding message.
+     * Blocking method that will return once all the tasks submitted by calling the {@link #run(ModelResolutionTask)}
+     * method have been executed.
      */
-    void waitForCompletion() {
-        phaser.arriveAndAwaitAdvance();
-        assertNoErrors();
-    }
-
-    private void assertNoErrors() {
-        if (!errors.isEmpty()) {
-            var sb = new StringBuilder(
-                    "The following errors were encountered while processing Quarkus application dependencies:");
-            log.error(sb);
-            var i = 1;
-            for (var error : errors) {
-                var prefix = i++ + ")";
-                log.error(prefix, error);
-                sb.append(System.lineSeparator()).append(prefix).append(" ").append(error.getLocalizedMessage());
-                for (var e : error.getStackTrace()) {
-                    sb.append(System.lineSeparator());
-                    for (int j = 0; j < prefix.length(); ++j) {
-                        sb.append(" ");
-                    }
-                    sb.append("at ").append(e);
-                    if (e.getClassName().contains("io.quarkus")) {
-                        sb.append(System.lineSeparator());
-                        for (int j = 0; j < prefix.length(); ++j) {
-                            sb.append(" ");
-                        }
-                        sb.append("...");
-                        break;
-                    }
-                }
-            }
-            throw new RuntimeException(sb.toString());
-        }
-    }
+    void waitForCompletion();
 }

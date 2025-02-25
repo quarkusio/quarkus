@@ -17,10 +17,10 @@ import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.provider.Property;
-import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -48,8 +48,8 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
     static final String NATIVE_SOURCES = "native-sources";
     private final QuarkusPluginExtensionView extensionView;
 
-    @ServiceReference("forcedPropertiesService")
-    abstract Property<ForcedPropertieBuildService> getAdditionalForcedProperties();
+    @Internal
+    public abstract Property<ForcedPropertieBuildService> getAdditionalForcedProperties();
 
     QuarkusBuildTask(String description, boolean compatible) {
         super(description, compatible);
@@ -244,11 +244,14 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         SmallRyeConfig config = getExtensionView()
-                .buildEffectiveConfiguration(appModel.getAppArtifact(), getAdditionalForcedProperties().get().getProperties())
+                .buildEffectiveConfiguration(appModel, getAdditionalForcedProperties().get().getProperties())
                 .getConfig();
         Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
             Map<String, String> values = new HashMap<>();
             for (String key : config.getMapKeys("quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
+            for (String key : config.getMapKeys("platform.quarkus").values()) {
                 values.put(key, config.getConfigValue(key).getValue());
             }
             return values;
@@ -272,7 +275,7 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getCodeGenForkOptions().get());
+        WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getBuildForkOptions().get());
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties()

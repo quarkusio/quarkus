@@ -5,7 +5,7 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.load.shedding.RequestPrioritizer;
 import io.quarkus.load.shedding.RequestPriority;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -14,21 +14,22 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServ
     private final String managementPath;
 
     @Inject
-    public ManagementRequestPrioritizer(HttpBuildTimeConfig httpConfig,
-            ManagementInterfaceBuildTimeConfig managementInterfaceConfig) {
-        if (managementInterfaceConfig.enabled) {
+    public ManagementRequestPrioritizer(
+            VertxHttpBuildTimeConfig buildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        if (managementBuildTimeConfig.enabled()) {
             managementPath = null;
             return;
         }
-        if (httpConfig.nonApplicationRootPath.startsWith("/")) {
-            if (httpConfig.nonApplicationRootPath.equals(httpConfig.rootPath)) {
+        if (buildTimeConfig.nonApplicationRootPath().startsWith("/")) {
+            if (buildTimeConfig.nonApplicationRootPath().equals(buildTimeConfig.rootPath())) {
                 managementPath = null;
                 return;
             }
-            managementPath = httpConfig.nonApplicationRootPath;
+            managementPath = buildTimeConfig.nonApplicationRootPath();
             return;
         }
-        managementPath = httpConfig.rootPath + httpConfig.nonApplicationRootPath;
+        managementPath = buildTimeConfig.rootPath() + buildTimeConfig.nonApplicationRootPath();
     }
 
     @Override

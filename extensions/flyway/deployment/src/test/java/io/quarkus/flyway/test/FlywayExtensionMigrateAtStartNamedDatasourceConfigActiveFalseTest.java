@@ -2,7 +2,6 @@ package io.quarkus.flyway.test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import jakarta.enterprise.inject.CreationException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -34,18 +34,17 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigActiveFalseTest {
 
     @Inject
     @FlywayDataSource("users")
-    Instance<Flyway> flywayForNamedDatasource;
+    Instance<Flyway> flyway;
 
     @Test
     @DisplayName("If a named datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForNamedDatasource::get)
-                .isInstanceOf(CreationException.class)
-                .cause()
-                .hasMessageContainingAll("Unable to find datasource 'users' for Flyway",
-                        "Datasource 'users' was deactivated through configuration properties.",
-                        "To solve this, avoid accessing this datasource at runtime",
-                        "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.\"users\".active'"
+        assertThatThrownBy(flyway::get)
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll(
+                        "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".active'"
                                 + " to 'true' and configure datasource 'users'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }

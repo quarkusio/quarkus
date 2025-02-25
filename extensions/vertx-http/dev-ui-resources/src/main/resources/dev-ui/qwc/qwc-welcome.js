@@ -1,17 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { devuiState } from 'devui-state';
-import { JsonRpc } from 'jsonrpc';
-import '@vaadin/progress-bar';
-import '@vaadin/grid';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import '@vaadin/grid/vaadin-grid-sort-column.js';
+import 'qwc/qwc-endpoints.js';
 
 /**
  * This component shows the welcome screen
  */
 export class QwcWelcome extends LitElement {
-    jsonRpc = new JsonRpc("devui-endpoints");
-
     static styles = css`
         a { color: inherit; } 
 
@@ -113,27 +107,14 @@ export class QwcWelcome extends LitElement {
             margin-top: 1rem;
             font-weight: 200;
         }
+        #quarkus-logo-svg {
+            cursor: pointer;
+        }
     `;
-
-    static properties = {
-        _info: {state: true}
-    };
-
-    constructor() {
-        super();
-        this._info = null;
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        this.jsonRpc.getJsonContent().then(jsonRpcResponse => {
-            this._info = jsonRpcResponse.result;
-        });
-    }
 
     render() {
         return html`<div class="fullscreen">
-                        <div class="header">
+                        <div class="header" @click=${this._reload}>
                             <svg id="quarkus-logo-svg" data-name="Quarkus Logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 195">
                                 <defs>
                                     <style>.cls-1 {
@@ -199,7 +180,7 @@ export class QwcWelcome extends LitElement {
                                     <span>Static assets: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code></span>
                                     <span>Code: <code>${devuiState.welcomeData.sourceDir}</code></span>
                                 </div>
-                                ${this._renderEndpoints()}
+                                <qwc-endpoints filter="Resource Endpoints"></qwc-endpoints>
                             </div>
                             <div class="right-column">
                                 ${this._renderSelectedExtensions()}
@@ -215,50 +196,8 @@ export class QwcWelcome extends LitElement {
                     </div>`;
     }
     
-    _renderEndpoints(){
-        if (this._info) {
-            const typeTemplates = [];
-            for (const [type, list] of Object.entries(this._info)) {
-                if(type !== "Additional endpoints")
-                typeTemplates.push(html`${this._renderType(type,list)}`);
-            }
-            return html`${typeTemplates}`;
-        }else{
-            return html`
-            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching information...</div>
-                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
-            </div>
-            `;
-        }
-    }
-    
-    _renderType(type, items){
-        return html`<h3>${type}</h3>
-                    <vaadin-grid .items="${items}" class="infogrid" all-rows-visible>
-                        <vaadin-grid-sort-column header='URL'
-                                                path="uri" 
-                                            ${columnBodyRenderer(this._uriRenderer, [])}>
-                        </vaadin-grid-sort-column>
-
-                        <vaadin-grid-sort-column 
-                                            header="Description" 
-                                            path="description"
-                                            ${columnBodyRenderer(this._descriptionRenderer, [])}>
-                        </vaadin-grid-sort-column>
-                    </vaadin-grid>`;
-    }
-    
-    _uriRenderer(endpoint) {
-        if (endpoint.uri) {
-            return html`<a href="${endpoint.uri}" target="_blank">${endpoint.uri}</a>`;
-        }
-    }
-
-    _descriptionRenderer(endpoint) {
-        if (endpoint.description) {
-            return html`<span>${endpoint.description}</span>`;
-        }
+    _reload(){
+        window.location.href = '/';
     }
     
     _renderSelectedExtensions(){

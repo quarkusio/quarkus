@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 open class PersonRepository : PanacheRepository<Person> {
-    override fun count(query: String, params: Map<String, Any>): Long {
+    override fun count(query: String, params: Map<String, Any?>): Long {
         return INSTANCE.count(Person::class.java, query, params)
     }
 }

@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +40,8 @@ import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
@@ -65,7 +66,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
-import io.vertx.core.streams.Pump;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -98,6 +98,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
+                requestContext.setHttpClientRequest(httpClientRequest);
+
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection
                 ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
 
@@ -307,19 +309,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                                 return;
                                                             }
                                                             final AsyncFile tmpAsyncFile = asyncFileOpened.result();
-                                                            final Pump downloadPump = Pump.pump(clientResponse,
-                                                                    tmpAsyncFile);
-                                                            downloadPump.start();
-
-                                                            clientResponse.resume();
-                                                            clientResponse.endHandler(new Handler<>() {
-                                                                public void handle(Void event) {
-                                                                    tmpAsyncFile.flush(new Handler<>() {
-                                                                        public void handle(AsyncResult<Void> flushed) {
-                                                                            if (flushed.failed()) {
-                                                                                reportFinish(flushed.cause(),
+                                                            clientResponse.pipeTo(tmpAsyncFile,
+                                                                    new Handler<>() {
+                                                                        @Override
+                                                                        public void handle(AsyncResult<Void> event) {
+                                                                            if (event.failed()) {
+                                                                                reportFinish(event.cause(),
                                                                                         requestContext);
-                                                                                requestContext.resume(flushed.cause());
+                                                                                requestContext.resume(event.cause());
                                                                                 return;
                                                                             }
 
@@ -332,8 +329,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                                             requestContext.resume();
                                                                         }
                                                                     });
-                                                                }
-                                                            });
+                                                            clientResponse.resume();
                                                         }
                                                     });
                                         }
@@ -346,7 +342,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             //TODO: make timeout configureable
                             requestContext
                                     .setResponseEntityStream(
-                                            new VertxClientInputStream(clientResponse, 100000, requestContext));
+                                            new VertxClientInputStream(clientResponse, 100000));
                             requestContext.resume();
                         } else {
                             clientResponse.body(new Handler<>() {
@@ -360,7 +356,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         try {
                                             if (buffer.length() > 0) {
                                                 requestContext.setResponseEntityStream(
-                                                        new ByteArrayInputStream(buffer.getBytes()));
+                                                        new ByteBufInputStream(buffer.getByteBuf(), true));
                                             } else {
                                                 requestContext.setResponseEntityStream(null);
                                             }
@@ -384,10 +380,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 .onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable failure) {
-                        if (failure instanceof HttpClosedException) {
+                        if (failure instanceof HttpClosedException || failure instanceof DecoderException) {
                             // This is because of the Rest Client TCK
-                            // HttpClosedException is a runtime exception. If we complete with that exception, it gets
-                            // unwrapped by the rest client proxy and thus fails the TCK.
+                            // HttpClosedException / DecoderException are runtime exceptions. If we complete with that
+                            // exception, it gets unwrapped by the rest client proxy and thus fails the TCK.
                             // By creating an IOException, we avoid that and provide a meaningful exception (because
                             // it's an I/O exception)
                             requestContext.resume(new ProcessingException(new IOException(failure.getMessage())));

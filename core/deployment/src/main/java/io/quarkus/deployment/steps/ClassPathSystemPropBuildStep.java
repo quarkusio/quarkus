@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -15,16 +14,8 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.ClassPathSystemPropertyRecorder;
 
+@SuppressWarnings("removal")
 public class ClassPathSystemPropBuildStep {
-
-    @BuildStep
-    public void produce(BuildProducer<SetClassPathSystemPropBuildItem> producer, CurateOutcomeBuildItem curateOutcome) {
-        boolean truffleUsed = curateOutcome.getApplicationModel().getDependencies().stream()
-                .anyMatch(d -> d.getGroupId().equals("org.graalvm.polyglot"));
-        if (truffleUsed) {
-            producer.produce(new SetClassPathSystemPropBuildItem());
-        }
-    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

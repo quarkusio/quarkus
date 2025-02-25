@@ -10,11 +10,11 @@ include::_attributes.adoc[]
 :topics: templating,qute
 :extensions: io.quarkus:quarkus-qute,io.quarkus:quarkus-resteasy-qute,io.quarkus:quarkus-rest-qute
 
-Qute is a templating engine designed specifically to meet the Quarkus needs.
-The usage of reflection is minimized to reduce the size of native images.
+Qute is a templating engine developed specifically for Quarkus.
+Reflection usage is minimized to reduce the size of native images.
 The API combines both the imperative and the non-blocking reactive style of coding.
-In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
-Furthermore, we try to detect most of the template problems at build time.
+In development mode, all files located in `src/main/resources/templates` are monitored for changes, and modifications become visible immediately.
+Furthermore, we aim to detect most template issues at build time.
 In this guide, you will learn how to easily render templates in your application.
 
 == Solution
@@ -65,7 +65,7 @@ Let's start with a Hello World template:
 
 NOTE: Templates located in the `pub` directory are served via HTTP. This behavior is built-in, no controllers are needed. For example, the template `src/main/resources/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
 
-If your application is running, you can open your browser and hit: http://localhost:8080/hello?name=Martin
+Once your application is running, you can open your browser and navigate to: http://localhost:8080/hello?name=Martin
 
 For more information about Qute Web options, see the https://docs.quarkiverse.io/quarkus-qute-web/dev/index.html[Qute Web guide].
 
@@ -144,9 +144,9 @@ Hello Martin!
 
 There's an alternate way to declare your templates in your Java code, which relies on the following convention:
 
-- Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
-  your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
-  and `/src/main/resources/templates/ItemResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+- Organize your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
+  your `FruitResource` class references two templates `apples` and `oranges`, place them at `/src/main/resources/templates/FruitResource/apples.txt`
+  and `/src/main/resources/templates/FruitResource/oranges.txt`. Grouping templates per resource class makes it easier to navigate to them.
 - In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
 - Declare one `public static native TemplateInstance method();` per template file for your resource.
 - Use those static methods to build your template instances.
@@ -162,7 +162,7 @@ Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
-Now let's declare and use those templates in the resource class.
+Now let's declare and use this template in the resource class.
 
 .HelloResource.java
 [source,java]
@@ -201,7 +201,7 @@ NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all 
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
-.HelloResource.java
+.GreetingResource.java
 [source,java]
 ----
 package org.acme.quarkus.sample;
@@ -215,8 +215,8 @@ import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 
-@Path("goodbye")
-public class GoodbyeResource {
+@Path("greeting")
+public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -389,7 +389,7 @@ public class ItemResource {
 *Template extension methods* are used to extend the set of accessible properties of data objects.
 
 Sometimes, you're not in control of the classes that you want to use in your template, and you cannot add methods
-to them. Template extension methods allows you to declare new method for those classes that will be available
+to them. Template extension methods allow you to declare new methods for those classes that will be available
 from your templates just as if they belonged to the target class.
 
 Let's keep extending on our simple HTML page that contains the item name, price and add a discounted price.
@@ -442,7 +442,7 @@ grouped by target type, or in a single `TemplateExtensions` class by convention.
 
 == Rendering Periodic Reports
 
-Templating engine could be also very useful when rendering periodic reports.
+The templating engine can also be very useful for rendering periodic reports.
 You'll need to add the `quarkus-scheduler` and `quarkus-qute` extensions first.
 In your `pom.xml` file, add:
 

@@ -48,7 +48,7 @@ public interface HttpUpgradeCheck {
      * @param securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
      * @param endpointId {@link WebSocket#endpointId()}
      */
-    record HttpUpgradeContext(HttpServerRequest httpRequest, SecurityIdentity securityIdentity, String endpointId) {
+    record HttpUpgradeContext(HttpServerRequest httpRequest, Uni<SecurityIdentity> securityIdentity, String endpointId) {
     }
 
     final class CheckResult {

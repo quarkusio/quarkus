@@ -7,6 +7,20 @@ import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 
+import com.webauthn4j.data.AuthenticationRequest;
+import com.webauthn4j.data.AuthenticatorAssertionResponse;
+import com.webauthn4j.data.AuthenticatorAttestationResponse;
+import com.webauthn4j.data.PublicKeyCredential;
+import com.webauthn4j.data.PublicKeyCredentialCreationOptions;
+import com.webauthn4j.data.PublicKeyCredentialParameters;
+import com.webauthn4j.data.PublicKeyCredentialRequestOptions;
+import com.webauthn4j.data.PublicKeyCredentialRpEntity;
+import com.webauthn4j.data.PublicKeyCredentialType;
+import com.webauthn4j.data.PublicKeyCredentialUserEntity;
+import com.webauthn4j.data.RegistrationRequest;
+import com.webauthn4j.data.attestation.AttestationObject;
+import com.webauthn4j.data.client.CollectedClientData;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -15,12 +29,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.security.webauthn.WebAuthn;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
 import io.quarkus.security.webauthn.WebAuthnBuildTimeConfig;
-import io.quarkus.security.webauthn.WebAuthnIdentityProvider;
 import io.quarkus.security.webauthn.WebAuthnRecorder;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.quarkus.security.webauthn.WebAuthnTrustedIdentityProvider;
@@ -28,10 +42,43 @@ import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
-import io.vertx.ext.auth.webauthn.impl.attestation.Attestation;
 
 @BuildSteps(onlyIf = QuarkusSecurityWebAuthnProcessor.IsEnabled.class)
 class QuarkusSecurityWebAuthnProcessor {
+
+    @BuildStep
+    public IndexDependencyBuildItem addTypesToJandex() {
+        // needed by registerJacksonTypes()
+        return new IndexDependencyBuildItem("com.webauthn4j", "webauthn4j-core");
+    }
+
+    @BuildStep
+    public void registerJacksonTypes(BuildProducer<ReflectiveHierarchyBuildItem> reflection) {
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).build());
+    }
 
     @BuildStep
     public void myBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -39,7 +86,6 @@ class QuarkusSecurityWebAuthnProcessor {
 
         builder.addBeanClass(WebAuthnSecurity.class)
                 .addBeanClass(WebAuthnAuthenticatorStorage.class)
-                .addBeanClass(WebAuthnIdentityProvider.class)
                 .addBeanClass(WebAuthnTrustedIdentityProvider.class);
         additionalBeans.produce(builder.build());
     }
@@ -53,11 +99,6 @@ class QuarkusSecurityWebAuthnProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath());
-    }
-
-    @BuildStep
-    public ServiceProviderBuildItem serviceLoader() {
-        return ServiceProviderBuildItem.allProvidersFromClassPath(Attestation.class.getName());
     }
 
     @BuildStep

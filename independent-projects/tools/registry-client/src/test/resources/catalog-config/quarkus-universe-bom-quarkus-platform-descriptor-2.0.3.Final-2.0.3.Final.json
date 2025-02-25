@@ -1100,22 +1100,6 @@
     "artifact" : "io.quarkus:quarkus-jacoco::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
-    "name" : "Jaeger",
-    "description" : "Trace your services with Jaeger",
-    "metadata" : {
-      "keywords" : [ "tracing", "distributed-tracing", "jaeger" ],
-      "categories" : [ "observability" ],
-      "unlisted" : true,
-      "status" : "stable",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.opentracing" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
-    },
-    "artifact" : "io.quarkus:quarkus-jaeger::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
     "name" : "JAXB",
     "description" : "XML serialization support",
     "metadata" : {
@@ -2546,22 +2530,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-swagger-ui" ]
     },
     "artifact" : "io.quarkus:quarkus-smallrye-openapi::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "SmallRye OpenTracing",
-    "description" : "Trace your services with SmallRye OpenTracing",
-    "metadata" : {
-      "keywords" : [ "smallrye-opentracing", "opentracing", "tracing", "distributed-tracing", "jaeger" ],
-      "guide" : "https://quarkus.io/guides/opentracing",
-      "categories" : [ "observability" ],
-      "status" : "stable",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.smallrye.opentracing" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaeger", "io.quarkus:quarkus-jsonp" ]
-    },
-    "artifact" : "io.quarkus:quarkus-smallrye-opentracing::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "SmallRye Reactive Messaging - AMQP Connector",

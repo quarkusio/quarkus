@@ -20,11 +20,11 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.narayana.rts</groupId>
+            <groupId>org.jboss.narayana.lra</groupId>
             <artifactId>narayana-lra</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.narayana.rts</groupId>
+            <groupId>org.jboss.narayana.lra</groupId>
             <artifactId>lra-service-base</artifactId>
             <exclusions>
                 <exclusion>
@@ -34,7 +34,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.narayana.rts</groupId>
+            <groupId>org.jboss.narayana.lra</groupId>
             <artifactId>lra-proxy-api</artifactId>
             <exclusions>
                 <exclusion>
@@ -44,7 +44,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.narayana.rts</groupId>
+            <groupId>org.jboss.narayana.lra</groupId>
             <artifactId>lra-client</artifactId>
         </dependency>
         <dependency>
@@ -69,11 +69,11 @@
                 <configuration>
                     <removedResources>
                         <artifact>
-                            <key>org.jboss.narayana.rts:narayana-lra</key>
+                            <key>org.jboss.narayana.lra:narayana-lra</key>
                             <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                         <artifact>
-                            <key>org.jboss.narayana.rts:lra-client</key>
+                            <key>org.jboss.narayana.lra:lra-client</key>
                             <resources>META-INF/services/jakarta.ws.rs.client.ClientBuilder</resources>
                         </artifact>
                     </removedResources>
@@ -92,9 +92,6 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
-                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

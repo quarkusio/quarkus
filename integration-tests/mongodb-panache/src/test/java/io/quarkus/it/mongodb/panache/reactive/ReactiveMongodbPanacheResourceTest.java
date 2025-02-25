@@ -41,7 +41,7 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-class ReactiveMongodbPanacheResourceTest {
+public class ReactiveMongodbPanacheResourceTest {
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
@@ -67,7 +67,7 @@ class ReactiveMongodbPanacheResourceTest {
         callReactivePersonEndpoint("/reactive/persons/repository");
     }
 
-    private void callReactiveBookEndpoint(String endpoint) throws InterruptedException {
+    public static void callReactiveBookEndpoint(String endpoint) throws InterruptedException {
         RestAssured.defaultParser = Parser.JSON;
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new Jdk8Module())
@@ -333,7 +333,7 @@ class ReactiveMongodbPanacheResourceTest {
         assertEquals(0, count);
     }
 
-    private Date yearToDate(int year) {
+    private static Date yearToDate(int year) {
         Calendar cal = new GregorianCalendar();
         cal.set(year, 1, 1);
         return cal.getTime();

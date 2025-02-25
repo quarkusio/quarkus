@@ -296,6 +296,20 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return bootstrapProvider.bootstrapApplication(this, mode);
     }
 
+    protected void closeApplication(LaunchMode mode) {
+        bootstrapProvider.closeApplication(this, mode);
+    }
+
+    /**
+     * Workspace ID associated with a given bootstrap mojo.
+     * If the returned value is {@code 0}, a workspace was not associated with the bootstrap mojo.
+     *
+     * @return workspace ID associated with a given bootstrap mojo
+     */
+    protected int getWorkspaceId() {
+        return bootstrapProvider.getWorkspaceId(this);
+    }
+
     protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer)
             throws MojoExecutionException {
         return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer);

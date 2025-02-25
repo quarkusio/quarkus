@@ -10,7 +10,7 @@ import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertTarget;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -23,6 +23,7 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
@@ -36,23 +37,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class RestClientOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
-            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+            .addPackage(TestSpanExporter.class.getPackage())
+            .addClasses(SemconvResolver.class)
             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.rest-client.client.url", "${test.url}");
 
@@ -112,21 +115,27 @@ public class RestClientOpenTelemetryTest {
 
     @Test
     void urlWithoutAuthentication() {
-        WebTarget target = ClientBuilder.newClient()
-                .target(UriBuilder.fromUri(uri).userInfo("username:password").path("hello").queryParam("query", "1"));
-        Response response = target.request().get();
-        assertEquals(response.getStatus(), HTTP_OK);
+        try (Client client = ClientBuilder.newClient()) {
+            WebTarget target = client
+                    .target(UriBuilder.fromUri(uri)
+                            .userInfo("username:password")
+                            .path("hello")
+                            .queryParam("query", "1"));
+            Response response = target.request().get();
+            assertEquals(response.getStatus(), HTTP_OK);
+        }
+
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
-        SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals(CLIENT, client.getKind());
-        assertEquals("GET", client.getName());
-        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
-        assertSemanticAttribute(client, HttpMethod.GET, HTTP_REQUEST_METHOD);
-        assertSemanticAttribute(client, uri.toString() + "hello?query=1", URL_FULL);
+        SpanData clientSpan = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        assertEquals(CLIENT, clientSpan.getKind());
+        assertEquals("GET", clientSpan.getName());
+        assertSemanticAttribute(clientSpan, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(clientSpan, HttpMethod.GET, HTTP_REQUEST_METHOD);
+        assertSemanticAttribute(clientSpan, uri.toString() + "hello?query=1", URL_FULL);
 
-        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals(client.getTraceId(), server.getTraceId());
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, clientSpan.getSpanId());
+        assertEquals(clientSpan.getTraceId(), server.getTraceId());
     }
 
     @Test

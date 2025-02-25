@@ -60,7 +60,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         command += String.format("--kafka-addr %s ", getKafkaAddresses());
         command += String.format("--advertise-kafka-addr %s ", getKafkaAdvertisedAddresses());
         command += "--set redpanda.auto_create_topics_enabled=true ";
-        if (redpandaConfig.transactionEnabled) {
+        if (redpandaConfig.transactionEnabled()) {
             command += "--set redpanda.enable_idempotence=true ";
             command += "--set redpanda.enable_transactions=true ";
         }
@@ -104,8 +104,8 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
             addFixedExposedPort(fixedExposedPort, DevServicesKafkaProcessor.KAFKA_PORT);
         }
 
-        if (redpandaConfig.proxyPort.isPresent()) {
-            addFixedExposedPort(redpandaConfig.proxyPort.get(), PANDAPROXY_PORT);
+        if (redpandaConfig.proxyPort().isPresent()) {
+            addFixedExposedPort(redpandaConfig.proxyPort().get(), PANDAPROXY_PORT);
         } else {
             addExposedPort(PANDAPROXY_PORT);
         }

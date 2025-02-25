@@ -7,8 +7,6 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-/**
- */
 public final class StringUtil {
     private StringUtil() {
     }
@@ -114,13 +112,13 @@ public final class StringUtil {
     }
 
     /**
-     * @deprecated Use {@link String#join} instead.
+     * Dropped for public usage, kept in place for usage by hyphenate method to avoid need for lambda
+     *
      * @param delim delimiter
      * @param it iterator
      * @return the joined string
      */
-    @Deprecated
-    public static String join(String delim, Iterator<String> it) {
+    private static String join(String delim, Iterator<String> it) {
         final StringBuilder b = new StringBuilder();
         if (it.hasNext()) {
             b.append(it.next());

@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.security.Permission;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
@@ -246,9 +246,9 @@ public class OidcUtilsTest {
 
     @Test
     public void testDecodeOpaqueTokenAsJwt() throws Exception {
-        assertNull(OidcUtils.decodeJwtContent("123"));
-        assertNull(OidcUtils.decodeJwtContent("1.23"));
-        assertNull(OidcUtils.decodeJwtContent("1.2.3"));
+        assertNull(OidcCommonUtils.decodeJwtContent("123"));
+        assertNull(OidcCommonUtils.decodeJwtContent("1.23"));
+        assertNull(OidcCommonUtils.decodeJwtContent("1.2.3"));
     }
 
     @Test
@@ -257,27 +257,11 @@ public class OidcUtilsTest {
                 .getBytes(StandardCharsets.UTF_8);
         SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
         String jwt = Jwt.claims().sign(key);
-        assertNull(OidcUtils.decodeJwtContent(jwt + ".4"));
-        JsonObject json = OidcUtils.decodeJwtContent(jwt);
+        assertNull(OidcCommonUtils.decodeJwtContent(jwt + ".4"));
+        JsonObject json = OidcCommonUtils.decodeJwtContent(jwt);
         assertTrue(json.containsKey("iat"));
         assertTrue(json.containsKey("exp"));
         assertTrue(json.containsKey("jti"));
-    }
-
-    @Test
-    public void testTransformScopeToPermission() throws Exception {
-        Permission[] perms = OidcUtils.transformScopesToPermissions(
-                List.of("read", "read:d", "read:", ":read"));
-        assertEquals(4, perms.length);
-
-        assertEquals("read", perms[0].getName());
-        assertNull(perms[0].getActions());
-        assertEquals("read", perms[1].getName());
-        assertEquals("d", perms[1].getActions());
-        assertEquals("read:", perms[2].getName());
-        assertNull(perms[2].getActions());
-        assertEquals(":read", perms[3].getName());
-        assertNull(perms[3].getActions());
     }
 
     @Test
@@ -338,4 +322,14 @@ public class OidcUtilsTest {
         }
     }
 
+    @Test
+    public void testJwtContentTypeCheck() {
+        assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt"));
+        assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt "));
+        assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt;charset=UTF-8"));
+        assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt ; charset=UTF-8"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(" application/jwt-custom"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(" application/json"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(null));
+    }
 }

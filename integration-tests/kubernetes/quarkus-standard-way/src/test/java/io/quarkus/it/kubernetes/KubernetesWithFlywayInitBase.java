@@ -29,9 +29,7 @@ public class KubernetesWithFlywayInitBase {
                         && name.equals(d.getMetadata().getName()))
                 .map(d -> (Deployment) d).findAny();
 
-        assertTrue(deployment.isPresent());
-        assertThat(deployment).satisfies(j -> j.isPresent());
-        assertThat(deployment.get()).satisfies(d -> {
+        assertThat(deployment).isPresent().get().satisfies(d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(name);
             });
@@ -56,9 +54,7 @@ public class KubernetesWithFlywayInitBase {
                 .filter(j -> "Job".equals(j.getKind()) && jobName.equals(j.getMetadata().getName()))
                 .map(j -> (Job) j)
                 .findAny();
-        assertTrue(job.isPresent());
-
-        assertThat(job.get()).satisfies(j -> {
+        assertThat(job).isPresent().get().satisfies(j -> {
             assertThat(j.getSpec()).satisfies(jobSpec -> {
                 assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
@@ -69,7 +65,7 @@ public class KubernetesWithFlywayInitBase {
                         assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo(jobName);
-                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
+                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ACTIVE".equals(env.getName()))
                                     .singleElement().satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });

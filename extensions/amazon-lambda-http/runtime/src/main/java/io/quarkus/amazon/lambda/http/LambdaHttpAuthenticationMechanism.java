@@ -95,7 +95,7 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return null;
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().nullItem();
     }
 }

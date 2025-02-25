@@ -476,9 +476,9 @@ public class IfSectionHelper implements SectionHelper {
         boolean evaluate(Object op1, Object op2) {
             switch (this) {
                 case EQ:
-                    return Objects.equals(op1, op2);
+                    return equals(op1, op2);
                 case NE:
-                    return !Objects.equals(op1, op2);
+                    return !equals(op1, op2);
                 case GE:
                 case GT:
                 case LE:
@@ -490,6 +490,17 @@ public class IfSectionHelper implements SectionHelper {
                 default:
                     throw new TemplateException("Not a binary operator: " + this);
             }
+        }
+
+        boolean equals(Object op1, Object op2) {
+            if (Objects.equals(op1, op2)) {
+                return true;
+            }
+            if (op1 != null && op2 != null && (op1 instanceof Number || op2 instanceof Number)) {
+                // Both operands are not null and at least one of them is a number
+                return getDecimal(op1).compareTo(getDecimal(op2)) == 0;
+            }
+            return false;
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -553,25 +564,22 @@ public class IfSectionHelper implements SectionHelper {
         }
 
         static BigDecimal getDecimal(Object value) {
-            BigDecimal decimal;
-            if (value instanceof BigDecimal) {
-                decimal = (BigDecimal) value;
-            } else if (value instanceof BigInteger) {
-                decimal = new BigDecimal((BigInteger) value);
-            } else if (value instanceof Integer) {
-                decimal = new BigDecimal((Integer) value);
-            } else if (value instanceof Long) {
-                decimal = new BigDecimal((Long) value);
-            } else if (value instanceof Double) {
-                decimal = new BigDecimal((Double) value);
-            } else if (value instanceof Float) {
-                decimal = new BigDecimal((Float) value);
-            } else if (value instanceof String) {
-                decimal = new BigDecimal(value.toString());
-            } else {
-                throw new TemplateException("Not a valid number: " + value);
+            if (value instanceof BigDecimal decimal) {
+                return decimal;
+            } else if (value instanceof BigInteger bigInteger) {
+                return new BigDecimal(bigInteger);
+            } else if (value instanceof Integer integer) {
+                return BigDecimal.valueOf(integer);
+            } else if (value instanceof Long _long) {
+                return BigDecimal.valueOf(_long);
+            } else if (value instanceof Double _double) {
+                return BigDecimal.valueOf(_double);
+            } else if (value instanceof Float _float) {
+                return BigDecimal.valueOf(_float);
+            } else if (value instanceof String string) {
+                return new BigDecimal(string);
             }
-            return decimal;
+            throw new TemplateException("Cannot coerce " + value + " to a BigDecimal");
         }
 
     }

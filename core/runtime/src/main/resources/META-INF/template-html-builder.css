@@ -78,6 +78,8 @@ h2 {
 
 .intro {    
     font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
 }
 h3 {
     font-size: 1.2rem;
@@ -85,6 +87,8 @@ h3 {
     font-weight: 400;
     color: #555;
     margin: 0.25em 0 0.25em 0;
+    display: grid;
+    grid-template-columns: 50% 50%;
 }
 
 .trace {
@@ -125,6 +129,18 @@ h3 {
     color: hsla(3, 89%, 42%, 1.0);
 }
 
+.wrap-code {
+    display: block;
+    white-space: initial;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.scroll-code {
+    display: block;
+    overflow-x: scroll;
+}
+
 .rel-stacktrace-item {
     font-weight: 400;
     display: inline;
@@ -139,7 +155,7 @@ h3 {
 a, a:visited, a:focus, a:active  { 
     text-decoration: none; color:hsla(211, 63%, 54%, 1.0); 
 }
-a:hover { 
+a:hover, h3:hover { 
     text-decoration: none; color:hsla(343, 100%, 50%, 1.0); 
 }
 .header {    
@@ -251,3 +267,61 @@ a:hover {
 .configValue {
     border: 1px inset rgba(28,110,164,0.41);
 }
+
+ .sorticon {
+    margin: unset;
+    width: 20px;
+    padding-right: 5px;
+    cursor: pointer;
+ }
+ 
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    top: -10px;
+    left: 110%;;
+}
+
+#utilities-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: end;
+    margin: 0;
+    gap: 12px;
+}
+
+#utilities-container .clipboard {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-items: center;
+    gap: 4px;
+    color: #555;
+    cursor: pointer;
+}
+
+#utilities-container svg {
+    width: 24px;
+    height: 24px;
+}
+
+
+
+

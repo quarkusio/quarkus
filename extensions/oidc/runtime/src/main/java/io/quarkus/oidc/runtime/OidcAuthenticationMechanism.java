@@ -10,8 +10,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -27,7 +27,7 @@ import io.vertx.ext.web.RoutingContext;
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
     private static final Logger LOG = Logger.getLogger(OidcAuthenticationMechanism.class);
 
-    private static HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
+    private static final HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
             HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
     private final BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
@@ -47,7 +47,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
-                if (!oidcConfig.tenantEnabled) {
+                if (!oidcConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
                 return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
@@ -61,7 +61,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends ChallengeData> apply(OidcTenantConfig oidcTenantConfig) {
-                if (!oidcTenantConfig.tenantEnabled) {
+                if (!oidcTenantConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
                 return isWebApp(context, oidcTenantConfig) ? codeAuth.getChallenge(context)
@@ -84,19 +84,23 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
                 if (oidcTenantConfig == null) {
                     throw new OIDCException("Tenant configuration has not been resolved");
                 }
-                LOG.debugf("Resolved OIDC tenant id: %s", oidcTenantConfig.tenantId.orElse(OidcUtils.DEFAULT_TENANT_ID));
+                final String tenantId = oidcTenantConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
+                LOG.debugf("Resolved OIDC tenant id: %s", tenantId);
                 context.put(OidcTenantConfig.class.getName(), oidcTenantConfig);
+                if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
+                    context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+                }
                 return oidcTenantConfig;
             };
         });
     }
 
     private boolean isWebApp(RoutingContext context, OidcTenantConfig oidcConfig) {
-        ApplicationType applicationType = oidcConfig.applicationType.orElse(ApplicationType.SERVICE);
-        if (OidcTenantConfig.ApplicationType.HYBRID == applicationType) {
+        ApplicationType applicationType = oidcConfig.applicationType().orElse(ApplicationType.SERVICE);
+        if (ApplicationType.HYBRID == applicationType) {
             return context.request().getHeader("Authorization") == null;
         }
-        return OidcTenantConfig.ApplicationType.WEB_APP == applicationType;
+        return ApplicationType.WEB_APP == applicationType;
     }
 
     @Override
@@ -109,12 +113,12 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return resolve(context).onItem().transform(new Function<OidcTenantConfig, HttpCredentialTransport>() {
             @Override
             public HttpCredentialTransport apply(OidcTenantConfig oidcTenantConfig) {
-                if (!oidcTenantConfig.tenantEnabled) {
+                if (!oidcTenantConfig.tenantEnabled()) {
                     return null;
                 }
                 return isWebApp(context, oidcTenantConfig) ? OIDC_WEB_APP_TRANSPORT
                         : new HttpCredentialTransport(
-                                HttpCredentialTransport.Type.AUTHORIZATION, oidcTenantConfig.token.authorizationScheme);
+                                HttpCredentialTransport.Type.AUTHORIZATION, oidcTenantConfig.token().authorizationScheme());
             }
         });
     }

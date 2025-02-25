@@ -108,6 +108,11 @@ public final class JpaJandexScavenger {
         managedClassNames.addAll(collector.modelTypes);
         for (String className : managedClassNames) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+            // Register static metamodel classes as well, so that their `class_` attribute can be populated.
+            // See org.hibernate.metamodel.internal.MetadataContext.populateStaticMetamodel
+            // Note: registering classes that do not exist is not a problem -- and is necessary if the application
+            //       tries to access these classes via reflection anyway (which it will, through Hibernate ORM).
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className + "_").fields().build());
         }
 
         if (!collector.enumTypes.isEmpty()) {

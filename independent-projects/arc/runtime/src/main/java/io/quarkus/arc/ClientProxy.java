@@ -42,14 +42,14 @@ public interface ClientProxy {
      * This method should only be used with caution. If you unwrap a client proxy then certain key functionality will not work
      * as expected.
      *
-     * @param <T>
-     * @param obj
+     * @param <T> the type of the object to unwrap
+     * @param obj the object to unwrap
      * @return the contextual instance if the object represents a client proxy, the object otherwise
      */
     @SuppressWarnings("unchecked")
     static <T> T unwrap(T obj) {
-        if (obj instanceof ClientProxy) {
-            return (T) ((ClientProxy) obj).arc_contextualInstance();
+        if (obj instanceof ClientProxy proxy) {
+            return (T) proxy.arc_contextualInstance();
         }
         return obj;
     }

@@ -1,13 +1,17 @@
 package io.quarkus.it.spring.data.jpa;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
 
 @QuarkusTest
 public class BookResourceTest {
@@ -131,5 +135,17 @@ public class BookResourceTest {
         when().get("/book/customPublicationYearObject/1").then()
                 .statusCode(200)
                 .body(is("2011"));
+    }
+
+    @Test
+    void testEnsureFieldPageableIsSerialized() {
+        Response response = given()
+                .accept("application/json")
+                .queryParam("size", "2")
+                .queryParam("page", "1")
+                .when().get("/book/paged");
+        Assertions.assertEquals(200, response.statusCode());
+        assertThat(response.body().jsonPath().getString("pageable")).contains("paged:true");
+        assertThat(response.body().jsonPath().getString("pageable")).contains("unpaged:false");
     }
 }

@@ -25,9 +25,9 @@ public class CsrfTokenParameterProvider {
     private final String csrfHeaderName;
 
     public CsrfTokenParameterProvider(RestCsrfConfig config) {
-        this.csrfFormFieldName = config.formFieldName;
-        this.csrfCookieName = config.cookieName;
-        this.csrfHeaderName = config.tokenHeaderName;
+        this.csrfFormFieldName = config.formFieldName();
+        this.csrfCookieName = config.cookieName();
+        this.csrfHeaderName = config.tokenHeaderName();
     }
 
     /**

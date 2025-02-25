@@ -9,6 +9,9 @@ include::_attributes.adoc[]
 :categories: security
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client-registration
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
 
 Typically, you have to register an OIDC client (application) manually in your OIDC provider's dashboard.
 During this process, you specify the human readable application name, allowed redirect and post logout URLs, and other properties.
@@ -19,12 +22,12 @@ You can read more about it in the https://openid.net/specs/openid-connect-regist
 
 You can use Quarkus `quarkus-oidc-client-registration` extension to register one or more clients using OIDC client registration configurations and read, update and delete metadata of the registered clients.
 
-xref:security-openid-connect-multitenancy#tenant-config-resolver[OIDC TenantConfigResolver] can be used to create OIDC tenant configurations using the metadata of the registered clients.
+xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver] can be used to create OIDC tenant configurations using the metadata of the registered clients.
 
 [IMPORTANT]
 ====
 Currently, Quarkus `quarkus-oidc-client-registration` extension has an `experimental` status.
-Dynamic client registration API provided by this extension may change while this extension has an experiemental status. 
+Dynamic client registration API provided by this extension may change while this extension has an experiemental status.
 ====
 
 == OIDC Client Registration
@@ -41,7 +44,7 @@ Add the following dependency:
 
 The `quarkus-oidc-client-registration` extension allows register one or more clients using OIDC client registration configurations, either on start-up or on demand, and read, update and delete metadata of the registered clients.
 
-You can register and manage client registrations from the custom xref:security-openid-connect-multitenancy#tenant-config-resolver[OIDC TenantConfigResolver].
+You can register and manage client registrations from the custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver].
 
 Alternatively, you can register clients without even using OIDC. For example, it can be a command line tool which registers clients and passes metadata of the registered clients to Quarkus services which require them.
 
@@ -61,7 +64,7 @@ quarkus.oidc-client-registration.auth-server-url=${quarkus.oidc.auth-server-url}
 quarkus.oidc-client-registration.metadata.client-name=Default Client
 quarkus.oidc-client-registration.metadata.redirect-uri=http://localhost:8081/protected
 
-# Named OIDC client registration which configures a registration endpoint path: 
+# Named OIDC client registration which configures a registration endpoint path:
 # It require an initial registration token for a client registration to succeed.
 
 quarkus.oidc-client-registration.tenant-client.registration-path=${quarkus.oidc.auth-server-url}/clients-registrations/openid-connect
@@ -72,7 +75,7 @@ quarkus.oidc-client-registration.initial-token=${initial-registration-token}
 
 The above configuration will lead to two new client registrations created in your OIDC provider.
 
-You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies[Keycloak client registration policies].   
+You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies[Keycloak client registration policies].
 
 The next step is to inject either `quarkus.oidc.client.registration.OidcClientRegistration` if only a single default client registration is done, or `quarkus.oidc.client.registration.OidcClientRegistrations` if more than one registration is configured, and use metadata of the clients registered with these configurations.
 
@@ -97,7 +100,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.client.registration.ClientMetadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
-import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
 import io.quarkus.oidc.client.registration.RegisteredClient;
 import io.smallrye.mutiny.Uni;
@@ -115,7 +117,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     @Override
     public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
             OidcRequestContext<OidcTenantConfig> requestContext) {
-            
+
         if (routingContext.request().path().endsWith("/protected")) {
             // Use the registered client created from the default OIDC client registration
             return clientReg.registeredClient().onItem().transform(client -> createTenantConfig("registered-client", client));
@@ -131,15 +133,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }
@@ -148,7 +151,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 [[register-clients-on-demand]]
 === Register clients on demand
 
-You can register new clients on demand. 
+You can register new clients on demand.
 You can add new clients to the existing, already configured `OidcClientConfiguration` or to a newly created `OidcClientConfiguration`.
 
 Start from configuring one or more OIDC client registrations:
@@ -179,7 +182,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.client.registration.ClientMetadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
-import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -202,7 +204,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             ClientMetadata metadata = createMetadata("http://localhost:8081/protected/dynamic-tenant",
                     "Dynamic Tenant Client");
 
-            return clientReg.registerClient(metadata).onItem().transform(r -> 
+            return clientReg.registerClient(metadata).onItem().transform(r ->
                   createTenantConfig("registered-client-dynamically", r));
         }
         return null;
@@ -210,15 +212,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     // Create metadata of registered clients to OidcTenantConfig
     private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 
@@ -274,13 +277,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if (routingContext.request().path().endsWith("/protected/new-oidc-client-reg")) {
             // New client registration done dynamically at the request time
 
-            OidcClientRegistrationConfig clientRegConfig = new OidcClientRegistrationConfig();
-            clientRegConfig.auth-server-url = Optional.of(authServerUrl);
-            clientRegConfig.metadata.redirectUri = Optional.of("http://localhost:8081/protected/new-oidc-client-reg");
-            clientRegConfig.metadata.clientName = Optional.of("Dynamic Client");
+            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig
+                    .authServerUrl(authServerUrl)
+                    .metadata("Dynamic Client", "http://localhost:8081/protected/new-oidc-client-reg")
+                    .build();
 
             return clientRegs.newClientRegistration(clientRegConfig)
-                    .onItem().transform(reg -> 
+                    .onItem().transform(reg ->
                     createTenantConfig("registered-client-dynamically", reg.registeredClient());
         }
 
@@ -289,15 +292,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     // Create metadata of registered clients to OidcTenantConfig
     private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 
@@ -369,15 +373,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }
@@ -479,15 +484,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }

@@ -22,8 +22,8 @@
             <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-backend-elasticsearch</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-search-backend-elasticsearch-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>

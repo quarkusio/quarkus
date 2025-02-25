@@ -1,6 +1,6 @@
 package io.quarkus.compressors.it;
 
-import static io.quarkus.compressors.it.Testflow.runTest;
+import static io.quarkus.compressors.it.Testflow.runCompressorsTest;
 
 import java.net.URL;
 
@@ -30,6 +30,6 @@ public class RESTEndpointsTest {
     //@formatter:on
     }, delimiter = '|', ignoreLeadingAndTrailingWhitespace = true, nullValues = "null")
     public void testCompressors(String endpoint, String acceptEncoding, String contentEncoding, String contentLength) {
-        runTest(url.toString() + endpoint, acceptEncoding, contentEncoding, contentLength);
+        runCompressorsTest(url.toString() + endpoint, acceptEncoding, contentEncoding, contentLength);
     }
 }

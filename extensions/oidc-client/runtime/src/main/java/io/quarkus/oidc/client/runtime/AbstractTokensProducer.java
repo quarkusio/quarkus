@@ -43,10 +43,10 @@ public abstract class AbstractTokensProducer {
             if (clientId.isPresent()) {
                 // static named OidcClient
                 oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
-                earlyTokenAcquisition = oidcClientsConfig.namedClients.get(clientId.get()).earlyTokensAcquisition;
+                earlyTokenAcquisition = oidcClientsConfig.namedClients().get(clientId.get()).earlyTokensAcquisition();
             } else {
                 // default OidcClient
-                earlyTokenAcquisition = oidcClientsConfig.defaultClient.earlyTokensAcquisition;
+                earlyTokenAcquisition = OidcClientsConfig.getDefaultClient(oidcClientsConfig).earlyTokensAcquisition();
                 oidcClient = oidcClients.getClient();
             }
         } else {
@@ -57,7 +57,7 @@ public abstract class AbstractTokensProducer {
     }
 
     protected boolean isClientFeatureDisabled() {
-        return !oidcClientBuildTimeConfig.enabled;
+        return !oidcClientBuildTimeConfig.enabled();
     }
 
     protected void initTokens() {

@@ -2,7 +2,6 @@ package io.quarkus.liquibase.runtime;
 
 import javax.sql.DataSource;
 
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
 
 /**
@@ -28,12 +27,10 @@ public class LiquibaseFactoryProducer {
     }
 
     public LiquibaseFactory createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
-        LiquibaseDataSourceBuildTimeConfig matchingBuildTimeConfig = DataSourceUtil.isDefault(dataSourceName)
-                ? liquibaseBuildTimeConfig.defaultDataSource
-                : liquibaseBuildTimeConfig.getConfigForDataSourceName(dataSourceName);
-        LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = DataSourceUtil.isDefault(dataSourceName)
-                ? liquibaseRuntimeConfig.defaultDataSource
-                : liquibaseRuntimeConfig.getConfigForDataSourceName(dataSourceName);
+        LiquibaseDataSourceBuildTimeConfig matchingBuildTimeConfig = liquibaseBuildTimeConfig.datasources()
+                .get(dataSourceName);
+        LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = liquibaseRuntimeConfig.datasources()
+                .get(dataSourceName);
         return new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
                 .createLiquibaseFactory(dataSource, dataSourceName);
     }

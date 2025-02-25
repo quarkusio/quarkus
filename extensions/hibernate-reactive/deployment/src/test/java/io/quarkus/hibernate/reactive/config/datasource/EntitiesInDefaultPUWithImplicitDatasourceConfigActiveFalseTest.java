@@ -23,8 +23,8 @@ public class EntitiesInDefaultPUWithImplicitDatasourceConfigActiveFalseTest {
                     .hasMessageContainingAll(
                             "Unable to find datasource '<default>' for persistence unit 'default-reactive'",
                             "Datasource '<default>' was deactivated through configuration properties.",
-                            "To solve this, avoid accessing this datasource at runtime, for instance by deactivating consumers (persistence units, ...).",
-                            "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.active'"
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To activate the datasource, set configuration property 'quarkus.datasource.active'"
                                     + " to 'true' and configure datasource '<default>'",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 

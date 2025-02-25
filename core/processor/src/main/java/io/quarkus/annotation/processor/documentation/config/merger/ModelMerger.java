@@ -43,12 +43,29 @@ public final class ModelMerger {
      * target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories) {
+        return mergeModel(javadocRepository, buildOutputDirectories, false);
+    }
+
+    /**
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
+     * target/ directories found in the parent directory scanned).
+     */
+    public static MergedModel mergeModel(List<Path> buildOutputDirectories, boolean mergeCommonOrInternalExtensions) {
+        return mergeModel(null, buildOutputDirectories, mergeCommonOrInternalExtensions);
+    }
+
+    /**
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
+     * target/ directories found in the parent directory scanned).
+     */
+    public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories,
+            boolean mergeCommonOrInternalExtensions) {
         // keyed on extension and then top level prefix
         Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots = new HashMap<>();
         // keyed on file name
         Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
         // keyed on extension
-        Map<Extension, List<ConfigSection>> generatedConfigSections = new TreeMap<>();
+        Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
 
         for (Path buildOutputDirectory : buildOutputDirectories) {
             Path resolvedModelPath = buildOutputDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
@@ -85,7 +102,8 @@ public final class ModelMerger {
                         continue;
                     }
 
-                    Map<ConfigRootKey, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
+                    Map<ConfigRootKey, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(
+                            normalizeExtension(configRoot.getExtension(), mergeCommonOrInternalExtensions),
                             e -> new TreeMap<>());
 
                     ConfigRootKey configRootKey = getConfigRootKey(javadocRepository, configRoot);
@@ -102,6 +120,7 @@ public final class ModelMerger {
             }
         }
 
+        // note that the configRoots are now sorted by extension name
         configRoots = retainBestExtensionKey(configRoots);
 
         for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
@@ -114,6 +133,18 @@ public final class ModelMerger {
         }
 
         return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
+    }
+
+    private static Extension normalizeExtension(Extension extension, boolean mergeCommonOrInternalExtensions) {
+        if (!mergeCommonOrInternalExtensions) {
+            return extension;
+        }
+
+        if (extension.commonOrInternal()) {
+            return extension.normalizeCommonOrInternal();
+        }
+
+        return extension;
     }
 
     private static Map<Extension, Map<ConfigRootKey, ConfigRoot>> retainBestExtensionKey(

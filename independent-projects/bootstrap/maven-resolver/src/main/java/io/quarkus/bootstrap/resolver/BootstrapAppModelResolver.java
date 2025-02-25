@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -34,10 +35,10 @@ import org.eclipse.aether.version.Version;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyResolver;
 import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyTreeResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.DependencyLoggingConfig;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
@@ -56,24 +57,56 @@ import io.quarkus.paths.PathList;
  */
 public class BootstrapAppModelResolver implements AppModelResolver {
 
+    private static final String LEGACY_MODEL_RESOLVER_PROP = "quarkus.bootstrap.legacy-model-resolver";
+
+    /**
+     * Temporary method that will be removed once the legacy {@link ApplicationModel} resolver implementation gets removed.
+     * <p>
+     * Returns {@code true} if the system or POM property {@code quarkus.bootstrap.legacy-model-resolver}
+     * is set to {@code true}.
+     *
+     * @return true if the legacy application model resolver should be used
+     */
+    public static boolean isLegacyModelResolver(Properties projectProperties) {
+        return Boolean.parseBoolean(getLegacyModelResolverProperty(projectProperties));
+    }
+
+    /**
+     * Temporary method that will be removed once the legacy {@link ApplicationModel} resolver implementation gets removed.
+     * <p>
+     * Returns value of the system or POM property {@code quarkus.bootstrap.legacy-model-resolver}.
+     * The system property is checked first and if its value is not {@code null}, the value is returned.
+     * Otherwise, the value of the POM property is returned as the result.
+     *
+     * @return value of the system or POM property {@code quarkus.bootstrap.legacy-model-resolver} or null if it's not set
+     */
+    private static String getLegacyModelResolverProperty(Properties projectProperties) {
+        var value = System.getProperty(LEGACY_MODEL_RESOLVER_PROP);
+        if (value != null || projectProperties == null) {
+            return value;
+        }
+        return String.valueOf(projectProperties.get(LEGACY_MODEL_RESOLVER_PROP));
+    }
+
     protected final MavenArtifactResolver mvn;
     private DependencyLoggingConfig depLogConfig;
     protected boolean devmode;
     protected boolean test;
     private boolean collectReloadableDeps = true;
-    private boolean incubatingModelResolver;
+    private boolean legacyModelResolver;
+    private boolean runtimeModelOnly;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) {
         this.mvn = mvn;
     }
 
     /**
-     * Temporary method that will be removed once the incubating implementation becomes the default.
+     * Temporary method that will be removed once the legacy {@link ApplicationModel} resolver implementation gets removed.
      *
      * @return this application model resolver
      */
-    public BootstrapAppModelResolver setIncubatingModelResolver(boolean incubatingModelResolver) {
-        this.incubatingModelResolver = incubatingModelResolver;
+    public BootstrapAppModelResolver setLegacyModelResolver(boolean legacyModelResolver) {
+        this.legacyModelResolver = legacyModelResolver;
         return this;
     }
 
@@ -107,6 +140,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     public BootstrapAppModelResolver setCollectReloadableDependencies(boolean collectReloadableDeps) {
         this.collectReloadableDeps = collectReloadableDeps;
+        return this;
+    }
+
+    public BootstrapAppModelResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+        this.runtimeModelOnly = runtimeModelOnly;
         return this;
     }
 
@@ -364,27 +402,31 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             if (logTime) {
                 start = System.currentTimeMillis();
             }
-            if (incubatingModelResolver) {
-                IncubatingApplicationModelResolver.newInstance()
-                        .setArtifactResolver(mvn)
-                        .setApplicationModelBuilder(appBuilder)
-                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
-                        .setCollectCompileOnly(filteredProvidedDeps)
-                        .setDependencyLogging(depLogConfig)
-                        .resolve(collectRtDepsRequest);
-            } else {
+            if (legacyModelResolver) {
                 ApplicationDependencyTreeResolver.newInstance()
                         .setArtifactResolver(mvn)
                         .setApplicationModelBuilder(appBuilder)
                         .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
                         .setCollectCompileOnly(filteredProvidedDeps)
                         .setBuildTreeConsumer(depLogConfig == null ? null : depLogConfig.getMessageConsumer())
+                        .setRuntimeModelOnly(runtimeModelOnly)
+                        .setDevMode(devmode)
+                        .resolve(collectRtDepsRequest);
+            } else {
+                ApplicationDependencyResolver.newInstance()
+                        .setArtifactResolver(mvn)
+                        .setApplicationModelBuilder(appBuilder)
+                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
+                        .setCollectCompileOnly(filteredProvidedDeps)
+                        .setDependencyLogging(depLogConfig)
+                        .setRuntimeModelOnly(runtimeModelOnly)
+                        .setDevMode(devmode)
                         .resolve(collectRtDepsRequest);
             }
             if (logTime) {
                 System.err.println(
-                        "Application model resolved in " + (System.currentTimeMillis() - start) + "ms, incubating="
-                                + incubatingModelResolver);
+                        "Application model resolved in " + (System.currentTimeMillis() - start) + "ms, legacy="
+                                + legacyModelResolver);
             }
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(

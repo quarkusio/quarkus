@@ -38,6 +38,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.dsl.Manifest;
@@ -64,6 +65,7 @@ public abstract class QuarkusPluginExtensionView {
         getCleanupBuildOutput().set(extension.getCleanupBuildOutput());
         getFinalName().set(extension.getFinalName());
         getCodeGenForkOptions().set(getProviderFactory().provider(() -> extension.codeGenForkOptions));
+        getBuildForkOptions().set(getProviderFactory().provider(() -> extension.buildForkOptions));
         getIgnoredEntries().set(extension.ignoredEntriesProperty());
         getMainResources().setFrom(project.getExtensions().getByType(SourceSetContainer.class).getByName(MAIN_SOURCE_SET_NAME)
                 .getResources().getSourceDirectories());
@@ -126,6 +128,9 @@ public abstract class QuarkusPluginExtensionView {
 
     @Nested
     public abstract ListProperty<Action<? super JavaForkOptions>> getCodeGenForkOptions();
+
+    @Nested
+    public abstract ListProperty<Action<? super JavaForkOptions>> getBuildForkOptions();
 
     @Input
     @Optional
@@ -205,8 +210,10 @@ public abstract class QuarkusPluginExtensionView {
         }
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact,
+    protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel,
             Map<String, ?> additionalForcedProperties) {
+        ResolvedDependency appArtifact = appModel.getAppArtifact();
+
         Map<String, Object> properties = new HashMap<>();
         exportCustomManifestProperties(properties);
 
@@ -231,6 +238,7 @@ public abstract class QuarkusPluginExtensionView {
             forced.put("quarkus.native.enabled", "true");
         }
         return EffectiveConfig.builder()
+                .withPlatformProperties(appModel.getPlatformProperties())
                 .withForcedProperties(forced)
                 .withTaskProperties(properties)
                 .withBuildProperties(getQuarkusBuildProperties().get())

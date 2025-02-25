@@ -16,9 +16,11 @@ import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
-import io.quarkus.micrometer.runtime.export.EmptyExemplarSamplerProvider;
-import io.quarkus.micrometer.runtime.export.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
+import io.quarkus.micrometer.runtime.export.exemplars.EmptyExemplarSamplerProvider;
+import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarContextUnwrapper;
+import io.quarkus.micrometer.runtime.export.exemplars.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -40,7 +42,7 @@ public class PrometheusRegistryProcessor {
 
         public boolean getAsBoolean() {
             return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
-                    && mConfig.checkRegistryEnabledWithDefault(mConfig.export.prometheus);
+                    && mConfig.checkRegistryEnabledWithDefault(mConfig.export().prometheus());
         }
     }
 
@@ -59,7 +61,7 @@ public class PrometheusRegistryProcessor {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider")
                 .setUnremovable();
-        if (config.export.prometheus.defaultRegistry) {
+        if (config.export().prometheus().defaultRegistry()) {
             builder.addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProducer");
         }
         additionalBeans.produce(builder.build());
@@ -73,6 +75,7 @@ public class PrometheusRegistryProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(OpentelemetryExemplarSamplerProvider.class)
+                .addBeanClass(OpenTelemetryExemplarContextUnwrapper.class)
                 .setUnremovable()
                 .build());
     }
@@ -82,6 +85,7 @@ public class PrometheusRegistryProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(EmptyExemplarSamplerProvider.class)
+                .addBeanClass(NoopOpenTelemetryExemplarContextUnwrapper.class)
                 .setUnremovable()
                 .build());
     }
@@ -92,17 +96,17 @@ public class PrometheusRegistryProcessor {
             BuildProducer<RegistryBuildItem> registries,
             MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             PrometheusRecorder recorder) {
 
-        PrometheusConfigGroup pConfig = mConfig.export.prometheus;
+        PrometheusConfigGroup pConfig = mConfig.export().prometheus();
         log.debug("PROMETHEUS CONFIG: " + pConfig);
 
         // Exact match for resources matched to the root path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path, recorder.route())
+                .routeFunction(pConfig.path(), recorder.route())
                 .routeConfigKey("quarkus.micrometer.export.prometheus.path")
                 .handler(recorder.getHandler())
                 .displayOnNotFoundPage("Metrics")
@@ -112,7 +116,7 @@ public class PrometheusRegistryProcessor {
         // Match paths that begin with the deployment path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.route())
+                .routeFunction(pConfig.path() + (pConfig.path().endsWith("/") ? "*" : "/*"), recorder.route())
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());
@@ -120,17 +124,17 @@ public class PrometheusRegistryProcessor {
         // Fallback paths (for non text/plain requests)
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path, recorder.fallbackRoute())
+                .routeFunction(pConfig.path(), recorder.fallbackRoute())
                 .handler(recorder.getFallbackHandler())
                 .build());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
+                .routeFunction(pConfig.path() + (pConfig.path().endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
                 .handler(recorder.getFallbackHandler())
                 .build());
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path(),
+                managementBuildTimeConfig, launchModeBuildItem);
         registries.produce(new RegistryBuildItem("Prometheus", path));
     }
 }

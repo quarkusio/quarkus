@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -741,6 +743,20 @@ public class TracingTest {
                 .filter(e -> ("attr_" + SemanticAttributes.ENDUSER_ID.getKey()).equals(e.getKey())
                         || ("attr_" + SemanticAttributes.ENDUSER_ROLE.getKey()).equals(e.getKey()))
                 .findAny().isEmpty());
+    }
+
+    @Test
+    public void testSuppressAppUri() {
+        RestAssured.given()
+                .when().get("/suppress-app-uri")
+                .then()
+                .statusCode(200)
+                .body("message", Matchers.is("Suppress me!"));
+
+        // should throw because there are a configuration quarkus.otel.traces.suppress-app-uris=/suppress-app-uri
+        assertThrows(ConditionTimeoutException.class, () -> {
+            await().atMost(5, SECONDS).until(() -> !getSpans().isEmpty());
+        });
     }
 
     private void verifyResource(Map<String, Object> spanData) {

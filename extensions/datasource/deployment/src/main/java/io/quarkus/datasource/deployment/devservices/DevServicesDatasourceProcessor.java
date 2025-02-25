@@ -34,13 +34,13 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class DevServicesDatasourceProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
@@ -66,7 +66,7 @@ public class DevServicesDatasourceProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
         if (databases != null) {
@@ -122,7 +122,8 @@ public class DevServicesDatasourceProcessor {
                     installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
                     dockerStatusBuildItem,
-                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem, globalDevServicesConfig);
+                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
+                    devServicesConfig);
             if (devService != null) {
                 runningDevServices.add(devService);
                 results.put(entry.getKey(), toDbResult(devService));
@@ -202,7 +203,7 @@ public class DevServicesDatasourceProcessor {
             Map<String, String> propertiesMap,
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
+            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
         String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource " + dbName;
 
         if (!ConfigUtils.getFirstOptionalValue(
@@ -287,7 +288,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices().password(),
                     dataSourceBuildTimeConfig.devservices().initScriptPath(),
                     dataSourceBuildTimeConfig.devservices().volumes(),
-                    dataSourceBuildTimeConfig.devservices().reuse());
+                    dataSourceBuildTimeConfig.devservices().reuse(),
+                    dataSourceBuildTimeConfig.devservices().showLogs());
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(
@@ -296,7 +298,7 @@ public class DevServicesDatasourceProcessor {
                             ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
                                     String.class),
                             dbName, containerConfig,
-                            launchMode, globalDevServicesConfig.timeout);
+                            launchMode, devServicesConfig.timeout());
 
             for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, "db-kind")) {
                 propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind().orElse(null));

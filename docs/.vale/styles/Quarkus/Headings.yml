@@ -178,7 +178,6 @@ exceptions:
   - OpenJDK
   - OpenRewrite
   - OpenShift
-  - OpenTracing
   - PHP
   - Podman
   - Podman Desktop

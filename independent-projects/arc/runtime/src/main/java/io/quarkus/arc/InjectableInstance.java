@@ -2,11 +2,14 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.enterprise.util.TypeLiteral;
 
 /**
@@ -75,11 +78,37 @@ public interface InjectableInstance<T> extends Instance<T> {
      * If there is exactly one bean that matches the required type and qualifiers, returns the instance, otherwise returns
      * {@code null}.
      *
-     * @param other
      * @return the bean instance or {@code null}
      */
     default T orNull() {
         return orElse(null);
     }
 
+    /**
+     * Returns exactly one instance of an {@linkplain InjectableBean#checkActive() active} bean that matches
+     * the required type and qualifiers. If no active bean matches, or if more than one active bean matches,
+     * throws an exception.
+     *
+     * @return the single instance of an active matching bean
+     */
+    default T getActive() {
+        List<T> list = listActive();
+        if (list.size() == 1) {
+            return list.get(0);
+        } else if (list.isEmpty()) {
+            throw new UnsatisfiedResolutionException("No active bean found");
+        } else {
+            throw new AmbiguousResolutionException("More than one active bean found: " + list);
+        }
+    }
+
+    /**
+     * Returns the list of instances of {@linkplain InjectableBean#checkActive() active} beans that match
+     * the required type and qualifiers, sorter in priority order (higher priority goes first).
+     *
+     * @return the list of instances of matching active beans
+     */
+    default List<T> listActive() {
+        return handlesStream().filter(it -> it.getBean().isActive()).map(InstanceHandle::get).toList();
+    }
 }

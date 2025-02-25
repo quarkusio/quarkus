@@ -66,7 +66,7 @@ The following is an example for the `{config-file}` file:
 [source,properties]
 ----
 # configure MongoDB
-quarkus.mongodb.connection-string = mongodb://localhost:27017
+quarkus.mongodb.connection-string = mongodb://localhost:27017/mydatabase
 
 # Liquibase MongoDB minimal config properties
 quarkus.liquibase-mongodb.migrate-at-start=true
@@ -80,8 +80,9 @@ quarkus.liquibase-mongodb.migrate-at-start=true
 # quarkus.liquibase-mongodb.default-catalog-name=DefaultCatalog
 # quarkus.liquibase-mongodb.default-schema-name=DefaultSchema
 ----
+NOTE: Liquibase needs a database either in the connection string or with the `quarkus.mongodb.database` property.
 
-NOTE: Liquibase MongoDB is configured using a connection string, we do our best to craft a connection string that matches the MongoDB client configuration but if some configuration properties are not working you may consider adding them directly into the `quarkus.mongodb.connection-string` config property.
+NOTE: By default, Liquibase MongoDB is configured to use the default MongoDB client Quarkus creates, but you can configure the extension to use a named client by setting `quarkus.liquibase-mongodb.mongo-client-name`.
 
 Add a changeLog file to the default folder following the Liquibase naming conventions: `{change-log}`
 YAML, JSON and XML formats are supported for the changeLog.

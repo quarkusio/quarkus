@@ -53,12 +53,7 @@ public class DelayedExecutionInvoker extends DelegateInvoker {
         executor.schedule(new Runnable() {
             @Override
             public void run() {
-                try {
-                    delegate.invoke(execution);
-                    ret.complete(null);
-                } catch (Exception e) {
-                    ret.completeExceptionally(e);
-                }
+                invokeComplete(ret, execution);
             }
         }, delay, TimeUnit.MILLISECONDS);
         return ret;

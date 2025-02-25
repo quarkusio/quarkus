@@ -102,7 +102,7 @@ The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is pr
 the server address has not been explicitly configured. More information can be found in the
 xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-oidc_quarkus.keycloak.devservices.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
 
 === Kubernetes
 

@@ -177,6 +177,18 @@ quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 
+=== Map LDAP groups to `SecurityIdentity` roles
+
+Previously described application configuration showed how to map `CN` attribute of the LDAP Distinguished Name group to a Quarkus `SecurityIdentity` role.
+More specifically, the `standardRole` CN was mapped to a `SecurityIdentity` role and thus allowed access to the `UserResource#me` endpoint.
+However, required `SecurityIdentity` roles may differ between applications and you may need to map LDAP groups to local `SecurityIdentity` roles like in the example below:
+
+[source,properties]
+----
+quarkus.http.auth.roles-mapping."standardRole"=user <1>
+----
+<1> Map the `standardRole` role to the application-specific `SecurityIdentity` role `user`.
+
 == Testing the Application
 
 The application is now protected and the identities are provided by our LDAP server.

@@ -10,6 +10,7 @@ import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnPingMessage;
 import io.quarkus.websockets.next.OnPongMessage;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
@@ -37,6 +38,7 @@ final class WebSocketDotNames {
     static final DotName ON_OPEN = DotName.createSimple(OnOpen.class);
     static final DotName ON_TEXT_MESSAGE = DotName.createSimple(OnTextMessage.class);
     static final DotName ON_BINARY_MESSAGE = DotName.createSimple(OnBinaryMessage.class);
+    static final DotName ON_PING_MESSAGE = DotName.createSimple(OnPingMessage.class);
     static final DotName ON_PONG_MESSAGE = DotName.createSimple(OnPongMessage.class);
     static final DotName ON_CLOSE = DotName.createSimple(OnClose.class);
     static final DotName ON_ERROR = DotName.createSimple(OnError.class);
@@ -54,7 +56,8 @@ final class WebSocketDotNames {
     static final DotName HANDSHAKE_REQUEST = DotName.createSimple(HandshakeRequest.class);
     static final DotName THROWABLE = DotName.createSimple(Throwable.class);
     static final DotName CLOSE_REASON = DotName.createSimple(CloseReason.class);
+    static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
 
     static final List<DotName> CALLBACK_ANNOTATIONS = List.of(ON_OPEN, ON_CLOSE, ON_BINARY_MESSAGE, ON_TEXT_MESSAGE,
-            ON_PONG_MESSAGE, ON_ERROR);
+            ON_PING_MESSAGE, ON_PONG_MESSAGE, ON_ERROR);
 }

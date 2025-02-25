@@ -37,7 +37,10 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.maven.config.doc.generator.Format;
 import io.quarkus.maven.config.doc.generator.Formatter;
+import io.quarkus.maven.config.doc.generator.GenerationReport;
+import io.quarkus.maven.config.doc.generator.GenerationReport.GenerationViolation;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -91,13 +94,14 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
+        GenerationReport generationReport = new GenerationReport();
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
-        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories);
+        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories, true);
 
         Format normalizedFormat = Format.normalizeFormat(format);
 
         String normalizedTheme = normalizedFormat.normalizeTheme(theme);
-        Formatter formatter = Formatter.getFormatter(javadocRepository, enableEnumTooltips, normalizedFormat);
+        Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips, normalizedFormat);
         Engine quteEngine = initializeQuteEngine(formatter, normalizedFormat, normalizedTheme);
 
         // we generate a file per extension + top level prefix
@@ -117,10 +121,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         extension.artifactId(), topLevelPrefix, normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + topLevelPrefix);
+                Context context = new Context(summaryTableId, false);
 
                 try {
                     Files.writeString(configRootPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
+                            generateConfigReference(quteEngine, context, extension, configRoot, "", true));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension, e);
@@ -156,14 +161,30 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
             Path configRootPath = resolvedTargetDirectory.resolve(fileName);
             String summaryTableId = formatter.toAnchor(normalizedFileName);
+            Context context = new Context(summaryTableId, false);
 
             try {
                 Files.writeString(configRootPath,
-                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
+                        generateConfigReference(quteEngine, context, extension, configRoot, "", true));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
             }
+        }
+
+        if (!generationReport.getViolations().isEmpty()) {
+            StringBuilder report = new StringBuilder(
+                    "One or more errors happened during the configuration documentation generation. Here is a full report:\n\n");
+            for (Entry<String, List<GenerationViolation>> violationsEntry : generationReport.getViolations().entrySet()) {
+                report.append("- ").append(violationsEntry.getKey()).append("\n");
+                for (GenerationViolation violation : violationsEntry.getValue()) {
+                    report.append("    . ").append(violation.sourceElement()).append(" - ").append(violation.message())
+                            .append("\n");
+                }
+                report.append("\n----\n\n");
+            }
+
+            throw new IllegalStateException(report.toString());
         }
 
         // we generate files for generated sections
@@ -181,10 +202,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath().property());
+                Context context = new Context(summaryTableId, false);
 
                 try {
                     Files.writeString(configSectionPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection,
+                            generateConfigReference(quteEngine, context, extension, generatedConfigSection,
                                     "_" + generatedConfigSection.getPath().property(), false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
@@ -201,32 +223,36 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 Path allConfigPath = resolvedTargetDirectory.resolve(String.format(ALL_CONFIG_FILE_FORMAT,
                         normalizedFormat.getExtension()));
 
-                Files.writeString(allConfigPath, generateAllConfig(quteEngine, mergedModel.getConfigRoots()));
+                Context context = new Context("all-config", true);
+
+                Files.writeString(allConfigPath, generateAllConfig(quteEngine, context, mergedModel.getConfigRoots()));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render all config", e);
             }
         }
     }
 
-    private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
+    private static String generateConfigReference(Engine quteEngine, Context context, Extension extension,
             ConfigItemCollection configItemCollection, String additionalAnchorPrefix, boolean searchable) {
         return quteEngine.getTemplate("configReference")
                 .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
                 .data("searchable", searchable)
-                .data("summaryTableId", summaryTableId)
+                .data("context", context)
+                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
                 .data("additionalAnchorPrefix", additionalAnchorPrefix)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
                 .render();
     }
 
-    private static String generateAllConfig(Engine quteEngine,
+    private static String generateAllConfig(Engine quteEngine, Context context,
             Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRootsByExtensions) {
         return quteEngine.getTemplate("allConfig")
                 .data("configRootsByExtensions", configRootsByExtensions)
                 .data("searchable", true)
-                .data("summaryTableId", "all-config")
+                .data("context", context)
+                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
                 .data("additionalAnchorPrefix", "")
                 .data("includeDurationNote", true)
                 .data("includeMemorySizeNote", true)
@@ -271,7 +297,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
     }
 
     private static Engine initializeQuteEngine(Formatter formatter, Format format, String theme) {
-        Engine engine = Engine.builder()
+        EngineBuilder engineBuilder = Engine.builder()
                 .addDefaults()
                 .addSectionHelper(new UserTagSectionHelper.Factory("configProperty", "configProperty"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("configSection", "configSection"))
@@ -326,14 +352,31 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatTypeDescription")
+                        .applyToParameters(1)
+                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(),
+                                (Context) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
+                        .build())
+                // deprecated, for backward compatibility
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatTypeDescription")
                         .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase()))
+                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(), null))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatDescription")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatDescription((ConfigProperty) ctx.getBase()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDescription")
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> formatter
+                                .formatDescription((ConfigProperty) ctx.getBase(),
+                                        (Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join(),
+                                        (Context) ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
@@ -360,9 +403,13 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .applyToName("formatName")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatName((Extension) ctx.getBase()))
-                        .build())
-                .build();
+                        .build());
 
+        if (format == Format.asciidoc) {
+            engineBuilder.addSectionHelper(new UserTagSectionHelper.Factory("propertyCopyButton", "propertyCopyButton"));
+        }
+
+        Engine engine = engineBuilder.build();
         engine.putTemplate("configReference",
                 engine.parse(getTemplate("templates", format, theme, "configReference", false)));
         engine.putTemplate("allConfig",
@@ -377,6 +424,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 engine.parse(getTemplate("templates", format, theme, "durationNote", true)));
         engine.putTemplate("memorySizeNote",
                 engine.parse(getTemplate("templates", format, theme, "memorySizeNote", true)));
+
+        if (format == Format.asciidoc) {
+            engine.putTemplate("propertyCopyButton",
+                    engine.parse(getTemplate("templates", format, theme, "propertyCopyButton", true)));
+        }
 
         return engine;
     }
@@ -429,5 +481,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
     private String stripAdocSuffix(String fileName) {
         return fileName.substring(0, fileName.length() - ADOC_SUFFIX.length());
+    }
+
+    public record Context(String summaryTableId, boolean allConfig) {
     }
 }

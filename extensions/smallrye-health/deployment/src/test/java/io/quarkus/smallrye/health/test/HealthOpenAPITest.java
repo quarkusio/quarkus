@@ -28,6 +28,7 @@ class HealthOpenAPITest {
                 .when().get(OPEN_API_PATH)
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
+
                 .body("paths", Matchers.hasKey("/q/health/ready"))
                 .body("paths", Matchers.hasKey("/q/health/live"))
                 .body("paths", Matchers.hasKey("/q/health/started"))
@@ -40,9 +41,7 @@ class HealthOpenAPITest {
                 .body("components.schemas.HealthCheck.type", Matchers.equalTo("object"))
                 .body("components.schemas.HealthCheck.properties.status.type", Matchers.equalTo("string"))
                 .body("components.schemas.HealthCheck.properties.name.type", Matchers.equalTo("string"))
-                .body("components.schemas.HealthCheck.properties.data.type", Matchers.equalTo("object"))
-                .body("components.schemas.HealthCheck.properties.data.nullable", Matchers.is(true));
-
+                .body("components.schemas.HealthCheck.properties.data.type", Matchers.contains("object", "null"));
     }
 
 }

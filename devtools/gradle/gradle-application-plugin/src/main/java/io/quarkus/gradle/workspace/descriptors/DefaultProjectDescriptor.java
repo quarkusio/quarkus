@@ -18,14 +18,16 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
 
     private final Map<String, QuarkusTaskDescriptor> tasks;
     private final Map<String, Set<String>> sourceSetTasks;
+    private final Map<String, Set<String>> sourceSetTasksRaw;
 
     public DefaultProjectDescriptor(File projectDir, File buildDir, File buildFile, Map<String, QuarkusTaskDescriptor> tasks,
-            Map<String, Set<String>> sourceSetTasks) {
+            Map<String, Set<String>> sourceSetTasks, Map<String, Set<String>> sourceSetTasksRaw) {
         this.projectDir = projectDir;
         this.buildDir = buildDir;
         this.buildFile = buildFile;
         this.tasks = tasks;
         this.sourceSetTasks = sourceSetTasks;
+        this.sourceSetTasksRaw = sourceSetTasksRaw;
     }
 
     @Override
@@ -45,6 +47,10 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
 
     public Map<String, Set<String>> getSourceSetTasks() {
         return sourceSetTasks;
+    }
+
+    public Map<String, Set<String>> getSourceSetTasksRaw() {
+        return sourceSetTasksRaw;
     }
 
     public Map<String, QuarkusTaskDescriptor> getTasks() {
@@ -81,7 +87,8 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
         Map<String, QuarkusTaskDescriptor> filteredTasks = tasks.entrySet().stream()
                 .filter(e -> filteredSourceSets.values().stream().anyMatch(tasks -> tasks.contains(e.getKey())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, TreeMap::new));
-        return new DefaultProjectDescriptor(projectDir, buildDir, buildFile, filteredTasks, filteredSourceSets);
+        return new DefaultProjectDescriptor(projectDir, buildDir, buildFile, filteredTasks, filteredSourceSets,
+                sourceSetTasksRaw);
     }
 
     @Override
@@ -92,6 +99,7 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
                 ",\nbuildFile=" + buildFile +
                 ",\ntasks=" + tasks +
                 ",\nsourceSetTasks=" + sourceSetTasks +
+                ",\nsourceSetTasksRaw=" + sourceSetTasksRaw +
                 "\n}";
     }
 }

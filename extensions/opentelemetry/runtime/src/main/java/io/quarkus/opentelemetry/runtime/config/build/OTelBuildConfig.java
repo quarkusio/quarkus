@@ -15,7 +15,6 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 /**
  * Build Time configuration where all the attributes related with
@@ -39,6 +38,17 @@ public interface OTelBuildConfig {
     boolean enabled();
 
     /**
+     * Should we use simple processor for spans and log records.
+     * This will disable batch processing and the exporter will send
+     * telemetry data right away.
+     * This is recommended for serverless applications.
+     * <p>
+     * Defaults to <code>false</code>.
+     */
+    @WithDefault("false")
+    boolean simple();
+
+    /**
      * Trace exporter configurations.
      */
     TracesBuildConfig traces();
@@ -49,11 +59,9 @@ public interface OTelBuildConfig {
     MetricsBuildConfig metrics();
 
     /**
-     * No Log exporter for now.
+     * Logs exporter configurations.
      */
-    @WithName("logs.exporter")
-    @WithDefault("none")
-    List<String> logsExporter();
+    LogsBuildConfig logs();
 
     /**
      * The propagators to be used. Use a comma-separated list for multiple propagators.

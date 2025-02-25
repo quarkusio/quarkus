@@ -52,4 +52,9 @@ public class TestEvalContext implements EvalContext {
         return null;
     }
 
+    @Override
+    public ResolutionContext resolutionContext() {
+        return null;
+    }
+
 }

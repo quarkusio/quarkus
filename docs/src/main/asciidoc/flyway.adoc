@@ -63,7 +63,7 @@ In your build file, add the following dependencies:
     <artifactId>flyway-database-oracle</artifactId>
 </dependency>
 
-<!-- Flyway Postgres specific dependencies -->
+<!-- Flyway PostgreSQL specific dependencies -->
 <dependency>
     <groupId>org.flywaydb</groupId>
     <artifactId>flyway-database-postgresql</artifactId>
@@ -156,7 +156,7 @@ implementation("org.flywaydb:flyway-sqlserver")
 implementation("org.flywaydb:flyway-mysql")
 // Flyway Oracle specific dependencies
 implementation("org.flywaydb:flyway-database-oracle")
-// Flyway Postgres specific dependencies
+// Flyway PostgreSQL specific dependencies
 implementation("org.flywaydb:flyway-database-postgresql")
 // Flyway DB2 specific dependencies
 implementation("org.flywaydb:flyway-database-db2")

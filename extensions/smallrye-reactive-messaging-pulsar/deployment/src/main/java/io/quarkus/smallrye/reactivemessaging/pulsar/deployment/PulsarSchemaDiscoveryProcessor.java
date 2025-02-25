@@ -10,7 +10,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -44,10 +43,11 @@ public class PulsarSchemaDiscoveryProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBean,
             RecorderContext recorderContext,
             SchemaProviderRecorder recorder) {
-        if (buildTimeConfig.schemaAutodetectionEnabled) {
+        if (buildTimeConfig.schemaAutodetectionEnabled()) {
             DefaultSchemaDiscoveryState discoveryState = new DefaultSchemaDiscoveryState(combinedIndex.getIndex());
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.schemaGenerationEnabled ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
+                    buildTimeConfig.schemaGenerationEnabled()
+                            ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
                             : null);
         }
     }
@@ -144,15 +144,19 @@ public class PulsarSchemaDiscoveryProcessor {
     }
 
     private Type getInjectionPointType(AnnotationInstance annotation) {
-        switch (annotation.target().kind()) {
-            case FIELD:
-                return annotation.target().asField().type();
-            case METHOD_PARAMETER:
-                MethodParameterInfo parameter = annotation.target().asMethodParameter();
-                return parameter.method().parameterType(parameter.position());
-            default:
-                return null;
-        }
+        return switch (annotation.target().kind()) {
+            case FIELD -> handleInstanceChannelInjection(annotation.target().asField().type());
+            case METHOD_PARAMETER -> handleInstanceChannelInjection(annotation.target().asMethodParameter().type());
+            default -> null;
+        };
+    }
+
+    private Type handleInstanceChannelInjection(Type type) {
+        return (DotNames.INSTANCE.equals(type.name())
+                || DotNames.PROVIDER.equals(type.name())
+                || DotNames.INJECTABLE_INSTANCE.equals(type.name()))
+                        ? type.asParameterizedType().arguments().get(0)
+                        : type;
     }
 
     private void produceRuntimeConfigurationDefaultBuildItem(DefaultSchemaDiscoveryState discovery,

@@ -52,7 +52,15 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}]}"))
+                .and()
+                // The response should not contain the "data" field.
+                // See: https://spec.graphql.org/draft/#sec-Response-Format
+                //// If the request included execution, the response map must contain an entry with key data.
+                //// The value of this entry is described in the "Data" section.
+                //// If the request failed before execution due to a syntax error, missing information,
+                //// or validation error, this entry must not be present.
+                .body(CoreMatchers.not(CoreMatchers.containsString("\"data\":null")));
         LOG.info("Initial request done");
 
         // Make a code change (add a field)
@@ -94,7 +102,9 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}]}"))
+                .and()
+                .body(CoreMatchers.not(CoreMatchers.containsString("\"data\":null")));
 
         LOG.info("Code change done - field removed");
 

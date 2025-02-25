@@ -139,7 +139,14 @@ You can check the last publication date here: <https://s01.oss.sonatype.org/cont
 
 ### Building main
 
-Just do the following:
+> [!NOTE]
+> It is recommended to build Quarkus with Java 17 as it is the minimum requirement for Quarkus.
+>
+> You can however build Quarkus with more recent JDKs (such as Java 21) but some Gradle-related modules need to be able to find a Java 17 toolchain so you will need to have Java 17 around.
+>
+> The easiest way to achieve that is to use [SDKMAN!](https://sdkman.io/) to install Java 17 alongside your preferred JDK: it will be automatically detected by Gradle when building the Gradle modules.
+
+You can build Quarkus using the following commands:
 
 ```sh
 git clone git@github.com:quarkusio/quarkus.git
@@ -177,6 +184,15 @@ If you use different computers to contribute, please make sure the name is the s
 
 We use this information to acknowledge your contributions in release announcements.
 
+We also recommend enabling the `pull.rebase` Git option (either globally or specifically for your Quarkus local clone):
+
+```sh
+git config --global pull.rebase true
+```
+
+It will make it easier for you to rebase your pull request against the latest `main` branch using the `git pull upstream main` command.
+Make sure to register the remote `upstream` Quarkus repository beforehand with `git remote add upstream https://github.com/quarkusio/quarkus`.
+
 ### Code reviews
 
 All submissions, including submissions by project members, need to be reviewed by at least one Quarkus committer before
@@ -184,6 +200,12 @@ being merged.
 
 [GitHub Pull Request Review Process](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews)
 is followed for every pull request.
+
+> [!TIP]
+> We try to review and merge PRs promptly, and we have automation set up to catch stalled PRs.
+> Even so, occasionally things fall through the cracks.
+> In this situation, a good first step is to comment on the PR.
+> If that doesn't work, asking on [the `dev` channel in zulip](https://quarkusio.zulipchat.com/#narrow/channel/187038-dev) is a good next step.
 
 ### Coding Guidelines
 
@@ -234,9 +256,9 @@ If you have not done so on this machine, you need to:
     * macOS: Use the `Disk Utility.app` to check. It also allows you to create a case-sensitive volume to store your code projects. See this [blog entry](https://karnsonline.com/case-sensitive-apfs/) for more.
     * Windows: [Enable case sensitive file names per directory](https://learn.microsoft.com/en-us/windows/wsl/case-sensitivity)
 * Install Git and configure your GitHub access
-  * Windows: 
+  * Windows:
     * enable longpaths: `git config --global core.longpaths true`
-    * avoid CRLF breaks: `git config --global core.autocrlf false`      
+    * avoid CRLF breaks: `git config --global core.autocrlf false`
 * Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
@@ -399,6 +421,61 @@ Thus, it is recommended to use the following approach:
 
 Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very
 productive. The following Maven tips can vastly speed up development when working on a specific extension.
+
+#### Using mvnd
+
+[mvnd](https://github.com/apache/maven-mvnd) is a daemon for Maven providing faster builds.
+It parallelizes your builds by default and makes sure the output is consistent even for a parallelized build.
+
+You can [install mvnd](https://github.com/apache/maven-mvnd?tab=readme-ov-file#how-to-install-mvnd) with SDKMAN!, Homebrew...
+
+mvnd is a good companion for your Quarkus builds.
+
+Make sure you install the latest mvnd 1.0.x which embeds Maven 3.x as Quarkus does not support Maven 4 yet.
+Once it is installed, you can use `mvnd` in your Maven command lines instead of the typical `mvn` or `./mvnw`.
+
+If anything goes wrong, you can stop the daemon and start fresh with `mvnd --stop`.
+
+#### Using aliases
+
+While building with `-Dquickly` or `-DquicklyDocs` is practical when contributing your first patches,
+if you contribute to Quarkus often, it is recommended to have your own aliases - for instance to make sure your build is parallelized.
+
+Here are a couple of useful aliases that are good starting points - and that you will need to adapt to your environment:
+
+- `build-fast`: build the Quarkus artifacts and install them
+- `build-docs`: run from the root of the project, build the documentation
+- `format`: format the source code following our coding conventions
+- `qss`: run the Quarkus CLI from a snapshot (make sure you build the artifacts first)
+
+- If using mvnd
+
+```sh
+alias build-fast="mvnd -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvnd -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvnd process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+- If using plain Maven
+
+```sh
+alias build-fast="mvn -T0.8C -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvn -T0.8C -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvn -T0.8C process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+Using `./mvnw` is often not practical in this case as you might want to call these aliases from a nested directory.
+[gum](https://andresalmiray.com/gum-the-gradle-maven-wrapper/) might be useful in this case.
+
+##### Justfile
+
+As a convenience, we have a [justfile](.justfile)) that provides the suggested set of aliases to use to build Quarkus using [just](https://just.systems/).
+
+Run `just -l` to see the list of aliases.
+
+By default it uses `./mvnw`. If you use `mvnd` you can set the `QMVNCMD` environment variable to `mvnd` to use it instead.
 
 #### Building all modules of an extension
 
@@ -668,20 +745,6 @@ You can check the output of the build in the `docs/target/generated-docs/` direc
 You can build the documentation this way as many times as needed, just avoid doing a `./mvnw clean` at the root level
 because you would lose the configuration properties documentation includes.
 
-### Referencing a new guide in the index
-
-The [Guides index page](https://quarkus.io/guides/) visible on the website is generated from a YAML file
-named `guides-latest.yaml` present in
-the [Quarkus.io website repository](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-latest.yaml)
-. This particular file is for the latest stable version.
-
-When adding a new guide to the `main` version of Quarkus, you need to reference the guide in
-the [`main` guides index YAML file](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-main.yaml)
-.
-
-This file will later be copied to become the new `guides-latest.yaml` file when the next major or minor version is
-released.
-
 ## Usage
 
 After the build was successful, the artifacts are available in your local Maven repository.
@@ -742,7 +805,7 @@ repositories {
 ### MicroProfile TCK's
 
 Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These include
-tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, OpenTracing, REST
+tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, Telemetry, REST
 Client, Reactive Messaging and Context Propagation.
 
 The TCK module is not part of the main Maven reactor build, but you can enable it and run the TCK tests by activating
@@ -824,10 +887,6 @@ This project is an open source project, please act responsibly, be nice, polite 
   claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
 
   See section `IDEA Setup` as there are different possible solutions described.
-
-* IntelliJ does not recognize the project as a Java 17 project
-
-  In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
 
 * Build hangs with DevMojoIT running infinitely
 

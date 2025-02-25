@@ -59,6 +59,13 @@ export class QwcKafkaAddTopic extends LitElement {
                         min="0" 
                         max="99">
                     </vaadin-integer-field>
+                    <vaadin-text-field
+                        label="Configurations"
+                        placeholder="key1=value1,key2=value2"
+                        value="${this._newTopic.configs}"
+                        step-buttons-visible
+                        @value-changed="${(e) => this._configsChanged(e)}">
+                    </vaadin-text-field>
                     ${this._renderButtons()}`;
     }
     
@@ -70,10 +77,11 @@ export class QwcKafkaAddTopic extends LitElement {
     }
     
     _reset(){
-        this._newTopic = new Object();
+        this._newTopic = {};
         this._newTopic.name = '';
         this._newTopic.partitions = 1;
         this._newTopic.replications = 1;        
+        this._newTopic.configs = undefined;
     }
 
     _cancel(){
@@ -89,11 +97,11 @@ export class QwcKafkaAddTopic extends LitElement {
 
     _submit(){
         if(this._newTopic.name.trim() !== ''){
-            
             this.jsonRpc.createTopic({
                 topicName: this._newTopic.name,
                 partitions: parseInt(this._newTopic.partitions),
-                replications: parseInt(this._newTopic.replications)
+                replications: parseInt(this._newTopic.replications),
+                configs: this._newTopic.configs
             }).then(jsonRpcResponse => { 
                 this._reset();
                 const success = new CustomEvent("kafka-topic-added-success", {
@@ -118,6 +126,17 @@ export class QwcKafkaAddTopic extends LitElement {
     
     _replicationsChanged(e){
         this._newTopic.replications = e.detail.value;
+    }
+
+    _configsChanged(e){
+        this._newTopic.configs = Object.fromEntries(e.detail.value.split(',')
+            .reduce((configs, item) => {
+                const split = item.trim().split('=');
+                if (split.length > 1) {
+                    configs.set(split[0], split[1]);
+                }
+                return configs;
+            }, new Map()));
     }
 }
 

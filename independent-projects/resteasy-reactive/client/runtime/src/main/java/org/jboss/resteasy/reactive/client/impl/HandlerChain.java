@@ -47,9 +47,27 @@ class HandlerChain {
         this.clientErrorHandler = new ClientErrorHandler(loggingScope);
     }
 
+    private HandlerChain(ClientRestHandler clientCaptureCurrentContextRestHandler,
+            ClientRestHandler clientSwitchToRequestContextRestHandler, ClientRestHandler clientSendHandler,
+            ClientRestHandler clientSetResponseEntityRestHandler, ClientRestHandler clientResponseCompleteRestHandler,
+            ClientRestHandler clientErrorHandler) {
+        this.clientCaptureCurrentContextRestHandler = clientCaptureCurrentContextRestHandler;
+        this.clientSwitchToRequestContextRestHandler = clientSwitchToRequestContextRestHandler;
+        this.clientSendHandler = clientSendHandler;
+        this.clientSetResponseEntityRestHandler = clientSetResponseEntityRestHandler;
+        this.clientResponseCompleteRestHandler = clientResponseCompleteRestHandler;
+        this.clientErrorHandler = clientErrorHandler;
+    }
+
+    private HandlerChain newInstance() {
+        return new HandlerChain(clientCaptureCurrentContextRestHandler, clientSwitchToRequestContextRestHandler,
+                clientSendHandler, clientSetResponseEntityRestHandler, clientResponseCompleteRestHandler, clientErrorHandler);
+    }
+
     HandlerChain setPreClientSendHandler(ClientRestHandler preClientSendHandler) {
-        this.preClientSendHandler = preClientSendHandler;
-        return this;
+        HandlerChain newHandlerChain = newInstance();
+        newHandlerChain.preClientSendHandler = preClientSendHandler;
+        return newHandlerChain;
     }
 
     ClientRestHandler[] createHandlerChain(ConfigurationImpl configuration) {

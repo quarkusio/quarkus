@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -13,12 +14,13 @@ import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
+import io.vertx.redis.client.RedisTopology;
 
 @ConfigGroup
 public interface RedisClientConfig {
 
     /**
-     * The redis hosts to use while connecting to the redis server. Only the cluster and sentinel modes will consider more than
+     * The Redis hosts to use while connecting to the Redis server. Only the cluster and sentinel modes will consider more than
      * 1 element.
      * <p>
      * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
@@ -41,49 +43,47 @@ public interface RedisClientConfig {
     Optional<String> hostsProviderName();
 
     /**
-     * The maximum delay to wait before a blocking command to redis server times out
+     * The maximum delay to wait before a blocking command to Redis server times out
      */
     @WithDefault("10s")
     Duration timeout();
 
     /**
-     * The redis client type.
+     * The Redis client type.
      * Accepted values are: {@code STANDALONE} (default), {@code CLUSTER}, {@code REPLICATION}, {@code SENTINEL}.
      */
     @WithDefault("standalone")
     RedisClientType clientType();
 
     /**
-     * The master name (only considered in HA mode).
+     * The master name (only considered in the Sentinel mode).
      */
     @ConfigDocDefault("mymaster")
     Optional<String> masterName();
 
     /**
-     * The role name (only considered in Sentinel / HA mode).
+     * The role name (only considered in the Sentinel mode).
      * Accepted values are: {@code MASTER}, {@code REPLICA}, {@code SENTINEL}.
      */
     @ConfigDocDefault("master")
     Optional<RedisRole> role();
 
     /**
-     * Whether to use replicas nodes (only considered in Cluster mode).
+     * Whether to use replicas nodes (only considered in Cluster mode and Replication mode).
      * Accepted values are: {@code ALWAYS}, {@code NEVER}, {@code SHARE}.
      */
     @ConfigDocDefault("never")
     Optional<RedisReplicas> replicas();
 
     /**
-     * The default password for cluster/sentinel connections.
+     * The default password for Redis connections.
      * <p>
-     * If not set it will try to extract the value from the current default {@code #hosts}.
+     * If not set, it will try to extract the value from the {@code hosts}.
      */
     Optional<String> password();
 
     /**
      * The maximum size of the connection pool.
-     * When working with cluster or sentinel, this value should be at least the total number of cluster members (or
-     * number of sentinels + 1)
      */
     @WithDefault("6")
     int maxPoolSize();
@@ -95,15 +95,16 @@ public interface RedisClientConfig {
     int maxPoolWaiting();
 
     /**
-     * The duration indicating how often should the connection pool cleaner executes.
+     * The duration indicating how often should the connection pool cleaner execute.
      */
+    @ConfigDocDefault("30s")
     Optional<Duration> poolCleanerInterval();
 
     /**
-     * The timeout for a connection recycling.
+     * The timeout for unused connection recycling.
      */
-    @WithDefault("15")
-    Duration poolRecycleTimeout();
+    @WithDefault("3m")
+    Optional<Duration> poolRecycleTimeout();
 
     /**
      * Sets how many handlers is the client willing to queue.
@@ -115,7 +116,7 @@ public interface RedisClientConfig {
     int maxWaitingHandlers();
 
     /**
-     * Tune how much nested arrays are allowed on a redis response. This affects the parser performance.
+     * Tune how much nested arrays are allowed on a Redis response. This affects the parser performance.
      */
     @WithDefault("32")
     int maxNestedArrays();
@@ -157,6 +158,35 @@ public interface RedisClientConfig {
     Duration hashSlotCacheTtl();
 
     /**
+     * Whether automatic failover is enabled. This only makes sense for sentinel clients
+     * with role of {@code MASTER} and is ignored otherwise.
+     * <p>
+     * If enabled, the sentinel client will additionally create a connection to one sentinel node
+     * and watch for failover events. When new master is elected, all connections to the old master
+     * are automatically closed and new connections to the new master are created. Automatic failover
+     * makes sense for connections executing regular commands, but not for connections used to subscribe
+     * to Redis pub/sub channels.
+     * <p>
+     * Note that there is a brief period of time between the old master failing and the new
+     * master being elected when the existing connections will temporarily fail all operations.
+     * After the new master is elected, the connections will automatically fail over and
+     * start working again.
+     */
+    @WithDefault("false")
+    boolean autoFailover();
+
+    /**
+     * How the Redis topology is obtained. By default, the topology is discovered automatically.
+     * This is the only mode for the clustered and sentinel client. For replication client,
+     * topology may be set <em>statically</em>.
+     * <p>
+     * In case of a static topology for replication Redis client, the first node in the list
+     * is considered a <em>master</em> and the remaining nodes in the list are considered <em>replicas</em>.
+     */
+    @ConfigDocDefault("discover")
+    Optional<RedisTopology> topology();
+
+    /**
      * TCP config.
      */
     @ConfigDocSection
@@ -167,6 +197,29 @@ public interface RedisClientConfig {
      */
     @ConfigDocSection
     TlsConfig tls();
+
+    /**
+     * The client name used to identify the connection.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, and this property is not set
+     * it will attempt to extract the value from the {@link RedisClientName#value()} annotation.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, both this property and the
+     * {@link RedisClientName#value()} must adhere to the pattern '[a-zA-Z0-9\\-_.~]*'; if not,
+     * this may result in an incorrect client name after URI encoding.
+     */
+    Optional<String> clientName();
+
+    /**
+     * Whether it should set the client name while connecting with Redis.
+     * <p>
+     * This is necessary because Redis only accepts {@code client=my-client-name} query parameter in version 6+.
+     * <p>
+     * This property can be used with {@link RedisClientConfig#clientName()} configuration.
+     *
+     */
+    @WithDefault("false")
+    Boolean configureClientName();
 
     /**
      * The name of the TLS configuration to use.
@@ -203,6 +256,8 @@ public interface RedisClientConfig {
                 ", hashSlotCacheTtl=" + hashSlotCacheTtl() +
                 ", tcp=" + tcp() +
                 ", tls=" + tls() +
+                ", clientName=" + clientName() +
+                ", configureClientName=" + configureClientName() +
                 '}';
     }
 

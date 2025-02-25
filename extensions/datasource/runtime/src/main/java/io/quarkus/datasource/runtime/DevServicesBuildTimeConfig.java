@@ -1,5 +1,6 @@
 package io.quarkus.datasource.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -28,8 +29,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> imageName();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> imageName();
 
     /**
      * Environment variables that are passed to the container.
@@ -64,13 +64,12 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> command();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> command();
 
     /**
      * The database name to use if this Dev Service supports overriding it.
      */
-    Optional<String> dbName();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> dbName();
 
     /**
      * The username to use if this Dev Service supports overriding it.
@@ -83,11 +82,11 @@ public interface DevServicesBuildTimeConfig {
     Optional<String> password();
 
     /**
-     * The path to a SQL script to be loaded from the classpath and applied to the Dev Service database.
+     * The paths to SQL scripts to be loaded from the classpath and applied to the Dev Service database.
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    Optional<String> initScriptPath();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptPath();
 
     /**
      * The volumes to be mapped to the container.
@@ -128,5 +127,13 @@ public interface DevServicesBuildTimeConfig {
      */
     @WithDefault("true")
     boolean reuse();
+
+    /**
+     * Whether the logs should be consumed by the JBoss logger.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    @WithDefault("false")
+    boolean showLogs();
 
 }

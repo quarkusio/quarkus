@@ -43,6 +43,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>    
+           <groupId>io.smallrye.certs</groupId>
+           <artifactId>smallrye-certificate-generator</artifactId>
+           <scope>test</scope>  
+        </dependency>
         <dependency>
             <groupId>org.htmlunit</groupId>
             <artifactId>htmlunit</artifactId>

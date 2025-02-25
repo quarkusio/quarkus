@@ -12,10 +12,13 @@ import java.util.logging.Handler;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.handlers.OutputStreamHandler;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -38,9 +41,10 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
-        AfterAllCallback {
+        AfterAllCallback, ExecutionCondition {
 
     PrepareResult prepareResult;
+    LinkedBlockingDeque<Runnable> shutdownTasks;
 
     /**
      * The result from an {@link Launch} test
@@ -65,7 +69,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
         if (wrongProfile || (isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
+                        profile))) {
             if (state != null) {
                 try {
                     state.close();
@@ -75,10 +80,13 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             }
             prepareResult = null;
         }
+        if (isNewTestClass && extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            // we need to rerun the augmentor in this case
+            prepareResult = null;
+        }
         if (prepareResult == null) {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            PrepareResult result = createAugmentor(extensionContext, profile, shutdownTasks);
-            prepareResult = result;
+            shutdownTasks = new LinkedBlockingDeque<>();
+            prepareResult = createAugmentor(extensionContext, profile, shutdownTasks);
         }
     }
 
@@ -315,10 +323,26 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         currentTestClassStack.pop();
+
+        try {
+            if (shutdownTasks != null) {
+                for (Runnable shutdownTask : shutdownTasks) {
+                    shutdownTask.run();
+                }
+            }
+            shutdownTasks = null;
+        } catch (Exception e) {
+            System.err.println("Unable to run shutdown tasks: " + e.getMessage());
+        }
     }
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         currentTestClassStack.push(context.getRequiredTestClass());
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        return super.evaluateExecutionCondition(context);
     }
 }

@@ -109,7 +109,7 @@ class EvaluatorImpl implements Evaluator {
                         // Continue to the next part of the expression
                         return resolveReference(false, r, parts, resolutionContext, expression, 1);
                     } else if (strictRendering) {
-                        throw propertyNotFound(r, expression);
+                        return CompletedStage.failure(propertyNotFound(r, expression));
                     }
                     return Results.notFound(context);
                 }
@@ -199,9 +199,9 @@ class EvaluatorImpl implements Evaluator {
                     notFound = Results.NotFound.from(evalContext);
                 }
             }
-            // If in strict mode then just throw an exception
+            // If in strict mode then just fail
             if (strictRendering && isLastPart) {
-                throw propertyNotFound(notFound, expression);
+                return CompletedStage.failure(propertyNotFound(notFound, expression));
             }
             return CompletedStage.of(notFound);
         }
@@ -289,6 +289,11 @@ class EvaluatorImpl implements Evaluator {
         @Override
         public Object getAttribute(String key) {
             return resolutionContext.getAttribute(key);
+        }
+
+        @Override
+        public ResolutionContext resolutionContext() {
+            return resolutionContext;
         }
 
         @Override
@@ -403,6 +408,11 @@ class EvaluatorImpl implements Evaluator {
 
         boolean tryParent() {
             return true;
+        }
+
+        @Override
+        public ResolutionContext resolutionContext() {
+            return resolutionContext;
         }
 
         @Override

@@ -213,6 +213,12 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          *
+         * @return the section name
+         */
+        String getName();
+
+        /**
+         *
          * @return the parameters of the main block
          * @see SectionBlock#parameters
          */

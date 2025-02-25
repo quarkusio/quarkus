@@ -3,6 +3,9 @@ package io.quarkus.it.keycloak;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -11,19 +14,33 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TrustStoreUtils;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
-import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.json.JsonObject;
 
 public class TestUtils {
 
+    public static List<X509Certificate> loadCertificateChain() throws Exception {
+        Path rootCertPath = Paths.get("target/chain/root.crt");
+        Path intermediateCertPath = Paths.get("target/chain/intermediate.crt");
+        Path leafCertPath = Paths.get("target/chain/www.quarkustest.com.crt");
+
+        X509Certificate rootCert = KeyUtils.getCertificate(Files.readString(rootCertPath));
+        X509Certificate intermediateCert = KeyUtils.getCertificate(Files.readString(intermediateCertPath));
+        X509Certificate subjectCert = KeyUtils.getCertificate(Files.readString(leafCertPath));
+
+        return List.of(subjectCert, intermediateCert, rootCert);
+    }
+
+    public static PrivateKey loadLeafCertificatePrivateKey() throws Exception {
+        Path leafKeyPath = Paths.get("target/chain/www.quarkustest.com.key");
+        return KeyUtils.decodePrivateKey(Files.readString(leafKeyPath));
+    }
+
     public static String createTokenWithInlinedCertChain(String preferredUserName) throws Exception {
-        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
-        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
-        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
-        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+        List<X509Certificate> chain = loadCertificateChain();
+        PrivateKey subjectPrivateKey = loadLeafCertificatePrivateKey();
 
         String bearerAccessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey,
                 preferredUserName);
 

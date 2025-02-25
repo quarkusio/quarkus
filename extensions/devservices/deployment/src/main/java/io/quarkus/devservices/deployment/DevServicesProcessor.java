@@ -213,10 +213,10 @@ public class DevServicesProcessor {
         return networks.entrySet().stream()
                 .map(e -> {
                     List<String> aliases = e.getValue().getAliases();
-                    if (aliases == null) {
+                    if (aliases == null || aliases.isEmpty()) {
                         return e.getKey();
                     }
-                    return e.getKey() + " (" + String.join(",", aliases) + ")";
+                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
                 })
                 .toArray(String[]::new);
     }

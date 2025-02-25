@@ -12,6 +12,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
@@ -35,7 +36,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  * require it, so this would facilitate the option to revert to the older version in
  * case of problems.
  */
-@BuildSteps
+@BuildSteps(onlyIf = NativeOrNativeSourcesBuild.class)
 public final class OracleMetadataOverrides {
 
     static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
@@ -129,6 +130,8 @@ public final class OracleMetadataOverrides {
         //referring to various other types which aren't allowed in a captured heap.
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.Diagnostic"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.replay.driver.FailoverManagerImpl"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.AbstractDiagnosable"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.AbstractTrueCacheConnectionPools"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.CommonDiagnosable"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.replay.driver.TxnFailoverManagerImpl"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.OracleDiagnosticsMXBean"));
@@ -151,7 +154,7 @@ public final class OracleMetadataOverrides {
 
     @BuildStep
     RemovedResourceBuildItem enhancedCharsetSubstitutions() {
-        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
+        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc17"),
                 Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
     }
 

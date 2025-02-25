@@ -66,7 +66,7 @@ public interface TlsConfig {
 
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be {@code HTTPS}, {@code LDAPS} or an {@code NONE} (default).
+     * Should be {@code HTTPS}, {@code LDAPS} or {@code NONE} (default).
      * <p>
      * If set to {@code NONE}, it does not verify the hostname.
      * <p>

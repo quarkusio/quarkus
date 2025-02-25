@@ -15,33 +15,113 @@ import io.quarkus.runtime.util.ExceptionUtil;
 public class TemplateHtmlBuilder {
     private static String CSS = null;
 
-    private static final String SCRIPT_STACKTRACE_MANIPULATION = "<script>\n" +
-            "	function toggleStackTraceOrder() {\n" +
-            "		var stElement = document.getElementById('stacktrace');\n" +
-            "		var current = stElement.getAttribute('data-current-setting');\n" +
-            "		if (current == 'original-stacktrace') {\n" +
-            "			var reverseOrder = document.getElementById('reversed-stacktrace');\n" +
-            "			stElement.innerHTML = reverseOrder.innerHTML;\n" +
-            "			stElement.setAttribute('data-current-setting', 'reversed-stacktrace');\n" +
-            "		} else {\n" +
-            "			var originalOrder = document.getElementById('original-stacktrace');\n" +
-            "			stElement.innerHTML = originalOrder.innerHTML;\n" +
-            "			stElement.setAttribute('data-current-setting', 'original-stacktrace');\n" +
-            "		}\n" +
-            "		return;\n" +
-            "	}\n" +
-            "	function showDefaultStackTraceOrder() {\n" +
-            "		var reverseOrder = document.getElementById('reversed-stacktrace');\n" +
-            "		var stElement = document.getElementById('stacktrace');\n" +
-            "       if (reverseOrder == null || stElement == null) {\n" +
-            "           return;\n" +
-            "       }\n" +
-            "		// default to reverse ordered stacktrace\n" +
-            "		stElement.innerHTML = reverseOrder.innerHTML;\n" +
-            "		stElement.setAttribute('data-current-setting', 'reversed-stacktrace');\n" +
-            "		return;\n" +
-            "	}\n" +
-            "</script>\n";
+    private static final String SCRIPT_STACKTRACE_MANIPULATION = """
+            <script>
+                function toggleStackTraceOrder() {
+                    var stElement = document.getElementById('stacktrace');
+                    var current = stElement.getAttribute('data-current-setting');
+                    if (current == 'original-stacktrace') {
+                        var reverseOrder = document.getElementById('reversed-stacktrace');
+                        stElement.innerHTML = reverseOrder.innerHTML;
+                        stElement.setAttribute('data-current-setting', 'reversed-stacktrace');
+                    } else {
+                        var originalOrder = document.getElementById('original-stacktrace');
+                        stElement.innerHTML = originalOrder.innerHTML;
+                        stElement.setAttribute('data-current-setting', 'original-stacktrace');
+                    }
+                    return;
+                }
+
+                function showDefaultStackTraceOrder() {
+                    var reverseOrder = document.getElementById('reversed-stacktrace');
+                    var stacktrace = document.getElementById('stacktrace');
+
+                    if (reverseOrder == null || stacktrace == null) {
+                        return;
+                    }
+                    stacktrace.innerHTML = reverseOrder.innerHTML;
+                    stacktrace.setAttribute('data-current-setting', 'reversed-stacktrace');
+
+                    initStacktraceStyles(stacktrace);
+
+                    return;
+                }
+
+                function copyStacktrace() {
+                    const stacktrace = document.getElementById("stacktrace");
+                    const content = stacktrace.getElementsByTagName("code")[0];
+                    navigator.clipboard.writeText(content.textContent);
+                }
+
+                function initStacktraceStyles() {
+                    document.querySelector("#stacktrace code > pre").setAttribute("data-viewmode", "wrap");
+                    stacktrace.querySelector("#stacktrace code").classList.add("wrap-code");
+                }
+
+                function changeViewMode() {
+                    const code = document.querySelector("div#stacktrace code");
+                    const pre = code.querySelector("pre");
+                    const currentViewMode = pre.getAttribute("data-viewmode");
+                    if (currentViewMode === "scroll") {
+                        code.classList.remove("scroll-code");
+                        pre.classList.add("wrap-code");
+                        pre.setAttribute("data-viewmode", "wrap");
+                    } else {
+                        pre.classList.remove("wrap-code");
+                        code.classList.add("scroll-code");
+                        pre.setAttribute("data-viewmode", "scroll");
+                    }
+                }
+            </script>
+            """;
+
+    private static final String NOT_FOUND_SORTING = """
+                                                    <script>
+                                                        let isAlphabetical = false;
+
+                                                        function sortNotFoundLinks() {
+                                                            const resourcesDiv = document.querySelector('.sortable');
+                                                            const h3Elements = Array.from(resourcesDiv.querySelectorAll('h3'));
+
+                                                            h3Elements.sort((a, b) => {
+                                                              const urlA = a.querySelector('a').href;
+                                                              const urlB = b.querySelector('a').href;
+
+                                                              if (isAlphabetical) {
+                                                                return urlA.localeCompare(urlB); // Sort alphabetically
+                                                              } else {
+                                                                const slashCountA = (urlA.match(/\\//g) || []).length;
+                                                                const slashCountB = (urlB.match(/\\//g) || []).length;
+                                                                return slashCountA - slashCountB; // Sort by number of slashes
+            }});
+
+            // Reattach sorted elements to the container
+            h3Elements.forEach(h3=>resourcesDiv.appendChild(h3));
+
+            // Toggle sort mode
+            isAlphabetical=!isAlphabetical;}</script>""";
+
+    private static final String SORT_NOT_FOUND_LINKS = """
+            <p class="sorticon" onclick="sortNotFoundLinks();" title="Sort">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path fill="#555555" d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM64 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L96 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"/></svg>
+            </p>""";
+
+    private static final String UTILITIES = """
+                    <div id="utilities-container">
+                        <p class="clipboard tooltip" onclick="changeViewMode();">
+                            <span class="tooltip-text">Change view mode</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path fill="#555555" d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM64 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L96 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"/></svg>
+                        </p>
+                        <p class="clipboard tooltip" onclick="copyStacktrace();">
+                            <span class="tooltip-text">Copy stacktrace to clipboard</span>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 384 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
+                                <path fill="#555555"
+                                    d="M192 0c-41.8 0-77.4 26.7-90.5 64L64 64C28.7 64 0 92.7 0 128L0 448c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64l-37.5 0C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192l160 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-160 0c-8.8 0-16-7.2-16-16s7.2-16 16-16z" />
+                            </svg>
+                        </p>
+                    </div>
+            """;
 
     private static final String HTML_TEMPLATE_START_NO_STACK = "" +
             "<!doctype html>\n" +
@@ -59,8 +139,9 @@ public class TemplateHtmlBuilder {
             "    <meta charset=\"utf-8\">\n" +
             "    <style>%3$s</style>\n" +
             SCRIPT_STACKTRACE_MANIPULATION +
+            NOT_FOUND_SORTING +
             "</head>\n" +
-            "<body  onload=\"showDefaultStackTraceOrder()\">\n" +
+            "<body  onload=\"showDefaultStackTraceOrder();\">\n" +
             "<div class=\"header\">\n" +
             "   <svg id=\"quarkus-logo-svg\" data-name=\"Quarkus Logo\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1280 195\">\n"
             +
@@ -136,9 +217,12 @@ public class TemplateHtmlBuilder {
 
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
+    private static final String RESOURCES_START_WITH_CLASS = "<div class=\"intro\">%1$s " + SORT_NOT_FOUND_LINKS
+            + "</div><div class=\"resources %2$s\">";
+
     private static final String ANCHOR_TEMPLATE_ABSOLUTE = "<a href=\"%1$s\">%2$s</a>";
 
-    private static final String DESCRIPTION_TEMPLATE = "%1$s — %2$s";
+    private static final String DESCRIPTION_TEMPLATE = "%1$s <span>%2$s</span>";
 
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
@@ -165,11 +249,11 @@ public class TemplateHtmlBuilder {
 
     private static final String OPEN_IDE_LINK = "<div class='rel-stacktrace-item' onclick=\"event.preventDefault(); fetch('/q/open-in-ide/%s/%s/%d');\">";
 
-    private static final String ERROR_STACK = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
+    private static final String ORIGINAL_STACK_TRACE = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
             "<h3>The stacktrace below is the original. " +
-            "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the stacktrace in reversed order</a> (root-cause first)</h4>"
+            "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the stacktrace in reversed order</a> (root-cause first)</h3>"
             +
-            "        <code class=\"stacktrace\"><pre>%1$s<pre></code>\n" +
+            "        <code class=\"stacktrace\"><pre>%1$s</pre></code>\n" +
             "    </div>\n";
 
     private static final String ERROR_STACK_REVERSED = "    <div id=\"reversed-stacktrace\" class=\"trace hidden\">\n" +
@@ -218,7 +302,7 @@ public class TemplateHtmlBuilder {
     public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions,
             String redirect,
             List<CurrentConfig> config) {
-        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
+        this(true, null, title, subTitle, details, actions, redirect, config);
     }
 
     public TemplateHtmlBuilder(boolean showStack, String baseUrl, String title, String subTitle, String details,
@@ -308,7 +392,8 @@ public class TemplateHtmlBuilder {
                 rootFirst = rootFirst.replace(ERSTI, "</div>");
             }
 
-            result.append(String.format(ERROR_STACK, original));
+            result.append(UTILITIES);
+            result.append(String.format(ORIGINAL_STACK_TRACE, original));
             result.append(String.format(ERROR_STACK_REVERSED, rootFirst));
             result.append(STACKTRACE_DISPLAY_DIV);
 
@@ -319,6 +404,11 @@ public class TemplateHtmlBuilder {
 
     public TemplateHtmlBuilder resourcesStart(String title) {
         result.append(String.format(RESOURCES_START, title));
+        return this;
+    }
+
+    public TemplateHtmlBuilder resourcesStart(String title, String cssclass) {
+        result.append(String.format(RESOURCES_START_WITH_CLASS, title, cssclass));
         return this;
     }
 
@@ -351,7 +441,6 @@ public class TemplateHtmlBuilder {
     private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor, String description) {
         String content;
         if (withAnchor) {
-            String text = title;
             if (title.startsWith("/")) {
                 title = title.substring(1);
             }
@@ -359,12 +448,7 @@ public class TemplateHtmlBuilder {
             if (!title.startsWith("http") && baseUrl != null) {
                 title = baseUrl + title;
             }
-            if (title.startsWith("http")) {
-                int firstSlashIndex = title.indexOf("/", title.indexOf("//") + 2);
-                text = title.substring(firstSlashIndex);
-            }
-
-            content = String.format(ANCHOR_TEMPLATE_ABSOLUTE, title, escapeHtml(text));
+            content = String.format(ANCHOR_TEMPLATE_ABSOLUTE, title, escapeHtml(title));
         } else {
             content = escapeHtml(title);
         }

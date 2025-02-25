@@ -104,13 +104,17 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final Integer startupPriority;
 
+    // used to create the implementation of `InjectableBean.checkActive()`,
+    // which returns whether this particular bean is active at runtime
+    private final Consumer<MethodCreator> checkActiveConsumer;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
             boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
             Integer priority, Set<Type> unrestrictedTypes, InterceptionProxyInfo interceptionProxy) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy);
+                targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -118,7 +122,8 @@ public class BeanInfo implements InjectionTargetInfo {
             DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean,
             Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params,
             boolean isRemovable, boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier,
-            Set<Type> unrestrictedTypes, Integer startupPriority, InterceptionProxyInfo interceptionProxy) {
+            Set<Type> unrestrictedTypes, Integer startupPriority, InterceptionProxyInfo interceptionProxy,
+            Consumer<MethodCreator> checkActiveConsumer) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -152,6 +157,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.removable = isRemovable;
         this.params = params;
         this.interceptionProxy = interceptionProxy;
+        this.checkActiveConsumer = checkActiveConsumer;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1_base64((identifier != null ? identifier : "") + toString() + beanDeployment.toString());
         this.interceptedMethods = Collections.emptyMap();
@@ -544,14 +550,6 @@ public class BeanInfo implements InjectionTargetInfo {
         return alternative;
     }
 
-    /**
-     * @deprecated use {@link #getPriority()}
-     */
-    @Deprecated(forRemoval = true)
-    public Integer getAlternativePriority() {
-        return alternative ? priority : null;
-    }
-
     public Integer getPriority() {
         return priority;
     }
@@ -598,6 +596,21 @@ public class BeanInfo implements InjectionTargetInfo {
 
     Consumer<MethodCreator> getDestroyerConsumer() {
         return destroyerConsumer;
+    }
+
+    Consumer<MethodCreator> getCheckActiveConsumer() {
+        return checkActiveConsumer;
+    }
+
+    /**
+     * Returns whether this bean can be inactive. Most beans are always active, but certain synthetic beans
+     * may be inactive from time to time.
+     *
+     * @return whether this bean can be inactive
+     * @see #getCheckActiveConsumer()
+     */
+    public boolean canBeInactive() {
+        return checkActiveConsumer != null;
     }
 
     Map<String, Object> getParams() {
@@ -659,7 +672,6 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     void validateInterceptorDecorator(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
-        // no actual validations done at the moment, but we still want the transformation
         Beans.validateInterceptorDecorator(this, errors, bytecodeTransformerConsumer);
     }
 
@@ -1136,6 +1148,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private InterceptionProxyInfo interceptionProxy;
 
+        private Consumer<MethodCreator> checkActiveConsumer;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -1194,15 +1208,6 @@ public class BeanInfo implements InjectionTargetInfo {
         Builder disposer(DisposerInfo disposer) {
             this.disposer = disposer;
             return this;
-        }
-
-        /**
-         * @deprecated use {@link #alternative(boolean)} and {@link #priority(Integer)};
-         *             this method will be removed at some time after Quarkus 3.6
-         */
-        @Deprecated(forRemoval = true, since = "3.0")
-        Builder alternativePriority(Integer alternativePriority) {
-            return alternative(true).priority(alternativePriority);
         }
 
         Builder alternative(boolean value) {
@@ -1265,11 +1270,16 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder checkActive(Consumer<MethodCreator> checkActiveConsumer) {
+            this.checkActiveConsumer = checkActiveConsumer;
+            return this;
+        }
+
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
-                    identifier, null, startupPriority, interceptionProxy);
+                    identifier, null, startupPriority, interceptionProxy, checkActiveConsumer);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

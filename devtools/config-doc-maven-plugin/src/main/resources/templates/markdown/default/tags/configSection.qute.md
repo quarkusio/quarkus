@@ -7,8 +7,8 @@
 </thead>
 
 {#for property in configSection.nonDeprecatedProperties}
-{#configProperty configProperty=property extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configProperty context=context configProperty=property extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 {/for}
 {#for subsection in configSection.nonDeprecatedSections}
-{#configSection configSection=subsection extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configSection context=context configSection=subsection extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 {/for}

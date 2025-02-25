@@ -22,7 +22,8 @@ public class TenantSpecificJwtPreferredNameValidator implements Validator {
     @Override
     public String validate(JwtContext jwtContext) throws MalformedClaimException {
         // verify that normal scoped validator is created when the runtime config is ready
-        if (!"quarkus-app-b".equals(oidcConfig.namedTenants.get("tenant-requiredclaim").token.requiredClaims.get("azp"))) {
+        if (!"quarkus-app-b"
+                .equals(oidcConfig.namedTenants().get("tenant-requiredclaim").token().requiredClaims().get("azp"))) {
             throw new IllegalStateException("The 'tenant-requiredclaim' tenant required claim 'azp' is not 'quarkus-app-b'");
         }
 

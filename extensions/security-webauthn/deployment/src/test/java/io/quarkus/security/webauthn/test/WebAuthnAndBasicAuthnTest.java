@@ -1,5 +1,6 @@
 package io.quarkus.security.webauthn.test;
 
+import java.net.URL;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -13,9 +14,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnRunTimeConfig;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
@@ -24,7 +27,6 @@ import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.specification.RequestSpecification;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 public class WebAuthnAndBasicAuthnTest {
 
@@ -40,6 +42,9 @@ public class WebAuthnAndBasicAuthnTest {
     @Inject
     WebAuthnUserProvider userProvider;
 
+    @TestHTTPResource
+    URL url;
+
     @BeforeAll
     public static void setupUsers() {
         TestIdentityController.resetRoles()
@@ -50,10 +55,10 @@ public class WebAuthnAndBasicAuthnTest {
     @Test
     public void test() throws Exception {
 
-        Assertions.assertTrue(userProvider.findWebAuthnCredentialsByUserName("stev").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stev").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
-        String challenge = WebAuthnEndpointHelper.invokeRegistration("stev", cookieFilter);
-        WebAuthnHardware hardwareKey = new WebAuthnHardware();
+        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stev", cookieFilter);
+        WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
@@ -66,17 +71,17 @@ public class WebAuthnAndBasicAuthnTest {
                 .build()
                 .getConfigMapping(WebAuthnRunTimeConfig.class);
         request
+                .queryParam("username", "stev")
                 .post("/register")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
                 .cookie(config.challengeCookieName(), Matchers.is(""))
-                .cookie(config.challengeUsernameCookieName(), Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
-        List<Authenticator> users = userProvider.findWebAuthnCredentialsByUserName("stev").await().indefinitely();
+        List<WebAuthnCredentialRecord> users = userProvider.findByUsername("stev").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stev"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stev"));
         Assertions.assertEquals(1, users.get(0).getCounter());
 
         // make sure our login cookie works

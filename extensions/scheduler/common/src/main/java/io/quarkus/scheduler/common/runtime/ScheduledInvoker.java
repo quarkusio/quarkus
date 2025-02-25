@@ -11,7 +11,7 @@ public interface ScheduledInvoker {
 
     /**
      * @param execution
-     * @return the result
+     * @return the result, never {@code null}
      * @throws Exception
      */
     CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception;

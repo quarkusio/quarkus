@@ -25,10 +25,9 @@ import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.runtime.DataSources;
-import io.quarkus.agroal.runtime.UnconfiguredDataSource;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
@@ -180,8 +179,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
             RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
 
-            StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(runtimeSettings,
-                    recordedState, persistenceUnitName);
+            StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
+                    recordedState, puConfig, runtimeSettings);
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -283,10 +282,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         return runtimeSettingsBuilder.build();
     }
 
-    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings, RecordedState rs,
-            String persistenceUnitName) {
+    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,
+            HibernateOrmRuntimeConfigPersistenceUnit puConfig, RuntimeSettings runtimeSettings) {
         PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder(
-                persistenceUnitName, rs);
+                persistenceUnitName, rs, puConfig);
 
         runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
@@ -387,10 +386,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         DataSource dataSource;
         try {
-            dataSource = Arc.container().instance(DataSources.class).get().getDataSource(dataSourceName);
-            if (dataSource instanceof UnconfiguredDataSource) {
-                throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
-            }
+            // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
+            dataSource = ClientProxy.unwrap(AgroalDataSourceUtil.dataSourceInstance(dataSourceName).get());
         } catch (RuntimeException e) {
             throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName, e);
         }

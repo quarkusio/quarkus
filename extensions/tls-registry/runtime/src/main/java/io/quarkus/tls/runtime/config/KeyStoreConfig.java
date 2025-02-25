@@ -2,7 +2,9 @@ package io.quarkus.tls.runtime.config;
 
 import java.util.Optional;
 
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.tls.runtime.KeyStoreProvider;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -48,7 +50,13 @@ public interface KeyStoreConfig {
      */
     KeyStoreCredentialProviderConfig credentialsProvider();
 
-    default void validate(String name) {
+    default void validate(InstanceHandle<KeyStoreProvider> provider, String name) {
+        if (provider.isAvailable() && (pem().isPresent() || p12().isPresent() || jks().isPresent())) {
+            throw new IllegalStateException(
+                    "Invalid truststore '" + name
+                            + "' - The keystore cannot be configured with a provider and PEM or PKCS12 or JKS at the same time");
+        }
+
         if (pem().isPresent() && (p12().isPresent() || jks().isPresent())) {
             throw new IllegalStateException(
                     "Invalid keystore '" + name

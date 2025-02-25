@@ -68,6 +68,8 @@ public interface Capability {
     String RESTEASY_REACTIVE_JSON_JACKSON = RESTEASY_REACTIVE_JSON + ".jackson";
     String RESTEASY_REACTIVE_JSON_JSONB = RESTEASY_REACTIVE_JSON + ".jsonb";
 
+    String RESTEASY_MULTIPART = RESTEASY + ".multipart";
+
     String JWT = QUARKUS_PREFIX + ".jwt";
 
     /**
@@ -114,6 +116,7 @@ public interface Capability {
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
 
     String OIDC = QUARKUS_PREFIX + ".oidc";
+    String OIDC_CLIENT = OIDC + ".client";
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 
@@ -158,4 +161,6 @@ public interface Capability {
     String REACTIVE_MYSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mysql-client";
     String REACTIVE_MSSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mssql-client";
     String REACTIVE_DB2_CLIENT = QUARKUS_PREFIX + ".reactive-db2-client";
+
+    String GRPC = QUARKUS_PREFIX + ".grpc";
 }

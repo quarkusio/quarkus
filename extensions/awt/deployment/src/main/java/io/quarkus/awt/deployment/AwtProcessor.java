@@ -1,7 +1,6 @@
 package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
-import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.awt.runtime.graal.AwtFeature;
 import io.quarkus.awt.runtime.graal.DarwinAwtFeature;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -20,16 +20,13 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 
 class AwtProcessor {
 
@@ -43,6 +40,7 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DarwinAwtFeature.class));
+        nativeImageFeatures.produce(new NativeImageFeatureBuildItem(AwtFeature.class));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -50,13 +48,6 @@ class AwtProcessor {
         return new UnsupportedOSBuildItem(WINDOWS,
                 "Windows AWT integration is not ready in native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: no awt in java.library.path.");
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeMinimalJavaVersionBuildItem nativeMinimalJavaVersionBuildItem() {
-        return new NativeMinimalJavaVersionBuildItem("11.0.13",
-                "AWT: Some MLib related operations, such as filter in awt.image.ConvolveOp will not work. " +
-                        "See https://bugs.openjdk.java.net/browse/JDK-8254024");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -112,32 +103,22 @@ class AwtProcessor {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
                 .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-        final GraalVM.Version v;
-        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
-            v = CURRENT;
-            log.warnf("native-image is not installed. " +
-                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
-        } else {
-            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
-        }
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
-        if (v.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
-            jm.produce(
-                    new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", "java.lang.String",
-                            "java.lang.String"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLock"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotify"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotifyAll"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockWait", "long"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtUnlock"));
-            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK"));
-            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK_COND"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.X11.XErrorHandlerUtil", "init", "long"));
-            jc.produce(new JniRuntimeAccessBuildItem(false, false, true, "sun.awt.X11.XToolkit"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.Thread", "yield"));
-        }
+        jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
+        jm.produce(
+                new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", "java.lang.String",
+                        "java.lang.String"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLock"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotify"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotifyAll"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockWait", "long"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtUnlock"));
+        jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK"));
+        jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK_COND"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.X11.XErrorHandlerUtil", "init", "long"));
+        jc.produce(new JniRuntimeAccessBuildItem(false, false, true, "sun.awt.X11.XToolkit"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.Thread", "yield"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -146,12 +127,6 @@ class AwtProcessor {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
                 .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-        final GraalVM.Version v;
-        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
-            v = CURRENT;
-        } else {
-            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
-        }
         final List<String> classes = new ArrayList<>();
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReader");
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriter");
@@ -275,21 +250,12 @@ class AwtProcessor {
 
         // A new way of dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
-        if (v.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-            classes.add("sun.awt.X11FontManager");
-            if (v.javaVersion.feature() != 19) {
-                classes.add("java.awt.GraphicsEnvironment");
-                classes.add("sun.awt.X11GraphicsConfig");
-                classes.add("sun.awt.X11GraphicsDevice");
-                classes.add("sun.java2d.SunGraphicsEnvironment");
-                classes.add("sun.java2d.xr.XRSurfaceData");
-            }
-        }
-
-        // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
-        if (v.jdkVersionGreaterOrEqualTo("19")) {
-            classes.add("sun.font.FontUtilities");
-        }
+        classes.add("sun.awt.X11FontManager");
+        classes.add("java.awt.GraphicsEnvironment");
+        classes.add("sun.awt.X11GraphicsConfig");
+        classes.add("sun.awt.X11GraphicsDevice");
+        classes.add("sun.java2d.SunGraphicsEnvironment");
+        classes.add("sun.java2d.xr.XRSurfaceData");
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
     }

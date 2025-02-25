@@ -165,17 +165,17 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
     }
 
-    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode) {
-        return resolveManagementPath(path, managementInterfaceBuildTimeConfig, mode, true);
+        return resolveManagementPath(path, managementBuildTimeConfig, mode, true);
     }
 
-    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode, boolean extensionOverride) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
+        if (managementBuildTimeConfig.enabled() && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {
@@ -203,12 +203,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      */
     public static String getManagementUrlPrefix(LaunchModeBuildItem mode) {
         Config config = ConfigProvider.getConfig();
-        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("0.0.0.0");
+        // These will always be defined except when the configuration is not properly set up
+        // (for instance in NonApplicationRootPathBuildItemTest)
+        // so we default to the safest behavior possible
+        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("localhost");
         var managementPort = config.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
         if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);
         }
-        var isHttps = isTLsConfigured(config);
+        var isHttps = isTlsConfigured(config);
 
         return (isHttps ? "https://" : "http://") + managementHost + ":" + managementPort;
     }
@@ -267,6 +270,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         private final NonApplicationRootPathBuildItem buildItem;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private RouteBuildItem.RouteType routerType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+        private String name;
         private String path;
 
         Builder(NonApplicationRootPathBuildItem buildItem) {
@@ -327,7 +331,13 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 this.path = route;
                 this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
-            super.orderedRoute(this.path, order, routeFunction);
+
+            // we normalize the route name to remove trailing *, this is to be consistent with the path
+            // see RouteImpl#setPath()
+            String routeName = route.charAt(route.length() - 1) == '*' ? route.substring(0, route.length() - 1) : route;
+
+            // we pass a route name for proper identification in the metrics
+            super.orderedRoute(routeName, this.path, order, routeFunction);
             return this;
         }
 
@@ -435,7 +445,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * @param config the config
      * @return {@code true} if the management interface configuration contains a key or a certificate (indicating TLS)
      */
-    private static boolean isTLsConfigured(Config config) {
+    private static boolean isTlsConfigured(Config config) {
+        // TLS registry
+        var hasTlsConfigurationName = config.getOptionalValue("quarkus.management.tls-configuration-name", String.class)
+                .isPresent();
+        if (hasTlsConfigurationName) {
+            return true;
+        }
+
+        // legacy TLS configuration
         var hasCert = config.getOptionalValue("quarkus.management.ssl.certificate.file", String.class).isPresent();
         var hasKey = config.getOptionalValue("quarkus.management.ssl.certificate.key-file", String.class).isPresent();
 

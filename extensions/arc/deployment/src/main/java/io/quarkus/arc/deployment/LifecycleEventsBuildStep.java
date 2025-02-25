@@ -24,7 +24,8 @@ public class LifecycleEventsBuildStep {
             BeanContainerBuildItem beanContainer,
             ShutdownContextBuildItem shutdown,
             LaunchModeBuildItem launchMode, ArcConfig config) {
-        recorder.handleLifecycleEvents(shutdown, launchMode.getLaunchMode(), config.test.disableApplicationLifecycleObservers);
+        recorder.handleLifecycleEvents(shutdown, launchMode.getLaunchMode(),
+                config.test().disableApplicationLifecycleObservers());
         return new ApplicationStartBuildItem();
     }
 

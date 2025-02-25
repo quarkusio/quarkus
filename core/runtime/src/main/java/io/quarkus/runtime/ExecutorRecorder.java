@@ -14,10 +14,10 @@ import org.jboss.threads.ContextHandler;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
-import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.util.NoopShutdownScheduledExecutorService;
+import io.smallrye.common.cpu.ProcessorInfo;
 
 /**
  *
@@ -55,7 +55,7 @@ public class ExecutorRecorder {
             Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
             shutdownContext.addLastShutdownTask(shutdownTask);
         }
-        if (threadPoolConfig.prefill) {
+        if (threadPoolConfig.prefill()) {
             underlying.prestartAllCoreThreads();
         }
         ScheduledExecutorService managed = underlying;
@@ -78,12 +78,12 @@ public class ExecutorRecorder {
             @Override
             public void run() {
                 executor.shutdown();
-                final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout;
-                final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval;
+                final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout();
+                final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval();
                 long remaining = shutdownTimeout.toNanos();
                 final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
                 long intervalRemaining = interval;
-                long interruptRemaining = threadPoolConfig.shutdownInterrupt.toNanos();
+                long interruptRemaining = threadPoolConfig.shutdownInterrupt().toNanos();
 
                 long start = System.nanoTime();
                 int loop = 1;
@@ -165,17 +165,20 @@ public class ExecutorRecorder {
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
         // run time config variables
-        builder.setCorePoolSize(threadPoolConfig.coreThreads);
+        builder.setCorePoolSize(threadPoolConfig.coreThreads());
         builder.setMaximumPoolSize(getMaxSize(threadPoolConfig));
-        if (threadPoolConfig.queueSize.isPresent()) {
-            if (threadPoolConfig.queueSize.getAsInt() < 0) {
+        if (threadPoolConfig.queueSize().isPresent()) {
+            if (threadPoolConfig.queueSize().getAsInt() < 0) {
                 builder.setMaximumQueueSize(Integer.MAX_VALUE);
+                builder.setQueueLimited(false);
             } else {
-                builder.setMaximumQueueSize(threadPoolConfig.queueSize.getAsInt());
+                builder.setMaximumQueueSize(threadPoolConfig.queueSize().getAsInt());
             }
+        } else {
+            builder.setQueueLimited(false);
         }
-        builder.setGrowthResistance(threadPoolConfig.growthResistance);
-        builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
+        builder.setGrowthResistance(threadPoolConfig.growthResistance());
+        builder.setKeepAliveTime(threadPoolConfig.keepAliveTime());
 
         if (contextHandler != null) {
             builder.setContextHandler(contextHandler);
@@ -185,7 +188,7 @@ public class ExecutorRecorder {
     }
 
     public static int getMaxSize(ThreadPoolConfig threadPoolConfig) {
-        return threadPoolConfig.maxThreads.orElseGet(MaxThreadsCalculator.INSTANCE);
+        return threadPoolConfig.maxThreads().orElseGet(MaxThreadsCalculator.INSTANCE);
     }
 
     public static int calculateMaxThreads() {

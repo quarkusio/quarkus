@@ -8,6 +8,7 @@ import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestart
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_NAME;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_DOCS_MODULE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_INTEGRATION_TESTS_MODULE;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_ARTIFACT_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_RELATIVE_PATH;
@@ -86,11 +87,11 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "17";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "18";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
-    public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://quarkiverse.github.io/quarkiverse-docs/%s/dev/";
+    public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://docs.quarkiverse.io/%s/dev/";
 
-    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.5.0";
+    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.5.2";
     private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.13.0";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();
@@ -105,6 +106,7 @@ public class CreateExtension {
     private String extensionsRelativeDir = "extensions";
     private boolean withCodestart;
     private String javaVersion;
+    private boolean hasIntegrationTestsModule;
 
     public CreateExtension(final Path baseDir) {
         this.baseDir = requireNonNull(baseDir, "extensionDirPath is required");
@@ -218,6 +220,7 @@ public class CreateExtension {
     }
 
     public CreateExtension withoutIntegrationTests(boolean withoutIntegrationTest) {
+        hasIntegrationTestsModule = !withoutIntegrationTest;
         this.builder.withoutIntegrationTests(withoutIntegrationTest);
         return this;
     }
@@ -263,6 +266,7 @@ public class CreateExtension {
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
         data.put(EXTENSION_FULL_NAME,
                 data.getRequiredStringValue(NAMESPACE_NAME) + data.getRequiredStringValue(EXTENSION_NAME));
+        data.put(HAS_INTEGRATION_TESTS_MODULE, hasIntegrationTestsModule);
 
         // for now, we only support Java extensions
         data.put(JAVA_VERSION, javaVersion == null ? JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION

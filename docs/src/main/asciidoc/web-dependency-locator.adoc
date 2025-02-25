@@ -113,7 +113,7 @@ This means adding the following to your `index.html` will allow you to import we
 
 ===== Automatic imports
 
-You can also automate the imports above. To do this, move your web assests from `src/main/resources/META-INF/resources` to `src/main/web` 
+You can also automate the imports above. To do this, move your web assets from `src/main/resources/META-INF/resources` to `src/main/resources/web`
 and now replace the above scripts and imports with `{#bundle /}`:
 
 [source,html]

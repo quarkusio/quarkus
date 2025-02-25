@@ -34,6 +34,7 @@ public class AnnotationBasedTenantTest {
                     Map.entry("quarkus.oidc.hr.credentials.secret", "secret"),
                     Map.entry("quarkus.oidc.hr.tenant-paths", "/api/tenant-echo/http-security-policy-applies-all-same"),
                     Map.entry("quarkus.oidc.hr.token.audience", "http://hr.service"),
+                    Map.entry("quarkus.oidc.hr.follow-redirects", "false"),
                     Map.entry("quarkus.http.auth.policy.roles1.roles-allowed", "role1"),
                     Map.entry("quarkus.http.auth.policy.roles2.roles-allowed", "role2"),
                     Map.entry("quarkus.http.auth.policy.roles3.roles-allowed", "role3,role2"),
@@ -68,7 +69,13 @@ public class AnnotationBasedTenantTest {
                     Map.entry("quarkus.http.auth.permission.tenant-annotation-applies-all.paths",
                             "/api/tenant-echo/http-security-policy-applies-all-diff,/api/tenant-echo/http-security-policy-applies-all-same"),
                     Map.entry("quarkus.http.auth.permission.tenant-annotation-applies-all.policy", "admin-role"),
-                    Map.entry("quarkus.http.auth.policy.admin-role.roles-allowed", "admin"));
+                    Map.entry("quarkus.http.auth.policy.admin-role.roles-allowed", "admin"),
+                    Map.entry("quarkus.oidc.redirect-loop.auth-server-url", "http://localhost:8180/auth/realms/quarkus3/"),
+                    Map.entry("quarkus.oidc.redirect-loop.follow-redirects", "false"),
+                    Map.entry("quarkus.oidc.redirect-loop2.auth-server-url", "http://localhost:8180/auth/realms/quarkus4/"),
+                    Map.entry("quarkus.oidc.redirect-loop2.follow-redirects", "false"),
+                    Map.entry("quarkus.oidc.redirect-loop3.auth-server-url", "http://localhost:8180/auth/realms/quarkus5/"),
+                    Map.entry("quarkus.oidc.redirect-loop3.follow-redirects", "false"));
         }
 
         @Override
@@ -100,6 +107,18 @@ public class AnnotationBasedTenantTest {
                     .then().statusCode(200)
                     .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
                             + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api-redirect-loop")
+                    .then().statusCode(500);
+
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api-redirect-loop2")
+                    .then().statusCode(500);
+
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api-redirect-loop3")
+                    .then().statusCode(500);
 
         } finally {
             server.stop();
@@ -137,7 +156,7 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/default")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=null, static.tenant.id=null, name=alice, "
+                    .body(Matchers.equalTo(("tenant-id=Default, static.tenant.id=null, name=alice, "
                             + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=null")));
         } finally {
             server.stop();
@@ -369,7 +388,7 @@ public class AnnotationBasedTenantTest {
                     .when().get("/api/tenant-echo/http-security-policy-applies-all-same")
                     .then().statusCode(200)
                     .body(Matchers
-                            .equalTo("tenant-id=null, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
+                            .equalTo("tenant-id=hr, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
         } finally {
             server.stop();
         }

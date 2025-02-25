@@ -41,12 +41,29 @@ public interface ApplicationModel {
     Iterable<ResolvedDependency> getDependencies(int flags);
 
     /**
+     * Returns application dependencies that have any of the flags combined in the value of the {@code flags} arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags);
+
+    /**
      * Returns application dependencies that have any of the flags passed in as arguments set.
      *
      * @param flags dependency flags to match
      * @return application dependencies that matched the flags
      */
-    Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags);
+    default Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
+        if (flags.length == 0) {
+            throw new IllegalArgumentException("Flags are empty");
+        }
+        int combined = flags[0];
+        for (int i = 1; i < flags.length; ++i) {
+            combined |= flags[i];
+        }
+        return getDependenciesWithAnyFlag(combined);
+    }
 
     /**
      * Runtime dependencies of an application
@@ -156,4 +173,11 @@ public interface ApplicationModel {
             collectModules(((ResolvedDependency) d).getWorkspaceModule(), collected);
         }
     }
+
+    /**
+     * Extension Dev mode configuration options.
+     *
+     * @return extension Dev mode configuration options
+     */
+    Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
 }

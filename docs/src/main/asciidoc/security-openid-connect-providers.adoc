@@ -25,14 +25,14 @@ The configuration of such providers can become complex, very technical and diffi
 
 `quarkus.oidc.provider` configuration property has been introduced to refer to well-known OpenID Connect and OAuth2 providers. This property can be used to refer to a provider such as `github` with only a minimum number of customizations required, typically, an account specific `client id`, `client secret` and some properties have to be set to complete the configuration.
 
-This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://quarkiverse.github.io/quarkiverse-docs/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
+This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://docs.quarkiverse.io/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
 
 == Well Known Providers
 
 [[apple]]
 === Apple
 
-In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers:
+In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99$/year program, but you cannot test your application on `localhost` like most other OIDC providers:
 you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
@@ -84,7 +84,7 @@ Enable `Sign in with Apple` and press `Configure`:
 
 image::oidc-apple-12.png[role="thumb"]
 
-Add your domain and return URL (set to `<host>/_renarde/security/oidc-success`) and press `Next`:
+Add your domain and return URL (set to `<host>/apple`) and press `Next`:
 
 image::oidc-apple-13.png[role="thumb"]
 
@@ -165,11 +165,11 @@ Facebook you will not be let you test your application on `localhost` like most 
 you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
-In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `None` as an app type, and press `Next`:
+In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `Other` as an app type, and click `Next`.
 
 image::oidc-facebook-1.png[role="thumb"]
 
-Now enter an application name, and contact email, and press `Create app`:
+Now choose your application type. For this guide choose `Consumer` and click `Next` until you reach the screen below. Now enter an application name, and contact email, and press `Create app`:
 
 image::oidc-facebook-2.png[role="thumb"]
 
@@ -177,11 +177,12 @@ On the app page, click `Set up` on the `Facebook login` product:
 
 image::oidc-facebook-3.png[role="thumb"]
 
-Quick the `Quickstarts` page and click on `Facebook login > Settings` on the left menu:
+On the `Quickstart` page click on `Facebook login > Settings` on the left menu:
 
 image::oidc-facebook-4.png[role="thumb"]
 
-Enter your `Redirect URIs` (set to `<host>/_renarde/security/oidc-success`) and press `Save changes`:
+First click on `Get Advanced Access` to switch `public_profile` to advanced access.
+Then enter your `Redirect URIs` (set to `<host>/facebook`) and press `Save changes`:
 
 image::oidc-facebook-5.png[role="thumb"]
 
@@ -207,7 +208,7 @@ In order to set up OIDC for GitHub you need to create a new OAuth application in
 
 image::oidc-github-1.png[role="thumb"]
 
-Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/_renarde/security/oidc-success`
+Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/github`
 (if you intend to test this using the Quarkus dev mode).
 
 Now click on `Register application` and you'll be shown your application page:
@@ -266,7 +267,7 @@ Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
 
 image::oidc-google-7.png[role="thumb"]
 
-Select `Web application` as `Application type`, and add `http://localhost:8080/_renarde/security/oidc-success` in
+Select `Web application` as `Application type`, and add `http://localhost:8080/google` in
 the `Authorised redirect URIs` list, then press `CREATE`:
 
 image::oidc-google-8.png[role="thumb"]
@@ -349,7 +350,7 @@ quarkus.oidc.credentials.client-secret.value=<Client Secret>
 === Microsoft
 
 In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
-and search for `Azure Active Directory`, then click on it:
+and search for `Microsoft Entra ID` formerly known as `Azure Active Directory` , then click on it:
 
 image::oidc-microsoft-1.png[role="thumb"]
 
@@ -357,7 +358,7 @@ Once there, on the left side under `Manage`, click on `App registrations` then c
 
 image::oidc-microsoft-2.png[role="thumb"]
 
-Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/_renarde/security/oidc-success`,
+Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/microsoft`,
 then click on `Register`:
 
 image::oidc-microsoft-3.png[role="thumb"]
@@ -406,6 +407,42 @@ quarkus.oidc.token.customizer-name=azure-access-token-customizer
 
 ====
 
+[[slack]]
+=== Slack
+
+Create a https://api.slack.com/authentication/sign-in-with-slack#setup[Slack application]:
+
+image::oidc-slack-1.png[role="thumb"]
+
+Select application name, workspace, and remember it, you will need it later:
+
+image::oidc-slack-2.png[role="thumb"]
+
+Please save client id and secret displayed on the next page, you will need them later:
+
+image::oidc-slack-3.png[role="thumb"]
+
+Configure redirect URLs.
+Slack provider requires HTTPS protocol, for development purposes, you can use ngrok:
+
+image::oidc-slack-4.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=slack
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+quarkus.oidc.authentication.extra-params.team=quarkus-slack <1>
+----
+<1> Use the `team` parameter to refer to the workspace you chose during the Slack OIDC application registration.
+
+Open your browser and navigate to your application `https://<your ngrok instance>.ngrok-free.app/`.
+Quarkus will redirect you to Slack provider on the first request where you can grant required permissions:
+
+image::oidc-slack-5.png[role="thumb"]
+
 [[spotify]]
 === Spotify
 
@@ -447,8 +484,8 @@ quarkus.oidc.credentials.client-secret=<Client Secret>
 # default value is '/strava'
 quarkus.oidc.authentication.redirect-path=/fitness/welcome <1>
 ----
-<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficent redirect_uri validation] for more information.
-Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authotization code flow. See the <<exact_redirect_uri_match>> for more information.
+<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficient redirect_uri validation] for more information.
+Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authorization code flow. See the <<exact_redirect_uri_match>> for more information.
 
 [[twitch]]
 === Twitch
@@ -594,7 +631,7 @@ package org.acme.calendar;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -734,7 +771,7 @@ It may not be a problem when Quarkus fetches public verification keys from OIDC-
 
 Therefore, UserInfo is embedded in an internally generated ID token and is encrypted in the session cookie. You can disable it with `quarkus.oidc.cache-user-info-in-idtoken=false`.
 
-Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
+Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 == References
 

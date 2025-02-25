@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
-import io.smallrye.faulttolerance.api.FaultTolerance;
+import io.smallrye.faulttolerance.api.TypedGuard;
 
 @ApplicationScoped
 public class HelloService {
@@ -16,9 +16,10 @@ public class HelloService {
     static final int THRESHOLD = 5;
     static final int DELAY = 500;
 
-    private final Supplier<String> anotherHello = FaultTolerance.createSupplier(this::anotherHelloImpl)
+    private final Supplier<String> anotherHello = TypedGuard.create(String.class)
             .withCircuitBreaker().requestVolumeThreshold(THRESHOLD).delay(DELAY, ChronoUnit.MILLIS).name("another-hello").done()
-            .build();
+            .build()
+            .adaptSupplier(this::anotherHelloImpl);
 
     @CircuitBreaker(requestVolumeThreshold = THRESHOLD, delay = DELAY)
     @CircuitBreakerName("hello")

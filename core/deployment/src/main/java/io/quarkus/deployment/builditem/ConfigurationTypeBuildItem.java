@@ -1,8 +1,7 @@
 package io.quarkus.deployment.builditem;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The configuration type build item. Every configuration type should be registered using this build item

@@ -33,7 +33,7 @@ public class SubprotocolNotAvailableTest {
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Endpoint.class, WSClient.class);
-            });
+            }).overrideConfigKey("quarkus.websockets-next.server.activate-session-context", "always");
 
     @Inject
     Vertx vertx;
@@ -44,7 +44,12 @@ public class SubprotocolNotAvailableTest {
     @Test
     void testConnectionRejected() {
         CompletionException e = assertThrows(CompletionException.class,
-                () -> new WSClient(vertx).connect(new WebSocketConnectOptions().addSubProtocol("oak"), endUri));
+                () -> {
+                    try (WSClient connect = new WSClient(vertx).connect(new WebSocketConnectOptions().addSubProtocol("oak"),
+                            endUri)) {
+                        // handshake should fail
+                    }
+                });
         Throwable cause = e.getCause();
         assertTrue(cause instanceof WebSocketClientHandshakeException);
         assertFalse(Endpoint.OPEN_CALLED.get());

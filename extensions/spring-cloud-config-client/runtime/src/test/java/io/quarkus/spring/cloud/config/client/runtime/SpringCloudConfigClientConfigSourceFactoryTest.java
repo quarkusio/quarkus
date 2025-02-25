@@ -22,7 +22,7 @@ import org.mockito.Mockito;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.smallrye.config.ConfigSourceContext;
 
 class SpringCloudConfigClientConfigSourceFactoryTest {
@@ -47,7 +47,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
 
         // Arrange
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(false, "foo", MOCK_SERVER_PORT, true);
+        final SpringCloudConfigClientConfig config = configForTesting(false, "foo", MOCK_SERVER_PORT, true, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
         // Act
@@ -62,7 +62,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
 
         // Arrange
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(true, null, MOCK_SERVER_PORT, true);
+        final SpringCloudConfigClientConfig config = configForTesting(true, null, MOCK_SERVER_PORT, true, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
         // Act
@@ -77,16 +77,16 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
 
         // Arrange
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(true, "foo", MOCK_SERVER_PORT, true);
+        final SpringCloudConfigClientConfig config = configForTesting(true, "foo", MOCK_SERVER_PORT, true, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
-        System.setProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP, "true");
+        System.setProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "true");
 
         // Act
         final Iterable<ConfigSource> configSourceIterable = factory.getConfigSources(context, config);
 
         // Clear property, because not necessary any more
-        System.clearProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP);
+        System.clearProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP);
 
         // Assert
         assertThat(configSourceIterable).isEmpty();
@@ -97,7 +97,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
 
         // Arrange
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(true, "unknown-application", 1234, false);
+        final SpringCloudConfigClientConfig config = configForTesting(true, "unknown-application", 1234, false, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
         Mockito.when(context.getProfiles()).thenReturn(List.of("dev"));
@@ -114,7 +114,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
 
         // Arrange
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(true, "unknown-application", 1234, true);
+        final SpringCloudConfigClientConfig config = configForTesting(true, "unknown-application", 1234, true, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
         Mockito.when(context.getProfiles()).thenReturn(List.of("dev"));
@@ -130,7 +130,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         // Arrange
         final String profile = "dev";
         final ConfigSourceContext context = Mockito.mock(ConfigSourceContext.class);
-        final SpringCloudConfigClientConfig config = configForTesting(true, "foo", MOCK_SERVER_PORT, true);
+        final SpringCloudConfigClientConfig config = configForTesting(true, "foo", MOCK_SERVER_PORT, true, 450);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
         Mockito.when(context.getProfiles()).thenReturn(List.of(profile));
@@ -176,7 +176,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
     }
 
     private SpringCloudConfigClientConfig configForTesting(final boolean isEnabled, final String appName,
-            final int serverPort, final boolean isFailFastEnabled) {
+            final int serverPort, final boolean isFailFastEnabled, final int ordinal) {
 
         final SpringCloudConfigClientConfig config = Mockito.mock(SpringCloudConfigClientConfig.class);
         when(config.enabled()).thenReturn(isEnabled);
@@ -192,6 +192,7 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         when(config.keyStore()).thenReturn(Optional.empty());
         when(config.trustCerts()).thenReturn(false);
         when(config.headers()).thenReturn(new HashMap<>());
+        when(config.ordinal()).thenReturn(ordinal);
 
         return config;
     }

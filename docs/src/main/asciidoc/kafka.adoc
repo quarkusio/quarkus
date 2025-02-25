@@ -65,9 +65,9 @@ implementation("io.quarkus:quarkus-messaging-kafka")
 The extension includes `kafka-clients` version 3.2.1 as a transitive dependency and is compatible with Kafka brokers version 2.x.
 ====
 
-== Configuring Smallrye Kafka Connector
+== Configuring SmallRye Kafka Connector
 
-Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
+Because SmallRye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
 
 - Applications send and receive *messages*. A message wraps a _payload_ and can be extended with some _metadata_. With the Kafka connector, a _message_ corresponds to a Kafka _record_.
 - Messages transit on *channels*. Application components connect to channels to publish and consume messages. The Kafka connector maps _channels_ to Kafka _topics_.
@@ -381,7 +381,7 @@ If high throughput is important for you, and you are not limited by the downstre
 - or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`.
 ====
 
-Smallrye Reactive Messaging enables implementing custom commit strategies.
+SmallRye Reactive Messaging enables implementing custom commit strategies.
 See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 [[error-handling]]
@@ -409,7 +409,7 @@ The record written on the dead letter queue contains a set of additional headers
 - *dead-letter-partition*: the original partition of the record (integer mapped to String)
 - *dead-letter-offset*: the original offset of the record (long mapped to String)
 
-Smallrye Reactive Messaging enables implementing custom failure strategies.
+SmallRye Reactive Messaging enables implementing custom failure strategies.
 See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 ==== Retrying processing
@@ -537,7 +537,7 @@ Therefore, it is important to think about how records are partitioned inside a t
 The default partitioner uses record key hash to compute the partition for a record, or when the key is not defined, chooses a partition randomly per batch or records.
 
 During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
-Smallrye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
+SmallRye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
 
 Note that due to consumer rebalances, Kafka consumers only guarantee at-least-once processing of single records, meaning that uncommitted records _can_ be processed again by consumers.
 ====
@@ -761,7 +761,7 @@ You can configure batch mode explicitly with `mp.messaging.incoming.$channel.bat
 The `checkpoint` commit strategy is an experimental feature and can change in the future.
 ====
 
-Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
+SmallRye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
 An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external
 <<state-stores,state store>>, such as a relational database or a key-value store.
 As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer.
@@ -1469,7 +1469,7 @@ which it expects to be sent back in the reply record.
 The replier can be implemented using a Reactive Messaging processor (see <<processing-messages>>).
 
 For more information on Kafka Request Reply feature and advanced configuration options,
-see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[Smallrye Reactive Messaging Documentation].
+see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[SmallRye Reactive Messaging Documentation].
 
 [[processing-messages]]
 == Processing Messages
@@ -2453,6 +2453,20 @@ public class OrderProcessorTest {
 <3> Create consumer task which subscribes to 'orders-processed' topic and consumes 10 records.
 <4> Await completion of the consumer task.
 
+
+[TIP]
+====
+You need to configure
+
+[source,properties]
+----
+mp.messaging.incoming.orders.connector=smallrye-kafka
+mp.messaging.incoming.orders.auto.offset.reset=earliest
+----
+
+otherwise you will get an `java.lang.AssertionError: No completion (or failure) event received in the last 10000 ms` in <4>
+====
+
 [TIP]
 ====
 If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker, otherwise it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].
@@ -2942,9 +2956,7 @@ NOTE: If you use Hibernate Reactive, look at <<writing-entities-managed-by-hiber
 
 Because we write to a database, we must run this method in a transaction.
 Yet, sending the entity to Kafka happens asynchronously.
-The operation returns a `CompletionStage` (or a `Uni` if you use a `MutinyEmitter`) reporting when the operation completes.
-We must be sure that the transaction is still running until the object is written.
-Otherwise, you may access the object outside the transaction, which is not allowed.
+We can achieve this by using `.sendAndAwait()` or `.sendAndForget()` on the `MutinyEmitter`, or `.send().toCompletableFuture().join()` on the `Emitter`.
 
 To implement this process, you need the following approach:
 
@@ -2959,26 +2971,29 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Path("/")
 public class ResourceSendingToKafka {
 
-    @Channel("kafka") Emitter<Fruit> emitter;
+    @Channel("kafka") MutinyEmitter<Fruit> emitter;
 
     @POST
     @Path("/fruits")
-    @Transactional                                                      // <1>
-    public CompletionStage<Void> storeAndSendToKafka(Fruit fruit) {     // <2>
+    @Transactional                                               // <1>
+    public void storeAndSendToKafka(Fruit fruit) {               // <2>
         fruit.persist();
-        return emitter.send(new FruitDto(fruit));                       // <3>
+        emitter.sendAndAwait(new FruitDto(fruit));               // <3>
     }
 }
 ----
 <1> As we are writing to the database, make sure we run inside a transaction
-<2> The method receives the fruit instance to persist. It returns a `CompletionStage` which is used for the transaction demarcation. The transaction is committed when the return `CompletionStage` completes. In our case, it's when the message is written to Kafka.
+<2> The method receives the fruit instance to persist.
 <3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
 This makes sure that managed entity is not impacted by the Kafka serialization.
+Then await the completion of the operation before returning.
+
+NOTE: You should not return a `CompletionStage` or `Uni` when using `@Transactional`, as all transaction commits will happen on a single thread, which impacts performance.
 
 [[writing-entities-managed-by-hibernate-reactive-to-kafka]]
 === Writing entities managed by Hibernate Reactive to Kafka
@@ -3092,7 +3107,7 @@ perform database updates and commit the Kafka transaction only if the database t
 The following example demonstrates:
 
 * Receive a payload by serving HTTP requests using Quarkus REST,
-* Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
+* Limit concurrency of that HTTP endpoint using SmallRye Fault Tolerance,
 * Start a Kafka transaction and send the payload to Kafka record,
 * Store the payload in the database using Hibernate Reactive with Panache,
 * Commit the Kafka transaction only if the entity is persisted successfully.
@@ -3177,23 +3192,104 @@ public class FruitProducer {
     @Consumes(MediaType.APPLICATION_JSON)
     @Bulkhead(1)
     public Uni<Void> post(Fruit fruit) {
-        Context context = Vertx.currentContext(); // <2>
-        return sf.withTransaction(session -> // <3>
-                kafkaTx.withTransaction(emitter -> // <4>
-                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <5>
-                ).emitOn(context::runOnContext) // <6>
-        );
+        return sf.withTransaction(session -> // <2>
+                kafkaTx.withTransaction(emitter -> // <3>
+                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <4>
+                ));
     }
 }
 ----
 
 <1> Inject the Hibernate Reactive `SessionFactory`.
-<2> Capture the caller Vert.x context.
-<3> Begin a Hibernate Reactive transaction.
-<4> Begin a Kafka transaction.
-<5> Persist the payload and send the entity to Kafka.
-<6> The Kafka transaction terminates on the Kafka producer sender thread.
-We need to switch to the Vert.x context previously captured in order to terminate the Hibernate Reactive transaction on the same context we started it.
+<2> Begin a Hibernate Reactive transaction.
+<3> Begin a Kafka transaction.
+<4> Persist the payload and send the entity to Kafka.
+
+Alternatively, you can use the `@WithTransaction` annotation to start a transaction and commit it when the method returns:
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx;
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    @WithTransaction // <1>
+    public Uni<Void> post(Fruit fruit) {
+        return kafkaTx.withTransaction(emitter -> // <2>
+            fruit.persist().invoke(() -> emitter.send(fruit)) // <3>
+        );
+    }
+}
+----
+
+<1> Start a Hibernate Reactive transaction and commit it when the method returns.
+<2> Begin a Kafka transaction.
+<3> Persist the payload and send the entity to Kafka.
+
+[[chaining-kafka-transactions-with-hibernate-orm-transactions]]
+=== Chaining Kafka Transactions with Hibernate ORM transactions
+
+While `KafkaTransactions` provide a reactive API on top of Mutiny to manage Kafka transactions,
+you can still chain Kafka transactions with blocking Hibernate ORM transactions.
+
+[source, java]
+----
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.logging.Log;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Pet> emitter;
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    @Transactional // <1>
+    public void post(Fruit fruit) {
+        emitter.withTransaction(e -> { // <2>
+            // if id is attributed by the database, will need to flush to get it
+            // fruit.persistAndFlush();
+            fruit.persist(); // <3>
+            Log.infov("Persisted fruit {0}", p);
+            e.send(p); // <4>
+            return Uni.createFrom().voidItem();
+        }).await().indefinitely(); // <5>
+    }
+}
+----
+
+<1> Start a Hibernate ORM transaction. The transaction is committed when the method returns.
+<2> Begin a Kafka transaction.
+<3> Persist the payload.
+<4> Send the entity to Kafka inside the Kafka transaction.
+<5> Wait on the returned `Uni` for the Kafka transaction to complete.
 
 == Logging
 

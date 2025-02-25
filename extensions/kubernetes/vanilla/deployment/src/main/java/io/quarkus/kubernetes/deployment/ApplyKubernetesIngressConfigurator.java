@@ -13,12 +13,12 @@ public class ApplyKubernetesIngressConfigurator extends Configurator<KubernetesC
 
     @Override
     public void visit(KubernetesConfigFluent config) {
-        if (ingressConfig.expose) {
+        if (ingressConfig.expose()) {
             KubernetesConfigFluent.IngressNested ingressConfigBuilder = config.withNewIngress();
             ingressConfigBuilder.withExpose(true);
-            ingressConfig.host.ifPresent(ingressConfigBuilder::withHost);
-            ingressConfigBuilder.withTargetPort(ingressConfig.targetPort);
-            ingressConfig.ingressClassName.ifPresent(ingressConfigBuilder::withIngressClassName);
+            ingressConfig.host().ifPresent(ingressConfigBuilder::withHost);
+            ingressConfigBuilder.withTargetPort(ingressConfig.targetPort());
+            ingressConfig.ingressClassName().ifPresent(ingressConfigBuilder::withIngressClassName);
 
             ingressConfigBuilder.endIngress();
         }

@@ -33,7 +33,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -41,7 +41,7 @@ import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class DevServicesMongoProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesMongoProcessor.class);
@@ -71,7 +71,7 @@ public class DevServicesMongoProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
 
         List<String> connectionNames = new ArrayList<>(mongoConnections.size());
         for (MongoConnectionNameBuildItem mongoConnection : mongoConnections) {
@@ -107,10 +107,10 @@ public class DevServicesMongoProcessor {
                     (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
                     loggingSetupBuildItem);
             try {
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
                 devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
-                        useSharedNetwork, globalDevServicesConfig.timeout, launchMode.getLaunchMode());
+                        useSharedNetwork, devServicesConfig.timeout(), launchMode.getLaunchMode());
                 if (devService == null) {
                     compressor.closeAndDumpCaptured();
                 } else {
@@ -161,12 +161,12 @@ public class DevServicesMongoProcessor {
 
         String configPrefix = getConfigPrefix(connectionName);
 
-        // TODO: do we need to check the hosts as well?
-        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "connection-string");
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "connection-string")
+                && !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts");
         if (!needToStart) {
             // a connection string has been provided
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
-                    + " as a connection string has been provided");
+                    + " as a connection string and/or server addresses have been provided");
             return null;
         }
 
@@ -247,12 +247,12 @@ public class DevServicesMongoProcessor {
         String connectionString = ConfigProvider.getConfig().getOptionalValue(configPrefix + "connection-string", String.class)
                 .orElse(null);
         //TODO: update for multiple connections
-        DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
-        boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
+        DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices();
+        boolean devServicesEnabled = devServicesConfig.enabled().orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
-                devServicesConfig.port.orElse(null), devServicesConfig.properties, devServicesConfig.containerEnv,
-                devServicesConfig.shared, devServicesConfig.serviceName);
+                devServicesConfig.imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
+                devServicesConfig.port().orElse(null), devServicesConfig.properties(), devServicesConfig.containerEnv(),
+                devServicesConfig.shared(), devServicesConfig.serviceName());
     }
 
     private record CapturedProperties(String database, String connectionString, boolean devServicesEnabled,

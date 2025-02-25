@@ -126,10 +126,13 @@ package org.acme.elasticsearch;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -151,13 +154,49 @@ public class FruitService {
         restClient.performRequest(request); //<4>
     }
 
+    public void index(List<Fruit> list) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var fruit : list) {
+
+            entityList.add(new JsonObject().put("index", new JsonObject()//<5>
+                    .put("_index", "fruits").put("_id", fruit.id)));
+            entityList.add(JsonObject.mapFrom(fruit));
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),//<6>
+                ContentType.create("application/x-ndjson")));//<7>
+        restClient.performRequest(request);
+    }
+
+    public void delete(List<String> identityList) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var id : identityList) {
+            entityList.add(new JsonObject().put("delete",
+                    new JsonObject().put("_index", "fruits").put("_id", id)));//<8>
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),
+                ContentType.create("application/x-ndjson")));
+        restClient.performRequest(request);
+    }
+
     public Fruit get(String id) throws IOException {
         Request request = new Request(
                 "GET",
                 "/fruits/_doc/" + id);
         Response response = restClient.performRequest(request);
         String responseBody = EntityUtils.toString(response.getEntity());
-        JsonObject json = new JsonObject(responseBody); //<5>
+        JsonObject json = new JsonObject(responseBody); //<9>
         return json.getJsonObject("_source").mapTo(Fruit.class);
     }
 
@@ -191,13 +230,42 @@ public class FruitService {
         }
         return results;
     }
+
+    private static String toNdJsonString(List<JsonObject> objects) {
+        return objects.stream()
+                .map(JsonObject::encode)
+                .collect(Collectors.joining("\n", "", "\n"));
+    }    
 }
 ----
 <1> We inject an Elasticsearch low level `RestClient` into our service.
 <2> We create an Elasticsearch request.
 <3> We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize your objects to JSON.
 <4> We send the request (indexing request here) to Elasticsearch.
-<5> In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
+<5> As we `index` collection of objects we should use `index`, `create` or `update` action.
+<6> We use `toNdJsonString(entityList)` call to produce output like below
++
+[source, json]
+----
+{"index", {"_index" : "fruits", "_id", "1"}}
+{"id": "1", "name": "apple", "color": "red"}
+...           ...             ...        ...
+{"create", {"_index" : "fruits", "_id", "N"}}
+{"id": "N", "name": "dragonfruit", "color": "pink"}
+
+----
+<7> Pass the content type that is expected by the search backend for bulk requests.
+<8> The bulk API's delete operation JSON already contains all the required information; hence, there is no request body following this operation in the Bulk API request body.
++
+[source, json]
+----
+{"delete", {"_index" : "fruits", "_id", "1"}}
+{"delete", {"_index" : "fruits", "_id", "2"}}
+...           ...             ...        ...
+{"delete", {"_index" : "fruits", "_id", "N"}}
+
+----
+<9> In order to deserialize the object from Elasticsearch, we again use Vert.x JsonObject.
 
 Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 
@@ -205,18 +273,20 @@ Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 ----
 package org.acme.elasticsearch;
 
-import jakarta.inject.Inject;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import org.jboss.resteasy.reactive.RestQuery;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
 
 @Path("/fruits")
 public class FruitResource {
@@ -231,6 +301,20 @@ public class FruitResource {
         }
         fruitService.index(fruit);
         return Response.created(URI.create("/fruits/" + fruit.id)).build();
+    }
+
+    @Path("bulk")
+    @DELETE
+    public Response delete(List<String> identityList) throws IOException {
+        fruitService.delete(identityList);
+        return Response.ok().build();
+    }
+
+    @Path("bulk")
+    @POST
+    public Response index(List<Fruit> list) throws IOException {
+        fruitService.index(list);
+        return Response.ok().build();
     }
 
     @GET
@@ -384,18 +468,26 @@ Here is a version of the `FruitService` using the Elasticsearch Java Client inst
 
 [source,java]
 ----
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.*;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.acme.elasticsearch.Fruit;
-
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 
 @ApplicationScoped
 public class FruitService {
@@ -408,6 +500,37 @@ public class FruitService {
                 .id(fruit.id)
                 .document(fruit)); // <3>
         client.index(request);  // <4>
+    }
+
+    public void index(List<Fruit> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var fruit : list) {
+            br.operations(op -> op
+                    .index(idx -> idx.index("fruits").id(fruit.id).document(fruit)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
+    }
+
+    public void delete(List<String> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var id : list) {
+            br.operations(op -> op.delete(idx -> idx.index("fruits").id(id)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
     }
 
     public Fruit get(String id) throws IOException {

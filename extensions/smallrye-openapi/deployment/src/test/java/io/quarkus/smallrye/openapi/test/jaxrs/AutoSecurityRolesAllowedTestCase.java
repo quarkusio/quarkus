@@ -2,6 +2,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -65,20 +66,20 @@ class AutoSecurityRolesAllowedTestCase {
                         not(hasKey("my-extension2"))))
                 .and()
                 // OpenApiResourceSecuredAtMethodLevel
-                .body("paths.'/resource2/test-security/naked'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/naked'.get.security", defaultSecurityScheme("admin"))
                 .body("paths.'/resource2/test-security/annotated'.get.security", defaultSecurity)
-                .body("paths.'/resource2/test-security/methodLevel/1'.get.security", defaultSecurity)
-                .body("paths.'/resource2/test-security/methodLevel/2'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.security", defaultSecurityScheme("user1"))
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.security", defaultSecurityScheme("user2"))
                 .body("paths.'/resource2/test-security/methodLevel/public'.get.security", nullValue())
                 .body("paths.'/resource2/test-security/annotated/documented'.get.security", defaultSecurity)
-                .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurityScheme("admin"))
                 .body("paths.'/resource2/test-security/methodLevel/4'.get.security", defaultSecurity)
                 .and()
                 // OpenApiResourceSecuredAtClassLevel
-                .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurity)
-                .body("paths.'/resource2/test-security/classLevel/2'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurityScheme("user1"))
+                .body("paths.'/resource2/test-security/classLevel/2'.get.security", defaultSecurityScheme("user2"))
                 .body("paths.'/resource2/test-security/classLevel/3'.get.security", schemeArray("MyOwnName"))
-                .body("paths.'/resource2/test-security/classLevel/4'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/classLevel/4'.get.security", defaultSecurityScheme("admin"))
                 .and()
                 // OpenApiResourceSecuredAtMethodLevel2
                 .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
@@ -173,4 +174,11 @@ class AutoSecurityRolesAllowedTestCase {
                         Matchers.equalTo("Not Allowed"));
     }
 
+    static Matcher<Iterable<Object>> defaultSecurityScheme(String... roles) {
+        return allOf(
+                iterableWithSize(1),
+                hasItem(allOf(
+                        aMapWithSize(1),
+                        hasEntry(equalTo("JWTCompanyAuthentication"), containsInAnyOrder(roles)))));
+    }
 }

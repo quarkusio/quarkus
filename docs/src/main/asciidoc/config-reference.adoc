@@ -91,13 +91,13 @@ configuration name to its most likely dotted format. This works fine for fixed c
 names that contain dynamic segments. In this case, Quarkus is unable to determine if `DATASOURCE_NAME` should be
 converted to `datasource.name` or `datasource-name` (or any other special character separator).
 
-For this reason, such properties always require their dotted version name in another source (the value can be left
-empty) to disambiguate the Environment Variable name. It will provide additional information to perform a two-way
-conversion and match the property names together.
+For this reason, such properties always require their dotted version name in another source to disambiguate the
+Environment Variable name. It will provide additional information to perform a two-way conversion and match the
+property names together.
 
 [source,properties]
 ----
-# value can be left empty
+# value can be left empty but must be supplied by another source at runtime (or be an optional)
 quarkus.datasource."datasource-name".jdbc.url=
 ----
 

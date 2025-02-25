@@ -93,7 +93,7 @@ public class KafkaStreamsProducer {
 
         Properties buildTimeProperties = kafkaStreamsSupport.getProperties();
 
-        String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
+        String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers());
         if (DEFAULT_KAFKA_BROKER.equalsIgnoreCase(bootstrapServersConfig)) {
             // Try to see if kafka.bootstrap.servers is set, if so, use that value, if not, keep localhost:9092
             bootstrapServersConfig = ConfigProvider.getConfig().getOptionalValue("kafka.bootstrap.servers", String.class)
@@ -109,7 +109,7 @@ public class KafkaStreamsProducer {
 
         this.executorService = executorService;
 
-        this.topicsTimeout = runtimeConfig.topicsTimeout;
+        this.topicsTimeout = runtimeConfig.topicsTimeout();
         this.trimmedTopics = isTopicsCheckEnabled() ? runtimeConfig.getTrimmedTopics() : Collections.emptyList();
         this.streamsConfig = new StreamsConfig(kafkaStreamsProperties);
         this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(),
@@ -217,66 +217,68 @@ public class KafkaStreamsProducer {
 
         // add runtime options
         streamsProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
-        streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, runtimeConfig.applicationId);
+        streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, runtimeConfig.applicationId());
 
         // app id
-        if (runtimeConfig.applicationServer.isPresent()) {
-            streamsProperties.put(StreamsConfig.APPLICATION_SERVER_CONFIG, runtimeConfig.applicationServer.get());
+        if (runtimeConfig.applicationServer().isPresent()) {
+            streamsProperties.put(StreamsConfig.APPLICATION_SERVER_CONFIG, runtimeConfig.applicationServer().get());
         }
 
         // schema registry
-        if (runtimeConfig.schemaRegistryUrl.isPresent()) {
-            streamsProperties.put(runtimeConfig.schemaRegistryKey, runtimeConfig.schemaRegistryUrl.get());
+        if (runtimeConfig.schemaRegistryUrl().isPresent()) {
+            streamsProperties.put(runtimeConfig.schemaRegistryKey(), runtimeConfig.schemaRegistryUrl().get());
         }
 
         // set the security protocol (in case we are doing PLAIN_TEXT)
-        setProperty(runtimeConfig.securityProtocol, streamsProperties, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
+        setProperty(runtimeConfig.securityProtocol(), streamsProperties, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
 
         // sasl
-        SaslConfig sc = runtimeConfig.sasl;
+        SaslConfig sc = runtimeConfig.sasl();
         if (sc != null) {
-            setProperty(sc.mechanism, streamsProperties, SaslConfigs.SASL_MECHANISM);
+            setProperty(sc.mechanism(), streamsProperties, SaslConfigs.SASL_MECHANISM);
 
-            setProperty(sc.jaasConfig, streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
+            setProperty(sc.jaasConfig(), streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
 
-            setProperty(sc.clientCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);
+            setProperty(sc.clientCallbackHandlerClass(), streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);
 
-            setProperty(sc.loginCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS);
-            setProperty(sc.loginClass, streamsProperties, SaslConfigs.SASL_LOGIN_CLASS);
+            setProperty(sc.loginCallbackHandlerClass(), streamsProperties, SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS);
+            setProperty(sc.loginClass(), streamsProperties, SaslConfigs.SASL_LOGIN_CLASS);
 
-            setProperty(sc.kerberosServiceName, streamsProperties, SaslConfigs.SASL_KERBEROS_SERVICE_NAME);
-            setProperty(sc.kerberosKinitCmd, streamsProperties, SaslConfigs.SASL_KERBEROS_KINIT_CMD);
-            setProperty(sc.kerberosTicketRenewWindowFactor, streamsProperties,
+            setProperty(sc.kerberosServiceName(), streamsProperties, SaslConfigs.SASL_KERBEROS_SERVICE_NAME);
+            setProperty(sc.kerberosKinitCmd(), streamsProperties, SaslConfigs.SASL_KERBEROS_KINIT_CMD);
+            setProperty(sc.kerberosTicketRenewWindowFactor(), streamsProperties,
                     SaslConfigs.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR);
-            setProperty(sc.kerberosTicketRenewJitter, streamsProperties, SaslConfigs.SASL_KERBEROS_TICKET_RENEW_JITTER);
-            setProperty(sc.kerberosMinTimeBeforeRelogin, streamsProperties, SaslConfigs.SASL_KERBEROS_MIN_TIME_BEFORE_RELOGIN);
+            setProperty(sc.kerberosTicketRenewJitter(), streamsProperties, SaslConfigs.SASL_KERBEROS_TICKET_RENEW_JITTER);
+            setProperty(sc.kerberosMinTimeBeforeRelogin(), streamsProperties,
+                    SaslConfigs.SASL_KERBEROS_MIN_TIME_BEFORE_RELOGIN);
 
-            setProperty(sc.loginRefreshWindowFactor, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_FACTOR);
-            setProperty(sc.loginRefreshWindowJitter, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_JITTER);
+            setProperty(sc.loginRefreshWindowFactor(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_FACTOR);
+            setProperty(sc.loginRefreshWindowJitter(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_JITTER);
 
-            setProperty(sc.loginRefreshMinPeriod, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS,
+            setProperty(sc.loginRefreshMinPeriod(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS,
                     DurationToSecondsFunction.INSTANCE);
-            setProperty(sc.loginRefreshBuffer, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS,
+            setProperty(sc.loginRefreshBuffer(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS,
                     DurationToSecondsFunction.INSTANCE);
         }
 
         // ssl
-        SslConfig ssl = runtimeConfig.ssl;
+        SslConfig ssl = runtimeConfig.ssl();
         if (ssl != null) {
-            setProperty(ssl.protocol, streamsProperties, SslConfigs.SSL_PROTOCOL_CONFIG);
-            setProperty(ssl.provider, streamsProperties, SslConfigs.SSL_PROVIDER_CONFIG);
-            setProperty(ssl.cipherSuites, streamsProperties, SslConfigs.SSL_CIPHER_SUITES_CONFIG);
-            setProperty(ssl.enabledProtocols, streamsProperties, SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG);
+            setProperty(ssl.protocol(), streamsProperties, SslConfigs.SSL_PROTOCOL_CONFIG);
+            setProperty(ssl.provider(), streamsProperties, SslConfigs.SSL_PROVIDER_CONFIG);
+            setProperty(ssl.cipherSuites(), streamsProperties, SslConfigs.SSL_CIPHER_SUITES_CONFIG);
+            setProperty(ssl.enabledProtocols(), streamsProperties, SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG);
 
-            setTrustStoreConfig(ssl.truststore, streamsProperties);
-            setKeyStoreConfig(ssl.keystore, streamsProperties);
-            setKeyConfig(ssl.key, streamsProperties);
+            setTrustStoreConfig(ssl.truststore(), streamsProperties);
+            setKeyStoreConfig(ssl.keystore(), streamsProperties);
+            setKeyConfig(ssl.key(), streamsProperties);
 
-            setProperty(ssl.keymanagerAlgorithm, streamsProperties, SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG);
-            setProperty(ssl.trustmanagerAlgorithm, streamsProperties, SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG);
-            Optional<String> eia = Optional.of(ssl.endpointIdentificationAlgorithm.orElse(""));
+            setProperty(ssl.keymanagerAlgorithm(), streamsProperties, SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG);
+            setProperty(ssl.trustmanagerAlgorithm(), streamsProperties, SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG);
+            Optional<String> eia = Optional.of(ssl.endpointIdentificationAlgorithm().orElse(""));
             setProperty(eia, streamsProperties, SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG);
-            setProperty(ssl.secureRandomImplementation, streamsProperties, SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
+            setProperty(ssl.secureRandomImplementation(), streamsProperties,
+                    SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
         }
 
         return streamsProperties;
@@ -284,26 +286,26 @@ public class KafkaStreamsProducer {
 
     private static void setTrustStoreConfig(TrustStoreConfig tsc, Properties properties) {
         if (tsc != null) {
-            setProperty(tsc.type, properties, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG);
-            setProperty(tsc.location, properties, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
-            setProperty(tsc.password, properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
-            setProperty(tsc.certificates, properties, SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
+            setProperty(tsc.type(), properties, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG);
+            setProperty(tsc.location(), properties, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
+            setProperty(tsc.password(), properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
+            setProperty(tsc.certificates(), properties, SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
         }
     }
 
     private static void setKeyStoreConfig(KeyStoreConfig ksc, Properties properties) {
         if (ksc != null) {
-            setProperty(ksc.type, properties, SslConfigs.SSL_KEYSTORE_TYPE_CONFIG);
-            setProperty(ksc.location, properties, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
-            setProperty(ksc.password, properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
-            setProperty(ksc.key, properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
-            setProperty(ksc.certificateChain, properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG);
+            setProperty(ksc.type(), properties, SslConfigs.SSL_KEYSTORE_TYPE_CONFIG);
+            setProperty(ksc.location(), properties, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
+            setProperty(ksc.password(), properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
+            setProperty(ksc.key(), properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
+            setProperty(ksc.certificateChain(), properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG);
         }
     }
 
     private static void setKeyConfig(KeyConfig kc, Properties properties) {
         if (kc != null) {
-            setProperty(kc.password, properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
+            setProperty(kc.password(), properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
         }
     }
 

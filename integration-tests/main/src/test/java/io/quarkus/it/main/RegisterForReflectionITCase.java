@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
 import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
 import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -58,19 +57,13 @@ public class RegisterForReflectionITCase {
         assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
     }
 
+    // NOTE: This test is expected to fail with GraalVM >= 23.1.0 and < 23.1.3 yet we enable it for all 23.1 versions
+    // due to https://github.com/quarkusio/quarkus/issues/45873
     @Test
-    @DisableIfBuiltWithGraalVMNewerThan(GraalVMVersion.GRAALVM_23_1_0)
-    public void testLambdaCapturingPre24_0() {
-        // Starting with GraalVM 22.1 support Lambda functions serialization
-        // (see https://github.com/oracle/graal/issues/3756)
-        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda$"));
-    }
-
-    @Test
-    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_24_0_0)
-    public void testLambdaCapturingPost23_1() {
-        // Starting with GraalVM 24.0 lambda class names match the ones from HotSpot
-        // (see https://github.com/oracle/graal/pull/7775)
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_23_1_0)
+    public void testLambdaCapturingPost23_1_2() {
+        // Starting with GraalVM 23.1.3 lambda class names match the ones from HotSpot
+        // (see https://github.com/oracle/graal/pull/7775 and https://github.com/oracle/graal/commit/7d158e5c141e2f5c84f27095d8718189ab4953c2)
         RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda/"));
     }
 

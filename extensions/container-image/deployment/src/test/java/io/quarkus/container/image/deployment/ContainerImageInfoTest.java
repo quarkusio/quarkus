@@ -17,11 +17,6 @@ import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
-import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
-import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
-import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -104,19 +99,15 @@ public class ContainerImageInfoTest {
     }
 
     private void whenPublishImageInfo() {
-        BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(
-                Collections.singletonList(ContainerImageConfig.class));
-        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, LaunchMode.NORMAL);
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .addDefaultInterceptors()
+                .addDefaultSources()
+                .addDiscoveredConverters()
+                .addDiscoveredCustomizers()
+                .withMapping(ContainerImageConfig.class)
+                .build();
 
-        DefaultValuesConfigurationSource ds = new DefaultValuesConfigurationSource(
-                reader.getBuildTimePatternMap());
-        PropertiesConfigSource pcs = new PropertiesConfigSource(new Properties(), "Test Properties");
-        builder.withSources(ds, pcs);
-
-        SmallRyeConfig src = builder.build();
-        BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
-        ContainerImageConfig containerImageConfig = (ContainerImageConfig) readResult
-                .requireObjectForClass(ContainerImageConfig.class);
+        ContainerImageConfig containerImageConfig = config.getConfigMapping(ContainerImageConfig.class);
 
         ApplicationInfoBuildItem app = new ApplicationInfoBuildItem(Optional.of(APP_NAME), Optional.of(APP_VERSION));
         Capabilities capabilities = new Capabilities(Collections.emptySet());

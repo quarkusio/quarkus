@@ -39,11 +39,15 @@
                     <groupId>io.fabric8</groupId>
                     <artifactId>openshift-model-operator</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operatorhub</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-openshift-client</artifactId>
+            <artifactId>quarkus-test-kubernetes-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

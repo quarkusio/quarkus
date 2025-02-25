@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.migration;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public enum MultiTenancyStrategy {
      */
     NONE;
 
-    private static final CoreMessageLogger LOG = Logger.getMessageLogger(
+    private static final CoreMessageLogger LOG = Logger.getMessageLogger(MethodHandles.lookup(),
             CoreMessageLogger.class,
             MultiTenancyStrategy.class.getName());
 

@@ -281,7 +281,7 @@ The OpenTelemetry tracer is not compatible with the OpenTracing API. The main ch
 
 |1
 |`@Inject io.opentracing.Tracer legacyTracer;`
-|`@Injectio.opentelemetry.api.trace.Tracer otelTracer;`
+|`@Inject io.opentelemetry.api.trace.Tracer otelTracer;`
 
 |2
 |`@Traced`

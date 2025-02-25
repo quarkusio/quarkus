@@ -1,12 +1,25 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DELETE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATCH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.POST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -32,6 +45,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -105,14 +119,23 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
-                            + "' contains both @Blocking and @NonBlocking annotations.");
-                }
+            // collect default behaviour, making sure that we don't have multiple contradicting annotations
+            int numAnnotations = 0;
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.BLOCKING)) {
                 blocking = BlockingDefault.BLOCKING;
-            } else if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING)) {
                 blocking = BlockingDefault.NON_BLOCKING;
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.RUN_ON_VIRTUAL_THREAD)) {
+                blocking = BlockingDefault.RUN_ON_VIRTUAL_THREAD;
+                numAnnotations++;
+            }
+            if (numAnnotations > 1) {
+                throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                        + "' contains multiple conflicting @Blocking, @NonBlocking and @RunOnVirtualThread annotations.");
             }
         }
         if (selectedAppClass != null) {
@@ -217,6 +240,7 @@ public class ResteasyReactiveScanner {
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
         List<MethodInfo> methodExceptionMappers = new ArrayList<>();
+        Set<DotName> requestScopedResources = new HashSet<>();
 
         Set<DotName> interfacesWithPathOnMethods = new HashSet<>();
 
@@ -232,6 +256,9 @@ public class ResteasyReactiveScanner {
                 MethodInfo ctor = hasJaxRsCtorParams(clazz);
                 if (ctor != null) {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
+                }
+                if (hasJaxRsFieldInjection(clazz, index)) {
+                    requestScopedResources.add(clazz.name());
                 }
                 List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
                         .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
@@ -368,7 +395,7 @@ public class ResteasyReactiveScanner {
 
         return new ResourceScanningResult(index, scannedResources,
                 scannedResourcePaths, possibleSubResources, pathInterfaces, clientInterfaces, resourcesThatNeedCustomProducer,
-                httpAnnotationToMethod, methodExceptionMappers);
+                httpAnnotationToMethod, methodExceptionMappers, requestScopedResources);
     }
 
     private static void addClientSubInterfaces(DotName interfaceName, IndexView index,
@@ -408,6 +435,32 @@ public class ResteasyReactiveScanner {
             }
         }
         return needsHandling ? ctor : null;
+    }
+
+    public static final Set<DotName> ANNOTATIONS_REQUIRING_FIELD_INJECTION = new HashSet<>(
+            Arrays.asList(PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM, MATRIX_PARAM,
+                    COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM, REST_MATRIX_PARAM,
+                    REST_COOKIE_PARAM, BEAN_PARAM));
+
+    private static boolean hasJaxRsFieldInjection(ClassInfo classInfo, IndexView index) {
+        while (true) {
+            for (FieldInfo field : classInfo.fields()) {
+                List<AnnotationInstance> annotations = field.annotations();
+                if (annotations.stream()
+                        .anyMatch(an -> ANNOTATIONS_REQUIRING_FIELD_INJECTION.contains(an.name()))) {
+                    return true;
+                }
+            }
+            DotName parentDotName = classInfo.superName();
+            if (parentDotName.equals(ResteasyReactiveDotNames.OBJECT)) {
+                return false;
+            }
+            classInfo = index.getClassByName(parentDotName);
+            if (classInfo == null) {
+                return false;
+            }
+        }
+
     }
 
 }

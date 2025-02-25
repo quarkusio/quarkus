@@ -4,8 +4,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.Nullable;
-
 import jakarta.inject.Inject;
 
 import org.bson.BsonDocument;
@@ -100,8 +98,8 @@ public class MongoTracingCommandListener implements CommandListener {
                 AttributesBuilder attributesBuilder,
                 Context context,
                 MongoCommand command,
-                @Nullable Void unused,
-                @Nullable Throwable throwable) {
+                Void unused,
+                Throwable throwable) {
         }
     }
 }

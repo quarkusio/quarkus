@@ -104,7 +104,7 @@ public class GrpcClientProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
-        storkRecorder.init(config.storkProactiveConnections);
+        storkRecorder.init(config.storkProactiveConnections());
     }
 
     @BuildStep
@@ -218,8 +218,17 @@ public class GrpcClientProcessor {
     public void generateGrpcClientProducers(List<GrpcClientBuildItem> clients,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
+        // squash all GrpcClientBuildItem's ClientInfo(s) per clientName
+        // so any extension could add own GrpcClientBuildItem(s) as well
+        Map<String, Set<ClientInfo>> clientsMap = new HashMap<>();
         for (GrpcClientBuildItem client : clients) {
-            for (ClientInfo clientInfo : client.getClients()) {
+            Set<ClientInfo> infos = clientsMap.computeIfAbsent(client.getClientName(), cn -> new HashSet<>());
+            infos.addAll(client.getClients());
+        }
+
+        for (Map.Entry<String, Set<ClientInfo>> entry : clientsMap.entrySet()) {
+            String clientName = entry.getKey();
+            for (ClientInfo clientInfo : entry.getValue()) {
                 if (clientInfo.type == ClientType.CHANNEL) {
                     // channel
 
@@ -227,7 +236,7 @@ public class GrpcClientProcessor {
                     // bean that provides the GrpcClientConfiguration for the specific service.
 
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(GrpcDotNames.CHANNEL)
-                            .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", client.getClientName())
+                            .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName)
                             .done()
                             .scope(Singleton.class)
                             .unremovable()
@@ -235,7 +244,7 @@ public class GrpcClientProcessor {
                             .creator(new Consumer<>() {
                                 @Override
                                 public void accept(MethodCreator mc) {
-                                    GrpcClientProcessor.this.generateChannelProducer(mc, client.getClientName(), clientInfo);
+                                    GrpcClientProcessor.this.generateChannelProducer(mc, clientName, clientInfo);
                                 }
                             })
                             .destroyer(Channels.ChannelDestroyer.class);
@@ -250,7 +259,6 @@ public class GrpcClientProcessor {
                     syntheticBeans.produce(configurator.done());
                 } else {
                     // blocking stub, mutiny stub, mutiny client
-                    String clientName = client.getClientName();
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(clientInfo.className)
                             .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName).done()
                             // Only the mutiny client can use the Application scope, the others are "final" and so need Singleton.
@@ -427,6 +435,11 @@ public class GrpcClientProcessor {
     @BuildStep
     UnremovableBeanBuildItem unremovableClientInterceptors() {
         return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.CLIENT_INTERCEPTOR);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremovableChannelBuilderCustomizers() {
+        return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.CHANNEL_BUILDER_CUSTOMIZER);
     }
 
     Set<String> getRegisteredInterceptors(InjectionPointInfo injectionPoint) {

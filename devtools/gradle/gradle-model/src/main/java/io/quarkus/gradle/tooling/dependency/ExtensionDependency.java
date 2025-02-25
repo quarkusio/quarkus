@@ -15,15 +15,17 @@ public abstract class ExtensionDependency<T> {
     private final ModuleVersionIdentifier extensionId;
     private final T deploymentModule;
     private final List<Dependency> conditionalDependencies;
+    private final List<Dependency> conditionalDevDeps;
     private final List<ArtifactKey> dependencyConditions;
     private boolean isConditional;
 
     public ExtensionDependency(ModuleVersionIdentifier extensionId, T deploymentModule,
-            List<Dependency> conditionalDependencies,
+            List<Dependency> conditionalDependencies, List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
         this.deploymentModule = deploymentModule;
         this.conditionalDependencies = conditionalDependencies;
+        this.conditionalDevDeps = conditionalDevDeps;
         this.dependencyConditions = dependencyConditions;
     }
 
@@ -41,7 +43,15 @@ public abstract class ExtensionDependency<T> {
     }
 
     private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {
-        for (Dependency conditionalDependency : conditionalDependencies) {
+        final Dependency dep = findConditionalDependency(capability, conditionalDependencies);
+        if (dep != null) {
+            return dep;
+        }
+        return findConditionalDependency(capability, conditionalDevDeps);
+    }
+
+    private static Dependency findConditionalDependency(ModuleVersionIdentifier capability, List<Dependency> deps) {
+        for (Dependency conditionalDependency : deps) {
             if (conditionalDependency.getGroup().equals(capability.getGroup())
                     && conditionalDependency.getName().equals(capability.getName())) {
                 return conditionalDependency;
@@ -76,6 +86,10 @@ public abstract class ExtensionDependency<T> {
 
     public List<Dependency> getConditionalDependencies() {
         return conditionalDependencies;
+    }
+
+    public List<Dependency> getConditionalDevDependencies() {
+        return conditionalDevDeps;
     }
 
     public T getDeploymentModule() {

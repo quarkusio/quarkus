@@ -6,26 +6,24 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Authentication mechanism information used for configuring HTTP auth instance for the deployment.
  */
-@ConfigGroup
-public class AuthRuntimeConfig {
-
+public interface AuthRuntimeConfig {
     /**
      * The HTTP permissions
      */
-    @ConfigItem(name = "permission")
-    public Map<String, PolicyMappingConfig> permissions;
+    @WithName("permission")
+    Map<String, PolicyMappingConfig> permissions();
 
     /**
      * The HTTP role based policies
      */
-    @ConfigItem(name = "policy")
-    public Map<String, PolicyConfig> rolePolicy;
+    @WithName("policy")
+    Map<String, PolicyConfig> rolePolicy();
 
     /**
      * Map the `SecurityIdentity` roles to deployment specific roles and add the matching roles to `SecurityIdentity`.
@@ -34,9 +32,8 @@ public class AuthRuntimeConfig {
      * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
      * both `user` and `UserRole` roles.
      */
-    @ConfigItem
     @ConfigDocMapKey("role-name")
-    public Map<String, List<String>> rolesMapping;
+    Map<String, List<String>> rolesMapping();
 
     /**
      * Client certificate attribute whose values are going to be mapped to the 'SecurityIdentity' roles
@@ -58,8 +55,8 @@ public class AuthRuntimeConfig {
      * </li>
      * </ul>
      */
-    @ConfigItem(defaultValue = "CN")
-    public String certificateRoleAttribute;
+    @WithDefault("CN")
+    String certificateRoleAttribute();
 
     /**
      * Properties file containing the client certificate attribute value to role mappings.
@@ -68,18 +65,63 @@ public class AuthRuntimeConfig {
      * <p/>
      * Properties file is expected to have the `CN_VALUE=role1,role,...,roleN` format and should be encoded using UTF-8.
      */
-    @ConfigItem
-    public Optional<Path> certificateRoleProperties;
+    Optional<Path> certificateRoleProperties();
 
     /**
      * The authentication realm
      */
-    @ConfigItem
-    public Optional<String> realm;
+    Optional<String> realm();
 
     /**
      * Form Auth config
      */
-    @ConfigItem
-    public FormAuthRuntimeConfig form;
+    FormAuthRuntimeConfig form();
+
+    /**
+     * Require that all registered HTTP authentication mechanisms must attempt to verify the request credentials.
+     * <p>
+     * By default, when the {@link #inclusiveMode} is strict, every registered authentication mechanism must produce
+     * SecurityIdentity, otherwise, a number of mechanisms which produce the identity may be less than a total
+     * number of registered mechanisms.
+     * <p>
+     * All produced security identities can be retrieved using the following utility method:
+     *
+     * <pre>
+     * {@code
+     * io.quarkus.vertx.http.runtime.security.HttpSecurityUtils#getSecurityIdentities(io.quarkus.security.identity.SecurityIdentity)
+     * }
+     * </pre>
+     *
+     * An injected `SecurityIdentity` represents an identity produced by the first inclusive authentication mechanism.
+     * When the `mTLS` authentication is required, the `mTLS` mechanism is always the first mechanism,
+     * because its priority is elevated when inclusive authentication
+     * <p>
+     * This property is false by default which means that the authentication process is complete as soon as the first
+     * `SecurityIdentity` is created.
+     * <p>
+     * This property will be ignored if the path specific authentication is enabled.
+     */
+    @WithDefault("false")
+    boolean inclusive();
+
+    /**
+     * Inclusive authentication mode.
+     */
+    @WithDefault("strict")
+    InclusiveMode inclusiveMode();
+
+    enum InclusiveMode {
+        /**
+         * Authentication succeeds if at least one of the registered HTTP authentication mechanisms creates the identity.
+         */
+        LAX,
+        /**
+         * Authentication succeeds if all the registered HTTP authentication mechanisms create the identity.
+         * Typically, inclusive authentication should be in the strict mode when the credentials are carried over mTLS,
+         * when both mTLS and another authentication, for example, OIDC bearer token authentication, must succeed.
+         * In such cases, `SecurityIdentity` created by the first mechanism, mTLS, can be injected, identities created
+         * by other mechanisms will be available on `SecurityIdentity`.
+         */
+        STRICT
+    }
 }

@@ -31,7 +31,7 @@ public class WrongAnnotationUsageProcessor {
             TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<ValidationErrorBuildItem> validationErrors,
             InterceptorResolverBuildItem interceptorResolverBuildItem) {
 
-        if (!config.detectWrongAnnotations) {
+        if (!config.detectWrongAnnotations()) {
             return;
         }
 
@@ -52,6 +52,9 @@ public class WrongAnnotationUsageProcessor {
         unsupported.add(new UnsupportedAnnotation("com.oracle.svm.core.annotate.Inject", correctInject));
         unsupported.add(new UnsupportedAnnotation("org.gradle.internal.impldep.javax.inject.Inject",
                 correctInject));
+
+        unsupported.add(new UnsupportedAnnotation("javax.annotation.PostConstruct", "@jakarta.annotation.PostConstruct"));
+        unsupported.add(new UnsupportedAnnotation("javax.annotation.PreDestroy", "@jakarta.annotation.PreDestroy"));
 
         Map<AnnotationInstance, String> wrongUsages = new HashMap<>();
 

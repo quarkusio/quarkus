@@ -25,7 +25,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.db2.runtime.DB2AgroalConnectionConfigurer;
@@ -65,7 +67,8 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> resource) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal,
@@ -87,6 +90,12 @@ public class JDBCDB2Processor {
                 T4Resources.class)
                 .reason(getClass().getName() + " DB2 JDBC driver classes")
                 .build());
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.ibm.pdq.cmx.client.DataSourceFactory")
+                .reason(getClass().getName() + " accessed reflectively by DB2 JDBC driver")
+                .build());
+
+        resource.produce(new NativeImageResourceBuildItem("pdq.properties"));
     }
 
     @BuildStep
@@ -115,6 +124,14 @@ public class JDBCDB2Processor {
                             DB2ServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
+    }
+
+    @BuildStep
+    NativeImageAllowIncompleteClasspathBuildItem allowIncompleteClasspath() {
+        // The DB2 JDBC driver uses reflection to load classes that are not present in the classpath
+        // Without it, the following error is thrown:
+        // Discovered unresolved type during parsing: com.ibm.db2.jcc.licenses.ConParam. This error is reported at image build time because class com.ibm.db2.jcc.am.Connection is registered for linking at image build time by command line and command line.
+        return new NativeImageAllowIncompleteClasspathBuildItem(Feature.JDBC_DB2.getName());
     }
 
     @BuildStep

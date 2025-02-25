@@ -172,6 +172,12 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
         return isGenerated;
     }
 
+    // only exists to make sure that the JSON objects already have the field
+    // and don't have to change their shape later
+    public boolean isInactive() {
+        return false;
+    }
+
     public String getDescription() {
         return description(false);
     }

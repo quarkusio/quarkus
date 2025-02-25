@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 Quarkus extensions are distributed as Maven JAR artifacts that application and other libraries may depend on. When a Quarkus application project is built, tested or edited using the Quarkus dev tools, Quarkus extension JAR artifacts will be identified on the application classpath by the presence of the Quarkus extension metadata files in them.
 This document describes the purpose of each Quarkus extension metadata file and its content.
 
-IMPORTANT: Two of the metadata files have the same name but different extensions, `quarkus-extension.yaml` and `quarkus-extension.properties`. It is easy to mix them up, be careful. You will usually edit the YAML file and track it in your SCM. While you _can_ manually manage the properties file, Quarkus will generated it at build if you don't.
+IMPORTANT: Two of the metadata files have the same name but different extensions, `quarkus-extension.yaml` and `quarkus-extension.properties`. It is easy to mix them up, be careful. You will usually edit the YAML file and track it in your SCM. While you _can_ manually manage the properties file, Quarkus will generate it at build if you don't.
 
 [[quarkus-extension-yaml]]
 == META-INF/quarkus-extension.yaml
@@ -169,6 +169,22 @@ The following properties may appear in this file:
 | Optional
 | https://quarkus.io/guides/conditional-extension-dependencies[Dependency condition] that has to be satisfied for a conditional dependency on this extension to be activated
 
+| `dev-mode.jvm-option.std.<option-name>=<option-value>`
+| Optional
+| Standard Java command line option that should be added to command line launching an application in dev mode
+
+| `dev-mode.jvm-option.xx.<option-name>=<option-value>`
+| Optional
+| `-XX:` Java command line option that should be added to command line launching an application in dev mode
+
+| `dev-mode.lock.jvm-options`
+| Optional
+| A comma-separated list of standard Java command line options that should not be overridden by values that are pre-configured by the Quarkus Maven and Gradle plugins by default
+
+| `dev-mode.lock.xx-jvm-options`
+| Optional
+| A comma-separated list of `-XX:` Java command line options that should not be overridden by values that are pre-configured by the Quarkus Maven and Gradle plugins by default
+
 |===
 
 [[quarkus-config-roots]]
@@ -185,3 +201,70 @@ Same as `quarkus-config-roots.list`, this file may appear in a runtime extension
 == META-INF/quarkus-build-steps.list
 
 This file may appear in a deployment extension artifact. It contains a list of classes that implement Quarkus build steps (methods annotated with `io.quarkus.deployment.annotations.BuildStep`). This file is generated as part of the extension project build process and must not be edited manually.
+
+[[quarkus-extension-maven-plugin]]
+== Quarkus Extension Maven Plugin
+
+The `quarkus-extension-maven-plugin` is configured in the runtime module of a Quarkus extension Maven project and serves the following purposes:
+
+* validate extension metadata configuration;
+* generate extension metadata;
+* check whether extension dependencies conform to the Quarkus extension dependency model.
+
+=== Dev mode JVM options
+
+An extension may pre-configure certain Java command line options that should be added to the command line
+launching an application in Dev mode. Here is how such options can be configured in the `quarkus-extension-maven-plugin` configuration:
+
+[source,xml,subs=attributes+]
+----
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <devMode>
+                                <jvmOptions>
+                                    <add-modules>jdk.incubator.vector</add-modules>
+                                    <enable-preview/>
+                                    <enable-native-access>ALL-UNNAMED</enable-native-access>
+                                </jvmOptions>
+                                <xxJvmOptions>
+                                    <UseThreadPriorities>false</UseThreadPriorities>
+                                </xxJvmOptions>
+                                <lockJvmOptions>agentlib:jdwp</lockJvmOptions>
+                                <lockXxJvmOptions>TieredStopAtLevel</lockXxJvmOptions>
+                            </devMode>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+----
+
+The `extension-descriptor` goal will generate `META-INF/quarkus-extension.properties` with the corresponding properties.
+And once an application that has a dependency on this extension is launched in Dev mode, the logs will look like
+[source,bash]
+----
+
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main) Adding JVM options from org.acme:quarkus-blue::jar
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main)   enable-native-access: [ALL-UNNAMED]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main)   add-modules: [jdk.incubator.vector]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main)   enable-preview: []
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main)   UseThreadPriorities: [false]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main) org.acme:quarkus-blue::jar locks JVM options [TieredStopAtLevel, agentlib:jdwp]
+[INFO] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Extension org.acme:quarkus-blue enables the C2 compiler which is disabled by default in Dev mode for optimal performance.
+[INFO] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Extension org.acme:quarkus-blue disables the Debug mode for optimal performance. Debugging can still be enabled in the Quarkus plugin configuration or with -Ddebug on the command line.
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] (main) Executable jar: /home/<username>/app/target/acme-app-dev.jar
+[DEBUG] Launching JVM with command line: /home/<username>/jdk/bin/java -Dquarkus-internal.serialized-app-model.path=/home/<username>/app/target/quarkus/bootstrap/dev-app-model.dat -javaagent:/home/<username>/.m2/repository/io/quarkus/quarkus-class-change-agent/{quarkus-verion}/quarkus-class-change-agent-{quarkus-version}.jar --enable-native-access=ALL-UNNAMED --add-modules=jdk.incubator.vector --enable-preview -XX:-UseThreadPriorities -Djava.util.logging.manager=org.jboss.logmanager.LogManager -jar /home/<username>/app/target/acme-app-dev.jar
+----
+
+Note, there are a couple `INFO` messages informing the user that the values for certain options Quarkus uses
+by default in Dev mode were overridden by the extension preferences. Specifically, the C2 compiler was re-enabled
+and the debug mode was disabled. A user can still choose to enable the debug agent and disable the C2 compilter
+if necessary by explicitly setting the corresponding Quarkus Maven or Gradle plugin parameter values.

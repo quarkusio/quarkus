@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.deployment;
 
-import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
-import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 import static io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem.getBodyHandlerRequiredConditions;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
 
@@ -9,8 +7,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -32,26 +32,23 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -62,26 +59,24 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsRegistryBuildItem;
-import io.quarkus.utilities.OS;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
-import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
-import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
+import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
@@ -105,8 +100,8 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
-        return new HttpRootPathBuildItem(httpBuildTimeConfig.rootPath);
+    HttpRootPathBuildItem httpRoot(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return new HttpRootPathBuildItem(httpBuildTimeConfig.rootPath());
     }
 
     @BuildStep
@@ -123,44 +118,29 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig,
+    NonApplicationRootPathBuildItem frameworkRoot(
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         String mrp = null;
-        if (managementBuildTimeConfig.enabled) {
-            mrp = managementBuildTimeConfig.rootPath;
+        if (managementBuildTimeConfig.enabled()) {
+            mrp = managementBuildTimeConfig.rootPath();
         }
-        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath, httpBuildTimeConfig.nonApplicationRootPath,
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath(), httpBuildTimeConfig.nonApplicationRootPath(),
                 mrp);
     }
 
     @BuildStep
     FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             List<RouteBuildItem> routes) {
-        List<String> frameworkEndpoints = new ArrayList<>();
+        Set<String> frameworkEndpoints = new HashSet<>();
         for (RouteBuildItem route : routes) {
             if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
-                if (route.getConfiguredPathInfo() != null) {
-                    String endpointPath = route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath,
-                            managementInterfaceBuildTimeConfig, launchModeBuildItem);
-                    frameworkEndpoints.add(endpointPath);
+                if (route.getAbsolutePath() == null) {
                     continue;
                 }
-                if (route.getRouteFunction() != null && route.getRouteFunction() instanceof BasicRoute) {
-                    BasicRoute basicRoute = (BasicRoute) route.getRouteFunction();
-                    if (basicRoute.getPath() != null) {
-                        if (basicRoute.getPath().startsWith(nonApplicationRootPath.getNonApplicationRootPath())) {
-                            // Do not repeat the non application root path.
-                            frameworkEndpoints.add(basicRoute.getPath());
-                        } else {
-                            // Calling TemplateHtmlBuilder does not see very correct here, but it is the underlying API for ConfiguredPathInfo
-                            String adjustRoot = adjustRoot(nonApplicationRootPath.getNonApplicationRootPath(),
-                                    basicRoute.getPath());
-                            frameworkEndpoints.add(adjustRoot);
-                        }
 
-                    }
-                }
+                frameworkEndpoints.add(route.getAbsolutePath());
             }
         }
         return new FrameworkEndpointsBuildItem(frameworkEndpoints);
@@ -188,8 +168,9 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    UseManagementInterfaceBuildItem useManagementInterfaceBuildItem(ManagementInterfaceBuildTimeConfig config) {
-        if (config.enabled) {
+    UseManagementInterfaceBuildItem useManagementInterfaceBuildItem(
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        if (managementBuildTimeConfig.enabled()) {
             return new UseManagementInterfaceBuildItem();
         }
         return null;
@@ -217,9 +198,9 @@ class VertxHttpProcessor {
 
     @BuildStep
     public KubernetesPortBuildItem kubernetesForManagement(
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         return KubernetesPortBuildItem.fromRuntimeConfiguration("management", "quarkus.management.port", 9000,
-                managementInterfaceBuildTimeConfig.enabled);
+                managementBuildTimeConfig.enabled());
     }
 
     @BuildStep
@@ -259,7 +240,7 @@ class VertxHttpProcessor {
             InitialRouterBuildItem initialRouter,
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
-            HttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath,
             ShutdownContextBuildItem shutdown) {
@@ -274,7 +255,7 @@ class VertxHttpProcessor {
         boolean frameworkRouterCreated = false;
         boolean mainRouterCreated = false;
 
-        boolean isManagementInterfaceEnabled = managementBuildTimeConfig.enabled;
+        boolean isManagementInterfaceEnabled = managementBuildTimeConfig.enabled();
         if (isManagementInterfaceEnabled) {
             managementRouter = recorder.initializeRouter(vertx.getVertx());
         }
@@ -306,7 +287,7 @@ class VertxHttpProcessor {
          * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /}
          * Refer https://github.com/quarkusio/quarkus/issues/34261
          */
-        if (!httpBuildTimeConfig.rootPath.equals("/") && !mainRouterCreated) {
+        if (!httpBuildTimeConfig.rootPath().equals("/") && !mainRouterCreated) {
             mainRouter = recorder.initializeRouter(vertx.getVertx());
         }
 
@@ -341,6 +322,7 @@ class VertxHttpProcessor {
         vertxDevUILogBuildItem.produce(new VertxDevUILogBuildItem(publisher));
     }
 
+    @Consume(PreRouterFinalizationBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(Optional<LoggingDecorateBuildItem> decorateBuildItem,
@@ -353,7 +335,7 @@ class VertxHttpProcessor {
             VertxWebRouterBuildItem httpRouteRouter,
             HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
             List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
@@ -378,7 +360,6 @@ class VertxHttpProcessor {
             }
         }
 
-        HttpRemoteDevClientProvider.liveReloadConfig = lrc;
         GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
         shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
 
@@ -462,14 +443,14 @@ class VertxHttpProcessor {
             CoreVertxBuildItem vertx,
             ShutdownContextBuildItem shutdown,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            HttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             Optional<RequireSocketHttpBuildItem> requireSocket,
             EventLoopCountBuildItem eventLoopCount,
             List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             Capabilities capabilities,
             VertxHttpRecorder recorder) throws IOException {
-        boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
+        boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual();
         if (startVirtual) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
@@ -542,10 +523,10 @@ class VertxHttpProcessor {
      */
     private static boolean isSslConfigured() {
         Config config = ConfigProvider.getConfig();
-        HttpConfiguration.InsecureRequests insecureRequests = config
-                .getOptionalValue("quarkus.http.insecure-requests", HttpConfiguration.InsecureRequests.class)
-                .orElse(HttpConfiguration.InsecureRequests.ENABLED);
-        if (insecureRequests == HttpConfiguration.InsecureRequests.DISABLED) {
+        InsecureRequests insecureRequests = config
+                .getOptionalValue("quarkus.http.insecure-requests", InsecureRequests.class)
+                .orElse(InsecureRequests.ENABLED);
+        if (insecureRequests == InsecureRequests.DISABLED) {
             return false;
         }
 
@@ -560,73 +541,12 @@ class VertxHttpProcessor {
         return false;
     }
 
-    /**
-     * Compressors, deals with adding brotli compression via Brotli4J JNI wrapper.
-     */
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void brotliResources(HttpBuildTimeConfig httpBuildTimeConfig,
-            BuildProducer<NativeImageResourcePatternsBuildItem> resources,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses,
-            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) throws BuildException {
-
-        if (httpBuildTimeConfig.compressors.isPresent() &&
-                httpBuildTimeConfig.compressors.get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
-            final String arch = System.getProperty("os.arch");
-            final boolean amd64 = arch.matches("^(amd64|x64|x86_64)$");
-            final boolean aarch64 = "aarch64".equals(arch);
-            final String lib;
-            if (OS.determineOS() == OS.LINUX) {
-                if (amd64) {
-                    lib = "linux-x86_64/libbrotli.so";
-                } else if (aarch64) {
-                    lib = "linux-aarch64/libbrotli.so";
-                } else {
-                    throw new BuildException("Brotli compressor: No library for linux-" + arch);
-                }
-            } else if (OS.determineOS() == OS.WINDOWS) {
-                if (amd64) {
-                    lib = "windows-x86_64/brotli.dll";
-                } else if (aarch64) {
-                    lib = "windows-aarch64/brotli.dll";
-                } else {
-                    throw new BuildException("Brotli compressor: No library for windows-" + arch);
-                }
-            } else if (OS.determineOS() == OS.MAC) {
-                if (amd64) {
-                    lib = "osx-x86_64/libbrotli.dylib";
-                } else if (aarch64) {
-                    lib = "osx-aarch64/libbrotli.dylib";
-                } else {
-                    throw new BuildException("Brotli compressor: No library for osx-" + arch);
-                }
-            } else {
-                throw new BuildException("Brotli compressor: Your platform is not supported.");
-            }
-
-            resources.produce(NativeImageResourcePatternsBuildItem.builder()
-                    // We do have Brotli4J on classpath thanks to Vert.X -> Netty dependencies.
-                    .includePattern("\\QMETA-INF/services/com.aayushatharva.brotli4j.service.BrotliNativeProvider\\E")
-                    // Native library. We pick only the one relevant to our system.
-                    .includePattern("\\Qlib/" + lib + "\\E")
-                    .build());
-
-            // Static initializer tries to load the native library in Brotli4jLoader; must be done at runtime.
-            runtimeInitializedClasses
-                    .produce(new RuntimeInitializedClassBuildItem("com.aayushatharva.brotli4j.Brotli4jLoader"));
-            final GraalVM.Version v;
-            if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
-                v = CURRENT;
-                logger.warnf("native-image is not installed. " +
-                        "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
-            } else {
-                v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
-            }
-            // Newer 23.1+ GraalVM/Mandrel does not need this explicitly marked for runtime init thanks
-            // to a different strategy: https://github.com/oracle/graal/blob/vm-23.1.0/substratevm/CHANGELOG.md?plain=1#L10
-            if (v.compareTo(GraalVM.Version.VERSION_23_1_0) <= 0) {
-                runtimeInitializedClasses
-                        .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.compression.Brotli"));
-            }
+    @BuildStep
+    NativeImageFeatureBuildItem Brotli4jFeature(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (httpBuildTimeConfig.compressors().isPresent()
+                && httpBuildTimeConfig.compressors().get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
+            return new NativeImageFeatureBuildItem(Brotli4jFeature.class.getName());
         }
+        return null;
     }
 }

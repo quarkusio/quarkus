@@ -144,10 +144,10 @@ class InfinispanClientProcessor {
         Properties properties = new Properties();
         Map<String, Object> marshallers = new HashMap<>();
         initMarshaller(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME,
-                infinispanClientsBuildTimeConfig.defaultInfinispanClient.marshallerClass, marshallers);
+                infinispanClientsBuildTimeConfig.defaultInfinispanClient().marshallerClass(), marshallers);
         for (String clientName : infinispanClientsBuildTimeConfig.getInfinispanNamedClientConfigNames()) {
             initMarshaller(clientName,
-                    infinispanClientsBuildTimeConfig.getInfinispanClientBuildTimeConfig(clientName).marshallerClass,
+                    infinispanClientsBuildTimeConfig.getInfinispanClientBuildTimeConfig(clientName).marshallerClass(),
                     marshallers);
         }
         protostreamPropertiesBuildItem.produce(new MarshallingBuildItem(properties, marshallers));
@@ -201,8 +201,8 @@ class InfinispanClientProcessor {
         nativeImageSecurityProviders.produce(new NativeImageSecurityProviderBuildItem(SASL_SECURITY_PROVIDER));
 
         // add per cache file config
-        handlePerCacheFileConfig(infinispanClientsBuildTimeConfig.defaultInfinispanClient, resourceBuildItem, hotDeployment);
-        for (InfinispanClientBuildTimeConfig config : infinispanClientsBuildTimeConfig.namedInfinispanClients.values()) {
+        handlePerCacheFileConfig(infinispanClientsBuildTimeConfig.defaultInfinispanClient(), resourceBuildItem, hotDeployment);
+        for (InfinispanClientBuildTimeConfig config : infinispanClientsBuildTimeConfig.namedInfinispanClients().values()) {
             handlePerCacheFileConfig(config, resourceBuildItem, hotDeployment);
         }
 
@@ -307,6 +307,7 @@ class InfinispanClientProcessor {
         String[] elytronClasses = new String[] {
                 "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
                 "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
+                "org.wildfly.security.sasl.digest.DigestClientFactory",
                 "org.wildfly.security.credential.BearerTokenCredential",
                 "org.wildfly.security.credential.GSSKerberosCredential",
                 "org.wildfly.security.credential.KeyPairCredential",
@@ -314,8 +315,8 @@ class InfinispanClientProcessor {
                 "org.wildfly.security.credential.PublicKeyCredential",
                 "org.wildfly.security.credential.SecretKeyCredential",
                 "org.wildfly.security.credential.SSHCredential",
-                "org.wildfly.security.credential.X509CertificateChainPrivateCredential",
-                "org.wildfly.security.credential.X509CertificateChainPublicCredential"
+                "org.wildfly.security.digest.SHA512_256MessageDigest",
+                "org.wildfly.security.credential.X509CertificateChainPrivateCredential"
         };
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).reason(getClass().getName()).build());
@@ -325,10 +326,10 @@ class InfinispanClientProcessor {
     private void handlePerCacheFileConfig(InfinispanClientBuildTimeConfig config,
             BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment) {
-        for (InfinispanClientBuildTimeConfig.RemoteCacheConfig cacheConfig : config.cache.values()) {
-            if (cacheConfig.configurationResource.isPresent()) {
-                resourceBuildItem.produce(new NativeImageResourceBuildItem(cacheConfig.configurationResource.get()));
-                hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(cacheConfig.configurationResource.get()));
+        for (InfinispanClientBuildTimeConfig.RemoteCacheConfig cacheConfig : config.cache().values()) {
+            if (cacheConfig.configurationResource().isPresent()) {
+                resourceBuildItem.produce(new NativeImageResourceBuildItem(cacheConfig.configurationResource().get()));
+                hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(cacheConfig.configurationResource().get()));
             }
         }
     }
@@ -339,8 +340,9 @@ class InfinispanClientProcessor {
         Map<String, Properties> propertiesMap = builderBuildItem.getProperties();
 
         addMaxEntries(DEFAULT_INFINISPAN_CLIENT_NAME,
-                infinispanClientsBuildTimeConfig.defaultInfinispanClient, propertiesMap.get(DEFAULT_INFINISPAN_CLIENT_NAME));
-        for (Map.Entry<String, InfinispanClientBuildTimeConfig> config : infinispanClientsBuildTimeConfig.namedInfinispanClients
+                infinispanClientsBuildTimeConfig.defaultInfinispanClient(), propertiesMap.get(DEFAULT_INFINISPAN_CLIENT_NAME));
+        for (Map.Entry<String, InfinispanClientBuildTimeConfig> config : infinispanClientsBuildTimeConfig
+                .namedInfinispanClients()
                 .entrySet()) {
             addMaxEntries(config.getKey(), config.getValue(), propertiesMap.get(config.getKey()));
         }
@@ -382,8 +384,9 @@ class InfinispanClientProcessor {
             clientNames.add(annotation.value().asString());
         }
         // dev mode client name for default - 0 config
-        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.enabled
-                && infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.createDefaultClient) {
+        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient().devservices().devservices().enabled()
+                && infinispanClientsBuildTimeConfig.defaultInfinispanClient().devservices().devservices()
+                        .createDefaultClient()) {
             clientNames.add(DEFAULT_INFINISPAN_CLIENT_NAME);
         }
 
@@ -453,11 +456,11 @@ class InfinispanClientProcessor {
             log.debugf("Applying micro profile configuration: %s", config);
         }
         // Only write the entries if it is a valid number and it isn't already configured
-        if (config.nearCacheMaxEntries > 0 && !properties.containsKey(ConfigurationProperties.NEAR_CACHE_MODE)) {
+        if (config.nearCacheMaxEntries() > 0 && !properties.containsKey(ConfigurationProperties.NEAR_CACHE_MODE)) {
             // This is already empty so no need for putIfAbsent
             if (InfinispanClientUtil.isDefault(clientName)) {
                 properties.put(ConfigurationProperties.NEAR_CACHE_MODE, NearCacheMode.INVALIDATED.toString());
-                properties.putIfAbsent(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES, config.nearCacheMaxEntries);
+                properties.putIfAbsent(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES, config.nearCacheMaxEntries());
             }
         }
     }
@@ -471,7 +474,7 @@ class InfinispanClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(InfinispanClientsBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.infinispan.client.runtime.health.InfinispanHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     @BuildStep

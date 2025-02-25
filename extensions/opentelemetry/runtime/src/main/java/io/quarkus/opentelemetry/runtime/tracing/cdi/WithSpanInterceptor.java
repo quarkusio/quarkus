@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.lang.annotation.Annotation;
@@ -15,6 +17,7 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -23,11 +26,13 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttributesExtractor;
 import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttributeNamesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.util.SpanNames;
+import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Functions;
@@ -38,18 +43,21 @@ import io.smallrye.mutiny.tuples.Functions;
 public class WithSpanInterceptor {
     private final Instrumenter<MethodRequest, Void> instrumenter;
 
-    public WithSpanInterceptor(final OpenTelemetry openTelemetry) {
+    public WithSpanInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
+
+        builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.create(
                 MethodRequest::getMethod,
                 new WithSpanParameterAttributeNamesExtractor(),
                 MethodRequest::getArgs);
 
-        this.instrumenter = builder.addAttributesExtractor(attributesExtractor)
+        this.instrumenter = builder.addAttributesExtractor(ClassMethodNameAttributesExtractor.INSTANCE)
+                .addAttributesExtractor(attributesExtractor)
                 .buildInstrumenter(new SpanKindExtractor<MethodRequest>() {
                     @Override
                     public SpanKind extract(MethodRequest methodRequest) {
@@ -152,6 +160,26 @@ public class WithSpanInterceptor {
                     currentScope.close();
                 }
             }
+        }
+    }
+
+    private static final class ClassMethodNameAttributesExtractor implements AttributesExtractor<MethodRequest, Void> {
+        private static final ClassMethodNameAttributesExtractor INSTANCE = new ClassMethodNameAttributesExtractor();
+
+        private ClassMethodNameAttributesExtractor() {
+            //no-op
+        }
+
+        @Override
+        public void onStart(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest) {
+            attributesBuilder.put(CODE_NAMESPACE, methodRequest.getMethod().getDeclaringClass().getName());
+            attributesBuilder.put(CODE_FUNCTION, methodRequest.getMethod().getName());
+        }
+
+        @Override
+        public void onEnd(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest, Void unused,
+                Throwable throwable) {
+            // no-op
         }
     }
 

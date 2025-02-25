@@ -1,7 +1,10 @@
 package io.quarkus.restclient.config;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -12,11 +15,14 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithKeys;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
@@ -32,6 +38,7 @@ public interface RestClientsConfig {
      */
     @WithParentName
     @WithDefaults
+    @WithKeys(RestClientKeysProvider.class)
     @ConfigDocMapKey("client")
     Map<String, RestClientConfig> clients();
 
@@ -53,7 +60,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<String> proxyAddress();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
@@ -170,8 +177,7 @@ public interface RestClientsConfig {
     Optional<Boolean> followRedirects();
 
     /**
-     * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
-     * priorities. The equivalent of the `@RegisterProvider` annotation.
+     * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider` annotation.
      * <p>
      * Can be overwritten by client-specific settings.
      */
@@ -276,6 +282,17 @@ public interface RestClientsConfig {
     Optional<MemorySize> maxChunkSize();
 
     /**
+     * Supports receiving compressed messages using GZIP.
+     * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+     * REST Client will automatically decode the content and proceed with the message handling.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<Boolean> enableCompression();
+
+    /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
      * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
      * use HTTP/1.1.
@@ -301,15 +318,11 @@ public interface RestClientsConfig {
     RestClientMultipartConfig multipart();
 
     default RestClientConfig getClient(final Class<?> restClientInterface) {
-        // Check if the key is there first or else we will get the defaults from @WithDefaults
-        if (clients().containsKey(restClientInterface.getName())) {
+        if (RestClientKeysProvider.KEYS.contains(restClientInterface.getName())) {
             return clients().get(restClientInterface.getName());
         }
-        return clients().get(restClientInterface.getSimpleName());
-    }
-
-    default RestClientConfig getClient(final String restClientConfigKey) {
-        return clients().get(restClientConfigKey);
+        throw new IllegalArgumentException("Unable to lookup configuration for REST Client " + restClientInterface.getName()
+                + ". Please confirm if the REST Client is annotated with @RegisterRestClient");
     }
 
     interface RestClientLoggingConfig {
@@ -353,15 +366,6 @@ public interface RestClientsConfig {
     }
 
     interface RestClientConfig {
-        /**
-         * Dummy configuration to force lookup of REST Client configurations.
-         *
-         * @see AbstractRestClientConfigBuilder
-         */
-        @WithDefault("true")
-        @ConfigDocIgnore
-        boolean force();
-
         /**
          * Multipart configuration.
          */
@@ -457,7 +461,7 @@ public interface RestClientsConfig {
          * <p>
          * Use `none` to disable proxy
          */
-        Optional<String> proxyAddress();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
         /**
          * Proxy username.
@@ -600,13 +604,21 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
-         * The max HTTP ch
-         * unk size (8096 bytes by default).
+         * The max HTTP chunk size (8096 bytes by default).
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
         @ConfigDocDefault("8K")
         Optional<MemorySize> maxChunkSize();
+
+        /**
+         * Supports receiving compressed messages using GZIP.
+         * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+         * REST Client will automatically decode the content and proceed with the message handling.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Boolean> enableCompression();
 
         /**
          * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
@@ -621,5 +633,27 @@ public interface RestClientsConfig {
          * This stacktrace will be used if the invocation throws an exception
          */
         Optional<Boolean> captureStacktrace();
+
+        /**
+         * If set to {@code true}, then this REST Client will not the default exception mapper which
+         * always throws an exception if HTTP response code >= 400.
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
+        Boolean disableDefaultMapper();
+
+        /**
+         * Logging configuration.
+         */
+        Optional<RestClientLoggingConfig> logging();
+    }
+
+    class RestClientKeysProvider implements Supplier<Iterable<String>> {
+        static List<String> KEYS = new ArrayList<>();
+
+        @Override
+        public Iterable<String> get() {
+            return KEYS;
+        }
     }
 }

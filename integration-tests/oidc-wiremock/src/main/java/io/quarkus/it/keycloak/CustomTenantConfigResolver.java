@@ -71,7 +71,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (path.endsWith("bearer-certificate-full-chain-root-only")) {
             OidcTenantConfig config = new OidcTenantConfig();
             config.setTenantId("bearer-certificate-full-chain-root-only");
-            config.getCertificateChain().setTrustStoreFile(Path.of("truststore-rootcert.p12"));
+            config.getCertificateChain().setTrustStoreFile(Path.of("target/chain/truststore-rootcert.p12"));
             config.getCertificateChain().setTrustStorePassword("storepassword");
             config.getCertificateChain().setLeafCertificateName("www.quarkustest.com");
             return Uni.createFrom().item(config);

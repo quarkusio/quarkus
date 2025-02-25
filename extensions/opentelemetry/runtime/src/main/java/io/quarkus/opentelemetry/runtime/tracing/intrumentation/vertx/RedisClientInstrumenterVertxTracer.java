@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_REDIS_DATABASE_INDEX;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.util.Map;
@@ -15,7 +16,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.internal.AttributesExtractorUtil;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.incubating.DbIncubatingAttributes;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -25,11 +27,13 @@ public class RedisClientInstrumenterVertxTracer implements
         InstrumenterVertxTracer<RedisClientInstrumenterVertxTracer.CommandTrace, Object> {
     private final Instrumenter<CommandTrace, Object> redisClientInstrumenter;
 
-    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
+    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<CommandTrace, Object> clientInstrumenterBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 DbClientSpanNameExtractor.create(RedisClientAttributesGetter.INSTANCE));
+
+        clientInstrumenterBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         this.redisClientInstrumenter = clientInstrumenterBuilder
                 .addAttributesExtractor(DbClientAttributesExtractor.create(RedisClientAttributesGetter.INSTANCE))
@@ -120,8 +124,9 @@ public class RedisClientInstrumenterVertxTracer implements
             return attributes.get(PEER_ADDRESS);
         }
 
-        public long dbIndex() {
-            return Long.parseLong(attributes.get(DB_INSTANCE));
+        public Long dbIndex() {
+            String dbInstance = attributes.get(DB_INSTANCE);
+            return dbInstance != null ? Long.valueOf(dbInstance) : null;
         }
     }
 
@@ -140,7 +145,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         @Override
         public String getSystem(final CommandTrace commandTrace) {
-            return SemanticAttributes.DbSystemValues.REDIS;
+            return DbIncubatingAttributes.DbSystemIncubatingValues.REDIS;
         }
 
         @Override
@@ -165,7 +170,7 @@ public class RedisClientInstrumenterVertxTracer implements
         @Override
         public void onStart(AttributesBuilder attributes, io.opentelemetry.context.Context parentContext,
                 CommandTrace request) {
-            AttributesExtractorUtil.internalSet(attributes, SemanticAttributes.DB_REDIS_DATABASE_INDEX, request.dbIndex());
+            AttributesExtractorUtil.internalSet(attributes, DB_REDIS_DATABASE_INDEX, request.dbIndex());
         }
 
         @Override

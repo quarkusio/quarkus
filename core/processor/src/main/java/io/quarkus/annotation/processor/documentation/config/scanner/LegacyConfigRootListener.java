@@ -16,7 +16,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
-import io.quarkus.annotation.processor.documentation.config.model.SourceType;
+import io.quarkus.annotation.processor.documentation.config.model.SourceElementType;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
@@ -79,6 +79,8 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             }
         }
 
+        validateRuntimeConfigOnDeploymentModules(configPhase, configRoot);
+
         String overriddenDocPrefix = null;
         if (configDocPrefixAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
@@ -123,11 +125,11 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
 
         Map<String, AnnotationMirror> fieldAnnotations = utils.element().getAnnotations(field);
 
-        String sourceName = field.getSimpleName().toString();
-        String name = ConfigNamingUtil.hyphenate(sourceName);
+        String sourceElementName = field.getSimpleName().toString();
+        String name = ConfigNamingUtil.hyphenate(sourceElementName);
 
         DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
-                sourceName, SourceType.FIELD, resolvedType);
+                sourceElementName, SourceElementType.FIELD, resolvedType);
 
         AnnotationMirror configItemAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_ITEM);
         if (configItemAnnotation != null) {
@@ -158,7 +160,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         builder.name(name);
 
         if (resolvedType.isMap()) {
-            String mapKey = ConfigNamingUtil.hyphenate(sourceName);
+            String mapKey = ConfigNamingUtil.hyphenate(sourceElementName);
             AnnotationMirror configDocMapKeyAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_MAP_KEY);
             if (configDocMapKeyAnnotation != null) {
                 mapKey = configDocMapKeyAnnotation.getElementValues().values().iterator().next().getValue().toString();
@@ -171,7 +173,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        handleCommonPropertyAnnotations(builder, fieldAnnotations, resolvedType, sourceName);
+        handleCommonPropertyAnnotations(builder, fieldAnnotations, resolvedType, sourceElementName);
 
         discoveryRootElement.addProperty(builder.build());
     }

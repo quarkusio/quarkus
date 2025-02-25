@@ -9,7 +9,7 @@ import picocli.CommandLine.Model.CommandSpec;
 
 public class TargetQuarkusPlatformGroup {
     static final String FULL_EXAMPLE = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
-            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":2.2.0.Final";
+            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":3.15.2";
     PlatformStreamCoords streamCoords = null;
     String validStream = null;
 
@@ -20,7 +20,7 @@ public class TargetQuarkusPlatformGroup {
     CommandSpec spec;
 
     @CommandLine.Option(paramLabel = "platformKey:streamId", names = { "-S",
-            "--stream" }, description = "A target stream, for example:%n  io.quarkus.platform:2.0")
+            "--stream" }, description = "A target stream, for example:%n  3.15 or io.quarkus.platform:3.15")
     void setStream(String stream) {
         stream = stream.trim();
         if (!stream.isEmpty()) {
@@ -39,7 +39,7 @@ public class TargetQuarkusPlatformGroup {
             "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n"
                     + "  " + FULL_EXAMPLE + "%n"
                     + "  io.quarkus::999-SNAPSHOT"
-                    + "  2.2.0.Final%n"
+                    + "  3.15.2%n"
                     + "Default groupId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + "%n"
                     + "Default artifactId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "%n")
     void setPlatformBom(String bom) {

@@ -12,6 +12,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,8 +76,113 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     @Override
-    public LaunchResult runToCompletion(String[] args) {
-        throw new UnsupportedOperationException("not implemented for docker yet");
+    public LaunchResult runToCompletion(String[] argz) {
+        try {
+            final ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+            containerRuntimeBinaryName = containerRuntime.getExecutableName();
+
+            if (pullRequired) {
+                log.infof("Pulling container image '%s'", containerImage);
+                try {
+                    int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                            .command(containerRuntimeBinaryName, "pull", containerImage).start().waitFor();
+                    if (pullResult > 0) {
+                        throw new RuntimeException("Pulling container image '" + containerImage + "' completed unsuccessfully");
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
+                }
+            }
+
+            System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
+            final List<String> args = new ArrayList<>();
+            args.add(containerRuntimeBinaryName);
+            args.add("run");
+            if (!argLine.isEmpty()) {
+                args.addAll(argLine);
+            }
+            args.add("--name");
+            args.add(containerName);
+            args.add("-i"); // Interactive, write logs to stdout
+            args.add("--rm");
+
+            if (!volumeMounts.isEmpty()) {
+                args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+            }
+
+            if (httpPort != 0) {
+                args.add("-p");
+                args.add(httpPort + ":" + httpPort);
+            }
+            if (httpsPort != 0) {
+                args.add("-p");
+                args.add(httpsPort + ":" + httpsPort);
+            }
+            if (entryPoint.isPresent()) {
+                args.add("--entrypoint");
+                args.add(entryPoint.get());
+            }
+            for (Map.Entry<Integer, Integer> entry : additionalExposedPorts.entrySet()) {
+                args.add("-p");
+                args.add(entry.getKey() + ":" + entry.getValue());
+            }
+            for (Map.Entry<String, String> entry : volumeMounts.entrySet()) {
+                NativeImageBuildLocalContainerRunner.addVolumeParameter(entry.getKey(), entry.getValue(), args,
+                        containerRuntime);
+            }
+
+            // if the dev services resulted in creating a dedicated network, then use it
+            if (devServicesLaunchResult.networkId() != null) {
+                args.add("--net=" + devServicesLaunchResult.networkId());
+            }
+
+            args.addAll(toEnvVar("quarkus.log.category.\"io.quarkus\".level", "INFO"));
+            if (DefaultJarLauncher.HTTP_PRESENT) {
+                args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
+                args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
+                // This won't be correct when using the random port, but it's really only used by us for the rest client tests
+                // in the main module, since those tests hit the application itself
+                args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
+            }
+            if (testProfile != null) {
+                args.addAll(toEnvVar("quarkus.profile", testProfile));
+            }
+
+            for (var e : systemProps.entrySet()) {
+                args.addAll(toEnvVar(e.getKey(), e.getValue()));
+            }
+
+            for (var e : env.entrySet()) {
+                args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
+            }
+
+            for (var e : labels.entrySet()) {
+                args.add("--label");
+                args.add(e.getKey() + "=" + e.getValue());
+            }
+            args.add(containerImage);
+            args.addAll(programArgs);
+            args.addAll(Arrays.asList(argz));
+
+            log.infof("Executing \"%s\"", String.join(" ", args));
+
+            final Process containerProcess = new ProcessBuilder(args).start();
+
+            ProcessReader error = new ProcessReader(containerProcess.getErrorStream());
+            ProcessReader stdout = new ProcessReader(containerProcess.getInputStream());
+            Thread t1 = new Thread(error, "Error stream reader");
+            t1.start();
+            Thread t2 = new Thread(stdout, "Stdout stream reader");
+            t2.start();
+            t1.join();
+            t2.join();
+            byte[] s = stdout.get();
+            byte[] e = error.get();
+            return new LaunchResult(containerProcess.waitFor(), s, e);
+        } catch (IOException | InterruptedException ex) {
+            throw new RuntimeException("Running to completion failed.", ex);
+        }
     }
 
     @Override

@@ -120,9 +120,9 @@ public class SchedulerProcessor {
         }
         DiscoveredImplementationsBuildItem discovered = new DiscoveredImplementationsBuildItem(
                 sorted.get(0).getImplementation(), found,
-                config.useCompositeScheduler);
+                config.useCompositeScheduler());
         discoveredImplementations.produce(discovered);
-        if (implementations.size() > 1 && config.useCompositeScheduler) {
+        if (implementations.size() > 1 && config.useCompositeScheduler()) {
             // If multiple implementations are needed we have to register the CompositeScheduler, and
             // instruct the extensions that provide an implementation to modify the bean metadata, i.e. add the marker qualifier
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -305,7 +305,7 @@ public class SchedulerProcessor {
             }
             // Validate cron() and every() expressions
             long checkPeriod = capabilities.isMissing(Capability.QUARTZ) ? SimpleScheduler.CHECK_PERIOD : 50;
-            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
+            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType()));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
                         checkPeriod, beanArchiveIndex.getIndex(), discoveredImplementations);
@@ -399,7 +399,7 @@ public class SchedulerProcessor {
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
-        if (config.metricsEnabled && metricsCapability.isPresent()) {
+        if (config.metricsEnabled() && metricsCapability.isPresent()) {
             DotName micrometerTimed = DotName.createSimple("io.micrometer.core.annotation.Timed");
             DotName mpTimed = DotName.createSimple("org.eclipse.microprofile.metrics.annotation.Timed");
 

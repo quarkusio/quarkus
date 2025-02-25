@@ -18,7 +18,7 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.ConfigMappings;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.inject.ConfigProducerUtil;
@@ -75,7 +75,7 @@ public class ConfigRecorder {
         }
     }
 
-    public void registerConfigProperties(final Set<ConfigClassWithPrefix> configClasses) {
+    public void registerConfigProperties(final Set<ConfigClass> configClasses) {
         try {
             SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
             ConfigMappings.registerConfigProperties(config, configClasses);

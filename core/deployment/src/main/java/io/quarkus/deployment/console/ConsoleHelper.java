@@ -11,22 +11,19 @@ import org.aesh.terminal.Connection;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
-import io.quarkus.runtime.console.ConsoleRuntimeConfig;
-import io.quarkus.runtime.util.ColorSupport;
 
 public class ConsoleHelper {
 
-    public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig,
-            ConsoleRuntimeConfig consoleRuntimeConfig, io.quarkus.runtime.logging.ConsoleConfig logConfig, boolean test) {
+    public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig, boolean test) {
         if (QuarkusConsole.installed) {
             return;
         }
-        boolean colorEnabled = ColorSupport.isColorEnabled(consoleRuntimeConfig, logConfig);
+        boolean colorEnabled = consoleConfig.color().orElse(QuarkusConsole.hasColorSupport());
         QuarkusConsole.installed = true;
         //if there is no color we need a basic console
         //note that we never enable input for tests
         //surefire communicates of stdin, so this can mess with it
-        boolean inputSupport = !test && !config.disableConsoleInput.orElse(consoleConfig.disableInput);
+        boolean inputSupport = !test && !config.disableConsoleInput().orElse(consoleConfig.disableInput());
         if (!inputSupport) {
             //note that in this case we don't hold onto anything from this class loader
             //which is important for the test suite
@@ -37,7 +34,7 @@ public class ConsoleHelper {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override
                 public void accept(Connection connection) {
-                    if (connection.supportsAnsi() && !config.basicConsole.orElse(consoleConfig.basic)) {
+                    if (connection.supportsAnsi() && !config.basicConsole().orElse(consoleConfig.basic())) {
                         QuarkusConsole.INSTANCE = new AeshConsole(connection);
                     } else {
                         LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();

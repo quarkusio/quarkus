@@ -463,12 +463,12 @@ customElements.define('qwc-arc-beans', QwcArcBeans);
 
 ===== Qomponent
 
-We also include all components from the [Qomponent](https://github.com/qomponent) library
+We also include all components from the https://github.com/qomponent[Qomponent] library
 
-- [Card](https://www.npmjs.com/package/@qomponent/qui-card)
-- [Badge](https://www.npmjs.com/package/@qomponent/qui-badge)
-- [Alert](https://www.npmjs.com/package/@qomponent/qui-alert)
-- [Code block](https://www.npmjs.com/package/@qomponent/qui-code-block)
+- https://www.npmjs.com/package/@qomponent/qui-card[Card]
+- https://www.npmjs.com/package/@qomponent/qui-badge[Badge]
+- https://www.npmjs.com/package/@qomponent/qui-alert[Alert]
+- https://www.npmjs.com/package/@qomponent/qui-code-block[Code block]
 
 ====== Card
 
@@ -747,7 +747,7 @@ import 'qui-ide-link';
 <qui-ide-link title='Source full class name'
                         class='text-source'
                         fileName='${sourceClassNameFull}'
-                        lineNumber=${sourceLineNumber}>[${sourceClassNameFull}]</qui-ide-link>;
+                        lineNumber='${sourceLineNumber}'>[${sourceClassNameFull}]</qui-ide-link>;
 ----
 
 https://github.com/quarkusio/quarkus/blob/582f1f78806d2268885faea7aa8f5a4d2b3f5b98/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js#L315[Example code]
@@ -922,7 +922,7 @@ public JsonArray getAll() { // <2>
 <1> This example runs nonblocking. We could also return `Uni<JsonArray>`
 <2> The method name `getAll` will be available in the Javascript
 
-https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devconsole/CacheJsonRPCService.java[Example code]
+https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devui/CacheJsonRPCService.java[Example code]
 
 *Webcomponent (Javascript) part*
 

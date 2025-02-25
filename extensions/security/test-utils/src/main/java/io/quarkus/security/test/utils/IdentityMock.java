@@ -13,7 +13,11 @@ import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
 import io.quarkus.security.credential.Credential;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.BaseAuthenticationRequest;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
@@ -25,7 +29,7 @@ import io.smallrye.mutiny.Uni;
 @Priority(1)
 public class IdentityMock implements SecurityIdentity {
 
-    public static final AuthData ANONYMOUS = new AuthData(null, true, null);
+    public static final AuthData ANONYMOUS = new AuthData(null, true, null, null);
     public static final AuthData USER = new AuthData(Collections.singleton("user"), false, "user", Set.of());
     public static final AuthData ADMIN = new AuthData(Collections.singleton("admin"), false, "admin", Set.of());
 
@@ -33,12 +37,14 @@ public class IdentityMock implements SecurityIdentity {
     private static volatile Set<String> roles;
     private static volatile Set<Permission> permissions = new HashSet<>();
     private static volatile String name;
+    private static volatile boolean applyAugmentors;
 
     public static void setUpAuth(AuthData auth) {
         IdentityMock.anonymous = auth.anonymous;
         IdentityMock.roles = auth.roles;
         IdentityMock.name = auth.name;
         IdentityMock.permissions = auth.permissions == null ? Set.of() : auth.permissions;
+        IdentityMock.applyAugmentors = auth.applyAugmentors;
     }
 
     @Override
@@ -76,7 +82,7 @@ public class IdentityMock implements SecurityIdentity {
 
     @Override
     public Set<Credential> getCredentials() {
-        return null;
+        return Set.of();
     }
 
     @Override
@@ -86,7 +92,7 @@ public class IdentityMock implements SecurityIdentity {
 
     @Override
     public Map<String, Object> getAttributes() {
-        return null;
+        return Map.of();
     }
 
     @Override
@@ -99,17 +105,50 @@ public class IdentityMock implements SecurityIdentity {
     @ApplicationScoped
     @Priority(1)
     public static class IdentityAssociationMock extends SecurityIdentityAssociation {
+
         @Inject
         IdentityMock identity;
 
+        @Inject
+        IdentityProviderManager identityProviderManager;
+
         @Override
         public Uni<SecurityIdentity> getDeferredIdentity() {
+            if (applyAugmentors) {
+                return identityProviderManager.authenticate(new IdentityMockAuthenticationRequest());
+            }
             return Uni.createFrom().item(identity);
         }
 
         @Override
         public SecurityIdentity getIdentity() {
+            if (applyAugmentors) {
+                return getDeferredIdentity().await().indefinitely();
+            }
             return identity;
+        }
+
+    }
+
+    public static final class IdentityMockAuthenticationRequest extends BaseAuthenticationRequest {
+
+    }
+
+    @ApplicationScoped
+    public static final class IdentityMockProvider implements IdentityProvider<IdentityMockAuthenticationRequest> {
+
+        @Inject
+        IdentityMock identity;
+
+        @Override
+        public Class<IdentityMockAuthenticationRequest> getRequestType() {
+            return IdentityMockAuthenticationRequest.class;
+        }
+
+        @Override
+        public Uni<SecurityIdentity> authenticate(IdentityMockAuthenticationRequest identityMockAuthenticationRequest,
+                AuthenticationRequestContext authenticationRequestContext) {
+            return Uni.createFrom().item(identity);
         }
     }
 }

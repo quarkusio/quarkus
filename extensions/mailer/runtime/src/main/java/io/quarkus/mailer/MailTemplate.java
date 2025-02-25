@@ -4,6 +4,7 @@ import java.io.File;
 
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -117,8 +118,18 @@ public interface MailTemplate {
          * @return a {@link Uni} indicating when the mails have been sent
          * @see ReactiveMailer#send(Mail...)
          */
+        @CheckReturnValue
         default Uni<Void> send() {
             throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Sends all e-mail definitions and blocks the current thread while waiting for the result.
+         *
+         * @see #send()
+         */
+        default void sendAndAwait() {
+            send().await().indefinitely();
         }
 
         /**

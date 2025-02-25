@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.wildfly.common.net.CidrAddress;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.net.CidrAddress;
 
 public class PackageTestCase {
 

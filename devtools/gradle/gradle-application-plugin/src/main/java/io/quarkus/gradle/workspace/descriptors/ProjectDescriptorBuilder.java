@@ -32,11 +32,13 @@ public class ProjectDescriptorBuilder {
     private final File buildFile;
     private final Map<String, QuarkusTaskDescriptor> tasks;
     private final Map<String, Set<String>> sourceSetTasks;
+    private final Map<String, Set<String>> sourceSetTasksRaw;
     private final Set<String> collectOnlySourceSets;
 
     private ProjectDescriptorBuilder(Project project, Set<String> collectOnlySourceSets) {
         this.tasks = new LinkedHashMap<>();
         this.sourceSetTasks = new LinkedHashMap<>();
+        this.sourceSetTasksRaw = new LinkedHashMap<>();
         this.buildFile = project.getBuildFile();
         this.projectDir = project.getLayout().getProjectDirectory().getAsFile();
         this.buildDir = project.getLayout().getBuildDirectory().get().getAsFile();
@@ -59,7 +61,8 @@ public class ProjectDescriptorBuilder {
                 builder.buildDir,
                 builder.buildFile,
                 builder.tasks,
-                builder.sourceSetTasks));
+                builder.sourceSetTasks,
+                builder.sourceSetTasksRaw));
     }
 
     public static Provider<DefaultProjectDescriptor> buildForDependency(Project target) {
@@ -76,10 +79,14 @@ public class ProjectDescriptorBuilder {
                 builder.buildDir,
                 builder.buildFile,
                 builder.tasks,
-                builder.sourceSetTasks));
+                builder.sourceSetTasks,
+                builder.sourceSetTasksRaw));
     }
 
     private void readConfigurationFor(AbstractCompile task) {
+        sourceSetTasksRaw.computeIfAbsent(task.getName(), s -> new HashSet<>())
+                .add(task.getDestinationDirectory().getAsFile().get().getAbsolutePath());
+
         if (task.getEnabled() && !task.getSource().isEmpty()) {
             File destDir = task.getDestinationDirectory().getAsFile().get();
             task.getSource().visit(fileVisitDetails -> {

@@ -10,17 +10,17 @@
 </thead>
 <tbody>
 {#for property in configItemCollection.nonDeprecatedProperties}
-{#configProperty configProperty=property extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configProperty context=context configProperty=property extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 {/for}
 {#for section in configItemCollection.nonDeprecatedSections}
-{#configSection configSection=section extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=false /}
+{#configSection context=context configSection=section extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=false /}
 {/for}
 </tbody>
 </table>
 
 {#if includeDurationNote}
-{#durationNote summaryTableId /}
+{#durationNote context.summaryTableId /}
 {/if}
 {#if includeMemorySizeNote}
-{#memorySizeNote summaryTableId /}
+{#memorySizeNote context.summaryTableId /}
 {/if}

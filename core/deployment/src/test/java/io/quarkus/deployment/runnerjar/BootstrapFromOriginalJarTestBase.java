@@ -72,8 +72,17 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)
-                .setAppModelResolver(resolver)
-                .setTest(isBootstrapForTestMode());
+                .setAppModelResolver(resolver);
+
+        switch (getBootstrapMode()) {
+            case PROD:
+                break;
+            case TEST:
+                bootstrap.setTest(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported bootstrap mode " + getBootstrapMode());
+        }
 
         if (createWorkspace() || !wsModules.isEmpty()) {
             System.setProperty("basedir", ws.toAbsolutePath().toString());

@@ -9,26 +9,29 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * Dev Services
+ *
+ * @deprecated Please, use {@link DevServicesConfig} instead.
  */
+@Deprecated(forRemoval = true, since = "3.18")
 @ConfigRoot(name = "devservices")
 public class GlobalDevServicesConfig {
 
     /**
      * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be used.
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "true", generateDocumentation = false)
     boolean enabled;
 
     /**
      * Global flag that can be used to force the attachmment of Dev Services to shared network. Default is false.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem(defaultValue = "false", generateDocumentation = false)
     public boolean launchOnSharedNetwork;
 
     /**
      * The timeout for starting a container
      */
-    @ConfigItem
+    @ConfigItem(generateDocumentation = false)
     public Optional<Duration> timeout;
 
     public static class Enabled implements BooleanSupplier {

@@ -18,6 +18,7 @@ import javax.net.ssl.TrustManagerFactory;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.quarkus.tls.runtime.keystores.TrustAllOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyCertOptions;
@@ -154,7 +155,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Reload keystore
         if (keyStore != null) {
             try {
-                keyStoreUpdateResult = CertificateRecorder.verifyKeyStore(config.keyStore().orElseThrow(), vertx, name);
+                keyStoreUpdateResult = CertificateRecorder.getKeyStore(config, vertx, name);
             } catch (Exception e) {
                 return false;
             }
@@ -163,10 +164,12 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Reload truststore
         if (trustStore != null) {
             try {
-                trustStoreUpdateResult = CertificateRecorder.verifyTrustStore(config.trustStore().orElseThrow(), vertx, name);
+                trustStoreUpdateResult = CertificateRecorder.getTrustStore(config, vertx, name);
             } catch (Exception e) {
                 return false;
             }
+        } else if (config.trustAll()) {
+            trustStoreUpdateResult = new TrustStoreAndTrustOptions(null, TrustAllOptions.INSTANCE);
         }
 
         if (keyStoreUpdateResult == null && trustStoreUpdateResult == null) {

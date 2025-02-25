@@ -455,10 +455,15 @@ public class LargeTxAccount implements Account { <3>
    Account delegate; <4>
 
    @Inject
-   LogService logService; <5>
+   @Decorated
+   Bean<Account> delegateInfo; <5>
+
+
+   @Inject
+   LogService logService; <6>
 
    void withdraw(BigDecimal amount) {
-      delegate.withdraw(amount); <6>
+      delegate.withdraw(amount); <7>
       if (amount.compareTo(1000) > 0) {
          logService.logWithdrawal(delegate, amount);
       }
@@ -470,8 +475,9 @@ public class LargeTxAccount implements Account { <3>
 <2> `@Decorator` marks a decorator component.
 <3> The set of decorated types includes all bean types which are Java interfaces, except for `java.io.Serializable`.
 <4> Each decorator must declare exactly one _delegate injection point_. The decorator applies to beans that are assignable to this delegate injection point.
-<5> Decorators can inject other beans.
-<6> The decorator may invoke any method of the delegate object. And the container invokes either the next decorator in the chain or the business method of the intercepted instance.
+<5> It is possible to obtain information about the decorated bean by using the `@Decorated` qualifier.
+<6> Decorators can inject other beans.
+<7> The decorator may invoke any method of the delegate object. And the container invokes either the next decorator in the chain or the business method of the intercepted instance.
 
 NOTE: Instances of decorators are dependent objects of the bean instance they intercept, i.e. a new decorator instance is created for each intercepted bean.
 

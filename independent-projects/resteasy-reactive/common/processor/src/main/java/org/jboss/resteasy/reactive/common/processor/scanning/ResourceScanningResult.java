@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -19,13 +20,15 @@ public final class ResourceScanningResult {
     final Map<DotName, MethodInfo> resourcesThatNeedCustomProducer;
     final Map<DotName, String> httpAnnotationToMethod;
     final List<MethodInfo> classLevelExceptionMappers;
+    final Set<DotName> requestScopedResources;
 
     public ResourceScanningResult(IndexView index, Map<DotName, ClassInfo> scannedResources,
             Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, String> clientInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers) {
+            Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers,
+            Set<DotName> requestScopedResources) {
         this.index = index;
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
@@ -35,6 +38,7 @@ public final class ResourceScanningResult {
         this.resourcesThatNeedCustomProducer = resourcesThatNeedCustomProducer;
         this.httpAnnotationToMethod = httpAnnotationToMethod;
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+        this.requestScopedResources = requestScopedResources;
     }
 
     public IndexView getIndex() {
@@ -71,5 +75,9 @@ public final class ResourceScanningResult {
 
     public List<MethodInfo> getClassLevelExceptionMappers() {
         return classLevelExceptionMappers;
+    }
+
+    public Set<DotName> getRequestScopedResources() {
+        return requestScopedResources;
     }
 }

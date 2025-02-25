@@ -111,6 +111,7 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final boolean isHibernateValidatorPresent;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
@@ -119,6 +120,7 @@ public class FastBootMetadataBuilder {
         this.persistenceUnit = puDefinition.getPersistenceUnitDescriptor();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
+        this.isHibernateValidatorPresent = puDefinition.isHibernateValidatorPresent();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
         this.integrationStaticDescriptors = puDefinition.getIntegrationStaticDescriptors();
@@ -476,7 +478,9 @@ public class FastBootMetadataBuilder {
 
     private Collection<Integrator> getIntegrators() {
         LinkedHashSet<Integrator> integrators = new LinkedHashSet<>();
-        integrators.add(new BeanValidationIntegrator());
+        if (isHibernateValidatorPresent) {
+            integrators.add(new BeanValidationIntegrator());
+        }
         integrators.add(new CollectionCacheInvalidator());
 
         for (Class<? extends Integrator> integratorClass : additionalIntegrators) {

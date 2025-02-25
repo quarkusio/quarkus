@@ -1,6 +1,5 @@
 package io.quarkus.security.runtime.interceptor.check;
 
-import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 import java.lang.reflect.Method;
@@ -105,12 +104,12 @@ public abstract class PermissionSecurityCheck<T> implements SecurityCheck {
                         .transformToUni(new Function<>() {
                             @Override
                             public Uni<?> apply(Boolean hasPermission) {
-                                if (FALSE.equals(hasPermission)) {
-                                    // check failed
-                                    return Uni.createFrom().failure(getException(identity));
+                                if (TRUE.equals(hasPermission)) {
+                                    return SUCCESSFUL_CHECK;
                                 }
 
-                                return SUCCESSFUL_CHECK;
+                                // check failed
+                                return Uni.createFrom().failure(getException(identity));
                             }
                         });
             }

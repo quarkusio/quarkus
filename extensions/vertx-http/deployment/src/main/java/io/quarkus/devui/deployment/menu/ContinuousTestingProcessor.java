@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.dev.testing.results.TestRunResultsInterface;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingJsonRPCService;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingRecorder;
@@ -237,7 +238,7 @@ public class ContinuousTestingProcessor {
     }
 
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("getResults", ignored -> {
+        actions.<TestRunResultsInterface> addAction("getResults", ignored -> {
             try {
                 Optional<TestSupport> ts = TestSupport.instance();
                 if (testsDisabled(launchModeBuildItem, ts)) {

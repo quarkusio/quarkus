@@ -5,9 +5,9 @@ import java.util.Collections;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientUtils;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory;
@@ -24,7 +24,7 @@ public class KubernetesConfigSourceFactoryBuilder implements ConfigBuilder {
         public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context,
                 final KubernetesClientBuildConfig config) {
             boolean inAppCDsGeneration = Boolean
-                    .parseBoolean(System.getProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP, "false"));
+                    .parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
             if (inAppCDsGeneration) {
                 return Collections.emptyList();
             }

@@ -16,6 +16,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
+import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -34,6 +35,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     protected final Codecs codecs;
 
+    private final ErrorInterceptor errorInterceptor;
+
     private final ConcurrencyLimiter limiter;
 
     private final ArcContainer container;
@@ -47,13 +50,14 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private final Object beanInstance;
 
     public WebSocketEndpointBase(WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport,
-            SecuritySupport securitySupport) {
+            SecuritySupport securitySupport, ErrorInterceptor errorInterceptor) {
         this.connection = connection;
         this.codecs = codecs;
         this.limiter = inboundProcessingMode() == InboundProcessingMode.SERIAL ? new ConcurrencyLimiter(connection) : null;
         this.container = Arc.container();
         this.contextSupport = contextSupport;
         this.securitySupport = securitySupport;
+        this.errorInterceptor = errorInterceptor;
         InjectableBean<?> bean = container.bean(beanIdentifier());
         if (bean.getScope().equals(ApplicationScoped.class)
                 || bean.getScope().equals(Singleton.class)) {
@@ -79,6 +83,11 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     @Override
     public Future<Void> onBinaryMessage(Object message) {
         return execute(message, onBinaryMessageExecutionModel(), this::doOnBinaryMessage, false);
+    }
+
+    @Override
+    public Future<Void> onPingMessage(Buffer message) {
+        return execute(message, onPingMessageExecutionModel(), this::doOnPingMessage, false);
     }
 
     @Override
@@ -186,7 +195,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     public Uni<Void> doErrorExecute(Throwable throwable, ExecutionModel executionModel,
             Function<Throwable, Uni<Void>> action) {
         Promise<Void> promise = Promise.promise();
-        // Always exeute error handler on a new duplicated context
+        // Always execute error handler on a new duplicated context
         ContextSupport.createNewDuplicatedContext(Vertx.currentContext(), connection).runOnContext(new Handler<Void>() {
             @Override
             public void handle(Void event) {
@@ -278,6 +287,10 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return Uni.createFrom().voidItem();
     }
 
+    protected Uni<Void> doOnPingMessage(Buffer message) {
+        return Uni.createFrom().voidItem();
+    }
+
     protected Uni<Void> doOnPongMessage(Buffer message) {
         return Uni.createFrom().voidItem();
     }
@@ -288,8 +301,16 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     @Override
     public Uni<Void> doOnError(Throwable t) {
-        // This method is overriden if there is at least one error handler defined
+        // This method is overridden if there is at least one error handler defined
+        interceptError(t);
         return Uni.createFrom().failure(t);
+    }
+
+    // method is used in generated subclasses, if you change a name, change bytecode generation as well
+    public void interceptError(Throwable t) {
+        if (errorInterceptor != null) {
+            errorInterceptor.intercept(t);
+        }
     }
 
     public Object decodeText(Type type, String value, Class<?> codecBeanClass) {
@@ -345,4 +366,5 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                         t -> LOG.errorf(t, "Unable to send binary message from Multi: %s ", connection));
         return Uni.createFrom().voidItem();
     }
+
 }

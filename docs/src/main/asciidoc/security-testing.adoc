@@ -156,6 +156,50 @@ public String getDetail() {
 }
 ----
 
+It is also possible to set custom permissions like in the example below:
+
+[source,java]
+----
+@PermissionsAllowed("see", permission = CustomPermission.class)
+public String getDetail() {
+    return "detail";
+}
+----
+
+The `CustomPermission` needs to be granted to the `SecurityIdentity` created
+by the `@TestSecurity` annotation with a `SecurityIdentityAugmentor` CDI bean:
+
+[source,java]
+----
+@ApplicationScoped
+public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity,
+            AuthenticationRequestContext authenticationRequestContext) {
+        final SecurityIdentity augmentedIdentity;
+        if (shouldGrantCustomPermission(securityIdentity) {
+            augmentedIdentity = QuarkusSecurityIdentity.builder(securityIdentity)
+                                   .addPermission(new CustomPermission("see")).build();
+        } else {
+            augmentedIdentity = securityIdentity;
+        }
+        return Uni.createFrom().item(augmentedIdentity);
+    }
+}
+----
+
+Quarkus will only augment the `SecurityIdentity` created with the `@TestSecurity` annotation if you set
+the `@TestSecurity#augmentors` annotation attribute to the `CustomSecurityIdentityAugmentor.class` like this:
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", permissions = "see:detail", augmentors = CustomSecurityIdentityAugmentor.class)
+void someTestMethod() {
+    ...
+}
+----
+
 === Mixing security tests
 
 If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth

@@ -15,11 +15,6 @@ public class ConditionalDependencyGraphMojoTest extends DependencyTreeMojoTestBa
     }
 
     @Override
-    protected boolean isIncubatingModelResolver() {
-        return true;
-    }
-
-    @Override
     protected void initRepo() {
 
         final TsQuarkusExt coreExt = new TsQuarkusExt("test-core-ext");

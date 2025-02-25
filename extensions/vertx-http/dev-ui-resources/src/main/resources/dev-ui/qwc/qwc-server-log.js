@@ -332,7 +332,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
             return html`<qui-ide-link title='Source full class name' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
-                        lineNumber=${sourceLineNumber}>[${sourceClassNameFull}]</qui-ide-link>`;
+                        lineNumber='${sourceLineNumber}'>[${sourceClassNameFull}]</qui-ide-link>`;
         }
     }
     
@@ -341,7 +341,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
             return html`<qui-ide-link title='Source full class name (short)' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
-                        lineNumber=${sourceLineNumber}>[${sourceClassNameFullShort}]</qui-ide-link>`;
+                        lineNumber='${sourceLineNumber}'>[${sourceClassNameFullShort}]</qui-ide-link>`;
         }
     }
     
@@ -350,7 +350,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
             return html`<qui-ide-link title='Source class name' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
-                        lineNumber=${sourceLineNumber}>[${sourceClassName}]</qui-ide-link>`;
+                        lineNumber='${sourceLineNumber}'>[${sourceClassName}]</qui-ide-link>`;
         }
     }
     
@@ -365,7 +365,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
             return html`<qui-ide-link title='Source file name' 
                         class='text-file'
                         fileName='${sourceClassNameFull}'
-                        lineNumber=${sourceLineNumber}>${sourceFileName}</qui-ide-link>`;
+                        lineNumber='${sourceLineNumber}'>${sourceFileName}</qui-ide-link>`;
         }
     }
     

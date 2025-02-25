@@ -3,8 +3,6 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.recording.ObjectLoader;
 
-/**
- */
 public final class BytecodeRecorderObjectLoaderBuildItem extends MultiBuildItem {
     private final ObjectLoader objectLoader;
 

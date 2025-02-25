@@ -16,6 +16,6 @@ public class ShutdownListenerBuildStep {
     void setupShutdown(List<ShutdownListenerBuildItem> listeners, ShutdownBuildTimeConfig shutdownBuildTimeConfig,
             ShutdownRecorder recorder) {
         recorder.setListeners(listeners.stream().map(ShutdownListenerBuildItem::getShutdownListener).toList(),
-                shutdownBuildTimeConfig.delayEnabled);
+                shutdownBuildTimeConfig.isDelayEnabled());
     }
 }

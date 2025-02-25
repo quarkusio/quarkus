@@ -5,6 +5,8 @@ import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.credential.TokenCredential;
@@ -23,7 +25,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
-
+    private static final Logger LOG = Logger.getLogger(OAuth2AuthMechanism.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(
@@ -46,7 +48,9 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
         String authHeader = context.request().headers().get("Authorization");
 
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            // No suitable bearer token has been found in this request,
+            // No suitable bearer token has been found in this request
+            LOG.debug("Bearer access token is not available");
+
             return Uni.createFrom().nullItem();
         }
 
@@ -68,7 +72,7 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "bearer");
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "bearer"));
     }
 }

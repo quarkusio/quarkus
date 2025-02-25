@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.Operation;
@@ -12,16 +13,6 @@ import org.eclipse.microprofile.openapi.models.Paths;
 import org.eclipse.microprofile.openapi.models.media.Content;
 import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
-
-import io.smallrye.openapi.api.models.ComponentsImpl;
-import io.smallrye.openapi.api.models.OperationImpl;
-import io.smallrye.openapi.api.models.PathItemImpl;
-import io.smallrye.openapi.api.models.PathsImpl;
-import io.smallrye.openapi.api.models.media.ContentImpl;
-import io.smallrye.openapi.api.models.media.MediaTypeImpl;
-import io.smallrye.openapi.api.models.media.SchemaImpl;
-import io.smallrye.openapi.api.models.responses.APIResponseImpl;
-import io.smallrye.openapi.api.models.responses.APIResponsesImpl;
 
 /**
  * Create OpenAPI entries (if configured)
@@ -32,37 +23,37 @@ public class HealthOpenAPIFilter implements OASFilter {
     private static final String HEALTH_RESPONSE_SCHEMA_NAME = "HealthResponse";
     private static final String HEALTH_CHECK_SCHEMA_NAME = "HealthCheck";
 
-    private static final Schema healthResponseSchemaDefinition = new SchemaImpl(HEALTH_RESPONSE_SCHEMA_NAME)
-            .type(Schema.SchemaType.OBJECT)
+    private static final Schema healthResponseSchemaDefinition = OASFactory.createSchema()
+            .type(Collections.singletonList(Schema.SchemaType.OBJECT))
             .properties(Map.ofEntries(
 
                     Map.entry("status",
-                            new SchemaImpl()
-                                    .type(Schema.SchemaType.STRING)
+                            OASFactory.createSchema()
+                                    .type(Collections.singletonList(Schema.SchemaType.STRING))
                                     .enumeration(List.of("UP", "DOWN"))),
 
                     Map.entry("checks",
-                            new SchemaImpl()
-                                    .type(Schema.SchemaType.ARRAY)
-                                    .items(new SchemaImpl().ref("#/components/schemas/" + HEALTH_CHECK_SCHEMA_NAME)))));
+                            OASFactory.createSchema()
+                                    .type(Collections.singletonList(Schema.SchemaType.ARRAY))
+                                    .items(OASFactory.createSchema()
+                                            .ref("#/components/schemas/" + HEALTH_CHECK_SCHEMA_NAME)))));
 
-    private static final Schema healthCheckSchemaDefinition = new SchemaImpl(HEALTH_CHECK_SCHEMA_NAME)
-            .type(Schema.SchemaType.OBJECT)
+    private static final Schema healthCheckSchemaDefinition = OASFactory.createSchema()
+            .type(Collections.singletonList(Schema.SchemaType.OBJECT))
             .properties(Map.ofEntries(
 
                     Map.entry("name",
-                            new SchemaImpl()
-                                    .type(Schema.SchemaType.STRING)),
+                            OASFactory.createSchema()
+                                    .type(Collections.singletonList(Schema.SchemaType.STRING))),
 
                     Map.entry("status",
-                            new SchemaImpl()
-                                    .type(Schema.SchemaType.STRING)
+                            OASFactory.createSchema()
+                                    .type(Collections.singletonList(Schema.SchemaType.STRING))
                                     .enumeration(List.of("UP", "DOWN"))),
 
                     Map.entry("data",
-                            new SchemaImpl()
-                                    .type(Schema.SchemaType.OBJECT)
-                                    .nullable(Boolean.TRUE))));
+                            OASFactory.createSchema()
+                                    .type(List.of(Schema.SchemaType.OBJECT, Schema.SchemaType.NULL)))));
 
     private final String rootPath;
     private final String livenessPath;
@@ -79,13 +70,14 @@ public class HealthOpenAPIFilter implements OASFilter {
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
         if (openAPI.getComponents() == null) {
-            openAPI.setComponents(new ComponentsImpl());
+            openAPI.setComponents(OASFactory.createComponents());
         }
+
         openAPI.getComponents().addSchema(HEALTH_RESPONSE_SCHEMA_NAME, healthResponseSchemaDefinition);
         openAPI.getComponents().addSchema(HEALTH_CHECK_SCHEMA_NAME, healthCheckSchemaDefinition);
 
         if (openAPI.getPaths() == null) {
-            openAPI.setPaths(new PathsImpl());
+            openAPI.setPaths(OASFactory.createPaths());
         }
 
         final Paths paths = openAPI.getPaths();
@@ -150,31 +142,31 @@ public class HealthOpenAPIFilter implements OASFilter {
             String operationDescription,
             String operationId,
             String operationSummary) {
-        final Content content = new ContentImpl()
+        final Content content = OASFactory.createContent()
                 .addMediaType(
                         "application/json",
-                        new MediaTypeImpl()
-                                .schema(new SchemaImpl().ref("#/components/schemas/" + HEALTH_RESPONSE_SCHEMA_NAME)));
+                        OASFactory.createMediaType()
+                                .schema(OASFactory.createSchema().ref("#/components/schemas/" + HEALTH_RESPONSE_SCHEMA_NAME)));
 
-        final APIResponses responses = new APIResponsesImpl()
+        final APIResponses responses = OASFactory.createAPIResponses()
                 .addAPIResponse(
                         "200",
-                        new APIResponseImpl().description("OK").content(content))
+                        OASFactory.createAPIResponse().description("OK").content(content))
                 .addAPIResponse(
                         "503",
-                        new APIResponseImpl().description("Service Unavailable").content(content))
+                        OASFactory.createAPIResponse().description("Service Unavailable").content(content))
                 .addAPIResponse(
                         "500",
-                        new APIResponseImpl().description("Internal Server Error").content(content));
+                        OASFactory.createAPIResponse().description("Internal Server Error").content(content));
 
-        final Operation getOperation = new OperationImpl()
+        final Operation getOperation = OASFactory.createOperation()
                 .operationId(operationId)
                 .description(operationDescription)
                 .tags(MICROPROFILE_HEALTH_TAG)
                 .summary(operationSummary)
                 .responses(responses);
 
-        return new PathItemImpl()
+        return OASFactory.createPathItem()
                 .description(endpointDescription)
                 .summary(endpointSummary)
                 .GET(getOperation);

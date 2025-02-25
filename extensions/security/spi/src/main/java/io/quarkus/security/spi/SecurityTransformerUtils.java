@@ -23,6 +23,7 @@ public final class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
     private static final Set<DotName> SECURITY_ANNOTATIONS = Set.of(DotName.createSimple(RolesAllowed.class.getName()),
             DotName.createSimple(PermissionsAllowed.class.getName()),
+            DotName.createSimple(PermissionsAllowed.List.class.getName()),
             DotName.createSimple(Authenticated.class.getName()),
             DotName.createSimple(DenyAll.class.getName()),
             DotName.createSimple(PermitAll.class.getName()));

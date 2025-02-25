@@ -21,7 +21,7 @@ Quarkus provides several extensions to create web applications, this document ai
 
 Let's assume you have a Quarkus backend, and you want to serve static files. This is the most basic case, it is supported out of the box with all our Vert.x based extensions, you must place them in the `META-INF/resources` directory of your application.
 
-You can find more information in the xref:http-reference#serving-static-resources[HTTP reference guide].
+You can find more information in the xref:http-reference.adoc#serving-static-resources[HTTP reference guide].
 
 === Serving scripts, styles, and web libraries
 
@@ -39,7 +39,7 @@ NOTE: *We recommend using a bundler for production* as it offers better control,
 There are two ways to bundle your web assets:
 
 a. Using https://docs.quarkiverse.io/quarkus-web-bundler/dev/[the Quarkus Web Bundler extension], which is the recommended way. Without any configuration, it puts everything together in an instant, and follows good practices such as dead-code elimination, minification, caching, and more.
-b. Using a custom bundler such as Webpack, Parcel, Rollup, etc. This can be easily integrated with Quarkus using the https://quarkiverse.github.io/quarkiverse-docs/quarkus-quinoa/dev/[Quarkus Quinoa extension].
+b. Using a custom bundler such as Webpack, Parcel, Rollup, etc. This can be easily integrated with Quarkus using the https://docs.quarkiverse.io/quarkus-quinoa/dev/[Quarkus Quinoa extension].
 
 image::web-bundle-transition.png[Web Bundle Transition]
 
@@ -155,11 +155,13 @@ public class Todos extends Controller {
 }
 ----
 
+NOTE: Check out https://www.youtube.com/watch?v=JNmHNSmK180[Quarkus Insights Episode #178]. First part is a hands-on demonstration of creating a CMS with Renarde. You can also give it a try using https://github.com/quarkusio/quarkus-web-lab[the web-lab repo]).
+
 == Single Page Applications
 
 Quarkus provides very solid tools for creating or integrating Single Page Applications to Quarkus (React, Angular, Vue, …), here are 3 options:
 
-* https://quarkiverse.github.io/quarkiverse-docs/quarkus-quinoa/dev/[Quarkus Quinoa] bridges your npm-compatible web application and Quarkus for both dev and prod. No need to install Node.js or configure your framework, it will detect it and use sensible defaults.
+* https://docs.quarkiverse.io/quarkus-quinoa/dev/[Quarkus Quinoa] bridges your npm-compatible web application and Quarkus for both dev and prod. No need to install Node.js or configure your framework, it will detect it and use sensible defaults.
 * The https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Quarkus Web Bundler] is also a good approach, it is closer to the Java ecosystem and removes a lot of boilerplate and configuration, it is fast and efficient. For examples of such SPAs, see https://github.com/quarkusio/code.quarkus.io[code.quarkus.io] and https://github.com/mvnpm/mvnpm[mvnpm.org].
 * Your automation using the https://github.com/eirslett/frontend-maven-plugin[maven-frontend-plugin] or similar tools.
 
@@ -265,8 +267,3 @@ You could also split it in two services: one for the backend and one for the fro
 If your application involves a substantial number of static resources, consider using a CDN. Both the Web Bundler and Quinoa can be configured to work seamlessly with a CDN, providing improved performance and distribution of assets.
 
 // It would be nice to have a blog article and benchmark about this topic.
-
-
-
-
-

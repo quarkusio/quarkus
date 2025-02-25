@@ -15,7 +15,7 @@ The primary mechanism for securing HTTP applications in Quarkus is the `HttpAuth
 
 == Overview of the Quarkus Security architecture
 
-When a client sends an HTTP request, Quarkus Security orchestrates security authentication and authorization by interacting with several built-in core components, including `HttpAuthenticationMechanism`, `IdentityProvider`, and `SecurityIdentityAugmentor`.
+When a client sends a HTTP request, Quarkus Security orchestrates security authentication and authorization by interacting with several built-in core components, including `HttpAuthenticationMechanism`, `IdentityProvider`, and `SecurityIdentityAugmentor`.
 
 The sequential security validation process results in one of three outcomes:
 

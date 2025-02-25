@@ -26,6 +26,9 @@ class HelloWorldEndpointTestBase {
                 "io.quarkus.grpc.examples.interceptors.ServerInterceptors$MethodTarget");
 
         ensureThatMetricsAreProduced();
+
+        String used = response.getHeader("used");
+        assertThat(Boolean.parseBoolean(used)).isTrue();
     }
 
     @Test

@@ -259,7 +259,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     errorCount++;
                     log.error("Remote dev request failed", e);
                     if (errorCount == retryMaxAttempts) {
-                        log.error("Connection failed after 10 retries, exiting");
+                        log.errorf("Connection failed after %d retries, exiting", errorCount);
                         return;
                     }
                     try {

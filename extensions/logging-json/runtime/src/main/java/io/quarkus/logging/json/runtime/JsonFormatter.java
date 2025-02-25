@@ -11,7 +11,7 @@ import org.jboss.logmanager.ExtLogRecord;
 public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter {
 
     private Set<String> excludedKeys;
-    private Map<String, AdditionalFieldConfig> additionalFields;
+    private Map<String, AdditionalField> additionalFields;
 
     /**
      * Creates a new JSON formatter.
@@ -46,7 +46,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
      * @param additionalFields additionalFields to be added to the output
      */
     public JsonFormatter(final String keyOverrides, final Set<String> excludedKeys,
-            final Map<String, AdditionalFieldConfig> additionalFields) {
+            final Map<String, AdditionalField> additionalFields) {
         super(keyOverrides);
         this.excludedKeys = excludedKeys;
         this.additionalFields = additionalFields;
@@ -60,11 +60,11 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.excludedKeys = excludedKeys;
     }
 
-    public Map<String, AdditionalFieldConfig> getAdditionalFields() {
+    public Map<String, AdditionalField> getAdditionalFields() {
         return this.additionalFields;
     }
 
-    public void setAdditionalFields(Map<String, AdditionalFieldConfig> additionalFields) {
+    public void setAdditionalFields(Map<String, AdditionalField> additionalFields) {
         this.additionalFields = additionalFields;
     }
 
@@ -77,15 +77,15 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     @Override
     protected void after(final Generator generator, final ExtLogRecord record) throws Exception {
         for (var entry : this.additionalFields.entrySet()) {
-            switch (entry.getValue().type) {
+            switch (entry.getValue().type()) {
                 case STRING:
-                    generator.add(entry.getKey(), entry.getValue().value);
+                    generator.add(entry.getKey(), entry.getValue().value());
                     break;
                 case INT:
-                    generator.add(entry.getKey(), Integer.valueOf(entry.getValue().value));
+                    generator.add(entry.getKey(), Integer.valueOf(entry.getValue().value()));
                     break;
                 case LONG:
-                    generator.add(entry.getKey(), Long.valueOf(entry.getValue().value));
+                    generator.add(entry.getKey(), Long.valueOf(entry.getValue().value()));
                     break;
             }
         }

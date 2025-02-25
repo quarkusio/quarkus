@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.mysqlclient.spi.MySQLDriver;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleMySQLPoolCreatorsForSameDatasourceTest {
 
@@ -32,8 +33,8 @@ public class MultipleMySQLPoolCreatorsForSameDatasourceTest {
     public static class AnotherMySQLPoolCreator implements MySQLPoolCreator {
 
         @Override
-        public MySQLPool create(Input input) {
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptionsList(), input.poolOptions());
+        public Pool create(Input input) {
+            return MySQLDriver.INSTANCE.createPool(input.vertx(), input.mySQLConnectOptionsList(), input.poolOptions());
         }
     }
 

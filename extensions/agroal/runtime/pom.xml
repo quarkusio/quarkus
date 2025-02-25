@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-agroal</artifactId>
     <name>Quarkus - Agroal - Runtime</name>
-    <description>Pool JDBC database connections (included in Hibernate ORM)</description>
+    <description>JDBC Datasources and connection pooling</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -90,6 +90,19 @@
                         <provides>io.quarkus.agroal</provides>
                     </capabilities>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal> 
+                        </goals>
+                        <configuration>
+                            <conditionalDevDependencies> 
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact> 
+                            </conditionalDevDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

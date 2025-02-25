@@ -1,6 +1,6 @@
 package io.quarkus.reactive.pg.client;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
 
@@ -16,9 +16,9 @@ public class SamePoolInstanceTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest();
 
     @Inject
-    io.vertx.mutiny.pgclient.PgPool mutinyPool;
+    io.vertx.mutiny.sqlclient.Pool mutinyPool;
     @Inject
-    io.vertx.pgclient.PgPool pool;
+    io.vertx.sqlclient.Pool pool;
 
     @Test
     public void test() {

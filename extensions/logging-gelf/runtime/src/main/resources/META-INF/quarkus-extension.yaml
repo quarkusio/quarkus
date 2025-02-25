@@ -9,6 +9,6 @@ metadata:
   guide: "https://quarkus.io/guides/centralized-log-management"
   categories:
   - "core"
-  status: "preview"
+  status: "deprecated"
   config:
   - "quarkus.log.handler.gelf."

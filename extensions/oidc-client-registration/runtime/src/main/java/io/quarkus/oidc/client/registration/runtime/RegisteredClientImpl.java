@@ -1,12 +1,13 @@
 package io.quarkus.oidc.client.registration.runtime;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
@@ -94,7 +95,7 @@ public class RegisteredClientImpl implements RegisteredClient {
             throw new OidcClientRegistrationException("Client secret can not be modified");
         }
 
-        JsonObjectBuilder builder = Json.createObjectBuilder();
+        JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
 
         JsonObject newJsonObject = newMetadata.getJsonObject();
         JsonObject currentJsonObject = registeredMetadata.getJsonObject();
@@ -163,7 +164,7 @@ public class RegisteredClientImpl implements RegisteredClient {
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
-                .atMost(oidcConfig.connectionRetryCount)
+                .atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak

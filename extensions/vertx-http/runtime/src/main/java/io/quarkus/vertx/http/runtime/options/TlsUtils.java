@@ -29,26 +29,26 @@ public class TlsUtils {
     public static KeyCertOptions computeKeyStoreOptions(CertificateConfig certificates, Optional<String> keyStorePassword,
             Optional<String> keyStoreAliasPassword) throws IOException {
 
-        if (certificates.keyFiles.isPresent() || certificates.files.isPresent()) {
-            if (certificates.keyFiles.isEmpty()) {
+        if (certificates.keyFiles().isPresent() || certificates.files().isPresent()) {
+            if (certificates.keyFiles().isEmpty()) {
                 throw new IllegalArgumentException("You must specify the key files when specifying the certificate files");
             }
-            if (certificates.files.isEmpty()) {
+            if (certificates.files().isEmpty()) {
                 throw new IllegalArgumentException("You must specify the certificate files when specifying the key files");
             }
-            if (certificates.files.get().size() != certificates.keyFiles.get().size()) {
+            if (certificates.files().get().size() != certificates.keyFiles().get().size()) {
                 throw new IllegalArgumentException(
                         "The number of certificate files and key files must be the same, and be given in the same order");
             }
-            return createPemKeyCertOptions(certificates.files.get(), certificates.keyFiles.get());
-        } else if (certificates.keyStoreFile.isPresent()) {
-            var type = getKeyStoreType(certificates.keyStoreFile.get(), certificates.keyStoreFileType);
+            return createPemKeyCertOptions(certificates.files().get(), certificates.keyFiles().get());
+        } else if (certificates.keyStoreFile().isPresent()) {
+            var type = getKeyStoreType(certificates.keyStoreFile().get(), certificates.keyStoreFileType());
             return createKeyStoreOptions(
-                    certificates.keyStoreFile.get(),
+                    certificates.keyStoreFile().get(),
                     keyStorePassword,
                     type,
-                    certificates.keyStoreProvider,
-                    or(certificates.keyStoreAlias, certificates.keyStoreKeyAlias),
+                    certificates.keyStoreProvider(),
+                    or(certificates.keyStoreAlias(), certificates.keyStoreKeyAlias()),
                     keyStoreAliasPassword);
         }
         return null;
@@ -60,7 +60,7 @@ public class TlsUtils {
         Path singleTrustStoreFile = getSingleTrustStoreFile(certificates);
 
         if (singleTrustStoreFile != null) { // We have a single trust store file.
-            String type = getTruststoreType(singleTrustStoreFile, certificates.trustStoreFileType);
+            String type = getTruststoreType(singleTrustStoreFile, certificates.trustStoreFileType());
             if (type.equalsIgnoreCase("pem")) {
                 byte[] cert = getFileContent(singleTrustStoreFile);
                 return new PemTrustOptions()
@@ -69,7 +69,7 @@ public class TlsUtils {
 
             if ((type.equalsIgnoreCase("pkcs12") || type.equalsIgnoreCase("jks"))) {
                 // We cannot assume that custom type configured by the user requires a password.
-                if (certificates.trustStorePassword.isEmpty() && trustStorePassword.isEmpty()) {
+                if (certificates.trustStorePassword().isEmpty() && trustStorePassword.isEmpty()) {
                     throw new IllegalArgumentException("No trust store password provided");
                 }
             }
@@ -78,16 +78,16 @@ public class TlsUtils {
                     singleTrustStoreFile,
                     trustStorePassword,
                     type,
-                    certificates.trustStoreProvider,
-                    certificates.trustStoreCertAlias,
+                    certificates.trustStoreProvider(),
+                    certificates.trustStoreCertAlias(),
                     Optional.empty());
         }
 
         // We have multiple trust store files (PEM).
-        if (certificates.trustStoreFiles.isPresent() && !certificates.trustStoreFiles.get().isEmpty()) {
+        if (certificates.trustStoreFiles().isPresent() && !certificates.trustStoreFiles().get().isEmpty()) {
             // Assuming PEM, as it's the only format with multiple files
             PemTrustOptions pemKeyCertOptions = new PemTrustOptions();
-            for (Path path : certificates.trustStoreFiles.get()) {
+            for (Path path : certificates.trustStoreFiles().get()) {
                 byte[] cert = getFileContent(path);
                 pemKeyCertOptions.addCertValue(Buffer.buffer(cert));
             }
@@ -99,15 +99,15 @@ public class TlsUtils {
 
     private static Path getSingleTrustStoreFile(CertificateConfig certificates) {
         Path singleTrustStoreFile = null;
-        if (certificates.trustStoreFile.isPresent()) {
-            singleTrustStoreFile = certificates.trustStoreFile.get();
+        if (certificates.trustStoreFile().isPresent()) {
+            singleTrustStoreFile = certificates.trustStoreFile().get();
         }
-        if (certificates.trustStoreFiles.isPresent()) {
+        if (certificates.trustStoreFiles().isPresent()) {
             if (singleTrustStoreFile != null) {
                 throw new IllegalArgumentException("You cannot specify both `trustStoreFile` and `trustStoreFiles`");
             }
-            if (certificates.trustStoreFiles.get().size() == 1) {
-                singleTrustStoreFile = certificates.trustStoreFiles.get().get(0);
+            if (certificates.trustStoreFiles().get().size() == 1) {
+                singleTrustStoreFile = certificates.trustStoreFiles().get().get(0);
             }
         }
         return singleTrustStoreFile;
@@ -196,5 +196,4 @@ public class TlsUtils {
                 .setCertValues(certificates)
                 .setKeyValues(keys);
     }
-
 }

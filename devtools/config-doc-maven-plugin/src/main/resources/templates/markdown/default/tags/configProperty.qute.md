@@ -12,7 +12,7 @@
 </td>
 <td>
 
-{configProperty.formatTypeDescription.escapeCellContent.or("")}
+{configProperty.formatTypeDescription(context).escapeCellContent.or("")}
 </td>
 <td>
 

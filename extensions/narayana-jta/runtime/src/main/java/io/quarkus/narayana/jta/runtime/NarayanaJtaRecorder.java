@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -42,26 +42,35 @@ public class NarayanaJtaRecorder {
     public void setNodeName(final TransactionManagerConfiguration transactions) {
 
         try {
-            if (transactions.nodeName.getBytes(StandardCharsets.UTF_8).length > 28
-                    && transactions.shortenNodeNameIfNecessary) {
-                shortenNodeName(transactions);
+            String nodeName = transactions.nodeName();
+            if (nodeName.getBytes(StandardCharsets.UTF_8).length > 28
+                    && transactions.shortenNodeNameIfNecessary()) {
+                nodeName = shortenNodeName(transactions.nodeName());
             }
-            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(transactions.nodeName);
-            jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(Collections.singletonList(transactions.nodeName));
-            TxControl.setXANodeName(transactions.nodeName);
+            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(nodeName);
+            jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(List.of(nodeName));
+            TxControl.setXANodeName(nodeName);
         } catch (CoreEnvironmentBeanException | NoSuchAlgorithmException e) {
             log.error("Could not set node name", e);
         }
     }
 
-    private static void shortenNodeName(TransactionManagerConfiguration transactions) throws NoSuchAlgorithmException {
-        String originalNodeName = transactions.nodeName;
+    String shortenNodeName(String originalNodeName) throws NoSuchAlgorithmException {
         log.warnf("Node name \"%s\" is longer than 28 bytes, shortening it by using %s.", originalNodeName,
                 HASH_ALGORITHM_FOR_SHORTENING);
         final byte[] nodeNameAsBytes = originalNodeName.getBytes();
         MessageDigest messageDigest224 = MessageDigest.getInstance(HASH_ALGORITHM_FOR_SHORTENING);
-        transactions.nodeName = new String(messageDigest224.digest(nodeNameAsBytes), StandardCharsets.UTF_8);
-        log.warnf("New node name is \"%s\"", transactions.nodeName);
+        byte[] hashedByteArray = messageDigest224.digest(nodeNameAsBytes);
+
+        //Encode the byte array in Base64
+        //encoding the array might result in a longer array
+        byte[] base64Result = Base64.getEncoder().encode(hashedByteArray);
+        //truncate the array
+        byte[] slice = Arrays.copyOfRange(base64Result, 0, 28);
+
+        String shorterNodeName = new String(slice, StandardCharsets.UTF_8);
+        log.warnf("New node name is \"%s\"", shorterNodeName);
+        return shorterNodeName;
     }
 
     public void setDefaultProperties(Properties properties) {
@@ -83,8 +92,8 @@ public class NarayanaJtaRecorder {
 
     public void setDefaultTimeout(TransactionManagerConfiguration transactions) {
         arjPropertyManager.getCoordinatorEnvironmentBean()
-                .setDefaultTimeout((int) transactions.defaultTransactionTimeout.getSeconds());
-        TxControl.setDefaultTimeout((int) transactions.defaultTransactionTimeout.getSeconds());
+                .setDefaultTimeout((int) transactions.defaultTransactionTimeout().getSeconds());
+        TxControl.setDefaultTimeout((int) transactions.defaultTransactionTimeout().getSeconds());
     }
 
     public static Properties getDefaultProperties() {
@@ -98,17 +107,17 @@ public class NarayanaJtaRecorder {
 
     public void setConfig(final TransactionManagerConfiguration transactions) {
         List<String> objectStores = Arrays.asList(null, "communicationStore", "stateStore");
-        if (transactions.objectStore.type.equals(ObjectStoreType.File_System)) {
+        if (transactions.objectStore().type().equals(ObjectStoreType.File_System)) {
             objectStores.forEach(name -> setObjectStoreDir(name, transactions));
-        } else if (transactions.objectStore.type.equals(ObjectStoreType.JDBC)) {
+        } else if (transactions.objectStore().type().equals(ObjectStoreType.JDBC)) {
             objectStores.forEach(name -> setJDBCObjectStore(name, transactions));
         }
         BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setRecoveryModuleClassNames(transactions.recoveryModules);
+                .setRecoveryModuleClassNames(transactions.recoveryModules());
         BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setExpiryScannerClassNames(transactions.expiryScanners);
+                .setExpiryScannerClassNames(transactions.expiryScanners());
         BeanPopulator.getDefaultInstance(JTAEnvironmentBean.class)
-                .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters);
+                .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters());
     }
 
     /**
@@ -136,25 +145,26 @@ public class NarayanaJtaRecorder {
     }
 
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {
-        BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name).setObjectStoreDir(config.objectStore.directory);
+        BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name)
+                .setObjectStoreDir(config.objectStore().directory());
     }
 
     private void setJDBCObjectStore(String name, TransactionManagerConfiguration config) {
         final ObjectStoreEnvironmentBean instance = BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name);
         instance.setObjectStoreType(JDBCStore.class.getName());
-        instance.setJdbcDataSource(new QuarkusDataSource(config.objectStore.datasource));
-        instance.setCreateTable(config.objectStore.createTable);
-        instance.setDropTable(config.objectStore.dropTable);
-        instance.setTablePrefix(config.objectStore.tablePrefix);
+        instance.setJdbcDataSource(new QuarkusDataSource(config.objectStore().datasource()));
+        instance.setCreateTable(config.objectStore().createTable());
+        instance.setDropTable(config.objectStore().dropTable());
+        instance.setTablePrefix(config.objectStore().tablePrefix());
     }
 
     public void startRecoveryService(final TransactionManagerConfiguration transactions,
             Map<String, String> configuredDataSourcesConfigKeys,
             Set<String> dataSourcesWithTransactionIntegration) {
 
-        if (transactions.objectStore.type.equals(ObjectStoreType.JDBC)) {
+        if (transactions.objectStore().type().equals(ObjectStoreType.JDBC)) {
             final String objectStoreDataSourceName;
-            if (transactions.objectStore.datasource.isEmpty()) {
+            if (transactions.objectStore().datasource().isEmpty()) {
                 if (!DataSourceUtil.hasDefault(configuredDataSourcesConfigKeys.keySet())) {
                     throw new ConfigurationException(
                             "The Narayana JTA extension does not have a datasource configured as the JDBC object store,"
@@ -167,7 +177,7 @@ public class NarayanaJtaRecorder {
                 }
                 objectStoreDataSourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
             } else {
-                objectStoreDataSourceName = transactions.objectStore.datasource.get();
+                objectStoreDataSourceName = transactions.objectStore().datasource().get();
 
                 if (!configuredDataSourcesConfigKeys.keySet().contains(objectStoreDataSourceName)) {
                     throw new ConfigurationException(
@@ -191,7 +201,7 @@ public class NarayanaJtaRecorder {
                         objectStoreDataSourceName, configuredDataSourcesConfigKeys.get(objectStoreDataSourceName)));
             }
         }
-        if (transactions.enableRecovery) {
+        if (transactions.enableRecovery()) {
             QuarkusRecoveryService.getInstance().create();
             QuarkusRecoveryService.getInstance().start();
         }
@@ -199,7 +209,7 @@ public class NarayanaJtaRecorder {
 
     public void handleShutdown(ShutdownContext context, TransactionManagerConfiguration transactions) {
         context.addShutdownTask(() -> {
-            if (transactions.enableRecovery) {
+            if (transactions.enableRecovery()) {
                 try {
                     QuarkusRecoveryService.getInstance().stop();
                 } catch (Exception e) {

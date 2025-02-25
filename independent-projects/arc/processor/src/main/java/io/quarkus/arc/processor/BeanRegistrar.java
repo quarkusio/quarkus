@@ -25,7 +25,7 @@ public interface BeanRegistrar extends BuildExtension {
          * Configure a new synthetic bean. The bean is not added to the deployment unless the {@link BeanConfigurator#done()}
          * method is called.
          *
-         * @param beanClass
+         * @param beanClassName
          * @return a new synthetic bean configurator
          */
         <T> BeanConfigurator<T> configure(DotName beanClassName);

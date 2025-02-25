@@ -50,9 +50,9 @@ public class ShutdownRecorder {
     }
 
     private static void waitForDelay() {
-        if (delayEnabled && shutdownConfig.isDelaySet()) {
+        if (delayEnabled && shutdownConfig.isDelayEnabled()) {
             try {
-                Thread.sleep(shutdownConfig.delay.get().toMillis());
+                Thread.sleep(shutdownConfig.delay().get().toMillis());
             } catch (InterruptedException e) {
                 log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
             }
@@ -64,8 +64,8 @@ public class ShutdownRecorder {
         for (ShutdownListener i : shutdownListeners) {
             i.shutdown(new LatchShutdownNotification(shutdown));
         }
-        if (shutdownConfig.isShutdownTimeoutSet()
-                && !shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
+        if (shutdownConfig.isTimeoutEnabled()
+                && !shutdown.await(shutdownConfig.timeout().get().toMillis(), TimeUnit.MILLISECONDS)) {
             log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
         }
     }

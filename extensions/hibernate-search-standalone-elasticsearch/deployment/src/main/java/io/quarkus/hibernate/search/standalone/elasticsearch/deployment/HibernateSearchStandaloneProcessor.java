@@ -5,19 +5,14 @@ import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.Hi
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.ROOT_MAPPING;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig.backendPropertyKey;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig.defaultBackendPropertyKeys;
-import static io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig.elasticsearchVersionPropertyKey;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig.mapperPropertyKey;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig.mapperPropertyKeys;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -25,7 +20,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
-import org.hibernate.search.backend.elasticsearch.gson.spi.GsonClasses;
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -46,25 +40,21 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.ElasticsearchVersionSubstitution;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
+import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneElasticsearchMapperContext;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRecorder;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 @BuildSteps(onlyIf = HibernateSearchStandaloneEnabled.class)
@@ -99,8 +89,6 @@ class HibernateSearchStandaloneProcessor {
             return;
         }
 
-        registerReflectionForGson(reflectiveClass);
-
         Set<String> backendNamesForIndexedEntities = new LinkedHashSet<>();
         for (AnnotationInstance indexedAnnotation : indexedAnnotations) {
             AnnotationValue backendNameValue = indexedAnnotation.value("backend");
@@ -113,8 +101,21 @@ class HibernateSearchStandaloneProcessor {
 
         Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClassNames(index);
 
-        enabled.produce(new HibernateSearchStandaloneEnabledBuildItem(backendNamesForIndexedEntities,
-                backendAndIndexNamesForSearchExtensions, rootAnnotationMappedClassNames));
+        var mapperContext = new HibernateSearchStandaloneElasticsearchMapperContext(backendNamesForIndexedEntities,
+                backendAndIndexNamesForSearchExtensions);
+        enabled.produce(new HibernateSearchStandaloneEnabledBuildItem(mapperContext, rootAnnotationMappedClassNames));
+    }
+
+    @BuildStep
+    void enableBackend(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
+            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
+            BuildProducer<HibernateSearchBackendElasticsearchEnabledBuildItem> elasticsearchEnabled) {
+        if (!enabled.isPresent()) {
+            // No boot
+            return;
+        }
+        elasticsearchEnabled.produce(new HibernateSearchBackendElasticsearchEnabledBuildItem(enabled.get().mapperContext,
+                buildTimeConfig.backends()));
     }
 
     private static Map<String, Set<String>> collectBackendAndIndexNamesForSearchExtensions(
@@ -160,104 +161,6 @@ class HibernateSearchStandaloneProcessor {
         return rootAnnotationMappedClassNames;
     }
 
-    @BuildStep
-    public void processBuildTimeConfig(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        if (enabled.isEmpty()) {
-            // Disabled => no config processing necessary
-            return;
-        }
-        Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
-        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.backends()
-                : Collections.emptyMap();
-
-        Set<String> allBackendNames = new LinkedHashSet<>(enabled.get().getBackendNamesForIndexedEntities());
-        allBackendNames.addAll(backends.keySet());
-        // For all backends referenced either through @Indexed(backend = ...) or configuration...
-        for (String backendName : allBackendNames) {
-            ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(backendName);
-            // ... we validate that the backend is configured and the version is present
-            if (backendConfig == null || backendConfig.version().isEmpty()) {
-                propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(backendName));
-            }
-            // ... we register files referenced from backends configuration
-            if (backendConfig != null) {
-                registerClasspathFileFromBackendConfig(backendName, backendConfig,
-                        applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-            }
-        }
-        if (!propertyKeysWithNoVersion.isEmpty()) {
-            throw new ConfigurationException(
-                    "The Elasticsearch version needs to be defined via properties: "
-                            + String.join(", ", propertyKeysWithNoVersion) + ".",
-                    propertyKeysWithNoVersion);
-        }
-    }
-
-    private static void registerClasspathFileFromBackendConfig(String backendName,
-            ElasticsearchBackendBuildTimeConfig backendConfig,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        registerClasspathFileFromIndexConfig(backendName, null, backendConfig.indexDefaults(),
-                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-        for (Entry<String, ElasticsearchIndexBuildTimeConfig> entry : backendConfig.indexes().entrySet()) {
-            String indexName = entry.getKey();
-            ElasticsearchIndexBuildTimeConfig indexConfig = entry.getValue();
-            registerClasspathFileFromIndexConfig(backendName, indexName, indexConfig,
-                    applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-        }
-    }
-
-    private static void registerClasspathFileFromIndexConfig(String backendName, String indexName,
-            ElasticsearchIndexBuildTimeConfig indexConfig,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        registerClasspathFileFromConfig(backendName, indexName, "schema-management.settings-file",
-                indexConfig.schemaManagement().settingsFile(),
-                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-        registerClasspathFileFromConfig(backendName, indexName, "schema-management.mapping-file",
-                indexConfig.schemaManagement().mappingFile(),
-                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-    }
-
-    private static void registerClasspathFileFromConfig(String backendName, String indexName,
-            String propertyKeyRadical,
-            Optional<String> classpathFileOptional,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
-        if (!classpathFileOptional.isPresent()) {
-            return;
-        }
-        String classpathFile = classpathFileOptional.get();
-
-        Path existingPath = applicationArchivesBuildItem.getRootArchive().getChildPath(classpathFile);
-
-        if (existingPath == null || Files.isDirectory(existingPath)) {
-            //raise exception if explicit file is not present (i.e. not the default)
-            throw new ConfigurationException(
-                    "Unable to find file referenced in '"
-                            + backendPropertyKey(backendName, indexName, propertyKeyRadical) + "="
-                            + classpathFile
-                            + "'. Remove property or add file to your path.");
-        }
-        nativeImageResources.produce(new NativeImageResourceBuildItem(classpathFile));
-        hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
-    }
-
-    private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses)
-                .reason(getClass().getName())
-                .methods().fields().build());
-    }
-
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void defineSearchMappingBean(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
@@ -276,8 +179,7 @@ class HibernateSearchStandaloneProcessor {
                 .unremovable()
                 .addQualifier(Default.class)
                 .setRuntimeInit()
-                .createWith(recorder.createSearchMappingFunction(runtimeConfig,
-                        enabled.get().getBackendAndIndexNamesForSearchExtensions()))
+                .createWith(recorder.createSearchMappingFunction(enabled.get().mapperContext, runtimeConfig))
                 .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
@@ -297,7 +199,7 @@ class HibernateSearchStandaloneProcessor {
         // Make it possible to record the settings as bytecode:
         recorderContext.registerSubstitution(ElasticsearchVersion.class,
                 String.class, ElasticsearchVersionSubstitution.class);
-        recorder.preBoot(buildTimeConfig, enabled.get().getBackendAndIndexNamesForSearchExtensions(),
+        recorder.preBoot(enabled.get().mapperContext, buildTimeConfig,
                 enabled.get().getRootAnnotationMappedClassNames());
     }
 

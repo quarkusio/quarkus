@@ -1,6 +1,5 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +33,7 @@ public class StaticResourcesHotReplacementSetup implements HotReplacementSetup {
 
     private void addPathIfContainsStaticResources(List<Path> resources, Path resourceDir) {
         Path resource = resourceDir.resolve(StaticResourcesRecorder.META_INF_RESOURCES);
-        if (Files.exists(resource)) {
-            resources.add(resource);
-        }
+        resources.add(resource);
     }
 
 }

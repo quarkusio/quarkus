@@ -1,6 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -9,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
+import io.quarkus.runtime.graal.GraalVM.Distribution;
 
 public final class GraalVM {
 
@@ -152,7 +152,7 @@ public final class GraalVM {
             if (versMatcher.find()) {
                 return matchVersion(version);
             } else {
-                return GRAAL_MAPPING.get(jdkFeature);
+                return Version.GRAAL_MAPPING.get(Integer.toString(jdkFeature));
             }
         }
 
@@ -165,15 +165,10 @@ public final class GraalVM {
         }
     }
 
-    // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
-    // till we have a consensus on how to move forward in
-    // https://github.com/quarkusio/quarkus/issues/34161
-    private static final Map<Integer, String> GRAAL_MAPPING = Map.of(22, "24.0",
-            23, "24.1",
-            24, "24.2",
-            25, "25.0");
+    public static final class Version extends io.quarkus.runtime.graal.GraalVM.Version {
 
-    public static final class Version implements Comparable<Version> {
+        // Get access to GRAAL_MAPPING without making it public
+        private static final Map<String, String> GRAAL_MAPPING = io.quarkus.runtime.graal.GraalVM.Version.GRAAL_MAPPING;
 
         /**
          * JDK version used with native-image tool:
@@ -189,32 +184,38 @@ public final class GraalVM {
 
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
-        public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
+        public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
+        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
 
         /**
          * The minimum version of GraalVM supported by Quarkus.
          * Versions prior to this are expected to cause major issues.
+         *
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM} instead.
          */
-        public static final Version MINIMUM = VERSION_22_3_0;
+        @Deprecated
+        public static final Version MINIMUM = VERSION_23_0_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.
+         *
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.CURRENT} instead.
          */
+        @Deprecated
         public static final Version CURRENT = VERSION_23_1_0;
         /**
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
+         *
+         * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED} instead.
          */
+        @Deprecated
         public static final Version MINIMUM_SUPPORTED = CURRENT;
-
-        final String fullVersion;
-        public final Runtime.Version javaVersion;
-        final Distribution distribution;
-        private int[] versions;
-        private String suffix;
 
         Version(String fullVersion, String version, Distribution distro) {
             this(fullVersion, version, "11", distro);
@@ -225,19 +226,15 @@ public final class GraalVM {
         }
 
         Version(String fullVersion, String version, Runtime.Version javaVersion, Distribution distro) {
-            this.fullVersion = fullVersion;
-            breakdownVersion(version);
-            this.javaVersion = javaVersion;
-            this.distribution = distro;
+            super(fullVersion, version, javaVersion, distro);
         }
 
-        private void breakdownVersion(String version) {
-            int dash = version.indexOf('-');
-            if (dash != -1) {
-                this.suffix = version.substring(dash + 1);
-                version = version.substring(0, dash);
-            }
-            this.versions = Arrays.stream(version.split("\\.")).mapToInt(Integer::parseInt).toArray();
+        public int compareTo(GraalVM.Version o) {
+            return compareTo((io.quarkus.runtime.graal.GraalVM.Version) o);
+        }
+
+        Distribution getDistribution() {
+            return distribution;
         }
 
         String getFullVersion() {
@@ -245,15 +242,11 @@ public final class GraalVM {
         }
 
         boolean isObsolete() {
-            return this.compareTo(MINIMUM) < 0;
+            return this.compareTo(io.quarkus.runtime.graal.GraalVM.Version.MINIMUM) < 0;
         }
 
         boolean isSupported() {
-            return this.compareTo(MINIMUM_SUPPORTED) >= 0;
-        }
-
-        boolean isMandrel() {
-            return distribution == Distribution.MANDREL;
+            return this.compareTo(io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED) >= 0;
         }
 
         boolean isNewerThan(Version version) {
@@ -273,26 +266,6 @@ public final class GraalVM {
 
         public boolean jdkVersionGreaterOrEqualTo(String version) {
             return javaVersion.compareToIgnoreOptional(Runtime.Version.parse(version)) >= 0;
-        }
-
-        @Override
-        public int compareTo(Version o) {
-            int i = 0;
-            for (; i < this.versions.length; i++) {
-                if (i >= o.versions.length) {
-                    if (this.versions[i] != 0) {
-                        return 1;
-                    }
-                } else if (this.versions[i] != o.versions[i]) {
-                    return this.versions[i] - o.versions[i];
-                }
-            }
-            for (; i < o.versions.length; i++) {
-                if (o.versions[i] != 0) {
-                    return -1;
-                }
-            }
-            return 0;
         }
 
         public static Version of(Stream<String> output) {
@@ -341,43 +314,8 @@ public final class GraalVM {
             return s != null && s.contains("Mandrel Distribution");
         }
 
-        /**
-         * Returns the Mandrel/GraalVM version as a string. e.g. 21.3.0-rc1
-         */
-        public String getVersionAsString() {
-            String version = Arrays.stream(versions).mapToObj(Integer::toString).collect(Collectors.joining("."));
-            if (suffix != null) {
-                return version + "-" + suffix;
-            }
-            return version;
-        }
-
-        public String getMajorMinorAsString() {
-            if (versions.length >= 2) {
-                return versions[0] + "." + versions[1];
-            }
-            return versions[0] + ".0";
-        }
-
-        @Override
-        public String toString() {
-            return "Version{" +
-                    "version="
-                    + getVersionAsString() +
-                    ", fullVersion=" + fullVersion +
-                    ", distribution=" + distribution +
-                    ", javaVersion=" + javaVersion +
-                    '}';
-        }
-
         public boolean isJava17() {
             return javaVersion.feature() == 17;
         }
-    }
-
-    enum Distribution {
-        GRAALVM,
-        LIBERICA,
-        MANDREL;
     }
 }

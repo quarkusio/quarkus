@@ -3,9 +3,8 @@ package io.quarkus.builder;
 import java.util.Collections;
 import java.util.List;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.diag.Diagnostic;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
@@ -16,7 +15,7 @@ public class BuildException extends Exception {
     private final List<Diagnostic> diagnostics;
 
     /**
-     * Constructs a new {@code DeploymentException} instance. The message is left blank ({@code null}), and no
+     * Constructs a new {@code BuildException} instance. The message is left blank ({@code null}), and no
      * cause is specified.
      *
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
@@ -27,7 +26,7 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance. The diagnostics is left blank ({@code null}), and no
+     * Constructs a new {@code BuildException} instance. The diagnostics is left blank ({@code null}), and no
      * cause is specified.
      *
      * @param msg the message
@@ -37,7 +36,7 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance with an initial message. No
+     * Constructs a new {@code BuildException} instance with an initial message. No
      * cause is specified.
      *
      * @param msg the message
@@ -53,9 +52,9 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance with an initial cause. If
+     * Constructs a new {@code BuildException} instance with an initial cause. If
      * a non-{@code null} cause is specified, its message is used to initialize the message of this
-     * {@code DeploymentException}; otherwise the message is left blank ({@code null}).
+     * {@code BuildException}; otherwise the message is left blank ({@code null}).
      *
      * @param cause the cause
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
@@ -67,7 +66,7 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance with an initial message and cause.
+     * Constructs a new {@code BuildException} instance with an initial message and cause.
      *
      * @param msg the message
      * @param cause the cause

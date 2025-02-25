@@ -61,6 +61,10 @@ public class KotlinProcessor {
                 .build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion[]").constructors(false)
                 .build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem
+                        .builder("kotlin.collections.EmptyList", "kotlin.collections.EmptyMap", "kotlin.collections.EmptySet")
+                        .build());
 
         nativeResourcePatterns.produce(builder().includePatterns(
                 "META-INF/.*.kotlin_module$",

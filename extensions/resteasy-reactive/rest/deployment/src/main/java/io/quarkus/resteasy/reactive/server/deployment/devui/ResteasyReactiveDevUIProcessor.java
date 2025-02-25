@@ -15,6 +15,12 @@ public class ResteasyReactiveDevUIProcessor {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
+        // Endpoints
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
+                .componentLink("qwc-resteasy-reactive-endpoints.js")
+                .title("Endpoints")
+                .icon("font-awesome-solid:plug"));
+
         // Endpoint Scores
         cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                 .componentLink("qwc-resteasy-reactive-endpoint-scores.js")

@@ -33,6 +33,7 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
@@ -47,12 +48,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     private final JTAStatelessSessionOpener jtaSessionOpener;
     private final String unitName;
     private final String sessionKey;
+    private final boolean requestScopedSessionEnabled;
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             SessionFactory sessionFactory,
             String unitName,
+            boolean requestScopedSessionEnabled,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -60,6 +63,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         this.jtaSessionOpener = JTAStatelessSessionOpener.create(sessionFactory);
         this.unitName = unitName;
         this.sessionKey = this.getClass().getSimpleName() + "-" + unitName;
+        this.requestScopedSessionEnabled = requestScopedSessionEnabled;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -74,15 +78,23 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             // The session has automatically joined the JTA transaction when it was constructed.
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
             return new SessionResult(newSession, false, true);
-        } else if (Arc.container().requestContext().isActive()) {
-            RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
-            return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
-                    false, false);
+        } else if (requestScopedSessionEnabled) {
+            if (Arc.container().requestContext().isActive()) {
+                RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
+                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
+                        false, false);
+            } else {
+                throw new ContextNotActiveException(
+                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
+                                + " Consider adding @Transactional to your method to automatically activate a transaction,"
+                                + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
+            }
         } else {
             throw new ContextNotActiveException(
-                    "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
+                    "Cannot use the StatelessSession because no transaction is active."
                             + " Consider adding @Transactional to your method to automatically activate a transaction,"
-                            + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
+                            + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
+                            + "' to 'true' if you have valid reasons not to use transactions.");
         }
     }
 

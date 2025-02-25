@@ -153,8 +153,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     }
     
     _serviceClassRenderer(service){
-        return html`<qui-ide-link fileName='${service.serviceClass}'
-                        lineNumber=0><code>${service.serviceClass}</code></qui-ide-link>`;
+        return html`<qui-ide-link fileName='${service.serviceClass}'><code>${service.serviceClass}</code></qui-ide-link>`;
     }
     
     _methodsRenderer(service){

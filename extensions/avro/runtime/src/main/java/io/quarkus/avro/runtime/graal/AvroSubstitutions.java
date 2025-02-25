@@ -16,8 +16,6 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.quarkus.runtime.graal.JDK17OrLater;
-
 @TargetClass(className = "org.apache.avro.generic.GenericDatumReader")
 final class Target_org_apache_avro_generic_GenericDatumReader {
 
@@ -68,7 +66,7 @@ final class Target_org_apache_avro_generic_GenericDatumReader_ReaderCache {
 
 }
 
-@TargetClass(className = "org.apache.avro.reflect.ReflectionUtil", onlyWith = JDK17OrLater.class)
+@TargetClass(className = "org.apache.avro.reflect.ReflectionUtil")
 final class Target_org_apache_avro_reflect_ReflectionUtil {
 
     @Substitute

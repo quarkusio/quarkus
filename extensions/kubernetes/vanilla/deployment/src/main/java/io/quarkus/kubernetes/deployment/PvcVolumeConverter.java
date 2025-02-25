@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Map;
@@ -14,8 +13,8 @@ public class PvcVolumeConverter {
 
     public static PersistentVolumeClaimVolumeBuilder convert(PvcVolumeConfig c) {
         PersistentVolumeClaimVolumeBuilder b = new PersistentVolumeClaimVolumeBuilder();
-        b.withClaimName(c.claimName);
-        b.withReadOnly(c.optional);
+        b.withClaimName(c.claimName());
+        b.withReadOnly(c.optional());
         return b;
     }
 }

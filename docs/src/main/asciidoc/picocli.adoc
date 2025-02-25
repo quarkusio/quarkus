@@ -41,9 +41,11 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-picocli")
 ----
 
-== Simple command line application
+== Building a command line application
 
-Simple PicocliApplication with only one `Command` can be created as follows:
+=== Simple application
+
+A simple Picocli application with only one `Command` can be created as follows:
 
 [source,java]
 ----
@@ -79,12 +81,14 @@ class GreetingService {
     }
 }
 ----
-<1> If there is only one class annotated with `picocli.CommandLine.Command` it will be used as entry point to Picocli CommandLine.
+<1> If there is only one class annotated with `picocli.CommandLine.Command`, it will be used automatically as the entry point of the command line application.
 <2> All classes annotated with `picocli.CommandLine.Command` are registered as CDI beans.
 
-IMPORTANT: Beans with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScope`)
-because Picocli will not be able to set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
-using `@Depended` scope. If you need to use proxied scope, then annotate setter and not field, for example:
+IMPORTANT: Beans annotated with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScoped`)
+because Picocli will not be able to set field values in such beans.
+By default, this Picocli extension registers classes annotated with `@CommandLine.Command`
+with the `@Dependent` scope. If you need to use a proxied scope, then annotate the setters and not the fields, for example:
+
 [source,java]
 ----
 @CommandLine.Command
@@ -96,11 +100,10 @@ public class EntryCommand {
     public void setName(String name) {
         this.name = name;
     }
-
 }
 ----
 
-== Command line application with multiple Commands
+=== Command line application with multiple Commands
 
 When multiple classes have the `picocli.CommandLine.Command` annotation, then one of them needs to be also annotated with `io.quarkus.picocli.runtime.annotations.TopCommand`.
 This can be overwritten with the `quarkus.picocli.top-command` property.
@@ -136,7 +139,7 @@ class GoodByeCommand implements Runnable {
 }
 ----
 
-== Customizing Picocli CommandLine instance
+=== Customizing Picocli CommandLine instance
 
 You can customize CommandLine classes used by the `picocli` extension by producing your own bean instance:
 
@@ -174,7 +177,7 @@ class CustomConfiguration {
 ----
 <1> `PicocliCommandLineFactory` will create an instance of CommandLine with `TopCommand` and `CommandLine.IFactory` injected.
 
-== Different entry command for each profile
+=== Different entry command for each profile
 
 It is possible to create different entry command for each profile, using `@IfBuildProfile`:
 
@@ -201,7 +204,7 @@ public class Config {
 ----
 <1> You can return instance of `java.lang.Class` here. In such case `CommandLine` will try to instantiate this class using `CommandLine.IFactory`.
 
-== Configure CDI Beans with parsed arguments
+=== Configure CDI Beans with parsed arguments
 
 You can use `Event<CommandLine.ParseResult>` or just `CommandLine.ParseResult` to configure CDI beans based on arguments parsed by Picocli.
 This event will be generated in `QuarkusApplication` class created by this extension. If you are providing your own `@QuarkusMain` this event will not be raised.
@@ -242,7 +245,7 @@ class DatasourceConfiguration {
 ----
 <1> `@ApplicationScoped` used for lazy initialization
 
-== Providing own QuarkusMain
+=== Providing your own QuarkusMain
 
 You can also provide your own application entry point annotated with `QuarkusMain` (as described in xref:command-mode-reference.adoc[Command Mode reference guide]).
 
@@ -275,26 +278,6 @@ public class ExampleApp implements Runnable, QuarkusApplication {
 ----
 <1> Quarkus-compatible `CommandLine.IFactory` bean created by `picocli` extension.
 
-== Native mode support
-
-This extension uses the Quarkus standard build steps mechanism to support GraalVM Native images. In the exceptional case that incompatible changes in a future picocli release cause any issue, the following configuration can be used to fall back to the annotation processor from the picocli project as a temporary workaround:
-
-[source,xml]
-----
-<dependency>
-  <groupId>info.picocli</groupId>
-  <artifactId>picocli-codegen</artifactId>
-</dependency>
-----
-
-For Gradle, you need to add the following in `dependencies` section of the `build.gradle` file:
-
-[source,groovy,subs=attributes+]
-----
-annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-annotationProcessor 'info.picocli:picocli-codegen'
-----
-
 == Development Mode
 
 In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`.
@@ -304,6 +287,42 @@ For Gradle projects, arguments can be passed using `--quarkus-args`.
 ====
 If you're creating a typical Quarkus application (e.g., HTTP-based services) that includes command-line functionality, you'll need to handle the application's lifecycle differently. In the `Runnable.run()` method of your command, make sure to use `Quarkus.waitForExit()` or `Quarkus.asyncExit()`. This will prevent the application from shutting down prematurely and ensure a proper shutdown process.
 ====
+
+== Packaging your application
+
+A Picocli command line application can be packaged in multiple formats (e.g. a JAR, a native executable) and can be published to various repositories (e.g. Homebrew, Chocolatey, SDKMAN!).
+
+=== As a jar
+
+A Picocli command line application is a standard Quarkus application and as such can be published as a JAR in various packaging formats (e.g. fast-jar, uber-jar).
+
+In the context of a command line application, building an uber-jar is more practical if you plan on publishing the JAR as is.
+
+For more information about how to build an uber-jar, see our documentation:
+
+- For https://quarkus.io/guides/maven-tooling#uber-jar-maven[Maven]
+- For https://quarkus.io/guides/gradle-tooling#building-uber-jars[Gradle]
+
+You can then execute the application by using the standard `java -jar your-application.jar` command.
+
+Using plugins such as the https://github.com/brianm/really-executable-jars-maven-plugin[really-executable-jar-maven-plugin] can be handy to simplify the execution of your command line application.
+
+=== As a native executable
+
+You can also build a https://quarkus.io/guides/building-native-image[native executable] but keep in mind that native executables are not portable and that you need one binary per supported platform.
+
+=== Publishing the application
+
+Publishing your command line application to a repository makes it a lot easier to consume.
+Various application repositories are available depending on your requirements such as https://sdkman.io/[SDKMAN!], https://brew.sh/[Homebrew] for macOS, or https://chocolatey.org/[Chocolatey] for Windows.
+
+To publish to these repositories, we recommend the usage of https://jreleaser.org/[JReleaser].
+
+JReleaser adds executable wrappers around your JAR for your application to be easily executable.
+
+=== More information
+
+You can also consult the https://picocli.info/#_packaging_your_application[Picocli official documentation] for more general information about how to package Picocli applications.
 
 == Kubernetes support
 

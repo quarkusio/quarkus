@@ -87,14 +87,14 @@ public class ArcDevProcessor {
     // And we can't split the config due to compatibility reasons
     private Map<String, String> getConfigProperties(ArcConfig arcConfig) {
         Map<String, String> props = new HashMap<>();
-        props.put("quarkus.arc.remove-unused-beans", arcConfig.removeUnusedBeans);
-        props.put("quarkus.arc.unremovable-types", arcConfig.unremovableTypes.map(Object::toString).orElse(""));
-        props.put("quarkus.arc.detect-unused-false-positives", "" + arcConfig.detectUnusedFalsePositives);
-        props.put("quarkus.arc.transform-unproxyable-classes", "" + arcConfig.transformUnproxyableClasses);
-        props.put("quarkus.arc.auto-inject-fields", "" + arcConfig.autoInjectFields);
-        props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods);
-        props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives.map(Object::toString).orElse(""));
-        props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes.map(Object::toString).orElse(""));
+        props.put("quarkus.arc.remove-unused-beans", arcConfig.removeUnusedBeans());
+        props.put("quarkus.arc.unremovable-types", arcConfig.unremovableTypes().map(Object::toString).orElse(""));
+        props.put("quarkus.arc.detect-unused-false-positives", "" + arcConfig.detectUnusedFalsePositives());
+        props.put("quarkus.arc.transform-unproxyable-classes", "" + arcConfig.transformUnproxyableClasses());
+        props.put("quarkus.arc.auto-inject-fields", "" + arcConfig.autoInjectFields());
+        props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods());
+        props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives().map(Object::toString).orElse(""));
+        props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes().map(Object::toString).orElse(""));
         return props;
     }
 }

@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
@@ -96,7 +98,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         if (results.size() == 1) {
             return results.get(0);
         }
-        return Uni.combine().all().unis(results).combinedWith(new Function<List<?>, Boolean>() {
+        return Uni.combine().all().unis(results).with(new Function<List<?>, Boolean>() {
             @Override
             public Boolean apply(List<?> o) {
                 Boolean result = null;
@@ -144,6 +146,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         Principal principal;
         Set<String> roles = new HashSet<>();
         Set<Credential> credentials = new HashSet<>();
+        Set<Permission> permissions = new HashSet<>();
         Map<String, Object> attributes = new HashMap<>();
         List<Function<Permission, Uni<Boolean>>> permissionCheckers = new ArrayList<>();
         private boolean anonymous;
@@ -206,6 +209,48 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         }
 
         /**
+         * Adds a permission as String.
+         *
+         * @param permission The permission in a String format.
+         * @return This builder
+         */
+        public Builder addPermissionAsString(String permission) {
+            return addPermissionsAsString(Set.of(permission));
+        }
+
+        /**
+         * Adds permissions as String
+         *
+         * @param permissions The permissions in a String format.
+         * @return This builder
+         */
+        public Builder addPermissionsAsString(Set<String> permissions) {
+            return addPermissions(permissions.stream().map(p -> toPermission(p))
+                    .collect(Collectors.toSet()));
+        }
+
+        /**
+         * Adds a permission.
+         *
+         * @param permission The permission
+         * @return This builder
+         */
+        public Builder addPermission(Permission permission) {
+            return addPermissions(Set.of(permission));
+        }
+
+        /**
+         * Adds permissions.
+         *
+         * @param permissions The permissions
+         * @return This builder
+         */
+        public Builder addPermissions(Set<Permission> permissions) {
+            this.permissions.addAll(permissions);
+            return this;
+        }
+
+        /**
          * Adds a permission checker function. This permission checker has the following semantics:
          *
          * If it returns null, or the CompletionStage evaluates to null then this check is ignored
@@ -258,9 +303,43 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
             if (principal == null && !anonymous) {
                 throw new IllegalStateException("Principal is null but anonymous status is false");
             }
+            addPossesedPermissionsChecker();
 
             built = true;
             return new QuarkusSecurityIdentity(this);
         }
+
+        private void addPossesedPermissionsChecker() {
+            if (!permissions.isEmpty()) {
+                addPermissionChecker(
+                        new Function<Permission, Uni<Boolean>>() {
+
+                            @Override
+                            public Uni<Boolean> apply(Permission requiredPermission) {
+
+                                for (Permission possessedPermission : permissions) {
+                                    if (possessedPermission.implies(requiredPermission)) {
+                                        return Uni.createFrom().item(true);
+                                    }
+                                }
+                                return Uni.createFrom().item(false);
+
+                            }
+                        });
+            }
+
+        }
+
+        static Permission toPermission(String permissionAsString) {
+            int semicolonIndex = permissionAsString.indexOf(':');
+            if (semicolonIndex > 0 && semicolonIndex < permissionAsString.length() - 1) {
+                return new StringPermission(permissionAsString.substring(0, semicolonIndex),
+                        permissionAsString.substring(semicolonIndex + 1));
+            } else {
+                return new StringPermission(permissionAsString);
+            }
+
+        }
     }
+
 }

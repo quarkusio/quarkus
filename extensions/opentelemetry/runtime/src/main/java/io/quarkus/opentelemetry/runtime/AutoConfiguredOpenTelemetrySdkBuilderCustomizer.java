@@ -5,9 +5,11 @@ import static java.util.Collections.emptyList;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Any;
@@ -18,6 +20,10 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
@@ -27,7 +33,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
@@ -38,6 +44,47 @@ import io.quarkus.runtime.ApplicationConfig;
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
+
+    @Singleton
+    final class SimpleLogRecordProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private SimpleLogRecordProcessorBiFunction biFunction;
+
+        public SimpleLogRecordProcessorCustomizer(
+                OTelBuildConfig oTelBuildConfig,
+                Instance<LogRecordExporter> ilre) {
+            if (oTelBuildConfig.simple() && ilre.isResolvable()) {
+                LogRecordProcessor lrp = SimpleLogRecordProcessor.create(ilre.get());
+                this.biFunction = new SimpleLogRecordProcessorBiFunction(lrp);
+            }
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            if (biFunction != null) {
+                builder.addLogRecordProcessorCustomizer(biFunction);
+            }
+        }
+    }
+
+    class SimpleLogRecordProcessorBiFunction
+            implements BiFunction<LogRecordProcessor, ConfigProperties, LogRecordProcessor> {
+
+        private final LogRecordProcessor logRecordProcessor;
+
+        public SimpleLogRecordProcessorBiFunction(LogRecordProcessor logRecordProcessor) {
+            this.logRecordProcessor = logRecordProcessor;
+        }
+
+        @Override
+        public LogRecordProcessor apply(LogRecordProcessor lrp, ConfigProperties cp) {
+            // only change batch lrp, leave others
+            if (lrp instanceof BatchLogRecordProcessor) {
+                return logRecordProcessor;
+            } else {
+                return lrp;
+            }
+        }
+    }
 
     @Singleton
     final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
@@ -77,7 +124,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 .filter(new Predicate<String>() {
                                     @Override
                                     public boolean test(String sn) {
-                                        return !sn.equals(appConfig.name.orElse("unset"));
+                                        return !sn.equals(appConfig.name().orElse("unset"));
                                     }
                                 })
                                 .orElse(null);
@@ -125,12 +172,18 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 .orElse(existingSampler);
 
                         //collect default filtering targets (Needed for all samplers)
-                        List<String> dropTargets = new ArrayList<>();
+                        Set<String> dropTargets = new HashSet<>();
                         if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {//default is true
                             dropTargets.addAll(TracerRecorder.dropNonApplicationUriTargets);
                         }
                         if (!oTelRuntimeConfig.traces().includeStaticResources()) {// default is false
                             dropTargets.addAll(TracerRecorder.dropStaticResourceTargets);
+                        }
+                        if (oTelRuntimeConfig.traces().suppressApplicationUris().isPresent()) {
+                            dropTargets.addAll(oTelRuntimeConfig.traces().suppressApplicationUris().get()
+                                    .stream().filter(Predicate.not(String::isEmpty))
+                                    .map(addSlashIfNecessary())
+                                    .toList());
                         }
 
                         // make sure dropped targets are not sampled
@@ -145,6 +198,19 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                 }
             });
         }
+    }
+
+    private static Function<String, String> addSlashIfNecessary() {
+        return new Function<String, String>() {
+            @Override
+            public String apply(String item) {
+                if (item.startsWith("/")) {
+                    return item;
+                } else {
+                    return "/" + item;
+                }
+            }
+        };
     }
 
     @Singleton
@@ -174,7 +240,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
                                     @Override
                                     public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundBatchSpanProcessor);
+                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
                                     }
                                 })
                                         .forEach(tracerProviderBuilder::addSpanProcessor);

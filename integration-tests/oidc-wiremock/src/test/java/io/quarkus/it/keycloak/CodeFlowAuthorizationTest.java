@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -37,6 +39,7 @@ import javax.crypto.SecretKey;
 import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.jwt.Claims;
 import org.hamcrest.Matchers;
+import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
 import org.htmlunit.WebClient;
@@ -110,6 +113,33 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowOpaqueAccessToken() throws IOException {
+        defineCodeFlowOpaqueAccessTokenStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-opaque-access-token");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+
+            try {
+                webClient.getPage("http://localhost:8081/code-flow-opaque-access-token/jwt-access-token");
+                fail("500 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(500, ex.getStatusCode());
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
+    }
+
+    @Test
     public void testCodeFlowVerifyIdAndAccessToken() throws IOException {
         defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {
@@ -125,7 +155,7 @@ public class CodeFlowAuthorizationTest {
             assertEquals("access token verified: true,"
                     + " id_token issuer: https://server.example.com,"
                     + " access_token issuer: https://server.example.com,"
-                    + " id_token audience: https://id.server.example.com,"
+                    + " id_token audience: https://id.server.example.com;quarkus-web-app,"
                     + " access_token audience: https://server.example.com,"
                     + " cache size: 0", textPage.getContent());
             assertNotNull(getSessionCookie(webClient, "code-flow-verify-id-and-access-tokens"));
@@ -320,7 +350,7 @@ public class CodeFlowAuthorizationTest {
 
             Cookie stateCookie = getStateCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             Date stateCookieDate = stateCookie.getExpires();
-            final long nowInSecs = System.currentTimeMillis() / 1000;
+            final long nowInSecs = nowInSecs();
             final long sessionCookieLifespan = stateCookieDate.toInstant().getEpochSecond() - nowInSecs;
             // 5 mins is default
             assertTrue(sessionCookieLifespan >= 299 && sessionCookieLifespan <= 304);
@@ -377,7 +407,7 @@ public class CodeFlowAuthorizationTest {
 
             Thread.sleep(3000);
             // Refresh token is available but it is expired, so no token endpoint call is expected
-            assertTrue((System.currentTimeMillis() / 1000) > OidcUtils.decodeJwtContent(refreshJwtToken)
+            assertTrue((System.currentTimeMillis() / 1000) > OidcCommonUtils.decodeJwtContent(refreshJwtToken)
                     .getLong(Claims.exp.name()));
 
             webClient.getOptions().setRedirectEnabled(false);
@@ -437,7 +467,7 @@ public class CodeFlowAuthorizationTest {
                                 } else if (line.contains("Response contains signed UserInfo")) {
                                     signedUserInfoResponseFilterMessageDetected = true;
                                 } else if (line.contains(
-                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken'")) {
+                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken' in an instant: true")) {
                                     codeFlowCompletedResponseFilterMessageDetected = true;
                                 }
                                 if (lineConfirmingVerificationDetected
@@ -460,7 +490,8 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
-    public void testCodeFlowTokenIntrospection() throws Exception {
+    public void testCodeFlowTokenIntrospectionActiveRefresh() throws Exception {
+        // This stub does not return an access token expires_in property
         defineCodeFlowTokenIntrospectionStub();
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -474,10 +505,43 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice", textPage.getContent());
 
-            // refresh
+            // Refresh
+            // The internal ID token lifespan is 5 mins
+            // Configured refresh token skew is 298 secs = 5 mins - 2 secs
+            // Therefore, after waiting for 3 secs, an active refresh is happening
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection");
             assertEquals("admin:admin", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+
+        clearCache();
+    }
+
+    @Test
+    public void testCodeFlowTokenIntrospectionExpiresInRefresh() throws Exception {
+        // This stub does return an access token expires_in property
+        defineCodeFlowTokenIntrospectionExpiresInStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-token-introspection-expires-in");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+
+            // Refresh the expired token
+            // The internal ID token lifespan is 5 mins, refresh token skew is not configured,
+            // code flow access token expires in 3 seconds from now. Therefore, after waiting for 5 secs
+            // the refresh is triggered because it is allowed in the config and token expires_in property is returned.
+            Thread.sleep(5000);
+            textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection-expires-in");
+            assertEquals("bob", textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -566,7 +630,7 @@ public class CodeFlowAuthorizationTest {
 
         String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
 
-        return OidcUtils.decodeJwtContent(encodedIdToken);
+        return OidcCommonUtils.decodeJwtContent(encodedIdToken);
     }
 
     private WebClient createWebClient() {
@@ -676,6 +740,16 @@ public class CodeFlowAuthorizationTest {
 
     }
 
+    private void defineCodeFlowOpaqueAccessTokenStub() {
+        wireMockServer
+                .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/opaque-access-token"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \"alice\","
+                                        + "\"expires_in\": 299}")));
+    }
+
     private String generateAlreadyExpiredRefreshToken() {
         return Jwt.claims().expiresIn(0).signWithSecret("0123456789ABCDEF0123456789ABCDEF");
     }
@@ -699,6 +773,61 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"admin\""
+                                        + "}")));
+    }
+
+    private static long nowInSecs() {
+        return Instant.now().getEpochSecond();
+    }
+
+    private void defineCodeFlowTokenIntrospectionExpiresInStub() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token_expires_in")
+                        .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"id_token\": \"" +
+                                        OidcWiremockTestResource.generateJwtToken("alice", Set.of(), "sub", "ID",
+                                                Set.of("quarkus-web-app"))
+                                        + "\","
+                                        + "  \"access_token\": \"alice\","
+                                        + "  \"expires_in\":" + 3 + ","
+                                        + "  \"refresh_token\": \"refresh_expires_in\""
+                                        + "}")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/introspect_expires_in")
+                        .withRequestBody(containing("token=alice"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n"
+                                        + "  \"username\": \"alice\","
+                                        + "  \"exp\":" + (nowInSecs() + 3) + ","
+                                        + "  \"active\": true"
+                                        + "}")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/introspect_expires_in")
+                        .withRequestBody(containing("token=bob"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n"
+                                        + "  \"username\": \"bob\","
+                                        + "  \"active\": true"
+                                        + "}")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token_expires_in")
+                        .withRequestBody(containing("refresh_token=refresh_expires_in"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \"bob\","
+                                        + "  \"id_token\": \"" +
+                                        OidcWiremockTestResource.generateJwtToken("bob", Set.of(), "sub", "ID",
+                                                Set.of("quarkus-web-app"))
+                                        + "\""
                                         + "}")));
     }
 

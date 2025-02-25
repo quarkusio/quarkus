@@ -35,7 +35,8 @@ public class BlockingAnnotationTest {
 
     @Test
     void testEndoint() {
-        try (WSClient client = new WSClient(vertx).connect(endUri)) {
+        try (WSClient client = new WSClient(vertx)) {
+            client.connect(endUri);
             assertEquals("evenloop:false,worker:true", client.sendAndAwaitReply("foo").toString());
         }
     }

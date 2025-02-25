@@ -12,7 +12,6 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanEventAttrs;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -251,6 +250,92 @@ public class OpenTelemetryReactiveTest {
         assertEquals("name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_QUERY.getKey()));
         Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
         assertEquals("helloGet", gokuInternal.get("name"));
+    }
+
+    @Test
+    void multipleUsingCombineDifferentPaths() {
+        given()
+                .when()
+                .get("/reactive/multiple-combine-different-paths")
+                .then()
+                .statusCode(200)
+                .body(equalTo("helloGetUniDelay and Hello Naruto and Hello Goku and helloGetUniExecutor"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 13);
+
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(13, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+
+        // First span is the call getting into the server. It does not have a parent span.
+        Map<String, Object> parent = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+
+        // We should get 2 client spans originated by the server
+        List<Map<String, Object>> clientSpans = getSpansByKindAndParentId(spans, CLIENT, parent.get("spanId"));
+        assertEquals(4, clientSpans.size());
+
+        // Each client calls the server and programmatically create a span, so each have a server and an internal span
+
+        // helloGetUniDelay Span
+        Optional<Map<String, Object>> helloGetUniDelaySpan = clientSpans.stream()
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey()))
+                        .contains("/hello-get-uni-delay"))
+                .findFirst();
+        assertTrue(helloGetUniDelaySpan.isPresent());
+        Map<String, Object> helloGetUniDelay = helloGetUniDelaySpan.get();
+        assertEquals("GET /reactive/hello-get-uni-delay", helloGetUniDelay.get("name"));
+
+        Map<String, Object> helloGetUniDelayServer = getSpanByKindAndParentId(spans, SERVER, helloGetUniDelay.get("spanId"));
+        assertEquals("/reactive/hello-get-uni-delay",
+                ((Map<?, ?>) helloGetUniDelayServer.get("attributes")).get(URL_PATH.getKey()));
+        Map<String, Object> helloGetUniDelayInternal = getSpanByKindAndParentId(spans, INTERNAL,
+                helloGetUniDelayServer.get("spanId"));
+        assertEquals("helloGetUniDelay", helloGetUniDelayInternal.get("name"));
+
+        // Naruto Span
+        Optional<Map<String, Object>> narutoSpan = clientSpans.stream()
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Naruto"))
+                .findFirst();
+        assertTrue(narutoSpan.isPresent());
+        Map<String, Object> naruto = narutoSpan.get();
+        assertEquals("GET /reactive", naruto.get("name"));
+
+        Map<String, Object> narutoServer = getSpanByKindAndParentId(spans, SERVER, naruto.get("spanId"));
+        assertEquals("/reactive", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Naruto", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_QUERY.getKey()));
+        Map<String, Object> narutoInternal = getSpanByKindAndParentId(spans, INTERNAL, narutoServer.get("spanId"));
+        assertEquals("helloGet", narutoInternal.get("name"));
+
+        // Goku Span
+        Optional<Map<String, Object>> gokuSpan = clientSpans.stream()
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Goku"))
+                .findFirst();
+        assertTrue(gokuSpan.isPresent());
+        Map<String, Object> goku = gokuSpan.get();
+        assertEquals("GET /reactive", goku.get("name"));
+
+        Map<String, Object> gokuServer = getSpanByKindAndParentId(spans, SERVER, goku.get("spanId"));
+        assertEquals("/reactive", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_QUERY.getKey()));
+        Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
+        assertEquals("helloGet", gokuInternal.get("name"));
+
+        // helloGetUniDelay Span
+        Optional<Map<String, Object>> helloGetUniExecutorSpan = clientSpans.stream()
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey()))
+                        .contains("/hello-get-uni-executor"))
+                .findFirst();
+        assertTrue(helloGetUniExecutorSpan.isPresent());
+        Map<String, Object> helloGetUniExecutor = helloGetUniExecutorSpan.get();
+        assertEquals("GET /reactive/hello-get-uni-executor", helloGetUniExecutor.get("name"));
+
+        Map<String, Object> helloGetUniExecutorServer = getSpanByKindAndParentId(spans, SERVER,
+                helloGetUniExecutor.get("spanId"));
+        assertEquals("/reactive/hello-get-uni-executor",
+                ((Map<?, ?>) helloGetUniExecutorServer.get("attributes")).get(URL_PATH.getKey()));
+        Map<String, Object> helloGetUniExecutorInternal = getSpanByKindAndParentId(spans, INTERNAL,
+                helloGetUniExecutorServer.get("spanId"));
+        assertEquals("helloGetUniExecutor", helloGetUniExecutorInternal.get("name"));
     }
 
     @Test

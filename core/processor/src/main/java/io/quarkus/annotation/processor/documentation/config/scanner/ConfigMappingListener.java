@@ -15,7 +15,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
-import io.quarkus.annotation.processor.documentation.config.model.SourceType;
+import io.quarkus.annotation.processor.documentation.config.model.SourceElementType;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
@@ -75,6 +75,8 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
         }
 
+        validateRuntimeConfigOnDeploymentModules(configPhase, configRoot);
+
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion.getElementValues()
                 .entrySet()) {
             if ("prefix()".equals(entry.getKey().toString())) {
@@ -125,11 +127,11 @@ public class ConfigMappingListener extends AbstractConfigListener {
 
         Map<String, AnnotationMirror> methodAnnotations = utils.element().getAnnotations(method);
 
-        String sourceName = method.getSimpleName().toString();
+        String sourceElementName = method.getSimpleName().toString();
         DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
-                sourceName, SourceType.METHOD, resolvedType);
+                sourceElementName, SourceElementType.METHOD, resolvedType);
 
-        String name = ConfigNamingUtil.hyphenate(sourceName);
+        String name = ConfigNamingUtil.hyphenate(sourceElementName);
         AnnotationMirror withNameAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_WITH_NAME);
         if (withNameAnnotation != null) {
             name = withNameAnnotation.getElementValues().values().iterator().next().getValue().toString();
@@ -152,7 +154,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
         }
 
         if (resolvedType.isMap()) {
-            String mapKey = ConfigNamingUtil.hyphenate(sourceName);
+            String mapKey = ConfigNamingUtil.hyphenate(sourceElementName);
             AnnotationMirror configDocMapKeyAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_MAP_KEY);
             if (configDocMapKeyAnnotation != null) {
                 mapKey = configDocMapKeyAnnotation.getElementValues().values().iterator().next().getValue().toString();
@@ -169,7 +171,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        handleCommonPropertyAnnotations(builder, methodAnnotations, resolvedType, sourceName);
+        handleCommonPropertyAnnotations(builder, methodAnnotations, resolvedType, sourceElementName);
 
         discoveryRootElement.addProperty(builder.build());
     }

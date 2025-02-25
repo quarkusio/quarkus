@@ -242,7 +242,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 === Adding entity methods
 
@@ -410,7 +410,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 NOTE: The rest of the documentation show usages based on the active record pattern only,
 but keep in mind that they can be performed with the repository pattern as well.
@@ -707,7 +707,7 @@ TIP: Using `@BsonProperty` is not needed to define custom column mappings, as th
 
 TIP: You can have your projection class extends from another class. In this case, the parent class also needs to have use `@ProjectionFor` annotation.
 
-TIP: If you run Java 17+, records are a good fit for projection classes.
+TIP: Records are a good fit for projection classes.
 
 == Query debugging
 
@@ -724,6 +724,7 @@ quarkus.log.category."io.quarkus.mongodb.panache.common.runtime".level=DEBUG
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/[PojoCodecProvider], with link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/#configure-the-driver-for-pojos[automatic POJO support],
 to automatically convert your object to a BSON document.
+This codec also supports Java records so you can use them for your entities or an attribute of your entities.
 
 In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to
 automatically convert your object.
@@ -1274,12 +1275,12 @@ and then `quarkus.mongodb.database` property.
 [NOTE]
 ====
 If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB
-database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver`
-to the MongoDB with Panache `MongoDatabaseResolver` as a `RoutingContext` attribute, for example:
+database are the same, you can access the OIDC tenant id from a `RoutingContext` attribute like in the example below:
 
 [source,java]
 ----
 import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped
@@ -1290,8 +1291,8 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
     ...
     @Override
     public String resolve() {
-        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
-        return context.get("tenantId");
+        // OIDC has saved the tenant id as the RoutingContext attribute:
+        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
     }
 }
 ----

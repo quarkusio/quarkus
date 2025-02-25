@@ -88,31 +88,31 @@ public interface NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
-     * It also serves as the default Locale language for the native executable application runtime.
+     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale language for the native executable
+     * application runtime.
      * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
      *
      * @deprecated Use the global quarkus.default-locale.
      */
-    @WithConverter(TrimmedStringConverter.class)
     @Deprecated
-    Optional<String> userLanguage();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> userLanguage();
 
     /**
      * Defines the user country used for building the native executable.
-     * It also serves as the default Locale country for the native executable application runtime.
+     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale country for the native executable
+     * application runtime.
      * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
      *
      * @deprecated Use the global quarkus.default-locale.
      */
-    @WithConverter(TrimmedStringConverter.class)
     @Deprecated
-    Optional<String> userCountry();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> userCountry();
 
     /**
      * Defines the file encoding as in {@code -Dfile.encoding=...}.
-     *
+     * <p>
      * Native image runtime uses the host's (i.e. build time) value of {@code file.encoding}
      * system property. We intentionally default this to UTF-8 to avoid platform specific
      * defaults to be picked up which can then result in inconsistent behavior in the
@@ -251,7 +251,16 @@ public interface NativeConfig {
     interface BuilderImageConfig {
         /**
          * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}.
+         * {@code quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21}.
+         * <p>
+         * <strong>Note:</strong> Builder images are available using UBI 8 and UBI 9 base images, for example:
+         * <ul>
+         * <li>UBI 8: {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21} (UBI 8)</li>
+         * <li>UBI 9: {@code quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21} (UBI 9)</li>
+         * </ul>
+         * <p>
+         * You need to be aware that if you use a builder image using UBI9 and you plan to build a container, you must
+         * ensure that the base image used in the container is also UBI9.
          */
         @WithParentName
         @WithDefault("${platform.quarkus.native.builder-image}")
@@ -276,9 +285,9 @@ public interface NativeConfig {
         default String getEffectiveImage() {
             final String builderImageName = this.image().toUpperCase();
             if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-                return ContainerImages.GRAALVM_BUILDER;
+                return ContainerImages.UBI9_GRAALVM_BUILDER;
             } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-                return ContainerImages.MANDREL_BUILDER;
+                return ContainerImages.UBI9_MANDREL_BUILDER;
             } else {
                 return this.image();
             }
@@ -313,6 +322,7 @@ public interface NativeConfig {
      * <li><code>heapdump</code> for heampdump support</li>
      * <li><code>jmxclient</code> for JMX client support (experimental)</li>
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
+     * <li><code>nmt</code> for native memory tracking support</li>
      * <li><code>all</code> for all monitoring features</li>
      * </ul>
      */
@@ -343,7 +353,7 @@ public interface NativeConfig {
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
      * means
      * your application may fail at runtime if an unsupported feature is used by accident.
-     *
+     * <p>
      * Note that the use of this flag may result in build time failures due to {@code ClassNotFoundException}s.
      * Reason most likely being that the Quarkus extension already optimized it away or do not actually need it.
      * In such cases you should explicitly add the corresponding dependency providing the missing classes as a
@@ -354,9 +364,9 @@ public interface NativeConfig {
 
     /**
      * Don't build a native image if it already exists.
-     *
+     * <p>
      * This is useful if you have already built an image and you want to use Quarkus to deploy it somewhere.
-     *
+     * <p>
      * Note that this is not able to detect if the existing image is outdated, if you have modified source
      * or config and want a new image you must not use this flag.
      */
@@ -384,7 +394,7 @@ public interface NativeConfig {
          * <pre>
          * quarkus.native.resources.includes = foo/**,bar/**&#47;*.txt
          * </pre>
-         *
+         * <p>
          * the files {@code src/main/resources/foo/selected.png} and {@code bar/some.txt} will be included in the native
          * image, while {@code src/main/resources/ignored.png} will not be included.
          * <p>
@@ -464,7 +474,7 @@ public interface NativeConfig {
          * quarkus.native.resources.includes = **&#47;*.png
          * quarkus.native.resources.excludes = foo/**,**&#47;green.png
          * </pre>
-         *
+         * <p>
          * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
          * and {@code bar/blue.png} will not be available in the native image.
          */
@@ -529,7 +539,7 @@ public interface NativeConfig {
         /**
          * Allows passing extra arguments to the UPX command line (like --brute).
          * The arguments are comma-separated.
-         *
+         * <p>
          * The exhaustive list of parameters can be found in
          * <a href="https://github.com/upx/upx/blob/devel/doc/upx.pod">https://github.com/upx/upx/blob/devel/doc/upx.pod</a>.
          */
@@ -550,6 +560,7 @@ public interface NativeConfig {
         JFR,
         JMXSERVER,
         JMXCLIENT,
+        NMT,
         ALL
     }
 

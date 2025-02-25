@@ -88,7 +88,7 @@ public class ClassTransformingBuildStep {
             ExecutorService buildExecutor,
             CuratedApplicationShutdownBuildItem shutdown)
             throws ExecutionException, InterruptedException {
-        if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()
+        if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources().isEmpty()
                 && removedResourceBuildItems.isEmpty()) {
             return new TransformedClassesBuildItem(Collections.emptyMap());
         }
@@ -314,7 +314,7 @@ public class ClassTransformingBuildStep {
             List<RemovedResourceBuildItem> removedResourceBuildItems) {
         //a little bit of a hack, but we use an empty transformed class to represent removed resources, as transforming a class removes it from the original archive
         Map<ArtifactKey, Set<String>> removed = new HashMap<>();
-        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources().entrySet()) {
             removed.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
         for (RemovedResourceBuildItem i : removedResourceBuildItems) {

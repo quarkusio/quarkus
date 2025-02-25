@@ -97,7 +97,7 @@ public interface TlsBucketConfig {
 
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be {@code HTTPS} (default), {@code LDAPS} or an {@code NONE}.
+     * Should be {@code HTTPS} (default), {@code LDAPS} or {@code NONE}.
      * <p>
      * If set to {@code NONE}, it does not verify the hostname.
      * <p>

@@ -15,17 +15,17 @@ import io.smallrye.mutiny.Uni;
 
 public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuthenticationRequest> {
 
-    private static final Principal principal = new Principal() {
+    private static final Principal PRINCIPAL = new Principal() {
         @Override
         public String getName() {
             return "";
         }
     };
 
-    private static final SecurityIdentity instance = new SecurityIdentity() {
+    private static final SecurityIdentity INSTANCE = new SecurityIdentity() {
         @Override
         public Principal getPrincipal() {
-            return principal;
+            return PRINCIPAL;
         }
 
         @Override
@@ -77,6 +77,6 @@ public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuth
     @Override
     public Uni<SecurityIdentity> authenticate(AnonymousAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        return Uni.createFrom().item(instance);
+        return Uni.createFrom().item(INSTANCE);
     }
 }

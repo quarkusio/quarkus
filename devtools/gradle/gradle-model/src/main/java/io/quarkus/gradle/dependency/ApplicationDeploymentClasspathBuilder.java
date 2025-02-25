@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,8 @@ import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.runtime.LaunchMode;
 
 public class ApplicationDeploymentClasspathBuilder {
+
+    public static final String QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION = "quarkusBootstrapResolverConfiguration";
 
     private static String getLaunchModeAlias(LaunchMode mode) {
         if (mode == LaunchMode.DEVELOPMENT) {
@@ -226,32 +229,39 @@ public class ApplicationDeploymentClasspathBuilder {
                 configuration.setCanBeConsumed(false);
                 Configuration enforcedPlatforms = this.getPlatformConfiguration();
                 configuration.extendsFrom(enforcedPlatforms);
+                Map<String, Set<Dependency>> calculatedDependenciesByModeAndConfiguration = new HashMap<>();
                 ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
                 configuration.getDependencies().addAllLater(dependencyListProperty.value(project.provider(() -> {
-                    ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
-                            enforcedPlatforms);
-                    final Collection<ExtensionDependency<?>> allExtensions = cdEnabler.getAllExtensions();
-                    Set<ExtensionDependency<?>> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
-                            allExtensions);
-                    // Add conditional extensions
-                    for (ExtensionDependency<?> knownExtension : allExtensions) {
-                        if (knownExtension.isConditional()) {
-                            extensions.add(knownExtension);
-                        }
-                    }
-
-                    final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
-                    final DependencyHandler dependencies = project.getDependencies();
-                    final Set<Dependency> deploymentDependencies = new HashSet<>();
-                    for (ExtensionDependency<?> extension : extensions) {
-                        if (!alreadyProcessed.add(extension.getExtensionId())) {
-                            continue;
+                    String key = String.format("%s%s%s", mode, configuration.getName(), project.getName());
+                    if (!calculatedDependenciesByModeAndConfiguration.containsKey(key)) {
+                        ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
+                                enforcedPlatforms);
+                        final Collection<ExtensionDependency<?>> allExtensions = cdEnabler.getAllExtensions();
+                        Set<ExtensionDependency<?>> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
+                                allExtensions);
+                        // Add conditional extensions
+                        for (ExtensionDependency<?> knownExtension : allExtensions) {
+                            if (knownExtension.isConditional()) {
+                                extensions.add(knownExtension);
+                            }
                         }
 
-                        deploymentDependencies.add(
-                                DependencyUtils.createDeploymentDependency(dependencies, extension));
+                        final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
+                        final DependencyHandler dependencies = project.getDependencies();
+                        final Set<Dependency> deploymentDependencies = new HashSet<>();
+                        for (ExtensionDependency<?> extension : extensions) {
+                            if (!alreadyProcessed.add(extension.getExtensionId())) {
+                                continue;
+                            }
+
+                            deploymentDependencies.add(
+                                    DependencyUtils.createDeploymentDependency(dependencies, extension));
+                        }
+                        calculatedDependenciesByModeAndConfiguration.put(key, deploymentDependencies);
+                        return deploymentDependencies;
+                    } else {
+                        return calculatedDependenciesByModeAndConfiguration.get(key);
                     }
-                    return deploymentDependencies;
                 })));
             });
         }
@@ -288,6 +298,10 @@ public class ApplicationDeploymentClasspathBuilder {
         return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 
+    public Configuration getRuntimeConfigurationWithoutResolvingDeployment() {
+        return project.getConfigurations().getByName(this.runtimeConfigurationName);
+    }
+
     public Configuration getDeploymentConfiguration() {
         return project.getConfigurations().getByName(this.deploymentConfigurationName);
     }
@@ -305,6 +319,10 @@ public class ApplicationDeploymentClasspathBuilder {
      */
     public PlatformImports getPlatformImports() {
         this.getPlatformConfiguration().getResolvedConfiguration();
+        return platformImports.get(this.platformImportName);
+    }
+
+    public PlatformImports getPlatformImportsWithoutResolvingPlatform() {
         return platformImports.get(this.platformImportName);
     }
 

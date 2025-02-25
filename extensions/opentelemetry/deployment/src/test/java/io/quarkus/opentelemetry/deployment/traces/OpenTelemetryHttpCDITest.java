@@ -2,8 +2,10 @@ package io.quarkus.opentelemetry.deployment.traces;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,10 +26,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.SemanticAttributes;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -64,9 +65,9 @@ public class OpenTelemetryHttpCDITest {
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /hello", server.getName());
         // verify that OpenTelemetryServerFilter took place
-        assertStringAttribute(server, SemanticAttributes.CODE_NAMESPACE,
+        assertStringAttribute(server, CODE_NAMESPACE,
                 "io.quarkus.opentelemetry.deployment.traces.OpenTelemetryHttpCDITest$HelloResource");
-        assertStringAttribute(server, SemanticAttributes.CODE_FUNCTION, "hello");
+        assertStringAttribute(server, CODE_FUNCTION, "hello");
 
         final SpanData internalFromBean = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("HelloBean.hello", internalFromBean.getName());
@@ -88,6 +89,7 @@ public class OpenTelemetryHttpCDITest {
 
         final SpanData withSpan = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("withSpan", withSpan.getName());
+        assertEquals(2, withSpan.getAttributes().size());
 
         final SpanData bean = getSpanByKindAndParentId(spans, INTERNAL, withSpan.getSpanId());
         assertEquals("HelloBean.hello", bean.getName());

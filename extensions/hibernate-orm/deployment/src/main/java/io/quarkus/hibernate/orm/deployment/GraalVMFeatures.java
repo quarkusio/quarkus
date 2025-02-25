@@ -39,4 +39,14 @@ public class GraalVMFeatures {
                 .build();
     }
 
+    // Workaround for https://hibernate.atlassian.net/browse/HHH-18875
+    // See https://hibernate.zulipchat.com/#narrow/channel/132094-hibernate-orm-dev/topic/StandardStack.20and.20reflection
+    @BuildStep
+    ReflectiveClassBuildItem registerStandardStackElementTypesForReflection() {
+        return ReflectiveClassBuildItem
+                .builder(ClassNames.STANDARD_STACK_ELEMENT_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .reason("Workaround for https://hibernate.atlassian.net/browse/HHH-18875")
+                .build();
+    }
+
 }

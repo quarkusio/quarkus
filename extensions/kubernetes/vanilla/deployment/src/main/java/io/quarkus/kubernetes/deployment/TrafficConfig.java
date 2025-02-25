@@ -1,25 +1,20 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class TrafficConfig {
+public interface TrafficConfig {
     /**
      * Tag is optionally used to expose a dedicated url for referencing
      * this target exclusively.
      */
-    @ConfigItem
-    Optional<String> tag;
+    Optional<String> tag();
 
     /**
      * RevisionName of a specific revision to which to send this portion of traffic.
      */
-    @ConfigItem
-    Optional<String> revisionName;
+    Optional<String> revisionName();
 
     /**
      * LatestRevision may be optionally provided to indicate that the latest
@@ -27,8 +22,8 @@ public class TrafficConfig {
      * target. When provided LatestRevision must be true if RevisionName is
      * empty.
      */
-    @ConfigItem(defaultValue = "false")
-    Optional<Boolean> latestRevision;
+    @WithDefault("false")
+    Optional<Boolean> latestRevision();
 
     /**
      * Percent indicates that percentage based routing should be used and
@@ -36,6 +31,6 @@ public class TrafficConfig {
      * Revision or Configuration. `0` (zero) mean no traffic, `100` means all
      * traffic.
      */
-    @ConfigItem(defaultValue = "100")
-    Optional<Long> percent;
+    @WithDefault("100")
+    Optional<Long> percent();
 }

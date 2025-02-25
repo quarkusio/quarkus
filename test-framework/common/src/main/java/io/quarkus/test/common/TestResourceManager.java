@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -38,8 +39,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-import io.smallrye.config.SmallRyeConfigProviderResolver;
-
 /**
  * Manages {@link QuarkusTestResourceLifecycleManager}
  */
@@ -53,6 +52,7 @@ public class TestResourceManager implements Closeable {
     private final List<TestResourceStartInfo> allTestResources;
     private final Map<String, String> configProperties = new ConcurrentHashMap<>();
     private final Set<TestResourceComparisonInfo> testResourceComparisonInfo;
+    private final DevServicesContext devServicesContext;
 
     private boolean started = false;
 
@@ -107,8 +107,7 @@ public class TestResourceManager implements Closeable {
 
         this.testResourceComparisonInfo = new HashSet<>();
         for (TestResourceClassEntry uniqueEntry : uniqueEntries) {
-            testResourceComparisonInfo.add(new TestResourceComparisonInfo(
-                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope()));
+            testResourceComparisonInfo.add(prepareTestResourceComparisonInfo(uniqueEntry));
         }
 
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
@@ -117,7 +116,7 @@ public class TestResourceManager implements Closeable {
         this.allTestResources = new ArrayList<>(sequentialTestResources);
         this.allTestResources.addAll(parallelTestResources);
 
-        DevServicesContext context = new DevServicesContext() {
+        this.devServicesContext = new DevServicesContext() {
             @Override
             public Map<String, String> devServicesProperties() {
                 return devServicesProperties;
@@ -130,7 +129,7 @@ public class TestResourceManager implements Closeable {
         };
         for (var i : allTestResources) {
             if (i.getTestResource() instanceof DevServicesContext.ContextAware) {
-                ((DevServicesContext.ContextAware) i.getTestResource()).setIntegrationTestContext(context);
+                ((DevServicesContext.ContextAware) i.getTestResource()).setIntegrationTestContext(devServicesContext);
             }
         }
     }
@@ -195,10 +194,38 @@ public class TestResourceManager implements Closeable {
     }
 
     public void inject(Object testInstance) {
+        injectTestContext(testInstance, devServicesContext);
         for (TestResourceStartInfo entry : allTestResources) {
             QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager = entry.getTestResource();
             quarkusTestResourceLifecycleManager.inject(testInstance);
             quarkusTestResourceLifecycleManager.inject(new DefaultTestInjector(testInstance));
+        }
+    }
+
+    private static void injectTestContext(Object testInstance, DevServicesContext context) {
+        Class<?> c = testInstance.getClass();
+        while (c != Object.class) {
+            for (Field f : c.getDeclaredFields()) {
+                if (f.getType().equals(DevServicesContext.class)) {
+                    try {
+                        f.setAccessible(true);
+                        f.set(testInstance, context);
+                        return;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to set field '" + f.getName()
+                                + "' with the proper test context", e);
+                    }
+                } else if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
+                    f.setAccessible(true);
+                    try {
+                        DevServicesContext.ContextAware val = (DevServicesContext.ContextAware) f.get(testInstance);
+                        val.setIntegrationTestContext(context);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to inject context into field " + f.getName(), e);
+                    }
+                }
+            }
+            c = c.getSuperclass();
         }
     }
 
@@ -213,18 +240,6 @@ public class TestResourceManager implements Closeable {
             } catch (Exception e) {
                 throw new RuntimeException("Unable to stop Quarkus test resource " + entry.getTestResource(), e);
             }
-        }
-        // TODO using QuarkusConfigFactory.setConfig(null) here makes continuous testing fail,
-        //   e.g. in io.quarkus.hibernate.orm.HibernateHotReloadTestCase
-        //   or io.quarkus.opentelemetry.deployment.OpenTelemetryContinuousTestingTest;
-        //   maybe this cleanup is not really necessary and just "doesn't hurt" because
-        //   the released config is still cached in QuarkusConfigFactory#config
-        //   and will be restored soon after when QuarkusConfigFactory#getConfigFor is called?
-        //   In that case we should remove this cleanup.
-        try {
-            ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
-                    .releaseConfig(Thread.currentThread().getContextClassLoader());
-        } catch (Throwable ignored) {
         }
         configProperties.clear();
     }
@@ -316,19 +331,34 @@ public class TestResourceManager implements Closeable {
     }
 
     /**
-     * Allows Quarkus to extra basic information about which test resources a test class will require
+     * Allows Quarkus to extract basic information about which test resources a test class will require
      */
     public static Set<TestResourceManager.TestResourceComparisonInfo> testResourceComparisonInfo(Class<?> testClass,
-            Path testClassLocation) {
+            Path testClassLocation, List<TestResourceClassEntry> entriesFromProfile) {
         Set<TestResourceClassEntry> uniqueEntries = getUniqueTestResourceClassEntries(testClass, testClassLocation, null);
-        if (uniqueEntries.isEmpty()) {
+        if (uniqueEntries.isEmpty() && entriesFromProfile.isEmpty()) {
             return Collections.emptySet();
         }
-        Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
-        for (TestResourceClassEntry entry : uniqueEntries) {
-            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope()));
+        Set<TestResourceClassEntry> allEntries = new HashSet<>(uniqueEntries);
+        allEntries.addAll(entriesFromProfile);
+        Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(allEntries.size());
+        for (TestResourceClassEntry entry : allEntries) {
+            result.add(prepareTestResourceComparisonInfo(entry));
         }
         return result;
+    }
+
+    private static TestResourceComparisonInfo prepareTestResourceComparisonInfo(TestResourceClassEntry entry) {
+        Map<String, String> args;
+        if (entry.configAnnotation != null) {
+            args = new HashMap<>(entry.args);
+            args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
+        } else {
+            args = entry.args;
+        }
+
+        return new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
+                args);
     }
 
     private static Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,
@@ -439,15 +469,15 @@ public class TestResourceManager implements Closeable {
 
     private static Collection<AnnotationInstance> findTestResourceInstancesOfClass(Class<?> testClass, IndexView index) {
         // collect all test supertypes for matching per-test targets
-        Set<String> testClasses = new HashSet<>();
+        Set<String> currentTestClassHierarchy = new HashSet<>();
         Class<?> current = testClass;
         while (current != Object.class) {
-            testClasses.add(current.getName());
+            currentTestClassHierarchy.add(current.getName());
             current = current.getSuperclass();
         }
         current = testClass.getEnclosingClass();
         while (current != null) {
-            testClasses.add(current.getName());
+            currentTestClassHierarchy.add(current.getName());
             current = current.getEnclosingClass();
         }
 
@@ -455,7 +485,7 @@ public class TestResourceManager implements Closeable {
 
         for (DotName testResourceClasses : List.of(WITH_TEST_RESOURCE, QUARKUS_TEST_RESOURCE)) {
             for (AnnotationInstance annotation : index.getAnnotations(testResourceClasses)) {
-                if (keepTestResourceAnnotation(annotation, annotation.target().asClass(), testClasses)) {
+                if (keepTestResourceAnnotation(annotation, annotation.target().asClass(), currentTestClassHierarchy)) {
                     testResourceAnnotations.add(annotation);
                 }
             }
@@ -466,7 +496,8 @@ public class TestResourceManager implements Closeable {
             for (AnnotationInstance annotation : index.getAnnotations(testResourceListClasses)) {
                 for (AnnotationInstance nestedAnnotation : annotation.value().asNestedArray()) {
                     // keep the list target
-                    if (keepTestResourceAnnotation(nestedAnnotation, annotation.target().asClass(), testClasses)) {
+                    if (keepTestResourceAnnotation(nestedAnnotation, annotation.target().asClass(),
+                            currentTestClassHierarchy)) {
                         testResourceAnnotations.add(nestedAnnotation);
                     }
                 }
@@ -477,21 +508,22 @@ public class TestResourceManager implements Closeable {
     }
 
     private static boolean keepTestResourceAnnotation(AnnotationInstance annotation, ClassInfo targetClass,
-            Set<String> testClasses) {
+            Set<String> currentTestClassHierarchy) {
         if (targetClass.isAnnotation()) {
             // meta-annotations have already been handled in collectMetaAnnotations
             return false;
         }
 
         if (restrictToAnnotatedClass(annotation)) {
-            return testClasses.contains(targetClass.name().toString('.'));
+            return currentTestClassHierarchy.contains(targetClass.name().toString('.'));
         }
 
         return true;
     }
 
     private static boolean restrictToAnnotatedClass(AnnotationInstance annotation) {
-        return TestResourceClassEntryHandler.determineScope(annotation) == RESTRICTED_TO_CLASS;
+        return TestResourceClassEntryHandler.determineScope(annotation) == RESTRICTED_TO_CLASS
+                || TestResourceClassEntryHandler.determineScope(annotation) == MATCHING_RESOURCES;
     }
 
     /**
@@ -516,7 +548,7 @@ public class TestResourceManager implements Closeable {
             return false;
         }
 
-        if (hasRestrictedToClassScope(existing) || hasRestrictedToClassScope(next)) {
+        if (anyResourceRestrictedToClass(existing) || anyResourceRestrictedToClass(next)) {
             return true;
         }
 
@@ -538,8 +570,14 @@ public class TestResourceManager implements Closeable {
         return false;
     }
 
-    private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {
-        for (TestResourceComparisonInfo info : existing) {
+    public static String getReloadGroupIdentifier(Set<TestResourceComparisonInfo> existing) {
+        // For now, we reload if it's restricted to class scope, and don't otherwise
+        String uniquenessModifier = anyResourceRestrictedToClass(existing) ? UUID.randomUUID().toString() : "";
+        return existing.stream().map(Object::toString).sorted().collect(Collectors.joining()) + uniquenessModifier;
+    }
+
+    private static boolean anyResourceRestrictedToClass(Set<TestResourceComparisonInfo> testResources) {
+        for (TestResourceComparisonInfo info : testResources) {
             if (info.scope == RESTRICTED_TO_CLASS) {
                 return true;
             }
@@ -603,7 +641,8 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope) {
+    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope,
+            Map<String, String> args) {
 
     }
 

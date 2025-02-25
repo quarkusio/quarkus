@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -50,7 +51,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-d",
             "--directory" }, description = "The directory in which the certificates will be created. Default is `.certs`", defaultValue = ".certs")
-    String directory;
+    Path directory;
 
     @CommandLine.Option(names = { "-r",
             "--renew" }, description = "Whether existing certificates will need to be replaced", defaultValue = "false")
@@ -83,35 +84,35 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         createSignedCertificate(caCert, caPrivateKey);
 
         LOGGER.log(INFO, "✅ Signed Certificate generated successfully and exported into `{0}-keystore.p12`", name);
-        printConfig(new File(directory, name + "-keystore.p12").getAbsolutePath(), password);
+        printConfig(directory.resolve(name + "-keystore.p12"), password);
 
         return 0;
     }
 
     private void generateSelfSignedCertificate() throws Exception {
-        File out = new File(directory);
-        if (!out.exists()) {
-            out.mkdirs();
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
         }
-        new CertificateGenerator(out.toPath(), renew).generate(new CertificateRequest()
+        new CertificateGenerator(directory, renew).generate(new CertificateRequest()
                 .withName(name)
                 .withCN(cn)
                 .withPassword(password)
                 .withDuration(Duration.ofDays(365))
                 .withFormat(Format.PKCS12));
         LOGGER.log(INFO, "✅ Self-signed certificate generated successfully and exported into `{0}-keystore.p12`", name);
-        printConfig(new File(directory, name + "-keystore.p12").getAbsolutePath(), password);
+        printConfig(directory.resolve(name + "-keystore.p12"), password);
 
     }
 
-    private void printConfig(String path, String password) {
+    private void printConfig(Path certificatePath, String password) {
+        String certificatePathProperty = certificatePath.toString();
         if (OS.WINDOWS.isCurrent()) {
-            path = path.replace("\\", "\\\\");
+            certificatePathProperty = certificatePathProperty.replace("\\", "\\\\");
         }
 
         try {
             List<String> dotEnvContent = readDotEnvFile();
-            addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.path", path);
+            addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.path", certificatePathProperty);
             addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.password", password);
             Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
         } catch (IOException e) {
@@ -119,10 +120,10 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         }
 
         LOGGER.log(INFO, """
-                    ✅ Required configuration added to the `.env` file:
-                    %dev.quarkus.tls.key-store.p12.path={0}
-                    %dev.quarkus.tls.key-store.p12.password={1}
-                """, path, password);
+                ✅ Required configuration added to the `.env` file:
+                %dev.quarkus.tls.key-store.p12.path={0}
+                %dev.quarkus.tls.key-store.p12.password={1}
+                """, certificatePathProperty, password);
     }
 
     private X509Certificate loadRootCertificate(File ca) throws Exception {
@@ -151,11 +152,10 @@ public class GenerateCertificateCommand implements Callable<Integer> {
 
     private void createSignedCertificate(X509Certificate issuerCert,
             PrivateKey issuerPrivateKey) throws Exception {
-        File out = new File(directory);
-        if (!out.exists()) {
-            out.mkdirs();
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
         }
-        new CertificateGenerator(out.toPath(), renew).generate(new CertificateRequest()
+        new CertificateGenerator(directory, renew).generate(new CertificateRequest()
                 .withName(name)
                 .withCN(cn)
                 .withPassword(password)

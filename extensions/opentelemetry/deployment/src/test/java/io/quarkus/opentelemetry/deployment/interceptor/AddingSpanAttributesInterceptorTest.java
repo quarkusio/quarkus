@@ -1,6 +1,8 @@
 package io.quarkus.opentelemetry.deployment.interceptor;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,8 +26,8 @@ import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class AddingSpanAttributesInterceptorTest {
@@ -104,9 +106,11 @@ public class AddingSpanAttributesInterceptorTest {
         SpanData spanDataOut = spanItems.get(0);
         assertEquals("HelloRouter.withSpanTakesPrecedence", spanDataOut.getName());
         assertEquals(INTERNAL, spanDataOut.getKind());
-        assertEquals(2, spanDataOut.getAttributes().size());
+        assertEquals(4, spanDataOut.getAttributes().size());
         assertEquals("implicit", getAttribute(spanDataOut, "implicitName"));
         assertEquals("explicit", getAttribute(spanDataOut, "explicitName"));
+        assertEquals("withSpanTakesPrecedence", spanDataOut.getAttributes().get((CODE_FUNCTION)));
+        assertEquals(HelloRouter.class.getName(), spanDataOut.getAttributes().get((CODE_NAMESPACE)));
     }
 
     @Test

@@ -193,6 +193,17 @@
             </properties>
         </profile>
         <profile>
+            <id>quickly-docs-build</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
             <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
             <id>quick-build-ci</id>
             <activation>

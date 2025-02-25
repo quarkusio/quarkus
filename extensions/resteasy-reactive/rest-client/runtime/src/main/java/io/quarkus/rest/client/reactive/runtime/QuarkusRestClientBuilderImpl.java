@@ -263,6 +263,18 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     }
 
     @Override
+    public QuarkusRestClientBuilder disableDefaultMapper(Boolean disable) {
+        proxy.disableDefaultMapper(disable);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder enableCompression(boolean enableCompression) {
+        proxy.enableCompression(enableCompression);
+        return this;
+    }
+
+    @Override
     public <T> T build(Class<T> clazz) throws IllegalStateException, RestClientDefinitionException {
         return proxy.build(clazz);
     }

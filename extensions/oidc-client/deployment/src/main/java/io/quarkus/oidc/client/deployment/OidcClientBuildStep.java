@@ -3,7 +3,6 @@ package io.quarkus.oidc.client.deployment;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.sanitize;
 
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -13,7 +12,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.BeanDestroyer;
@@ -32,8 +30,8 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -46,19 +44,17 @@ import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
+import io.quarkus.oidc.client.runtime.OidcClientDefaultIdConfigBuilder;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.client.runtime.TokenProviderProducer;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
-import io.quarkus.oidc.token.propagation.AccessToken;
 import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
 public class OidcClientBuildStep {
-
-    private static final DotName ACCESS_TOKEN = DotName.createSimple(AccessToken.class.getName());
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
@@ -165,23 +161,8 @@ public class OidcClientBuildStep {
     }
 
     @BuildStep
-    public List<AccessTokenInstanceBuildItem> collectAccessTokenInstances(CombinedIndexBuildItem index) {
-        record ItemBuilder(AnnotationInstance instance) {
-
-            private String toClientName() {
-                var value = instance.value("exchangeTokenClient");
-                return value == null || value.asString().equals("Default") ? "" : value.asString();
-            }
-
-            private boolean toExchangeToken() {
-                return instance.value("exchangeTokenClient") != null;
-            }
-
-            private AccessTokenInstanceBuildItem build() {
-                return new AccessTokenInstanceBuildItem(toClientName(), toExchangeToken(), instance.target());
-            }
-        }
-        return index.getIndex().getAnnotations(ACCESS_TOKEN).stream().map(ItemBuilder::new).map(ItemBuilder::build).toList();
+    RunTimeConfigBuilderBuildItem useOidcClientDefaultIdConfigBuilder() {
+        return new RunTimeConfigBuilderBuildItem(OidcClientDefaultIdConfigBuilder.class);
     }
 
     /**
@@ -242,7 +223,7 @@ public class OidcClientBuildStep {
         OidcClientBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 }

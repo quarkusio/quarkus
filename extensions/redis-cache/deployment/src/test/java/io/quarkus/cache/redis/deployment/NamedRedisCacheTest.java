@@ -14,9 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
 
-@QuarkusTestResource(RedisTestResource.class)
 public class NamedRedisCacheTest {
 
     private static final String KEY_1 = "1";
@@ -25,7 +23,7 @@ public class NamedRedisCacheTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleCachedService.class, TestUtil.class))
-            .overrideConfigKey("quarkus.redis.test.hosts", "${quarkus.redis.tr}/1")
+            .overrideConfigKey("quarkus.redis.test.hosts", "${quarkus.redis.hosts}/1")
             .overrideConfigKey("quarkus.cache.redis.client-name", "test");
 
     @Inject
@@ -84,25 +82,34 @@ public class NamedRedisCacheTest {
         assertEquals(allKeysAtStart.size() + 2, TestUtil.allRedisKeys(redisDataSource).size());
 
         // STEP 7
+        // Action: add 100 cached keys, to make sure the SCAN command in next step requires multiple iterations
+        // Expected effect: + 100 keys in Redis
+        // Verified by: comparison with previous number of keys
+        for (int i = 0; i < 100; i++) {
+            simpleCachedService.cachedMethod("extra-" + i);
+        }
+        assertEquals(allKeysAtStart.size() + 102, TestUtil.allRedisKeys(redisDataSource).size());
+
+        // STEP 8
         // Action: full cache invalidation.
         // Expected effect: empty cache.
-        // Verified by: STEPS 8 and 9.
+        // Verified by: comparison with previous number of keys, STEPS 9 and 10.
         simpleCachedService.invalidateAll();
         assertEquals(allKeysAtStart.size(), TestUtil.allRedisKeys(redisDataSource).size());
 
-        // STEP 8
-        // Action: same call as STEP 5.
-        // Expected effect: method invoked because of STEP 7 and result cached.
-        // Verified by: different objects references between STEPS 5 and 8 results.
-        String value8 = simpleCachedService.cachedMethod(KEY_1);
-        assertNotEquals(value5, value8);
-
         // STEP 9
+        // Action: same call as STEP 5.
+        // Expected effect: method invoked because of STEP 8 and result cached.
+        // Verified by: different objects references between STEPS 5 and 9 results.
+        String value9 = simpleCachedService.cachedMethod(KEY_1);
+        assertNotEquals(value5, value9);
+
+        // STEP 10
         // Action: same call as STEP 6.
-        // Expected effect: method invoked because of STEP 7 and result cached.
-        // Verified by: different objects references between STEPS 6 and 9 results.
-        String value9 = simpleCachedService.cachedMethod(KEY_2);
-        assertNotEquals(value6, value9);
+        // Expected effect: method invoked because of STEP 8 and result cached.
+        // Verified by: different objects references between STEPS 6 and 10 results.
+        String value10 = simpleCachedService.cachedMethod(KEY_2);
+        assertNotEquals(value6, value10);
     }
 
 }

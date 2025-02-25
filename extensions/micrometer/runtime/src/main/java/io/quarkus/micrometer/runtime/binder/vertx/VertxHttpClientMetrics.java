@@ -172,7 +172,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                         .and(HttpCommonTags.status(tracker.response.statusCode()))
                         .and(HttpCommonTags.outcome(tracker.response.statusCode()));
                 if (!httpClientMetricsTagsContributors.isEmpty()) {
-                    HttpClientMetricsTagsContributor.Context context = new DefaultContext(tracker.request);
+                    HttpClientMetricsTagsContributor.Context context = new DefaultContext(tracker.request, tracker.response);
                     for (int i = 0; i < httpClientMetricsTagsContributors.size(); i++) {
                         try {
                             Tags additionalTags = httpClientMetricsTagsContributors.get(i).contribute(context);
@@ -232,7 +232,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             this.tags = origin.and(
                     Tag.of("address", address),
                     HttpCommonTags.method(request.method().name()),
-                    HttpCommonTags.uri(request.uri(), null, -1));
+                    HttpCommonTags.uri(request.uri(), null, -1, false));
         }
 
         void requestReset() {
@@ -254,6 +254,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         }
     }
 
-    private record DefaultContext(HttpRequest request) implements HttpClientMetricsTagsContributor.Context {
+    private record DefaultContext(HttpRequest request,
+            HttpResponse response) implements HttpClientMetricsTagsContributor.Context {
     }
 }

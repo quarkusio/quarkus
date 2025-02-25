@@ -70,7 +70,7 @@ public class CsrfRequestResponseReactiveFilter {
             try {
                 int cookieTokenSize = Base64.getUrlDecoder().decode(cookieToken).length;
                 // HMAC SHA256 output is 32 bytes long
-                int expectedCookieTokenSize = config.tokenSignatureKey.isPresent() ? 32 : config.tokenSize;
+                int expectedCookieTokenSize = config.tokenSignatureKey().isPresent() ? 32 : config.tokenSize();
                 if (cookieTokenSize != expectedCookieTokenSize) {
                     LOG.debugf("Invalid CSRF token cookie size: expected %d, got %d", expectedCookieTokenSize,
                             cookieTokenSize);
@@ -90,12 +90,12 @@ public class CsrfRequestResponseReactiveFilter {
                 if (cookieToken == null) {
                     generateNewCsrfToken(routing, config);
                 } else {
-                    String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName);
+                    String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName());
                     if (csrfTokenHeaderParam != null) {
                         LOG.debugf("CSRF token found in the token header");
                         // Verify the header, make sure the header value, possibly signed, is returned as the next cookie value
                         verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
-                    } else if (!config.tokenSignatureKey.isEmpty()) {
+                    } else if (!config.tokenSignatureKey().isEmpty()) {
                         // If the signature is required, then we can not use the current cookie value
                         // as the HTML form token key because it represents a signed value of the previous key
                         // and it will lead to the double-signing issue if this value is reused as the key.
@@ -109,11 +109,11 @@ public class CsrfRequestResponseReactiveFilter {
                 }
                 routing.put(NEW_COOKIE_REQUIRED, true);
             }
-        } else if (config.verifyToken) {
+        } else if (config.verifyToken()) {
             // unsafe HTTP method, token is required
 
             // Check the header first
-            String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName);
+            String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName());
             if (csrfTokenHeaderParam != null) {
                 LOG.debugf("CSRF token found in the token header");
                 verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
@@ -124,7 +124,7 @@ public class CsrfRequestResponseReactiveFilter {
             MediaType mediaType = requestContext.getMediaType();
             if (!isMatchingMediaType(mediaType, MediaType.APPLICATION_FORM_URLENCODED_TYPE)
                     && !isMatchingMediaType(mediaType, MediaType.MULTIPART_FORM_DATA_TYPE)) {
-                if (config.requireFormUrlEncoded) {
+                if (config.requireFormUrlEncoded()) {
                     LOG.debugf("Request has the wrong media type: %s", mediaType);
                     requestContext.abortWith(badClientRequest());
                     return;
@@ -143,7 +143,7 @@ public class CsrfRequestResponseReactiveFilter {
 
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) requestContext
                     .getServerRequestContext();
-            String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName, true, false);
+            String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName(), true, false);
             LOG.debugf("CSRF token found in the form parameter");
             verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenFormParam);
 
@@ -155,7 +155,7 @@ public class CsrfRequestResponseReactiveFilter {
 
     private void generateNewCsrfToken(RoutingContext routing, RestCsrfConfig config) {
         // Set the CSRF cookie with a randomly generated value
-        byte[] tokenBytes = new byte[config.tokenSize];
+        byte[] tokenBytes = new byte[config.tokenSize()];
         secureRandom.nextBytes(tokenBytes);
         routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
         routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
@@ -173,8 +173,8 @@ public class CsrfRequestResponseReactiveFilter {
             requestContext.abortWith(badClientRequest());
             return;
         } else {
-            String expectedCookieTokenValue = config.tokenSignatureKey.isPresent()
-                    ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey.get())
+            String expectedCookieTokenValue = config.tokenSignatureKey().isPresent()
+                    ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey().get())
                     : csrfToken;
             if (!cookieToken.equals(expectedCookieTokenValue)) {
                 LOG.debug("CSRF token value is wrong");
@@ -227,7 +227,7 @@ public class CsrfRequestResponseReactiveFilter {
             final RestCsrfConfig config = configInstance.get();
 
             String cookieValue = null;
-            if (config.tokenSignatureKey.isPresent()) {
+            if (config.tokenSignatureKey().isPresent()) {
                 byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
@@ -235,7 +235,7 @@ public class CsrfRequestResponseReactiveFilter {
                             + ", no CSRF cookie will be created");
                     return;
                 }
-                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
+                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey().get());
             } else {
                 String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
 
@@ -258,7 +258,7 @@ public class CsrfRequestResponseReactiveFilter {
      * @return An Optional containing the token, or an empty Optional if the token cookie is not present or is invalid
      */
     private static String getCookieToken(RoutingContext routing, RestCsrfConfig config) {
-        Cookie cookie = routing.getCookie(config.cookieName);
+        Cookie cookie = routing.getCookie(config.cookieName());
 
         if (cookie == null) {
             LOG.debug("CSRF token cookie is not set");
@@ -269,19 +269,19 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private static boolean isCsrfTokenRequired(RoutingContext routing, RestCsrfConfig config) {
-        return config.createTokenPath
+        return config.createTokenPath()
                 .map(value -> value.contains(routing.normalizedPath())).orElse(true);
     }
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {
 
-        ServerCookie cookie = new CookieImpl(config.cookieName, cookieTokenValue);
-        cookie.setHttpOnly(config.cookieHttpOnly);
-        cookie.setSecure(config.cookieForceSecure || routing.request().isSSL());
-        cookie.setMaxAge(config.cookieMaxAge.toSeconds());
-        cookie.setPath(config.cookiePath);
-        if (config.cookieDomain.isPresent()) {
-            cookie.setDomain(config.cookieDomain.get());
+        ServerCookie cookie = new CookieImpl(config.cookieName(), cookieTokenValue);
+        cookie.setHttpOnly(config.cookieHttpOnly());
+        cookie.setSecure(config.cookieForceSecure() || routing.request().isSSL());
+        cookie.setMaxAge(config.cookieMaxAge().toSeconds());
+        cookie.setPath(config.cookiePath());
+        if (config.cookieDomain().isPresent()) {
+            cookie.setDomain(config.cookieDomain().get());
         }
         routing.response().addCookie(cookie);
     }

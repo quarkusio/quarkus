@@ -27,7 +27,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -36,7 +36,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts a Mosquitto broker as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class MqttDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(MqttDevServicesProcessor.class);
@@ -61,7 +61,7 @@ public class MqttDevServicesProcessor {
             MqttBuildTimeConfig mqttClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig) {
+            DevServicesConfig devServicesConfig) {
 
         MqttDevServiceCfg configuration = getConfiguration(mqttClientBuildTimeConfig);
 
@@ -79,7 +79,7 @@ public class MqttDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
 
@@ -218,7 +218,7 @@ public class MqttDevServicesProcessor {
     }
 
     private MqttDevServiceCfg getConfiguration(MqttBuildTimeConfig cfg) {
-        MqttDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        MqttDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new MqttDevServiceCfg(devServicesConfig);
     }
 
@@ -232,12 +232,12 @@ public class MqttDevServicesProcessor {
         private final Map<String, String> containerEnv;
 
         public MqttDevServiceCfg(MqttDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.containerEnv = devServicesConfig.containerEnv;
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.containerEnv = devServicesConfig.containerEnv();
         }
 
         @Override

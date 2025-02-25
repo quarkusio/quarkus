@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
+    private static final List<Locale> LANGUAGE_WILDCARD = List.of(new Locale("*"));
 
     private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override
@@ -115,7 +116,7 @@ public class HeaderUtil {
     public static MediaType getMediaType(MultivaluedMap<String, ? extends Object> headers) {
         Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
         if (first instanceof String contentType) {
-            return MediaType.valueOf(contentType);
+            return MediaTypeHelper.valueOf(contentType);
         } else {
             return (MediaType) first;
         }
@@ -280,10 +281,10 @@ public class HeaderUtil {
                 StringTokenizer tokenizer = new StringTokenizer(accept, ",");
                 while (tokenizer.hasMoreElements()) {
                     String item = tokenizer.nextToken().trim();
-                    list.add(MediaType.valueOf(item));
+                    list.add(MediaTypeHelper.valueOf(item));
                 }
             } else {
-                list.add(MediaType.valueOf(accept.trim()));
+                list.add(MediaTypeHelper.valueOf(accept.trim()));
             }
         }
         MediaTypeHelper.sortByWeight(list);
@@ -293,7 +294,7 @@ public class HeaderUtil {
     public static List<Locale> getAcceptableLanguages(MultivaluedMap<String, ? extends Object> headers) {
         List<?> accepts = headers.get(HttpHeaders.ACCEPT_LANGUAGE);
         if (accepts == null || accepts.isEmpty())
-            return Collections.emptyList();
+            return LANGUAGE_WILDCARD;
         List<WeightedLanguage> languages = new ArrayList<WeightedLanguage>();
         for (Object obj : accepts) {
             if (obj instanceof Locale) {

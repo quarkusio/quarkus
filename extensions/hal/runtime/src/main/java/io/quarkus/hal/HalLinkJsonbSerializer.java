@@ -10,6 +10,14 @@ public class HalLinkJsonbSerializer implements JsonbSerializer<HalLink> {
     public void serialize(HalLink value, JsonGenerator generator, SerializationContext context) {
         generator.writeStartObject();
         generator.write("href", value.getHref());
+        if (value.getTitle() != null) {
+            generator.write("title", value.getTitle());
+        }
+
+        if (value.getType() != null) {
+            generator.write("type", value.getType());
+        }
+
         generator.writeEnd();
     }
 }

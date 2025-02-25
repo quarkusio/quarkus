@@ -50,7 +50,7 @@ public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateM
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals(200, page.getWebResponse().getStatusCode());
 
             WebResponse webResponse = webClient.loadWebResponse(

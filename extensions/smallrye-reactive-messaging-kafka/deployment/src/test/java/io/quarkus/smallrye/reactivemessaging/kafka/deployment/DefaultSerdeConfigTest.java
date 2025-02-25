@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.apache.avro.generic.GenericRecord;
@@ -41,6 +42,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -111,6 +113,7 @@ public class DefaultSerdeConfigTest {
 
             assertThat(configs)
                     .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
+                    .hasSize(expectations.length)
                     .allSatisfy(tuple -> {
                         Object[] e = tuple.toArray();
                         String key = (String) e[0];
@@ -128,11 +131,12 @@ public class DefaultSerdeConfigTest {
                     });
 
             assertThat(generated)
-                    .extracting(GeneratedClassBuildItem::getName)
+                    .extracting(GeneratedClassBuildItem::internalName)
                     .allSatisfy(s -> assertThat(generatedNames).satisfiesOnlyOnce(c -> c.apply(s)));
 
             assertThat(reflective)
                     .flatExtracting(ReflectiveClassBuildItem::getClassNames)
+                    .extracting(n -> n.replace('/', '.'))
                     .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
             // must not leak the lazily-initialized Config instance associated to the system classloader
@@ -3046,6 +3050,27 @@ public class DefaultSerdeConfigTest {
 
         @Channel("channel2")
         Multi<JsonbDto> channel2;
+    }
+
+    @Test
+    void instanceInjectionPoint() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "org.apache.kafka.common.serialization.DoubleSerializer"),
+        };
+        doTest(expectations, InstanceInjectionPoint.class);
+    }
+
+    private static class InstanceInjectionPoint {
+        @Channel("channel1")
+        Instance<Emitter<String>> emitter1;
+
+        @Channel("channel2")
+        Instance<Multi<Integer>> channel2;
+
+        @Channel("channel3")
+        InjectableInstance<MutinyEmitter<Double>> channel3;
     }
 
 

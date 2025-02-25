@@ -42,7 +42,6 @@ Nuget
 Oauth
 Omnisharp
 Openshift
-Opentracing
 php
 Postgresql
 postgres

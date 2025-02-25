@@ -199,6 +199,42 @@ As you can see, we don't have to manually validate the provided `Book` anymore a
 If a validation error is triggered, a violation report is generated and serialized as JSON as our end point produces a JSON output.
 It can be extracted and manipulated to display a proper error message.
 
+An example of such a report could be:
+
+[source, json]
+----
+{
+    "title": "Constraint Violation",
+    "status": 400,
+    "violations": [
+        {
+            "field": "tryMeEndPointMethodValidation.book.title",
+            "message": "Title cannot be blank"
+        }
+    ]
+}
+----
+
+This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`. If the application code needs to handle `ValidationException` in some custom way,
+it can provide an implementation of `jakarta.ws.rs.ext.ExceptionMapper` like so:
+
+[source, java]
+----
+import jakarta.validation.ValidationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    @Override
+    public Response toResponse(ValidationException exception) {
+        // TODO: implement
+    }
+}
+----
+
 == Service method validation
 
 It might not always be handy to have the validation rules declared at the end point level as it could duplicate some business validation.
@@ -374,6 +410,53 @@ The scope you choose for your `ConstraintValidator` bean is important:
 - If the same instance of the `ConstraintValidator` bean can be used across the whole application, use the `@ApplicationScoped` scope.
 - If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
+
+When injecting beans relying on the runtime configuration, use `@Inject Instance<..>`. Since constraints are initialized
+at build time, it is not possible to completely preconfigure the constraint in the `initialize(..)` method,
+as the runtime information will be missing at that point. The `initialize(..)` method in such scenarios can still be used
+to read the constraint annotation parameters, and perform any work not relying on the runtime configuration.
+Hence, it is recommended that any heavy configuration work happens as part of the injected bean initialization
+and methods used in the `ConstraintValidator#isValid(..)` implementation are as fast as possible:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
+
+    @Inject
+    Instance<MyService> service;
+
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+
+        return service.get().validate(value);
+    }
+}
+
+@ApplicationScoped
+public class MyService {
+
+	private final Predicate<String> validationFunction;
+
+	@Inject
+	public MyService(MyRuntimeConfig config) {
+		// perform all possible "initialization" work, e.g.:
+		if (config.complexValidationEnabled()) {
+			validationFunction = s -> ...
+		} else {
+			validationFunction = String::isBlank;
+		}
+	}
+
+	public boolean validate(String value) {
+		// perform the validation
+		return validationFunction.test(value);
+	}
+}
+----
 
 === Validation and localization
 

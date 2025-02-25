@@ -509,7 +509,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         collectHeaderFillers(subInterfaceClass, subMethod, headerFillersByName);
         String subHeaderFillerName = subInterfaceClass.name().toString() + sha1(rootInterfaceClass.name().toString()) +
                 "$$" + methodIndex + "$$" + subMethodIndex;
-        createAndReturnHeaderFiller(subClassCreator, subConstructor, subMethodCreator, subMethod,
+        createAndReturnHeaderFiller(subClassCreator, subClinit, subMethodCreator, subMethod,
                 invocationBuilder, index, generatedClasses, subMethodIndex, subHeaderFillerName, headerFillersByName,
                 Collections.emptyList());
     }
@@ -535,7 +535,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                     clientBasicAuth.value("password").asString()));
         }
 
-        createAndReturnHeaderFiller(classCreator, constructor, methodCreator, method,
+        createAndReturnHeaderFiller(classCreator, clinit, methodCreator, method,
                 invocationBuilder, index, generatedClasses, methodIndex,
                 interfaceClass + "$$" + method.name() + "$$" + methodIndex, headerFillersByName, enhancers);
     }
@@ -593,18 +593,19 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         }
     }
 
-    private void createAndReturnHeaderFiller(ClassCreator classCreator, MethodCreator constructor,
+    private void createAndReturnHeaderFiller(ClassCreator classCreator, MethodCreator clinit,
             MethodCreator methodCreator, MethodInfo method,
             AssignableResultHandle invocationBuilder, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex, String fillerClassName,
             Map<String, ParamData> headerFillersByName,
             List<AddHeadersEnhancer> addHeadersEnhancers) {
-        FieldDescriptor headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
-                "headerFiller" + methodIndex, HeaderFiller.class);
-        classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
-        ResultHandle headerFiller;
+        FieldDescriptor headerFillerField = null;
         // create header filler for this method if headerFillersByName is not empty
         if (!headerFillersByName.isEmpty() || !addHeadersEnhancers.isEmpty()) {
+            headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
+                    "headerFiller" + methodIndex, HeaderFiller.class);
+            classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.STATIC | Modifier.PRIVATE | Modifier.FINAL);
+
             GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
             try (ClassCreator headerFillerClass = ClassCreator.builder().className(fillerClassName)
                     .interfaces(ExtendedHeaderFiller.class)
@@ -654,19 +655,17 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
                 addHeaders.returnValue(null);
 
-                headerFiller = constructor.newInstance(MethodDescriptor.ofConstructor(fillerClassName));
+                ResultHandle headerFiller = clinit.newInstance(MethodDescriptor.ofConstructor(fillerClassName));
+                clinit.writeStaticField(headerFillerField, headerFiller);
             }
-        } else {
-            headerFiller = constructor
-                    .readStaticField(FieldDescriptor.of(NoOpHeaderFiller.class, "INSTANCE", NoOpHeaderFiller.class));
         }
-        constructor.writeInstanceField(headerFillerField, constructor.getThis(), headerFiller);
 
-        ResultHandle headerFillerAsObject = methodCreator.checkCast(
-                methodCreator.readInstanceField(headerFillerField, methodCreator.getThis()), Object.class);
         methodCreator.assign(invocationBuilder,
                 methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
-                        methodCreator.load(HeaderFiller.class.getName()), headerFillerAsObject));
+                        methodCreator.load(HeaderFiller.class.getName()),
+                        headerFillerField != null ? methodCreator.readStaticField(headerFillerField)
+                                : methodCreator.readStaticField(
+                                        FieldDescriptor.of(NoOpHeaderFiller.class, "INSTANCE", NoOpHeaderFiller.class))));
 
         ResultHandle parametersList = null;
         if (method.parametersCount() == 0) {

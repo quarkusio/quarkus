@@ -5,6 +5,9 @@ import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -22,7 +25,14 @@ public class MetricsTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
+        await().atMost(5, SECONDS).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (!spans.isEmpty()) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.isEmpty();
+        });
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -30,10 +40,10 @@ public class MetricsTest {
         });
     }
 
-    private List<Map<String, Object>> getMetrics() {
+    private List<Map<String, Object>> getMetrics(String metricName) {
         return given()
                 .when()
-                .queryParam("name", "direct-trace-counter")
+                .queryParam("name", metricName)
                 .get("/export/metrics")
                 .body().as(new TypeRef<>() {
                 });
@@ -51,11 +61,12 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
-        await().atMost(10, SECONDS).until(() -> getMetrics().size() > 2);
+        await().atMost(10, SECONDS).until(() -> getSpans().size() >= 2);
+        assertEquals(2, getSpans().size(), () -> "The spans are " + getSpans());
+        await().atMost(10, SECONDS).until(() -> getMetrics("direct-trace-counter").size() > 2);
 
-        List<Map<String, Object>> metrics = getMetrics();
-        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics()
+        List<Map<String, Object>> metrics = getMetrics("direct-trace-counter");
+        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("direct-trace-counter")
                 .get(metrics.size() - 1)
                 .get("longSumData")))
                 .get("points"))
@@ -67,5 +78,43 @@ public class MetricsTest {
                 .get("/export/metrics")
                 .body().as(new TypeRef<>() {
                 }));
+    }
+
+    @Test
+    void testJvmMetrics() {
+        await().atMost(10, SECONDS).until(() -> getMetrics("jvm.thread.count").size() > 2);
+
+        List<Map<String, Object>> metrics = getMetrics("jvm.thread.count");
+
+        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("jvm.thread.count")
+                .get(metrics.size() - 1)
+                .get("longSumData")))
+                .get("points"))
+                .get(0))
+                .get("value");
+
+        assertThat(value, greaterThan(0)); // at least one thread is running
+    }
+
+    @Test
+    void testServerRequestDuration() {
+        given()
+                .when()
+                .get("/nopath")
+                .then()
+                .statusCode(200);
+
+        await().atMost(10, SECONDS).until(() -> getMetrics("http.server.request.duration").size() > 2);
+
+        List<Map<String, Object>> metrics = getMetrics("http.server.request.duration");
+
+        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("http.server.request.duration")
+                .get(metrics.size() - 1)
+                .get("data")))
+                .get("points"))
+                .get(0))
+                .get("count");
+
+        assertThat(value, greaterThanOrEqualTo(1)); // at least one endpoint was called once
     }
 }

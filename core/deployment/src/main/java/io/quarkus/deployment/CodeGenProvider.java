@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.microprofile.config.Config;
-import org.wildfly.common.annotation.NotNull;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
@@ -18,7 +17,6 @@ public interface CodeGenProvider {
     /**
      * @return unique name of the code gen provider, will correspond to the directory in <code>generated-sources</code>
      */
-    @NotNull
     String providerId();
 
     /**
@@ -37,7 +35,6 @@ public interface CodeGenProvider {
      *
      * @return file extensions
      */
-    @NotNull
     default String[] inputExtensions() {
         if (inputExtension() != null) {
             return new String[] { inputExtension() };
@@ -53,7 +50,6 @@ public interface CodeGenProvider {
      *
      * @return the input directory
      */
-    @NotNull
     String inputDirectory();
 
     /**

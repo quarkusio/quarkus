@@ -217,7 +217,7 @@ public class FruitResource {
 The implementation is pretty straightforward, and you just need to define your endpoints using the Jakarta REST annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring the MongoDB database
-The main property to configure is the URL to access to MongoDB. Almost all configuration can be included in the connection URI, so we advise you to do so. You can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
+The main property to configure is the URL to access the MongoDB instance. Almost all configuration can be included in the connection URI, so we advise you to do so. You can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
 
 A sample configuration should look like this:
 
@@ -570,7 +570,8 @@ public class CodecFruitService {
 == The POJO Codec
 
 The link:https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/data-formats/document-data-format-pojo/[POJO Codec] provides a set of annotations that enable the customization of
-the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus
+the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus.
+This codec also supports Java records so you can use them for your POJOs or an attribute of your POJOs.
 
 One of these annotations is the `@BsonDiscriminator` annotation that allows to storage multiple Java types in a single MongoDB collection by adding
 a discriminator field inside the document. It can be useful when working with abstract types or interfaces.
@@ -675,19 +676,38 @@ If you want to use the legacy API, you need to add the following dependency to y
 implementation("org.mongodb:mongodb-driver-legacy")
 ----
 
-== Building a native executable
+== TLS configuration
 
-You can use the MongoDB client in a native executable.
-
-If you want to use SSL/TLS encryption, you need to add these properties in your `application.properties`:
+If you want to use SSL/TLS encryption, you need to add this property in your `application.properties`:
 
 [source,properties]
 ----
 quarkus.mongodb.tls=true
-quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 ----
 
-You can then build a native executable with the usual command:
+You can also configure the client to use a tls configuration from the TLS registry, this will enable tls:
+
+[source,properties]
+----
+quarkus.tls.mongo.trust-store.pem.certs=certa.pem,certb.pem
+quarkus.mongodb.tls-configuration-name=mongo
+----
+
+You can configure the client to trust servers with certificates with invalid hostnames:
+
+[source,properties]
+----
+quarkus.tls.mongo.hostname-verification-algorithm=NONE
+quarkus.mongodb.tls-configuration-name=mongo
+----
+
+
+== Building a native executable
+
+You can use the MongoDB client in a native executable.
+
+
+You can build a native executable with the usual command:
 
 include::{includes}/devtools/build-native.adoc[]
 
@@ -707,40 +727,6 @@ If you encounter the following error when running your application in native mod
 This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable` class.
 More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 ====
-
-== Using mongo+srv:// urls
-
-`mongo+srv://` urls are supported out of the box in JVM mode.
-However, in native, the default DNS resolver, provided by the MongoDB client, uses JNDI and does not work in native mode.
-
-If you need to use `mongo+srv://` in native mode, you can configure an alternative DNS resolver.
-This feature is **experimental** and may introduce a difference between JVM applications and native applications.
-
-To enable the alternative DNS resolver, use:
-
-[source, properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-----
-
-As indicated in the property name, it uses Vert.x to retrieve the DNS records.
-By default, it tries to read the first `nameserver` from `/etc/resolv.conf`, if this file exists.
-You can also configure your DNS server:
-
-[source,properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-quarkus.mongodb.native.dns.server-host=10.0.0.1
-quarkus.mongodb.native.dns.server-port=53 # 53 is the default port
-----
-
-Also, you can configure the lookup timeout using:
-
-[source,properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-quarkus.mongodb.native.dns.lookup-timeout=10s # the default is 5s
-----
 
 == Customize the Mongo client configuration programmatically
 

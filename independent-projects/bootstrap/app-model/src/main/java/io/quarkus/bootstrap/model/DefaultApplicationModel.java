@@ -16,7 +16,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
-    private static final long serialVersionUID = -3878782344578748234L;
+    private static final long serialVersionUID = -5247678201356725379L;
 
     private final ResolvedDependency appArtifact;
     private final List<ResolvedDependency> dependencies;
@@ -24,6 +24,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     private final List<ExtensionCapabilities> capabilityContracts;
     private final Set<ArtifactKey> localProjectArtifacts;
     private final Map<ArtifactKey, Set<String>> excludedResources;
+    private final List<ExtensionDevModeConfig> extensionDevConfig;
 
     public DefaultApplicationModel(ApplicationModelBuilder builder) {
         this.appArtifact = builder.appArtifact.build();
@@ -31,7 +32,8 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         this.platformImports = builder.platformImports;
         this.capabilityContracts = List.copyOf(builder.extensionCapabilities);
         this.localProjectArtifacts = Set.copyOf(builder.reloadableWorkspaceModules);
-        this.excludedResources = builder.excludedResources;
+        this.excludedResources = Map.copyOf(builder.excludedResources);
+        this.extensionDevConfig = List.copyOf(builder.extensionDevConfig);
     }
 
     @Override
@@ -51,11 +53,12 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     @Override
     public Iterable<ResolvedDependency> getDependencies(int flags) {
-        return new FlagDependencyIterator(new int[] { flags });
+        return new FlagDependencyIterator(flags, false);
     }
 
-    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
-        return new FlagDependencyIterator(flags);
+    @Override
+    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags) {
+        return new FlagDependencyIterator(flags, true);
     }
 
     @Override
@@ -93,6 +96,11 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         return excludedResources;
     }
 
+    @Override
+    public Collection<ExtensionDevModeConfig> getExtensionDevModeConfig() {
+        return extensionDevConfig;
+    }
+
     private Collection<ResolvedDependency> collectDependencies(int flags) {
         var result = new ArrayList<ResolvedDependency>();
         for (var d : getDependencies(flags)) {
@@ -111,17 +119,27 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     private class FlagDependencyIterator implements Iterable<ResolvedDependency> {
 
-        private final int[] flags;
+        private final int flags;
+        private final boolean any;
 
-        private FlagDependencyIterator(int[] flags) {
+        /**
+         * Iterates over application model dependencies that match requested flags.
+         * The {@code any} boolean argument controls whether any or all the flags have to match
+         * for a dependency to be selected.
+         *
+         * @param flags flags to match
+         * @param any whether any or all of the flags have to be matched
+         */
+        private FlagDependencyIterator(int flags, boolean any) {
             this.flags = flags;
+            this.any = any;
         }
 
         @Override
         public Iterator<ResolvedDependency> iterator() {
             return new Iterator<>() {
 
-                final Iterator<ResolvedDependency> i = dependencies.iterator();
+                int index = 0;
                 ResolvedDependency next;
 
                 {
@@ -145,11 +163,14 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
                 private void moveOn() {
                     next = null;
-                    while (i.hasNext()) {
-                        var d = i.next();
-                        if (d.hasAnyFlag(flags)) {
+                    while (index < dependencies.size() && next == null) {
+                        var d = dependencies.get(index++);
+                        if (any) {
+                            if (d.isAnyFlagSet(flags)) {
+                                next = d;
+                            }
+                        } else if (d.isFlagSet(flags)) {
                             next = d;
-                            break;
                         }
                     }
                 }

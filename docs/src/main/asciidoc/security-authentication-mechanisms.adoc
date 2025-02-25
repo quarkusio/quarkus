@@ -49,7 +49,7 @@ ifndef::no-webauthn-authentication[]
 endif::no-webauthn-authentication[]
 
 ifndef::no-quarkus-kerberos[]
-|Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+|Kerberos ticket |link:https://docs.quarkiverse.io/quarkus-kerberos/dev/index.html[Kerberos]
 endif::no-quarkus-kerberos[]
 
 |====
@@ -194,8 +194,10 @@ code to destroy the cookie.
 
 [source,java]
 ----
-@ConfigProperty(name = "quarkus.http.auth.form.cookie-name")
-String cookieName;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.POST;
 
 @Inject
 CurrentIdentityAssociation identity;
@@ -205,15 +207,11 @@ public Response logout() {
     if (identity.getIdentity().isAnonymous()) {
         throw new UnauthorizedException("Not authenticated");
     }
-    final NewCookie removeCookie = new NewCookie.Builder(cookieName)
-            .maxAge(0)
-            .expiry(Date.from(Instant.EPOCH))
-            .path("/")
-            .build();
-    return Response.noContent().cookie(removeCookie).build();
+    FormAuthenticationMechanism.logout(identity.getIdentity()); <1>
+    return Response.noContent().build();
 }
-
 ----
+<1> Perform the logout by removing the session cookie.
 
 The following properties can be used to configure form-based authentication:
 
@@ -322,7 +320,7 @@ quarkus.http.auth.policy.role-policy-cert.roles-allowed=user,admin     <2>
 <1> The `cert-role-mappings.properties` classpath resource contains a map of certificate's CN values to roles in the form `CN=role` or `CN=role1,role2`, etc. Let us assume it contains three entries: `alice=user,admin`, `bob=user` and `jdoe=tester`.
 <2> Use HTTP security policy to require that `SecurityIdentity` must have either `user` or `admin` roles for the requests to be authorized.
 
-Given the preceeding configuration, the request is authorized if the client certificate's CN attribute is equal to `alice` or `bob` and forbidden if it is equal to `jdoe`.
+Given the preceding configuration, the request is authorized if the client certificate's CN attribute is equal to `alice` or `bob` and forbidden if it is equal to `jdoe`.
 
 ==== Using certificate attributes to augment SecurityIdentity
 
@@ -448,7 +446,12 @@ For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] gu
 endif::no-quarkus-elytron-security-oauth2[]
 
 [[oidc-jwt-oauth2-comparison]]
+ifndef::no-quarkus-elytron-security-oauth2[]
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
+endif::no-quarkus-elytron-security-oauth2[]
+ifdef::no-quarkus-elytron-security-oauth2[]
+== Choosing between OpenID Connect and SmallRye JWT authentication mechanisms
+endif::no-quarkus-elytron-security-oauth2[]
 
 Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.
 
@@ -586,6 +589,9 @@ For example, you can combine the built-in Basic and the Quarkus `quarkus-oidc` B
 
 The authentication process completes as soon as the first `SecurityIdentity` is produced by one of the authentication mechanisms.
 
+[[inclusive-authentication]]
+=== Inclusive Authentication
+
 In some cases it can be required that all registered authentication mechanisms create their `SecurityIdentity`.
 It can be required when the credentials such as tokens have to be passed over <<mutual-tls>>,
 for example, when users are authenticating via `Virtual Private Network`, or when the current token has to be bound
@@ -602,7 +608,11 @@ quarkus.http.auth.inclusive=true
 If the authentication is inclusive then `SecurityIdentity` created by the first authentication mechanism can be
 injected into the application code.
 For example, if both <<mutual-tls>> and basic authentication mechanism authentications are required,
-the <<mutual-tls>> authentication mechanism will create `SecurityIdentity` first.
+the <<mutual-tls>> mechanism will create `SecurityIdentity` first.
+
+NOTE: The <<mutual-tls>> mechanism has the highest priority when inclusive authentication is enabled, to ensure
+that an injected `SecurityIdentity` always represents <<mutual-tls>> and can be used to get access to `SecurityIdentity`
+identities provided by other authentication mechanisms.
 
 Additional `SecurityIdentity` instances can be accessed as a `quarkus.security.identities` attribute on the first
 `SecurityIdentity`, however, accessing these extra identities directly may not be necessary, for example,
@@ -653,7 +663,10 @@ public class InclusiveAuthExampleBean {
 You cannot combine the Quarkus `quarkus-oidc` Bearer token and `smallrye-jwt` authentication mechanisms because both mechanisms attempt to verify the token extracted from the HTTP Bearer token authentication scheme.
 ====
 
-=== Use HTTP Security Policy to enable path-based authentication
+[[path-based-authentication]]
+=== Path-based authentication
+
+==== Use HTTP Security Policy to enable path-based authentication
 
 The following configuration example demonstrates how you can enforce a single selectable authentication mechanism for a given request path:
 
@@ -673,7 +686,7 @@ quarkus.http.auth.permission.bearer.auth-mechanism=bearer
 
 Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer`, or `form`.
 
-=== Use annotations to enable path-based authentication for Jakarta REST endpoints
+==== Use annotations to enable path-based authentication for Jakarta REST endpoints
 
 It is possible to use annotations to select an authentication mechanism specific to each Jakarta REST endpoint.
 This feature is only enabled when <<proactive-auth>> is disabled due to the fact that the annotations can only be used
@@ -752,6 +765,57 @@ It is also possible to use the `io.quarkus.vertx.http.runtime.security.annotatio
 Annotation-based analogy to the `quarkus.http.auth.permission.basic.auth-mechanism=custom` configuration property is the `@HttpAuthenticationMechanism("custom")` annotation.
 
 NOTE: For consistency with various Jakarta EE specifications, it is recommended to always repeat annotations instead of relying on annotation inheritance.
+
+==== Use inclusive authentication to enable path-based authentication
+
+By default, Quarkus only supports <<path-based-authentication>> for one authentication mechanism per path.
+If more than one authentication mechanism must be used for the path-based authentication, you can write a custom `HttpAuthenticationMechanism` as documented in the xref:security-customization.adoc#dealing-with-more-than-one-http-auth-mechanisms[Dealing with more than one HttpAuthenticationMechanism] section of the Security Tips and Tricks guide.
+Another option is to enable <<inclusive-authentication>> in the lax mode and write a custom `HttpSecurityPolicy` or `PermissionChecker` that verifies that all registered HTTP authentication mechanisms created their mechanism-specific `SecurityIdentity`.
+
+.Enable inclusive authentication in the lax mode
+[source,properties]
+----
+quarkus.http.auth.inclusive-mode=lax <1>
+quarkus.http.auth.inclusive=true
+----
+<1> By default, inclusive authentication requires that all registered HTTP authentication mechanisms must create the `SecurityIdentity`.
+However, in the lax mode, the authentication succeeds if at least one registered `HttpAuthenticationMechanism` created the `SecurityIdentity`.
+
+Let's assume that we have 3 registered mechanisms, mTLS, Basic and OIDC and you only require Basic and mTLS authentications to succeed to permit access to the `hello` method.
+In this case, enabling an inclusive authentication in a lax mode allows to check which mechanisms produced the identity as shown in the example below:
+
+.Example of the HTTP Authentication mechanisms check
+[source,java]
+----
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import java.util.Map;
+
+@Path("/hello")
+public class HelloResource {
+
+    @PermissionsAllowed("mtls-basic")
+    @GET
+    public String hello() {
+        return "Hello world";
+    }
+
+    @PermissionChecker("mtls-basic")
+    boolean isMtlsAndBasicAuthentication(SecurityIdentity identity) {
+        Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(identity);
+        if (identities != null) {
+            return identities.containsKey("basic") && identities.containsKey("x509"); <1>
+        }
+        return false;
+    }
+}
+----
+<1> Permit access to the endpoint only if it is confirmed that both `mTLS` and `Basic` authentication mechanisms have authenticated the current request.
 
 ==== How to combine it with HTTP Security Policy
 

@@ -36,7 +36,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
@@ -48,7 +48,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 /**
  * Starts a Kafka broker as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class DevServicesKafkaProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesKafkaProcessor.class);
@@ -75,7 +75,7 @@ public class DevServicesKafkaProcessor {
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
+            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
@@ -94,7 +94,7 @@ public class DevServicesKafkaProcessor {
         try {
             devService = startKafka(dockerStatusBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -228,7 +228,7 @@ public class DevServicesKafkaProcessor {
             switch (config.provider) {
                 case REDPANDA:
                     RedpandaKafkaContainer redpanda = new RedpandaKafkaContainer(
-                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
+                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("redpandadata/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork, config.redpanda);
@@ -305,7 +305,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private KafkaDevServiceCfg getConfiguration(KafkaBuildTimeConfig cfg) {
-        KafkaDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        KafkaDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new KafkaDevServiceCfg(devServicesConfig);
     }
 
@@ -324,17 +324,17 @@ public class DevServicesKafkaProcessor {
         private final RedpandaBuildTimeConfig redpanda;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled.orElse(true);
-            this.provider = config.provider;
-            this.imageName = config.imageName.orElseGet(provider::getDefaultImageName);
-            this.fixedExposedPort = config.port.orElse(0);
-            this.shared = config.shared;
-            this.serviceName = config.serviceName;
-            this.topicPartitions = config.topicPartitions;
-            this.topicPartitionsTimeout = config.topicPartitionsTimeout;
-            this.containerEnv = config.containerEnv;
+            this.devServicesEnabled = config.enabled().orElse(true);
+            this.provider = config.provider();
+            this.imageName = config.imageName().orElseGet(provider::getDefaultImageName);
+            this.fixedExposedPort = config.port().orElse(0);
+            this.shared = config.shared();
+            this.serviceName = config.serviceName();
+            this.topicPartitions = config.topicPartitions();
+            this.topicPartitionsTimeout = config.topicPartitionsTimeout();
+            this.containerEnv = config.containerEnv();
 
-            this.redpanda = config.redpanda;
+            this.redpanda = config.redpanda();
         }
 
         @Override

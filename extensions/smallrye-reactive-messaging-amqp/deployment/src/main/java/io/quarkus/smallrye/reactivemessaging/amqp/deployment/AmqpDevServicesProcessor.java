@@ -28,7 +28,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -40,7 +40,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
  * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class AmqpDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(AmqpDevServicesProcessor.class);
@@ -76,7 +76,7 @@ public class AmqpDevServicesProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig,
+            DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
@@ -95,7 +95,7 @@ public class AmqpDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startAmqpBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout, !devServicesSharedNetworkBuildItem.isEmpty());
+                    devServicesConfig.timeout(), !devServicesSharedNetworkBuildItem.isEmpty());
             if (newDevService != null) {
                 devService = newDevService;
             }
@@ -236,7 +236,7 @@ public class AmqpDevServicesProcessor {
     }
 
     private AmqpDevServiceCfg getConfiguration(AmqpBuildTimeConfig cfg) {
-        AmqpDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        AmqpDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new AmqpDevServiceCfg(devServicesConfig);
     }
 
@@ -250,13 +250,13 @@ public class AmqpDevServicesProcessor {
         private final Map<String, String> containerEnv;
 
         public AmqpDevServiceCfg(AmqpDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.extra = devServicesConfig.extraArgs;
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.containerEnv = devServicesConfig.containerEnv;
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.extra = devServicesConfig.extraArgs();
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.containerEnv = devServicesConfig.containerEnv();
         }
 
         @Override

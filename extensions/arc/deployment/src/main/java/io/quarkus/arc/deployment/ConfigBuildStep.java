@@ -7,7 +7,7 @@ import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.MAPPING;
 import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTIES;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
-import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
@@ -75,7 +75,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -410,15 +410,19 @@ public class ConfigBuildStep {
             if (configClass != null) {
                 AnnotationTarget target = injectionPoint.getAnnotationTarget();
                 AnnotationInstance mapping = null;
-                if (target.kind().equals(FIELD)) {
-                    mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
-                } else if (target.kind().equals(METHOD_PARAMETER)) {
-                    MethodParameterInfo methodParameterInfo = target.asMethodParameter();
-                    if (methodParameterInfo.type().name().equals(type.name())) {
-                        Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
-                                validationPhase.getBeanProcessor().getBeanDeployment(),
-                                target.asMethodParameter().method(), methodParameterInfo.position());
-                        mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
+
+                // target can be null for synthetic injection point
+                if (target != null) {
+                    if (target.kind().equals(FIELD)) {
+                        mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
+                    } else if (target.kind().equals(METHOD_PARAMETER)) {
+                        MethodParameterInfo methodParameterInfo = target.asMethodParameter();
+                        if (methodParameterInfo.type().name().equals(type.name())) {
+                            Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
+                                    validationPhase.getBeanProcessor().getBeanDeployment(),
+                                    target.asMethodParameter().method(), methodParameterInfo.position());
+                            mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
+                        }
                     }
                 }
 
@@ -497,13 +501,13 @@ public class ConfigBuildStep {
 
         // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
-                ConfigClassWithPrefix.class.getDeclaredConstructor(Class.class, String.class),
-                configClassWithPrefix -> Stream.of(configClassWithPrefix.getKlass(), configClassWithPrefix.getPrefix())
+                ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
+                configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
                         .collect(toList()));
 
         recorder.registerConfigProperties(
                 configProperties.stream()
-                        .map(p -> configClassWithPrefix(p.getConfigClass(), p.getPrefix()))
+                        .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
                         .collect(toSet()));
     }
 

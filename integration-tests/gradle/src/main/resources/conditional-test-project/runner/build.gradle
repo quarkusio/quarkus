@@ -17,10 +17,11 @@ repositories {
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 
-    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-rest'
 
     implementation 'org.acme:ext-a:1.0-SNAPSHOT'
     implementation 'org.acme:ext-c:1.0-SNAPSHOT'
+    implementation 'org.acme:ext-t:1.0-SNAPSHOT'
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'

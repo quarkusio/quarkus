@@ -535,11 +535,14 @@ public class CoffeeResource {
 We can override the `maxRetries` parameter with 6 retries instead of 4 by the following configuration item:
 [source,properties]
 ----
+quarkus.fault-tolerance."org.acme.CoffeeResource/coffees".retry.max-retries=6
+
+# alternatively, a specification-defined property can be used
 org.acme.CoffeeResource/coffees/Retry/maxRetries=6
 ----
 
-NOTE: The format is `fully-qualified-class-name/method-name/annotation-name/property-name=value`.
-You can also configure a property for all the annotation via `annotation-name/property-name=value`.
+The full set of Quarkus-native configuration properties is detailed in the <<configuration-reference>>.
+The specification-defined configuration properties are still supported, but the Quarkus-native configuration takes priority.
 
 == Conclusion
 
@@ -573,7 +576,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.3.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.3/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -591,7 +594,7 @@ The entire point of context propagation is to make sure the new thread has the s
 ====
 
 Non-compatible mode is enabled by default.
-This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@AsynchronousNonBlocking`, `@Blocking` or `@NonBlocking` annotation.
+This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without the `@Asynchronous` or `@AsynchronousNonBlocking` annotation.
 It also means that circuit breaker, fallback and retry automatically inspect the exception cause chain if the exception itself is insufficient to decide what should happen.
 
 [NOTE]
@@ -601,12 +604,12 @@ To restore full compatibility, add this configuration property:
 
 [source,properties]
 ----
-smallrye.faulttolerance.mp-compatibility=true
+quarkus.fault-tolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.3.0/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
-You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.3/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
+You can use the `Guard`, `TypedGuard` and `@ApplyGuard` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.
 
@@ -614,3 +617,46 @@ Metrics are automatically discovered and integrated.
 If your application uses the Quarkus extension for Micrometer, SmallRye Fault Tolerance will emit metrics to Micrometer.
 If your application uses the Quarkus extension for SmallRye Metrics, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics.
 Otherwise, SmallRye Fault Tolerance metrics will be disabled.
+
+[[configuration-reference]]
+== Configuration reference
+
+The `"<identifier>"` below is:
+
+* `"<classname>/<methodname>"` for per method configuration
+* `"<classname>"` for per class configuration
+* `global` for global configuration
+* It may also be an `@Identifier` value for configuring a programmatically constructed `Guard` or `TypedGuard` that is used declaratively through `@ApplyGuard`.
+Note that in this case, the `Guard`/`TypedGuard` should *NEVER* be used programmatically, because configuration is applied on creation, which happens lazily, on the first use.
+This first use must be through `@ApplyGuard`, otherwise configuration would be ignored.
+
+include::{generated-dir}/config/quarkus-smallrye-fault-tolerance.adoc[opts=optional, leveloffset=+1]
+
+This is how the specification-defined properties are mapped to the Quarkus-native configuration:
+
+[%header,cols="1,1"]
+|===
+|Specification-defined config property
+|Quarkus-native config property
+
+|`<classname>/<methodname>/<annotation>/<member>`
+|`quarkus.fault-tolerance."<classname>/<methodname>".<annotation>.<member>`
+
+|`<classname>/<annotation>/<member>`
+|`quarkus.fault-tolerance."<classname>".<annotation>.<member>`
+
+|`<annotation>/<member>`
+|`quarkus.fault-tolerance.global.<annotation>.<member>`
+
+|`MP_Fault_Tolerance_NonFallback_Enabled`
+|`quarkus.fault-tolerance.enabled`
+
+|`MP_Fault_Tolerance_Metrics_Enabled`
+|`quarkus.fault-tolerance.metrics.enabled`
+|===
+
+All the `<annotation>` and `<member>` parts are changed from camel case (`BeforeRetry`, `methodName`) to kebab case (`before-retry`, `method-name`).
+Two annotation members are special cased to improve consistency:
+
+- `Retry/durationUnit` moves to `retry.max-duration-unit`
+- `Retry/jitterDelayUnit` moves to `retry.jitter-unit`

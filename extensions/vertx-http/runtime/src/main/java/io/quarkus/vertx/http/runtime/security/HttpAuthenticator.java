@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.DEV_MODE_AUTHENTICATION_FAILURE_BODY;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getSecurityIdentities;
 import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
@@ -24,6 +25,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -40,9 +42,11 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -50,7 +54,7 @@ import io.vertx.ext.web.RoutingContext;
  * Class that is responsible for running the HTTP based authentication
  */
 @Singleton
-public class HttpAuthenticator {
+public final class HttpAuthenticator {
     /**
      * Special handling for the basic authentication mechanism, for user convenience, we add the mechanism when:
      * - not explicitly disabled or enabled
@@ -83,18 +87,20 @@ public class HttpAuthenticator {
     private final HttpAuthenticationMechanism[] mechanisms;
     private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
     private final boolean inclusiveAuth;
+    private final boolean strictInclusiveMode;
 
     HttpAuthenticator(IdentityProviderManager identityProviderManager,
             Event<AuthenticationFailureEvent> authFailureEvent,
             Event<AuthenticationSuccessEvent> authSuccessEvent,
-            BeanManager beanManager, HttpBuildTimeConfig httpBuildTimeConfig,
-            Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
+            BeanManager beanManager, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpConfig httpConfig, Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
             Instance<IdentityProvider<?>> providers,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
                 AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityProviderManager = identityProviderManager;
-        this.inclusiveAuth = httpBuildTimeConfig.auth.inclusive;
+        this.inclusiveAuth = httpConfig.auth().inclusive();
+        this.strictInclusiveMode = httpConfig.auth().inclusiveMode() == AuthRuntimeConfig.InclusiveMode.STRICT;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             if (mechanism.getCredentialTypes().isEmpty()) {
@@ -121,7 +127,7 @@ public class HttpAuthenticator {
             if (found) {
                 mechanisms.add(mechanism);
             } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass())
-                    && httpBuildTimeConfig.auth.basic.isEmpty()) {
+                    && httpBuildTimeConfig.auth().basic().isEmpty()) {
                 log.debug("""
                         BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
                         detected, but there is no IdentityProvider based on username and password. Please use
@@ -160,7 +166,7 @@ public class HttpAuthenticator {
                                     the highest priority. Please lower priority of the '%s' authentication mechanism under '%s'.
                                     """.formatted(MtlsAuthenticationMechanism.class.getName(),
                                     topMechanism.getClass().getName(),
-                                    MtlsAuthenticationMechanism.PRIORITY));
+                                    MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY));
                 }
             }
         }
@@ -207,6 +213,30 @@ public class HttpAuthenticator {
                         @Override
                         public Uni<SecurityIdentity> apply(HttpAuthenticationMechanism mech) {
                             return mech.authenticate(routingContext, identityProviderManager);
+                        }
+                    });
+        }
+
+        if (inclusiveAuth && strictInclusiveMode && pathSpecificMechanism == null) {
+            // inclusive authentication in the strict mode requires that all registered mechanisms created identity
+            // if at least one of them created it (AKA: if identity is not null, null results in anonymous identity)
+            // inclusive authentication is not applied when path-specific mechanism has been selected (because there
+            // user said use 'xyz' mechanism, not all the mechanisms)
+            result = result.onItem().ifNotNull()
+                    .transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity identity) {
+                            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(routingContext);
+                            if (identities == null || identities.size() != mechanisms.length) {
+                                return Uni.createFrom().failure(new AuthenticationFailedException(
+                                        """
+                                                There is '%d' HTTP authentication mechanisms, however only '%d' authentication mechanisms
+                                                created identity: %s
+                                                """
+                                                .formatted(identities == null ? 0 : identities.size(), mechanisms.length,
+                                                        identities == null ? "" : identities.keySet())));
+                            }
+                            return Uni.createFrom().item(identity);
                         }
                     });
         }
@@ -301,7 +331,12 @@ public class HttpAuthenticator {
                 if (!authDone) {
                     log.debug("Authentication has not been done, returning HTTP status 401");
                     routingContext.response().setStatusCode(401);
-                    routingContext.response().end();
+                    if (routingContext.get(DEV_MODE_AUTHENTICATION_FAILURE_BODY) == null) {
+                        routingContext.response().end();
+                    } else {
+                        final String authenticationFailureBody = routingContext.get(DEV_MODE_AUTHENTICATION_FAILURE_BODY);
+                        routingContext.response().end(authenticationFailureBody);
+                    }
                 }
                 return Uni.createFrom().item(authDone);
             }
@@ -493,8 +528,10 @@ public class HttpAuthenticator {
         if (Boolean.getBoolean(BASIC_AUTH_ANNOTATION_DETECTED)) {
             return false;
         }
-        for (var policy : Arc.container().instance(HttpConfiguration.class).get().auth.permissions.values()) {
-            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism.orElse(null))) {
+        VertxHttpConfig httpConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                .getConfigMapping(VertxHttpConfig.class);
+        for (var policy : httpConfig.auth().permissions().values()) {
+            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism().orElse(null))) {
                 return false;
             }
         }

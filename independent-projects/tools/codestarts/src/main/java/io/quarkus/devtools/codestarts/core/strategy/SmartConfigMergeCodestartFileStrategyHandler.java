@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -30,7 +31,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles,
+            Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
 
@@ -63,7 +65,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
 
     private void writePropertiesConfig(Path targetPath, Map<String, Object> config) throws IOException {
         final StringBuilder builder = new StringBuilder();
-        final HashMap<String, String> flat = new HashMap<>();
+        // Enforce properties are in consistent order.
+        final TreeMap<String, String> flat = new TreeMap<>();
         flatten("", flat, config);
         for (Map.Entry<String, String> entry : flat.entrySet()) {
             final String key = entry.getKey().replaceAll("\\.~$", "");

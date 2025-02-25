@@ -13,6 +13,8 @@ include::_attributes.adoc[]
 
 Create an application that uses the Micrometer metrics library to collect runtime, extension and application metrics and expose them as a Prometheus (OpenMetrics) endpoint.
 
+include::{includes}/observability-include.adoc[]
+
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]

@@ -59,6 +59,7 @@ import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
+import io.quarkus.devui.deployment.menu.EndpointsProcessor;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.buildtime.BuildTimeAction;
@@ -84,7 +85,6 @@ public class BuildTimeContentProcessor {
     private static final Logger log = Logger.getLogger(BuildTimeContentProcessor.class);
 
     private static final String SLASH = "/";
-    private static final String DEV_UI = "dev-ui";
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
     private static final String ES_MODULE_SHIMS = "es-module-shims";
 
@@ -97,7 +97,7 @@ public class BuildTimeContentProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
@@ -280,7 +280,7 @@ public class BuildTimeContentProcessor {
             BuildProducer<QuteTemplateBuildItem> quteTemplateProducer,
             BuildProducer<InternalImportMapBuildItem> internalImportMapProducer) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
 
         QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
                 QuteTemplateBuildItem.DEV_UI);
@@ -379,7 +379,7 @@ public class BuildTimeContentProcessor {
 
         String themeVars = themeVarsBuildItem.getTemplateValue();
         String nonApplicationRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
-        String contextRoot = nonApplicationRoot + DEV_UI + SLASH;
+        String contextRoot = nonApplicationRoot + EndpointsProcessor.DEV_UI + SLASH;
 
         Map<String, Object> data = Map.of(
                 "nonApplicationRoot", nonApplicationRoot,
@@ -528,7 +528,7 @@ public class BuildTimeContentProcessor {
         footerTabs.add(testLog);
 
         // This is only needed when extension developers work on an extension, so we only included it if you build from source.
-        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog) {
+        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog()) {
             Page devUiLog = Page.webComponentPageBuilder().internal()
                     .namespace("devui-jsonrpcstream")
                     .title("Dev UI")
@@ -560,7 +560,7 @@ public class BuildTimeContentProcessor {
         String artifactId = appArtifact.getArtifactId();
         applicationInfo.put("artifactId", artifactId);
         // Add version info
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
         applicationInfo.put("contextRoot", contextRoot);
         applicationInfo.put("quarkusVersion", Version.getVersion());
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));

@@ -11,19 +11,27 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 
+import org.wildfly.security.authz.Attributes;
+
+import io.quarkus.security.identity.SecurityIdentity;
+
 @Path("subject")
 public class SubjectExposingResource {
 
     @Inject
     Principal principal;
 
+    @Inject
+    SecurityIdentity identity;
+
     @GET
     @RolesAllowed("standardRole")
     @Path("secured")
-    public String getSubjectSecured(@Context SecurityContext sec) {
-        Principal user = sec.getUserPrincipal();
+    public String getSubjectSecured() {
+        Principal user = identity.getPrincipal();
         String name = user != null ? user.getName() : "anonymous";
-        return name;
+        Attributes.Entry attributeEntry = (Attributes.Entry) identity.getAttributes().get("displayName");
+        return attributeEntry == null ? name : name + ":" + attributeEntry.get(0);
     }
 
     @GET
@@ -34,7 +42,8 @@ public class SubjectExposingResource {
             throw new IllegalStateException("No injected principal");
         }
         String name = principal.getName();
-        return name;
+        Attributes.Entry attributeEntry = (Attributes.Entry) identity.getAttributes().get("displayName");
+        return attributeEntry == null ? name : name + ":" + attributeEntry.get(0);
     }
 
     @GET

@@ -44,8 +44,14 @@
         },
         {
             "category": "Data7",
-            "timeout": 85,
-            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mariadb, hibernate-reactive-mysql, hibernate-reactive-mysql-agroal-flyway, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
+            "timeout": 90,
+            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mariadb, hibernate-reactive-mssql, hibernate-reactive-mysql, hibernate-reactive-mysql-agroal-flyway, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Build tools and DevTools",
+            "timeout": 75,
+            "test-modules": "maven, gradle, devtools-registry-client",
             "os-name": "ubuntu-latest"
         },
         {
@@ -75,7 +81,7 @@
         {
             "category": "Security2",
             "timeout": 75,
-            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock",
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
             "os-name": "ubuntu-latest"
         },
         {
@@ -92,32 +98,32 @@
         },
         {
             "category": "HTTP",
-            "timeout": 120,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
+            "timeout": 130,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc1",
             "timeout": 70,
-            "test-modules": "maven, jackson, jsonb, kotlin-serialization, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space",
+            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc2",
             "timeout": 75,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some",
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default, jaxp, jaxb",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc3",
             "timeout": 80,
-            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak,  picocli-native",
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Misc4",
+            "category": "Observability",
             "timeout": 130,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator",
+            "test-modules": "smallrye-metrics, micrometer-mp-metrics, micrometer-prometheus, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {
@@ -137,12 +143,6 @@
             "timeout": 50,
             "test-modules": "resteasy-jackson, qute, liquibase",
             "os-name": "windows-latest"
-        },
-        {
-            "category": "DevTools Integration Tests",
-            "timeout": 75,
-            "test-modules": "devtools-registry-client",
-            "os-name": "ubuntu-latest"
         },
         {
             "category": "AWT, ImageIO and Java2D, Packaging .so files",

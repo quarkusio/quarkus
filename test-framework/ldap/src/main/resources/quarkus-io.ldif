@@ -31,6 +31,8 @@ cn: StandardUser
 sn: standardUser
 uid: standardUser
 userPassword: standardUserPassword
+displayName: Standard User
+
 
 dn: uid=adminUser,ou=Users,dc=quarkus,dc=io
 objectClass: top

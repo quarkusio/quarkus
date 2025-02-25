@@ -30,7 +30,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -39,7 +39,7 @@ import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class })
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
     private static final String REDIS_IMAGE = "docker.io/redis:7";
@@ -68,7 +68,7 @@ public class DevServicesRedisProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig) {
+            DevServicesConfig devServicesConfig) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices());
         currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService());
@@ -105,7 +105,7 @@ public class DevServicesRedisProcessor {
                 RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        useSharedNetwork, devServicesConfig.timeout);
+                        useSharedNetwork, devServicesConfig.timeout());
                 if (devService == null) {
                     continue;
                 }
@@ -148,7 +148,7 @@ public class DevServicesRedisProcessor {
     }
 
     private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String name,
-            DevServicesConfig devServicesConfig, LaunchMode launchMode,
+            io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled()) {
             // explicitly disabled

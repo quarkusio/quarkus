@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,6 +24,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.AttributeType;
 import io.quarkus.test.security.SecurityAttribute;
 import io.quarkus.test.security.TestSecurity;
+import io.restassured.RestAssured;
 
 @QuarkusTest
 class TestSecurityTestCase {
@@ -187,4 +189,24 @@ class TestSecurityTestCase {
                 arguments(new int[] { 1, 2 }, new String[] { "hello", "world" }));
     }
 
+    @Test
+    public void testPermissionChecker_anonymousUser() {
+        // user is not authenticated and access should not be granted by the permission checker
+        RestAssured.get("/test-security-permission-checker").then().statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "authenticated-user")
+    public void testPermissionChecker_authenticatedUser() {
+        // user is authenticated, but access should not be granted by the permission checker
+        RestAssured.get("/test-security-permission-checker").then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "meat loaf")
+    public void testPermissionChecker_authorizedUser() {
+        // user is authenticated and access should be granted by the permission checker
+        RestAssured.get("/test-security-permission-checker").then().statusCode(200)
+                .body(Matchers.is("meat loaf:meat loaf:meat loaf"));
+    }
 }

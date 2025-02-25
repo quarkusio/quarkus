@@ -66,9 +66,9 @@ To send a simple email, proceed as follows:
 [source, java]
 ----
 // Imperative API:
-mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body."));
+mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body.").setFrom("from@acme.org"));
 // Reactive API:
-Uni<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body."));
+Uni<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body.").setFrom("from@acme.org"));
 ----
 
 For example, you can use the `Mailer` in an HTTP endpoint as follows:
@@ -78,14 +78,14 @@ For example, you can use the `Mailer` in an HTTP endpoint as follows:
 @GET
 @Path("/imperative")
 public void sendASimpleEmail() {
-    mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body"));
+    mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body").setFrom("from@acme.org"));
 }
 
 @GET
 @Path("/reactive")
 public Uni<Void> sendASimpleEmailAsync() {
     return reactiveMailer.send(
-            Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body"));
+            Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body").setFrom("from@acme.org"));
 }
 ----
 
@@ -95,6 +95,20 @@ The mailer lets you send `io.quarkus.mailer.Mail` objects.
 You can create new `io.quarkus.mailer.Mail` instances from the constructor or from the `Mail.withText` and
 `Mail.withHtml` helper methods.
 The `Mail` instance lets you add recipients (to, cc, or bcc), set the subject, headers, sender (from) address...
+
+Most of these properties are optional, but the sender address is required. It can either be set on an individual `Mail` instances using
+
+[source,java]
+----
+.setFrom("from@acme.org");
+----
+
+or a global default can be configured, using
+
+[source,properties]
+----
+quarkus.mailer.from=from@acme.org
+----
 
 You can also send several `Mail` objects in one call:
 
@@ -356,7 +370,7 @@ the only way to get the new value would be to restart the application.
 
 [NOTE]
 Do use Vault, you need the https://github.com/quarkiverse/quarkus-vault[Quarkus Vault] extension.
-More details about this extension and its configuration can be found in the https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html[extension documentation].
+More details about this extension and its configuration can be found in the https://docs.quarkiverse.io/quarkus-vault/dev/index.html[extension documentation].
 
 
 [TIP]

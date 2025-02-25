@@ -44,12 +44,32 @@ public class TsQuarkusExt {
         return setDescriptorProp(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
     }
 
+    public TsQuarkusExt setConditionalDevDeps(TsArtifact... artifacts) {
+        final StringBuilder buf = new StringBuilder();
+        int i = 0;
+        buf.append(artifacts[i++]);
+        while (i < artifacts.length) {
+            buf.append(' ').append(artifacts[i++]);
+        }
+        return setDescriptorProp(BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES, buf.toString());
+    }
+
     public TsQuarkusExt setDependencyCondition(TsQuarkusExt... exts) {
         final StringBuilder buf = new StringBuilder();
         int i = 0;
         buf.append(exts[i++].getRuntime().getKey());
         while (i < exts.length) {
             buf.append(' ').append(exts[i++].getRuntime().getKey());
+        }
+        return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
+    }
+
+    public TsQuarkusExt setDependencyCondition(TsArtifact... exts) {
+        final StringBuilder buf = new StringBuilder();
+        int i = 0;
+        buf.append(exts[i++].getKey());
+        while (i < exts.length) {
+            buf.append(' ').append(exts[i++].getKey());
         }
         return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
     }

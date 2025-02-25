@@ -4,7 +4,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +35,8 @@ public final class QuarkusUpdatesRepository {
     }
 
     private static final String QUARKUS_UPDATE_RECIPES_GA = "io.quarkus:quarkus-update-recipes";
+    private static final Pattern VERSION_EXTRACTION_PATTERN = Pattern.compile("[.][^.]+$");
+
     public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
     public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.46.0";
@@ -46,7 +57,7 @@ public final class QuarkusUpdatesRepository {
         }
 
         List<String> artifacts = new ArrayList<>();
-        Map<String, String> recipes = new HashMap<>();
+        Map<String, String> recipes = new LinkedHashMap<>();
         String propRewritePluginVersion = null;
 
         for (String gav : gavs) {
@@ -147,7 +158,7 @@ public final class QuarkusUpdatesRepository {
     }
 
     static boolean shouldApplyRecipe(String recipeFileName, String currentVersion, String targetVersion) {
-        String recipeVersion = recipeFileName.replaceFirst("[.][^.]+$", "");
+        String recipeVersion = VERSION_EXTRACTION_PATTERN.matcher(recipeFileName).replaceFirst("");
         final DefaultArtifactVersion recipeAVersion = new DefaultArtifactVersion(recipeVersion);
         final DefaultArtifactVersion currentAVersion = new DefaultArtifactVersion(currentVersion);
         final DefaultArtifactVersion targetAVersion = new DefaultArtifactVersion(targetVersion);
@@ -172,6 +183,7 @@ public final class QuarkusUpdatesRepository {
                                                                     .matches("^\\d\\H+.ya?ml$"))
                                                             .filter(p -> shouldApplyRecipe(p.getFileName().toString(),
                                                                     versions[0], versions[1]))
+                                                            .sorted(RecipeVersionComparator.INSTANCE)
                                                             .map(p -> {
                                                                 try {
                                                                     return new String[] { p.toString(),
@@ -231,4 +243,18 @@ public final class QuarkusUpdatesRepository {
                 .collect(Collectors.toList());
     }
 
+    private static class RecipeVersionComparator implements Comparator<Path> {
+
+        private static final RecipeVersionComparator INSTANCE = new RecipeVersionComparator();
+
+        @Override
+        public int compare(Path recipePath1, Path recipePath2) {
+            DefaultArtifactVersion recipeVersion1 = new DefaultArtifactVersion(
+                    VERSION_EXTRACTION_PATTERN.matcher(recipePath1.getFileName().toString()).replaceFirst(""));
+            DefaultArtifactVersion recipeVersion2 = new DefaultArtifactVersion(
+                    VERSION_EXTRACTION_PATTERN.matcher(recipePath2.getFileName().toString()).replaceFirst(""));
+
+            return recipeVersion1.compareTo(recipeVersion2);
+        }
+    }
 }

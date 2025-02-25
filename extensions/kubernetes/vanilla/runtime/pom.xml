@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-kubernetes</artifactId>
-    <name>Quarkus - Kubernetes - Vanilla - Runtime</name>
+    <name>Quarkus - Kubernetes - Runtime</name>
     <description>Generate Kubernetes resources from annotations</description>
 
     <dependencies>
@@ -46,7 +46,7 @@
                                 </path>
                             </annotationProcessorPaths>
                             <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
                             </compilerArgs>
                         </configuration>
                     </execution>

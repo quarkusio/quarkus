@@ -1,9 +1,10 @@
 package io.quarkus.oidc.client.registration;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.util.List;
 import java.util.Map;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
@@ -66,11 +67,11 @@ public class ClientMetadata extends AbstractJsonObject {
         boolean built = false;
 
         Builder() {
-            builder = Json.createObjectBuilder();
+            builder = jsonProvider().createObjectBuilder();
         }
 
         Builder(JsonObject json) {
-            builder = Json.createObjectBuilder(json);
+            builder = jsonProvider().createObjectBuilder(json);
         }
 
         public Builder clientName(String clientName) {
@@ -86,7 +87,7 @@ public class ClientMetadata extends AbstractJsonObject {
                 throw new IllegalStateException();
             }
             builder.add(OidcConstants.CLIENT_METADATA_REDIRECT_URIS,
-                    Json.createArrayBuilder().add(redirectUri).build());
+                    jsonProvider().createArrayBuilder().add(redirectUri).build());
             return this;
         }
 
@@ -95,7 +96,7 @@ public class ClientMetadata extends AbstractJsonObject {
                 throw new IllegalStateException();
             }
             builder.add(OidcConstants.CLIENT_METADATA_POST_LOGOUT_URIS,
-                    Json.createArrayBuilder().add(postLogoutUri).build());
+                    jsonProvider().createArrayBuilder().add(postLogoutUri).build());
             return this;
         }
 
@@ -103,7 +104,7 @@ public class ClientMetadata extends AbstractJsonObject {
             if (built) {
                 throw new IllegalStateException();
             }
-            builder.addAll(Json.createObjectBuilder(extraProps));
+            builder.addAll(jsonProvider().createObjectBuilder(extraProps));
             return this;
         }
 

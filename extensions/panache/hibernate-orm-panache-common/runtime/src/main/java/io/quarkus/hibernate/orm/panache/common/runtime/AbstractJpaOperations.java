@@ -323,22 +323,19 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public long count(Class<?> entityClass) {
         return getSession(entityClass)
-                .createSelectionQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass), Long.class)
-                .getSingleResult();
+                .createSelectionQuery("FROM " + PanacheJpaUtil.getEntityName(entityClass), entityClass)
+                .getResultCount();
     }
 
     public long count(Class<?> entityClass, String panacheQuery, Object... params) {
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
-            SelectionQuery namedQuery = extractNamedSelectionQuery(entityClass, panacheQuery);
+            SelectionQuery<?> namedQuery = extractNamedSelectionQuery(entityClass, panacheQuery);
             return (long) bindParameters(namedQuery, params).getSingleResult();
         }
 
         try {
-            return bindParameters(
-                    getSession(entityClass)
-                            .createSelectionQuery(
-                                    PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params)), Long.class),
-                    params).getSingleResult();
+            String query = PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params));
+            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params).getResultCount();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }
@@ -346,16 +343,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public long count(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
-            SelectionQuery namedQuery = extractNamedSelectionQuery(entityClass, panacheQuery);
+            SelectionQuery<?> namedQuery = extractNamedSelectionQuery(entityClass, panacheQuery);
             return (long) bindParameters(namedQuery, params).getSingleResult();
         }
 
         try {
-            return bindParameters(
-                    getSession(entityClass)
-                            .createSelectionQuery(
-                                    PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params)), Long.class),
-                    params).getSingleResult();
+            String query = PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params));
+            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params).getResultCount();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }

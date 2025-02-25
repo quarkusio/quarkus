@@ -1,5 +1,5 @@
 allprojects {
-    group 'org.acme.p'
+    group 'org.acme'
     version '1.0-SNAPSHOT'
 
     apply plugin: 'java'

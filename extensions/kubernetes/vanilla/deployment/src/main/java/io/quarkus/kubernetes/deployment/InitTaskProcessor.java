@@ -46,8 +46,9 @@ public class InitTaskProcessor {
                     .replaceAll("^" + Pattern.quote(name + "-"), "")
                     .replaceAll(Pattern.quote("-init") + "$", "");
             String jobName = name + "-" + taskName + "-init";
+
             InitTaskConfig config = initTasksConfig.getOrDefault(taskName, initTaskDefaults);
-            if (config == null || config.enabled) {
+            if (config == null || config.enabled()) {
                 generateRoleForJobs = true;
                 jobs.produce(KubernetesJobBuildItem.create(image.getImage())
                         .withName(task.getName())
@@ -66,9 +67,10 @@ public class InitTaskProcessor {
                                     .build())));
                 });
 
-                String waitForImage = config.image.orElse(config.waitForContainer.image);
+                String waitForImage = config.image().orElse(config.waitForContainer().image());
                 initContainers
                         .produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME + taskName, waitForImage)
+                                .withImagePullPolicy(config.waitForContainer().imagePullPolicy().name())
                                 .withTarget(target)
                                 .withArguments(List.of("job", jobName)));
             }

@@ -21,6 +21,7 @@
         </pluginManagement>
     </build>
     {/if}
+    {#if has-integration-tests-module}
     <profiles>
         <profile>
             <id>it</id>
@@ -35,4 +36,5 @@
             </modules>
         </profile>
     </profiles>
+    {/if}
 </project>

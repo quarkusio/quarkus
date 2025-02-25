@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+import static io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -34,6 +36,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Inject
     OidcClientRegistrations clientRegs;
+
+    @Inject
+    ClientAuthWithSignedJwtCreator clientAuthWithSignedJwtCreator;
 
     @Inject
     @ConfigProperty(name = "quarkus.oidc.auth-server-url")
@@ -100,11 +105,10 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (routingContext.request().path().endsWith("/protected/dynamic")) {
             // New client registration done dynamically at the request time,
             // using the same registration endpoint used to register a default client at startup
-            OidcClientRegistrationConfig clientRegConfig = new OidcClientRegistrationConfig();
-            clientRegConfig.registrationPath = Optional.of(
-                    authServerUrl + "/clients-registrations/openid-connect");
-            clientRegConfig.metadata.redirectUri = Optional.of("http://localhost:8081/protected/dynamic");
-            clientRegConfig.metadata.clientName = Optional.of("Dynamic Client");
+            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig.builder()
+                    .registrationPath(authServerUrl + "/clients-registrations/openid-connect")
+                    .metadata("Dynamic Client", "http://localhost:8081/protected/dynamic")
+                    .build();
 
             return clientRegs.newClientRegistration(clientRegConfig)
                     .onItem().transformToUni(cfg -> cfg.registeredClient())
@@ -124,6 +128,23 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (routingContext.request().path().endsWith("/protected/multi2")) {
             return Uni.createFrom().item(createTenantConfig("registered-client-multi2",
                     regClientsMulti.get("/protected/multi2").metadata()));
+        } else if (routingContext.normalizedPath().endsWith("/jwt-bearer-token-file")) {
+            var clientMetadata = clientAuthWithSignedJwtCreator.getCreatedClientMetadata();
+            var redirectPath = URI.create(clientMetadata.getRedirectUris().get(0)).getPath();
+            var tenantConfig = OidcTenantConfig
+                    .authServerUrl(authServerUrl)
+                    .applicationType(WEB_APP)
+                    .tenantId("registered-client-jwt-bearer-token-file")
+                    .clientName(clientMetadata.getClientName())
+                    .clientId(clientMetadata.getClientId())
+                    .authentication().redirectPath(redirectPath).end()
+                    .credentials()
+                    .jwt()
+                    .source(BEARER)
+                    .tokenPath(clientAuthWithSignedJwtCreator.getSignedJwtTokenPath())
+                    .endCredentials()
+                    .build();
+            return Uni.createFrom().item(tenantConfig);
         }
 
         return null;

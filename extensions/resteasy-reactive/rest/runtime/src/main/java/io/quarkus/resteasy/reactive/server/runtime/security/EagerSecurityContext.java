@@ -1,9 +1,11 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
+import static io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor.STANDARD_SECURITY_CHECK_INTERCEPTOR;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -15,8 +17,8 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -26,8 +28,9 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
@@ -36,23 +39,23 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 @Singleton
-public class EagerSecurityContext {
+public final class EagerSecurityContext {
 
-    static EagerSecurityContext instance = null;
+    private static volatile EagerSecurityContext instance = null;
     private final JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
-    final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
-    final InjectableInstance<CurrentIdentityAssociation> identityAssociation;
-    final AuthorizationController authorizationController;
-    final boolean doNotRunPermissionSecurityCheck;
-    final boolean isProactiveAuthDisabled;
+    private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
+    private final InjectableInstance<CurrentIdentityAssociation> identityAssociation;
+    private final AuthorizationController authorizationController;
+    private final boolean doNotRunPermissionSecurityCheck;
+    private final boolean isProactiveAuthDisabled;
 
     EagerSecurityContext(Event<AuthorizationFailureEvent> authorizationFailureEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             Event<AuthorizationSuccessEvent> authorizationSuccessEvent, BeanManager beanManager,
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
-            HttpBuildTimeConfig buildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
-        this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
+        this.isProactiveAuthDisabled = !httpBuildTimeConfig.auth().proactive();
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,
@@ -74,15 +77,11 @@ public class EagerSecurityContext {
         instance = this;
     }
 
-    void destroySingleton(@Observes ShutdownEvent event) {
-        instance = null;
-    }
-
     Uni<SecurityIdentity> getDeferredIdentity() {
         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {
-                return EagerSecurityContext.instance.identityAssociation.get().getDeferredIdentity();
+                return identityAssociation.get().getDeferredIdentity();
             }
         });
     }
@@ -158,5 +157,93 @@ public class EagerSecurityContext {
                         throw exception;
                     }
                 });
+    }
+
+    Uni<?> runSecurityCheck(SecurityCheck check, MethodDescription invokedMethodDesc,
+            ResteasyReactiveRequestContext requestContext, SecurityIdentity securityIdentity) {
+        preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
+        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc,
+                requestContext.getParameters());
+        if (eventHelper.fireEventOnFailure()) {
+            checkResult = checkResult
+                    .onFailure()
+                    .invoke(new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+                            eventHelper
+                                    .fireFailureEvent(new AuthorizationFailureEvent(
+                                            securityIdentity, throwable, check.getClass().getName(),
+                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                        }
+                    });
+        }
+        if (eventHelper.fireEventOnSuccess()) {
+            checkResult = checkResult
+                    .invoke(new Runnable() {
+                        @Override
+                        public void run() {
+                            eventHelper.fireSuccessEvent(
+                                    new AuthorizationSuccessEvent(securityIdentity,
+                                            check.getClass().getName(),
+                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                        }
+                    });
+        }
+        return checkResult;
+    }
+
+    static void preventRepeatedSecurityChecks(ResteasyReactiveRequestContext requestContext,
+            MethodDescription methodDescription) {
+        // propagate information that security check has been performed on this method to the SecurityHandler
+        // via io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor
+        requestContext.setProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR, methodDescription);
+    }
+
+    static Map<String, Object> createEventPropsWithRoutingCtx(ResteasyReactiveRequestContext requestContext) {
+        final RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
+        if (routingContext == null) {
+            return Map.of();
+        } else {
+            return Map.of(RoutingContext.class.getName(), routingContext);
+        }
+    }
+
+    static EagerSecurityContext getInstance() {
+        if (instance == null) {
+            InjectableInstance<EagerSecurityContext> contextInstance = Arc.container().select(EagerSecurityContext.class);
+            if (contextInstance.isResolvable()) {
+                instance = contextInstance.get();
+            } else {
+                // only true when Security extension is not present, in which case users can create their
+                // own Jakarta REST filters that perform security and provide security identity association
+                // relevant for the SecurityContextOverrideHandler that is added regardless of the Security extension
+                return null;
+            }
+        }
+        return instance;
+    }
+
+    static boolean isAuthorizationEnabled() {
+        return getInstance().authorizationController.isAuthorizationEnabled();
+    }
+
+    static CurrentIdentityAssociation getCurrentIdentityAssociation() {
+        var instance = getInstance();
+        if (instance == null) {
+            return null;
+        }
+        return instance.identityAssociation.get();
+    }
+
+    static SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> getEventHelper() {
+        return getInstance().eventHelper;
+    }
+
+    static boolean doNotRunPermissionSecurityCheck() {
+        return getInstance().doNotRunPermissionSecurityCheck;
+    }
+
+    static boolean isProactiveAuthDisabled() {
+        return getInstance().isProactiveAuthDisabled;
     }
 }

@@ -41,7 +41,7 @@
 :quarkus-blob-url: ${quarkus-base-url}/blob/main
 :quarkus-tree-url: ${quarkus-base-url}/tree/main
 :quarkus-issues-url: ${quarkus-base-url}/issues
-:quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
+:quarkus-images-url: https://github.com/quarkusio/quarkus-images
 :quarkus-chat-url: https://quarkusio.zulipchat.com
 :quarkus-mailing-list-subscription-email: quarkus-dev+subscribe@googlegroups.com
 :quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev
@@ -55,13 +55,13 @@
 :hibernate-orm-dialect-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
 :hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
 // .
-:amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
-:config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html
-:hibernate-search-orm-elasticsearch-aws-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html
-:neo4j-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html
-:vault-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html
-:vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
-:micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
+:amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
+:config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html
+:hibernate-search-orm-elasticsearch-aws-guide: https://docs.quarkiverse.io/quarkus-hibernate-search-extras/dev/index.html
+:neo4j-guide: https://docs.quarkiverse.io/quarkus-neo4j/dev/index.html
+:vault-guide: https://docs.quarkiverse.io/quarkus-vault/dev/index.html
+:vault-datasource-guide: https://docs.quarkiverse.io/quarkus-vault/dev/vault-datasource.html
+:micrometer-registry-guide: https://docs.quarkiverse.io/quarkus-micrometer-registry/dev/index.html
 :quarkus-migration-guide: https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides]
 :quarkus-tls-registry-reference-guide: TLS registry reference
 // .

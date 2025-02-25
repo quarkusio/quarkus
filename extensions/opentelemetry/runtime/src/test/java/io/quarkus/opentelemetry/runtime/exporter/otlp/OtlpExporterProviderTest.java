@@ -10,10 +10,7 @@ import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
 
 class OtlpExporterProviderTest {
 
@@ -93,6 +90,46 @@ class OtlpExporterProviderTest {
     public void resolveMetricEndpoint_testIsSet() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
                 OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                        null,
+                        null)));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_newWins() {
+        assertEquals("http://localhost:2222/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        "http://localhost:1111/",
+                        "http://localhost:2222/")));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_globalWins() {
+        assertEquals("http://localhost:1111/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        "http://localhost:1111/",
+                        DEFAULT_GRPC_BASE_URI)));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_legacyTraceWins() {
+        assertEquals("http://localhost:2222/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        DEFAULT_GRPC_BASE_URI,
+                        "http://localhost:2222/")));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_legacyGlobalWins() {
+        assertEquals(DEFAULT_GRPC_BASE_URI,
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        DEFAULT_GRPC_BASE_URI,
+                        null)));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_testIsSet() {
+        assertEquals(DEFAULT_GRPC_BASE_URI,
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));
     }
@@ -247,6 +284,72 @@ class OtlpExporterProviderTest {
                         return Optional.empty();
                     }
 
+                    @Override
+                    public Optional<String> endpoint() {
+                        return Optional.ofNullable(newTrace);
+                    }
+
+                    @Override
+                    public Optional<List<String>> headers() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<CompressionType> compression() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Duration timeout() {
+                        return null;
+                    }
+
+                    @Override
+                    public Optional<String> protocol() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public KeyCert keyCert() {
+                        return new KeyCert() {
+                            @Override
+                            public Optional<List<String>> keys() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public TrustCert trustCert() {
+                        return new TrustCert() {
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public Optional<String> tlsConfigurationName() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public ProxyConfig proxyOptions() {
+                        return null;
+                    }
+                };
+
+            }
+
+            @Override
+            public OtlpExporterLogsConfig logs() {
+                return new OtlpExporterLogsConfig() {
                     @Override
                     public Optional<String> endpoint() {
                         return Optional.ofNullable(newTrace);

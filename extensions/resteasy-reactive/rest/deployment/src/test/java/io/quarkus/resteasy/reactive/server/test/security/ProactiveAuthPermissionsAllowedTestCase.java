@@ -14,6 +14,7 @@ public class ProactiveAuthPermissionsAllowedTestCase extends AbstractPermissions
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
                             PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
-                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class));
+                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
+                            PermissionCheckersResource.class));
 
 }

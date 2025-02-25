@@ -66,7 +66,7 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     public Multi<ScoredValue<V>> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)
-                .whilst(m -> !m.isEmpty() && hasNext())
+                .whilst(m -> hasNext())
                 .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
     }
 }

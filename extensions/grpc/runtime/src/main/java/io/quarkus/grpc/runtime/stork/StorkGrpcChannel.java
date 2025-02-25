@@ -30,7 +30,7 @@ import io.grpc.ClientCall;
 import io.grpc.Deadline;
 import io.grpc.MethodDescriptor;
 import io.grpc.internal.DelayedClientCall;
-import io.quarkus.grpc.runtime.config.StorkConfig;
+import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.Service;
@@ -48,7 +48,7 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
 
     private final GrpcClient client;
     private final String serviceName;
-    private final StorkConfig stork;
+    private final GrpcClientConfiguration.StorkConfig stork;
     private final Executor executor;
 
     private static class Context {
@@ -60,13 +60,14 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
         AtomicReference<ServiceInstance> ref;
     }
 
-    public StorkGrpcChannel(GrpcClient client, String serviceName, StorkConfig stork, Executor executor) {
+    public StorkGrpcChannel(GrpcClient client, String serviceName, GrpcClientConfiguration.StorkConfig stork,
+            Executor executor) {
         this.client = client;
         this.serviceName = serviceName;
         this.stork = stork;
         this.executor = executor;
-        this.scheduler = new ScheduledThreadPoolExecutor(stork.threads);
-        this.scheduler.scheduleAtFixedRate(this::refresh, stork.delay, stork.period, TimeUnit.SECONDS);
+        this.scheduler = new ScheduledThreadPoolExecutor(stork.threads());
+        this.scheduler.scheduleAtFixedRate(this::refresh, stork.delay(), stork.period(), TimeUnit.SECONDS);
     }
 
     @Override
@@ -85,12 +86,12 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
         context.ref = STORK_SERVICE_INSTANCE.get();
 
         DelayedClientCall<RequestT, ResponseT> delayed = new StorkDelayedClientCall<>(executor, scheduler,
-                Deadline.after(stork.deadline, TimeUnit.MILLISECONDS));
+                Deadline.after(stork.deadline(), TimeUnit.MILLISECONDS));
 
         asyncCall(methodDescriptor, callOptions, context)
                 .onFailure()
                 .retry()
-                .atMost(stork.retries)
+                .atMost(stork.retries())
                 .subscribe()
                 .asCompletionStage()
                 .thenApply(delayed::setCall)

@@ -29,7 +29,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     public Uni<TenantConfigContext> initialize() {
         if (!delegate.ready()) {
             LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                    delegate.oidcConfig().tenantId.get());
+                    delegate.oidcConfig().tenantId().get());
             return staticTenantCreator.get().invoke(ctx -> LazyTenantConfigContext.this.delegate = ctx);
         }
         return Uni.createFrom().item(delegate);
@@ -61,7 +61,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     }
 
     @Override
-    public OidcProviderClient getOidcProviderClient() {
+    public OidcProviderClientImpl getOidcProviderClient() {
         return delegate.getOidcProviderClient();
     }
 

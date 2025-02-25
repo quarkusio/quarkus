@@ -14,6 +14,6 @@ public class OpenshiftBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return containerImageConfig.builder.map(b -> b.equals(OpenshiftProcessor.OPENSHIFT)).orElse(true);
+        return containerImageConfig.builder().map(b -> b.equals(OpenshiftProcessor.OPENSHIFT)).orElse(true);
     }
 }

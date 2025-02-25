@@ -4,83 +4,83 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Runtime configuration for CSRF Reactive Filter.
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class RestCsrfConfig {
+@ConfigMapping(prefix = "quarkus.rest-csrf")
+public interface RestCsrfConfig {
     /**
      * Form field name which keeps a CSRF token.
      */
-    @ConfigItem(defaultValue = "csrf-token")
-    public String formFieldName;
+    @WithDefault("csrf-token")
+    String formFieldName();
 
     /**
      * Token header which can provide a CSRF token.
      */
-    @ConfigItem(defaultValue = "X-CSRF-TOKEN")
-    public String tokenHeaderName;
+    @WithDefault("X-CSRF-TOKEN")
+    String tokenHeaderName();
 
     /**
      * CSRF cookie name.
      */
-    @ConfigItem(defaultValue = "csrf-token")
-    public String cookieName;
+    @WithDefault("csrf-token")
+    String cookieName();
 
     /**
      * CSRF cookie max age.
      */
-    @ConfigItem(defaultValue = "2H")
-    public Duration cookieMaxAge;
+    @WithDefault("2H")
+    Duration cookieMaxAge();
 
     /**
      * CSRF cookie path.
      */
-    @ConfigItem(defaultValue = "/")
-    public String cookiePath;
+    @WithDefault("/")
+    String cookiePath();
 
     /**
      * CSRF cookie domain.
      */
-    @ConfigItem
-    public Optional<String> cookieDomain;
+    Optional<String> cookieDomain();
 
     /**
      * If enabled the CSRF cookie will have its 'secure' parameter set to 'true'
      * when HTTP is used. It may be necessary when running behind an SSL terminating reverse proxy.
      * The cookie will always be secure if HTTPS is used even if this property is set to false.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean cookieForceSecure;
+    @WithDefault("false")
+    boolean cookieForceSecure();
 
     /**
      * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean cookieHttpOnly = true;
+    @WithDefault("true")
+    boolean cookieHttpOnly();
+
     /**
      * Create CSRF token only if the HTTP GET relative request path matches one of the paths configured with this property.
      * Use a comma to separate multiple path values.
      *
      */
-    @ConfigItem
-    public Optional<Set<String>> createTokenPath;
+    Optional<Set<String>> createTokenPath();
 
     /**
      * Random CSRF token size in bytes.
      */
-    @ConfigItem(defaultValue = "16")
-    public int tokenSize;
+    @WithDefault("16")
+    int tokenSize();
 
     /**
      * CSRF token HMAC signature key, if this key is set then it must be at least 32 characters long.
      */
-    @ConfigItem
-    public Optional<String> tokenSignatureKey;
+    Optional<String> tokenSignatureKey();
 
     /**
      * Verify CSRF token in the CSRF filter.
@@ -95,8 +95,8 @@ public class RestCsrfConfig {
      * is available, has the correct {@linkplain #tokenSize} in bytes and that the Content-Type HTTP header is
      * either 'application/x-www-form-urlencoded' or 'multipart/form-data'.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean verifyToken;
+    @WithDefault("true")
+    boolean verifyToken();
 
     /**
      * Require that only 'application/x-www-form-urlencoded' or 'multipart/form-data' body is accepted for the token
@@ -105,6 +105,6 @@ public class RestCsrfConfig {
      * This property is only effective if {@link #verifyToken} property is enabled and {@link #tokenHeaderName} is not
      * configured.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean requireFormUrlEncoded;
+    @WithDefault("true")
+    boolean requireFormUrlEncoded();
 }

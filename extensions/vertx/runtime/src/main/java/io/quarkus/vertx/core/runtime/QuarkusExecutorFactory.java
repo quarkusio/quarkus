@@ -88,9 +88,12 @@ public class QuarkusExecutorFactory implements ExecutorServiceFactory {
             if (conf.queueSize().isPresent()) {
                 if (conf.queueSize().getAsInt() < 0) {
                     builder.setMaximumQueueSize(Integer.MAX_VALUE);
+                    builder.setQueueLimited(false);
                 } else {
                     builder.setMaximumQueueSize(conf.queueSize().getAsInt());
                 }
+            } else {
+                builder.setQueueLimited(false);
             }
             builder.setGrowthResistance(conf.growthResistance());
             builder.setKeepAliveTime(conf.keepAliveTime());

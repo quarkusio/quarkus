@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OtlpTraceExporterDisabledTest {
@@ -25,7 +25,7 @@ public class OtlpTraceExporterDisabledTest {
     OpenTelemetry openTelemetry;
 
     @Inject
-    Instance<LateBoundBatchSpanProcessor> lateBoundBatchSpanProcessorInstance;
+    Instance<LateBoundSpanProcessor> lateBoundSpanProcessorInstance;
 
     @Inject
     Instance<MetricExporter> metricExporters;
@@ -33,7 +33,7 @@ public class OtlpTraceExporterDisabledTest {
     @Test
     void testOpenTelemetryButNoBatchSpanProcessor() {
         assertNotNull(openTelemetry);
-        assertFalse(lateBoundBatchSpanProcessorInstance.isResolvable());
+        assertFalse(lateBoundSpanProcessorInstance.isResolvable());
         assertFalse(metricExporters.isResolvable());
     }
 }

@@ -33,7 +33,7 @@ public class OidcClientPasswordGrantSecretIsMissingTestCase {
                     }
                     e = e.getCause();
                 }
-                assertNotNull(te);
+                assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertTrue(
                         te.getMessage()
                                 .contains("Username and password must be set when a password grant is used"),

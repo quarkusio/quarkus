@@ -1,6 +1,8 @@
 package io.quarkus.smallrye.graphql.runtime;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.function.Consumer;
 
 import graphql.schema.GraphQLSchema;
@@ -26,12 +28,20 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class SmallRyeGraphQLRecorder {
 
+    public RuntimeValue<SubmissionPublisher<String>> createTraficLogPublisher() {
+        return new RuntimeValue<>(new SubmissionPublisher<>());
+    }
+
     public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer,
             Schema schema,
-            SmallRyeGraphQLConfig graphQLConfig) {
+            SmallRyeGraphQLConfig graphQLConfig,
+            Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
         GraphQLProducer graphQLProducer = beanContainer.beanInstance(GraphQLProducer.class);
-        if (graphQLConfig.extraScalars.isPresent()) {
-            registerExtraScalars(graphQLConfig.extraScalars.get());
+        if (graphQLConfig.extraScalars().isPresent()) {
+            registerExtraScalars(graphQLConfig.extraScalars().get());
+        }
+        if (publisher.isPresent()) {
+            graphQLProducer.setTraficPublisher(publisher.get().getValue());
         }
         GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema);
         return new RuntimeValue<>(graphQLSchema != null);
@@ -81,7 +91,7 @@ public class SmallRyeGraphQLRecorder {
             String graphqlUiPath, List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             SmallRyeGraphQLRuntimeConfig runtimeConfig, ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.enable) {
+        if (runtimeConfig.enable()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(graphqlUiFinalDestination, graphqlUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

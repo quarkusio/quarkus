@@ -1,14 +1,20 @@
 package io.quarkus.runtime.configuration;
 
+import java.util.Map;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 
+import io.smallrye.config.ConfigMappingLoader;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.SecretKeysHandler;
 import io.smallrye.config.SecretKeysHandlerFactory;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
@@ -17,14 +23,19 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
  * require varargs or collections as parameters.
  */
 public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCustomizer {
-    protected static void withDefaultValue(SmallRyeConfigBuilder builder, String name, String value) {
-        builder.withDefaultValue(name, value);
+
+    protected static void withDefaultValues(SmallRyeConfigBuilder builder, Map<String, String> values) {
+        builder.withDefaultValues(values);
     }
 
-    // TODO - radcortez - Can be improved by avoiding introspection work in the Converter class.
-    // Not a big issue, because registering Converters via ServiceLoader is not a common case
-    protected static void withConverter(SmallRyeConfigBuilder builder, Converter<?> converter) {
-        builder.withConverters(new Converter[] { converter });
+    @SuppressWarnings("unchecked")
+    protected static <T> void withConverter(SmallRyeConfigBuilder builder, String type, int priority, Converter<T> converter) {
+        try {
+            // To support converters that are not public
+            builder.withConverter((Class<T>) Class.forName(type, false, builder.getClassLoader()), priority, converter);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected static void withInterceptor(SmallRyeConfigBuilder builder, ConfigSourceInterceptor interceptor) {
@@ -58,6 +69,10 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         builder.withSecretKeyHandlerFactories(secretKeysHandlerFactory);
     }
 
+    protected static void withMapping(SmallRyeConfigBuilder builder, ConfigClass mapping) {
+        builder.withMapping(mapping);
+    }
+
     protected static void withMapping(SmallRyeConfigBuilder builder, String mappingClass, String prefix) {
         try {
             // To support mappings that are not public
@@ -65,6 +80,11 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected static void withMappingInstance(SmallRyeConfigBuilder builder, ConfigClass mapping) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType()));
     }
 
     protected static void withBuilder(SmallRyeConfigBuilder builder, ConfigBuilder configBuilder) {
@@ -92,6 +112,24 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
                     .getClassLoader().loadClass(customizer);
             customizerClass.getDeclaredConstructor().newInstance().configBuilder(builder);
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ConfigClass configClass(final String mappingClass, final String prefix) {
+        try {
+            // To support mappings that are not public
+            return ConfigClass.configClass(Thread.currentThread().getContextClassLoader().loadClass(mappingClass), prefix);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void ensureLoaded(final String mappingClass) {
+        try {
+            // To support mappings that are not public
+            ConfigMappingLoader.ensureLoaded(Thread.currentThread().getContextClassLoader().loadClass(mappingClass));
+        } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.info.BuildInfo;
@@ -25,6 +27,8 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class InfoRecorder {
+
+    private static final Logger log = Logger.getLogger(InfoRecorder.class);
 
     public Handler<RoutingContext> handler(Map<String, Object> buildTimeInfo, List<InfoContributor> knownContributors) {
         return new InfoHandler(buildTimeInfo, knownContributors);
@@ -130,6 +134,16 @@ public class InfoRecorder {
                     public String version() {
                         return JavaInfoContributor.getVersion();
                     }
+
+                    @Override
+                    public String vendor() {
+                        return JavaInfoContributor.getVendor();
+                    }
+
+                    @Override
+                    public String vendorVersion() {
+                        return JavaInfoContributor.getVendorVersion();
+                    }
                 };
             }
         };
@@ -141,13 +155,23 @@ public class InfoRecorder {
         public InfoHandler(Map<String, Object> buildTimeInfo, List<InfoContributor> knownContributors) {
             this.finalBuildInfo = new HashMap<>(buildTimeInfo);
             for (InfoContributor contributor : knownContributors) {
+                String key = contributor.name();
+                if (finalBuildInfo.containsKey(key)) {
+                    log.warn(
+                            "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+                }
                 //TODO: we might want this to be done lazily
                 // also, do we want to merge information or simply replace like we are doing here?
-                finalBuildInfo.put(contributor.name(), contributor.data());
+                finalBuildInfo.put(key, contributor.data());
             }
             for (InstanceHandle<InfoContributor> handler : Arc.container().listAll(InfoContributor.class)) {
                 InfoContributor contributor = handler.get();
-                finalBuildInfo.put(contributor.name(), contributor.data());
+                String key = contributor.name();
+                if (finalBuildInfo.containsKey(key)) {
+                    log.warn(
+                            "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+                }
+                finalBuildInfo.put(key, contributor.data());
             }
         }
 

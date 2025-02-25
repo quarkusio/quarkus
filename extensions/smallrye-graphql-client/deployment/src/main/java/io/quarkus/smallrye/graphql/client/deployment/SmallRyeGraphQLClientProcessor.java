@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.graphql.Input;
@@ -26,9 +25,12 @@ import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -40,6 +42,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientCertificateUpdateEventListener;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
@@ -52,6 +55,7 @@ public class SmallRyeGraphQLClientProcessor {
     private static final DotName GRAPHQL_CLIENT_API = DotName
             .createSimple("io.smallrye.graphql.client.typesafe.api.GraphQLClientApi");
     private static final DotName GRAPHQL_CLIENT = DotName.createSimple("io.smallrye.graphql.client.GraphQLClient");
+    private static final String CERTIFICATE_UPDATE_EVENT_LISTENER = GraphQLClientCertificateUpdateEventListener.class.getName();
     private static final String NAMED_DYNAMIC_CLIENTS = "io.smallrye.graphql.client.impl.dynamic.cdi.NamedDynamicClients";
 
     @BuildStep
@@ -70,23 +74,37 @@ public class SmallRyeGraphQLClientProcessor {
                 .allProvidersFromClassPath("io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder"));
         services.produce(ServiceProviderBuildItem
                 .allProvidersFromClassPath("io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Argument"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Directive"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.DirectiveArgument"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Document"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Enum"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Field"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Fragment"));
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.ArgumentFactory"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.FragmentReference"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InlineFragment"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InputObject"));
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveFactory"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InputObjectField"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Operation"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Variable"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.VariableType"));
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveArgumentFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DocumentFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.EnumFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FieldFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentFactory"));
+        services.produce(
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentReferenceFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InlineFragmentFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFactory"));
+        services.produce(
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFieldFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.OperationFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableTypeFactory"));
     }
 
     @BuildStep
@@ -98,7 +116,7 @@ public class SmallRyeGraphQLClientProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void initializeTypesafeClient(BeanArchiveIndexBuildItem index,
+    void initializeTypesafeClient(CombinedIndexBuildItem index,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -124,10 +142,11 @@ public class SmallRyeGraphQLClientProcessor {
                 }
             }
 
+            BuiltinScope scope = BuiltinScope.from(index.getIndex().getClassByName(apiClass));
             // an equivalent of io.smallrye.graphql.client.typesafe.impl.cdi.GraphQlClientBean that produces typesafe client instances
             SyntheticBeanBuildItem bean = SyntheticBeanBuildItem.configure(apiClassInfo.name())
                     .addType(apiClassInfo.name())
-                    .scope(ApplicationScoped.class)
+                    .scope(scope == null ? BuiltinScope.APPLICATION.getInfo() : scope.getInfo())
                     .addInjectionPoint(ClassType.create(DotName.createSimple(ClientModels.class)))
                     .createWith(recorder.typesafeClientSupplier(apiClass))
                     .unremovable()
@@ -165,13 +184,12 @@ public class SmallRyeGraphQLClientProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    GraphQLClientConfigInitializedBuildItem mergeClientConfigurations(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            SmallRyeGraphQLClientRecorder recorder,
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    GraphQLClientConfigInitializedBuildItem mergeClientConfigurations(SmallRyeGraphQLClientRecorder recorder,
             GraphQLClientsConfig quarkusConfig,
             BeanArchiveIndexBuildItem index) {
         // to store config keys of all clients found in the application code
         List<String> knownConfigKeys = new ArrayList<>();
-
         Map<String, String> shortNamesToQualifiedNames = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
             ClassInfo clazz = annotation.target().asClass();
@@ -203,7 +221,7 @@ public class SmallRyeGraphQLClientProcessor {
     void buildClientModel(CombinedIndexBuildItem index, SmallRyeGraphQLClientRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans, GraphQLClientBuildConfig quarkusConfig) {
         if (!index.getIndex().getAnnotations(GRAPHQL_CLIENT_API).isEmpty()) {
-            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning) ? ClientModelBuilder.build(index.getIndex())
+            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning()) ? ClientModelBuilder.build(index.getIndex())
                     : new ClientModels(); // empty Client Model(s)
             RuntimeValue<ClientModels> modelRuntimeClientModel = recorder.getRuntimeClientModel(clientModels);
             DotName supportClassName = DotName.createSimple(ClientModels.class.getName());
@@ -234,11 +252,16 @@ public class SmallRyeGraphQLClientProcessor {
     @BuildStep
     void setAdditionalClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalClassesToIndex,
             GraphQLClientBuildConfig quarkusConfig) {
-        if (quarkusConfig.enableBuildTimeScanning) {
+        if (quarkusConfig.enableBuildTimeScanning()) {
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Closeable.class.getName()));
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(AutoCloseable.class.getName()));
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Input.class.getName()));
         }
+    }
+
+    @BuildStep
+    void registerCertificateUpdateEventListener(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(CERTIFICATE_UPDATE_EVENT_LISTENER));
     }
 
 }

@@ -179,7 +179,7 @@ public class SmallRyeReactiveMessagingProcessor {
     @BuildStep
     public AnnotationsTransformerBuildItem enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability,
             ReactiveMessagingConfiguration configuration) {
-        boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled;
+        boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled();
         boolean useMicrometer = isMetricEnabled && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER);
         LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -222,14 +222,14 @@ public class SmallRyeReactiveMessagingProcessor {
             BuildProducer<AnnotationsTransformerBuildItem> transformations) {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
-                        buildTimeConfig.healthEnabled));
+                        buildTimeConfig.healthEnabled()));
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(),
-                        buildTimeConfig.healthEnabled));
+                        buildTimeConfig.healthEnabled()));
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingStartupCheck.class.getName(),
-                        buildTimeConfig.healthEnabled));
-        if (buildTimeConfig.healthEnabled) {
+                        buildTimeConfig.healthEnabled()));
+        if (buildTimeConfig.healthEnabled()) {
             beans.produce(new AdditionalBeanBuildItem(HealthCenterFilter.class, HealthCenterInterceptor.class));
 
             transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -308,9 +308,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
-                                Thread.currentThread().getContextClassLoader(), conf.strict,
+                                Thread.currentThread().getContextClassLoader(), conf.strict(),
                                 consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
-                                        ? conf.blockingSignaturesExecutionMode
+                                        ? conf.blockingSignaturesExecutionMode()
                                         : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP); // disable execution mode setting for inner channels
                 mediatorConfigurations.add(mediatorConfiguration);
 

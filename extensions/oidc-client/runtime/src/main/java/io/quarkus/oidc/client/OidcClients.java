@@ -2,6 +2,7 @@ package io.quarkus.oidc.client;
 
 import java.io.Closeable;
 
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -27,7 +28,7 @@ public interface OidcClients extends Closeable {
     /**
      * Returns a new {@link OidcClient}.
      *
-     * @param id {@link OidcClientConfig} new client configuration
+     * @param clientConfig {@link OidcClientConfig} new client configuration
      * @return Uni<OidcClient>
      */
     Uni<OidcClient> newClient(OidcClientConfig clientConfig);

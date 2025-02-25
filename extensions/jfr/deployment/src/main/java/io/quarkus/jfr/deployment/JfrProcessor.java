@@ -12,11 +12,13 @@ import io.quarkus.jfr.runtime.JfrRecorder;
 import io.quarkus.jfr.runtime.OTelIdProducer;
 import io.quarkus.jfr.runtime.QuarkusIdProducer;
 import io.quarkus.jfr.runtime.config.JfrRuntimeConfig;
-import io.quarkus.jfr.runtime.http.rest.ClassicServerRecorderProducer;
-import io.quarkus.jfr.runtime.http.rest.JfrClassicServerFilter;
-import io.quarkus.jfr.runtime.http.rest.JfrReactiveServerFilter;
-import io.quarkus.jfr.runtime.http.rest.ReactiveServerRecorderProducer;
+import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerFilter;
+import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerRecorderProducer;
+import io.quarkus.jfr.runtime.http.rest.reactive.ReactiveServerFilters;
+import io.quarkus.jfr.runtime.http.rest.reactive.ReactiveServerRecorderProducer;
+import io.quarkus.jfr.runtime.http.rest.reactive.ServerStartRecordingHandler;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.GlobalHandlerCustomizerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
 @BuildSteps
@@ -52,7 +54,8 @@ public class JfrProcessor {
     @BuildStep
     void registerRestIntegration(Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> filterBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<GlobalHandlerCustomizerBuildItem> globalHandlerCustomizerProducer) {
 
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
@@ -61,7 +64,10 @@ public class JfrProcessor {
                     .build());
 
             filterBeans
-                    .produce(new CustomContainerRequestFilterBuildItem(JfrReactiveServerFilter.class.getName()));
+                    .produce(new CustomContainerRequestFilterBuildItem(ReactiveServerFilters.class.getName()));
+
+            globalHandlerCustomizerProducer
+                    .produce(new GlobalHandlerCustomizerBuildItem(new ServerStartRecordingHandler.Customizer()));
         }
     }
 
@@ -76,7 +82,7 @@ public class JfrProcessor {
                     .build());
 
             resteasyJaxrsProviderBuildItemBuildProducer
-                    .produce(new ResteasyJaxrsProviderBuildItem(JfrClassicServerFilter.class.getName()));
+                    .produce(new ResteasyJaxrsProviderBuildItem(ClassicServerFilter.class.getName()));
         }
     }
 

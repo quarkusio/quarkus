@@ -363,7 +363,7 @@ public class WiringProcessor {
             }
         }
 
-        if (incomingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment) {
+        if (incomingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment()) {
             String connector = incomingConnectors.iterator().next();
             // Single incoming connector, set mp.messaging.incoming.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {
@@ -378,7 +378,7 @@ public class WiringProcessor {
             }
         }
 
-        if (outgoingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment) {
+        if (outgoingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment()) {
             String connector = outgoingConnectors.iterator().next();
             // Single outgoing connector, set mp.messaging.outgoing.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {

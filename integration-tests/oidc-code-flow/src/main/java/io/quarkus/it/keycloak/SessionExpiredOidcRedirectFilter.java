@@ -10,6 +10,7 @@ import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.Redirect.Location;
 import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.build.Jwt;
 
@@ -31,7 +32,7 @@ public class SessionExpiredOidcRedirectFilter implements OidcRedirectFilter {
         }
 
         AuthorizationCodeTokens tokens = context.routingContext().get(AuthorizationCodeTokens.class.getName());
-        String userName = OidcUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name());
+        String userName = OidcCommonUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name());
         String jwe = Jwt.preferredUserName(userName).jwe()
                 .encryptWithSecret(context.oidcTenantConfig().credentials.secret.get());
         OidcUtils.createCookie(context.routingContext(), context.oidcTenantConfig(), "session_expired",

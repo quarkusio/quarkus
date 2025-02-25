@@ -48,7 +48,7 @@ public class LiquibaseExtensionConfigFixture {
 
     public void assertDefaultConfigurationSettings(LiquibaseConfig configuration) {
 
-        assertEquals(configuration.changeLog, LiquibaseDataSourceBuildTimeConfig.defaultConfig().changeLog);
+        assertEquals(configuration.changeLog, LiquibaseDataSourceBuildTimeConfig.DEFAULT_CHANGE_LOG);
 
         assertEquals(configuration.databaseChangeLogTableName,
                 GlobalConfiguration.DATABASECHANGELOG_TABLE_NAME.getCurrentValue());

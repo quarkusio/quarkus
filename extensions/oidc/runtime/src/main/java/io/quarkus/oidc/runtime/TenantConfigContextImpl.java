@@ -74,21 +74,21 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     private static SecretKey createStateSecretKey(OidcTenantConfig config) {
-        if (config.authentication.pkceRequired.orElse(false) || config.authentication.nonceRequired) {
+        if (config.authentication().pkceRequired().orElse(false) || config.authentication().nonceRequired()) {
             String stateSecret = null;
-            if (config.authentication.pkceSecret.isPresent() && config.authentication.getStateSecret().isPresent()) {
+            if (config.authentication().pkceSecret().isPresent() && config.authentication().stateSecret().isPresent()) {
                 throw new ConfigurationException(
                         "Both 'quarkus.oidc.authentication.state-secret' and 'quarkus.oidc.authentication.pkce-secret' are configured");
             }
-            if (config.authentication.getStateSecret().isPresent()) {
-                stateSecret = config.authentication.getStateSecret().get();
-            } else if (config.authentication.pkceSecret.isPresent()) {
-                stateSecret = config.authentication.pkceSecret.get();
+            if (config.authentication().stateSecret().isPresent()) {
+                stateSecret = config.authentication().stateSecret().get();
+            } else if (config.authentication().pkceSecret().isPresent()) {
+                stateSecret = config.authentication().pkceSecret().get();
             }
 
             if (stateSecret == null) {
                 LOG.debug("'quarkus.oidc.authentication.state-secret' is not configured");
-                String possiblePkceSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials);
+                String possiblePkceSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials());
                 if (possiblePkceSecret != null && possiblePkceSecret.length() < 32) {
                     LOG.debug("Client secret is less than 32 characters long, the state secret will be generated");
                 } else {
@@ -122,13 +122,13 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     private static SecretKey createTokenEncSecretKey(OidcTenantConfig config, OidcProvider provider) {
-        if (config.tokenStateManager.encryptionRequired) {
+        if (config.tokenStateManager().encryptionRequired()) {
             String encSecret = null;
-            if (config.tokenStateManager.encryptionSecret.isPresent()) {
-                encSecret = config.tokenStateManager.encryptionSecret.get();
+            if (config.tokenStateManager().encryptionSecret().isPresent()) {
+                encSecret = config.tokenStateManager().encryptionSecret().get();
             } else {
                 LOG.debug("'quarkus.oidc.token-state-manager.encryption-secret' is not configured");
-                encSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials);
+                encSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials());
             }
             try {
                 if (encSecret != null) {
@@ -167,8 +167,8 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     private static SecretKey generateIdTokenSecretKey(OidcTenantConfig config, OidcProvider provider) {
         try {
-            return (!config.authentication.idTokenRequired.orElse(true)
-                    && OidcCommonUtils.getClientOrJwtSecret(config.credentials) == null
+            return (!config.authentication().idTokenRequired().orElse(true)
+                    && OidcCommonUtils.getClientOrJwtSecret(config.credentials()) == null
                     && provider.client.getClientJwtKey() == null) ? OidcCommonUtils.generateSecretKey() : null;
         } catch (Exception ex) {
             throw new OIDCException(ex);
@@ -201,7 +201,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     @Override
-    public OidcProviderClient getOidcProviderClient() {
+    public OidcProviderClientImpl getOidcProviderClient() {
         return provider != null ? provider.client : null;
     }
 

@@ -522,6 +522,38 @@ public final class Types {
         }
     }
 
+    static TypeClosure getTypeClosureFromJandexType(Type jandexType, BeanDeployment beanDeployment) {
+        Set<Type> types;
+        Set<Type> unrestrictedBeanTypes = new HashSet<>();
+        if (jandexType.kind() == Kind.TYPE_VARIABLE) {
+            throw new IllegalStateException("A type variable is not a legal bean type");
+        }
+        if (jandexType.kind() == Kind.PRIMITIVE || jandexType.kind() == Kind.ARRAY) {
+            types = new HashSet<>();
+            types.add(jandexType);
+            types.add(OBJECT_TYPE);
+            return new TypeClosure(types);
+        } else {
+            ClassInfo jandexTypeClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), jandexType);
+            if (jandexTypeClassInfo == null) {
+                throw new IllegalArgumentException(
+                        "Provided Jandex type not found in index: " + jandexType.name());
+            }
+            if (Kind.CLASS.equals(jandexType.kind())) {
+                types = getTypeClosure(jandexTypeClassInfo, null, Collections.emptyMap(), beanDeployment, null,
+                        unrestrictedBeanTypes);
+            } else if (Kind.PARAMETERIZED_TYPE.equals(jandexType.kind())) {
+                types = getTypeClosure(jandexTypeClassInfo, null,
+                        buildResolvedMap(jandexType.asParameterizedType().arguments(), jandexTypeClassInfo.typeParameters(),
+                                Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
+                        beanDeployment, null, unrestrictedBeanTypes);
+            } else {
+                throw new IllegalArgumentException("Unsupported return type");
+            }
+        }
+        return new TypeClosure(types, unrestrictedBeanTypes);
+    }
+
     static Set<Type> getClassUnrestrictedTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();

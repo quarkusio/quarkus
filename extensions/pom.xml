@@ -51,6 +51,7 @@
         <module>smallrye-fault-tolerance</module>
         <module>micrometer</module>
         <module>micrometer-registry-prometheus</module>
+        <module>micrometer-opentelemetry</module>
         <module>opentelemetry</module>
         <module>info</module>
         <module>observability-devservices</module>
@@ -99,6 +100,7 @@
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>hibernate-search-backend-elasticsearch-common</module>
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-search-orm-outbox-polling</module>
         <module>hibernate-search-standalone-elasticsearch</module>
@@ -144,9 +146,11 @@
         <module>oidc-client-reactive-filter</module>
         <module>oidc-client-registration</module>
         <module>oidc-client-graphql</module>
+        <module>oidc-token-propagation-common</module>
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
         <module>oidc-db-token-state-manager</module>
+        <module>oidc-redis-token-state-manager</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client-common</module>
         <module>keycloak-admin-rest-client</module>

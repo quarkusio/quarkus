@@ -18,14 +18,15 @@ public class DevResources {
     private static final Logger log = Logger.getLogger(DevResources.class);
 
     private static List<DevResourceLifecycleManager> resources;
-    private static Map<String, String> map;
+    private static Map<String, String> map = Map.of();
+    private static volatile boolean started = false;
 
     /**
      * @return list of found dev resources.
      */
     public static synchronized List<DevResourceLifecycleManager> resources() {
         if (resources == null) {
-            log.info("Activating dev resources");
+            log.debug("Activating dev resources");
 
             resources = ServiceLoader
                     .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())
@@ -34,7 +35,7 @@ public class DevResources {
                     .sorted(Comparator.comparing(DevResourceLifecycleManager::order))
                     .collect(Collectors.toList());
 
-            log.infof("Found dev resources: %s", resources);
+            log.debugf("Found dev resources: %s", resources);
         }
         return resources;
     }
@@ -45,7 +46,8 @@ public class DevResources {
      * @return a map of config properties to be returned by {@link DevResourcesConfigSource}
      */
     static synchronized Map<String, String> ensureStarted() {
-        if (map == null) {
+        if (!started) {
+            started = true;
             try {
                 for (var res : resources()) {
                     res.initDev();

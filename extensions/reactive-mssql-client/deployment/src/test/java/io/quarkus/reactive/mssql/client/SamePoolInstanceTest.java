@@ -13,12 +13,13 @@ public class SamePoolInstanceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-default-datasource.properties")
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     @Inject
-    io.vertx.mutiny.mssqlclient.MSSQLPool mutinyPool;
+    io.vertx.mutiny.sqlclient.Pool mutinyPool;
     @Inject
-    io.vertx.mssqlclient.MSSQLPool pool;
+    io.vertx.sqlclient.Pool pool;
 
     @Test
     public void test() {

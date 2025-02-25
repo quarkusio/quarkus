@@ -8,20 +8,16 @@ import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndP
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
-import static io.quarkus.test.junit.IntegrationTestUtil.getArtifactType;
+import static io.quarkus.test.junit.IntegrationTestUtil.getEffectiveArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
-import static io.quarkus.test.junit.TestResourceUtil.testResourcesRequireReload;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +29,7 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -46,11 +42,11 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
-import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RunCommandLauncher;
@@ -60,6 +56,7 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
+import io.smallrye.config.SmallRyeConfig;
 
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
@@ -108,7 +105,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
         } else {
             throwBootFailureException();
-            return;
         }
     }
 
@@ -141,7 +137,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
-        ensureNoInjectAnnotationIsUsed(testClass);
+        ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusIntegrationTest");
         Properties quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
 
         QuarkusTestExtensionState state = getState(extensionContext);
@@ -156,7 +152,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = false;
         if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
+                        selectedProfile))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -193,12 +190,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             throws Throwable {
         JBossVersion.disableVersionLogging();
 
-        String artifactType = getArtifactType(quarkusArtifactProperties);
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        String artifactType = getEffectiveArtifactType(quarkusArtifactProperties, config);
 
-        Config config = LauncherUtil.installAndGetSomeConfig();
-        String testProfile = TestConfigUtil.integrationTestProfile(config);
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
         boolean isDockerLaunch = isContainer(artifactType)
-                || (isJar(artifactType) && "test-with-native-agent".equals(testProfile));
+                || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                 isDockerLaunch);
@@ -266,25 +263,28 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                                 } else {
                                     System.setProperty(i.getKey(), i.getValue());
                                 }
+                                // recalculate the property names that may have changed with the restore
+                                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
                             }
                         }
                     });
             additionalProperties.putAll(resourceManagerProps);
+            // recalculate the property names that may have changed with testProfileAndProperties.properties
+            ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
 
-            ArtifactLauncher<?> launcher = null;
+            ArtifactLauncher<?> launcher;
             String testHost = System.getProperty("quarkus.http.test-host");
             if ((testHost != null) && !testHost.isEmpty()) {
                 launcher = new TestHostLauncher();
             } else {
-                Duration waitDuration = TestConfigUtil.waitTimeValue(config);
                 String target = TestConfigUtil.runTarget(config);
                 // try to execute a run command published by an extension if it exists.  We do this so that extensions that have a custom run don't have to create any special artifact type
                 launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
-                        target, waitDuration);
+                        target, testConfig.waitTime());
                 if (launcher == null) {
                     ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                     for (ArtifactLauncherProvider launcherProvider : loader) {
-                        if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
+                        if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
                             launcher = launcherProvider.create(
                                     new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,
                                             requiredTestClass,
@@ -305,7 +305,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());
             IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
-                    sysPropRestore);
+                    AbstractTestWithCallbacksExtension::clearCallbacks, sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return state;
@@ -330,42 +330,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         ensureStarted(context);
         if (!failedBoot) {
             doProcessTestInstance(testInstance, context);
-            injectTestContext(testInstance);
         }
-    }
-
-    private void injectTestContext(Object testInstance) {
-        Class<?> c = testInstance.getClass();
-        while (c != Object.class) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getType().equals(DevServicesContext.class)) {
-                    try {
-                        f.setAccessible(true);
-                        f.set(testInstance, createTestContext());
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to set field '" + f.getName()
-                                + "' with the proper test context", e);
-                    }
-                } else if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
-                    f.setAccessible(true);
-                    try {
-                        DevServicesContext.ContextAware val = (DevServicesContext.ContextAware) f.get(testInstance);
-                        val.setIntegrationTestContext(createTestContext());
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to inject context into field " + f.getName(), e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
-    }
-
-    private DevServicesContext createTestContext() {
-        Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
-                : Collections.unmodifiableMap(devServicesProps);
-        return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy,
-                containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
     }
 
     private void throwBootFailureException() {
@@ -380,7 +345,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
     private boolean isCallbacksEnabledForIntegrationTests() {
         return Optional.ofNullable(System.getProperty(ENABLED_CALLBACKS_PROPERTY)).map(Boolean::parseBoolean)
-                .or(() -> LauncherUtil.installAndGetSomeConfig().getOptionalValue(ENABLED_CALLBACKS_PROPERTY, Boolean.class))
+                .or(() -> ConfigProvider.getConfig().getOptionalValue(ENABLED_CALLBACKS_PROPERTY, Boolean.class))
                 .orElse(false);
     }
 
@@ -467,7 +432,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             if (launcher != null) {
                 try {
                     launcher.close();

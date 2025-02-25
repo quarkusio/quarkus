@@ -76,6 +76,26 @@ public class OtlpExporterConfigBuilder implements ConfigBuilder {
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.proxy-options.host", "quarkus.otel.exporter.otlp.proxy-options.host");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.proxy-options.port", "quarkus.otel.exporter.otlp.proxy-options.port");
 
+        //Logs
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.endpoint", "quarkus.otel.exporter.otlp.endpoint");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.headers", "quarkus.otel.exporter.otlp.headers");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.compression", "quarkus.otel.exporter.otlp.compression");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.timeout", "quarkus.otel.exporter.otlp.timeout");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.protocol", "quarkus.otel.exporter.otlp.protocol");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.key-cert.keys", "quarkus.otel.exporter.otlp.key-cert.keys");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.key-cert.certs", "quarkus.otel.exporter.otlp.key-cert.certs");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.trust-cert.certs", "quarkus.otel.exporter.otlp.trust-cert.certs");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.tls-configuration-name",
+                "quarkus.otel.exporter.otlp.tls-configuration-name");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.enabled",
+                "quarkus.otel.exporter.otlp.proxy-options.enabled");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.username",
+                "quarkus.otel.exporter.otlp.proxy-options.username");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.password",
+                "quarkus.otel.exporter.otlp.proxy-options.password");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.host", "quarkus.otel.exporter.otlp.proxy-options.host");
+        fallbacks.put("quarkus.otel.exporter.otlp.logs.proxy-options.port", "quarkus.otel.exporter.otlp.proxy-options.port");
+
         return builder.withInterceptors(new FallbackConfigSourceInterceptor(fallbacks));
     }
 

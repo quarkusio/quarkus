@@ -20,7 +20,7 @@ public class ExistingValueResolversDevModeTest {
                     .addClass(TestRoute.class)
                     .addAsResource(new StringAsset(
                             "{#let a = 3}{#let b = a.minus(2)}b={b}{/}{/}"),
-                            "templates/let.html"));
+                            "templates/test.html"));
 
     @Test
     public void testExistingValueResolvers() {
@@ -29,7 +29,7 @@ public class ExistingValueResolversDevModeTest {
                 .statusCode(200)
                 .body(Matchers.equalTo("b=1"));
 
-        config.modifyResourceFile("templates/let.html", t -> t.concat("::MODIFIED"));
+        config.modifyResourceFile("templates/test.html", t -> t.concat("::MODIFIED"));
 
         given().get("test")
                 .then()

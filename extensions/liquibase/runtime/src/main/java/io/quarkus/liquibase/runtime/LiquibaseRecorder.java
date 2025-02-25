@@ -2,17 +2,16 @@ package io.quarkus.liquibase.runtime;
 
 import java.util.Locale;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
-import jakarta.enterprise.inject.UnsatisfiedResolutionException;
-
-import io.quarkus.agroal.runtime.DataSources;
-import io.quarkus.agroal.runtime.UnconfiguredDataSource;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.InactiveBeanException;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.RuntimeValue;
@@ -29,22 +28,39 @@ public class LiquibaseRecorder {
         this.config = config;
     }
 
+    public Supplier<ActiveResult> liquibaseCheckActiveSupplier(String dataSourceName) {
+        return new Supplier<ActiveResult>() {
+            @Override
+            public ActiveResult get() {
+                // Flyway beans are inactive when the datasource itself is inactive.
+                var dataSourceBean = AgroalDataSourceUtil.dataSourceInstance(dataSourceName).getHandle().getBean();
+                var dataSourceActive = dataSourceBean.checkActive();
+                if (!dataSourceActive.value()) {
+                    return ActiveResult.inactive(
+                            String.format(Locale.ROOT,
+                                    "Liquibase for datasource '%s' was deactivated automatically because this datasource was deactivated.",
+                                    dataSourceName),
+                            dataSourceActive);
+                }
+
+                // Note: When quarkus.liquibase.enabled is set to false, Liquibase beans are still available.
+                //       The property only controls automatic execution on startup.
+                // TODO should we change quarkus.liquibase.enabled (see ^) to align on other extensions?
+                //   See https://github.com/quarkusio/quarkus/issues/42244.
+                //   We'd have something like quarkus.liquibase.startup.enabled controlling startup behavior,
+                //   and *if necessary* quarkus.liquibase.active controlling bean availability
+                //   (though IMO controlling that at the datasource level would be enough).
+                return ActiveResult.active();
+            }
+        };
+    }
+
     public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(String dataSourceName) {
         return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
-                DataSource dataSource;
-                try {
-                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                    if (dataSource instanceof UnconfiguredDataSource) {
-                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
-                    }
-                } catch (RuntimeException e) {
-                    throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
-                            "Unable to find datasource '%s' for Liquibase: %s",
-                            dataSourceName, e.getMessage()), e);
-                }
-
+                DataSource dataSource = context.getInjectedReference(DataSource.class,
+                        AgroalDataSourceUtil.qualifier(dataSourceName));
                 LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
                 return liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
             }
@@ -52,43 +68,45 @@ public class LiquibaseRecorder {
     }
 
     public void doStartActions(String dataSourceName) {
-        if (!config.getValue().enabled) {
-            return;
-        }
-        // Liquibase is active when the datasource itself is active.
-        if (!Arc.container().instance(DataSources.class).get().getActiveDataSourceNames().contains(dataSourceName)) {
+        if (!config.getValue().enabled()) {
             return;
         }
 
-        InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle = LiquibaseFactoryUtil.getLiquibaseFactory(dataSourceName);
-        try {
-            LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
-            var config = liquibaseFactory.getConfiguration();
-            if (!config.cleanAtStart && !config.migrateAtStart) {
-                return;
+        var dataSourceConfig = config.getValue().datasources().get(dataSourceName);
+        if (!dataSourceConfig.cleanAtStart() && !dataSourceConfig.migrateAtStart()) {
+            return;
+        }
+
+        InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container().select(LiquibaseFactory.class,
+                LiquibaseFactoryUtil.getLiquibaseFactoryQualifier(dataSourceName));
+        if (!liquibaseFactoryInstance.isResolvable()
+                || !liquibaseFactoryInstance.getHandle().getBean().isActive()) {
+            return;
+        }
+
+        LiquibaseFactory liquibaseFactory = liquibaseFactoryInstance.get();
+        try (Liquibase liquibase = liquibaseFactory.createLiquibase();
+                ResettableSystemProperties resettableSystemProperties = liquibaseFactory
+                        .createResettableSystemProperties()) {
+            if (dataSourceConfig.cleanAtStart()) {
+                liquibase.dropAll();
             }
-            try (Liquibase liquibase = liquibaseFactory.createLiquibase();
-                    ResettableSystemProperties resettableSystemProperties = liquibaseFactory
-                            .createResettableSystemProperties()) {
-                if (config.cleanAtStart) {
-                    liquibase.dropAll();
-                }
-                if (config.migrateAtStart) {
-                    var lockService = LockServiceFactory.getInstance()
-                            .getLockService(liquibase.getDatabase());
-                    lockService.waitForLock();
-                    try {
-                        if (config.validateOnMigrate) {
-                            liquibase.validate();
-                        }
-                        liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
-                    } finally {
-                        lockService.releaseLock();
+            if (dataSourceConfig.migrateAtStart()) {
+                var lockService = LockServiceFactory.getInstance()
+                        .getLockService(liquibase.getDatabase());
+                lockService.waitForLock();
+                try {
+                    if (dataSourceConfig.validateOnMigrate()) {
+                        liquibase.validate();
                     }
+                    liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                } finally {
+                    lockService.releaseLock();
                 }
             }
-        } catch (UnsatisfiedResolutionException e) {
-            //ignore, the DS is not configured
+        } catch (InactiveBeanException e) {
+            // These exceptions should be self-explanatory
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);
         }

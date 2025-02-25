@@ -2,6 +2,7 @@ package io.quarkus.virtual.rr;
 
 import static org.hamcrest.Matchers.is;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -18,30 +19,42 @@ class RunOnVirtualThreadTest {
 
     @Test
     void testGet() {
-        RestAssured.get().then()
-                .assertThat().statusCode(200)
-                .body(is("hello-1"));
-        RestAssured.get().then()
-                .assertThat().statusCode(200)
-                // Same value - request scoped bean
-                .body(is("hello-1"));
+        // test all variations:
+        // - MyResource ("/"): simple JAX-RS bean
+        // - ResourceImpl ("/itf"): bean implementing a JAX-RS interface with VT annotation on the method
+        // - ResourceOnClassImpl ("/itfOnClass"): bean implementing a JAX-RS interface with VT annotation on the class
+        for (String url : Arrays.asList("/", "itf", "itfOnClass")) {
+            RestAssured.get(url).then()
+                    .assertThat().statusCode(200)
+                    .body(is("hello-1"));
+            RestAssured.get(url).then()
+                    .assertThat().statusCode(200)
+                    // Same value - request scoped bean
+                    .body(is("hello-1"));
+        }
     }
 
     @Test
     void testPost() {
-        var body1 = UUID.randomUUID().toString();
-        var body2 = UUID.randomUUID().toString();
-        RestAssured
-                .given().body(body1)
-                .post().then()
-                .assertThat().statusCode(200)
-                .body(is(body1 + "-1"));
-        RestAssured
-                .given().body(body2)
-                .post().then()
-                .assertThat().statusCode(200)
-                // Same value - request scoped bean
-                .body(is(body2 + "-1"));
+        // test all variations:
+        // - MyResource ("/"): simple JAX-RS bean
+        // - ResourceImpl ("/itf"): bean implementing a JAX-RS interface with VT annotation on the method
+        // - ResourceOnClassImpl ("/itfOnClass"): bean implementing a JAX-RS interface with VT annotation on the class
+        for (String url : Arrays.asList("/", "itf", "itfOnClass")) {
+            var body1 = UUID.randomUUID().toString();
+            var body2 = UUID.randomUUID().toString();
+            RestAssured
+                    .given().body(body1)
+                    .post(url).then()
+                    .assertThat().statusCode(200)
+                    .body(is(body1 + "-1"));
+            RestAssured
+                    .given().body(body2)
+                    .post(url).then()
+                    .assertThat().statusCode(200)
+                    // Same value - request scoped bean
+                    .body(is(body2 + "-1"));
+        }
     }
 
     @Test

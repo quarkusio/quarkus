@@ -17,6 +17,8 @@
  */
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.DEFAULT_PRIORITY;
+
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
@@ -24,6 +26,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.credential.CertificateCredential;
@@ -39,9 +43,14 @@ import io.vertx.ext.web.RoutingContext;
  * The authentication handler responsible for mTLS client authentication
  */
 public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism {
-    public static final int PRIORITY = 3000;
+    public static final int INCLUSIVE_AUTHENTICATION_PRIORITY = 3000;
     private static final String ROLES_MAPPER_ATTRIBUTE = "roles_mapper";
+    private final boolean inclusiveAuthentication;
     private Function<X509Certificate, Set<String>> certificateToRoles = null;
+
+    MtlsAuthenticationMechanism(@ConfigProperty(name = "quarkus.http.auth.inclusive") boolean inclusiveAuthentication) {
+        this.inclusiveAuthentication = inclusiveAuthentication;
+    }
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -62,7 +71,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         context.put(HttpAuthenticationMechanism.class.getName(), this);
 
         AuthenticationRequest authRequest = new CertificateAuthenticationRequest(
-                new CertificateCredential(X509Certificate.class.cast(certificate)));
+                new CertificateCredential((X509Certificate) certificate));
         authRequest.setAttribute(ROLES_MAPPER_ATTRIBUTE, certificateToRoles);
         return identityProviderManager
                 .authenticate(HttpSecurityUtils.setRoutingContextAttribute(authRequest, context));
@@ -86,7 +95,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public int getPriority() {
-        return PRIORITY;
+        return inclusiveAuthentication ? INCLUSIVE_AUTHENTICATION_PRIORITY : DEFAULT_PRIORITY;
     }
 
     void setCertificateToRolesMapper(Function<X509Certificate, Set<String>> certificateToRoles) {

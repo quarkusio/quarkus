@@ -16,17 +16,18 @@ Observability for interactive web applications.
 
 On these page we show the signal independent features of the extension.
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
-- The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide] and the new  xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] has been created.
-- OpenTelemetry Logging is not yet supported.
+- The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide], the new xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] and the xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide].
 - The use of *the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended*. Quarkus Extensions and the libraries they provide, are directly instrumented. That agent doesn't work with native mode.
 ====
 
 == Introduction
 https://opentelemetry.io/docs/what-is-opentelemetry/[OpenTelemetry] is an Observability framework and toolkit designed to create and manage telemetry data such as traces, metrics, and logs. Crucially, OpenTelemetry is vendor- and tool-agnostic.
 
-Quarkus provides manual and automatic instrumentation for tracing and manual instrumentation  capabilities for metrics.
+Quarkus provides manual and automatic instrumentation for tracing and manual instrumentation capabilities for metrics.
 
 This will allow Quarkus based applications to be observable by tools and services supporting OpenTelemetry.
 
@@ -58,10 +59,16 @@ quarkus.otel.metrics.enabled=true
 ----
 At build time on your `application.properties` file.
 
-==== Manual instrumentation only
-For now only manual instrumentation is supported. You can use the OpenTelemetry API to create and record metrics but Quarkus is not yet providing automatic instrumentation for metrics.
+=== xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
 
-In the future, we plan to bridge current Micrometer metrics to OpenTelemetry and maintain compatibility when possible.
+==== Enable Logs
+The logging functionality is experimental and *off* by default. You will need to activate it by setting:
+
+[source,properties]
+----
+quarkus.otel.logs.enabled=true
+----
+At build time on your `application.properties` file.
 
 == Using the extension
 
@@ -137,6 +144,21 @@ If false will disable the default OTLP exporter at *build* time.
 |`quarkus.otel.metrics.exporter`
 |cdi
 |List of exporters to be used for metrics, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable metrics data output.
+
+| Logs
+|`quarkus.otel.logs.enabled`
+|false
+|Logs are disabled by default at *build* time because they are experimental.
+
+| Logs output
+|`quarkus.otel.logs.exporter`
+|cdi
+|List of exporters to be used for logs, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable logs data output.
+
+| Logs output
+|`quarkus.otel.logs.handler.enabled`
+|true
+|If false, disable the OpenTelemetry logs handler at *runtime*. This removes the bridge between the Quarkus logging system (JBoss LogManager) and OpenTelemetry logs.
 |===
 
 If you need to enable or disable the exporter at runtime, you can use the xref:opentelemetry-tracing.adoc#sampler[sampler] because it has the ability to filter out all the spans if needed.

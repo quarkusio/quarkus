@@ -79,7 +79,10 @@ public class WebXmlParsingBuildStep {
                     }
                     if (metadata.getServlets() != null) {
                         for (ServletMetaData i : metadata.getServlets()) {
-                            additionalBeans.add(i.getServletClass());
+                            String servletClass = i.getServletClass();
+                            if (servletClass != null) {
+                                additionalBeans.add(servletClass);
+                            }
                         }
                     }
                     if (metadata.getFilters() != null) {

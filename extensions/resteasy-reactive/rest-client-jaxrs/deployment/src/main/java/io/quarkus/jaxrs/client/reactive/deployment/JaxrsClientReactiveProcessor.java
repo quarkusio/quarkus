@@ -17,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
@@ -29,8 +30,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -52,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -91,6 +91,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 import org.jboss.resteasy.reactive.client.impl.SseEventSourceBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
@@ -178,6 +179,7 @@ import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDot
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
+import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -289,7 +291,10 @@ public class JaxrsClientReactiveProcessor {
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
-            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+            List<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlashProduces,
+            List<ParameterContainersBuildItem> parameterContainersBuildItems,
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
+
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 
@@ -342,6 +347,8 @@ public class JaxrsClientReactiveProcessor {
                         return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
                     }
                 })
+                .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
+                        .collect(Collectors.toUnmodifiableList()))
                 .setResourceMethodCallback(new Consumer<>() {
                     @Override
                     public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
@@ -404,8 +411,9 @@ public class JaxrsClientReactiveProcessor {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them
-            MaybeRestClientInterface maybeClientProxy = clientEndpointIndexer.createClientProxy(clazz,
-                    i.getValue());
+            String path = sanitizePath(i.getValue(),
+                    isRemovalTrailingSlashEnabled(i.getKey(), disableRemovalTrailingSlashProduces));
+            MaybeRestClientInterface maybeClientProxy = clientEndpointIndexer.createClientProxy(clazz, path);
             if (maybeClientProxy.exists()) {
                 RestClientInterface clientProxy = maybeClientProxy.getRestClientInterface();
                 try {
@@ -953,8 +961,7 @@ public class JaxrsClientReactiveProcessor {
                                     classContext.constructor.getThis(),
                                     baseTarget));
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
-                                .replaceAll("/");
+                        String templatePath = templatePath(restClientInterface, method);
                         classContext.constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),
@@ -1010,11 +1017,25 @@ public class JaxrsClientReactiveProcessor {
                                     + jandexMethod.name());
                         }
 
-                        ResultHandle newInputTarget = methodParamNotNull.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
-                                        java.net.URI.class),
-                                methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
-                                newUri);
+                        ResultHandle newInputTarget;
+                        if (observabilityIntegrationNeeded) {
+                            // we need to apply the ClientObservabilityHandler to the inputTarget field without altering it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class, ClientRestHandler.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri,
+                                    methodParamNotNull.newInstance(
+                                            MethodDescriptor.ofConstructor(ClientObservabilityHandler.class, String.class),
+                                            methodParamNotNull.load(templatePath(restClientInterface, method))));
+                        } else {
+                            // just read the inputTarget field and call withNewUri on it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri);
+                        }
                         ResultHandle newBaseTarget = methodParamNotNull.invokeVirtualMethod(
                                 baseTargetProducer.getMethodDescriptor(),
                                 methodParamNotNull.getThis(), newInputTarget);
@@ -1152,7 +1173,7 @@ public class JaxrsClientReactiveProcessor {
                             formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
                             // NOTE: don't use type here, because we're not going through the collection converters and stuff
                             Type parameterType = jandexMethod.parameterType(paramIdx);
-                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
+                            addFormParam(jandexMethod, methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
                                     parameterType, param.signature, index,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
@@ -1216,6 +1237,15 @@ public class JaxrsClientReactiveProcessor {
                     .getMethodCreator(MethodDescriptor.ofMethod(Closeable.class, "close", void.class));
             ResultHandle webTarget = closeCreator.readInstanceField(baseTargetField, closeCreator.getThis());
             ResultHandle webTargetImpl = closeCreator.checkCast(webTarget, WebTargetImpl.class);
+            ResultHandle restApiClass = closeCreator.loadClassFromTCCL(restClientInterface.getClassName());
+            ResultHandle context = closeCreator.newInstance(
+                    MethodDescriptor.ofConstructor(RestClientClosingTask.Context.class, Class.class, WebTargetImpl.class),
+                    restApiClass,
+                    webTargetImpl);
+            closeCreator.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(RestClientClosingTask.class, "invokeAll", void.class,
+                            RestClientClosingTask.Context.class),
+                    context);
             ResultHandle restClient = closeCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(WebTargetImpl.class, "getRestClient", ClientImpl.class), webTargetImpl);
             closeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientImpl.class, "close", void.class), restClient);
@@ -1234,6 +1264,11 @@ public class JaxrsClientReactiveProcessor {
 
         return recorderContext.newInstance(creatorName);
 
+    }
+
+    private String templatePath(RestClientInterface restClientInterface, ResourceMethod method) {
+        return MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                .replaceAll("/");
     }
 
     /**
@@ -2660,7 +2695,7 @@ public class JaxrsClientReactiveProcessor {
                     break;
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
-                    addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
+                    addFormParam(jandexMethod, creator, formParam.getFormParamName(), formParam.extract(creator, param),
                             formParam.getParamType(), formParam.getParamSignature(),
                             index,
                             restClientInterfaceClassName, client,
@@ -2827,6 +2862,19 @@ public class JaxrsClientReactiveProcessor {
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
                         queryParamHandle);
+            } else if (isOptional(type, index)) {
+                if (type.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = type.asParameterizedType().arguments().get(0);
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                        componentType = paramType.name().toString();
+                    }
+                }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                paramArray = notNullParam.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "optional", Object[].class, Optional.class),
+                        queryParamHandle);
             } else {
                 componentType = type.name().toString();
                 paramArray = notNullParam.invokeStaticMethod(
@@ -2896,6 +2944,10 @@ public class JaxrsClientReactiveProcessor {
         return isAssignableFrom(MAP, type.name(), index);
     }
 
+    private boolean isOptional(Type type, IndexView index) {
+        return isAssignableFrom(OPTIONAL, type.name(), index);
+    }
+
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
             String paramName, ResultHandle headerParamHandle, String paramType, ResultHandle client,
             ResultHandle genericType, ResultHandle annotations) {
@@ -2929,7 +2981,7 @@ public class JaxrsClientReactiveProcessor {
                         methodCreator.load(paramName), handle));
     }
 
-    private void addFormParam(BytecodeCreator methodCreator,
+    private void addFormParam(MethodInfo jandexMethod, BytecodeCreator methodCreator,
             String paramName,
             ResultHandle formParamHandle,
             Type parameterType,
@@ -2964,10 +3016,56 @@ public class JaxrsClientReactiveProcessor {
                 ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                                 Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                        client, paramArray, creator.loadClassFromTCCL(componentType), genericType, creator.newArray(
-                                Annotation.class, 0));
+                        client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
+                        creator.newArray(Annotation.class, 0));
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
+            } else if (isMap(parameterType, index)) {
+                var resolvesTypes = resolveMapTypes(parameterType, index, jandexMethod);
+                var keyType = resolvesTypes.getKey();
+                if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
+                    throw new IllegalArgumentException(
+                            "Map parameter types must have String keys. Offending method is: " + jandexMethod);
+                }
+                // Loop through the keys
+                ResultHandle keySet = creator.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
+                        formParamHandle);
+                ResultHandle keysIterator = creator.invokeInterfaceMethod(
+                        ofMethod(Set.class, "iterator", Iterator.class), keySet);
+                BytecodeCreator loopCreator = creator.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
+                ResultHandle key = loopCreator.invokeInterfaceMethod(
+                        ofMethod(Iterator.class, "next", Object.class), keysIterator);
+                // get the value and convert
+                ResultHandle value = loopCreator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                        formParamHandle, key);
+                var valueType = resolvesTypes.getValue();
+                String componentType = valueType.name().toString();
+                ResultHandle paramArray;
+                if (isCollection(valueType, index)) {
+                    if (valueType.kind() == PARAMETERIZED_TYPE) {
+                        Type paramType = valueType.asParameterizedType().arguments().get(0);
+                        if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                            componentType = paramType.name().toString();
+                        }
+                    }
+                    if (componentType == null) {
+                        componentType = DotNames.OBJECT.toString();
+                    }
+                    paramArray = loopCreator.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                            value);
+                } else {
+                    paramArray = loopCreator
+                            .invokeStaticMethod(ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
+                                    value);
+                }
+                ResultHandle convertedParamArray = loopCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                        client, paramArray, loopCreator.loadClassFromTCCL(componentType), genericType,
+                        loopCreator.newArray(Annotation.class, 0));
+                loopCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
+                        key, convertedParamArray);
             } else {
                 ResultHandle convertedFormParam = convertParamToString(creator, client, formParamHandle,
                         parameterType.name().toString(),
@@ -3020,6 +3118,30 @@ public class JaxrsClientReactiveProcessor {
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,
                                 String.class),
                         invocationBuilder, notNullValue.load(paramName), cookieParamHandle));
+    }
+
+    private String sanitizePath(String path, boolean removesTrailingSlash) {
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        // For the client side, by default, we're only removing the trailing slash for the
+        // `@Path` annotations at class level which is configurable.
+        if (removesTrailingSlash && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
+    private boolean isRemovalTrailingSlashEnabled(DotName restClientName,
+            List<RestClientDisableRemovalTrailingSlashBuildItem> buildItems) {
+        for (RestClientDisableRemovalTrailingSlashBuildItem buildItem : buildItems) {
+            if (buildItem.getClients().contains(restClientName)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private enum ReturnCategory {

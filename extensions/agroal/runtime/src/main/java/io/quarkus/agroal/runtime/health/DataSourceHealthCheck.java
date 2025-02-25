@@ -1,8 +1,10 @@
 package io.quarkus.agroal.runtime.health;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.sql.DataSource;
@@ -19,8 +21,7 @@ import org.eclipse.microprofile.health.Readiness;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
-import io.quarkus.agroal.runtime.DataSources;
-import io.quarkus.arc.Arc;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 
@@ -29,28 +30,28 @@ import io.quarkus.datasource.runtime.DataSourceSupport;
 public class DataSourceHealthCheck implements HealthCheck {
 
     @Inject
-    Instance<DataSources> dataSources;
+    Instance<DataSourceSupport> dataSourceSupport;
+
+    @Inject
+    Instance<AgroalDataSourceSupport> agroalDataSourceSupport;
 
     private final Map<String, DataSource> checkedDataSources = new HashMap<>();
 
     @PostConstruct
     protected void init() {
-        if (!dataSources.isResolvable()) {
-            // No configured Agroal datasource at build time.
+        if (!dataSourceSupport.isResolvable() || !agroalDataSourceSupport.isResolvable()) {
+            // No configured Agroal datasources at build time.
             return;
         }
-        DataSourceSupport support = Arc.container().instance(DataSourceSupport.class)
-                .get();
-        AgroalDataSourceSupport agroalSupport = Arc.container().instance(AgroalDataSourceSupport.class)
-                .get();
-        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
-        for (String name : agroalSupport.entries.keySet()) {
-            if (excludedNames.contains(name)) {
+        DataSourceSupport support = dataSourceSupport.get();
+        Set<String> healthCheckExcludedNames = support.getHealthCheckExcludedNames();
+        for (String name : agroalDataSourceSupport.get().entries.keySet()) {
+            if (healthCheckExcludedNames.contains(name)) {
                 continue;
             }
-            DataSource ds = dataSources.get().getDataSource(name);
-            if (ds != null) {
-                checkedDataSources.put(name, ds);
+            Optional<AgroalDataSource> dataSource = AgroalDataSourceUtil.dataSourceIfActive(name);
+            if (dataSource.isPresent()) {
+                checkedDataSources.put(name, dataSource.get());
             }
         }
     }
@@ -79,5 +80,9 @@ public class DataSourceHealthCheck implements HealthCheck {
             }
         }
         return builder.build();
+    }
+
+    protected Map<String, DataSource> getCheckedDataSources() {
+        return Collections.unmodifiableMap(checkedDataSources);
     }
 }

@@ -8,6 +8,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -16,17 +17,17 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.jboss.logging.Logger;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
@@ -35,11 +36,6 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
  */
 public class FunctionZipProcessor {
     private static final Logger log = Logger.getLogger(FunctionZipProcessor.class);
-
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
-    public void requireLegacy(BuildProducer<LegacyJarRequiredBuildItem> required) {
-        required.produce(new LegacyJarRequiredBuildItem());
-    }
 
     /**
      * Function.zip is same as the runner jar plus dependencies in lib/
@@ -52,8 +48,16 @@ public class FunctionZipProcessor {
      */
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void jvmZip(OutputTargetBuildItem target,
+            PackageConfig packageConfig,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             JarBuildItem jar) throws Exception {
+
+        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+            throw new BuildException("Lambda deployments need to use a legacy JAR, " +
+                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+                    List.of());
+        }
+
         Path zipPath = target.getOutputDirectory().resolve("function.zip");
         Path zipDir = findJvmZipDir(target.getOutputDirectory());
         try (ZipArchiveOutputStream zip = new ZipArchiveOutputStream(zipPath.toFile())) {
@@ -143,23 +147,19 @@ public class FunctionZipProcessor {
             }
             addZipEntry(zip, nativeImage.getPath(), executableName, 0755);
 
-            final GraalVM.Version graalVMVersion = nativeImageRunner.getBuildRunner().getGraalVMVersion();
-            if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-                // See https://github.com/oracle/graal/issues/4921
-                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
-                        "*.{so,dll}")) {
-                    sharedLibs.forEach(src -> {
-                        try {
-                            // In this use case, we can force all libs to be non-executable.
-                            addZipEntry(zip, src, src.getFileName().toString(), 0644);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                } catch (IOException e) {
-                    log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(),
-                            e);
-                }
+            // See https://github.com/oracle/graal/issues/4921
+            try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
+                    "*.{so,dll}")) {
+                sharedLibs.forEach(src -> {
+                    try {
+                        // In this use case, we can force all libs to be non-executable.
+                        addZipEntry(zip, src, src.getFileName().toString(), 0644);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (IOException e) {
+                log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(), e);
             }
         }
     }

@@ -46,7 +46,7 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
     public Multi<K> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)
-                .whilst(m -> !m.isEmpty() && hasNext())
+                .whilst(m -> hasNext())
                 .onItem().transformToMultiAndConcatenate(set -> Multi.createFrom().items(set.stream()));
     }
 }

@@ -44,7 +44,7 @@ public class LetsEncryptHelpers {
             throw new IllegalArgumentException("The certificate chain cannot be null or empty");
         }
 
-        CertificateUtils.writePrivateKeyToPem(pk, privateKeyFile);
+        CertificateUtils.writePrivateKeyToPem(pk, null, privateKeyFile);
 
         if (chain.length == 1) {
             CertificateUtils.writeCertificateToPEM(chain[0], certificateChainFile);

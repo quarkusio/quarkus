@@ -3,13 +3,13 @@ package io.quarkus.amazon.lambda.deployment;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.inject.Named;
 
@@ -29,6 +29,7 @@ import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -58,6 +59,18 @@ public final class AmazonLambdaProcessor {
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
     private static final Logger log = Logger.getLogger(AmazonLambdaProcessor.class);
 
+    private static final Predicate<ClassInfo> INCLUDE_HANDLER_PREDICATE = new Predicate<>() {
+
+        @Override
+        public boolean test(ClassInfo classInfo) {
+            if (classInfo.isAbstract() || classInfo.hasAnnotation(DotNames.DECORATOR)) {
+                return false;
+            }
+
+            return true;
+        }
+    };
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.AMAZON_LAMBDA);
@@ -75,11 +88,13 @@ public final class AmazonLambdaProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) throws BuildException {
 
-        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
+        List<ClassInfo> allKnownImplementors = new ArrayList<>(
+                combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER)
+                        .stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
         allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(REQUEST_STREAM_HANDLER));
+                .getAllKnownImplementors(REQUEST_STREAM_HANDLER).stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
         allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
-                .getAllKnownSubclasses(SKILL_STREAM_HANDLER));
+                .getAllKnownSubclasses(SKILL_STREAM_HANDLER).stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
 
         if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
             throw new BuildException(
@@ -318,7 +333,7 @@ public final class AmazonLambdaProcessor {
     void recordExpectedExceptions(LambdaBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> registerForReflection,
             AmazonLambdaStaticRecorder recorder) {
-        Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
+        Set<Class<?>> classes = config.expectedExceptions().map(Set::copyOf).orElseGet(Set::of);
         classes.stream()
                 .map(clazz -> ReflectiveClassBuildItem.builder(clazz).constructors(false)
                         .reason(getClass().getName() + " expectedExceptions")

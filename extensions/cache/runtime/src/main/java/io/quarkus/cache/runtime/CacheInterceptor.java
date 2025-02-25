@@ -71,9 +71,10 @@ public abstract class CacheInterceptor {
     private <T> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(
             InvocationContext invocationContext, Class<T> interceptorBindingClass) {
         Set<AbstractAnnotationLiteral> bindings = InterceptorBindings.getInterceptorBindingLiterals(invocationContext);
-        if (bindings == null) {
-            LOGGER.trace("Interceptor bindings not found in ArC");
-            // This should only happen when the interception is not managed by Arc.
+        if (bindings == null || bindings.isEmpty() || !(bindings.iterator().next() instanceof AbstractAnnotationLiteral)) {
+            // this should only happen when the interception is not managed by ArC
+            // a non-`AbstractAnnotationLiteral` can come from RESTEasy Classic's `QuarkusInvocationContextImpl`
+            LOGGER.trace("Interceptor bindings not found in ArC or not created by ArC");
             return Optional.empty();
         }
         List<T> interceptorBindings = new ArrayList<>();

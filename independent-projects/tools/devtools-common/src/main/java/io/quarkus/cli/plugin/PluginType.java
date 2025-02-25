@@ -5,5 +5,6 @@ public enum PluginType {
     java,
     maven,
     executable,
-    jbang;
+    jbang,
+    extension
 }

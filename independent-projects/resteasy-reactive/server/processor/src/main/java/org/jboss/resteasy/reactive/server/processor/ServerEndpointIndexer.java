@@ -21,6 +21,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR_MONTH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.io.File;
@@ -83,6 +84,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegment
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.YearMonthParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.YearParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -111,6 +113,7 @@ public class ServerEndpointIndexer
     protected final List<MethodScanner> methodScanners;
     protected final FieldInjectionIndexerExtension fieldInjectionHandler;
     protected final ConverterSupplierIndexerExtension converterSupplierIndexerExtension;
+    protected final boolean removesTrailingSlash;
 
     protected ServerEndpointIndexer(AbstractBuilder builder) {
         super(builder);
@@ -118,6 +121,7 @@ public class ServerEndpointIndexer
         this.methodScanners = new ArrayList<>(builder.methodScanners);
         this.fieldInjectionHandler = builder.fieldInjectionIndexerExtension;
         this.converterSupplierIndexerExtension = builder.converterSupplierIndexerExtension;
+        this.removesTrailingSlash = builder.removesTrailingSlash;
     }
 
     @Override
@@ -377,7 +381,7 @@ public class ServerEndpointIndexer
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
-                    annotations, field.type(), field.toString(), applyFieldRules, hasRuntimeConverters,
+                    annotations, field.type(), "%s", new Object[] { field }, applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
@@ -551,9 +555,16 @@ public class ServerEndpointIndexer
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
 
+    /**
+     * For the server side, by default, we are removing the trailing slash unless is not configured otherwise.
+     */
     @Override
     protected String handleTrailingSlash(String path) {
-        return path.substring(0, path.length() - 1);
+        if (removesTrailingSlash) {
+            return path.substring(0, path.length() - 1);
+        }
+
+        return path;
     }
 
     @Override
@@ -614,6 +625,8 @@ public class ServerEndpointIndexer
             return new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (YEAR.equals(paramType)) {
             return new YearParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
+        } else if (YEAR_MONTH.equals(paramType)) {
+            return new YearMonthParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         }
 
         throw new RuntimeException(
@@ -705,6 +718,7 @@ public class ServerEndpointIndexer
         private List<MethodScanner> methodScanners = new ArrayList<>();
         private FieldInjectionIndexerExtension fieldInjectionIndexerExtension;
         private ConverterSupplierIndexerExtension converterSupplierIndexerExtension = new ReflectionConverterIndexerExtension();
+        private boolean removesTrailingSlash = true;
 
         public EndpointInvokerFactory getEndpointInvokerFactory() {
             return endpointInvokerFactory;
@@ -732,6 +746,11 @@ public class ServerEndpointIndexer
 
         public B setFieldInjectionIndexerExtension(FieldInjectionIndexerExtension fieldInjectionHandler) {
             this.fieldInjectionIndexerExtension = fieldInjectionHandler;
+            return (B) this;
+        }
+
+        public B setRemovesTrailingSlash(boolean removesTrailingSlash) {
+            this.removesTrailingSlash = removesTrailingSlash;
             return (B) this;
         }
 

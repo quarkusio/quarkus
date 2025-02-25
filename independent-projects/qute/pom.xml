@@ -38,12 +38,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.junit>5.10.3</version.junit>
-        <version.assertj>3.26.3</version.assertj>
-        <version.jandex>3.2.2</version.jandex>
+        <version.junit>5.10.5</version.junit>
+        <version.assertj>3.27.3</version.assertj>
+        <version.jandex>3.2.7</version.jandex>
         <version.gizmo>1.8.0</version.gizmo>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.smallrye-mutiny>2.6.2</version.smallrye-mutiny>
+        <version.smallrye-common>2.10.0</version.smallrye-common>
+        <version.smallrye-mutiny>2.8.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -53,6 +54,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${version.smallrye-common}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>

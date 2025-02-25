@@ -1,10 +1,12 @@
 import { LitElement, html, css } from 'lit';
 import { RouterController } from 'router-controller';
-import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
+import { connectionState } from 'connection-state';
 import { devuiState } from 'devui-state';
+import { JsonRpc } from 'jsonrpc';
 import '@vaadin/tabs';
+import '@vaadin/confirm-dialog';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
 /**
@@ -92,17 +94,23 @@ export class QwcHeader extends observeState(LitElement) {
     static properties = {
         _title: {state: true},
         _subTitle: {state: true},
-        _rightSideNav: {state: true}
+        _rightSideNav: {state: true},
+        _dialogOpened: {state: true},
     };
 
     constructor() {
         super();
+        this._dialogOpened = false;
         this._title = "Extensions";
         this._subTitle = null;
         this._rightSideNav = "";
         
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateHeader(event);
+        });
+        document.addEventListener('max-retries-reached', (event) => {
+            this._dialogOpened = true;
+            this.requestUpdate();
         });
     }
 
@@ -118,8 +126,27 @@ export class QwcHeader extends observeState(LitElement) {
                 ${this._renderRightSideNav()}
                 ${this._renderThemeOptions()}
             </div>
-        </div>
-        `;
+            ${this._renderReconnectPopup()}
+        </div>`;
+    }
+
+    _renderReconnectPopup(){
+        if(!connectionState.current.isConnected){
+            return html`
+            <vaadin-confirm-dialog
+                header="Server unreachable"
+                confirm-text="Retry"
+                .opened="${this._dialogOpened}"
+                @opened-changed="${this._openedChanged}"
+                @confirm="${() => {
+                    JsonRpc.connect();
+                    this.requestUpdate();
+                }}"
+            >
+                It looks like the application is currently unavailable. After several reconnection attempts, we’re unable to connect.
+                Once the application is back online, click “Retry” to reconnect.
+            </vaadin-confirm-dialog>`;
+        }
     }
 
     _renderLogoAndTitle(){
@@ -218,8 +245,12 @@ export class QwcHeader extends observeState(LitElement) {
         })
         .catch(error => {
             this.routerController.goHome();
-            notifier.showErrorMessage("Seems like your server is not available.  <br/>Error : <code>" + error + "</code>","middle");
+            this._dialogOpened = true;
         });
+    }
+    
+    _openedChanged(e) {
+        this._dialogOpened = e.detail.value;
     }
 }
 customElements.define('qwc-header', QwcHeader);

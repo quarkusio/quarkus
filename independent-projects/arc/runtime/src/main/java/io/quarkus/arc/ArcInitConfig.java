@@ -24,12 +24,10 @@ public final class ArcInitConfig {
     private ArcInitConfig(Builder builder) {
         this.currentContextFactory = builder.currentContextFactory;
         this.strictCompatibility = builder.strictCompatibility;
-        this.optimizeContexts = builder.optimizeContexts;
     }
 
     private final boolean strictCompatibility;
     private final CurrentContextFactory currentContextFactory;
-    private final boolean optimizeContexts;
 
     public boolean isStrictCompatibility() {
         return strictCompatibility;
@@ -39,26 +37,14 @@ public final class ArcInitConfig {
         return currentContextFactory;
     }
 
-    /**
-     *
-     * @return {@code true} if optimized contexts should be used, {@code false} otherwise
-     * @deprecated This method was never used and will be removed at some point after Quarkus 3.10
-     */
-    @Deprecated(since = "3.7", forRemoval = true)
-    public boolean isOptimizeContexts() {
-        return optimizeContexts;
-    }
-
     public static class Builder {
         private boolean strictCompatibility;
         private CurrentContextFactory currentContextFactory;
-        private boolean optimizeContexts;
 
         private Builder() {
             // init all values with their defaults
             this.strictCompatibility = false;
             this.currentContextFactory = null;
-            this.optimizeContexts = false;
         }
 
         public Builder setStrictCompatibility(boolean strictCompatibility) {
@@ -68,19 +54,6 @@ public final class ArcInitConfig {
 
         public Builder setCurrentContextFactory(CurrentContextFactory currentContextFactory) {
             this.currentContextFactory = currentContextFactory;
-            return this;
-        }
-
-        /**
-         * The value was actually never used.
-         *
-         * @param value
-         * @return this
-         * @deprecated This value was never used; this method will be removed at some point after Quarkus 3.10
-         */
-        @Deprecated(since = "3.7", forRemoval = true)
-        public Builder setOptimizeContexts(boolean value) {
-            optimizeContexts = value;
             return this;
         }
 

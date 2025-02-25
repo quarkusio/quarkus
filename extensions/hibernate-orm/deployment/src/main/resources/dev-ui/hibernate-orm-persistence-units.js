@@ -1,19 +1,26 @@
-import { LitElement, html, css} from 'lit';
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
 import '@vaadin/grid';
+import '@vaadin/progress-bar';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import '@quarkus-webcomponents/codeblock';
 
-export class HibernateOrmPersistenceUnitsComponent extends observeState(LitElement) {
+export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotReloadElement) {
 
     static styles = css`
+        :host {
+            display: flex;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
         .full-height {
-          height: 100%;
+            height: 100%;
+            width: 100%;
         }
         a.script-heading {
             display: block;
@@ -29,10 +36,23 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(LitEleme
         _persistenceUnits: {state: true, type: Array}
     }
 
+    constructor() {
+        super();
+        this._persistenceUnits = [];
+    }
+
     connectedCallback() {
         super.connectedCallback();
+        this.hotReload();
+    }
+
+    hotReload(){
         this.jsonRpc.getInfo().then(response => {
             this._persistenceUnits = response.result.persistenceUnits;
+        }).catch(error => {
+            console.error("Failed to fetch persistence units:", error);
+            this._persistenceUnits = []; 
+            notifier.showErrorMessage("Failed to fetch persistence units: " + error, "bottom-start", 30);
         });
     }
 
@@ -40,13 +60,18 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(LitEleme
         if (this._persistenceUnits) {
             return this._renderAllPUs();
         } else {
-            return html`<span>Loading...</span>`;
+            return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                            <div>Fetching persistence units...</div>
+                            <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+                        </div>`;
         }
     }
 
     _renderAllPUs() {
         return this._persistenceUnits.length == 0
-            ? html`<p>No persistence units were found.</p>`
+            ? html`<p>No persistence units were found. 
+                        <vaadin-button @click="${this.hotReload}" theme="small">Check again</vaadin-button>
+                    </p>`
             : html`
                     <vaadin-tabsheet class="full-height">
                         <span slot="prefix">Persistence Unit</span>

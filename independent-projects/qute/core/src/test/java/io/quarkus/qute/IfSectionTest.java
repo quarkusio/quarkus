@@ -262,6 +262,19 @@ public class IfSectionTest {
         }
     }
 
+    @Test
+    public void testComparisons() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("longGtInt", engine.parse("{#if val > 10}longGtInt{/if}").data("val", 11l).render());
+        assertEquals("doubleGtInt", engine.parse("{#if val > 10}doubleGtInt{/if}").data("val", 20.0).render());
+        assertEquals("longGtStr", engine.parse("{#if val > '10'}longGtStr{/if}").data("val", 11l).render());
+        assertEquals("longLeStr", engine.parse("{#if val <= '10'}longLeStr{/if}").data("val", 1l).render());
+        assertEquals("longEqInt", engine.parse("{#if val == 10}longEqInt{/if}").data("val", 10l).render());
+        assertEquals("doubleEqInt", engine.parse("{#if val == 10}doubleEqInt{/if}").data("val", 10.0).render());
+        assertEquals("doubleEqFloat", engine.parse("{#if val == 10.00f}doubleEqFloat{/if}").data("val", 10.0).render());
+        assertEquals("longEqLong", engine.parse("{#if val eq 10l}longEqLong{/if}").data("val", Long.valueOf(10)).render());
+    }
+
     public static class Target {
 
         public ContentStatus status;

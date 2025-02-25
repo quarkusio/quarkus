@@ -732,7 +732,7 @@ Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
 The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses https://vertx.io/docs/vertx-core/java/#_message_codecs[codecs] to _serialize_ and _deserialize_ message objects.
 Quarkus provides a default codec for local delivery.
-This codec is automatically used for return types and message body parameters of local consumers, i.e. methods annotated with `@ConsumeEvent` whete `ConsumeEvent#local() == true` (which is the default).
+This codec is automatically used for return types and message body parameters of local consumers, i.e. methods annotated with `@ConsumeEvent` where `ConsumeEvent#local() == true` (which is the default).
 
 So that you can exchange the message objects as follows:
 
@@ -1035,7 +1035,7 @@ quarkus.http.so-reuse-port=true
 == Use a Vert.x context-aware scheduler
 
 Some Mutiny operators need to schedule work on an executor thread pool.
-A good example is `.onItem().delayIt().by(Duration.ofMillis(10)` as it needs such an executor to delay emissions.
+A good example is `.onItem().delayIt().by(Duration.ofMillis(10))` as it needs such an executor to delay emissions.
 
 The default executor is returned by `io.smallrye.mutiny.infrastructure.Infrastructure` and it is already configured and managed by Quarkus.
 
@@ -1243,4 +1243,34 @@ public class MyCustomizer implements VertxOptionsCustomizer {
 
 The _customizer_ beans received the `VertxOptions` (coming from the application configuration), and can modify them.
 
+== Brotli4J and cross-platform support
 
+Brotli4J is a native library that provides support for the Brotli compression algorithm.
+By default, Quarkus includes the Brotli native library matching the platform you are running on.
+But sometimes, you need to include the native library for a different platform.
+
+In this case, you need to explicitly add a dependency to your project.
+For example, if you need to include the native library for `linux-aarch64`, you can add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.aayushatharva.brotli4j</groupId>
+    <artifactId>native-linux-aarch64</artifactId>
+</dependency>
+----
+
+This will include the native library for `linux-aarch64` in your project, in addition to the one matching your machine.
+
+Here is the list of available brotli4j artifacts for the different platforms:
+
+* `native-linux-x86_64`
+* `native-linux-s390x`
+* `native-linux-ppc64le`
+* `native-linux-aarch64`
+* `native-linux-armv7`
+* `native-linux-riscv64`
+* `native-windows-x86_64`
+* `native-windows-aarch64`
+* `native-macos-x86_64`
+* `native-macos-aarch64`

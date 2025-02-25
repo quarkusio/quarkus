@@ -1,0 +1,4 @@
+////
+This file is intentionally empty.
+It is used for compatibility with downstream systems, where this empty snippet is replaced with an equivalent that carries a required note.
+////

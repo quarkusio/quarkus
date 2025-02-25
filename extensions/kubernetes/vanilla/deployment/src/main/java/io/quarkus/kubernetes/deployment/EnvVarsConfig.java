@@ -5,49 +5,51 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
 /**
  * The configuration specifying which environment variables to inject into the application's container.
  */
-@ConfigGroup
-public class EnvVarsConfig {
+public interface EnvVarsConfig {
     /**
      * The optional list of Secret names to load environment variables from.
      */
-    @ConfigItem
-    Optional<List<String>> secrets;
+    Optional<List<String>> secrets();
 
     /**
      * The optional list of ConfigMap names to load environment variables from.
      */
-    @ConfigItem
-    Optional<List<String>> configmaps;
+    Optional<List<String>> configmaps();
 
     /**
      * The map associating environment variable names to their associated field references they take their value from.
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    Map<String, String> fields;
+    Map<String, String> fields();
 
     /**
      * The map associating environment name to its associated value.
      */
-    @ConfigItem
-    Map<String, Optional<String>> vars;
+    Map<String, Value> vars();
 
     /**
      * The map recording the configuration of environment variable taking their value from resource (Secret or
      * ConfigMap) keys
      */
-    @ConfigItem
-    Map<String, EnvVarFromKeyConfig> mapping;
+    Map<String, EnvVarFromKeyConfig> mapping();
 
     /**
      * The map recording the configuration of environment variable prefix.
      */
-    @ConfigItem(name = "using-prefix")
-    Map<String, EnvVarPrefixConfig> prefixes;
+    @WithName("using-prefix")
+    Map<String, EnvVarPrefixConfig> prefixes();
+
+    interface Value {
+        /**
+         * The environment variable value
+         */
+        @WithParentName
+        Optional<String> value();
+    }
 }

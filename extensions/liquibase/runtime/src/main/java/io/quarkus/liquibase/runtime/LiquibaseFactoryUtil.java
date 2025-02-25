@@ -6,7 +6,7 @@ import java.util.List;
 
 import jakarta.enterprise.inject.Default;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -24,7 +24,7 @@ public final class LiquibaseFactoryUtil {
 
     public static List<InstanceHandle<LiquibaseFactory>> getActiveLiquibaseFactories() {
         List<InstanceHandle<LiquibaseFactory>> result = new ArrayList<>();
-        for (String datasourceName : Arc.container().instance(DataSources.class).get().getActiveDataSourceNames()) {
+        for (String datasourceName : AgroalDataSourceUtil.activeDataSourceNames()) {
             InstanceHandle<LiquibaseFactory> handle = Arc.container().instance(LiquibaseFactory.class,
                     getLiquibaseFactoryQualifier(datasourceName));
             if (!handle.isAvailable()) {

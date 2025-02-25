@@ -167,6 +167,10 @@ public class PersistentLoginManager {
         ctx.response().removeCookie(cookieName);
     }
 
+    String getCookieName() {
+        return cookieName;
+    }
+
     public static class RestoreResult {
 
         private final String principal;

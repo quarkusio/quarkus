@@ -5,7 +5,14 @@ import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
+import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
+import '@vaadin/dialog';
+import '@qomponent/qui-badge';
+import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { notifier } from 'notifier';
+import { connectionState } from 'connection-state';
+import { JsonRpc } from 'jsonrpc';
 
 /**
  * This component create cards of all the extensions
@@ -13,8 +20,14 @@ import { StorageController } from 'storage-controller';
 export class QwcExtensions extends observeState(LitElement) {
     routerController = new RouterController(this);
     storageController = new StorageController(this);
-    
+    jsonRpc = new JsonRpc("devui-extensions", false);
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100%;
+        }
         .grid {
             display: flex;
             flex-wrap: wrap;
@@ -42,25 +55,89 @@ export class QwcExtensions extends observeState(LitElement) {
             flex-flow: column wrap;
             padding-top: 5px;
         }
-         .float-right {
+        .float-right {
             align-self: flex-end;
+        }
+    
+        qwc-extension-link {
+            cursor: grab;
+        }
+        .addExtensionButton {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 3em;
+            height: 3em;
+            box-shadow: var(--lumo-shade) 5px 5px 15px 3px;
+            z-index: 9;
+        }
+        .addExtensionIcon {
+            width: 2em;
+            height: 2em;
+        }
+        .filter {
+            display: flex;
+            gap: 3px;
+            align-items: center;
         }
        `;
 
     static properties = {
         _favourites: {state: true},
+        _addDialogOpened: {state: true},
+        _installedExtensions: {state: true, type: Array},
+        _selectedFilters: {state: true, type: Array}
     }
 
     constructor() {
         super();
         this._favourites = this._getStoredFavourites();
+        this._addDialogOpened = false;
+        this._installedExtensions = [];
+        this._filteritems = ["Favorites","Active","Inactive"];
+        this._selectedFilters = this._getStoredFilters();
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
+            this._installedExtensions = jsonRpcResponse.result;
+        });
     }
 
     render() {
+        return html`
+            ${this._renderFilters()}
+            ${this._renderGrid()}
+            ${this._renderAddDialog()}`;
+    }
+
+    _renderFilters(){
+        return html`
+            <div class="filter">
+                <vaadin-icon icon="font-awesome-solid:filter" style="height: 10px;" title="Filter"></vaadin-icon>
+                ${this._filteritems.map(filter => this._renderFilter(filter))}
+            </div>
+        `;
+    }
+
+    _renderFilter(filter){
+        if (this._selectedFilters.includes(filter)) {
+            return html`<qui-badge level="success" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
+        }else{
+            return html`<qui-badge level="contrast" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
+        }
+    }
+
+    _renderSpace(){
+        return html`<div class="space"></div>`;
+    }
+
+    _renderGrid(){
         return html`<div class="grid">
             ${this._renderActives(devuiState.cards.active)}
-            ${devuiState.cards.inactive.map(extension => this._renderInactive(extension))}
-          </div>`;
+            ${this._renderInactives(devuiState.cards.inactive)}
+        </div>`;
     }
 
     _renderActives(extensions){
@@ -87,13 +164,28 @@ export class QwcExtensions extends observeState(LitElement) {
         }
         
         return html`
-            ${favouriteExtensions.map(e => this._renderActive(e,true))}
-            ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+            ${this._renderFavourites(favouriteExtensions)}
+            ${this._renderUnfavourites(unfavouriteExtensions)}
         `;
     }
 
-    _renderActive(extension, fav){
+    _renderFavourites(favouriteExtensions){
+        if (this._selectedFilters.includes("Favorites")) {
+            return html`
+                ${favouriteExtensions.map(e => this._renderActive(e,true))}
+            `;
+        }
+    }
 
+    _renderUnfavourites(unfavouriteExtensions){
+        if (this._selectedFilters.includes("Active")) {
+            return html`
+                ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+            `;
+        }
+    }
+
+    _renderActive(extension, fav){
         return html`
                 <qwc-extension 
                     clazz="active"
@@ -111,6 +203,7 @@ export class QwcExtensions extends observeState(LitElement) {
                     builtWith="${extension.builtWith}"
                     providesCapabilities="${extension.providesCapabilities}"
                     extensionDependencies="${extension.extensionDependencies}"
+                    ?installed=${this._installedExtensions.includes(extension.namespace)}
                     ?favourite=${fav} 
                     @favourite=${this._favourite}>
 
@@ -119,6 +212,39 @@ export class QwcExtensions extends observeState(LitElement) {
                 </qwc-extension>
 
             `;
+    }
+
+    _renderInactives(extensions){
+        if (this._selectedFilters.includes("Inactive")) {
+            return html`
+                ${extensions.map(extension => this._renderInactive(extension))}
+            `; 
+        }
+    }
+
+    _renderInactive(extension){
+        if(extension.unlisted === "false"){
+            return html`<qwc-extension
+                clazz="inactive"
+                name="${extension.name}" 
+                description="${extension.description}" 
+                guide="${extension.guide}"
+                namespace="${extension.namespace}"
+                artifact="${extension.artifact}"
+                shortName="${extension.shortName}"
+                keywords="${extension.keywords}"
+                status="${extension.status}"
+                configFilter="${extension.configFilter}"
+                categories="${extension.categories}"
+                unlisted="${extension.unlisted}"
+                builtWith="${extension.builtWith}"
+                providesCapabilities="${extension.providesCapabilities}"
+                extensionDependencies="${extension.extensionDependencies}">
+                <div class="card-content" slot="content">
+                    ${extension.description}
+                </div>    
+            </qwc-extension>`;
+        }
     }
 
     _favourite(e){
@@ -146,10 +272,23 @@ export class QwcExtensions extends observeState(LitElement) {
         }
     }
 
+    _getStoredFilters(){
+        let selectedFilters = this.storageController.get('selectedFilters');
+        if(selectedFilters){
+            return JSON.parse(selectedFilters);
+        }else{
+            return this._filteritems;
+        }
+    }
+
     _setStoredFavourites(favourites){
         this.storageController.set('favourites', JSON.stringify(favourites));
     }
 
+    _setStoredFilters(selectedFilters){
+        this.storageController.set('selectedFilters', JSON.stringify(selectedFilters));
+    }
+    
     _renderCardContent(extension){
         if(extension.card){
             return this._renderCustomCardContent(extension);
@@ -199,34 +338,88 @@ export class QwcExtensions extends observeState(LitElement) {
                                 ?embed=${page.embed}
                                 externalUrl="${page.metadata.externalUrl}"
                                 dynamicUrlMethodName="${page.metadata.dynamicUrlMethodName}"
-                                webcomponent="${page.componentLink}" >
+                                webcomponent="${page.componentLink}" 
+                                draggable="true" @dragstart="${this._handleDragStart}">
                             </qwc-extension-link>
                         `)}`;
     }
 
-    _renderInactive(extension){
-        if(extension.unlisted === "false"){
-            return html`<qwc-extension
-                clazz="inactive"
-                name="${extension.name}" 
-                description="${extension.description}" 
-                guide="${extension.guide}"
-                namespace="${extension.namespace}"
-                artifact="${extension.artifact}"
-                shortName="${extension.shortName}"
-                keywords="${extension.keywords}"
-                status="${extension.status}"
-                configFilter="${extension.configFilter}"
-                categories="${extension.categories}"
-                unlisted="${extension.unlisted}"
-                builtWith="${extension.builtWith}"
-                providesCapabilities="${extension.providesCapabilities}"
-                extensionDependencies="${extension.extensionDependencies}">
-                <div class="card-content" slot="content">
-                    ${extension.description}
-                </div>    
-            </qwc-extension>`;
+    _handleDragStart(event) {
+        const extensionNamespace = event.currentTarget.getAttribute('namespace');
+        const pageId = event.currentTarget.getAttribute('path');
+
+        const extension = devuiState.cards.active.find(obj => obj.namespace === extensionNamespace);
+        const page = extension.cardPages.find(obj => obj.id === pageId);
+        const jsonData = JSON.stringify(page);
+        event.dataTransfer.setData('application/json', jsonData);
+    }
+
+    _renderAddDialog(){
+        return html`
+            <vaadin-dialog
+              theme="no-padding"
+              resizable
+              draggable
+              header-title="Add extension"
+              .opened="${this._addDialogOpened}"
+              @opened-changed="${(event) => {
+                this._addDialogOpened = event.detail.value;
+              }}"
+              ${dialogHeaderRenderer(
+                  () => html`
+                    <vaadin-button theme="tertiary" @click="${() => (this._addDialogOpened = false)}">
+                        <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                    </vaadin-button>
+                  `,
+                  []
+                )}
+              ${dialogRenderer(
+                () => html`<qwc-extension-add @inprogress="${this._installRequest}"></qwc-extension-add>`
+              )}
+            ></vaadin-dialog>
+            ${this._renderAddExtensionButton()}
+          `;
+    }
+    
+    _renderAddExtensionButton(){
+        if(connectionState.current.isConnected){
+            return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="Add Extension" @click="${this._openAddDialog}">
+                        <vaadin-icon class="addExtensionIcon" icon="font-awesome-solid:plus"></vaadin-icon>
+                    </vaadin-button>`;
         }
     }
+    
+    _installRequest(e){
+        this._addDialogOpened = false;
+        let name = e.detail.name;
+        if(e.detail.outcome){
+            notifier.showInfoMessage(name + " installation in progress");
+        }else{
+            notifier.showErrorMessage(name + " installation failed");
+        }
+    }
+    
+    _openAddDialog() {
+        this._addDialogOpened = true;
+    }
+
+    _filterToggle(event){
+        const badge = event.currentTarget;
+        const currentLevel = badge.getAttribute('level');
+        const filter = badge.dataset.filter; 
+        
+        const newLevel = currentLevel === 'success' ? 'contrast' : 'success';
+        badge.setAttribute('level', newLevel);
+        
+        // Update the selected filters
+        if (newLevel === 'success') {
+            this._selectedFilters = [...this._selectedFilters, filter];
+        } else {
+            this._selectedFilters = this._selectedFilters.filter(item => item !== filter);
+        }
+        
+        this._setStoredFilters(this._selectedFilters);
+    }
+
 }
 customElements.define('qwc-extensions', QwcExtensions);

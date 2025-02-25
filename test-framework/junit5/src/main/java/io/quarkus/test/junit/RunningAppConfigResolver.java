@@ -44,7 +44,7 @@ class RunningAppConfigResolver extends ConfigProviderResolver {
 
             @Override
             public ConfigValue getConfigValue(final String propertyName) {
-                throw illegalStateException();
+                return runningQuarkusApplication.getConfigValue(propertyName, ConfigValue.class).get();
             }
 
             @Override

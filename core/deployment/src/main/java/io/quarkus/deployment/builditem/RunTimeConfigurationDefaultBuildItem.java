@@ -1,9 +1,8 @@
 package io.quarkus.deployment.builditem;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build item which specifies a configuration default value for run time, which is used to establish a default other
@@ -22,7 +21,7 @@ public final class RunTimeConfigurationDefaultBuildItem extends MultiBuildItem {
     public RunTimeConfigurationDefaultBuildItem(final String key, final String value) {
         Assert.checkNotNullParam("key", key);
         Assert.checkNotEmptyParam("key", key);
-        Assert.checkNotNullParam("value", value);
+        Assert.checkNotNullParam("value for key " + key, value);
         this.key = key;
         this.value = value;
     }

@@ -1,9 +1,8 @@
 package io.quarkus.deployment.configuration;
 
-import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +34,7 @@ import io.smallrye.config.ConfigMappingInterface.MapProperty;
 import io.smallrye.config.ConfigMappingInterface.Property;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public class ConfigMappingUtils {
 
@@ -64,7 +63,7 @@ public class ConfigMappingUtils {
             Class<?> configClass = toClass(target.asClass().name());
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
             Kind configClassKind = getConfigClassType(instance);
-            processConfigClass(configClassWithPrefix(configClass, prefix), configClassKind, true, combinedIndex,
+            processConfigClass(configClass(configClass, prefix), configClassKind, true, combinedIndex,
                     generatedClasses, reflectiveClasses, reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
     }
@@ -81,7 +80,7 @@ public class ConfigMappingUtils {
     }
 
     public static void processExtensionConfigMapping(
-            ConfigClassWithPrefix configClass,
+            ConfigClass configClass,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -94,7 +93,7 @@ public class ConfigMappingUtils {
     }
 
     private static void processConfigClass(
-            ConfigClassWithPrefix configClassWithPrefix,
+            ConfigClass configClassWithPrefix,
             Kind configClassKind,
             boolean isApplicationClass,
             CombinedIndexBuildItem combinedIndex,
@@ -123,9 +122,7 @@ public class ConfigMappingUtils {
                     .reason(ConfigMappingUtils.class.getName())
                     .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getDefaults", new String[0]));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getNames", new String[0]));
+                    mappingMetadata.getClassName(), "getProperties", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 
@@ -143,7 +140,6 @@ public class ConfigMappingUtils {
 
         ConfigMappingInterface mapping = ConfigMappingLoader.getConfigMapping(configClass);
         for (Property property : mapping.getProperties()) {
-            Class<?> returnType = property.getMethod().getReturnType();
             String reason = ConfigMappingUtils.class.getSimpleName() + " Required to process property "
                     + property.getPropertyName();
 
@@ -197,7 +193,8 @@ public class ConfigMappingUtils {
 
     public static Object newInstance(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ConfigMapping.class)) {
-            return ReflectUtil.newInstance(ConfigMappingLoader.getImplementationClass(configClass));
+            // TODO - radcortez - mapping classes cannot be initialized like this.
+            return ReflectUtil.newInstance(ConfigMappingLoader.ensureLoaded(configClass).implementation());
         } else {
             return ReflectUtil.newInstance(configClass);
         }
@@ -218,15 +215,6 @@ public class ConfigMappingUtils {
         } else {
             return Kind.PROPERTIES;
         }
-    }
-
-    private static List<Class<?>> getHierarchy(Class<?> mapping) {
-        List<Class<?>> interfaces = new ArrayList<>();
-        for (Class<?> i : mapping.getInterfaces()) {
-            interfaces.add(i);
-            interfaces.addAll(getHierarchy(i));
-        }
-        return interfaces;
     }
 
     private static Set<Type> collectTypes(CombinedIndexBuildItem combinedIndex, Class<?> configClass) {

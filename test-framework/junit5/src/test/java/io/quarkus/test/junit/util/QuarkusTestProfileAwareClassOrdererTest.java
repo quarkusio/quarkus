@@ -1,7 +1,5 @@
 package io.quarkus.test.junit.util;
 
-import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
-import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_SECONDARY_ORDERER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -40,14 +38,12 @@ class QuarkusTestProfileAwareClassOrdererTest {
     @Mock
     ClassOrdererContext contextMock;
 
-    QuarkusTestProfileAwareClassOrderer underTest = new QuarkusTestProfileAwareClassOrderer();
-
     @Test
     void singleClass() {
         doReturn(Arrays.asList(descriptorMock(Test01.class)))
                 .when(contextMock).getClassDescriptors();
 
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer().orderClasses(contextMock);
 
         verify(contextMock, never()).getConfigurationParameter(anyString());
     }
@@ -55,11 +51,17 @@ class QuarkusTestProfileAwareClassOrdererTest {
     @Test
     void allVariants() {
         ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
-        ClassDescriptor quarkusTestWithUnrestrictedResourceDesc = quarkusDescriptorMock(Test02.class, Manager3.class, false,
+        ClassDescriptor quarkusTest2b = quarkusDescriptorMock(Test02b.class, Manager3.class, false,
                 WithTestResource.class);
-        ClassDescriptor quarkusTestWithUnrestrictedQuarkusTestResourceDesc = quarkusDescriptorMock(Test02a.class,
+        ClassDescriptor quarkusTest2a = quarkusDescriptorMock(Test02a.class,
                 Manager3.class, false, QuarkusTestResource.class);
-        ClassDescriptor quarkusTest2Desc = quarkusDescriptorMock(Test03.class, null);
+        ClassDescriptor quarkusTest2Desc = quarkusDescriptorMock(Test02.class, Manager3.class, false, WithTestResource.class);
+        ClassDescriptor quarkusTest3Desc = quarkusDescriptorMock(Test03.class, Manager3.class, false,
+                QuarkusTestResource.class);
+        ClassDescriptor quarkusTest3aDesc = quarkusDescriptorMock(Test03a.class, Manager4.class, false, WithTestResource.class);
+        ClassDescriptor quarkusTest3bDesc = quarkusDescriptorMock(Test03b.class, Manager4.class, false,
+                QuarkusTestResource.class);
+        ClassDescriptor quarkusTest1aDesc = quarkusDescriptorMock(Test01a.class, null);
         ClassDescriptor quarkusTestWithProfile1Desc = quarkusDescriptorMock(Test04.class, Profile1.class);
         ClassDescriptor quarkusTestWithProfile2Test4Desc = quarkusDescriptorMock(Test05.class, Profile2.class);
         ClassDescriptor quarkusTestWithProfile2Test5Desc = quarkusDescriptorMock(Test06.class, Profile2.class);
@@ -76,51 +78,55 @@ class QuarkusTestProfileAwareClassOrdererTest {
         List<ClassDescriptor> input = Arrays.asList(
                 quarkusTestWithRestrictedResourceDesc,
                 nonQuarkusTest2Desc,
+                quarkusTest2Desc,
                 quarkusTestWithRestrictedResourceDesc2,
                 quarkusTestWithProfile2Test5Desc,
-                quarkusTest2Desc,
+                quarkusTest1aDesc,
                 nonQuarkusTest1Desc,
                 quarkusTestWithMetaResourceDesc,
                 quarkusTest1Desc,
                 quarkusTestWithProfile2Test4Desc,
                 quarkusTestWithMetaResourceDesc2,
-                quarkusTestWithUnrestrictedResourceDesc,
+                quarkusTest3Desc,
+                quarkusTest2b,
                 quarkusTestWithProfile1Desc,
-                quarkusTestWithUnrestrictedQuarkusTestResourceDesc);
+                quarkusTest2a,
+                quarkusTest3bDesc,
+                quarkusTest3aDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer().orderClasses(contextMock);
 
         assertThat(input).containsExactly(
+                nonQuarkusTest1Desc,
+                nonQuarkusTest2Desc,
                 quarkusTest1Desc,
-                quarkusTestWithUnrestrictedResourceDesc,
-                quarkusTestWithUnrestrictedQuarkusTestResourceDesc,
+                quarkusTest1aDesc,
                 quarkusTest2Desc,
+                quarkusTest2a,
+                quarkusTest2b,
+                quarkusTest3Desc,
+                quarkusTest3aDesc,
+                quarkusTest3bDesc,
                 quarkusTestWithProfile1Desc,
                 quarkusTestWithProfile2Test4Desc,
                 quarkusTestWithProfile2Test5Desc,
                 quarkusTestWithRestrictedResourceDesc,
                 quarkusTestWithRestrictedResourceDesc2,
                 quarkusTestWithMetaResourceDesc,
-                quarkusTestWithMetaResourceDesc2,
-                nonQuarkusTest1Desc,
-                nonQuarkusTest2Desc);
+                quarkusTestWithMetaResourceDesc2);
     }
 
     @Test
     void configuredPrefix() {
         ClassDescriptor quarkusTestDesc = quarkusDescriptorMock(Test01.class, null);
-        ClassDescriptor nonQuarkusTestDesc = descriptorMock(Test03.class);
+        ClassDescriptor nonQuarkusTestDesc = descriptorMock(Test01a.class);
         List<ClassDescriptor> input = Arrays.asList(quarkusTestDesc, nonQuarkusTestDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
-        // prioritize unit tests
-        when(contextMock.getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
+        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "45_", "60_", Optional.empty()).orderClasses(contextMock);
 
-        underTest.orderClasses(contextMock);
-
-        assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
+        assertThat(input).containsExactly(quarkusTestDesc, nonQuarkusTestDesc);
     }
 
     @Test
@@ -137,12 +143,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 quarkusTest1Desc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
-        // change secondary orderer from ClassName to OrderAnnotation
-        when(contextMock.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER))
-                .thenReturn(Optional.of(ClassOrderer.OrderAnnotation.class.getName()));
-
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer("20_", "30_", "40_", "45_", "60_",
+                Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(
                 quarkusTest1Desc,
@@ -153,18 +155,17 @@ class QuarkusTestProfileAwareClassOrdererTest {
     @Test
     void customOrderKey() {
         ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
-        ClassDescriptor quarkusTest2Desc = quarkusDescriptorMock(Test03.class, null);
+        ClassDescriptor quarkusTest2Desc = quarkusDescriptorMock(Test01a.class, null);
         List<ClassDescriptor> input = Arrays.asList(quarkusTest1Desc, quarkusTest2Desc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        underTest = new QuarkusTestProfileAwareClassOrderer() {
+        new QuarkusTestProfileAwareClassOrderer() {
             @Override
             protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context,
                     String secondaryOrderSuffix) {
                 return classDescriptor == quarkusTest2Desc ? Optional.of("00_first") : Optional.empty();
             }
-        };
-        underTest.orderClasses(contextMock);
+        }.orderClasses(contextMock);
 
         assertThat(input).containsExactly(quarkusTest2Desc, quarkusTest1Desc);
     }
@@ -226,7 +227,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
     // this single made-up test class needs an actual annotation since the orderer will have to do the meta-check directly
     // because ClassDescriptor does not offer any details whether an annotation is directly annotated or meta-annotated
     @WithTestResource(value = Manager3.class, scope = TestResourceScope.GLOBAL)
-    private static class Test02 {
+    private static class Test02b {
     }
 
     @QuarkusTestResource(Manager3.class)
@@ -234,7 +235,27 @@ class QuarkusTestProfileAwareClassOrdererTest {
 
     }
 
+    @WithTestResource(Manager3.class)
+    private static class Test02 {
+
+    }
+
+    @QuarkusTestResource(Manager3.class)
     private static class Test03 {
+
+    }
+
+    @WithTestResource(Manager4.class)
+    private static class Test03a {
+
+    }
+
+    @QuarkusTestResource(Manager4.class)
+    private static class Test03b {
+
+    }
+
+    private static class Test01a {
     }
 
     private static class Test04 {
@@ -271,5 +292,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
     }
 
     private static interface Manager3 extends QuarkusTestResourceLifecycleManager {
+    }
+
+    private static interface Manager4 extends QuarkusTestResourceLifecycleManager {
     }
 }

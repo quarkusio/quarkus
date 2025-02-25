@@ -12,6 +12,8 @@ include::_attributes.adoc[]
 
 Read about the use of logging API in {project-name}, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 
+include::{includes}/observability-include.adoc[]
+
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
 You can use any of the <<logging-apis,following APIs>>:
@@ -115,8 +117,25 @@ The fully qualified name of the class that calls the `Log` methods is used as a 
 In this example, the logger name would be `com.example.MyService`.
 <3> Finally, all calls to `Log` methods are rewritten to regular JBoss Logging calls on the logger field during the application build.
 
-WARNING: Only use the `Log` API in application classes, not in external dependencies.
-`Log` method calls that are not processed by Quarkus at build time will throw an exception.
+[[log-api-extension-warning]]
+[WARNING]
+====
+Use the `Log` API only in application classes, not in external dependencies.
+`Log` method calls not processed by Quarkus at build time will result in an exception.
+
+.Using `io.quarkus.logging.Log` in extensions:
+
+While the `Log` API simplifies logging in application classes, it is not recommended for use in extension modules or external dependencies.
+
+The following considerations apply:
+
+* `io.quarkus.logging.Log` depends on Quarkus bytecode transformations that occur at build time.
+
+* In extension modules, `Log` works only if the module includes a Jandex index.
+However, this behavior is unsupported and can lead to unreliable logging.
++
+For extension development, use `org.jboss.logging.Logger.getLogger(String)` instead of `io.quarkus.logging.Log`.
+====
 
 
 [[injection-of-a-configured-logger]]
@@ -152,9 +171,11 @@ class SimpleBean {
 <1> The fully qualified class name (FQCN) of the declaring class is used as a logger name, for example, `org.jboss.logging.Logger.getLogger(SimpleBean.class)` will be used.
 <2> In this case, the name _foo_ is used as a logger name, for example, `org.jboss.logging.Logger.getLogger("foo")` will be used.
 
-NOTE: The logger instances are cached internally.
+[NOTE]
+====
+The logger instances are cached internally.
 Therefore, when a logger is injected, for example, into a `@RequestScoped` bean, it is shared for all bean instances to avoid possible performance penalties associated with logger instantiation.
-
+====
 
 == Use log levels
 
@@ -511,6 +532,24 @@ quarkus.log.category."com.example".use-parent-handlers=false
 For details about its configuration, see the xref:#quarkus-core_section_quarkus-log-syslog[Syslog logging configuration] reference.
 
 
+=== Socket log handler
+
+This handler sends logs to a socket.
+Socket log handler is disabled by default; enable it to use it.
+When enabled, it sends all log events to a socket, such as a Logstash server.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.socket.enable=true
+quarkus.log.socket.endpoint=localhost:4560
+----
+
+Typically, this handler is used with the `quarkus-logging-json` extension to send logs in ECS format to an Elasticsearch instance.
+For an example configuration, see the xref:centralized-log-management.adoc[Centralized log management] guide.
+
+
 == Add a logging filter to your log handler
 
 Log handlers, such as the console log handler, can be linked with a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged.
@@ -575,8 +614,11 @@ quarkus.console.color=false
 quarkus.log.category."io.quarkus".level=INFO
 ----
 
-NOTE: If you add these properties in the command line, ensure `"` is escaped.
+[NOTE]
+====
+If you add these properties in the command line, ensure `"` is escaped.
 For example, `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
+====
 
 [[category-example]]
 .File TRACE logging configuration
@@ -631,13 +673,18 @@ Use a centralized location to efficiently collect, store, and analyze log data f
 To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
 
 
+=== OpenTelemetry logging
+Logging entries from all appenders can be sent by using OpenTelemetry Logging.
+
+For details, see the Quarkus xref:opentelemetry-logging.adoc[OpenTelemetry Logging] guide.
+
 == Configure logging for `@QuarkusTest`
 
 Enable proper logging for `@QuarkusTest` by setting the `java.util.logging.manager` system property to `org.jboss.logmanager.LogManager`.
 
 The system property must be set early on to be effective, so it is recommended to configure it in the build system.
 
-.Setting the `java.util.logging.manager` system property in the Maven Surefire plugin configuration
+.Setting the `java.util.logging.manager` system property in the Maven Surefire plugin configuration:
 [source, xml]
 ----
 <build>
@@ -782,7 +829,7 @@ To add data to the MDC and extract it in your log output:
 
 . Use the `MDC` class to set the data.
 .. Add `import org.jboss.logmanager.MDC;`
-.. Set  `MDC.put(...)` as shown in the example below:
+.. Set `MDC.put(...)` as shown in the example below:
 +
 [source,java]
 .An example with JBoss Logging and `io.quarkus.logging.Log`

@@ -13,6 +13,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logmanager.Level;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
@@ -36,9 +37,11 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -58,6 +61,7 @@ import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.MicrometerTimedInterceptor;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -77,11 +81,16 @@ public class MicrometerProcessor {
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
     private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
+    private static final List<String> OPERATING_SYSTEM_BEAN_CLASS_NAMES = List.of(
+            "com.ibm.lang.management.OperatingSystemMXBean", // J9
+            "com.sun.management.OperatingSystemMXBean" // HotSpot
+    );
+
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.enabled;
+            return mConfig.enabled();
         }
     }
 
@@ -93,11 +102,20 @@ public class MicrometerProcessor {
                 null);
     }
 
+    @BuildStep(onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
+    void registerEmptyExamplarProvider(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(NoopOpenTelemetryExemplarContextUnwrapper.class)
+                .setUnremovable()
+                .build());
+    }
+
     @BuildStep(onlyIf = { PrometheusRegistryProcessor.PrometheusEnabled.class })
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
-                nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));
+                nonApplicationRootPathBuildItem.resolvePath(mConfig.export().prometheus().path()));
     }
 
     @BuildStep
@@ -105,7 +123,8 @@ public class MicrometerProcessor {
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindings) {
+            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindings,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
 
         // Create and keep some basic Providers
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -147,6 +166,14 @@ public class MicrometerProcessor {
                         "org.HdrHistogram.ConcurrentHistogram")
                 .build());
 
+        for (String beanClassName : OPERATING_SYSTEM_BEAN_CLASS_NAMES) {
+            String reason = "Accessed by io.micrometer.core.instrument.binder.system.ProcessorMetrics.ProcessorMetrics(java.lang.Iterable<io.micrometer.core.instrument.Tag>)";
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getSystemCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuTime"));
+        }
+
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
                 NAMING_CONVENTION);
     }
@@ -173,6 +200,18 @@ public class MicrometerProcessor {
                 ctx.transform().add(COUNTED_BINDING, counted.values().toArray(new AnnotationValue[] {})).done();
             }
         });
+    }
+
+    @BuildStep
+    void configLoggingLevel(BuildProducer<LogCategoryBuildItem> logCategoryProducer) {
+        // Avoid users from receiving:
+        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
+        // registered to this registry...
+        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
+        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
+        logCategoryProducer.produce(new LogCategoryBuildItem(
+                "io.micrometer.core.instrument.composite.CompositeMeterRegistry",
+                Level.ERROR));
     }
 
     @BuildStep
@@ -203,23 +242,13 @@ public class MicrometerProcessor {
 
     @BuildStep
     @Consume(RootMeterRegistryBuildItem.class)
+    @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            BuildProducer<SystemPropertyBuildItem> systemProperty) {
-
-        // Avoid users from receiving:
-        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
-        // registered to this registry...
-        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
-        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
-        systemProperty.produce(
-                new SystemPropertyBuildItem(
-                        "quarkus.log.category.\"io.micrometer.core.instrument.composite.CompositeMeterRegistry\".level",
-                        "ERROR"));
+            ShutdownContextBuildItem shutdownContextBuildItem) {
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {

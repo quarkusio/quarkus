@@ -23,6 +23,6 @@ public class ProtectedResourceWithoutJwtAccessToken {
 
     @GET
     public String getName() {
-        return idToken.getName() + ":" + config.defaultTenant.authentication.verifyAccessToken;
+        return idToken.getName() + ":" + OidcConfig.getDefaultTenant(config).authentication().verifyAccessToken();
     }
 }

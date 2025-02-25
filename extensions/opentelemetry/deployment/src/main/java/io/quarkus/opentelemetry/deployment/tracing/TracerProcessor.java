@@ -69,6 +69,7 @@ public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
     private static final DotName TEXT_MAP_PROPAGATOR = DotName.createSimple(TextMapPropagator.class.getName());
+    private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
@@ -138,8 +139,9 @@ public class TracerProcessor {
             BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
             BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
 
-        // Drop framework paths
         List<String> nonApplicationUris = new ArrayList<>();
+
+        // Drop framework paths
         frameworkEndpoints.ifPresent(
                 frameworkEndpointsBuildItem -> {
                     for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
@@ -254,6 +256,37 @@ public class TracerProcessor {
                             void.class, eventType.getObservedType()), mc.checkCast(event, eventType.getObservedType()));
                     mc.returnNull();
                 }));
+    }
+
+    private static boolean containsPathExpression(String value) {
+        return value.indexOf('{') != -1;
+    }
+
+    private static String sanitizeForTraceless(final String path) {
+        int braceIndex = path.indexOf('{');
+        if (braceIndex == -1) {
+            return path;
+        }
+        if (braceIndex > 0 && path.charAt(braceIndex - 1) == '/') {
+            return path.substring(0, braceIndex - 1);
+        } else {
+            return path.substring(0, braceIndex);
+        }
+    }
+
+    private static boolean isClassAnnotatedWithPath(AnnotationInstance annotation) {
+        return annotation.target().kind().equals(AnnotationTarget.Kind.CLASS) &&
+                annotation.name().equals(PATH);
+    }
+
+    private String combinePaths(String basePath, String relativePath) {
+        if (!basePath.endsWith("/")) {
+            basePath += "/";
+        }
+        if (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1);
+        }
+        return basePath + relativePath;
     }
 
     static final class SecurityEventsEnabled implements BooleanSupplier {

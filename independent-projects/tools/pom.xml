@@ -39,7 +39,7 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.9</proposed-maven-version>
         <maven-wrapper.version>3.3.2</maven-wrapper.version>
-        <gradle-wrapper.version>8.9</gradle-wrapper.version>
+        <gradle-wrapper.version>8.12</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
@@ -48,18 +48,18 @@
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <assertj.version>3.26.3</assertj.version>
-        <jackson-bom.version>2.17.2</jackson-bom.version>
+        <assertj.version>3.27.3</assertj.version>
+        <jackson-bom.version>2.18.2</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <junit.version>5.11.0</junit.version>
+        <junit.version>5.10.5</junit.version>
         <commons-compress.version>1.27.1</commons-compress.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <mockito.version>5.13.0</mockito.version>
+        <mockito.version>5.15.2</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.2.2</jandex.version>
-        <system-stubs-jupiter.version>2.1.6</system-stubs-jupiter.version>
-        <awaitility.version>4.2.2</awaitility.version>
+        <jandex.version>3.2.7</jandex.version>
+        <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>
     </properties>
     <modules>

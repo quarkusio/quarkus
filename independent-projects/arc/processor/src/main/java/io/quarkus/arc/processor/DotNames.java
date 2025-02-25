@@ -25,6 +25,7 @@ import jakarta.enterprise.event.ObservesAsync;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Decorated;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
@@ -68,6 +69,7 @@ import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
+import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.impl.Identified;
 import io.smallrye.mutiny.Multi;
@@ -133,6 +135,7 @@ public final class DotNames {
     public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
     public static final DotName ARC_INVOCATION_CONTEXT = create(ArcInvocationContext.class);
     public static final DotName DECORATOR = create(Decorator.class);
+    public static final DotName DECORATED = create(Decorated.class);
     public static final DotName DELEGATE = create(Delegate.class);
     public static final DotName SERIALIZABLE = create(Serializable.class);
     public static final DotName UNREMOVABLE = create(Unremovable.class);
@@ -145,12 +148,7 @@ public final class DotNames {
     public static final DotName DEPRECATED = create(Deprecated.class);
     public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
     public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
-
-    /**
-     * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6
-     */
-    @Deprecated(forRemoval = true, since = "3.0")
-    public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
+    public static final DotName WITH_CACHING = create(WithCaching.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

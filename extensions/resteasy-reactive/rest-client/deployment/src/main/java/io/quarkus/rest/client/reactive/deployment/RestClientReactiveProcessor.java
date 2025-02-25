@@ -15,6 +15,7 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIEN
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
+import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
 import static java.util.Arrays.asList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
@@ -99,6 +100,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableRemovalTrailingSlashBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
@@ -159,14 +161,31 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
+    void setUpClientBuildTimeProperties(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
             BuildProducer<RestClientDefaultProducesBuildItem> produces,
             BuildProducer<RestClientDisableSmartDefaultProduces> disableSmartProduces,
-            RestClientReactiveConfig config) {
+            BuildProducer<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlash,
+            RestClientReactiveConfig config,
+            RestClientsBuildTimeConfig configsPerClient,
+            List<RegisteredRestClientBuildItem> registeredRestClientBuildItems) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
-        if (config.disableSmartProduces) {
+        if (config.disableSmartProduces()) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
+        }
+
+        List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(registeredRestClientBuildItems);
+        RestClientsBuildTimeConfig buildTimeConfig = configsPerClient.get(registeredRestClients);
+
+        List<DotName> clientsToDisable = new ArrayList<>();
+        for (RegisteredRestClientBuildItem registeredRestClient : registeredRestClientBuildItems) {
+            if (removesTrailingSlashIsDisabled(buildTimeConfig, registeredRestClient)) {
+                clientsToDisable.add(registeredRestClient.getClassInfo().name());
+            }
+        }
+
+        if (!clientsToDisable.isEmpty()) {
+            disableRemovalTrailingSlash.produce(new RestClientDisableRemovalTrailingSlashBuildItem(clientsToDisable));
         }
     }
 
@@ -286,7 +305,7 @@ class RestClientReactiveProcessor {
             constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationRegisteredProviders.class),
                     constructor.getThis());
 
-            if (clientConfig.providerAutodiscovery) {
+            if (clientConfig.providerAutodiscovery()) {
                 for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PROVIDER)) {
                     ClassInfo providerClass = instance.target().asClass();
 
@@ -447,7 +466,7 @@ class RestClientReactiveProcessor {
             if (cdiScope.isEmpty()) {
                 continue;
             }
-            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.of(configKeyName), Optional.empty()));
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.empty(), Optional.empty()));
         }
     }
 
@@ -458,15 +477,8 @@ class RestClientReactiveProcessor {
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
-        List<RegisteredRestClient> registeredRestClients = restClients.stream()
-                .map(rc -> new RegisteredRestClient(
-                        rc.getClassInfo().name().toString(),
-                        rc.getClassInfo().simpleName(),
-                        rc.getConfigKey().orElse(null)))
-                .toList();
-
-        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
-                runTimeConfigBuilder);
+        RestClientConfigUtils.generateRestClientConfigBuilder(toRegisteredRestClients(restClients), generatedClass,
+                staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep
@@ -847,11 +859,17 @@ class RestClientReactiveProcessor {
         return false;
     }
 
-    private Optional<String> getConfigKey(AnnotationInstance registerRestClientAnnotation) {
-        AnnotationValue configKeyValue = registerRestClientAnnotation.value("configKey");
-        return configKeyValue != null
-                ? Optional.of(configKeyValue.asString())
-                : Optional.empty();
+    private boolean removesTrailingSlashIsDisabled(RestClientsBuildTimeConfig config,
+            RegisteredRestClientBuildItem registeredRestClient) {
+        // is disabled for all the clients
+        if (!config.removesTrailingSlash()) {
+            return true;
+        }
+
+        // is disabled for this concrete client
+        return !config.clients()
+                .get(registeredRestClient.getClassInfo().name().toString())
+                .removesTrailingSlash();
     }
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,

@@ -12,6 +12,8 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MULTIPART_ENCODER_MODE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.STATIC_HEADERS;
 import static org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder.EncoderMode.HTML5;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
@@ -24,6 +26,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -37,11 +40,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 @SuppressWarnings({ "SameParameterValue" })
-public class RestClientCDIDelegateBuilderTest {
+class RestClientCDIDelegateBuilderTest {
 
     private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
     private static final String KEYSTORE_PASSWORD = "keystorePassword";
@@ -89,26 +96,34 @@ public class RestClientCDIDelegateBuilderTest {
     }
 
     @Test
-    public void testClientSpecificConfigs() {
-        // given
-
+    void clientSpecificConfigs() {
         RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
                 .setAddDefaultSources(false)
                 .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(TestClient.class, "test-client"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
                 .withDefaultValues(createSampleConfigRoot())
                 .withDefaultValues(createSampleClientConfig("test-client"))
                 .build()
                 .getConfigMapping(RestClientsConfig.class);
 
-        // when
+        assertEquals(1, configRoot.clients().size());
+        assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
                 configRoot).configureBuilder(restClientBuilderMock);
-
-        // then
 
         verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
@@ -137,17 +152,24 @@ public class RestClientCDIDelegateBuilderTest {
     }
 
     @Test
-    public void testGlobalConfigs() {
-        // given
-
+    void globalConfigs() {
         RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
                 .setAddDefaultSources(false)
                 .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(TestClient.class, "test-client"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
                 .withDefaultValues(createSampleConfigRoot())
                 .build()
                 .getConfigMapping(RestClientsConfig.class);
-
-        // when
 
         QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
@@ -155,7 +177,8 @@ public class RestClientCDIDelegateBuilderTest {
                 "test-client",
                 configRoot).configureBuilder(restClientBuilderMock);
 
-        // then
+        assertEquals(1, configRoot.clients().size());
+        assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         verify(restClientBuilderMock).property(MULTIPART_ENCODER_MODE, HTML5);

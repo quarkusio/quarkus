@@ -10,6 +10,8 @@ import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
@@ -19,7 +21,7 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * The datasource URL
      */
-    Optional<String> url();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> url();
 
     /**
      * The initial size of the pool. Usually you will want to set the initial size to match at least the
@@ -143,11 +145,6 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     @ConfigDocMapKey("property-key")
     Map<String, String> additionalJdbcProperties();
-
-    /**
-     * Enable JDBC tracing.
-     */
-    DataSourceJdbcTracingRuntimeConfig tracing();
 
     /**
      * Enable OpenTelemetry JDBC instrumentation.

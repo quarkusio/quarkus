@@ -33,10 +33,7 @@ public abstract class PathTreeWithManifest implements PathTree {
             List<Integer> list = (List<Integer>) v.getClass().getMethod(versionStr).invoke(v);
             JAVA_VERSION = list.get(0);
         } catch (Exception e) {
-            //version 8
-            throw new IllegalStateException(
-                    "Failed to obtain the Java version from java.lang.Runtime, possibly it's Java 8 which is not supported anymore",
-                    e);
+            throw new IllegalStateException("Failed to obtain the Java version from java.lang.Runtime", e);
         }
     }
 

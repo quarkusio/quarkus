@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -164,13 +163,13 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 });
 
         // Check if we need to login first
-        if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username.get(),
-                    "-p", containerImageConfig.password.get());
+        if (containerImageConfig.username().isPresent() && containerImageConfig.password().isPresent()) {
+            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username().get(),
+                    "-p", containerImageConfig.password().get());
 
             if (!loginSuccessful) {
                 throw containerRuntimeException(executableName,
-                        new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
+                        new String[] { "-u", containerImageConfig.username().get(), "-p", "********" });
             }
         }
     }
@@ -185,7 +184,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         args.addAll(List.of("build", "-f", dockerfilePaths.dockerfilePath().toAbsolutePath().toString()));
 
         config.buildArgs().forEach((k, v) -> args.addAll(List.of("--build-arg", "%s=%s".formatted(k, v))));
-        containerImageConfig.labels.forEach((k, v) -> args.addAll(List.of("--label", "%s=%s".formatted(k, v))));
+        containerImageConfig.labels().forEach((k, v) -> args.addAll(List.of("--label", "%s=%s".formatted(k, v))));
         config.cacheFrom()
                 .filter(cacheFrom -> !cacheFrom.isEmpty())
                 .ifPresent(cacheFrom -> args.addAll(List.of("--cache-from", String.join(",", cacheFrom))));
@@ -212,13 +211,17 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 });
     }
 
-    protected void pushImages(ContainerImageInfoBuildItem containerImageInfo, String executableName) {
-        Stream.concat(containerImageInfo.getAdditionalImageTags().stream(), Stream.of(containerImageInfo.getImage()))
-                .forEach(imageToPush -> pushImage(imageToPush, executableName));
+    protected void pushImages(ContainerImageInfoBuildItem containerImageInfo, String executableName, C config) {
+        List<String> imagesToPush = new ArrayList<>(1 + containerImageInfo.getAdditionalImageTags().size());
+        imagesToPush.add(containerImageInfo.getImage());
+        imagesToPush.addAll(containerImageInfo.getAdditionalImageTags());
+        for (String image : imagesToPush) {
+            pushImage(image, executableName, config);
+        }
     }
 
-    protected void pushImage(String image, String executableName) {
-        String[] pushArgs = { "push", image };
+    protected void pushImage(String image, String executableName, C config) {
+        String[] pushArgs = createPushArgs(image, config);
         var pushSuccessful = ExecUtil.exec(executableName, pushArgs);
 
         if (!pushSuccessful) {
@@ -226,6 +229,10 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         }
 
         LOGGER.infof("Successfully pushed %s image %s", getProcessorImplementation(), image);
+    }
+
+    protected String[] createPushArgs(String image, C config) {
+        return new String[] { "push", image };
     }
 
     protected void buildImage(ContainerImageInfoBuildItem containerImageInfo,

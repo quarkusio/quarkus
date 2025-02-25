@@ -31,12 +31,12 @@ public class JaxRsMetricsProcessor {
     static final String RESTEASY_CONFIG_PROPERTY = "quarkus.resteasy.metrics.enabled"; // TODO: we probably want to remove this now...
 
     static class RestMetricsEnabled implements BooleanSupplier {
-        SmallRyeMetricsProcessor.SmallRyeMetricsConfig smConfig;
+        SmallRyeMetricsConfig smConfig;
 
         public boolean getAsBoolean() {
             boolean resteasyConfigEnabled = ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class)
                     .orElse(false);
-            return smConfig.extensionsEnabled && (smConfig.jaxrsEnabled || resteasyConfigEnabled);
+            return smConfig.extensionsEnabled() && (smConfig.jaxrsEnabled() || resteasyConfigEnabled);
         }
     }
 

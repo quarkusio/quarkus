@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :summary: This guide explains how to use the REST Client.
 :topics: rest,rest-client,resteasy-reactive
 :extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 
 This guide explains how to use the REST Client in order to interact with REST APIs.
 REST Client is the REST Client implementation compatible with Quarkus REST (formerly RESTEasy Reactive).
@@ -156,6 +157,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 import java.util.Set;
+import java util.Optional;
 
 @Path("/extensions")
 @RegisterRestClient(configKey = "extensions-api")
@@ -166,6 +168,9 @@ public interface ExtensionsService {
 
     @GET
     Set<Extension> getByName(@RestQuery String name); <1>
+
+    @GET
+    Set<Extension> getByOptionalName(@RestQuery Optional<String> name);
 
     @GET
     Set<Extension> getByFilter(@RestQuery Map<String, String> filter); <2>
@@ -234,7 +239,7 @@ package org.acme.rest.client;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestForm;
 
-import jakarta.ws.rs.PORT;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
@@ -325,6 +330,38 @@ public interface ExtensionsService {
 }
 ----
 
+=== Dynamic base URLs
+
+The REST client allows for a per invocation override of the base URL using the `io.quarkus.rest.client.reactive.Url` annotation.
+
+Here is a simple example:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import java.util.Set;
+
+import io.quarkus.rest.client.reactive.Url;
+
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    @Path("/stream/{stream}")
+    Set<Extension> getByStream(@Url String url, @PathParam("stream") String stream, @QueryParam("id") String id);
+}
+----
+
+When the `url` parameter is non-null, it will override the base URL that is configured for the client (the default base URL configuration is still mandatory).
+
 === Sending large payloads
 
 The REST Client is capable of sending arbitrarily large HTTP bodies without buffering the contents in memory, if one of the following types is used:
@@ -337,6 +374,89 @@ Furthermore, the client can also send arbitrarily large files if one of the foll
 * `File`
 * `Path`
 
+=== Getting other response properties
+
+==== Using RestResponse
+
+If you need to get more properties of the HTTP response than just the body, such as the status code
+or headers, you can make your method return `org.jboss.resteasy.reactive.RestResponse` from a method.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.RestResponse;
+
+import java.util.Set;
+
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    RestResponse<Set<Extension>> getByIdResponseProperties(@RestQuery String id);
+}
+----
+
+NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
+not strongly typed to your entity.
+
+== Create the Jakarta REST resource
+
+Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
+
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import java.util.Set;
+
+@Path("/extension")
+public class ExtensionsResource {
+
+    @RestClient // <1>
+    ExtensionsService extensionsService;
+
+
+    @GET
+    @Path("/id/{id}")
+    public Set<Extension> id(String id) {
+        return extensionsService.getById(id);
+    }
+
+    @GET
+    @Path("/properties")
+    public RestResponse<Set<Extension>> responseProperties(@RestQuery String id) {
+        RestResponse<Set<Extension>> clientResponse = extensionsService.getByIdResponseProperties(id); //<2>
+        String contentType = clientResponse.getHeaderString("Content-Type");
+        int status = clientResponse.getStatus();
+        String setCookie = clientResponse.getHeaderString("Set-Cookie");
+        Date lastModified = clientResponse.getLastModified();
+
+        Log.infof("content-Type: %s status: %s Last-Modified: %s Set-Cookie: %s", contentType, status, lastModified,
+                setCookie);
+
+        return RestResponse.fromResponse(clientResponse);
+    }
+}
+----
+
+There are two interesting parts in this listing:
+
+<1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
+<2> `org.jboss.resteasy.reactive.RestResponse` used as effective way of getting response properties via RestResponse directly from RestClient, 
+as described in <<Using RestResponse>>
 
 == Create the configuration
 
@@ -377,18 +497,33 @@ quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 Setting the base URL of the client is **mandatory**, however the REST Client supports per-invocation overrides of the base URL using the `@io.quarkus.rest.client.reactive.Url` annotation.
 ====
 
-=== Disabling Hostname Verification
+=== Trusting all certificates and Disabling SSL hostname verification
 
-To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
-
-[source,properties]
-----
-quarkus.rest-client.extensions-api.verify-host=false
-----
 [WARNING]
 ====
-This setting should not be used in production as it will disable the SSL hostname verification.
+This properties set should not be used in production.
 ====
+
+You can configure TLS connection of specific REST client to trust all certificates and disable the hostname verification using tls extension.
+First of all, you should configure tls configuration bucket.
+
+To trust all certificates:
+[source,properties]
+----
+quarkus.tls.tls-disabled.trust-all=true
+----
+
+To disable SSL hostname verification:
+[source,properties]
+----
+quarkus.tls.tls-disabled.hostname-verification-algorithm=NONE
+----
+
+Finally, lets configure our REST client with apropriate tls configuration name:
+[source,properties]
+----
+quarkus.rest-client.extensions-api.tls-configuration-name=tls-disabled
+----
 
 === HTTP/2 Support
 
@@ -410,40 +545,6 @@ quarkus.rest-client.alpn=true
 // or for a single REST Client:
 quarkus.rest-client.extensions-api.alpn=true
 ----
-
-== Create the Jakarta REST resource
-
-Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
-
-
-[source,java]
-----
-package org.acme.rest.client;
-
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import java.util.Set;
-
-@Path("/extension")
-public class ExtensionsResource {
-
-    @RestClient // <1>
-    ExtensionsService extensionsService;
-
-
-    @GET
-    @Path("/id/{id}")
-    public Set<Extension> id(String id) {
-        return extensionsService.getById(id);
-    }
-}
-----
-
-There are two interesting parts in this listing:
-
-<1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 
 == Programmatic client creation with QuarkusRestClientBuilder
 
@@ -1291,7 +1392,7 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
 `ResponseExceptionMapper` also defines the `getPriority` method which is used in order to determine the priority with which `ResponseExceptionMapper` implementations will be called (implementations with a lower value for `getPriority` will be invoked first).
 If `toThrowable` returns an exception, then that exception will be thrown. If `null` is returned, the next implementation of `ResponseExceptionMapper` in the chain will be called (if there is any).
 
-The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client-reactive.provider-autodiscovery` is not set to `false`).
+The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client.provider-autodiscovery` is not set to `false`).
 Alternatively, if the exception handling class should only apply to specific REST Client interfaces, you can either annotate the interfaces with `@RegisterProvider(MyResponseExceptionMapper.class)`, or register it using configuration using the `providers` property of the proper `quarkus.rest-client` configuration group.
 
 === Using @ClientExceptionMapper
@@ -1387,6 +1488,34 @@ public interface EchoClient {
     }
 }
 ----
+
+=== Disabling the default mapper
+
+As mandated by the REST Client specification, a default exception mapper is included, that throws an exception when HTTP status code is higher than 400.
+While this behavior is fine when the client returns a regular object, it is however very unintuitive when the client needs to return a `jakarta.ws.rs.core.Response`
+(with the intention of allowing the caller to decide how to handle the HTTP status code).
+
+For this reason, the REST Client includes a property named `disable-default-mapper` which can be used to disable the default mapper when using a REST client in a declarative manner.
+
+For example, with a client like so:
+
+[source, java]
+----
+    @Path("foo")
+    @RegisterRestClient(configKey = "bar")
+    public interface Client {
+        @GET
+        Response get();
+    }
+----
+
+The default exception mapper can be disabled by setting `quarkus.rest-client.bar.disable-default-mapper=true` to disable the exception mapper for the REST Client configured with the key `bar`.
+
+[NOTE]
+====
+When using the programmatic approach for creating a REST Client, `QuarkusRestClientBuilder` provides a method named `disableDefaultMapper`
+that provides the same feature.
+====
 
 [[multipart]]
 == Multipart Form support
@@ -1626,8 +1755,21 @@ The code uses the following pieces:
 As previously mentioned, the body parameter needs to be properly crafted by the application code to conform to the service's requirements.
 
 === Receiving compressed messages
-REST Client also supports receiving compressed messages using GZIP. You can enable the HTTP compression support by adding the property `quarkus.http.enable-compression=true`.
+REST Client also supports receiving compressed messages using GZIP and can be enabled via configuration.
 When this feature is enabled and a server returns a response that includes the header `Content-Encoding: gzip`, REST Client will automatically decode the content and proceed with the message handling.
+
+An example configuration could be:
+
+[source,properties]
+----
+# global configuration is used for all clients
+quarkus.rest-client.enable-compression=true
+
+# per-client configuration overrides the global settings for a specific client
+quarkus.rest-client.my-client.enable-compression=true
+----
+
+The REST Client falls back onto the Quarkus wide `quarkus.http.enable-compression` configuration property (which defaults to `false`) if no REST Client specific property is set.
 
 == Proxy support
 REST Client supports sending requests through a proxy.
@@ -1721,6 +1863,9 @@ As HTTP messages can have large bodies, we limit the amount of body characters l
 
 NOTE: REST Client is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
 
+These configuration properties work globally for all clients injected by CDI.
+If you want configure logging for a specific declarative client, you should do it by specifying named "client" properties, also known as `quarkus.rest-client."client".logging.*` properties.
+
 An example logging configuration:
 
 [source,properties]
@@ -1728,7 +1873,10 @@ An example logging configuration:
 quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
 
+quarkus.rest-client.extensions-api.scope=all
+
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+quarkus.log.console.level=DEBUG
 ----
 
 [TIP]
@@ -1976,12 +2124,15 @@ While the REST Client extension aims to be a drop-in replacement for the RESTEas
 and limitations:
 
 - the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-resteasy-client` defaults to `@Dependent`
-To change this behavior, set the `quarkus.rest-client-reactive.scope` property to the fully qualified scope name.
-- it is not possible to set `HostnameVerifier` or `SSLContext`
+To change this behavior, set the `quarkus.rest-client.scope` property to the fully qualified scope name.
+- it is not possible to set `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
-
-
 
 == Further reading
 
  * link:https://download.eclipse.org/microprofile/microprofile-rest-client-2.0/microprofile-rest-client-spec-2.0.html[MicroProfile Rest Client specification]
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-rest-client_quarkus.rest-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-rest-client-config.adoc[opts=optional, leveloffset=+1]

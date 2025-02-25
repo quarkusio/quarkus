@@ -2,6 +2,9 @@ package io.quarkus.security.runtime;
 
 import static io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder.transformToKey;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -17,11 +20,14 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
@@ -33,6 +39,7 @@ import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
 import io.quarkus.security.runtime.interceptor.check.SupplierRolesAllowedCheck;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.smallrye.config.Expressions;
@@ -41,13 +48,9 @@ import io.smallrye.config.common.utils.StringUtil;
 @Recorder
 public class SecurityCheckRecorder {
 
-    private static volatile SecurityCheckStorage storage;
+    private static final Logger LOGGER = Logger.getLogger(SecurityCheckRecorder.class);
     private static final Set<SupplierRolesAllowedCheck> configExpRolesAllowedChecks = ConcurrentHashMap.newKeySet();
     private static volatile boolean runtimeConfigReady = false;
-
-    public static SecurityCheckStorage getStorage() {
-        return storage;
-    }
 
     public SecurityCheck denyAll() {
         return DenyAllCheck.INSTANCE;
@@ -274,9 +277,10 @@ public class SecurityCheckRecorder {
             } else {
                 permission = (Permission) loadClass(clazz).getConstructors()[0].newInstance(name);
             }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(String.format("Failed to create Permission - class '%s', name '%s', actions '%s'", clazz,
-                    name, Arrays.toString(actions)), e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | RuntimeException e) {
+            LOGGER.errorf(e, "Failed to create Permission - class '%s', name '%s', actions '%s', access will be denied",
+                    clazz, name, Arrays.toString(actions));
+            throw new ForbiddenException();
         }
         return new RuntimeValue<>(permission);
     }
@@ -290,10 +294,13 @@ public class SecurityCheckRecorder {
      * @param actions permission actions
      * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
      * @param formalParamIndexes indexes of secured method params that should be passed to permission constructor
+     * @param formalParamConverters converts method parameter to constructor parameter; most of the time, this will be
+     *        either identity function or a method calling method parameter getter
      * @return computed permission
      */
     public Function<Object[], Permission> createComputedPermission(String permissionName, String clazz, String[] actions,
-            boolean passActionsToConstructor, int[] formalParamIndexes) {
+            boolean passActionsToConstructor, int[] formalParamIndexes, String[] formalParamConverters,
+            Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle) {
         final int addActions = (passActionsToConstructor ? 1 : 0);
         final int argsCount = 1 + addActions + formalParamIndexes.length;
         final int methodArgsStart = 1 + addActions;
@@ -304,11 +311,11 @@ public class SecurityCheckRecorder {
                 try {
                     final Object[] initArgs = initArgs(securedMethodArgs);
                     return (Permission) permissionClassConstructor.newInstance(initArgs);
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException(
-                            String.format("Failed to create computed Permission - class '%s', name '%s', actions '%s', ", clazz,
-                                    permissionName, Arrays.toString(actions)),
-                            e);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException | RuntimeException e) {
+                    LOGGER.errorf(e,
+                            "Failed to create computed Permission - class '%s', name '%s', actions '%s', access will be denied",
+                            clazz, permissionName, Arrays.toString(actions));
+                    throw new ForbiddenException();
                 }
             }
 
@@ -320,7 +327,14 @@ public class SecurityCheckRecorder {
                     initArgs[1] = actions;
                 }
                 for (int i = 0; i < formalParamIndexes.length; i++) {
-                    initArgs[methodArgsStart + i] = methodArgs[formalParamIndexes[i]];
+                    var methodArg = methodArgs[formalParamIndexes[i]];
+                    if (formalParamConverters == null || formalParamConverters[i] == null) {
+                        initArgs[methodArgsStart + i] = methodArg;
+                    } else {
+                        var convertedValue = convertMethodParamToPermParam(i, methodArg, converterNameToMethodHandle,
+                                formalParamConverters);
+                        initArgs[methodArgsStart + i] = convertedValue;
+                    }
                 }
                 return initArgs;
             }
@@ -338,8 +352,8 @@ public class SecurityCheckRecorder {
         builder.getValue().registerCheck(className, methodName, parameterTypes, securityCheck);
     }
 
-    public void create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
-        storage = builder.getValue().create();
+    public SecurityCheckStorage create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
+        return builder.getValue().create();
     }
 
     public void resolveRolesAllowedConfigExpRoles() {
@@ -394,5 +408,40 @@ public class SecurityCheckRecorder {
                 runtimeConfigReady = false;
             }
         });
+    }
+
+    public RuntimeValue<MethodHandle> createPermissionMethodConverter(String methodName, RuntimeValue<Class<?>> clazz) {
+        try {
+            var handle = MethodHandles.publicLookup().findStatic(clazz.getValue(), methodName,
+                    MethodType.methodType(Object.class, Object.class));
+            return new RuntimeValue<>(handle);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to create Permission constructor method parameter converter", e);
+        }
+    }
+
+    public RuntimeValue<Class<?>> loadClassRuntimeVal(String className) {
+        return new RuntimeValue<>(loadClass(className));
+    }
+
+    private static Object convertMethodParamToPermParam(int i, Object methodArg,
+            Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle, String[] formalParamConverters) {
+        var converter = converterNameToMethodHandle.get(formalParamConverters[i]).getValue();
+        try {
+            return converter.invokeExact(methodArg);
+        } catch (Throwable e) {
+            throw new RuntimeException(
+                    "Failed to convert method argument '%s' to Permission constructor parameter".formatted(methodArg), e);
+        }
+    }
+
+    public Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor> createPermissionAugmentor() {
+        return new Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor>() {
+            @Override
+            public QuarkusPermissionSecurityIdentityAugmentor apply(
+                    SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor> ctx) {
+                return new QuarkusPermissionSecurityIdentityAugmentor(ctx.getInjectedReference(BlockingSecurityExecutor.class));
+            }
+        };
     }
 }

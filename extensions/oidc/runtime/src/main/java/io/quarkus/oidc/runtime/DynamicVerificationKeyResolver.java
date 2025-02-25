@@ -30,17 +30,15 @@ public class DynamicVerificationKeyResolver {
             HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT,
             HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
 
-    private final OidcProviderClient client;
+    private final OidcProviderClientImpl client;
     private final MemoryCache<Key> cache;
-    private final boolean tryAll;
     final CertChainPublicKeyResolver chainResolverFallback;
 
-    public DynamicVerificationKeyResolver(OidcProviderClient client, OidcTenantConfig config) {
+    public DynamicVerificationKeyResolver(OidcProviderClientImpl client, OidcTenantConfig config) {
         this.client = client;
-        this.tryAll = config.jwks.tryAll;
-        this.cache = new MemoryCache<Key>(client.getVertx(), config.jwks.cleanUpTimerInterval,
-                config.jwks.cacheTimeToLive, config.jwks.cacheSize);
-        if (config.certificateChain.trustStoreFile.isPresent()) {
+        this.cache = new MemoryCache<Key>(client.getVertx(), config.jwks().cleanUpTimerInterval(),
+                config.jwks().cacheTimeToLive(), config.jwks().cacheSize());
+        if (config.certificateChain().trustStoreFile().isPresent()) {
             chainResolverFallback = new CertChainPublicKeyResolver(config);
         } else {
             chainResolverFallback = null;

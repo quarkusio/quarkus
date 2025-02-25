@@ -17,6 +17,7 @@
 
     <properties>
         <!-- Plugin versions (please keep in alphabetical order) -->
+        <version.archetype.plugin>3.3.0</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.0</version.buildhelper.plugin>
         <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
         <version.clean.plugin>3.2.0</version.clean.plugin>
@@ -25,8 +26,8 @@
         <version.plugin.plugin>3.11.0</version.plugin.plugin>
         <version.dependency.plugin>3.6.1</version.dependency.plugin>
         <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
-        <version.exec.plugin>3.1.0</version.exec.plugin>
-        <version.formatter.plugin>2.24.1</version.formatter.plugin>
+        <version.exec.plugin>3.5.0</version.exec.plugin>
+        <version.formatter.plugin>2.25.0</version.formatter.plugin>
         <version.gpg.plugin>3.0.1</version.gpg.plugin>
         <version.impsort.plugin>1.12.0</version.impsort.plugin>
         <version.install.plugin>3.1.1</version.install.plugin>
@@ -37,7 +38,7 @@
         <version.resources.plugin>3.3.1</version.resources.plugin>
         <version.shade.plugin>3.2.1</version.shade.plugin>
         <version.source.plugin>3.2.1</version.source.plugin>
-        <version.surefire.plugin>3.5.0</version.surefire.plugin>
+        <version.surefire.plugin>3.5.2</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
         <version.versions.plugin>2.15.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
@@ -223,6 +224,11 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${version.archetype.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${version.compiler.plugin}</version>
                 </plugin>
@@ -286,6 +292,7 @@
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
                                 <Bundle-License>Apache License 2.0</Bundle-License>
+                                <Scm-Revision>${buildNumber}</Scm-Revision>
                             </manifestEntries>
                         </archive>
                     </configuration>

@@ -164,7 +164,6 @@ a functional approach that allows you to run a lambda within the scope of a tran
 [source,java]
 ----
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.narayana.jta.RunOptions;
 
 public class TransactionExample {
 
@@ -191,7 +190,7 @@ public class TransactionExample {
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
-                        return RunOptions.ExceptionResult.COMMIT;
+                        return TransactionExceptionResult.COMMIT;
                     }
                     return TransactionExceptionResult.ROLLBACK;
                 })
@@ -308,6 +307,13 @@ The node name identifier needs to be unique per transaction manager deployment.
 And the node identifier needs to be stable over the transaction manager restarts.
 
 The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
+[NOTE]
+====
+The node name cannot be longer than 28 bytes.
+To automatically shorten names longer than 28 bytes, set `quarkus.transaction-manager.shorten-node-name-if-necessary` to `true`.
+
+Shortening is implemented by hashing the node name, encoding the hash to Base64 and then truncating the result. As with all hashes, the resulting shortened node name could potentially conflict with another shortened node name, but it is https://github.com/quarkusio/quarkus/issues/30491#issuecomment-1537247764[very unlikely].
+====
 
 [[transaction-scope]]
 == Using `@TransactionScoped` to bind CDI beans to the transaction lifecycle

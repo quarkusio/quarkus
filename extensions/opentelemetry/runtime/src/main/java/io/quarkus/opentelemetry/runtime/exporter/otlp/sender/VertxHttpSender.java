@@ -38,6 +38,7 @@ public final class VertxHttpSender implements HttpSender {
 
     public static final String TRACES_PATH = "/v1/traces";
     public static final String METRICS_PATH = "/v1/metrics";
+    public static final String LOGS_PATH = "/v1/logs";
 
     private static final Logger internalLogger = Logger.getLogger(VertxHttpSender.class.getName());
     private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger);

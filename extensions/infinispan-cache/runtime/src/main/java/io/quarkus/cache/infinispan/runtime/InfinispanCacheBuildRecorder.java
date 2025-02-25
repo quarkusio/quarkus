@@ -57,7 +57,7 @@ public class InfinispanCacheBuildRecorder {
                                             cacheInfo.name, cacheInfo.lifespan, cacheInfo.maxIdle);
                                 }
 
-                                InfinispanCacheImpl cache = new InfinispanCacheImpl(cacheInfo, buildConfig.clientName);
+                                InfinispanCacheImpl cache = new InfinispanCacheImpl(cacheInfo, buildConfig.clientName());
                                 caches.put(cacheInfo.name, cache);
                             }
                             return new CacheManagerImpl(caches);

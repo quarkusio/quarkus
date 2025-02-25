@@ -25,7 +25,7 @@ public interface ResultMapper extends WithPriority {
 
     /**
      *
-     * @param result
+     * @param result The result, never {@code null}
      * @param expression The original expression
      * @return the string value
      */

@@ -2,7 +2,6 @@ package io.quarkus.kafka.streams.deployment;
 
 import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildKafkaStreamsProperties;
 
-import java.io.IOException;
 import java.util.Properties;
 
 import jakarta.inject.Singleton;
@@ -10,13 +9,14 @@ import jakarta.inject.Singleton;
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
+import org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
+import org.apache.kafka.streams.errors.LogAndFailProcessingExceptionHandler;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
 import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
-import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -28,16 +28,16 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
+import io.quarkus.kafka.streams.runtime.graal.KafkaStreamsFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
@@ -53,12 +53,9 @@ class KafkaStreamsProcessor {
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs,
-            LaunchModeBuildItem launchMode,
-            NativeImageRunnerBuildItem nativeImageRunner) throws IOException {
+            LaunchModeBuildItem launchMode) {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
-        addSupportForRocksDbLib(nativeLibs, nativeImageRunner);
         enableLoadOfNativeLibs(reinitialized);
     }
 
@@ -87,8 +84,13 @@ class KafkaStreamsProcessor {
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class,
-                org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class,
+                org.apache.kafka.streams.processor.internals.assignment.LegacyStickyTaskAssignor.class,
                 org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
+        // for backwards compatibility with < Kafka 3.9.0
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
+                "org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor")
                 .reason(getClass().getName())
                 .methods().fields().build());
         // See https://github.com/quarkusio/quarkus/issues/23404
@@ -103,12 +105,19 @@ class KafkaStreamsProcessor {
                         org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers.class)
                 .reason(getClass().getName())
                 .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.errors.LogAndFailProcessingExceptionHandler.class,
+                        org.apache.kafka.streams.errors.LogAndContinueProcessingExceptionHandler.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode) {
         Properties properties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
-        registerExceptionHandler(reflectiveClasses, properties);
+        registerDeserializationExceptionHandler(reflectiveClasses, properties);
+        registerProcessingExceptionHandler(reflectiveClasses, properties);
+        registerProductionExceptionHandler(reflectiveClasses, properties);
         registerDefaultSerdes(reflectiveClasses, properties);
         registerDslStoreSupplier(reflectiveClasses, properties);
     }
@@ -126,13 +135,15 @@ class KafkaStreamsProcessor {
         }
     }
 
-    private void registerExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+    private void registerDeserializationExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Properties kafkaStreamsProperties) {
         String exceptionHandlerClassName = kafkaStreamsProperties
                 .getProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG);
 
         if (exceptionHandlerClassName == null) {
-            registerDefaultExceptionHandler(reflectiveClasses);
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
+                    .reason(getClass().getName())
+                    .build());
         } else {
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(exceptionHandlerClassName)
@@ -141,10 +152,41 @@ class KafkaStreamsProcessor {
         }
     }
 
-    private void registerDefaultExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
-                .reason(getClass().getName())
-                .build());
+    private void registerProcessingExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String processingExceptionHandlerClassName = kafkaStreamsProperties
+                .getProperty(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG);
+
+        if (processingExceptionHandlerClassName == null) {
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(LogAndFailProcessingExceptionHandler.class,
+                            LogAndContinueProcessingExceptionHandler.class)
+                            .reason(getClass().getName())
+                            .build());
+        } else {
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(processingExceptionHandlerClassName)
+                            .reason(getClass().getName())
+                            .build());
+        }
+    }
+
+    private void registerProductionExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String productionExceptionHandlerClassName = kafkaStreamsProperties
+                .getProperty(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG);
+
+        if (productionExceptionHandlerClassName == null) {
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
+                            .reason(getClass().getName())
+                            .build());
+        } else {
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(productionExceptionHandlerClassName)
+                            .reason(getClass().getName())
+                            .build());
+        }
     }
 
     private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -172,18 +214,6 @@ class KafkaStreamsProcessor {
     private void registerClassesThatAreAccessedViaJni(BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
         jniRuntimeAccessibleClasses
                 .produce(new JniRuntimeAccessBuildItem(true, false, false, RocksDBException.class, Status.class));
-    }
-
-    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs,
-            NativeImageRunnerBuildItem nativeImageRunnerFactory) {
-        // for RocksDB, either add linux64 native lib when targeting containers
-        if (nativeImageRunnerFactory.isContainerBuild()) {
-            nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
-        }
-        // otherwise the native lib of the platform this build runs on
-        else {
-            nativeLibs.produce(new NativeImageResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
-        }
     }
 
     private void enableLoadOfNativeLibs(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
@@ -230,10 +260,15 @@ class KafkaStreamsProcessor {
         healthChecks.produce(
                 new HealthBuildItem(
                         "io.quarkus.kafka.streams.runtime.health.KafkaStreamsTopicsHealthCheck",
-                        buildTimeConfig.healthEnabled));
+                        buildTimeConfig.healthEnabled()));
         healthChecks.produce(
                 new HealthBuildItem(
                         "io.quarkus.kafka.streams.runtime.health.KafkaStreamsStateHealthCheck",
-                        buildTimeConfig.healthEnabled));
+                        buildTimeConfig.healthEnabled()));
+    }
+
+    @BuildStep
+    NativeImageFeatureBuildItem kafkaStreamsFeature() {
+        return new NativeImageFeatureBuildItem(KafkaStreamsFeature.class.getName());
     }
 }

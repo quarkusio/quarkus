@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -12,7 +13,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
-import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -24,10 +24,16 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
-public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
+public class ServerJacksonMessageBodyReader extends AbstractServerJacksonMessageBodyReader
+        implements ServerMessageBodyReader<Object> {
+
+    // used by Arc
+    public ServerJacksonMessageBodyReader() {
+
+    }
 
     @Inject
-    public ServerJacksonMessageBodyReader(ObjectMapper mapper) {
+    public ServerJacksonMessageBodyReader(Instance<ObjectMapper> mapper) {
         super(mapper);
     }
 

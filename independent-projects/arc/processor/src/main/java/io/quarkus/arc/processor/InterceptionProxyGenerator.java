@@ -24,7 +24,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InterceptionProxy;
-import io.quarkus.arc.Subclass;
+import io.quarkus.arc.InterceptionProxySubclass;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -156,8 +156,8 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
         String superClass = isInterface ? Object.class.getName() : pseudoBeanClassName;
         String[] interfaces = isInterface
-                ? new String[] { pseudoBeanClassName, Subclass.class.getName() }
-                : new String[] { Subclass.class.getName() };
+                ? new String[] { pseudoBeanClassName, InterceptionProxySubclass.class.getName() }
+                : new String[] { InterceptionProxySubclass.class.getName() };
 
         try (ClassCreator clazz = ClassCreator.builder()
                 .classOutput(classOutput)
@@ -352,6 +352,9 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
             ctor.writeInstanceField(constructedField.getFieldDescriptor(), ctor.getThis(), ctor.load(true));
             ctor.returnVoid();
+
+            MethodCreator getDelegate = clazz.getMethodCreator("arc_delegate", Object.class);
+            getDelegate.returnValue(getDelegate.readInstanceField(delegate.getFieldDescriptor(), getDelegate.getThis()));
         }
     }
 }

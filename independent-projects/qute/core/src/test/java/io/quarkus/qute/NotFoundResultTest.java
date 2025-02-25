@@ -52,6 +52,11 @@ public class NotFoundResultTest {
             }
 
             @Override
+            public ResolutionContext resolutionContext() {
+                return null;
+            }
+
+            @Override
             public CompletionStage<Object> evaluate(Expression expression) {
                 return null;
             }

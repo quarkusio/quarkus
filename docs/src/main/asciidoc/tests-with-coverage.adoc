@@ -191,6 +191,8 @@ specifying a `data-file` or `report-location` will assume the path as is. Here i
 </plugin
 ----
 
+WARNING: If you need to configure the `argLine` property of the Surefire plugin (e.g. for setting memory parameters), you need to use https://maven.apache.org/surefire/maven-surefire-plugin/faq.html#late-property-evaluation[Maven late property evaluation^], otherwise the Jacoco agent will not be correctly added, and regular JUnit tests and Quarkus `ComponentTest` will not get covered. Example: `<argLine>@{argLine} -your -extra -arguments</argLine>`.
+
 == Running the tests with coverage
 
 Run `mvn verify`, the tests will be run and the results will end up in `target/jacoco-reports`. This is all that is needed,

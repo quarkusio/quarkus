@@ -21,13 +21,13 @@ import javax.tools.Diagnostic.Kind;
 import org.jboss.jdeparser.JDeparser;
 
 import io.quarkus.annotation.processor.documentation.config.ConfigDocExtensionProcessor;
-import io.quarkus.annotation.processor.documentation.config.model.Extension;
+import io.quarkus.annotation.processor.documentation.config.model.ExtensionModule;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.extension.ExtensionBuildProcessor;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
-@SupportedOptions({ Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC })
+@SupportedOptions({ Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC, Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION })
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final String DEBUG = "debug-extension-annotation-processor";
@@ -45,11 +45,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 .parseBoolean(utils.processingEnv().getOptions().getOrDefault(Options.LEGACY_CONFIG_ROOT, "false"));
         boolean debug = Boolean.getBoolean(DEBUG);
 
-        Extension extension = utils.extension().getExtension();
-        Config config = new Config(extension, useConfigMapping, debug);
+        ExtensionModule extensionModule = utils.extension().getExtensionModule();
+
+        Config config = new Config(extensionModule, useConfigMapping, debug);
 
         if (!useConfigMapping) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension " + extension.artifactId()
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension module " + extensionModule.artifactId()
                     + " config implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration");
         }
 
@@ -61,7 +62,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         // for now, we generate the old config doc by default but we will change this behavior soon
         if (generateDoc) {
-            if (extension.detected()) {
+            if (extensionModule.detected()) {
                 extensionProcessors.add(new ConfigDocExtensionProcessor());
             } else {
                 processingEnv.getMessager().printMessage(Kind.WARNING,

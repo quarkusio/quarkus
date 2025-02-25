@@ -315,6 +315,91 @@ All the config options are shown below:
 
 include::{generated-dir}/config/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]
 
+=== Extension provided Dev mode Java options
+
+Some extensions may provide pre-configured Java options that should be added to the command line launching an application in Dev mode.
+
+Let's suppose there are couple of extensions `quarkus-blue` and `quarkus-red` in an application that provide Java options for Dev mode.
+The logs may look something like this
+[source,bash]
+----
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Adding JVM options from org.acme:quarkus-blue::jar
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   enable-native-access: [ALL-UNNAMED]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   add-modules: [jdk.incubator.vector]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   enable-preview: []
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Adding JVM options from org.acme:quarkus-red::jar
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   add-opens: [java.base/java.io=ALL-UNNAMED, java.base/java.nio=ALL-UNNAMED]
+[INFO] [org.gradle.process.internal.DefaultExecHandle] Starting process 'command '/home/<username>/jdk/bin/java''. Working directory: /home/<username>/gradle-app/build/classes/java/main Command: /home/<username>/jdk/bin/java -Dquarkus.console.basic=true -Dio.quarkus.force-color-support=true -javaagent:/home/<username>/.m2/repository/io/quarkus/quarkus-class-change-agent/{quarkus-version}/quarkus-class-change-agent-{quarkus-version}.jar -Dquarkus-internal.serialized-app-model.path=/home/<username>/gradle-app/build/tmp/quarkusDev/quarkus-app-model.dat -Dquarkus-internal-test.serialized-app-model.path=/home/<username>/gradle-app/build/tmp/quarkusDev/quarkus-app-test-model.dat -XX:TieredStopAtLevel=1 -agentlib:jdwp=transport=dt_socket,address=localhost:5005,server=y,suspend=n --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --enable-native-access=ALL-UNNAMED --add-modules=jdk.incubator.vector --enable-preview -Djava.util.logging.manager=org.jboss.logmanager.LogManager -jar /home/<username>/gradle-app/build/gradle-app-dev.jar
+----
+
+A user may choose to disable all the Java options provided by extensions by configuring `disableAll` parameter such as
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkusDev {
+    extensionJvmOptions{
+        disableAll = true
+    }
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+tasks.quarkusDev {
+    extensionJvmOptions{
+        setDisableAll(true)
+    }
+}
+----
+****
+
+Or disable Java options provided by specific extensions by configuring Maven coordinates patterns, such as
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkusDev {
+    extensionJvmOptions{
+        disableFor = ["org.acme:quarkus-red"]
+    }
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+tasks.quarkusDev {
+    extensionJvmOptions{
+        setDisableFor(mutableListOf("org.acme:quarkus-red"))
+    }
+}
+----
+****
+
+With this configuration the logs will look like
+
+[source,bash]
+----
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Adding JVM options from org.acme:quarkus-blue::jar
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   enable-native-access: [ALL-UNNAMED]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   add-modules: [jdk.incubator.vector]
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder]   enable-preview: []
+[DEBUG] [io.quarkus.deployment.dev.DevModeCommandLineBuilder] Skipped JVM options from org.acme:quarkus-red::jar
+[INFO] [org.gradle.process.internal.DefaultExecHandle] Starting process 'command '/home/<username>/jdk/bin/java''. Working directory: /home/<username>/gradle-app/build/classes/java/main Command: /home/<username>/jdk/bin/java -Dquarkus.console.basic=true -Dio.quarkus.force-color-support=true -javaagent:/home/<username>/.m2/repository/io/quarkus/quarkus-class-change-agent/{quarkus-version}/quarkus-class-change-agent-{quarkus-version}.jar -Dquarkus-internal.serialized-app-model.path=/home/<username>/gradle-app/build/tmp/quarkusDev/quarkus-app-model.dat -Dquarkus-internal-test.serialized-app-model.path=/home/<username>/gradle-app/build/tmp/quarkusDev/quarkus-app-test-model.dat -XX:TieredStopAtLevel=1 -agentlib:jdwp=transport=dt_socket,address=localhost:5005,server=y,suspend=n --enable-native-access=ALL-UNNAMED --add-modules=jdk.incubator.vector --enable-preview -Djava.util.logging.manager=org.jboss.logmanager.LogManager -jar /home/<username>/gradle-app/build/gradle-app-kotlin-dev.jar
+----
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.
@@ -433,13 +518,13 @@ Configuring the `quarkusBuild` task can be done as following:
 quarkusBuild {
     nativeArgs {
         containerBuild = true <1>
-        builderImage = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
+        builderImage = "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
     }
 }
 ----
 
 <1> Set `quarkus.native.container-build` property to `true`
-<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
+<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
 
 [role="secondary asciidoc-tabs-sync-kotlin"]
@@ -450,13 +535,13 @@ quarkusBuild {
 tasks.quarkusBuild {
     nativeArgs {
         "container-build" to true <1>
-        "builder-image" to "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
+        "builder-image" to "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
     }
 }
 ----
 
 <1> Set `quarkus.native.container-build` property to `true`
-<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
+<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
 
 [WARNING]
@@ -479,13 +564,15 @@ Note that in this case the build itself runs in a Docker container too, so you d
 
 [TIP]
 ====
-By default, the native executable will be generated using the `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
+By default, the native executable will be generated using the `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
 
 If you want to build a native executable with a different Docker image (for instance to use a different GraalVM version),
 use the `-Dquarkus.native.builder-image=<image name>` build argument.
 
-The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io].
+The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io].
 Be aware that a given Quarkus version might not be compatible with all the images available.
+
+Note also that starting Quarkus 3.19, the default _builder_ images are based on UBI 9. To use the previous UBI 8 based images, you can use the pick an image from the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
 ====
 
 == Running native tests

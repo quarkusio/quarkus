@@ -504,7 +504,6 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             // Now we are ready to initialize Arc
             ArcInitConfig.Builder initConfigBuilder = ArcInitConfig.builder();
             initConfigBuilder.setStrictCompatibility(strictCompatibility);
-            initConfigBuilder.setOptimizeContexts(optimizeContexts);
             Arc.initialize(initConfigBuilder.build());
 
         } catch (Throwable e) {

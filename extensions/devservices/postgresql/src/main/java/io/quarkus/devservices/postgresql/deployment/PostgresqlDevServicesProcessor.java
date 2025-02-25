@@ -25,9 +25,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
@@ -35,6 +36,9 @@ import io.quarkus.runtime.LaunchMode;
 public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
+
+    private static final String MAX_PREPARED_TRANSACTIONS = "max_prepared_transactions";
+    private static final String DEFAULT_MAX_PREPARED_TRANSACTIONS = "--" + MAX_PREPARED_TRANSACTIONS + "=100";
 
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
@@ -44,7 +48,7 @@ public class PostgresqlDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            GlobalDevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
             @SuppressWarnings("unchecked")
             @Override
@@ -52,7 +56,7 @@ public class PostgresqlDevServicesProcessor {
                     String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
                     LaunchMode launchMode, Optional<Duration> startupTimeout) {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
                 QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
                         containerConfig.getFixedExposedPort(),
@@ -74,8 +78,20 @@ public class PostgresqlDevServicesProcessor {
                 container.withEnv(containerConfig.getContainerEnv());
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                containerConfig.getCommand().ifPresent(container::setCommand);
-                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
+                String augmentedCommand;
+                if (containerConfig.getCommand().isPresent()) {
+                    String originalCommand = containerConfig.getCommand().get();
+                    augmentedCommand = originalCommand.contains(MAX_PREPARED_TRANSACTIONS) ? originalCommand
+                            : originalCommand + " " + DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                } else {
+                    augmentedCommand = DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                }
+                container.setCommand(augmentedCommand);
+
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                if (containerConfig.isShowLogs()) {
+                    container.withLogConsumer(new JBossLoggingConsumer(LOG));
+                }
 
                 container.start();
 

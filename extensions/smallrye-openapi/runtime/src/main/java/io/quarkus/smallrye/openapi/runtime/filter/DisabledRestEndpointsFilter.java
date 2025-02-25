@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
@@ -20,11 +19,29 @@ import io.quarkus.runtime.rest.DisabledRestEndpoints;
  */
 public class DisabledRestEndpointsFilter implements OASFilter {
 
+    public static Optional<OASFilter> maybeGetInstance() {
+        var endpoints = DisabledRestEndpoints.get();
+
+        if (endpoints != null && !endpoints.isEmpty()) {
+            return Optional.of(new DisabledRestEndpointsFilter(endpoints));
+        }
+
+        return Optional.empty();
+    }
+
+    final Map<String, List<String>> disabledEndpoints;
+
+    private DisabledRestEndpointsFilter(Map<String, List<String>> disabledEndpoints) {
+        this.disabledEndpoints = disabledEndpoints;
+    }
+
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
         Paths paths = openAPI.getPaths();
 
-        disabledRestEndpoints()
+        disabledEndpoints.entrySet()
+                .stream()
+                .map(pathMethods -> Map.entry(stripSlash(pathMethods.getKey()), pathMethods.getValue()))
                 // Skip paths that are not present in the OpenAPI model
                 .filter(pathMethods -> paths.hasPathItem(pathMethods.getKey()))
                 .forEach(pathMethods -> {
@@ -42,14 +59,6 @@ public class DisabledRestEndpointsFilter implements OASFilter {
                         paths.removePathItem(path);
                     }
                 });
-    }
-
-    static Stream<Map.Entry<String, List<String>>> disabledRestEndpoints() {
-        return Optional.ofNullable(DisabledRestEndpoints.get())
-                .orElseGet(Collections::emptyMap)
-                .entrySet()
-                .stream()
-                .map(pathMethods -> Map.entry(stripSlash(pathMethods.getKey()), pathMethods.getValue()));
     }
 
     /**

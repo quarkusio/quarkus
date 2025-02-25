@@ -3,29 +3,30 @@ package io.quarkus.oidc.deployment.devservices;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import jakarta.inject.Singleton;
+import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.config.ConfigValue;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
     protected static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
-    protected static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
-    protected static final String AUTHORIZATION_PATH_CONFIG_KEY = CONFIG_PREFIX + "authorization-path";
-    protected static final String TOKEN_PATH_CONFIG_KEY = CONFIG_PREFIX + "token-path";
-    protected static final String END_SESSION_PATH_CONFIG_KEY = CONFIG_PREFIX + "end-session-path";
-    protected static final String POST_LOGOUT_URI_PARAM_CONFIG_KEY = CONFIG_PREFIX + "logout.post-logout-uri-param";
-    protected static final String SCOPES_KEY = CONFIG_PREFIX + "authentication.scopes";
+    private static final String APP_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
 
     protected static CardPageBuildItem createProviderWebComponent(OidcDevUiRecorder recorder,
             Capabilities capabilities,
@@ -36,14 +37,16 @@ public abstract class AbstractDevUIProcessor {
             String tokenUrl,
             String logoutUrl,
             boolean introspectionIsAvailable,
-            BuildProducer<SyntheticBeanBuildItem> beanProducer,
+            BeanContainerBuildItem beanContainer,
             Duration webClientTimeout,
-            Map<String, Map<String, String>> grantOptions, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Map<String, Map<String, String>> grantOptions,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ConfigurationBuildItem configurationBuildItem,
             String keycloakAdminUrl,
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
-            boolean alwaysLogoutUserInDevUiOnReload) {
+            boolean alwaysLogoutUserInDevUiOnReload,
+            VertxHttpConfig httpConfig, boolean discoverMetadata, String authServerUrl) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         // prepare provider component
@@ -75,17 +78,14 @@ public abstract class AbstractDevUIProcessor {
 
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
-        // pass down properties used by RPC service
-        beanProducer.produce(
-                SyntheticBeanBuildItem.configure(OidcDevUiRpcSvcPropertiesBean.class).unremovable()
-                        .supplier(recorder.prepareRpcServiceProperties(authorizationUrl, tokenUrl, logoutUrl,
-                                webClientTimeout, grantOptions, keycloakUsers, oidcProviderName, oidcApplicationType,
-                                oidcGrantType, introspectionIsAvailable, keycloakAdminUrl, keycloakRealms,
-                                swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath,
-                                alwaysLogoutUserInDevUiOnReload))
-                        .scope(Singleton.class)
-                        .setRuntimeInit()
-                        .done());
+        RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
+                authorizationUrl, tokenUrl, logoutUrl, webClientTimeout, grantOptions,
+                keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
+                introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
+                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
+                authServerUrl);
+
+        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfig);
 
         return cardPage;
     }
@@ -97,27 +97,58 @@ public abstract class AbstractDevUIProcessor {
         // but I wanted to make this bit more robust till we have DEV UI tests
         // that will fail when this get changed in the future, then we can optimize this
 
-        String propertyValue = configurationBuildItem
+        ConfigValue configValue = configurationBuildItem
                 .getReadResult()
                 .getAllBuildTimeValues()
                 .get(propertyKey);
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getBuildTimeRunTimeValues()
                     .get(propertyKey);
         } else {
-            return propertyValue;
+            return configValue.getValue();
         }
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getRunTimeDefaultValues()
                     .get(propertyKey);
         }
 
-        return propertyValue;
+        return configValue != null ? configValue.getValue() : null;
+    }
+
+    protected static String getApplicationType() {
+        return getApplicationType(null);
+    }
+
+    protected static String getApplicationType(OidcTenantConfig providerConfig) {
+        Optional<io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType> appType = ConfigProvider.getConfig()
+                .getOptionalValue(APP_TYPE_CONFIG_KEY,
+                        io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.class);
+        if (appType.isEmpty() && providerConfig != null) {
+            appType = providerConfig.applicationType();
+        }
+        return appType
+                // constant is "WEB_APP" while documented value is "web-app" and we expect users to use "web-app"
+                // if this get changed, we need to update qwc-oidc-provider.js as well
+                .map(at -> io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP == at ? "web-app"
+                        : at.name().toLowerCase())
+                .orElse(OidcTenantConfig.ApplicationType.SERVICE.name().toLowerCase());
+    }
+
+    protected static void registerOidcWebAppRoutes(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute("io.quarkus.quarkus-oidc", "readSessionCookie")
+                .handler(recorder.readSessionCookieHandler())
+                .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute("io.quarkus.quarkus-oidc", "logout")
+                .handler(recorder.logoutHandler())
+                .build());
     }
 }

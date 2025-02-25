@@ -6,21 +6,22 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Proxy;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 
 public class OidcRecorderTest {
 
     @Test
     public void testtoProxyOptionsWithHostCheckPresent() {
-        OidcTenantConfig.Proxy proxy = new OidcTenantConfig.Proxy();
+        Proxy proxy = new Proxy();
         proxy.host = Optional.of("server.example.com");
-        assertTrue(OidcRecorder.toProxyOptions(proxy).isPresent());
+        assertTrue(OidcCommonUtils.toProxyOptions(proxy).isPresent());
     }
 
     @Test
     public void testtoProxyOptionsWithoutHostCheckNonPresent() {
-        OidcTenantConfig.Proxy proxy = new OidcTenantConfig.Proxy();
-        assertFalse(OidcRecorder.toProxyOptions(proxy).isPresent());
+        Proxy proxy = new Proxy();
+        assertFalse(OidcCommonUtils.toProxyOptions(proxy).isPresent());
     }
 
 }

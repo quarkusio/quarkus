@@ -294,9 +294,23 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                                <!-- As string concatenation has a non-zero impact on startup, let's disable it for this module -->
+                                <arg>-XDstringConcat=inline</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Target_org_wildfly_common_net*</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -10,12 +10,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
+import io.quarkus.mailer.SentMail;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -54,14 +56,17 @@ public class Mailers {
     private final Map<String, MutinyMailerImpl> mutinyMailers;
 
     public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
-            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry) {
+            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry,
+            Event<SentMail> sentMailEvent) {
         Map<String, MailClient> localClients = new HashMap<>();
         Map<String, io.vertx.mutiny.ext.mail.MailClient> localMutinyClients = new HashMap<>();
         Map<String, MockMailboxImpl> localMockMailboxes = new HashMap<>();
         Map<String, MutinyMailerImpl> localMutinyMailers = new HashMap<>();
 
         if (mailerSupport.hasDefaultMailer) {
-            MailClient mailClient = createMailClient(vertx, DEFAULT_MAILER_NAME, mailersRuntimeConfig.defaultMailer,
+            MailerRuntimeConfig defaultMailerConfig = mailersRuntimeConfig.mailers().get(DEFAULT_MAILER_NAME);
+
+            MailClient mailClient = createMailClient(vertx, DEFAULT_MAILER_NAME, defaultMailerConfig,
                     tlsRegistry);
             io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(mailClient);
             MockMailboxImpl mockMailbox = new MockMailboxImpl();
@@ -70,17 +75,17 @@ public class Mailers {
             localMockMailboxes.put(DEFAULT_MAILER_NAME, mockMailbox);
             localMutinyMailers.put(DEFAULT_MAILER_NAME,
                     new MutinyMailerImpl(mutinyVertx, mutinyMailClient, mockMailbox,
-                            mailersRuntimeConfig.defaultMailer.from.orElse(null),
-                            mailersRuntimeConfig.defaultMailer.bounceAddress.orElse(null),
-                            mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest()),
-                            mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
+                            defaultMailerConfig.from().orElse(null),
+                            defaultMailerConfig.bounceAddress().orElse(null),
+                            defaultMailerConfig.mock().orElse(launchMode.isDevOrTest()),
+                            defaultMailerConfig.approvedRecipients().orElse(List.of()).stream()
                                     .filter(Objects::nonNull).collect(Collectors.toList()),
-                            mailersRuntimeConfig.defaultMailer.logRejectedRecipients));
+                            defaultMailerConfig.logRejectedRecipients(),
+                            defaultMailerConfig.logInvalidRecipients(), sentMailEvent));
         }
 
         for (String name : mailerSupport.namedMailers) {
-            MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.namedMailers
-                    .getOrDefault(name, new MailerRuntimeConfig());
+            MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.mailers().get(name);
 
             MailClient namedMailClient = createMailClient(vertx, name, namedMailerRuntimeConfig,
                     tlsRegistry);
@@ -92,12 +97,14 @@ public class Mailers {
             localMockMailboxes.put(name, namedMockMailbox);
             localMutinyMailers.put(name,
                     new MutinyMailerImpl(mutinyVertx, namedMutinyMailClient, namedMockMailbox,
-                            namedMailerRuntimeConfig.from.orElse(null),
-                            namedMailerRuntimeConfig.bounceAddress.orElse(null),
-                            namedMailerRuntimeConfig.mock.orElse(false),
-                            namedMailerRuntimeConfig.approvedRecipients.orElse(List.of()).stream()
+                            namedMailerRuntimeConfig.from().orElse(null),
+                            namedMailerRuntimeConfig.bounceAddress().orElse(null),
+                            namedMailerRuntimeConfig.mock().orElse(false),
+                            namedMailerRuntimeConfig.approvedRecipients().orElse(List.of()).stream()
                                     .filter(p -> p != null).collect(Collectors.toList()),
-                            namedMailerRuntimeConfig.logRejectedRecipients));
+                            namedMailerRuntimeConfig.logRejectedRecipients(),
+                            namedMailerRuntimeConfig.logInvalidRecipients(),
+                            sentMailEvent));
         }
 
         this.clients = Collections.unmodifiableMap(localClients);
@@ -143,53 +150,54 @@ public class Mailers {
     private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {
         DKIMSignOptions vertxDkimOptions = new io.vertx.ext.mail.DKIMSignOptions();
 
-        String sdid = optionsConfig.sdid
+        String sdid = optionsConfig.sdid()
                 .orElseThrow(() -> {
                     throw new ConfigurationException("Must provide the Signing Domain Identifier (sdid).");
                 });
         vertxDkimOptions.setSdid(sdid);
 
-        String selector = optionsConfig.selector
+        String selector = optionsConfig.selector()
                 .orElseThrow(() -> {
                     throw new ConfigurationException("Must provide the selector.");
                 });
         vertxDkimOptions.setSelector(selector);
 
-        if (optionsConfig.auid.isPresent()) {
-            vertxDkimOptions.setAuid(optionsConfig.auid.get());
+        if (optionsConfig.auid().isPresent()) {
+            vertxDkimOptions.setAuid(optionsConfig.auid().get());
         }
 
-        if (optionsConfig.bodyLimit.isPresent()) {
-            int bodyLimit = optionsConfig.bodyLimit.getAsInt();
+        if (optionsConfig.bodyLimit().isPresent()) {
+            int bodyLimit = optionsConfig.bodyLimit().getAsInt();
             vertxDkimOptions.setBodyLimit(bodyLimit);
         }
 
-        if (optionsConfig.expireTime.isPresent()) {
-            long expireTime = optionsConfig.expireTime.getAsLong();
+        if (optionsConfig.expireTime().isPresent()) {
+            long expireTime = optionsConfig.expireTime().getAsLong();
             vertxDkimOptions.setExpireTime(expireTime);
         }
 
-        if (optionsConfig.bodyCanonAlgo.isPresent()) {
-            vertxDkimOptions.setBodyCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.bodyCanonAlgo.get().toString()));
-        }
-
-        if (optionsConfig.headerCanonAlgo.isPresent()) {
+        if (optionsConfig.bodyCanonAlgo().isPresent()) {
             vertxDkimOptions
-                    .setHeaderCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.headerCanonAlgo.get().toString()));
+                    .setBodyCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.bodyCanonAlgo().get().toString()));
         }
 
-        if (optionsConfig.privateKey.isPresent()) {
-            vertxDkimOptions.setPrivateKey(optionsConfig.privateKey.get());
-        } else if (optionsConfig.privateKeyPath.isPresent()) {
-            vertxDkimOptions.setPrivateKeyPath(optionsConfig.privateKeyPath.get());
+        if (optionsConfig.headerCanonAlgo().isPresent()) {
+            vertxDkimOptions
+                    .setHeaderCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.headerCanonAlgo().get().toString()));
         }
 
-        if (optionsConfig.signatureTimestamp.isPresent()) {
-            vertxDkimOptions.setSignatureTimestamp(optionsConfig.signatureTimestamp.get());
+        if (optionsConfig.privateKey().isPresent()) {
+            vertxDkimOptions.setPrivateKey(optionsConfig.privateKey().get());
+        } else if (optionsConfig.privateKeyPath().isPresent()) {
+            vertxDkimOptions.setPrivateKeyPath(optionsConfig.privateKeyPath().get());
         }
 
-        if (optionsConfig.signedHeaders.isPresent()) {
-            List<String> headers = optionsConfig.signedHeaders.get();
+        if (optionsConfig.signatureTimestamp().isPresent()) {
+            vertxDkimOptions.setSignatureTimestamp(optionsConfig.signatureTimestamp().get());
+        }
+
+        if (optionsConfig.signedHeaders().isPresent()) {
+            List<String> headers = optionsConfig.signedHeaders().get();
 
             if (headers.stream().noneMatch(header -> header.equalsIgnoreCase("from"))) {
                 throw new ConfigurationException(
@@ -205,43 +213,43 @@ public class Mailers {
     private io.vertx.ext.mail.MailConfig toVertxMailConfig(String name, MailerRuntimeConfig config,
             TlsConfigurationRegistry tlsRegistry) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
-        if (config.authMethods.isPresent()) {
-            cfg.setAuthMethods(config.authMethods.get());
+        if (config.authMethods().isPresent()) {
+            cfg.setAuthMethods(config.authMethods().get());
         }
-        cfg.setDisableEsmtp(config.disableEsmtp);
-        cfg.setHostname(config.host);
-        cfg.setKeepAlive(config.keepAlive);
-        cfg.setLogin(LoginOption.valueOf(config.login.toUpperCase()));
-        cfg.setMaxPoolSize(config.maxPoolSize);
+        cfg.setDisableEsmtp(config.disableEsmtp());
+        cfg.setHostname(config.host());
+        cfg.setKeepAlive(config.keepAlive());
+        cfg.setLogin(LoginOption.valueOf(config.login().toUpperCase()));
+        cfg.setMaxPoolSize(config.maxPoolSize());
 
-        if (config.ownHostName.isPresent()) {
-            cfg.setOwnHostname(config.ownHostName.get());
-        }
-
-        if (config.username.isPresent()) {
-            cfg.setUsername(config.username.get());
-        }
-        if (config.password.isPresent()) {
-            cfg.setPassword(config.password.get());
+        if (config.ownHostName().isPresent()) {
+            cfg.setOwnHostname(config.ownHostName().get());
         }
 
-        if (config.port.isPresent()) {
-            cfg.setPort(config.port.getAsInt());
+        if (config.username().isPresent()) {
+            cfg.setUsername(config.username().get());
+        }
+        if (config.password().isPresent()) {
+            cfg.setPassword(config.password().get());
         }
 
-        if (config.dkim != null && config.dkim.enabled) {
+        if (config.port().isPresent()) {
+            cfg.setPort(config.port().getAsInt());
+        }
+
+        if (config.dkim() != null && config.dkim().enabled()) {
             cfg.setEnableDKIM(true);
-            cfg.addDKIMSignOption(toVertxDkimSignOptions(config.dkim));
+            cfg.addDKIMSignOption(toVertxDkimSignOptions(config.dkim()));
         }
 
-        cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS.toUpperCase()));
-        cfg.setMultiPartOnly(config.multiPartOnly);
+        cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS().toUpperCase()));
+        cfg.setMultiPartOnly(config.multiPartOnly());
 
-        cfg.setAllowRcptErrors(config.allowRcptErrors);
-        cfg.setPipelining(config.pipelining);
-        cfg.setPoolCleanerPeriod((int) config.poolCleanerPeriod.toMillis());
+        cfg.setAllowRcptErrors(config.allowRcptErrors());
+        cfg.setPipelining(config.pipelining());
+        cfg.setPoolCleanerPeriod((int) config.poolCleanerPeriod().toMillis());
         cfg.setPoolCleanerPeriodUnit(TimeUnit.MILLISECONDS);
-        cfg.setKeepAliveTimeout((int) config.keepAliveTimeout.toMillis());
+        cfg.setKeepAliveTimeout((int) config.keepAliveTimeout().toMillis());
         cfg.setKeepAliveTimeoutUnit(TimeUnit.MILLISECONDS);
 
         configureTLS(name, config, tlsRegistry, cfg);
@@ -258,11 +266,11 @@ public class Mailers {
     private void configureTLS(String name, MailerRuntimeConfig config, TlsConfigurationRegistry tlsRegistry, MailConfig cfg) {
         TlsConfiguration configuration = null;
         boolean defaultTrustAll = false;
-        if (config.tlsConfigurationName.isPresent()) {
-            Optional<TlsConfiguration> maybeConfiguration = tlsRegistry.get(config.tlsConfigurationName.get());
+        if (config.tlsConfigurationName().isPresent()) {
+            Optional<TlsConfiguration> maybeConfiguration = tlsRegistry.get(config.tlsConfigurationName().get());
             if (!maybeConfiguration.isPresent()) {
                 throw new IllegalStateException("Unable to find the TLS configuration "
-                        + config.tlsConfigurationName.get() + " for the mailer " + name + ".");
+                        + config.tlsConfigurationName().get() + " for the mailer " + name + ".");
             }
             configuration = maybeConfiguration.get();
         } else if (tlsRegistry.getDefault().isPresent() && tlsRegistry.getDefault().get().isTrustAll()) {
@@ -276,7 +284,7 @@ public class Mailers {
         if (configuration != null) {
             // SMTP is a bit convoluted here.
             // You can start a non-TLS connection and then upgrade to TLS (using the STARTTLS command).
-            cfg.setSsl(config.tls.orElse(true));
+            cfg.setSsl(config.tls().orElse(true));
 
             if (configuration.getTrustStoreOptions() != null) {
                 cfg.setTrustOptions(configuration.getTrustStoreOptions());
@@ -307,8 +315,8 @@ public class Mailers {
             }
 
         } else {
-            boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : defaultTrustAll;
-            cfg.setSsl(config.ssl || config.tls.orElse(trustAll));
+            boolean trustAll = config.trustAll().isPresent() ? config.trustAll().get() : defaultTrustAll;
+            cfg.setSsl(config.ssl() || config.tls().orElse(trustAll));
             cfg.setTrustAll(trustAll);
             applyTruststore(name, config, cfg);
         }
@@ -316,26 +324,26 @@ public class Mailers {
 
     private void applyTruststore(String name, MailerRuntimeConfig config, io.vertx.ext.mail.MailConfig cfg) {
         // Handle deprecated config
-        if (config.keyStore.isPresent()) {
+        if (config.keyStore().isPresent()) {
             LOGGER.warn("`quarkus.mailer.key-store` is deprecated, use `quarkus.mailer.trust-store.path` instead");
             JksOptions options = new JksOptions();
-            options.setPath(config.keyStore.get());
-            if (config.keyStorePassword.isPresent()) {
+            options.setPath(config.keyStore().get());
+            if (config.keyStorePassword().isPresent()) {
                 LOGGER.warn(
                         "`quarkus.mailer.key-store-password` is deprecated, use `quarkus.mailer.trust-store.password` instead");
-                options.setPassword(config.keyStorePassword.get());
+                options.setPassword(config.keyStorePassword().get());
             }
             cfg.setTrustOptions(options);
             return;
         }
 
-        TrustStoreConfig truststore = config.truststore;
+        TrustStoreConfig truststore = config.truststore();
         if (truststore.isConfigured()) {
             if (cfg.isTrustAll()) { // Use the value configured before.
                 LOGGER.warn(
                         "SMTP is configured with a trust store and also with trust-all, disable trust-all to enforce the trust store usage");
             }
-            cfg.setTrustOptions(getTrustOptions(name, truststore.password, truststore.paths, truststore.type));
+            cfg.setTrustOptions(getTrustOptions(name, truststore.password(), truststore.paths(), truststore.type()));
         }
     }
 

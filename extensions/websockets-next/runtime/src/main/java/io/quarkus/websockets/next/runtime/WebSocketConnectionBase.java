@@ -8,8 +8,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.websockets.next.CloseReason;
+import io.quarkus.websockets.next.Connection;
 import io.quarkus.websockets.next.HandshakeRequest;
+import io.quarkus.websockets.next.UserData;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
+import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
@@ -17,7 +20,7 @@ import io.vertx.core.http.WebSocketBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-public abstract class WebSocketConnectionBase {
+public abstract class WebSocketConnectionBase implements Connection {
 
     private static final Logger LOG = Logger.getLogger(WebSocketConnectionBase.class);
 
@@ -33,38 +36,55 @@ public abstract class WebSocketConnectionBase {
 
     protected final TrafficLogger trafficLogger;
 
+    private final UserData data;
+
+    private final SendingInterceptor sendingInterceptor;
+
     WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest,
-            TrafficLogger trafficLogger) {
+            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
         this.identifier = UUID.randomUUID().toString();
         this.pathParams = pathParams;
         this.codecs = codecs;
         this.handshakeRequest = handshakeRequest;
         this.creationTime = Instant.now();
         this.trafficLogger = trafficLogger;
+        this.data = new UserDataImpl();
+        this.sendingInterceptor = sendingInterceptor;
     }
 
     abstract WebSocketBase webSocket();
 
+    @Override
     public String id() {
         return identifier;
     }
 
+    @Override
     public String pathParam(String name) {
         return pathParams.get(name);
     }
 
+    @Override
     public Uni<Void> sendText(String message) {
         Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
+        if (sendingInterceptor != null) {
+            uni = uni.invoke(() -> sendingInterceptor.onSend(message));
+        }
         return trafficLogger == null ? uni : uni.invoke(() -> {
             trafficLogger.textMessageSent(this, message);
         });
     }
 
+    @Override
     public Uni<Void> sendBinary(Buffer message) {
         Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
+        if (sendingInterceptor != null) {
+            uni = uni.invoke(() -> sendingInterceptor.onSend(message));
+        }
         return trafficLogger == null ? uni : uni.invoke(() -> trafficLogger.binaryMessageSent(this, message));
     }
 
+    @Override
     public <M> Uni<Void> sendText(M message) {
         String text;
         // Use the same conversion rules as defined for the OnTextMessage
@@ -79,6 +99,7 @@ public abstract class WebSocketConnectionBase {
         return sendText(text);
     }
 
+    @Override
     public Uni<Void> sendPing(Buffer data) {
         return Uni.createFrom().completionStage(() -> webSocket().writePing(data).toCompletionStage());
     }
@@ -91,14 +112,17 @@ public abstract class WebSocketConnectionBase {
         });
     }
 
+    @Override
     public Uni<Void> sendPong(Buffer data) {
         return Uni.createFrom().completionStage(() -> webSocket().writePong(data).toCompletionStage());
     }
 
+    @Override
     public Uni<Void> close() {
         return close(CloseReason.NORMAL);
     }
 
+    @Override
     public Uni<Void> close(CloseReason reason) {
         if (isClosed()) {
             LOG.warnf("Connection already closed: %s", this);
@@ -108,18 +132,22 @@ public abstract class WebSocketConnectionBase {
                 .completionStage(() -> webSocket().close((short) reason.getCode(), reason.getMessage()).toCompletionStage());
     }
 
+    @Override
     public boolean isSecure() {
         return webSocket().isSsl();
     }
 
+    @Override
     public boolean isClosed() {
         return webSocket().isClosed();
     }
 
+    @Override
     public HandshakeRequest handshakeRequest() {
         return handshakeRequest;
     }
 
+    @Override
     public Instant creationTime() {
         return creationTime;
     }
@@ -128,6 +156,7 @@ public abstract class WebSocketConnectionBase {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public CloseReason closeReason() {
         WebSocketBase ws = webSocket();
         if (ws.isClosed()) {
@@ -140,4 +169,10 @@ public abstract class WebSocketConnectionBase {
         }
         return null;
     }
+
+    @Override
+    public UserData userData() {
+        return data;
+    }
+
 }

@@ -26,6 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-credentials</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-private-key-pem-parser</artifactId>
+        </dependency>
 
         <!-- To register the let's encrypt routes -->
         <dependency>

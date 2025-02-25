@@ -9,6 +9,6 @@ metadata:
   guide: "https://quarkus.io/guides/container-image"
   categories:
     - "cloud"
-  status: "preview"
+  status: "stable"
   config:
     - "quarkus.podman."

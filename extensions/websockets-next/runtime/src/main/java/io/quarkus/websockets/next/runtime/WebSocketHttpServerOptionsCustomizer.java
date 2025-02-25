@@ -6,7 +6,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.vertx.core.http.HttpServerOptions;
 
 @Dependent
@@ -33,6 +33,9 @@ public class WebSocketHttpServerOptionsCustomizer implements HttpServerOptionsCu
         }
         if (config.maxMessageSize().isPresent()) {
             options.setMaxWebSocketMessageSize(config.maxMessageSize().getAsInt());
+        }
+        if (config.maxFrameSize().isPresent()) {
+            options.setMaxWebSocketFrameSize(config.maxFrameSize().getAsInt());
         }
     }
 

@@ -23,7 +23,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.exporter.otlp.internal.OtlpLogRecordExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
@@ -31,15 +31,16 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
-import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
+import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
@@ -51,7 +52,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
@@ -86,7 +86,6 @@ public class OpenTelemetryProcessor {
             return annotationInstance.name().equals(ADD_SPAN_ATTRIBUTES);
         }
     };
-    private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
@@ -96,6 +95,7 @@ public class OpenTelemetryProcessor {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClasses(
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SimpleLogRecordProcessorCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracingResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
@@ -106,8 +106,11 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig) {
-        return SyntheticBeanBuildItem.configure(OpenTelemetry.class)
+    void openTelemetryBean(OpenTelemetryRecorder recorder,
+            OTelRuntimeConfig oTelRuntimeConfig,
+            BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
+            BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
+        syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
                 .unremovable()
@@ -121,7 +124,10 @@ public class OpenTelemetryProcessor {
                                 null))
                 .createWith(recorder.opentelemetryBean(oTelRuntimeConfig))
                 .destroyer(OpenTelemetryDestroyer.class)
-                .done();
+                .done());
+
+        openTelemetrySdkBuildItemBuildProducer.produce(
+                new OpenTelemetrySdkBuildItem(recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
     }
 
     @BuildStep
@@ -163,10 +169,31 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
         }
 
+        final List<String> logRecordExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableLogRecordExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpLogRecordExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpLogRecordExporterProvider since it depends on OkHttp
+        if (!logRecordExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
+                            logRecordExporterProviders));
+        }
+        if (config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));
+        }
+
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));
@@ -236,7 +263,6 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Produce(OpenTelemetryInitBuildItem.class)
     void createOpenTelemetry(
             OpenTelemetryRecorder recorder,
             CoreVertxBuildItem vertx,
@@ -253,7 +279,7 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupVertx(InstrumentationRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            Capabilities capabilities) {
+            Capabilities capabilities, OTelBuildConfig config) {
         boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
@@ -262,7 +288,8 @@ public class OpenTelemetryProcessor {
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
-                redisClientAvailable);
+                redisClientAvailable,
+                config);
     }
 
     @BuildStep

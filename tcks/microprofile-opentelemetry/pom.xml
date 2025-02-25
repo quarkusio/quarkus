@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile OpenTelemetry</name>
 
     <properties>
-        <microprofile-opentelemetry-tck.version>1.1</microprofile-opentelemetry-tck.version>
+        <microprofile-opentelemetry-tck.version>2.0.1</microprofile-opentelemetry-tck.version>
     </properties>
 
     <build>
@@ -27,16 +27,107 @@
                         <quarkus.otel.mp.compatibility>true</quarkus.otel.mp.compatibility>
                         <quarkus.resteasy.ignore-application-classes>true</quarkus.resteasy.ignore-application-classes>
                     </systemPropertyVariables>
-                    <dependenciesToScan>
-                        <dependency>org.eclipse.microprofile.telemetry.tracing:microprofile-telemetry-tracing-tck</dependency>
-                    </dependenciesToScan>
                     <excludesFile>src/test/resources/exclusions.txt</excludesFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>tracing</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-tracing</reportsDirectory>
+                            <dependenciesToScan>
+                                <dependency>org.eclipse.microprofile.telemetry:microprofile-telemetry-tracing-tck</dependency>
+                            </dependenciesToScan>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>metrics</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-metrics</reportsDirectory>
+                            <systemPropertyVariables>
+                                <quarkus.otel.traces.exporter>none</quarkus.otel.traces.exporter>
+                                <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
+                                <quarkus.otel.metric.export.interval>1000</quarkus.otel.metric.export.interval>
+                            </systemPropertyVariables>
+                            <dependenciesToScan>
+                                <dependency>org.eclipse.microprofile.telemetry:microprofile-telemetry-metrics-tck</dependency>
+                            </dependenciesToScan>
+                            <includes>
+                                <include>**/application/**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>metrics-jvm</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-metrics-jvm</reportsDirectory>
+                            <systemPropertyVariables>
+                                <quarkus.otel.sdk.disabled>false</quarkus.otel.sdk.disabled>
+                                <quarkus.otel.traces.exporter>none</quarkus.otel.traces.exporter>
+                                <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
+                                <quarkus.otel.metrics.exporter>logging</quarkus.otel.metrics.exporter>
+                                <quarkus.otel.metric.export.interval>1000</quarkus.otel.metric.export.interval>
+                                <quarkus.log.file.enable>true</quarkus.log.file.enable>
+                                <quarkus.log.file.path>${project.build.directory}/out.log</quarkus.log.file.path>
+                                <mptelemetry.tck.log.file.path>${project.build.directory}/out.log</mptelemetry.tck.log.file.path>
+                            </systemPropertyVariables>
+                            <dependenciesToScan>
+                                <dependency>org.eclipse.microprofile.telemetry:microprofile-telemetry-metrics-tck</dependency>
+                            </dependenciesToScan>
+                            <includes>
+                                <include>**/jvm/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>logs</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-logs</reportsDirectory>
+                            <systemPropertyVariables>
+                                <quarkus.otel.sdk.disabled>false</quarkus.otel.sdk.disabled>
+                                <quarkus.otel.traces.enabled>false</quarkus.otel.traces.enabled>
+                                <quarkus.otel.metrics.enabled>false</quarkus.otel.metrics.enabled>
+                                <quarkus.otel.logs.enabled>true</quarkus.otel.logs.enabled>
+                                <quarkus.otel.logs.exporter>logging</quarkus.otel.logs.exporter>
+                                <!--  No point on using quarkus file logging. The logging logs exporter uses sys out -->
+                                <!--  Please check: io.quarkus.tck.opentelemetry.TestApplication.LogHandlerService -->
+                                <quarkus.otel.blrp.schedule.delay>100</quarkus.otel.blrp.schedule.delay>
+                                <!--  <quarkus.log.file.enable>true</quarkus.log.file.enable>-->
+                                <quarkus.log.file.path>${project.build.directory}/out.log</quarkus.log.file.path>
+                                <mptelemetry.tck.log.file.path>${project.build.directory}/out.log
+                                </mptelemetry.tck.log.file.path>
+                            </systemPropertyVariables>
+                            <dependenciesToScan>
+                                <dependency>org.eclipse.microprofile.telemetry:microprofile-telemetry-logs-tck
+                                </dependency>
+                            </dependenciesToScan>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arquillian</artifactId>
@@ -54,7 +145,7 @@
             <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.telemetry.tracing</groupId>
+            <groupId>org.eclipse.microprofile.telemetry</groupId>
             <artifactId>microprofile-telemetry-tracing-tck</artifactId>
             <version>${microprofile-opentelemetry-tck.version}</version>
             <exclusions>
@@ -63,6 +154,20 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.telemetry</groupId>
+            <artifactId>microprofile-telemetry-metrics-tck</artifactId>
+            <version>${microprofile-opentelemetry-tck.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.telemetry</groupId>
+            <artifactId>microprofile-telemetry-logs-tck</artifactId>
+            <version>${microprofile-opentelemetry-tck.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-logging</artifactId>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

@@ -10,6 +10,7 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyWriter;
 import io.vertx.core.json.JsonArray;
 
 public class VertxJsonArrayMessageBodyWriter extends VertxJsonArrayBasicMessageBodyWriter

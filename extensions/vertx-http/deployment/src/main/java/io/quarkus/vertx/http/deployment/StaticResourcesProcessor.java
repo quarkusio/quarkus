@@ -14,9 +14,11 @@ import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -30,6 +32,12 @@ import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
  * Handles all static file resources found in {@code META-INF/resources} unless the servlet container is present.
  */
 public class StaticResourcesProcessor {
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    HotDeploymentWatchedFileBuildItem indexHtmlFile() {
+        String staticRoot = StaticResourcesRecorder.META_INF_RESOURCES + "/index.html";
+        return new HotDeploymentWatchedFileBuildItem(staticRoot, !QuarkusClassLoader.isResourcePresentAtRuntime(staticRoot));
+    }
 
     @BuildStep
     void collectStaticResources(Capabilities capabilities,

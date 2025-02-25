@@ -77,20 +77,21 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
             jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
         }
 
-        spec.withSuspend(config.suspend);
-        spec.withConcurrencyPolicy(config.concurrencyPolicy.name());
-        config.schedule.ifPresent(spec::withSchedule);
-        config.successfulJobsHistoryLimit.ifPresent(spec::withSuccessfulJobsHistoryLimit);
-        config.failedJobsHistoryLimit.ifPresent(spec::withFailedJobsHistoryLimit);
-        config.startingDeadlineSeconds.ifPresent(spec::withStartingDeadlineSeconds);
+        spec.withSuspend(config.suspend());
+        spec.withConcurrencyPolicy(config.concurrencyPolicy().name());
+        config.schedule().ifPresent(spec::withSchedule);
+        config.successfulJobsHistoryLimit().ifPresent(spec::withSuccessfulJobsHistoryLimit);
+        config.failedJobsHistoryLimit().ifPresent(spec::withFailedJobsHistoryLimit);
+        config.startingDeadlineSeconds().ifPresent(spec::withStartingDeadlineSeconds);
+        config.timeZone().ifPresent(spec::withTimeZone);
 
-        jobTemplateSpec.withCompletionMode(config.completionMode.name());
-        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy.name()).endSpec().endTemplate();
-        config.parallelism.ifPresent(jobTemplateSpec::withParallelism);
-        config.completions.ifPresent(jobTemplateSpec::withCompletions);
-        config.backoffLimit.ifPresent(jobTemplateSpec::withBackoffLimit);
-        config.activeDeadlineSeconds.ifPresent(jobTemplateSpec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished.ifPresent(jobTemplateSpec::withTtlSecondsAfterFinished);
+        jobTemplateSpec.withCompletionMode(config.completionMode().name());
+        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
+        config.parallelism().ifPresent(jobTemplateSpec::withParallelism);
+        config.completions().ifPresent(jobTemplateSpec::withCompletions);
+        config.backoffLimit().ifPresent(jobTemplateSpec::withBackoffLimit);
+        config.activeDeadlineSeconds().ifPresent(jobTemplateSpec::withActiveDeadlineSeconds);
+        config.ttlSecondsAfterFinished().ifPresent(jobTemplateSpec::withTtlSecondsAfterFinished);
 
         jobTemplateSpec.endSpec().endJobTemplate();
         spec.endSpec();

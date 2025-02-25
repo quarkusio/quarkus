@@ -53,7 +53,7 @@ and in particular, adds the following dependencies:
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-rest-jackson")
-implementation("quarkus-rest-client-jackson")
+implementation("io.quarkus:quarkus-rest-client-jackson")
 ----
 
 [NOTE]

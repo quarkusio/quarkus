@@ -15,7 +15,7 @@ import io.quarkus.test.junit.TestProfile;
 @QuarkusTestResource(value = LgtmResource.class, restrictToAnnotatedClass = true)
 @TestProfile(LgtmLifecycleTest.TestResourceTestProfileOff.class)
 @DisabledOnOs(OS.WINDOWS)
-public class LgtmLifecycleTest extends LgtmTestBase {
+public class LgtmLifecycleTest extends LgtmConfigTestBase {
 
     public static class TestResourceTestProfileOff implements QuarkusTestProfile {
         @Override

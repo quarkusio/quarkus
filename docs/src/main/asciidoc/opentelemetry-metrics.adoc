@@ -5,6 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTelemetry Metrics
 include::_attributes.adoc[]
+:extension-status: preview
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide metrics for interactive web applications.
 :topics: observability,opentelemetry,metrics
@@ -13,8 +14,13 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 metrics for interactive web applications.
 
+include::{includes}/extension-status.adoc[]
+
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
+- OpenTelemetry Metrics is considered _tech preview_ and is disabled by default.
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.
 - If you search more information about OpenTelemetry Tracing, please refer to the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide].
 ====
@@ -123,9 +129,13 @@ Here we are creating a counter for the number of invocations of the `hello()` me
 
 === Create the configuration
 
-There are no mandatory configurations for the extension to work.
+The only mandatory configuration for OpenTelemetry Metrics is the one enabling it:
+[source,properties]
+----
+quarkus.otel.metrics.enabled=true
+----
 
-If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+To change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
@@ -173,6 +183,15 @@ Normally you don't need to set this.
 The default is `cdi`.
 <2> Set the interval to export the metrics.
 The default is `1m`, which is too long for debugging.
+
+Also add this dependency to your project:
+[source,xml]
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-logging</artifactId>
+</dependency>
+----
 
 === Start the application
 
@@ -515,9 +534,23 @@ We only show 1 of 3 exemplars for brevity.
 === Resource
 See the main xref:opentelemetry.adoc#resource[OpenTelemetry Guide resources] section.
 
-== Additional instrumentation
+== Automatic instrumentation
 
-Automatic metrics are not yet provided by the Quarkus OpenTelemetry extension.
+We provide automatic instrumentation for JVM metrics and HTTP server requests metrics according to the https://github.com/eclipse/microprofile-telemetry/blob/2.0/spec/src/main/asciidoc/metrics.adoc[Microprofile Metrics 2.0 specification].
+
+These metrics can be disabled by setting the following properties to `false`:
+
+[source,properties]
+----
+quarkus.otel.instrument.jvm-metrics=false
+quarkus.otel.instrument.http-server-metrics=false
+----
+
+[NOTE]
+====
+- It is recommended to disable these instrumentations if you are using the Micrometer extension as well.
+====
+
 We plan to bridge the existing Quarkus Micrometer extension metrics to OpenTelemetry in the future.
 
 == Exporters

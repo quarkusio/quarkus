@@ -335,7 +335,7 @@ You can learn more about virtual methods in the <<virtual_methods,following sect
 
 [[expression_resolution]]
 ==== Resolution
-
+When evaluating expressions a list of registered <<value-resolvers,value resolvers>> is used.
 The first part of the expression is always resolved against the <<current_context_object,current context object>>.
 If no result is found for the first part, it's resolved against the parent context object (if available).
 For an expression that starts with a namespace the current context object is found using all the available ``NamespaceResolver``s.
@@ -457,7 +457,8 @@ First two elements: {#each myArray.take(2)}{it}{/each} <5>
 
 ==== Character Escapes
 
-For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a template variant is set.
+For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a corresponding template variant is set.
+For JSON templates the `"`, `\` and the control characters (`U+0000` through `U+001F`) are escaped by default if a corresponding template variant is set.
 
 NOTE: In Quarkus, a variant is set automatically for templates located in the `src/main/resources/templates`. By default, the `java.net.URLConnection#getFileNameMap()` is used to determine the content-type of a template file. The additional map of suffixes to content types can be set via `quarkus.qute.content-types`.
 
@@ -466,6 +467,7 @@ If you need to render the unescaped value:
 1. Either use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
 2. Or wrap the `String` value in a `io.quarkus.qute.RawString`.
 
+.HTML Example
 [source,html]
 ----
 <html>
@@ -477,6 +479,17 @@ If you need to render the unescaped value:
 <2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
 
 TIP: By default, a template with one of the following content types is escaped: `text/html`, `text/xml`, `application/xml` and `application/xhtml+xml`. However, it's possible to extend this list via the `quarkus.qute.escape-content-types` configuration property.
+
+.JSON Example
+[source,json]
+----
+{
+  "id": "{valueId.raw}", <1>
+  "name": "{valueName}" <2>
+}
+----
+<1> `valueId` that resolves to `\nA12345` will be rendered as `\nA12345` that will result in an invalid JSON Object because of the new line inserted inside the string value for the attribute `id`.
+<2> `valueName` that resolves to `\tExpressions \n Escapes` will be rendered as `\\tExpressions \\n Escapes`.
 
 [[virtual_methods]]
 ==== Virtual Methods
@@ -774,11 +787,11 @@ A loop section may also define the `{#else}` block that is executed when there a
 [[if_section]]
 ==== If Section
 
-The `if` section represents a basic control flow section.
+The `{#if}` section represents a basic control flow section.
 The simplest possible version accepts a single parameter and renders the content if the condition is evaluated to `true`.
 A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
 
-[source]
+[source,html]
 ----
 {#if item.active}
   This item is active.
@@ -788,68 +801,91 @@ A condition without an operator evaluates to `true` if the value is not consider
 You can also use the following operators in a condition:
 
 |===
-|Operator |Aliases |Precedence (higher wins)
+|Operator |Aliases |Precedence |Example | Description
 
 |logical complement
 |`!`
-| 4
+|4
+|`{#if !item.active}{/if}`
+|Inverts the evaluated value.
 
 |greater than
 |`gt`, `>`
-| 3
+|3
+|`{#if item.age > 43}This item is very old.{/if}`
+|Evaluates to `true` if `value1` is greater than `value2`.
 
 |greater than or equal to
 |`ge`, `>=`
 | 3
+|`{#if item.price >= 100}This item is expensive.{/if}`
+|Evaluates to `true` if `value1` is greater than or equal to `value2`.
 
 |less than
 |`lt`, `<`
 | 3
+|`{#if item.price < 100}This item is cheap.{/if}`
+|Evaluates to `true` if `value1` is less than `value2`.
 
 |less than or equal to
 |`le`, `\<=`
 | 3
+|`{#if item.age <= 43}This item is young.{/if}`
+|Evaluates to `true` if `value1` is less than or equal to `value2`.
 
 |equals
 |`eq`, `==`, `is`
 | 2
+|`{#if item.name eq 'Foo'}Foo item!{/if}`
+|Evaluates to `true` if `value1` is equal to `value2`.
 
 |not equals
 |`ne`, `!=`
 | 2
+|`{#if item.name != 'Bar'}Not a Bar item!{/if}`
+|Evaluates to `true` if `value1` is not equal to `value2`.
 
 |logical AND (short-circuiting)
 |`&&`, `and`
 | 1
+|`{#if item.price > 100 && item.isActive}Expensive and active item.{/if}`
+|Evaluates to `true` if both operands evaluate to `true`.
 
 |logical OR (short-circuiting)
 |`\|\|`, `or`
 | 1
+|`{#if item.price > 100 \|\| item.isActive}Expensive or active item.{/if}`
+|Evaluates to `true` if one of the operands evaluates to `true`.
 
 |===
 
-.A simple operator example
-[source]
-----
-{#if item.age > 10}
-  This item is very old.
-{/if}
-----
+For `>`, `>=`, `<`, and `\<=` the following rules are applied:
+
+* Neither of the operands may be `null`.
+* If both operands are of the same type that implements the `java.lang.Comparable` then the `Comparable#compareTo(T)` method is used to perform comparison.
+* Otherwise, both operands are coerced to `java.math.BigDecimal` first and then the `BigDecimal#compareTo(BigDecimal)` method is used to perform comparison.
+
+NOTE: Types that support coercion include `BigInteger`, `Integer`, `Long`, `Double`, `Float` and `String`.
+
+For `==` and `!=` the following rules are applied:
+
+* Operands are first tested using the `java.util.Objects#equals(Object, Object)` method. If it returns `true` the operands are considered equal.
+* Otherwise, if both operands are not `null` and at least one of them is an instance of `java.lang.Number`, then operands are coerced to `java.math.BigDecimal` and the `BigDecimal#compareTo(BigDecimal)` method is used to perform comparison.
 
 Multiple conditions are also supported.
 
 .Multiple conditions example
-[source]
+[source,html]
 ----
 {#if item.age > 10 && item.price > 500}
   This item is very old and expensive.
 {/if}
 ----
 
-Precedence rules can be overridden by parentheses.
+The default precedence rules (higher precedence wins) can be overridden by parentheses.
 
 .Parentheses example
-[source]
+[source,html]
 ----
 {#if (item.age > 10 || item.price > 500) && user.loggedIn}
   User must be logged in and item age must be > 10 or price must be > 500.
@@ -859,7 +895,7 @@ Precedence rules can be overridden by parentheses.
 
 You can also add any number of `else` blocks:
 
-[source]
+[source,html]
 ----
 {#if item.age > 10}
   This item is very old.
@@ -1154,7 +1190,7 @@ In this case, just add `_isolated=false` or `_unisolated` argument to the call s
 ===== Arguments
 
 Named arguments can be accessed directly in the tag template.
-However, the first argument does not need to define a name and it can be accessed using the `it` alias.
+However, the first argument does not need to define a name, and it can be accessed using the `it` alias.
 Furthermore, if an argument does not have a name defined and the value is a single identifier, such as `foo`, then the name is defaulted to the value identifier, e.g. `{#myTag foo /}` becomes `{#myTag foo=foo /}`.
 In other words, the argument value `foo` is resolved and can be accessed using `{foo}` in the tag template.
 
@@ -1222,8 +1258,8 @@ This is {#insert title}my title{/title}! <1>
 [[fragments]]
 ==== Fragments
 
-A fragment represents a part of the template that can be treated as a separate template, i.e. rendered separately.
-One of the main motivations to introduce this feature was to support use cases like https://htmx.org/essays/template-fragments/[htmx fragments].
+A fragment represents a part of a template that can be treated as a separate template, i.e. rendered separately.
+One of the main motivations to introduce this feature was the support of use cases like https://htmx.org/essays/template-fragments/[htmx fragments].
 
 Fragments can be defined with the `{#fragment}` section.
 Each fragment has an identifier that can only consist of alphanumeric characters and underscores.
@@ -1249,7 +1285,7 @@ NOTE: Note that a fragment identifier must be unique in a template.
 </ol>
 {/fragment}
 ----
-<1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier.
+<1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier. The name of the first parameter can be omitted - `{#fragment item_aliases}` is fine too. 
 
 You can obtain a fragment programmatically via the `io.quarkus.qute.Template.getFragment(String)` method.
 
@@ -1282,49 +1318,63 @@ The snippet above should render something like:
 TIP: In Quarkus, it is also possible to define a <<type_safe_fragments,type-safe fragment>>.
 
 You can also include a fragment with an `{#include}` section inside another template or the template that defines the fragment.
+A fragment can be also used in expressions with the `frg:`/`fragment:` namespaces.
 
 .Including a Fragment in `user.html`
 [source,html]
 ----
 <h1>User - {user.name}</h1>
 
+<p>
+{#fragment fullname}
+{name} <strong>{surname}</strong>
+{/fragment}
+</p>
+
 <p>This document contains a detailed info about a user.</p>
 
 {#include item$item_aliases aliases=user.aliases /} <1><2>
+
+{frg:fullname} is a happy user! <3>
 ----
 <1> A template identifier that contains a dollar sign `$` denotes a fragment. The `item$item_aliases` value is translated as: _Use the fragment `item_aliases` from the template `item`._
 <2> The `aliases` parameter is used to pass the relevant data. We need to make sure that the data are set correctly. In this particular case the fragment will use the expression `user.aliases` as the value of `aliases` in the `{#for alias in aliases}` section.
+<3> The `{frg:username}` expression outputs the fragment content. `frg:` can be replaced with `fragment:`.
 
 TIP: If you want to reference a fragment from the same template, skip the part before `$`, i.e. something like `{#include $item_aliases /}`.
 
 NOTE: You can specify `{#include item$item_aliases _ignoreFragments=true /}` in order to disable this feature, i.e. a dollar sign `$` in the template identifier does not result in a fragment lookup.
 
-===== Hidden Fragments
+
+===== Hidden Fragments (Capture)
 
 By default, a fragment is normally rendered as a part of the original template.
-However, sometimes it might be useful to mark a fragment as _hidden_ with `rendered=false`.
-An interesting use case would be a fragment that can be used multiple-times inside the template that defines it.
+However, sometimes it might be useful to mark a fragment as _hidden_.
+The regular fragment section has the `capture` alias that implies a hidden fragment.
+Alternatively, you can "hide" a fragment either with `rendered=false` or `_hidden` parameters.
+An interesting use case could be a fragment that can be used multiple-times inside the template that defines it.
 
-.Fragment Definition in `item.html`
+.Hidden Fragment Definition in `item.html`
 [source,html]
 ----
-{#fragment id=strong rendered=false} <1>
+{#capture strong} <1>
 <strong>{val}</strong>
-{/fragment}
+{/capture}
 
 <h1>My page</h1>
 <p>This document
 {#include $strong val='contains' /} <2>
 a lot of
-{#include $strong val='information' /} <3>
+{capture:strong(param:val = 'information')} <3> <4>
 !</p>
 ----
 <1> Defines a hidden fragment with identifier `strong`.
-In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter.
-However, it's possible to use any expression there.
+`{#capture strong}` can be replaced with `{#fragment strong rendered=false}` or `{#fragment strong _hidden}`.
+The `rendered` parameter can use any expression, e.g. `{#fragment strong rendered=config.isRendered}`.
 <2> Include the fragment `strong` and pass the value.
 Note the syntax `$strong` which is translated to include the fragment `strong` from the current template.
-<3> Include the fragment `strong` and pass the value.
+<3> A namespace resolver can be used to access a hidden fragment too. `capture:` can be replaced with `cap:`.
+<4> `param:val = 'information'` is used to pass a named parameter to the fragment. 
 
 The snippet above renders something like:
 
@@ -1337,6 +1387,8 @@ a lot of
 <strong>information</strong>
 !</p>
 ----
+
+TIP: In Quarkus, the namespace resolvers are automatically registered for namespaces `frg`, `fragment`, `cap` and `capture`.
 
 ==== Eval Section
 
@@ -1451,6 +1503,11 @@ NOTE: The template rendering is divided in two phases. During the first phase, w
 ==== Value Resolvers
 
 Value resolvers are used when evaluating expressions.
+First the resolvers that apply to the given `EvalContext` are filtered.
+Then the resolver with _highest priority_ is used to resolve the data.
+If a `io.quarkus.qute.Results.NotFound` object is returned then the next available resolver is used instead.
+However, `null` return value is considered a valid result.
+
 A custom `io.quarkus.qute.ValueResolver` can be registered programmatically via `EngineBuilder.addValueResolver()`.
 
 .`ValueResolver` Builder Example
@@ -1461,6 +1518,10 @@ engineBuilder.addValueResolver(ValueResolver.builder()
     .resolveSync(ctx -> (Long) ctx.getBase() * 10)
     .build());
 ----
+
+TIP: In Quarkus, the <<engine-customization,`@EngineConfiguration`>> annotation can be used to register a `ValueResolver` implemented as a CDI bean. 
+
+NOTE: Keep in mind that the reflection-based value resolver has priority `-1` and the max priority value for resolvers generated from <<template_data,`@TemplateData`>> and <<typesafe_expressions,type-safe expressions>> is `10`.
 
 [[template-locator]]
 ==== Template Locator
@@ -1701,14 +1762,30 @@ A CDI bean annotated with `@Named` can be referenced in any template through `cd
 NOTE: `@Named @Dependent` beans are shared across all expressions in a template for a single rendering operation, and destroyed after the rendering finished.
 
 All expressions with `cdi` and `inject` namespaces are validated during build.
-
 For the expression `cdi:personService.findPerson(10).name`, the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
-
 For the expression `inject:foo.price`, the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
 TIP: If your application serves xref:http-reference.adoc[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`.
+
+Sometimes it may be necessary to access public methods and properties of a CDI bean that is not annotated with `@Named`.
+However, if you don't control the source of the bean it is not possible to add the `@Named` annotation.
+Nevertheless, it is possible to create an intermediate CDI bean annotated with `@Named`.
+This intermediate bean can inject the bean in question and make it accessible. 
+A Java record is a very convenient way to define such an intermediate CDI bean.
+
+[source,java]
+----
+@Named <1> <2>
+public record UserData(UserInfo info, @LoggedIn String username) { <3>
+}
+----
+<1> If no name is explicitly specified by the `value` member the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#default_name[default name is assigned] - the simple name of the bean class, after converting the first character to lower case. In this particular case, the default name is `userData`.
+<2> The `@Singleton` scope is added automatically.
+<3> All parameters of the canonical constructor are injection points. The accessor methods can be used to obtain the injected bean.
+
+And then in a template you can simply use `{cdi:userData.info}` or `{cdi:userData.username}`.
 
 [[typesafe_expressions]]
 === Type-safe Expressions
@@ -1983,8 +2060,8 @@ public class ItemResource {
 You can also define a type-safe <<fragments,fragment>> in your Java code.
 A _native static_ method with the name that contains a dollar sign `$` denotes a method that represents a fragment of a type-safe template.
 The name of the fragment is derived from the annotated method name.
-The part before the last occurence of a dollar sign `$` is the method name of the related type-safe template.
-The part after the last occurence of a dollar sign is the fragment identifier.
+The part before the last occurrence of a dollar sign `$` is the method name of the related type-safe template.
+The part after the last occurrence of a dollar sign is the fragment identifier.
 The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
 
 .Type-safe Fragment Example
@@ -2033,6 +2110,44 @@ class ItemService {
 ----
 
 NOTE: You can specify `@CheckedTemplate#ignoreFragments=true` in order to disable this feature, i.e. a dollar sign `$` in the method name will not result in a checked fragment method.
+
+[[template_contents]]
+==== Template Contents
+
+It is also possible to specify the contents for a type-safe template directly in your Java code.
+A `static native` method of a class annotated with `@CheckedTemplate` or a Java record that implements `TemplateInstance` may be annotated with `@io.quarkus.qute.TemplateContents`.
+The annotation value is used as the template contents.
+The template id/path is derived from the type-safe template.
+
+.Template Contents Example
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import io.quarkus.qute.TemplateContents;
+import io.quarkus.qute.TemplateInstance;
+
+@Path("hello")
+public class HelloResource {
+
+    @TemplateContents("Hello {name}!") <1>
+    record Hello(String name) implements TemplateInstance {} 
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return new Hello(name); 
+    }
+}
+----
+<1> Defines the contents for the type-safe template represented by the `Hello` record. The derived template id is `HelloResource/Hello`.
 
 [[template_extension_methods]]
 === Template Extension Methods
@@ -2101,18 +2216,18 @@ static BigDecimal discountedPrice(Item item) {
 }
 ----
 
-A special constant - `TemplateExtension#ANY`/`*` - can be used to specify that the extension method matches any name.
+A special constant - `TemplateExtension#ANY` - can be used to specify that the extension method matches any name.
 
 .`TemplateExtension#ANY` Example
 [source,java]
 ----
-@TemplateExtension(matchName = "*")
+@TemplateExtension(matchName = TemplateExtension.ANY)
 static String itemProperty(Item item, String name) { <1>
    // this method matches {item.foo} if "item" resolves to an object assignable to "Item"
    // the value of the "name" argument is "foo"
 }
 ----
-<1> A additional string method parameter is used to pass the actual property name.
+<1> An additional string method parameter is used to pass the actual property name.
 
 It's also possible to match the name against a regular expression specified in `matchRegex()`.
 
@@ -2125,7 +2240,7 @@ static String itemProperty(Item item, String name) { <1>
    // the value of the "name" argument is "foo" or "bar"
 }
 ----
-<1> A additional string method parameter is used to pass the actual property name.
+<1> An additional string method parameter is used to pass the actual property name.
 
 Finally, `matchNames()` can be used to specify a collection of matching names.
 An additional string method parameter is mandatory as well.
@@ -2268,12 +2383,34 @@ TIP: A list element can be accessed directly via an index: `{list.10}` or even `
 * `fmt` or `format`: Formats the string instance via `java.lang.String.format()`
 ** `{myStr.fmt("arg1","arg2")}`
 ** `{myStr.format(locale,arg1)}`
+
+* `+`: Infix notation for concatenation, works with `String` and `StringBuilder` base objects
+** `{item.name + '_' + mySuffix}`
+** `{name + 10}`
+
+* `str:['<value>']`: Returns the string value, e.g. to easily concatenate another string value
+** `{str:['/path/to/'] + fileName}`
+  
 * `str:fmt` or `str:format`: Formats the supplied string value via `java.lang.String.format()`
 ** `{str:format("Hello %s!",name)}`
 ** `{str:fmt(locale,'%tA',now)}`
-* `+`: Concatenation
-** `{item.name + '_' + mySuffix}`
-** `{name + 10}`
+** `{str:fmt('/path/to/%s', fileName)}`
+
+* `str:concat`: Concatenates the string representations of the specified arguments.
+** `{str:concat("Hello ",name,"!")}` yields `Hello Foo!` if `name` resolves to `Foo`
+** `{str:concat('/path/to/', fileName)}`
+
+* `str:join`: Joins the string representations of the specified arguments together with a delimiter. 
+** `{str:join('_','Qute','is','cool')}` yields `Qute_is_cool`
+
+* `str:builder`: Returns a new string builder. 
+** `{str:builder('Qute').append("is").append("cool!")}` yields `Qute is cool!`
+** `{str:builder('Qute') + "is" + whatisqute + "!"}` yields `Qute is cool!` if `whatisqute` resolves to `cool`
+
+* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>. 
+** `{str:eval('Hello {name}!')` yields `Hello lovely!` if `name` resolves to `lovely`
+** `{str:eval(myTemplate)}` yields `Hello lovely!` if `myTemplate` resolves to `Hello {name}!` and `name` resolves to `lovely`
+** `{str:eval('/path/to/{fileName}')}` yields `/path/to/file.txt` if `fileName` resolves to `file.txt`
 
 ===== Config
 
@@ -2733,7 +2870,7 @@ In the development mode, all files located in `src/main/resources/templates` are
 By default, a template modification results in an application restart that also triggers build-time validations.
 
 However, it's possible to use the `quarkus.qute.dev-mode.no-restart-templates` configuration property to specify the templates for which the application is not restarted.
-The configration value is a regular expression that matches the template path relative from the `templates` directory and `/` is used as a path separator.
+The configuration value is a regular expression that matches the template path relative from the `templates` directory and `/` is used as a path separator.
 For example, `quarkus.qute.dev-mode.no-restart-templates=templates/foo.html` matches the template `src/main/resources/templates/foo.html`.
 The matching templates are reloaded and only runtime validations are performed.
 
@@ -2839,7 +2976,7 @@ However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specif
 Additionally, there are two ways to define a localized bundle:
 
 1. Create an interface that extends the default interface that is annotated with `@Localized`
-2. Create an UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
+2. Create a UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
 
 TIP: While a localized interface enables easy refactoring, an external file might be more convenient in many situations.
 
@@ -2946,10 +3083,9 @@ If there is a message bundle method that accepts a single parameter of an enum t
 @Message <1>
 String methodName(MyEnum enum);
 ----
-<1> The value is intentionally not provided. There's also no key for the method in a localized file.
+<1> The value is intentionally not provided. There's also no key/value pair for this method in a localized file.
 
-Then it receives a generated template:
-
+Then it receives a generated template like:
 [source,html]
 ----
 {#when enumParamName}
@@ -2958,7 +3094,8 @@ Then it receives a generated template:
 {/when}
 ----
 
-Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and values for all constant message keys:
+Furthermore, a special message method is generated for each enum constant. 
+Finally, each localized file must contain keys and values for all enum constants:
 
 [source,poperties]
 ----
@@ -2966,14 +3103,27 @@ methodName_CONSTANT1=Value 1
 methodName_CONSTANT2=Value 2
 ----
 
-In a template, an enum constant can be localized with a message bundle method like `{msg:methodName(enumConstant)}`.
+// We need to escape the first underscore 
+// See https://docs.asciidoctor.org/asciidoc/latest/subs/prevent/
+[IMPORTANT] 
+.Message keys for enum constants
+==== 
+By default, the message key consists of the method name followed by the `\_` separator and the constant name.
+If any constant name of a particular enum contains the `_` or the `$` character then the `\_$` separator must be used for all message keys for this enum instead.
+For example, `methodName_$CONSTANT_1=Value 1` or `methodName_$CONSTANT$1=Value 1`.
+A constant of a localized enum may not contain the `_$` separator.
+====
+
+In a template, the localized message for an enum constant can be obtained with a message bundle method like `{msg:methodName(enumConstant)}`.
 
 TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a convenient annotation to access enum constants in a template.
 
 ==== Message Templates
 
-Every method of a message bundle interface must define a message template. The value is normally defined by `io.quarkus.qute.i18n.Message#value()`,
-but for convenience, there is also an option to define the value in a localized file.
+Every method of a message bundle interface must define a message template. 
+The value is normally defined by `io.quarkus.qute.i18n.Message#value()`, but for convenience, there is also an option to define the value in a localized file.
+Message templates are validated during the build. 
+If a missing message template is detected, an exception is thrown and the build fails.
 
 .Example of the Message Bundle Interface without the value
 [source,java]
@@ -3004,8 +3154,23 @@ goodbye=Best regards, {name} <1>
 ----
 <1> The value is ignored as `io.quarkus.qute.i18n.Message#value()` is always prioritized.
 
-Message templates are validated during the build. If a missing message template is detected, an exception is thrown and build fails.
+It is also possible to define a _default message template_.
+The default template is only used if the `Message#value()` is not specified and no relevant message template is defined in a localized file.
 
+.Example of the Message Bundle Interface with a default value
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle
+public interface AppMessages {
+
+    @Message(defaultValue = "Goodbye {name}!") <1>
+    String goodbye(String name);
+}
+----
+<1> The annotation value is only used if no message template is defined in a localized file.
 
 === Configuration Reference
 

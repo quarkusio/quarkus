@@ -1,13 +1,16 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.vertx.http.runtime.management.ManagementAuthConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.vertx.core.http.ClientAuth;
 
 public class NonApplicationRootPathBuildItemTest {
 
@@ -108,62 +111,56 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+                "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
-                buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/sub/path",
-                buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
-                buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
-                buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/management/foo",
+                buildItem.resolveManagementPath("foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/management/foo/sub/path",
+                buildItem.resolveManagementPath("foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo",
+                buildItem.resolveManagementPath("/foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
+                buildItem.resolveManagementPath("/foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("../foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("", managementBuildTimeConfig, launchModeBuildItem));
     }
 
     @Test
     void testResolveManagementPathWithRelativeRootPathInTestMode() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+                "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), true);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9001/management/foo",
-                buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/management/foo/sub/path",
-                buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/foo",
-                buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/foo/sub/path",
-                buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9001/management/foo",
+                buildItem.resolveManagementPath("foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9001/management/foo/sub/path",
+                buildItem.resolveManagementPath("foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9001/foo",
+                buildItem.resolveManagementPath("/foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9001/foo/sub/path",
+                buildItem.resolveManagementPath("/foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("../foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("", managementBuildTimeConfig, launchModeBuildItem));
     }
 
     @Test
     void testResolveManagementPathWithRelativeRootPathAndWithManagementDisabled() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = false;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(
+                false, "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -171,85 +168,124 @@ public class NonApplicationRootPathBuildItemTest {
 
         Assertions.assertEquals("/q/", buildItem.getManagementRootPath());
         Assertions.assertEquals("/q/foo",
-                buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                buildItem.resolveManagementPath("foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertEquals("/q/foo/sub/path",
-                buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                buildItem.resolveManagementPath("foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertEquals("/foo",
-                buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                buildItem.resolveManagementPath("/foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertEquals("/foo/sub/path",
-                buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                buildItem.resolveManagementPath("/foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("../foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("", managementBuildTimeConfig, launchModeBuildItem));
     }
 
     @Test
     void testResolveManagementPathWithAbsoluteRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "/management";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+                "/management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
-                buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/sub/path",
-                buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
-                buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
-                buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/management/foo",
+                buildItem.resolveManagementPath("foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/management/foo/sub/path",
+                buildItem.resolveManagementPath("foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo",
+                buildItem.resolveManagementPath("/foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
+                buildItem.resolveManagementPath("/foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("../foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("", managementBuildTimeConfig, launchModeBuildItem));
     }
 
     @Test
     void testResolveManagementPathWithEmptyRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+                "");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementBuildTimeConfig.rootPath());
         Assertions.assertEquals("/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
-                buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
-                buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
-                buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
-                buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo",
+                buildItem.resolveManagementPath("foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
+                buildItem.resolveManagementPath("foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo",
+                buildItem.resolveManagementPath("/foo", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
+                buildItem.resolveManagementPath("/foo/sub/path", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("../foo", managementBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> buildItem.resolveManagementPath("", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                () -> buildItem.resolveManagementPath("", managementBuildTimeConfig, launchModeBuildItem));
     }
 
     @Test
     void testResolveManagementPathWithWithWildcards() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "/management";
-
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+                "/management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/*",
-                buildItem.resolveManagementPath("foo/*", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/*",
-                buildItem.resolveManagementPath("/foo/*", managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                managementBuildTimeConfig.rootPath());
+        Assertions.assertEquals("http://localhost:9000/management/foo/*",
+                buildItem.resolveManagementPath("foo/*", managementBuildTimeConfig, launchModeBuildItem));
+        Assertions.assertEquals("http://localhost:9000/foo/*",
+                buildItem.resolveManagementPath("/foo/*", managementBuildTimeConfig, launchModeBuildItem));
+    }
+
+    private static final class ManagementBuildTimeConfigImpl implements ManagementInterfaceBuildTimeConfig {
+        private final boolean enabled;
+        private final String rootPath;
+
+        public ManagementBuildTimeConfigImpl(final boolean enabled, final String rootPath) {
+            this.enabled = enabled;
+            this.rootPath = rootPath;
+        }
+
+        @Override
+        public boolean enabled() {
+            return enabled;
+        }
+
+        @Override
+        public ManagementAuthConfig auth() {
+            return null;
+        }
+
+        @Override
+        public ClientAuth tlsClientAuth() {
+            return null;
+        }
+
+        @Override
+        public String rootPath() {
+            return rootPath;
+        }
+
+        @Override
+        public boolean enableCompression() {
+            return false;
+        }
+
+        @Override
+        public boolean enableDecompression() {
+            return false;
+        }
+
+        @Override
+        public OptionalInt compressionLevel() {
+            return OptionalInt.empty();
+        }
     }
 }

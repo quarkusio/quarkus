@@ -82,8 +82,7 @@ public interface SpringCloudConfigClientConfig {
      * TrustStore to be used containing the SSL certificate used by the Config server
      * Can be either a classpath resource or a file system path
      */
-    @WithConverter(PathConverter.class)
-    Optional<Path> trustStore();
+    Optional<@WithConverter(PathConverter.class) Path> trustStore();
 
     /**
      * Password of TrustStore to be used containing the SSL certificate used by the Config server
@@ -94,8 +93,7 @@ public interface SpringCloudConfigClientConfig {
      * KeyStore to be used containing the SSL certificate for authentication with the Config server
      * Can be either a classpath resource or a file system path
      */
-    @WithConverter(PathConverter.class)
-    Optional<Path> keyStore();
+    Optional<@WithConverter(PathConverter.class) Path> keyStore();
 
     /**
      * Password of KeyStore to be used containing the SSL certificate for authentication with the Config server
@@ -124,6 +122,12 @@ public interface SpringCloudConfigClientConfig {
      * The profiles to use for lookup
      */
     Optional<List<String>> profiles();
+
+    /**
+     * Microprofile Config ordinal.
+     */
+    @WithDefault("450")
+    int ordinal();
 
     /** */
     default boolean usernameAndPasswordSet() {

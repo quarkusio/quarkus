@@ -18,7 +18,7 @@ public class StorkBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.stork);
+            return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().stork());
         }
     }
 

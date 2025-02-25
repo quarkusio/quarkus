@@ -61,6 +61,7 @@ import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
@@ -96,7 +97,7 @@ public class KnativeProcessor {
         boolean knativeEnabled = targets.contains(KNATIVE);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KNATIVE, KNATIVE_SERVICE, KNATIVE_SERVICE_GROUP,
-                        KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY, knativeEnabled, config.deployStrategy));
+                        KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY, knativeEnabled, config.deployStrategy()));
         if (knativeEnabled) {
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KNATIVE, KNATIVE_SERVICE_GROUP,
@@ -106,13 +107,13 @@ public class KnativeProcessor {
 
     @BuildStep
     public void createAnnotations(KnativeConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.getAnnotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KNATIVE)));
+        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KNATIVE)));
     }
 
     @BuildStep
     public void createLabels(KnativeConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.getLabels().forEach((k, v) -> {
+        config.labels().forEach((k, v) -> {
             labels.produce(new KubernetesLabelBuildItem(k, v, KNATIVE));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
@@ -120,7 +121,7 @@ public class KnativeProcessor {
 
     @BuildStep
     public void createNamespace(KnativeConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        config.getNamespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(KNATIVE, n)));
+        config.namespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(KNATIVE, n)));
     }
 
     @BuildStep
@@ -167,6 +168,7 @@ public class KnativeProcessor {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
@@ -187,12 +189,12 @@ public class KnativeProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations,
                 labels, image, command, port, livenessPath, readinessPath, startupProbePath,
-                roles, clusterRoles, serviceAccounts, roleBindings));
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
 
         image.ifPresent(i -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage()))));
-        result.add(new DecoratorBuildItem(KNATIVE, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
+        result.add(new DecoratorBuildItem(KNATIVE, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
 
-        config.getContainerName().ifPresent(containerName -> result
+        config.containerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(KNATIVE, new ChangeContainerNameDecorator(containerName))));
 
         Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KNATIVE))
@@ -205,7 +207,7 @@ public class KnativeProcessor {
                                 .withField(e.getField())
                                 .build()))));
 
-        if (config.clusterLocal) {
+        if (config.clusterLocal()) {
             if (labels.stream().filter(l -> KNATIVE.equals(l.getTarget()))
                     .noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
                 result.add(new DecoratorBuildItem(KNATIVE,
@@ -213,19 +215,19 @@ public class KnativeProcessor {
             }
         }
 
-        config.minScale.ifPresent(min -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMinScaleDecorator(name, min))));
-        config.maxScale.ifPresent(max -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMaxScaleDecorator(name, max))));
-        config.revisionAutoScaling.autoScalerClass.map(AutoScalerClassConverter::convert)
+        config.minScale().ifPresent(min -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMinScaleDecorator(name, min))));
+        config.maxScale().ifPresent(max -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMaxScaleDecorator(name, max))));
+        config.revisionAutoScaling().autoScalerClass().map(AutoScalerClassConverter::convert)
                 .ifPresent(a -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingClassDecorator(name, a))));
-        config.revisionAutoScaling.metric.map(AutoScalingMetricConverter::convert)
+        config.revisionAutoScaling().metric().map(AutoScalingMetricConverter::convert)
                 .ifPresent(m -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingMetricDecorator(name, m))));
-        config.revisionAutoScaling.containerConcurrency.ifPresent(
+        config.revisionAutoScaling().containerConcurrency().ifPresent(
                 c -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalContainerConcurrencyDecorator(name, c))));
-        config.revisionAutoScaling.targetUtilizationPercentage.ifPresent(t -> result
+        config.revisionAutoScaling().targetUtilizationPercentage().ifPresent(t -> result
                 .add(new DecoratorBuildItem(KNATIVE, new ApplyLocalTargetUtilizationPercentageDecorator(name, t))));
-        config.revisionAutoScaling.target
+        config.revisionAutoScaling().target()
                 .ifPresent(t -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingTargetDecorator(name, t))));
-        config.globalAutoScaling.autoScalerClass
+        config.globalAutoScaling().autoScalerClass()
                 .map(AutoScalerClassConverter::convert)
                 .ifPresent(a -> {
                     result.add(
@@ -233,13 +235,13 @@ public class KnativeProcessor {
                                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalAutoscalingClassDecorator(a)));
                 });
-        config.globalAutoScaling.containerConcurrency.ifPresent(c -> {
+        config.globalAutoScaling().containerConcurrency().ifPresent(c -> {
             result.add(new DecoratorBuildItem(KNATIVE,
                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING)));
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalContainerConcurrencyDecorator(c)));
         });
 
-        config.globalAutoScaling.requestsPerSecond
+        config.globalAutoScaling().requestsPerSecond()
                 .ifPresent(r -> {
                     result.add(
                             new DecoratorBuildItem(KNATIVE,
@@ -247,7 +249,7 @@ public class KnativeProcessor {
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalRequestsPerSecondTargetDecorator(r)));
                 });
 
-        config.globalAutoScaling.targetUtilizationPercentage
+        config.globalAutoScaling().targetUtilizationPercentage()
                 .ifPresent(t -> {
                     result.add(
                             new DecoratorBuildItem(KNATIVE,
@@ -255,30 +257,30 @@ public class KnativeProcessor {
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalTargetUtilizationDecorator(t)));
                 });
 
-        if (!config.scaleToZeroEnabled) {
+        if (!config.scaleToZeroEnabled()) {
             result.add(new DecoratorBuildItem(KNATIVE,
                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
             result.add(
                     new DecoratorBuildItem(KNATIVE,
                             new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",
-                                    String.valueOf(config.scaleToZeroEnabled))));
+                                    String.valueOf(config.scaleToZeroEnabled()))));
         }
 
-        result.add(new DecoratorBuildItem(KNATIVE, new ApplyServiceTypeDecorator(name, config.getServiceType().name())));
+        result.add(new DecoratorBuildItem(KNATIVE, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
 
         //In Knative its expected that all http ports in probe are omitted (so we set them to null).
         result.add(new DecoratorBuildItem(KNATIVE, new ApplyHttpGetActionPortDecorator(name, null)));
 
         //Traffic Splitting
-        config.revisionName
+        config.revisionName()
                 .ifPresent(r -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyRevisionNameDecorator(name, r))));
 
-        config.traffic.forEach((k, traffic) -> {
+        config.traffic().forEach((k, traffic) -> {
             //Revision name is K unless we have the edge name of a revision named 'latest' which is not really the latest (in which case use null).
-            boolean latestRevision = traffic.latestRevision.get();
+            boolean latestRevision = traffic.latestRevision().get();
             String revisionName = !latestRevision && LATEST_REVISION.equals(k) ? null : k;
-            String tag = traffic.tag.orElse(null);
-            long percent = traffic.percent.orElse(100L);
+            String tag = traffic.tag().orElse(null);
+            long percent = traffic.percent().orElse(100L);
             result.add(new DecoratorBuildItem(KNATIVE,
                     new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag)));
         });
@@ -286,9 +288,11 @@ public class KnativeProcessor {
         //Add revision decorators
         result.addAll(createVolumeDecorators(config));
         result.addAll(createAppConfigVolumeAndEnvDecorators(name, config));
-        config.getHostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.hostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e)))));
-        config.getSidecars().entrySet().forEach(e -> result
+        config.nodeSelector().ifPresent(n -> result.add(new DecoratorBuildItem(KNATIVE,
+                new AddNodeSelectorDecorator(name, n.key(), n.value()))));
+        config.sidecars().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(KNATIVE, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e)))));
 
         if (!roleBindings.isEmpty()) {
@@ -296,8 +300,8 @@ public class KnativeProcessor {
         }
 
         //Handle Image Pull Secrets
-        config.getImagePullSecrets().ifPresent(imagePullSecrets -> {
-            String serviceAccountName = config.getServiceAccount().orElse(name);
+        config.imagePullSecrets().ifPresent(imagePullSecrets -> {
+            String serviceAccountName = config.serviceAccount().orElse(name);
             result.add(new DecoratorBuildItem(KNATIVE, new AddServiceAccountResourceDecorator(name)));
             result.add(
                     new DecoratorBuildItem(KNATIVE, new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
@@ -311,25 +315,26 @@ public class KnativeProcessor {
     private static List<DecoratorBuildItem> createVolumeDecorators(PlatformConfiguration config) {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
-        config.getSecretVolumes().entrySet().forEach(e -> result.add(
+        config.secretVolumes().entrySet().forEach(e -> result.add(
                 new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e)))));
 
-        config.getConfigMapVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.configMapVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e)))));
 
-        config.getEmptyDirVolumes().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
-                new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e)))));
+        config.emptyDirVolumes().ifPresent(volumes -> volumes.forEach(e -> result.add(
+                new DecoratorBuildItem(KNATIVE,
+                        new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e))))));
 
-        config.getPvcVolumes().entrySet().forEach(e -> result
+        config.pvcVolumes().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(KNATIVE, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e)))));
 
-        config.getAwsElasticBlockStoreVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e)))));
 
-        config.getAzureFileVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.azureFileVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e)))));
 
-        config.getAzureDiskVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.azureDiskVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e)))));
         return result;
     }
@@ -341,7 +346,7 @@ public class KnativeProcessor {
         List<DecoratorBuildItem> result = new ArrayList<>();
         Set<String> paths = new HashSet<>();
 
-        config.getAppSecret().ifPresent(s -> {
+        config.appSecret().ifPresent(s -> {
             result.add(new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
                     .withSecretName(s)
                     .withVolumeName("app-secret")
@@ -353,7 +358,7 @@ public class KnativeProcessor {
             paths.add("/mnt/app-secret");
         });
 
-        config.getAppConfigMap().ifPresent(s -> {
+        config.appConfigMap().ifPresent(s -> {
             result.add(new DecoratorBuildItem(KNATIVE, new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
                     .withConfigMapName(s)
                     .withVolumeName("app-config-map")
@@ -374,5 +379,4 @@ public class KnativeProcessor {
         }
         return result;
     }
-
 }

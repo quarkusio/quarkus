@@ -22,13 +22,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.utilities.OS;
-import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
 
@@ -37,10 +34,9 @@ public final class LauncherUtil {
     private LauncherUtil() {
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static Config installAndGetSomeConfig() {
-        final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
-        QuarkusConfigFactory.setConfig(config);
-        return config;
+        return ConfigProvider.getConfig();
     }
 
     /**
@@ -232,7 +228,6 @@ public final class LauncherUtil {
         if (effectivePort != null) {
             System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
             System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
-            installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
             System.clearProperty("test.url"); // make sure the old value does not interfere with setting the new one
             System.setProperty("test.url", TestHTTPResourceManager.getUri());
         }

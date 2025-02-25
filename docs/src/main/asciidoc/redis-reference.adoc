@@ -145,7 +145,7 @@ The Redis extension can operate in 4 distinct modes:
 * Simple client (probably what most users need).
 * Sentinel (when working with Redis in High Availability mode).
 * Cluster (when working with Redis in Clustered mode).
-* Replication (single shard, one node write, multiple read).
+* Replication (single shard, one node writes, multiple read).
 
 The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.redis.<name>.hosts`) as follows:
 
@@ -182,6 +182,22 @@ The client will obtain the URLs of actual Redis servers (master or replicas, dep
 
 Note that you practically never want to configure `quarkus.redis.role=sentinel`.
 This setting means that the Redis client will execute commands directly on one of the sentinel servers, instead of an actual Redis server guarded by the sentinels.
+
+==== Automatic Failover
+
+In the sentinel mode, it is possible to configure automatic failover of _master_ connections:
+
+[source,properties]
+----
+quarkus.redis.auto-failover=true
+----
+
+If enabled, the sentinel client will additionally create a connection to one sentinel node and watch for failover events.
+When new master is elected, all connections to the old master are automatically closed and new connections to the new master are created.
+Automatic failover makes sense for connections executing regular commands, but not for connections used to subscribe to Redis pub/sub channels.
+
+Note that there is a brief period of time between the old master failing and the new master being elected when the existing connections will temporarily fail all operations.
+After the new master is elected, the connections will automatically fail over and start working again.
 
 === Use the Cluster Mode
 
@@ -232,6 +248,30 @@ Set the `quarkus.redis.replicas` configuration property to:
 * `share`: use master and replica nodes to execute queries (the specific node for each query is selected randomly)
 
 Note that replication in Redis is asynchronous, so replica nodes may be lagging behind the master node.
+
+==== Static Topology
+
+In the replication mode, it is possible to reconfigure the Redis client to skip automatic discovery of the topology:
+
+[source,properties]
+----
+quarkus.redis.topology=static
+----
+
+With static topology, the first node in the configuration is assumed to be a _master_ node, while the remaining nodes are assumed to be _replicas_.
+The nodes are not verified; it is a responsibility of the application developer to ensure that the static configuration is correct.
+
+Note that automatic discovery of the topology is usually the preferred choice.
+Static configuration should only be used when necessary.
+One such case is _Amazon Elasticache for Redis (Cluster Mode Disabled)_, where:
+
+* master node should be set to the _primary endpoint_, and
+* one replica node should be set to the _reader endpoint_.
+
+WARNING: Note that the reader endpoint of Elasticache for Redis (Cluster Mode Disabled) is a domain name which resolves to a CNAME record that points to one of the replicas.
+The CNAME record to which the reader endpoint resolves changes over time.
+This form of DNS-based load balancing does not work well with DNS resolution caching and connection pooling.
+As a result, some replicas are likely to be underutilized.
 
 === Connect to Redis Cloud
 

@@ -6,9 +6,11 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -50,9 +52,22 @@ public class JfrResource {
     }
 
     @GET
-    @Path("check/{name}/{traceId}")
+    @Path("check/{name}/traceId/{traceId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public JfrRestEventResponse check(@PathParam("name") String name, @PathParam("traceId") String traceId) throws IOException {
+    public JfrRestEventResponse checkForTraceId(@PathParam("name") String name, @PathParam("traceId") String traceId)
+            throws IOException {
+        return doCheck(name, (e) -> e.hasField("traceId") && e.getString("traceId").equals(traceId));
+    }
+
+    @GET
+    @Path("check/{name}/uri")
+    @Produces(MediaType.APPLICATION_JSON)
+    public JfrRestEventResponse checkForPath(@PathParam("name") String name, @HeaderParam("uri") String uri)
+            throws IOException {
+        return doCheck(name, (e) -> e.hasField("uri") && e.getString("uri").equals(uri));
+    }
+
+    private JfrRestEventResponse doCheck(String name, Predicate<RecordedEvent> predicate) throws IOException {
         java.nio.file.Path dumpFile = Files.createTempFile("dump", "jfr");
         Recording recording = getRecording(name);
         recording.dump(dumpFile);
@@ -73,7 +88,7 @@ public class JfrResource {
                     Log.debug(e);
                 }
             }
-            if (e.hasField("traceId") && e.getString("traceId").equals(traceId)) {
+            if (predicate.test(e)) {
                 if (RestPeriodEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
                     periodEvent = e;
                 } else if (RestStartEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {

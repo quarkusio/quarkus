@@ -2,10 +2,14 @@ package io.quarkus.test.junit.util;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
@@ -27,7 +31,7 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * <p/>
  * By default, Quarkus*Tests not using any profile come first, then classes using a profile (in groups) and then all other
  * non-Quarkus tests (e.g. plain unit tests).<br/>
- * Quarkus*Tests with {@linkplain WithTestResource#restrictToAnnotatedClass()} or
+ * Quarkus*Tests with {@linkplain WithTestResource#scope() matching resources} or
  * {@linkplain QuarkusTestResource#restrictToAnnotatedClass() restricted} {@code QuarkusTestResource} come
  * after tests with profiles and Quarkus*Tests with only unrestricted resources are handled like tests without a profile (come
  * first).
@@ -35,7 +39,7 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * Internally, ordering is based on prefixes that are prepended to a secondary order suffix (by default the fully qualified
  * name of the respective test class), with the fully qualified class name of the
  * {@link io.quarkus.test.junit.QuarkusTestProfile QuarkusTestProfile} as an infix (if present).
- * The default prefixes are defined by {@code DEFAULT_ORDER_PREFIX_*} and can be overridden in {@code junit-platform.properties}
+ * The default prefixes are defined by {@code DEFAULT_ORDER_PREFIX_*} and can be overridden in {@code application.properties}
  * via {@code CFGKEY_ORDER_PREFIX_*}, e.g. non-Quarkus tests can be run first (not last) by setting
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
  * <p/>
@@ -54,12 +58,15 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  */
 public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
+    protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "10_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST = "20_";
+    protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_MATCHING_RES = "30_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "40_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "45_";
-    protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "60_";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "junit.quarkus.orderer.prefix.quarkus-test";
+
+    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_MATCHING_RES = "junit.quarkus.orderer.prefix.quarkus-test-with-matching-resource";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "junit.quarkus.orderer.prefix.quarkus-test-with-profile";
 
@@ -69,37 +76,69 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     static final String CFGKEY_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
 
+    private final String prefixQuarkusTest;
+    private final String prefixQuarkusTestWithProfile;
+    private final String prefixQuarkusTestWithRestrictedResource;
+    private final String prefixQuarkusTestWithMatchingResource;
+    private final String prefixNonQuarkusTest;
+    private final Optional<String> secondaryOrderer;
+
+    public QuarkusTestProfileAwareClassOrderer() {
+        Config config = ConfigProvider.getConfig();
+        this.prefixQuarkusTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_TEST, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST);
+        this.prefixQuarkusTestWithMatchingResource = config
+                .getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_MATCHING_RES, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_MATCHING_RES);
+        this.prefixQuarkusTestWithProfile = config.getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE);
+        this.prefixQuarkusTestWithRestrictedResource = config
+                .getOptionalValue(CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES);
+        this.prefixNonQuarkusTest = config.getOptionalValue(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST, String.class)
+                .orElse(DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST);
+        this.secondaryOrderer = config.getOptionalValue(CFGKEY_SECONDARY_ORDERER, String.class);
+    }
+
+    QuarkusTestProfileAwareClassOrderer(
+            final String prefixQuarkusTest,
+            final String prefixQuarkusTestWithMatchingResource,
+            final String prefixQuarkusTestWithProfile,
+            final String prefixQuarkusTestWithRestrictedResource,
+            final String prefixNonQuarkusTest,
+            final Optional<String> secondaryOrderer) {
+        this.prefixQuarkusTest = prefixQuarkusTest;
+        this.prefixQuarkusTestWithMatchingResource = prefixQuarkusTestWithMatchingResource;
+        this.prefixQuarkusTestWithProfile = prefixQuarkusTestWithProfile;
+        this.prefixQuarkusTestWithRestrictedResource = prefixQuarkusTestWithRestrictedResource;
+        this.prefixNonQuarkusTest = prefixNonQuarkusTest;
+        this.secondaryOrderer = secondaryOrderer;
+    }
+
     @Override
     public void orderClasses(ClassOrdererContext context) {
         // don't do anything if there is just one test class or the current order request is for @Nested tests
         if (context.getClassDescriptors().size() <= 1 || context.getClassDescriptors().get(0).isAnnotated(Nested.class)) {
             return;
         }
-        var prefixQuarkusTest = getConfigParam(
-                CFGKEY_ORDER_PREFIX_QUARKUS_TEST,
-                DEFAULT_ORDER_PREFIX_QUARKUS_TEST,
-                context);
-        var prefixQuarkusTestWithProfile = getConfigParam(
-                CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE,
-                DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE,
-                context);
-        var prefixQuarkusTestWithRestrictedResource = getConfigParam(
-                CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES,
-                DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES,
-                context);
-        var prefixNonQuarkusTest = getConfigParam(
-                CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST,
-                DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST,
-                context);
 
         // first pass: run secondary orderer first (!), which is easier than running it per "grouping"
-        buildSecondaryOrderer(context).orderClasses(context);
-        var classDecriptors = context.getClassDescriptors();
-        var firstPassIndexMap = IntStream.range(0, classDecriptors.size()).boxed()
-                .collect(Collectors.toMap(classDecriptors::get, i -> String.format("%06d", i)));
+        secondaryOrderer
+                .map(fqcn -> {
+                    try {
+                        return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
+                    } catch (ReflectiveOperationException e) {
+                        throw new IllegalArgumentException("Failed to instantiate " + fqcn, e);
+                    }
+                })
+                .orElseGet(ClassName::new).orderClasses(context);
+
+        var classDescriptors = context.getClassDescriptors();
+        var firstPassIndexMap = IntStream.range(0, classDescriptors.size()).boxed()
+                .collect(Collectors.toMap(classDescriptors::get, i -> String.format("%06d", i)));
 
         // second pass: apply the actual Quarkus aware ordering logic, using the first pass indices as order key suffixes
-        classDecriptors.sort(Comparator.comparing(classDescriptor -> {
+        classDescriptors.sort(Comparator.comparing(classDescriptor -> {
             var secondaryOrderSuffix = firstPassIndexMap.get(classDescriptor);
             Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context, secondaryOrderSuffix)
                     .or(() -> getCustomOrderKey(classDescriptor, context));
@@ -113,39 +152,65 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                         .map(TestProfile::value)
                         .map(profileClass -> prefixQuarkusTestWithProfile + profileClass.getName() + "@" + secondaryOrderSuffix)
                         .orElseGet(() -> {
-                            var prefix = hasRestrictedResource(classDescriptor)
-                                    ? prefixQuarkusTestWithRestrictedResource
-                                    : prefixQuarkusTest;
-                            return prefix + secondaryOrderSuffix;
+                            String prefix = prefixQuarkusTest;
+                            String suffix = "";
+                            TestResourceScope mostLimitedScope = mostLimitedScope(classDescriptor);
+                            if (mostLimitedScope != null) {
+                                if (mostLimitedScope == TestResourceScope.RESTRICTED_TO_CLASS) {
+                                    prefix = prefixQuarkusTestWithRestrictedResource;
+                                } else {
+                                    prefix = prefixQuarkusTestWithMatchingResource;
+                                    suffix = String.join(",",
+                                            lifecycleManagerClassNamesForNonRestricted(classDescriptor));
+                                }
+                            }
+                            return prefix + suffix + secondaryOrderSuffix;
                         });
             }
             return prefixNonQuarkusTest + secondaryOrderSuffix;
         }));
     }
 
-    private String getConfigParam(String key, String fallbackValue, ClassOrdererContext context) {
-        return context.getConfigurationParameter(key).orElse(fallbackValue);
+    private TestResourceScope mostLimitedScope(ClassDescriptor classDescriptor) {
+        TestResourceScope result = null;
+        for (WithTestResource annotation : classDescriptor.findRepeatableAnnotations(WithTestResource.class)) {
+            if (isMetaTestResource(annotation, classDescriptor)) {
+                result = TestResourceScope.RESTRICTED_TO_CLASS;
+            } else {
+                TestResourceScope scope = annotation.scope();
+                if ((result == null) || (scope.compareTo(result) < 0)) {
+                    result = scope;
+                }
+            }
+        }
+
+        for (QuarkusTestResource annotation : classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class)) {
+            if (isMetaTestResource(annotation, classDescriptor) || annotation.restrictToAnnotatedClass()) {
+                result = TestResourceScope.RESTRICTED_TO_CLASS;
+            } else {
+                result = TestResourceScope.GLOBAL;
+            }
+        }
+
+        return result;
     }
 
-    private ClassOrderer buildSecondaryOrderer(ClassOrdererContext context) {
-        return Optional.ofNullable(getConfigParam(CFGKEY_SECONDARY_ORDERER, null, context))
-                .map(fqcn -> {
-                    try {
-                        return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
-                    } catch (ReflectiveOperationException e) {
-                        throw new IllegalArgumentException("Failed to instantiate " + fqcn, e);
-                    }
-                })
-                .orElseGet(ClassOrderer.ClassName::new);
-    }
+    private Set<String> lifecycleManagerClassNamesForNonRestricted(ClassDescriptor classDescriptor) {
+        Set<String> result = new HashSet<>();
+        for (WithTestResource annotation : classDescriptor.findRepeatableAnnotations(WithTestResource.class)) {
+            TestResourceScope scope = annotation.scope();
+            if ((scope != TestResourceScope.RESTRICTED_TO_CLASS) && !isMetaTestResource(annotation, classDescriptor)) {
+                result.add(annotation.value().getSimpleName());
+            }
+        }
 
-    private boolean hasRestrictedResource(ClassDescriptor classDescriptor) {
-        return classDescriptor.findRepeatableAnnotations(WithTestResource.class).stream()
-                .anyMatch(
-                        res -> res.scope() == TestResourceScope.RESTRICTED_TO_CLASS || isMetaTestResource(res, classDescriptor))
-                ||
-                classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class).stream()
-                        .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor));
+        for (QuarkusTestResource annotation : classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class)) {
+            if (!annotation.restrictToAnnotatedClass() && !isMetaTestResource(annotation, classDescriptor)) {
+                result.add(annotation.value().getSimpleName());
+            }
+        }
+
+        return result;
     }
 
     @Deprecated(forRemoval = true)

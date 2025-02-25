@@ -6,24 +6,26 @@ import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot(phase = RUN_TIME, name = "cache.infinispan")
-public class InfinispanCachesConfig {
+@ConfigRoot(phase = RUN_TIME)
+@ConfigMapping(prefix = "quarkus.cache.infinispan")
+public interface InfinispanCachesConfig {
 
     /**
      * Default configuration applied to all Infinispan caches (lowest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public InfinispanCacheRuntimeConfig defaultConfig;
+    @WithParentName
+    InfinispanCacheRuntimeConfig defaultConfig();
 
     /**
      * Additional configuration applied to a specific Infinispan cache (highest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("cache-name")
     @ConfigDocSection
-    Map<String, InfinispanCacheRuntimeConfig> cachesConfig;
+    Map<String, InfinispanCacheRuntimeConfig> cachesConfig();
 
 }

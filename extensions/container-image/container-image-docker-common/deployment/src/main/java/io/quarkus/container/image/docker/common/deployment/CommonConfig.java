@@ -6,7 +6,9 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigGroup;
 
+@ConfigGroup
 public interface CommonConfig {
     /**
      * Path to the JVM Dockerfile.

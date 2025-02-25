@@ -245,7 +245,6 @@ Onboarding
 OpenID
 OpenJDK
 OpenShift
-OpenTracing
 Operator
 osd
 OTel

@@ -369,6 +369,8 @@ public class GreetingServiceTest {
 ----
 <1> The `GreetingService` bean will be injected into the test
 
+TIP: If you want to inject/test a `@SessionScoped` bean then it's very likely that the session context is not active and you would receive the `ContextNotActiveException` when a method of the injected bean is invoked. However, it's possible to use the `@io.quarkus.test.ActivateSessionContext` interceptor binding to activate the session context for a specific business method. Please read the javadoc for futher limitations.
+
 == Applying Interceptors to Tests
 
 As mentioned above Quarkus tests are actually full CDI beans, and as such you can apply CDI interceptors as you would
@@ -472,24 +474,10 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
-The behavior of this `ClassOrderer` is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
-It can also be disabled entirely by setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one. +
-Please note that as of JUnit 5.8.2 link:https://github.com/junit-team/junit5/issues/2794[only a single `junit-platform.properties` is picked up and a warning is logged if more than one is found].
-If you encounter such warnings, you can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
-    <scope>test</scope>
-    <exclusions>
-        <exclusion>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-properties</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-----
+The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
+`quarkus.test.class-orderer`. The property accepts the FQCN of the `ClassOrderer` to use. If the class cannot be found,
+it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all. It can also be disabled entirely by
+setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one.
 
 === Writing a Profile
 
@@ -1236,7 +1224,20 @@ public @interface WithRepeatableTestResource {
 }
 ----
 
+=== Usage of `@WithTestResource`
 
+While test resources provided by `@QuarkusTestResource` are available either globally or restricted to the annotated test class (`restrictToAnnotatedClass`), the annotation `@WithTestResource` allows to additionally group tests by test resources for execution.
+`@WithTestResource` has a `scope` property that takes a `TestResourceScope` enum value:
+
+- `TestResourceScope.MATCHING_RESOURCES` (default): Quarkus will group tests with the same test resources and run them together. After a group has been executed, all test resources will be stopped, and the next group will be executed.
+- `TestResourceScope.RESTRICTED_TO_CLASS`: The test resource is available only for the annotated test class and will be stopped after the test class has been executed.
+- `TestResourceScope.GLOBAL`: Test resources apply to all tests in the test suite
+
+Quarkus needs to restart if one of the following is true:
+
+- At least one of the test resources of the current test is restricted to the test class
+- At least one of the test resources of the next test is restricted to the test class
+- Different `MATCHING_RESOURCES` scoped test resources are being used
 
 == Hang Detection
 
@@ -1475,6 +1476,87 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 </plugin>
 ----
 
+[NOTE]
+--
+Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.  
+
+For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
+
+For Gradle, this means the two types of tests should belong to different source sets.
+
+.Source set configuration example  
+[%collapsible]
+====
+[source,kotlin,subs=attributes+]
+----
+/** custom source sets
+ *
+ * io.quarkus.gradle.QuarkusPlugin
+ * io.quarkus.test.junit.IntegrationTestUtil
+ *
+ * to work around
+ *  https://github.com/quarkusio/quarkus/issues/43796
+ *  https://github.com/quarkusio/quarkus/issues/43804
+ */
+
+sourceSets {
+    create("intTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+    create("e2eTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+configurations {
+    getByName("intTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("intTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+    getByName("e2eTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("e2eTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+}
+
+tasks.register<Test>("intTest") {
+    group = "verification"
+    description = "Runs integration tests"
+
+    testClassesDirs = sourceSets["intTest"].output.classesDirs
+    classpath = sourceSets["intTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+    systemProperty("quarkus.profile", "intTest")
+}
+
+tasks.register<Test>("e2eTest") {
+    group = "verification"
+    description = "Runs e2e tests"
+
+    val quarkusBuild = tasks.getByName("quarkusBuild")
+    dependsOn(quarkusBuild)
+
+    testClassesDirs = sourceSets["e2eTest"].output.classesDirs
+    classpath = sourceSets["e2eTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+}
+
+idea.module {
+    testSources.from(sourceSets["intTest"].kotlin.srcDirs)
+    testSources.from(sourceSets["e2eTest"].kotlin.srcDirs)
+}
+----
+====
+--
+
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
 
@@ -1607,7 +1689,7 @@ public class FooTest {
 <1> The `QuarkusComponentTest` annotation registers the JUnit extension.
 <2> Sets a configuration property for the test.
 <3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
-<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisifed_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
+<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisfied_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
 You can find more examples and hints in the xref:testing-components.adoc[testing components reference guide].

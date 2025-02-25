@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class PulsarDevServicesBuildTimeConfig {
+public interface PulsarDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for Pulsar has been explicitly enabled or disabled. Dev Services are generally enabled
@@ -16,16 +16,14 @@ public class PulsarDevServicesBuildTimeConfig {
      * {@code pulsar.client.serviceUrl} is set or if all the Reactive Messaging Pulsar channel are configured with
      * {@code serviceUrl}.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled = Optional.empty();
+    Optional<Boolean> enabled();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public Optional<Integer> port;
+    Optional<Integer> port();
 
     /**
      * The image to use.
@@ -35,8 +33,8 @@ public class PulsarDevServicesBuildTimeConfig {
      * Check https://hub.docker.com/r/apachepulsar/pulsar to find the available versions.
      */
     // Alpine-based images starting from 3.3.0 fail to start on aarch64: https://github.com/apache/pulsar/issues/23306
-    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.2.4")
-    public String imageName;
+    @WithDefault("apachepulsar/pulsar:3.2.4")
+    String imageName();
 
     /**
      * Indicates if the Pulsar broker managed by Quarkus Dev Services is shared.
@@ -49,8 +47,8 @@ public class PulsarDevServicesBuildTimeConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-pulsar} label attached to the started container.
@@ -62,14 +60,13 @@ public class PulsarDevServicesBuildTimeConfig {
      * <p>
      * This property is used when you need multiple shared Pulsar brokers.
      */
-    @ConfigItem(defaultValue = "pulsar")
-    public String serviceName;
+    @WithDefault("pulsar")
+    String serviceName();
 
     /**
      * Broker config to set on the Pulsar instance
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> brokerConfig;
+    Map<String, String> brokerConfig();
 
 }

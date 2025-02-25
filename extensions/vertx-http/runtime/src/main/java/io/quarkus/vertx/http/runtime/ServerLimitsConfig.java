@@ -5,69 +5,66 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class ServerLimitsConfig {
+public interface ServerLimitsConfig {
     /**
-     * The maximum length of all headers.
+     * The maximum length of all headers, up to {@code Integer.MAX_VALUE} bytes.
      */
-    @ConfigItem(defaultValue = "20K")
-    public MemorySize maxHeaderSize;
-
-    /**
-     * The maximum size of a request body.
-     */
-    @ConfigItem(defaultValue = "10240K")
-    public Optional<MemorySize> maxBodySize;
+    @WithDefault("20K")
+    MemorySize maxHeaderSize();
 
     /**
-     * The max HTTP chunk size
+     * The maximum size of a request body, up to {@code Long.MAX_VALUE} bytes.
      */
-    @ConfigItem(defaultValue = "8192")
-    public MemorySize maxChunkSize;
+    @WithDefault("10240K")
+    Optional<MemorySize> maxBodySize();
+
+    /**
+     * The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.
+     */
+    @WithDefault("8192")
+    MemorySize maxChunkSize();
 
     /**
      * The maximum length of the initial line (e.g. {@code "GET / HTTP/1.0"}).
      */
-    @ConfigItem(defaultValue = "4096")
-    public int maxInitialLineLength;
+    @WithDefault("4096")
+    int maxInitialLineLength();
 
     /**
-     * The maximum length of a form attribute.
+     * The maximum length of a form attribute, up to {@code Integer.MAX_VALUE} bytes.
      */
-    @ConfigItem(defaultValue = "2048")
-    public MemorySize maxFormAttributeSize;
+    @WithDefault("2048")
+    MemorySize maxFormAttributeSize();
 
     /**
      * Set the maximum number of fields of a form. Set to {@code -1} to allow unlimited number of attributes.
      */
-    @ConfigItem(defaultValue = "256")
-    public int maxFormFields;
+    @WithDefault("256")
+    int maxFormFields();
 
     /**
      * Set the maximum number of bytes a server can buffer when decoding a form.
-     * Set to {@code -1} to allow unlimited length
+     * Set to {@code -1} to allow unlimited length, up to {@code Integer.MAX_VALUE} bytes.
      **/
-    @ConfigItem(defaultValue = "1K")
-    public MemorySize maxFormBufferedBytes;
+    @WithDefault("1K")
+    MemorySize maxFormBufferedBytes();
 
     /**
      * The maximum number of HTTP request parameters permitted for incoming requests.
      * <p>
      * If a client sends more than this number of parameters in a request, the connection is closed.
      */
-    @ConfigItem(defaultValue = "1000")
-    public int maxParameters;
+    @WithDefault("1000")
+    int maxParameters();
 
     /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */
-    @ConfigItem
-    public OptionalInt maxConnections;
+    OptionalInt maxConnections();
 
     /**
      * Set the SETTINGS_HEADER_TABLE_SIZE HTTP/2 setting.
@@ -77,8 +74,7 @@ public class ServerLimitsConfig {
      * specific to the header compression format inside a header block.
      * The initial value is {@code 4,096} octets.
      */
-    @ConfigItem
-    public OptionalLong headerTableSize;
+    OptionalLong headerTableSize();
 
     /**
      * Set SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
@@ -87,16 +83,14 @@ public class ServerLimitsConfig {
      * applies to the number of streams that the sender permits the receiver to create. Initially, there is no limit to
      * this value. It is recommended that this value be no smaller than 100, to not unnecessarily limit parallelism.
      */
-    @ConfigItem
-    public OptionalLong maxConcurrentStreams;
+    OptionalLong maxConcurrentStreams();
 
     /**
      * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting.
      * Indicates the size of the largest frame payload that the sender is willing to receive, in octets.
      * The initial value is {@code 2^14} (16,384) octets.
      */
-    @ConfigItem
-    public OptionalInt maxFrameSize;
+    OptionalInt maxFrameSize();
 
     /**
      * Set the SETTINGS_MAX_HEADER_LIST_SIZE HTTP/2 setting.
@@ -105,23 +99,19 @@ public class ServerLimitsConfig {
      * value in octets plus an overhead of 32 octets for each header field.
      * The default value is {@code 8192}
      */
-    @ConfigItem
-    public OptionalLong maxHeaderListSize;
+    OptionalLong maxHeaderListSize();
 
     /**
      * Set the max number of RST frame allowed per time window, this is used to prevent
      * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
      * attacks</a>. The default value is {@code 200}, setting zero or a negative value, disables flood protection.
      */
-    @ConfigItem
-    public OptionalInt rstFloodMaxRstFramePerWindow;
+    OptionalInt rstFloodMaxRstFramePerWindow();
 
     /**
      * Set the duration of the time window when checking the max number of RST frames, this is used to prevent
      * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
      * attacks</a>.. The default value is {@code 30 s}, setting zero or a negative value, disables flood protection.
      */
-    @ConfigItem
-    public Optional<Duration> rstFloodWindowDuration;
-
+    Optional<Duration> rstFloodWindowDuration();
 }

@@ -13,9 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -35,7 +32,7 @@ import io.smallrye.config.ConfigMappingInterface.LeafProperty;
 import io.smallrye.config.ConfigMappingInterface.PrimitiveProperty;
 import io.smallrye.config.ConfigMappingInterface.Property;
 import io.smallrye.config.ConfigMappings;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public class ConfigDescriptionBuildStep {
 
@@ -87,7 +84,7 @@ public class ConfigDescriptionBuildStep {
                     String defaultDefault;
                     final Class<?> valueClass = field.getType();
 
-                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(field);
+                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(valueClass, field.getGenericType());
 
                     if (valueClass == boolean.class) {
                         defaultDefault = "false";
@@ -112,17 +109,17 @@ public class ConfigDescriptionBuildStep {
                     ret.add(new ConfigDescriptionBuildItem(name,
                             defVal,
                             javadoc.getProperty(javadocKey),
-                            effectiveConfigTypeAndValues.getTypeName(),
-                            effectiveConfigTypeAndValues.getAllowedValues(),
+                            effectiveConfigTypeAndValues.typeName(),
+                            effectiveConfigTypeAndValues.allowedValues(),
                             configPhase));
                 }
             });
         }
     }
 
-    private void processMappings(List<ConfigClassWithPrefix> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
+    private void processMappings(List<ConfigClass> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
             Properties javaDocProperties, ConfigPhase configPhase) {
-        for (ConfigClassWithPrefix mapping : mappings) {
+        for (ConfigClass mapping : mappings) {
             Map<String, Property> properties = ConfigMappings.getProperties(mapping);
             for (Map.Entry<String, Property> entry : properties.entrySet()) {
                 String propertyName = entry.getKey();
@@ -147,136 +144,75 @@ public class ConfigDescriptionBuildStep {
                 }
 
                 String javadocKey = method.getDeclaringClass().getName().replace('$', '.') + '.' + method.getName();
-                // TODO - radcortez - Fix nulls
+                EffectiveConfigTypeAndValues typeName = getTypeName(method.getReturnType(), method.getGenericReturnType());
                 descriptionBuildItems.add(new ConfigDescriptionBuildItem(propertyName, defaultValue,
-                        javaDocProperties.getProperty(javadocKey), null, null, configPhase));
+                        javaDocProperties.getProperty(javadocKey), typeName.typeName(), typeName.allowedValues(), configPhase));
             }
         }
     }
 
-    private EffectiveConfigTypeAndValues getTypeName(Field field) {
-        final Class<?> valueClass = field.getType();
-        return getTypeName(field, valueClass);
-    }
-
-    private EffectiveConfigTypeAndValues getTypeName(Field field, Class<?> valueClass) {
-        EffectiveConfigTypeAndValues typeAndValues = new EffectiveConfigTypeAndValues();
-        String name = valueClass.getName();
+    private EffectiveConfigTypeAndValues getTypeName(Class<?> valueClass, Type genericType) {
+        final String name;
+        final List<String> allowedValues = new ArrayList<>();
 
         // Extract Optionals, Lists and Sets
         if ((valueClass.equals(Optional.class) || valueClass.equals(List.class) || valueClass.equals(Set.class))) {
-
-            if (field != null) {
-                Type genericType = field.getGenericType();
-                name = genericType.getTypeName();
+            String thisName = valueClass.getName();
+            if (genericType != null) {
+                thisName = genericType.getTypeName();
             }
 
-            if (name.contains("<") && name.contains(">")) {
-                name = name.substring(name.lastIndexOf("<") + 1, name.indexOf(">"));
+            if (thisName.contains("<") && thisName.contains(">")) {
+                thisName = thisName.substring(thisName.lastIndexOf("<") + 1, thisName.indexOf(">"));
             }
 
             try {
-                Class<?> c = Class.forName(name);
-                return getTypeName(null, c);
+                Class<?> c = Class.forName(thisName);
+                return getTypeName(c, null);
             } catch (ClassNotFoundException ex) {
                 // Then we use the name as is.
             }
-        }
-
-        // Check other optionals
-        if (valueClass.equals(OptionalInt.class)) {
-            name = Integer.class.getName();
-        } else if (valueClass.equals(OptionalDouble.class)) {
-            name = Double.class.getName();
-        } else if (valueClass.equals(OptionalLong.class)) {
-            name = Long.class.getName();
-        }
-
-        // Check if this is an enum
-        if (Enum.class.isAssignableFrom(valueClass)) {
+            name = thisName;
+        } else if (Enum.class.isAssignableFrom(valueClass)) {
+            // Check if this is an enum
             name = Enum.class.getName();
 
             Object[] values = valueClass.getEnumConstants();
             for (Object v : values) {
-                Enum casted = (Enum) valueClass.cast(v);
-                typeAndValues.addAllowedValue(casted.name());
+                Enum<?> casted = (Enum<?>) valueClass.cast(v);
+                allowedValues.add(casted.name());
             }
+        } else {
+            // Map all primitives
+            name = switch (valueClass.getName()) {
+                case "java.util.OptionalInt", "int" -> Integer.class.getName();
+                case "boolean" -> Boolean.class.getName();
+                case "float" -> Float.class.getName();
+                case "java.util.OptionalDouble", "double" -> Double.class.getName();
+                case "java.util.OptionalLong", "long" -> Long.class.getName();
+                case "byte" -> Byte.class.getName();
+                case "short" -> Short.class.getName();
+                case "char" -> Character.class.getName();
+                default -> valueClass.getName();
+            };
         }
 
         // Special case for Log level
         if (valueClass.isAssignableFrom(Level.class)) {
-            typeAndValues.addAllowedValue(Level.ALL.getName());
-            typeAndValues.addAllowedValue(Level.CONFIG.getName());
-            typeAndValues.addAllowedValue(Level.FINE.getName());
-            typeAndValues.addAllowedValue(Level.FINER.getName());
-            typeAndValues.addAllowedValue(Level.FINEST.getName());
-            typeAndValues.addAllowedValue(Level.INFO.getName());
-            typeAndValues.addAllowedValue(Level.OFF.getName());
-            typeAndValues.addAllowedValue(Level.SEVERE.getName());
-            typeAndValues.addAllowedValue(Level.WARNING.getName());
+            allowedValues.add(Level.ALL.getName());
+            allowedValues.add(Level.CONFIG.getName());
+            allowedValues.add(Level.FINE.getName());
+            allowedValues.add(Level.FINER.getName());
+            allowedValues.add(Level.FINEST.getName());
+            allowedValues.add(Level.INFO.getName());
+            allowedValues.add(Level.OFF.getName());
+            allowedValues.add(Level.SEVERE.getName());
+            allowedValues.add(Level.WARNING.getName());
         }
 
-        // Map all primitives
-        if (name.equals("int")) {
-            name = Integer.class.getName();
-        } else if (name.equals("boolean")) {
-            name = Boolean.class.getName();
-        } else if (name.equals("float")) {
-            name = Float.class.getName();
-        } else if (name.equals("double")) {
-            name = Double.class.getName();
-        } else if (name.equals("long")) {
-            name = Long.class.getName();
-        } else if (name.equals("byte")) {
-            name = Byte.class.getName();
-        } else if (name.equals("short")) {
-            name = Short.class.getName();
-        } else if (name.equals("char")) {
-            name = Character.class.getName();
-        }
-
-        typeAndValues.setTypeName(name);
-        return typeAndValues;
+        return new EffectiveConfigTypeAndValues(name, allowedValues);
     }
 
-    static class EffectiveConfigTypeAndValues {
-        private String typeName;
-        private List<String> allowedValues;
-
-        public EffectiveConfigTypeAndValues() {
-
-        }
-
-        public EffectiveConfigTypeAndValues(String typeName) {
-            this.typeName = typeName;
-        }
-
-        public EffectiveConfigTypeAndValues(String typeName, List<String> allowedValues) {
-            this.typeName = typeName;
-            this.allowedValues = allowedValues;
-        }
-
-        public String getTypeName() {
-            return typeName;
-        }
-
-        public void setTypeName(String typeName) {
-            this.typeName = typeName;
-        }
-
-        public List<String> getAllowedValues() {
-            return allowedValues;
-        }
-
-        public void setAllowedValues(List<String> allowedValues) {
-            this.allowedValues = allowedValues;
-        }
-
-        public void addAllowedValue(String v) {
-            if (allowedValues == null) {
-                allowedValues = new ArrayList<>();
-            }
-            allowedValues.add(v);
-        }
+    private record EffectiveConfigTypeAndValues(String typeName, List<String> allowedValues) {
     }
 }

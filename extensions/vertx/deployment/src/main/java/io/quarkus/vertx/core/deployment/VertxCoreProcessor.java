@@ -31,6 +31,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -220,6 +221,12 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureLogging(VertxCoreRecorder recorder) {
+        recorder.configureQuarkusLoggerFactory();
+    }
+
+    @BuildStep
     @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
@@ -284,6 +291,12 @@ class VertxCoreProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
         return new ContextHandlerBuildItem(recorder.executionContextHandler(buildConfig.customizeArcContext()));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void resetMapper(VertxCoreRecorder recorder, ShutdownContextBuildItem shutdown) {
+        recorder.resetMapper(shutdown);
     }
 
     private void handleBlockingWarningsInDevOrTestMode() {

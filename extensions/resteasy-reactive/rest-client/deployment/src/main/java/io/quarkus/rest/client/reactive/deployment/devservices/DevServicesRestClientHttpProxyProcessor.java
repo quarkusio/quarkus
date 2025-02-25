@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment.devservices;
 
+import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -15,7 +17,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.UncheckedException;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -30,6 +31,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
 import io.smallrye.config.SmallRyeConfig;
@@ -53,18 +55,20 @@ public class DevServicesRestClientHttpProxyProcessor {
     }
 
     @BuildStep
-    public void determineRequiredProxies(RestClientsBuildTimeConfig restClientsBuildTimeConfig,
+    public void determineRequiredProxies(
+            RestClientsBuildTimeConfig clientsConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
             BuildProducer<RestClientHttpProxyBuildItem> producer) {
-        if (restClientsBuildTimeConfig.clients().isEmpty()) {
+
+        List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(registeredRestClientBuildItems);
+        Map<String, RestClientBuildConfig> configs = clientsConfig.get(registeredRestClients).clients();
+        if (configs.isEmpty()) {
             return;
         }
 
         IndexView index = combinedIndexBuildItem.getIndex();
-
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        Map<String, RestClientBuildConfig> configs = restClientsBuildTimeConfig.clients();
+        SmallRyeConfig config = clientsConfig.getConfig(registeredRestClients);
         for (var configEntry : configs.entrySet()) {
             if (!configEntry.getValue().enableLocalProxy()) {
                 log.trace("Ignoring config key: '" + configEntry.getKey() + "' because enableLocalProxy is false");
@@ -207,10 +211,12 @@ public class DevServicesRestClientHttpProxyProcessor {
 
             var urlKeyName = String.format("quarkus.rest-client.\"%s\".override-uri", bi.getClassName());
             var urlKeyValue = String.format("http://%s:%d", createResult.host(), createResult.port());
-            if (baseUri.getPath() != null) {
-                if (!"/".equals(baseUri.getPath()) && !baseUri.getPath().isEmpty()) {
-                    urlKeyValue = urlKeyValue + "/" + baseUri.getPath();
+            String basePath = baseUri.getPath();
+            if ((basePath != null) && !basePath.isEmpty()) {
+                if (basePath.startsWith("/")) {
+                    basePath = basePath.substring(1);
                 }
+                urlKeyValue = urlKeyValue + "/" + basePath;
             }
 
             devServicePropertiesProducer.produce(

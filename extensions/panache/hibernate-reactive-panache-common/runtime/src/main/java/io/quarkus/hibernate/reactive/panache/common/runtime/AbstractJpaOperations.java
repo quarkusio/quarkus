@@ -198,8 +198,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public Uni<Long> count(Class<?> entityClass) {
         return getSession()
                 .chain(session -> session
-                        .createSelectionQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass), Long.class)
-                        .getSingleResult());
+                        .createSelectionQuery("FROM " + PanacheJpaUtil.getEntityName(entityClass), entityClass)
+                        .getResultCount());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -213,9 +213,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             });
 
         return getSession().chain(session -> bindParameters(
-                session.createSelectionQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params)),
-                        Long.class),
-                params).getSingleResult())
+                session.createSelectionQuery(PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params)),
+                        Object.class),
+                params).getResultCount())
                 .onFailure(RuntimeException.class)
                 .transform(x -> NamedQueryUtil.checkForNamedQueryMistake((RuntimeException) x, panacheQuery));
     }
@@ -230,9 +230,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             });
 
         return getSession().chain(session -> bindParameters(
-                session.createSelectionQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params)),
-                        Long.class),
-                params).getSingleResult())
+                session.createSelectionQuery(PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params)),
+                        Object.class),
+                params).getResultCount())
                 .onFailure(RuntimeException.class)
                 .transform(x -> NamedQueryUtil.checkForNamedQueryMistake((RuntimeException) x, panacheQuery));
     }

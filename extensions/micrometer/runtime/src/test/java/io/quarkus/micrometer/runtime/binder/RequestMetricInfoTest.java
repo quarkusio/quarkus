@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
@@ -59,13 +60,14 @@ public class RequestMetricInfoTest {
 
     @Test
     public void testHttpServerMetricsIgnorePatterns() {
-        HttpServerConfig serverConfig = new HttpServerConfig();
-        serverConfig.ignorePatterns = Optional.of(new ArrayList<>(Arrays.asList(" /item/.* ", " /oranges/.* ")));
-
+        HttpServerConfig httpServerConfig = Mockito.mock(HttpServerConfig.class);
+        Mockito.doReturn(Optional.of(new ArrayList<>(Arrays.asList(" /item/.* ", " /oranges/.* "))))
+                .when(httpServerConfig).ignorePatterns();
+        HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
+        VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
         HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
                 true, false,
-                serverConfig, new HttpClientConfig(), new VertxConfig());
-
+                httpServerConfig, httpClientConfig, vertxConfig);
         Assertions.assertEquals(2, binderConfig.serverIgnorePatterns.size());
 
         Pattern p = binderConfig.serverIgnorePatterns.get(0);
@@ -97,13 +99,16 @@ public class RequestMetricInfoTest {
 
     @Test
     public void testHttpServerMetricsMatchPatterns() {
-        HttpServerConfig serverConfig = new HttpServerConfig();
-        serverConfig.matchPatterns = Optional
-                .of(new ArrayList<>(Arrays.asList(" /item/\\d+=/item/{id} ", "  /msg/\\d+=/msg/{other} ")));
 
+        HttpServerConfig httpServerConfig = Mockito.mock(HttpServerConfig.class);
+        Mockito.doReturn(Optional
+                .of(new ArrayList<>(Arrays.asList(" /item/\\d+=/item/{id} ", "  /msg/\\d+=/msg/{other} "))))
+                .when(httpServerConfig).matchPatterns();
+        HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
+        VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
         HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
                 true, false,
-                serverConfig, new HttpClientConfig(), new VertxConfig());
+                httpServerConfig, httpClientConfig, vertxConfig);
 
         Assertions.assertFalse(binderConfig.serverMatchPatterns.isEmpty());
         Iterator<Map.Entry<Pattern, String>> i = binderConfig.serverMatchPatterns.entrySet().iterator();

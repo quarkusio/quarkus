@@ -12,6 +12,8 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
+
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
@@ -20,6 +22,14 @@ public class MediaTypeHelper {
     public static final MediaTypeComparator Q_COMPARATOR = new MediaTypeComparator("q");
     public static final MediaTypeComparator QS_COMPARATOR = new MediaTypeComparator("qs");
     private static final String MEDIA_TYPE_SUFFIX_DELIM = "+";
+
+    public static MediaType valueOf(String value) {
+        return MediaTypeHeaderDelegate.INSTANCE.fromString(value);
+    }
+
+    public static String toString(MediaType mediaType) {
+        return MediaTypeHeaderDelegate.INSTANCE.toString(mediaType);
+    }
 
     private static float getQTypeWithParamInfo(MediaType type, String parameterName) {
         if (type.getParameters() != null) {
@@ -212,7 +222,7 @@ public class MediaTypeHelper {
         ArrayList<MediaType> types = new ArrayList<>();
         String[] medias = header.split(",");
         for (String media : medias) {
-            types.add(MediaType.valueOf(media.trim()));
+            types.add(valueOf(media.trim()));
         }
         return types;
     }
@@ -289,7 +299,7 @@ public class MediaTypeHelper {
 
         List<MediaType> list = new ArrayList<>(mediaTypes.length);
         for (String mediaType : mediaTypes) {
-            list.add(MediaType.valueOf(mediaType));
+            list.add(valueOf(mediaType));
         }
 
         return Collections.unmodifiableList(list);

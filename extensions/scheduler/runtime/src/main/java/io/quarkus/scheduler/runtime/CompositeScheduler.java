@@ -33,6 +33,17 @@ public class CompositeScheduler implements Scheduler {
     }
 
     @Override
+    public boolean isStarted() {
+        // IMPL NOTE: we return true if at least one of the schedulers is started
+        for (Scheduler scheduler : schedulers) {
+            if (scheduler.isStarted()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void pause() {
         for (Scheduler scheduler : schedulers) {
             scheduler.pause();
@@ -102,7 +113,7 @@ public class CompositeScheduler implements Scheduler {
     }
 
     @Override
-    public JobDefinition newJob(String identity) {
+    public CompositeJobDefinition newJob(String identity) {
         return new CompositeJobDefinition(identity);
     }
 
@@ -122,14 +133,14 @@ public class CompositeScheduler implements Scheduler {
         return Scheduled.AUTO;
     }
 
-    class CompositeJobDefinition extends AbstractJobDefinition {
+    public class CompositeJobDefinition extends AbstractJobDefinition<CompositeJobDefinition> {
 
         public CompositeJobDefinition(String identity) {
             super(identity);
         }
 
         @Override
-        public JobDefinition setExecuteWith(String implementation) {
+        public CompositeJobDefinition setExecuteWith(String implementation) {
             Objects.requireNonNull(implementation);
             if (!Scheduled.AUTO.equals(implementation)) {
                 if (schedulers.stream().map(Scheduler::implementation).noneMatch(implementation::equals)) {
@@ -153,7 +164,7 @@ public class CompositeScheduler implements Scheduler {
             throw new IllegalStateException("Matching scheduler implementation not found: " + implementation);
         }
 
-        private JobDefinition copy(JobDefinition to) {
+        private JobDefinition<?> copy(JobDefinition<?> to) {
             to.setCron(cron);
             to.setInterval(every);
             to.setDelayed(delayed);

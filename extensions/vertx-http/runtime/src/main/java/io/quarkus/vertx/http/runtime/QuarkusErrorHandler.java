@@ -27,8 +27,10 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig.PayloadHint;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.MIMEHeader;
@@ -46,24 +48,23 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
      * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
-    private static final String BASE_ID = UUID.randomUUID() + "-";
 
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
     private final boolean decorateStack;
-    private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
+    private final Optional<PayloadHint> contentTypeDefault;
     private final List<ErrorPageAction> actions;
     private final List<String> knowClasses;
     private final String srcMainJava;
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+            Optional<PayloadHint> contentTypeDefault) {
         this(showStack, decorateStack, contentTypeDefault, null, List.of(), List.of());
     }
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<HttpConfiguration.PayloadHint> contentTypeDefault,
+            Optional<PayloadHint> contentTypeDefault,
             String srcMainJava,
             List<String> knowClasses,
             List<ErrorPageAction> actions) {
@@ -77,14 +78,15 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
+        Throwable exception = event.failure();
         try {
-            if (event.failure() == null) {
+            if (exception == null) {
                 event.response().setStatusCode(event.statusCode());
                 event.response().end();
                 return;
             }
             //this can happen if there is no auth mechanisms
-            if (event.failure() instanceof UnauthorizedException) {
+            if (exception instanceof UnauthorizedException) {
                 HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
                 if (authenticator != null) {
                     authenticator.sendChallenge(event).subscribe().with(new Consumer<>() {
@@ -103,12 +105,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 }
                 return;
             }
-            if (event.failure() instanceof ForbiddenException) {
+            if (exception instanceof ForbiddenException) {
                 event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
                 return;
             }
 
-            if (event.failure() instanceof AuthenticationException) {
+            if (exception instanceof AuthenticationException) {
                 if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
                     //set 401 if status wasn't set upstream
                     event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
@@ -119,17 +121,18 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
                 //so it is better to send a response than to hang
 
-                if (event.failure() instanceof AuthenticationCompletionException
-                        && event.failure().getMessage() != null
-                        && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-                    event.response().end(event.failure().getMessage());
+                if ((exception instanceof AuthenticationCompletionException
+                        || (exception instanceof AuthenticationFailedException && event.response().getStatusCode() == 401))
+                        && exception.getMessage() != null
+                        && LaunchMode.isDev()) {
+                    event.response().end(exception.getMessage());
                 } else {
                     event.response().end();
                 }
                 return;
             }
 
-            if (event.failure() instanceof RejectedExecutionException) {
+            if (exception instanceof RejectedExecutionException) {
                 log.warn(
                         "Worker thread pool exhaustion, no more worker threads available - returning a `503 - SERVICE UNAVAILABLE` response.");
                 event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code()).end();
@@ -148,10 +151,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             event.response().setStatusCode(event.statusCode() > 0 ? event.statusCode() : 500);
         }
 
-        String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();
+        String uuid = LazyHolder.BASE_ID + ERROR_COUNT.incrementAndGet();
         String details;
         String stack = "";
-        Throwable exception = event.failure();
         String responseContentType = null;
         try {
             responseContentType = ContentTypes.pickFirstSupportedAndAcceptedContentType(event);
@@ -168,7 +170,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         } else {
             details = generateHeaderMessage(uuid);
         }
-        if (event.failure() instanceof IOException) {
+        if (exception instanceof IOException) {
             log.debugf(exception,
                     "IOError processing HTTP request to %s failed, the client likely terminated the connection. Error id: %s",
                     event.request().uri(), uuid);
@@ -426,5 +428,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 return result == null ? null : result.value();
             }
         }
+    }
+
+    private static class LazyHolder {
+        private static final String BASE_ID = UUID.randomUUID() + "-";
     }
 }

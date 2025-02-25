@@ -42,41 +42,40 @@ public class MongoHealthCheck implements HealthCheck {
 
     private static final Document COMMAND = new Document("ping", 1);
 
-    public void configure(MongodbConfig config) {
+    public MongoHealthCheck(MongodbConfig config) {
         Iterable<InstanceHandle<MongoClient>> handle = Arc.container().select(MongoClient.class, Any.Literal.INSTANCE)
                 .handles();
         Iterable<InstanceHandle<ReactiveMongoClient>> reactiveHandlers = Arc.container()
                 .select(ReactiveMongoClient.class, Any.Literal.INSTANCE).handles();
 
-        if (config.defaultMongoClientConfig != null) {
+        if (config.defaultMongoClientConfig() != null) {
             MongoClient client = getClient(handle, null);
             ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers, null);
             if (client != null) {
-                checks.add(new MongoClientCheck(CLIENT_DEFAULT, client, config.defaultMongoClientConfig));
+                checks.add(new MongoClientCheck(CLIENT_DEFAULT, client, config.defaultMongoClientConfig()));
             }
             if (reactiveClient != null) {
                 checks.add(new ReactiveMongoClientCheck(CLIENT_DEFAULT_REACTIVE,
                         reactiveClient,
-                        config.defaultMongoClientConfig));
+                        config.defaultMongoClientConfig()));
             }
         }
 
-        config.mongoClientConfigs.forEach(new BiConsumer<String, MongoClientConfig>() {
+        config.mongoClientConfigs().forEach(new BiConsumer<>() {
             @Override
             public void accept(String name, MongoClientConfig cfg) {
                 MongoClient client = getClient(handle, name);
                 ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers, name);
                 if (client != null) {
                     checks.add(new MongoClientCheck(name, client,
-                            config.defaultMongoClientConfig));
+                            config.defaultMongoClientConfig()));
                 }
                 if (reactiveClient != null) {
                     checks.add(new ReactiveMongoClientCheck(name, reactiveClient,
-                            config.defaultMongoClientConfig));
+                            config.defaultMongoClientConfig()));
                 }
             }
         });
-
     }
 
     private MongoClient getClient(Iterable<InstanceHandle<MongoClient>> handle, String name) {
@@ -144,7 +143,7 @@ public class MongoHealthCheck implements HealthCheck {
 
         return Uni.combine().all().unis(unis)
                 .collectFailures() // We collect all failures to avoid partial responses.
-                .combinedWith(new Function<List<?>, HealthCheckResponse>() {
+                .with(new Function<List<?>, HealthCheckResponse>() {
                     @Override
                     public HealthCheckResponse apply(List<?> list) {
                         return MongoHealthCheck.this.combine(list, builder);
@@ -182,11 +181,11 @@ public class MongoHealthCheck implements HealthCheck {
             return Uni.createFrom().item(new Supplier<Document>() {
                 @Override
                 public Document get() {
-                    return client.getDatabase(config.healthDatabase).runCommand(COMMAND);
+                    return client.getDatabase(config.healthDatabase()).runCommand(COMMAND);
                 }
             })
                     .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                    .ifNoItem().after(config.readTimeout.orElse(DEFAULT_TIMEOUT)).fail()
+                    .ifNoItem().after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail()
                     .onItemOrFailure().transform(toResult(name));
         }
     }
@@ -203,8 +202,8 @@ public class MongoHealthCheck implements HealthCheck {
         }
 
         public Uni<Tuple2<String, String>> get() {
-            return client.getDatabase(config.healthDatabase).runCommand(COMMAND)
-                    .ifNoItem().after(config.readTimeout.orElse(DEFAULT_TIMEOUT)).fail()
+            return client.getDatabase(config.healthDatabase()).runCommand(COMMAND)
+                    .ifNoItem().after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail()
                     .onItemOrFailure().transform(toResult(name));
         }
     }

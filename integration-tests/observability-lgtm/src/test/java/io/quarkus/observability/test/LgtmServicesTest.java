@@ -7,5 +7,5 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-public class LgtmServicesTest extends LgtmTestBase {
+public class LgtmServicesTest extends LgtmConfigTestBase {
 }

@@ -26,6 +26,20 @@ public @interface RestLink {
     String rel() default "";
 
     /**
+     * Intended for labelling the link with a human-readable identifier.
+     *
+     * @return the link title.
+     */
+    String title() default "";
+
+    /**
+     * Hint to indicate the media type expected when dereferencing the target resource.
+     *
+     * @return the link expected media type.
+     */
+    String type() default "";
+
+    /**
      * Declares a link for the given type of resources.
      * If not set, it will default to the returning type of the annotated method.
      *

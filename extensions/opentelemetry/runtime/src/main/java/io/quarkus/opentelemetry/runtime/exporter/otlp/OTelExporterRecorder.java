@@ -22,10 +22,12 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
 import io.opentelemetry.exporter.internal.http.HttpExporter;
+import io.opentelemetry.exporter.internal.otlp.logs.LogsRequestMarshaler;
 import io.opentelemetry.exporter.internal.otlp.metrics.MetricsRequestMarshaler;
 import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
@@ -34,21 +36,24 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.internal.aggregator.AggregationUtil;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.BatchSpanProcessorConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.NoopLogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.VertxGrpcLogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.VertxHttpLogRecordExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.NoopMetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxGrpcMetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxHttpMetricsExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxGrpcSender;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
 import io.quarkus.runtime.annotations.Recorder;
@@ -67,23 +72,24 @@ public class OTelExporterRecorder {
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
-    public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
+    public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
+            OTelBuildConfig oTelBuildConfig,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
         URI baseUri = getTracesUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
-            public LateBoundBatchSpanProcessor apply(
-                    SyntheticCreationalContext<LateBoundBatchSpanProcessor> context) {
+            public LateBoundSpanProcessor apply(
+                    SyntheticCreationalContext<LateBoundSpanProcessor> context) {
                 if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
-                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
                 // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
                 Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
                 });
                 if (!spanExporters.isUnsatisfied()) {
-                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
 
                 try {
@@ -92,15 +98,21 @@ public class OTelExporterRecorder {
                     var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri,
                             tlsConfigurationRegistry);
 
-                    BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
+                    if (oTelBuildConfig.simple()) {
+                        SimpleSpanProcessorBuilder processorBuilder = SimpleSpanProcessor.builder(spanExporter);
+                        return new LateBoundSpanProcessor(processorBuilder.build());
+                    } else {
+                        BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
 
-                    processorBuilder.setScheduleDelay(otelRuntimeConfig.bsp().scheduleDelay());
-                    processorBuilder.setMaxQueueSize(otelRuntimeConfig.bsp().maxQueueSize());
-                    processorBuilder.setMaxExportBatchSize(otelRuntimeConfig.bsp().maxExportBatchSize());
-                    processorBuilder.setExporterTimeout(otelRuntimeConfig.bsp().exportTimeout());
-                    // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
+                        BatchSpanProcessorConfig bspc = otelRuntimeConfig.bsp();
+                        processorBuilder.setScheduleDelay(bspc.scheduleDelay());
+                        processorBuilder.setMaxQueueSize(bspc.maxQueueSize());
+                        processorBuilder.setMaxExportBatchSize(bspc.maxExportBatchSize());
+                        processorBuilder.setExporterTimeout(bspc.exportTimeout());
+                        // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
 
-                    return new LateBoundBatchSpanProcessor(processorBuilder.build());
+                        return new LateBoundSpanProcessor(processorBuilder.build());
+                    }
                 } catch (IllegalArgumentException iae) {
                     throw new IllegalStateException("Unable to install OTLP Exporter", iae);
                 }
@@ -196,7 +208,7 @@ public class OTelExporterRecorder {
                     OtlpExporterMetricsConfig metricsConfig = exporterRuntimeConfig.metrics();
                     if (metricsConfig.protocol().isEmpty()) {
                         throw new IllegalStateException("No OTLP protocol specified. " +
-                                "Please check `quarkus.otel.exporter.otlp.traces.protocol` property");
+                                "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property");
                     }
 
                     String protocol = metricsConfig.protocol().get();
@@ -237,13 +249,81 @@ public class OTelExporterRecorder {
                                 aggregationResolver(metricsConfig));
                     } else {
                         throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
-                                "Please check `quarkus.otel.exporter.otlp.traces.protocol` property", protocol));
+                                "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property", protocol));
                     }
 
                 } catch (IllegalArgumentException iae) {
                     throw new IllegalStateException("Unable to install OTLP Exporter", iae);
                 }
                 return metricExporter;
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<LogRecordExporter>, LogRecordExporter> createLogRecordExporter(
+            OTelRuntimeConfig otelRuntimeConfig, OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
+        final URI baseUri = getLogsUri(exporterRuntimeConfig);
+
+        return new Function<>() {
+            @Override
+            public LogRecordExporter apply(SyntheticCreationalContext<LogRecordExporter> context) {
+
+                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                    return NoopLogRecordExporter.INSTANCE;
+                }
+
+                LogRecordExporter logRecordExporter;
+
+                try {
+                    TlsConfigurationRegistry tlsConfigurationRegistry = context
+                            .getInjectedReference(TlsConfigurationRegistry.class);
+                    OtlpExporterLogsConfig logsConfig = exporterRuntimeConfig.logs();
+                    if (logsConfig.protocol().isEmpty()) {
+                        throw new IllegalStateException("No OTLP protocol specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.logs.protocol` property");
+                    }
+
+                    String protocol = logsConfig.protocol().get();
+                    if (GRPC.equals(protocol)) {
+                        logRecordExporter = new VertxGrpcLogRecordExporter(
+                                new GrpcExporter<LogsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "log", // use the same as OTel does
+                                        new VertxGrpcSender(
+                                                baseUri,
+                                                VertxGrpcSender.GRPC_LOG_SERVICE_NAME,
+                                                determineCompression(logsConfig),
+                                                logsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(logsConfig),
+                                                new HttpClientOptionsConsumer(logsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop));
+                    } else if (HTTP_PROTOBUF.equals(protocol)) {
+                        boolean exportAsJson = false; //TODO: this will be enhanced in the future
+                        logRecordExporter = new VertxHttpLogRecordExporter(
+                                new HttpExporter<LogsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "log", // use the same as OTel does
+                                        new VertxHttpSender(
+                                                baseUri,
+                                                VertxHttpSender.LOGS_PATH,
+                                                determineCompression(logsConfig),
+                                                logsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(logsConfig),
+                                                exportAsJson ? "application/json" : "application/x-protobuf",
+                                                new HttpClientOptionsConsumer(logsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop,
+                                        exportAsJson));
+                    } else {
+                        throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.logs.protocol` property", protocol));
+                    }
+
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalStateException("Unable to install OTLP Exporter", iae);
+                }
+                return logRecordExporter;
             }
         };
     }
@@ -318,7 +398,15 @@ public class OTelExporterRecorder {
     }
 
     private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        String endpoint = resolveMetricEndpoint(exporterRuntimeConfig);
+        if (endpoint.isEmpty()) {
+            return null;
+        }
+        return ExporterBuilderUtil.validateEndpoint(endpoint);
+    }
+
+    private URI getLogsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveLogsEndpoint(exporterRuntimeConfig);
         if (endpoint.isEmpty()) {
             return null;
         }
@@ -336,6 +424,15 @@ public class OTelExporterRecorder {
 
     static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
         String endpoint = runtimeConfig.metrics().endpoint()
+                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    static String resolveLogsEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.logs().endpoint()
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)

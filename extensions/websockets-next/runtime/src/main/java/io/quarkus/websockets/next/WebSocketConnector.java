@@ -3,20 +3,44 @@ package io.quarkus.websockets.next;
 import java.net.URI;
 import java.net.URLEncoder;
 
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This connector can be used to configure and open new client connections using a client endpoint class.
+ * A connector can be used to configure and open a new client connection backed by a client endpoint that is used to
+ * consume and send messages.
+ * <p>
+ * Quarkus provides a CDI bean with bean type {@code WebSocketConnector<CLIENT>} and qualifier {@link Default}. The actual type
+ * argument of an injection point is used to determine the client endpoint. The type is validated during build
+ * and if it does not represent a client endpoint then the build fails.
  * <p>
  * This construct is not thread-safe and should not be used concurrently.
+ * <p>
+ * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new connetor
+ * instance programmatically using {@link Instance#get()}:
+ * <code><pre>
+ * import jakarta.enterprise.inject.Instance;
+ *
+ * &#64;Inject
+ * Instance&#60;WebSocketConnector&#60;MyEndpoint&#62;&#62; connector;
+ *
+ * void connect() {
+ *      var connection1 = connector.get().baseUri(uri)
+ *                  .addHeader("Foo", "alpha")
+ *                  .connectAndAwait();
+ *      var connection2 = connector.get().baseUri(uri)
+ *                  .addHeader("Foo", "bravo")
+ *                  .connectAndAwait();
+ * }
+ * </pre></code>
  *
  * @param <CLIENT> The client endpoint class
  * @see WebSocketClient
  * @see WebSocketClientConnection
  */
-@Experimental("This API is experimental and may change in the future")
 public interface WebSocketConnector<CLIENT> {
 
     /**

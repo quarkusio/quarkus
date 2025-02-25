@@ -42,7 +42,7 @@ The `mutable-jar` distribution is the same as the `fast-jar` distribution, excep
 which contains the deployment JARs and their dependencies (and some class-loader configuration).
 
 TIP: By default, you'll get a warning if a build time property has been changed at runtime.
-You may set the `quarkus.configuration.build-time-mismatch-at-runtime=fail` property to make sure your application does not start up if there is a mismatch.
+You may set the `quarkus.config.build-time-mismatch-at-runtime=fail` property to make sure your application does not start up if there is a mismatch.
 However, as of this writing changing `quarkus.datasource.db-kind` at runtime did neither fail nor produce a warning but was silently ignored.
 
 WARNING: Build time configuration provided by build tools (`properties` in Maven `pom.xml` or `gradle.properties`

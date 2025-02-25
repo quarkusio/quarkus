@@ -10,8 +10,11 @@ import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +24,7 @@ import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ConfigurationTest {
+class ConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
@@ -54,18 +57,18 @@ public class ConfigurationTest {
         RestClientsConfig.RestClientConfig clientConfig = restClientsConfig.getClient(HelloClientWithBaseUri.class);
         verifyClientConfig(clientConfig, true);
 
-        clientConfig = restClientsConfig.getClient("client-prefix");
+        clientConfig = restClientsConfig.getClient(ConfigKeyClient.class);
         verifyClientConfig(clientConfig, true);
         assertThat(clientConfig.proxyAddress().isPresent()).isTrue();
         assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
         assertThat(clientConfig.headers()).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
 
-        clientConfig = restClientsConfig.getClient("quoted-client-prefix");
+        clientConfig = restClientsConfig.getClient(QuotedConfigKeyClient.class);
         assertThat(clientConfig.url().isPresent()).isTrue();
         assertThat(clientConfig.url().get()).endsWith("/hello");
         assertThat(clientConfig.headers()).containsOnly(entry("foo", "bar"));
 
-        clientConfig = restClientsConfig.getClient("mp-client-prefix");
+        clientConfig = restClientsConfig.getClient(MPConfigKeyClient.class);
         verifyClientConfig(clientConfig, false);
     }
 
@@ -99,5 +102,26 @@ public class ConfigurationTest {
             assertTrue(clientConfig.maxRedirects().isPresent());
             assertThat(clientConfig.maxRedirects().get()).isEqualTo(5);
         }
+    }
+
+    @RegisterRestClient(configKey = "client-prefix")
+    @Path("/")
+    public interface ConfigKeyClient {
+        @GET
+        String get();
+    }
+
+    @RegisterRestClient(configKey = "quoted-client-prefix")
+    @Path("/")
+    public interface QuotedConfigKeyClient {
+        @GET
+        String get();
+    }
+
+    @RegisterRestClient(configKey = "mp-client-prefix")
+    @Path("/")
+    public interface MPConfigKeyClient {
+        @GET
+        String get();
     }
 }

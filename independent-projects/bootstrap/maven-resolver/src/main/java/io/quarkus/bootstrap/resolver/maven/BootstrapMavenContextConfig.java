@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Function;
 
 import org.apache.maven.model.Model;
@@ -18,7 +19,24 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 
-public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
+public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T>> {
+
+    /**
+     * Resolves the effective value of the {@code effective-model-builder} option by looking for the
+     * {@code quarkus.bootstrap.effective-model-builder} property among the system properties and,
+     * if not set, in the properties argument.
+     * <p>
+     * If the property is found, the method will return the result of {@link java.lang.Boolean#parseBoolean}.
+     * If the property is not set, the method will return false.
+     *
+     * @param props primary source of properties
+     * @return whether effective model builder should be enabled
+     */
+    public static boolean getEffectiveModelBuilderProperty(Properties props) {
+        final String value = System.getProperty(BootstrapMavenContext.EFFECTIVE_MODEL_BUILDER_PROP);
+        return value == null ? Boolean.parseBoolean(props.getProperty(BootstrapMavenContext.EFFECTIVE_MODEL_BUILDER_PROP))
+                : Boolean.parseBoolean(value);
+    }
 
     protected String localRepo;
     protected String[] localRepoTail;

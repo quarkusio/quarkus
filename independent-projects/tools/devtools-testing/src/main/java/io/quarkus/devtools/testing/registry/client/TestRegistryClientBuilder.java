@@ -229,7 +229,7 @@ public class TestRegistryClientBuilder {
             throw new IllegalStateException("Failed to serialize registry client configuration " + configYaml, e);
         }
 
-        externalCodestartBuilders.forEach(b -> b.persist());
+        externalCodestartBuilders.forEach(TestCodestartBuilder::persist);
         installExtensionArtifacts(externalExtensions);
     }
 
@@ -673,6 +673,7 @@ public class TestRegistryClientBuilder {
 
         private final TestPlatformCatalogReleaseBuilder release;
         private final ExtensionCatalog.Mutable extensions = ExtensionCatalog.builder();
+        private Map<ArtifactCoords, Path> codestartArtifacts;
         private final Model pom;
 
         private TestPlatformCatalogMemberBuilder(TestPlatformCatalogReleaseBuilder release, ArtifactCoords bom) {
@@ -740,11 +741,24 @@ public class TestRegistryClientBuilder {
         }
 
         public TestPlatformCatalogMemberBuilder addExtension(String groupId, String artifactId, String version) {
+            return addExtensionWithCodestart(groupId, artifactId, version, null);
+        }
+
+        public TestPlatformCatalogMemberBuilder addExtensionWithCodestart(String artifactId, String codestart) {
+            return addExtensionWithCodestart(extensions.getBom().getGroupId(), artifactId, extensions.getBom().getVersion(),
+                    codestart);
+        }
+
+        public TestPlatformCatalogMemberBuilder addExtensionWithCodestart(String groupId, String artifactId, String version,
+                String codestart) {
             final ArtifactCoords coords = ArtifactCoords.jar(groupId, artifactId, version);
             final Extension.Mutable e = Extension.builder()
                     .setArtifact(coords)
                     .setName(artifactId)
                     .setOrigins(Collections.singletonList(extensions));
+            if (codestart != null) {
+                e.getMetadata().put("codestart", Map.of("name", codestart, "languages", List.of("java")));
+            }
             extensions.addExtension(e);
 
             final Dependency d = new Dependency();
@@ -758,6 +772,22 @@ public class TestRegistryClientBuilder {
             }
             d.setVersion(coords.getVersion());
             pom.getDependencyManagement().addDependency(d);
+            return this;
+        }
+
+        public TestPlatformCatalogMemberBuilder addCodestartsArtifact(ArtifactCoords coords, Path jarFile) {
+            if (codestartArtifacts == null) {
+                codestartArtifacts = new LinkedHashMap<>();
+            }
+            codestartArtifacts.put(coords, jarFile);
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TestPlatformCatalogMemberBuilder setPlatformProjectCodestartData(String name, Object value) {
+            var map = (Map<String, Object>) extensions.getMetadata().computeIfAbsent("project", k -> new HashMap<>());
+            map = (Map<String, Object>) map.computeIfAbsent("codestart-data", k -> new HashMap<>());
+            map.put(name, value);
             return this;
         }
 
@@ -781,6 +811,16 @@ public class TestRegistryClientBuilder {
         }
 
         private void persist(Path memberDir) {
+
+            if (codestartArtifacts != null) {
+                final List<String> artifacts = new ArrayList<>(codestartArtifacts.size());
+                for (var entry : codestartArtifacts.entrySet()) {
+                    artifacts.add(entry.getKey().toGACTVString());
+                    install(entry.getKey(), entry.getValue());
+                }
+                extensions.getMetadata().put("codestarts-artifacts", artifacts);
+            }
+
             release.setReleaseInfo(extensions);
             final ArtifactCoords bom = extensions.getBom();
             final Path json = getMemberCatalogPath(memberDir, bom);

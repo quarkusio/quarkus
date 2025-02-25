@@ -22,8 +22,7 @@ public class StatelessSessionWithinRequestScopeTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
-                    .addAsResource(EmptyAsset.INSTANCE, "import.sql")
-                    .addAsResource("application-physical-naming-strategy.properties", "application.properties"));
+                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
 
     @Inject
     StatelessSession statelessSession;
@@ -34,9 +33,22 @@ public class StatelessSessionWithinRequestScopeTest {
     }
 
     @Test
-    public void test() throws Exception {
-        Number result = (Number) statelessSession.createNativeQuery("SELECT COUNT(*) FROM TBL_MYENTITY").getSingleResult();
-        assertEquals(0, result.intValue());
+    public void read() {
+        assertEquals(0L, statelessSession
+                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
+                .getResultCount());
+    }
+
+    @Test
+    public void write() {
+        assertEquals(0L, statelessSession
+                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
+                .getResultCount());
+        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction active?
+        statelessSession.insert(new MyEntity("john"));
+        assertEquals(1L, statelessSession
+                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
+                .getResultCount());
     }
 
     @AfterEach

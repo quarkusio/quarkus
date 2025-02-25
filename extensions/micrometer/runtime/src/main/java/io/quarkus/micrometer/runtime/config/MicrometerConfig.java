@@ -3,23 +3,25 @@ package io.quarkus.micrometer.runtime.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Global configuration for the Micrometer extension
  */
-@ConfigRoot(name = "micrometer", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public final class MicrometerConfig {
+@ConfigMapping(prefix = "quarkus.micrometer")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface MicrometerConfig {
 
     /**
      * Micrometer metrics support.
      * <p>
      * Micrometer metrics support is enabled by default.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Micrometer MeterRegistry discovery.
@@ -27,8 +29,8 @@ public final class MicrometerConfig {
      * Micrometer MeterRegistry implementations discovered on the classpath
      * will be enabled automatically by default.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean registryEnabledDefault;
+    @WithDefault("true")
+    boolean registryEnabledDefault();
 
     /**
      * Micrometer MeterBinder discovery.
@@ -36,24 +38,24 @@ public final class MicrometerConfig {
      * Micrometer MeterBinder implementations discovered on the classpath
      * will be enabled automatically by default.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean binderEnabledDefault;
+    @WithDefault("true")
+    boolean binderEnabledDefault();
 
     /** Build / static runtime config for binders */
-    public BinderConfig binder;
+    BinderConfig binder();
 
     /** Build / static runtime config for exporters */
-    public ExportConfig export;
+    ExportConfig export();
 
     /**
      * For MeterRegistry configurations with optional 'enabled' attributes,
      * determine whether the registry is enabled using {@link #registryEnabledDefault}
      * as the default value.
      */
-    public boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
-        if (enabled) {
-            Optional<Boolean> configValue = config.getEnabled();
-            return configValue.orElseGet(() -> registryEnabledDefault);
+    default boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
+        if (enabled()) {
+            Optional<Boolean> configValue = config.enabled();
+            return configValue.orElseGet(this::registryEnabledDefault);
         }
         return false;
     }
@@ -63,28 +65,20 @@ public final class MicrometerConfig {
      * determine whether the binder is enabled using {@link #binderEnabledDefault}
      * as the default value.
      */
-    public boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
-        if (enabled) {
-            Optional<Boolean> configValue = config.getEnabled();
-            return configValue.orElseGet(() -> binderEnabledDefault);
+    default boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
+        if (enabled()) {
+            Optional<Boolean> configValue = config.enabled();
+            return configValue.orElseGet(this::binderEnabledDefault);
         }
         return false;
     }
 
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName()
-                + "{enabled=" + enabled
-                + ",binderEnabledDefault=" + binderEnabledDefault
-                + ",registryEnabledDefault=" + registryEnabledDefault
-                + '}';
-    }
-
     /** Build / static runtime config for binders */
     @ConfigGroup
-    public static class BinderConfig {
-        public HttpClientConfigGroup httpClient;
-        public HttpServerConfigGroup httpServer;
+    interface BinderConfig {
+        HttpClientConfigGroup httpClient();
+
+        HttpServerConfigGroup httpServer();
 
         /**
          * Micrometer JVM metrics support.
@@ -93,21 +87,23 @@ public final class MicrometerConfig {
          * support is enabled, and either this value is true, or this
          * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
-        @ConfigItem
-        public Optional<Boolean> jvm;
+        Optional<Boolean> jvm();
 
-        public KafkaConfigGroup kafka;
+        KafkaConfigGroup kafka();
 
-        public RedisConfigGroup redis;
-        public StorkConfigGroup stork;
+        RedisConfigGroup redis();
 
-        public GrpcServerConfigGroup grpcServer;
+        StorkConfigGroup stork();
 
-        public GrpcClientConfigGroup grpcClient;
+        GrpcServerConfigGroup grpcServer();
 
-        public ReactiveMessagingConfigGroup messaging;
+        GrpcClientConfigGroup grpcClient();
 
-        public MPMetricsConfigGroup mpMetrics;
+        ReactiveMessagingConfigGroup messaging();
+
+        MPMetricsConfigGroup mpMetrics();
+
+        VirtualThreadsConfigGroup virtualThreads();
 
         /**
          * Micrometer System metrics support.
@@ -116,22 +112,28 @@ public final class MicrometerConfig {
          * support is enabled, and either this value is true, or this
          * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
-        @ConfigItem
-        public Optional<Boolean> system;
+        Optional<Boolean> system();
 
-        public VertxConfigGroup vertx;
+        VertxConfigGroup vertx();
 
-        public NettyConfigGroup netty;
+        NettyConfigGroup netty();
     }
 
     /** Build / static runtime config for exporters */
     @ConfigGroup
-    public static class ExportConfig {
-        public JsonConfigGroup json;
-        public PrometheusConfigGroup prometheus;
+    interface ExportConfig {
+        JsonConfigGroup json();
+
+        PrometheusConfigGroup prometheus();
     }
 
-    public interface CapabilityEnabled {
-        Optional<Boolean> getEnabled();
+    interface CapabilityEnabled {
+
+        /**
+         * Gets enable value
+         *
+         * @return {@link Optional<Boolean>}
+         */
+        Optional<Boolean> enabled();
     }
 }

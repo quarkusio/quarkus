@@ -78,7 +78,6 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     static properties = {
         _state: {state: true},
-        _results: {state: true},
         _busy: {state: true},
         _detailsOpenedItem: {state: true, type: Array},
         _displayTags: {state: true, type: Boolean},
@@ -93,6 +92,45 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         this._displayTags = true;
     }
 
+    set _tests(value) {
+        this._state = value;
+        this._state?.result?.passed?.forEach(item => item.style = "successful");
+        this._state?.result?.failed?.forEach(item => item.style = "failed");
+        this._state?.result?.skipped?.forEach(item => item.style = "aborted");
+    }
+
+    get _tests() {
+        return this._state;
+    }
+
+    get _testsReceived() {
+        return this._tests != null;
+    }
+
+    get _testsEnabled() {
+        return this._tests?.config?.enabled ?? false;
+    }
+
+    get _testsCurrentlyRunning() {
+        return this._tests?.inProgress ?? false;
+    }
+
+    get _testResult() {
+        return this._tests?.result;
+    }
+
+    get _hasTestResult() {
+        return (this._testResult?.counts?.total ?? 0) > 0
+    }
+
+    get _hasFailedTestResult() {
+        return (this._testResult?.counts?.failed ?? 0) > 0;
+    }
+
+    get _hasTestResultWithTags() {
+        return (this._testResult?.tags?.length ?? 0) > 0;
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._lastKnownState();
@@ -105,11 +143,8 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _createObservers(){
-        this._streamStateObserver = this.jsonRpc.streamTestState().onNext(jsonRpcResponse => {
-            this._state = JSON.parse(jsonRpcResponse.result);
-        });
-        this._streamResultsObserver = this.jsonRpc.streamTestResults().onNext(jsonRpcResponse => {
-            this._results = jsonRpcResponse.result;
+        this._streamStateObserver = this.jsonRpc.streamState().onNext(jsonRpcResponse => {
+            this._tests = jsonRpcResponse.result;
         });
     }
 
@@ -120,13 +155,8 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _lastKnownState(){
         // Get last known
-        this.jsonRpc.lastKnownState().then(jsonRpcResponse => {
-            this._state = JSON.parse(jsonRpcResponse.result);
-        });
-        this.jsonRpc.lastKnownResults().then(jsonRpcResponse => {
-            if(jsonRpcResponse.result){
-                this._results = jsonRpcResponse.result;
-            }
+        this.jsonRpc.currentState().then(jsonRpcResponse => {
+            this._tests = jsonRpcResponse.result;
         });
     }
 
@@ -137,77 +167,36 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     render() {
-        let results = this._prepareResultsToRender();
         return html`
-            ${this._renderMenuBar(results)}
-            ${this._renderResults(results)}
+            ${this._renderMenuBar()}
+            ${this._renderResults()}
             ${this._renderBarChart()}
         `;
     }
 
-    _prepareResultsToRender() {
-        if(this._state && this._state.running && this._results && this._results.results) {
-            let itemsByState = {
-                passing: [],
-                failing: [],
-                skipped: [],
-            }
-            Object
-                .values(this._results.results)
-                .forEach(item => {
-                    itemsByState.passing.push(...item.passing.filter( obj => obj.test === true ));
-                    itemsByState.failing.push(...item.failing.filter( obj => obj.test === true ));
-                    itemsByState.skipped.push(...item.skipped.filter( obj => obj.test === true ));
-                });
-            let items = itemsByState.failing.concat(
-                itemsByState.passing,
-                itemsByState.skipped
-            );
-            let hasTags = items.find( item => item.tags && item.tags.length > 0 );
-            return {
-                items: items,
-                meta: {
-                    hasTags: hasTags,
-                    failing: itemsByState.failing.length,
-                    passing: itemsByState.passing.length,
-                    skipped: itemsByState.skipped.length,
-                },
-            }
-        } else {
-            return {
-                items: [],
-                meta: {
-                    hasTags: false,
-                    failing: 0,
-                    passing: 0,
-                    skipped: 0,
-                },
-            };
-        }
-    }
-
-    _renderMenuBar(results){
-        if(this._state){
-            return html`<div class="menubar">
+    _renderMenuBar(){
+        if(this._testsReceived) {
+            return html`
+            <div class="menubar">
                 <div>
-                    ${this._renderStopStartButton()}
+                    ${this._renderStartStopButton()}
                     ${this._renderRunAllButton()}
                     ${this._renderRunFailedButton()}
                     ${this._renderToggleBrokenOnly()}
-                    ${this._renderToggleDisplayTags(results)}
+                    ${this._renderToggleDisplayTags()}
                 </div>
                 ${this._renderBusyIndicator()}
-            </div>`;
-        }else{
-            return html`<div class="menubar">
-                ${this._renderStartButton()}
             </div>`;
         }
     }
 
     _renderBarChart(){
-        if(this._state && this._state.running && this._state.run > 0){
-            let values = [this._state.passed, this._state.failed, this._state.skipped];
+        if(this._testsEnabled && this._hasTestResult){
+            let values = [
+                this._testResult.counts?.passed ?? 0,
+                this._testResult.counts?.failed ?? 0,
+                this._testResult.counts?.skipped ?? 0
+            ];
             return html`<echarts-horizontal-stacked-bar name = "Tests"
                             sectionTitles="${this._chartTitles.toString()}" 
                             sectionValues="${values.toString()}"
@@ -216,33 +205,30 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         }
     }
 
-    _renderStateChart(){
-        let values = [this._state.passed, this._state.failed, this._state.skipped];
-        return html`<echarts-pie name = "Tests"
-                            sectionTitles="${this._chartTitles.toString()}" 
-                            sectionValues="${values.toString()}"
-                            sectionColors="${this._chartColors.toString()}">
-                        </echarts-pie>`;
-    }
-
     _renderBusyIndicator(){
-        if(this._state && this._state.inProgress){
+        if(this._testsCurrentlyRunning){
             return html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`;
-        }else if(this._results && this._state && this._state.running){
+        }else if(this._testsEnabled && this._testResult?.totalTime){
 
              return html`<span class="total">
                          Total time: 
-                         <qui-badge><span>${this._results.totalTime}ms</span></qui-badge>
+                         <qui-badge><span>${this._testResult?.totalTime}ms</span></qui-badge>
                      </span>`
         }
         
     }
 
-    _renderResults(results){
-        if(results.items.length > 0){
+    _renderResults(){
+        let items = [];
+        if(this._testsEnabled) {
+            items.push(... (this._testResult?.failed ?? []));
+            items.push(... (this._testResult?.passed ?? []));
+            items.push(... (this._testResult?.skipped ?? []));
+        }
+        if(items.length > 0){
 
             return html`
-                <vaadin-grid .items="${results.items}" class="resultTable" theme="no-border"
+                <vaadin-grid .items="${items}" class="resultTable" theme="no-border"
                                 .detailsOpenedItems="${this._detailsOpenedItem}"
                             @active-item-changed="${(event) => {
                             const prop = event.detail.value;
@@ -251,7 +237,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                         ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
                 >
                 ${
-                    this._displayTags && results.meta.hasTags 
+                    this._displayTags && this._hasTestResultWithTags
                     ? html`<vaadin-grid-sort-column path="tags" header="Tags" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])}></vaadin-grid-sort-column>`
                     : ''
                 }
@@ -293,7 +279,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     _renderStacktrace(stackTraces){
         return html`${stackTraces.map((stackTrace) => 
             html`<br><qui-ide-link fileName='${stackTrace.className}'
-                        lineNumber=${stackTrace.lineNumber}>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
+                        lineNumber='${stackTrace.lineNumber}'>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
         )}`;
     }
 
@@ -327,12 +313,12 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _testRenderer(testLine){
-        let level = testLine.testExecutionResult.status.toLowerCase();
-
-        return html`<qui-ide-link fileName='${testLine.testClass}'
-                        lineNumber=0><vaadin-icon class="ideIcon" icon="font-awesome-solid:code"></vaadin-icon></qui-ide-link>
+        let level = testLine.style ?? '';
+        return html`<qui-ide-link fileName='${testLine.className}'>
+                        <vaadin-icon class="ideIcon" icon="font-awesome-solid:code"></vaadin-icon>
+                    </qui-ide-link>
                     <span class="${level}">
-                        ${testLine.testClass}
+                        ${testLine.className}
                     </span>`;
     }
 
@@ -340,7 +326,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         var dn = testLine.displayName;
         var hi = dn.lastIndexOf('#');
         var n = dn.substring(hi + 1);
-        let level = testLine.testExecutionResult.status.toLowerCase();
+        let level = testLine.style ?? '';
         return html`<span class="${level}">
                         ${n}
                     </span>`;
@@ -352,36 +338,19 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                     </span>`;        
     }
 
-    _detailsRenderer(prop) {
-        return html`<p>${prop}</p>
-        <hr/>
-        <p>${this._detailsOpenedItem}</p>`;
-    }
-
-
-    _renderStopStartButton(){        
-        if(this._state && this._state.running){
-            return this._renderStopButton();
-        }
-        return this._renderStartButton();
-    }
-
-    _renderStartButton(){
-        return html`<vaadin-button id="start-cnt-testing-btn" theme="tertiary" @click="${this._start}" ?disabled=${this._busy}>
-                        <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                        Start
-                    </vaadin-button>`;
-    }
-
-    _renderStopButton(){
-        return html`<vaadin-button id="stop-cnt-testing-btn" theme="tertiary" @click="${this._stop}" ?disabled=${this._state.inProgress || this._busy}>
-                        <vaadin-icon icon="font-awesome-solid:stop"></vaadin-icon>
-                        Stop
+    _renderStartStopButton(){
+        return html`<vaadin-button 
+                            id="start-cnt-testing-btn" 
+                            theme="tertiary" 
+                            @click="${!this._testsEnabled ? this._start : this._stop}" 
+                            ?disabled=${this._busy}>
+                        <vaadin-icon icon="font-awesome-solid:${!this._testsEnabled ? 'play' : 'stop'}"></vaadin-icon>
+                        ${!this._testsEnabled ? 'Start' : 'Stop'}
                     </vaadin-button>`;
     }
 
     _renderRunAllButton(){
-        if(this._state && this._state.running){
+        if(this._testsEnabled){
             return html`<vaadin-button id="run-all-cnt-testing-btn" theme="tertiary" @click="${this._runAll}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon icon="font-awesome-solid:person-running"></vaadin-icon>
                             Run all
@@ -390,7 +359,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _renderRunFailedButton(){
-        if(this._state && this._state.running && this._state.failed > 0){
+        if(this._testsEnabled && this._hasFailedTestResult){
             return html`<vaadin-button id="run-failed-cnt-testing-btn" theme="tertiary" @click="${this._runFailed}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon class="warning" icon="font-awesome-solid:person-falling-burst" ></vaadin-icon>
                             Run failed
@@ -399,22 +368,22 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _renderToggleBrokenOnly(){
-        if(this._state && this._state.running){
+        if(this._testsEnabled){
             return html`<vaadin-checkbox id="run-failed-cnt-testing-chk" theme="small"
                                     @change="${this._toggleBrokenOnly}"
-                                    ?checked=${this._state.isBrokenOnly}
-                                    ?disabled=${this._state.inProgress || this._busy}
+                                    ?checked=${this._tests.config.brokenOnly}
+                                    ?disabled=${this._testsCurrentlyRunning || this._busy}
                                     label="Only run failing tests">
                         </vaadin-checkbox>`;
         }
     }
 
-    _renderToggleDisplayTags(results) {
-        if(this._state && this._state.running){
+    _renderToggleDisplayTags() {
+        if(this._testsEnabled){
             return html`<vaadin-checkbox id="display-tags-cnt-testing-chk" theme="small"
                                          @change="${this._toggleDisplayTags}"
                                          ?checked=${this._displayTags}
-                                         ?disabled=${this._state.inProgress || this._busy || !results.meta.hasTags}
+                                         ?disabled=${this._busy || !this._hasTestResultWithTags}
                                          label="Display tags (if available)">
             </vaadin-checkbox>`;
         }

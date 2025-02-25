@@ -9,13 +9,11 @@ import java.lang.annotation.Target;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Denotes a WebSocket client endpoint.
  * <p>
- * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPongMessage} or
- * {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.
+ * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPingMessage},
+ * {@link OnPongMessage} or {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.
  *
  * <h2>Lifecycle and concurrency</h2>
  * Client endpoint implementation class must be a CDI bean. If no scope annotation is defined then {@link Singleton} is used.
@@ -24,7 +22,6 @@ import io.smallrye.common.annotation.Experimental;
  */
 @Retention(RUNTIME)
 @Target(TYPE)
-@Experimental("This API is experimental and may change in the future")
 public @interface WebSocketClient {
 
     /**

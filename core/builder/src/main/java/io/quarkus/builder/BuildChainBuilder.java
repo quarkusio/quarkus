@@ -19,9 +19,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build chain builder.
@@ -179,7 +178,7 @@ public final class BuildChainBuilder {
             for (Map.Entry<ItemId, Consume> entry : stepBuilder.getConsumes().entrySet()) {
                 final Consume consume = entry.getValue();
                 final ItemId id = entry.getKey();
-                if (!consume.getFlags().contains(ConsumeFlag.OPTIONAL) && !id.isMulti()) {
+                if (!consume.flags().contains(ConsumeFlag.OPTIONAL) && !id.isMulti()) {
                     if (!initialIds.contains(id) && !allProduces.containsKey(id)) {
                         throw new ChainBuildException("No producers for required item " + id);
                     }

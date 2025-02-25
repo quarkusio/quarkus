@@ -73,6 +73,17 @@ public class ReactiveResource {
                 .combinedWith((s, s2) -> s + " and " + s2);
     }
 
+    @GET
+    @Path("/multiple-combine-different-paths")
+    public Uni<String> helloMultipleUsingCombineDifferentPaths() {
+        return Uni.combine().all().unis(
+                client.helloGetUniDelay(),
+                client.helloGet("Naruto"),
+                client.helloGet("Goku"),
+                client.helloGetUniExecutor())
+                .with((s, s2, s3, s4) -> s + " and " + s2 + " and " + s3 + " and " + s4);
+    }
+
     @POST
     public Uni<String> helloPost(String body) {
         Span span = tracer.spanBuilder("helloPost").startSpan();

@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.function.Supplier;
 
@@ -35,7 +37,8 @@ public class SimpleJsonTest {
                                     AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
-                                    NestedInterface.class)
+                                    NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
+                                    Fruit.class, Price.class, DogRecord.class, ItemExtended.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -583,6 +586,26 @@ public class SimpleJsonTest {
                 .body("parts[0].name", Matchers.is("protruding eyes"));
     }
 
+    @Test
+    public void testSecureFieldOnTypeVariable() {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/secure-field-on-type-variable")
+                .then()
+                .statusCode(200)
+                .body("entity.prices[0].price", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/secure-field-on-type-variable")
+                .then()
+                .statusCode(200)
+                .body("entity.prices[0].price", Matchers.notNullValue());
+    }
+
     private static void testSecuredFieldOnReturnTypeField(String subPath) {
         TestIdentityController.resetRoles().add("max", "max", "user");
         RestAssured
@@ -676,6 +699,24 @@ public class SimpleJsonTest {
     }
 
     @Test
+    public void testEchoWithNullString() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":null,\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/dog-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.nullValue())
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
     public void testEchoWithMissingPrimitive() {
         RestAssured
                 .with()
@@ -690,5 +731,80 @@ public class SimpleJsonTest {
                 .body("age", Matchers.is(5))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
+    public void testRecordEcho() {
+        String response = RestAssured
+                .with()
+                .body("{\"code\":\"AL\",\"is_enabled\":true,\"name\":\"Alabama\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Alabama"))
+                .body("code", Matchers.is("AL"))
+                .body("is_enabled", Matchers.is(true))
+                .extract()
+                .asString();
+
+        int first = response.indexOf("is_enabled");
+        int last = response.lastIndexOf("is_enabled");
+        // assert that the "is_enabled" field is present only once in the response
+        assertTrue(first >= 0);
+        assertEquals(first, last);
+    }
+
+    @Test
+    public void testRecordWithEmptyConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Bart\",\"age\":5}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/empty-ctor-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bart"))
+                .body("age", Matchers.is(5));
+    }
+
+    @Test
+    public void testNullMapEcho() {
+        RestAssured
+                .with()
+                .body(new MapWrapper("test"))
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/null-map-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("properties", Matchers.nullValue());
+    }
+
+    @Test
+    public void testItem() {
+        RestAssured
+                .with()
+                .get("/simple/item")
+                .then()
+                .statusCode(200)
+                .body("name", Matchers.is("Name"))
+                .body("email", Matchers.is("E-mail"));
+    }
+
+    @Test
+    public void testItemExtended() {
+        RestAssured
+                .with()
+                .get("/simple/item-extended")
+                .then()
+                .statusCode(200)
+                .body("name", Matchers.is("Name"))
+                .body("email", Matchers.is("E-mail"))
+                .body("nameExtended", Matchers.is("Name-Extended"))
+                .body("emailExtended", Matchers.is(emptyOrNullString()));
     }
 }

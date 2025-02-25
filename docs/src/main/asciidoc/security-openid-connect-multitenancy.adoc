@@ -184,12 +184,13 @@ public class CustomTenantResolver implements TenantConfigResolver {
         if (path.startsWith("/tenant-a")) {
            String keycloakUrl = ConfigProvider.getConfig().getValue("keycloak.url", String.class);
 
-            OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("tenant-a");
-            config.setAuthServerUrl(keycloakUrl + "/realms/tenant-a");
-            config.setClientId("multi-tenant-client");
-            config.getCredentials().setSecret("secret");
-            config.setApplicationType(ApplicationType.HYBRID);
+            OidcTenantConfig config = OidcTenantConfig
+                    .authServerUrl(keycloakUrl + "/realms/tenant-a")
+                    .tenantId("tenant-a")
+                    .clientId("multi-tenant-client")
+                    .credentials("secret")
+                    .applicationType(ApplicationType.HYBRID)
+                    .build();
             return Uni.createFrom().item(config);
         } else {
             // resolve to default tenant config
@@ -329,22 +330,11 @@ A similar technique can be used with `TenantConfigResolver`, where a `tenant-id`
 
 [NOTE]
 ====
-If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] or xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy] and both tenant ids are the same
-and must be extracted from the Vert.x `RoutingContext`, you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver or MongoDB with Panache Mongo Database Resolver
-as a `RoutingContext` attribute, for example:
+If you also use Hibernate ORM multitenancy or MongoDB with Panache multitenancy and both tenant ids are the same,
+you can get the tenant id from the `RoutingContext` attribute with `tenant-id`. You can find more information here:
 
-[source,java]
-----
-public class CustomTenantResolver implements TenantResolver {
-
-    @Override
-    public String resolve(RoutingContext context) {
-        String tenantId = extractTenantId(context);
-        context.put("tenantId", tenantId);
-        return tenantId;
-    }
-}
-----
+* xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy]
+* xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy]
 ====
 
 == Starting and configuring the Keycloak server
@@ -353,10 +343,10 @@ To start a Keycloak server, you can use Docker and run the following command:
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
+docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` is set to `25.0.6` or higher.
+where `keycloak.version` is set to `26.0.7` or higher.
 
 Access your Keycloak server at http://localhost:8180[localhost:8180].
 
@@ -511,9 +501,9 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("tenant"));
+            assertTrue(page.asNormalizedText().contains("tenant"));
         }
     }
 
@@ -529,9 +519,9 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("alice@tenant-a.org"));
+            assertTrue(page.asNormalizedText().contains("alice@tenant-a.org"));
         }
     }
 
@@ -609,7 +599,7 @@ OIDC tenants are resolved in the following order:
 
 3. Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
 
-Finally, the default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
+Finally, the default OIDC tenant is selected if a tenant id has not been resolved after the preceding steps.
 
 See the following sections for more information:
 
@@ -719,16 +709,12 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private Supplier<OidcTenantConfig> createTenantConfig() {
-        final OidcTenantConfig config = new OidcTenantConfig();
-
-        config.setTenantId("tenant-c");
-        config.setAuthServerUrl("http://localhost:8180/realms/tenant-c");
-        config.setClientId("multi-tenant-client");
-        OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
-
-        credentials.setSecret("my-secret");
-
-        config.setCredentials(credentials);
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/tenant-c")
+                .tenantId("tenant-c")
+                .clientId("multi-tenant-client")
+                .credentials("my-secret")
+                .build();
 
         // Any other setting supported by the quarkus-oidc extension
 
@@ -947,12 +933,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/"  + tenantId)
+                .tenantId(tenantId)
+                .clientId(clientId)
+                .credentials(secret)
+                .applicationType(ApplicationType.WEB_APP)
+                .build();
         return config;
     }
 }
@@ -970,7 +957,7 @@ quarkus.oidc.credentials.secret=secret-default
 quarkus.oidc.application-type=web-app
 ----
 
-The preceeding example assumes that the `tenant-a`, `tenant-b` and default tenants are all used to protect the same endpoint paths. In other words, after the user has authenticated with the `tenant-a` configuration, this user will not be able to choose to authenticate with the `tenant-b` or default configuration before this user logs out and has a session cookie cleared or expired.
+The preceding example assumes that the `tenant-a`, `tenant-b` and default tenants are all used to protect the same endpoint paths. In other words, after the user has authenticated with the `tenant-a` configuration, this user will not be able to choose to authenticate with the `tenant-b` or default configuration before this user logs out and has a session cookie cleared or expired.
 
 The situation where multiple OIDC `web-app` tenants protect the tenant-specific paths is less typical and also requires an extra care.
 When multiple OIDC `web-app` tenants such as `tenant-a`, `tenant-b` and default tenants are used to control access to the tenant specific paths, the users authenticated with one OIDC provider must not be able to access the paths requiring an authentication with another provider, otherwise the results can be unpredictable, most likely causing unexpected authentication failures.
@@ -1012,13 +999,14 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String cookiePath, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
-        config.getAuthentication().setCookiePath(cookiePath); <3>
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/" + tenantId)
+                .tenantId(tenantId)
+                .clientId(clientId)
+                .credentials(secret)
+                .applicationType(ApplicationType.WEB_APP)
+                .authentication().cookiePath(cookiePath).end()  <3>
+                .build();
         return config;
     }
 }
@@ -1090,12 +1078,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
+        final OidcTenantConfig config = OidcTenantConfig
+            .authServerUrl("http://localhost:8180/realms/"  + tenantId)
+            .tenantId(tenantId)
+            .clientId(clientId)
+            .credentials(secret)
+            .applicationType(ApplicationType.WEB_APP)
+            .build();
         return config;
     }
 }
@@ -1120,6 +1109,40 @@ The default tenant configuration is automatically disabled when `quarkus.oidc.au
 ====
 
 Be aware that tenant-specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
+
+[[programmatic-startup]]
+== Programmatic OIDC start-up for multiple tenants
+
+Static OIDC tenants can be created programmatically like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import io.quarkus.oidc.OidcTenantConfig;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void observe(@Observes Oidc oidc) { <1>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-one").tenantId("tenant-one").build()); <2>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-two").tenantId("tenant-two").build()); <3>
+    }
+
+}
+----
+<1> Observe OIDC event.
+<2> Create OIDC tenant 'tenant-one'.
+<3> Create OIDC tenant 'tenant-two'.
+
+The code above is a programmatic equivalent to the following configuration in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.oidc.tenant-one.auth-server-url=http://localhost:8180/realms/tenant-one
+quarkus.oidc.tenant-two.auth-server-url=http://localhost:8180/realms/tenant-two
+----
 
 == References
 

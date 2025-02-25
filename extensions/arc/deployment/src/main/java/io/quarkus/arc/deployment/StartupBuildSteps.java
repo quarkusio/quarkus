@@ -37,6 +37,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -179,6 +180,27 @@ public class StartupBuildSteps {
             ResultHandle containerHandle = mc.invokeStaticMethod(ARC_CONTAINER);
             ResultHandle beanHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
                     mc.load(bean.getIdentifier()));
+
+            // if the [synthetic] bean is not active and is not injected in an always-active bean, skip obtaining the instance
+            // this means that an inactive bean that is injected into an always-active bean will end up with an error
+            if (bean.canBeInactive()) {
+                boolean isInjectedInAlwaysActiveBean = false;
+                for (InjectionPointInfo ip : observerRegistration.getBeanProcessor().getBeanDeployment().getInjectionPoints()) {
+                    if (bean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
+                            && !ip.getTargetBean().get().canBeInactive()) {
+                        isInjectedInAlwaysActiveBean = true;
+                        break;
+                    }
+                }
+
+                if (!isInjectedInAlwaysActiveBean) {
+                    ResultHandle isActive = mc.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(InjectableBean.class, "isActive", boolean.class),
+                            beanHandle);
+                    mc.ifFalse(isActive).trueBranch().returnVoid();
+                }
+            }
+
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
                 // It does not make a lot of sense to support @Startup dependent beans but it's still a valid use case
                 ResultHandle creationalContext = mc.newInstance(
@@ -212,7 +234,7 @@ public class StartupBuildSteps {
                     mc.invokeInterfaceMethod(CLIENT_PROXY_CONTEXTUAL_INSTANCE, proxyHandle);
                 }
             }
-            mc.returnValue(null);
+            mc.returnVoid();
         });
         configurator.done();
     }

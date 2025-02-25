@@ -5,17 +5,11 @@ import java.util.concurrent.atomic.LongAdder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 import org.mockito.Mockito;
 
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
-/**
- * Disabled on Java 8 because of Mocks
- */
-@DisabledOnJre(JRE.JAVA_8)
 public class VertxHttpServerMetricsTest {
 
     RoutingContext routingContext;

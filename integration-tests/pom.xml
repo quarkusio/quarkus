@@ -213,6 +213,7 @@
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mariadb</module>
+                <module>hibernate-reactive-mssql</module>
                 <module>hibernate-reactive-mysql</module>
                 <module>hibernate-reactive-mysql-agroal-flyway</module>
                 <module>hibernate-reactive-postgresql</module>
@@ -234,6 +235,7 @@
                 <module>vertx</module>
                 <module>vertx-kotlin</module>
                 <module>websockets</module>
+                <module>websockets-next</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
                 <module>spring-data-jpa</module>
@@ -251,12 +253,15 @@
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
                 <module>observability-lgtm</module>
+                <module>observability-lgtm-prometheus</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
+                <module>oidc-dpop</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -266,6 +271,7 @@
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
                 <module>oidc-wiremock-logout</module>
+                <module>oidc-wiremock-providers</module>
                 <module>keycloak-authorization</module>
                 <module>rest-csrf</module>
                 <module>reactive-db2-client</module>
@@ -302,7 +308,7 @@
                 <module>maven</module>
                 <module>scala</module>
                 <module>kotlin</module>
-                <module>kotlin-serialization</module>
+                <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>
                 <module>mongodb-panache-kotlin</module>
                 <module>mongodb-rest-data-panache</module>
@@ -332,6 +338,7 @@
                 <module>reactive-messaging-pulsar</module>
                 <module>reactive-messaging-mqtt</module>
                 <module>reactive-messaging-rabbitmq</module>
+                <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>reactive-messaging-hibernate-reactive</module>
                 <module>reactive-messaging-hibernate-orm</module>
@@ -355,10 +362,12 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>micrometer-security</module>
+                <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
+                <module>opentelemetry-minimal</module>
                 <module>opentelemetry-mongodb-client-instrumentation</module>
                 <module>opentelemetry-quartz</module>
                 <module>opentelemetry-scheduler</module>

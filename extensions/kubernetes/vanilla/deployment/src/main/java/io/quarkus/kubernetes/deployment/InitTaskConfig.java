@@ -2,28 +2,40 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.dekorate.kubernetes.annotation.ImagePullPolicy;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class InitTaskConfig {
+public interface InitTaskConfig {
     /**
      * If true, the init task will be generated. Otherwise, the init task resource generation will be skipped.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
-     * The init task image to use by the init-container.
-     * Deprecated, use waitForContainer.image instead.
+     * The init task image to use by the init container.
+     *
+     * @deprecated use waitForContainer.image instead.
      */
-    @Deprecated
-    @ConfigItem
-    public Optional<String> image;
+    @Deprecated(forRemoval = true, since = "3.5")
+    Optional<String> image();
 
     /**
      * The configuration of the `wait for` container.
      */
-    @ConfigItem
-    public InitTaskContainerConfig waitForContainer;
+    InitTaskContainerConfig waitForContainer();
+
+    interface InitTaskContainerConfig {
+        /**
+         * The init task image to use by the init container.
+         */
+        @WithDefault("groundnuty/k8s-wait-for:no-root-v1.7")
+        String image();
+
+        /**
+         * Image pull policy.
+         */
+        @WithDefault("always")
+        ImagePullPolicy imagePullPolicy();
+    }
 }

@@ -9,6 +9,7 @@ import java.util.function.Function;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 
 /**
@@ -74,7 +75,21 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
      * Joining this network may be required if explicitily asked by user properties or if running a containerized
      * application during integration tests.
      */
-    public static boolean isSharedNetworkRequired(GlobalDevServicesConfig globalDevServicesConfig,
+    public static boolean isSharedNetworkRequired(
+            DevServicesConfig devServicesConfig,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+        return devServicesConfig.launchOnSharedNetwork() ||
+                (!devServicesSharedNetworkBuildItem.isEmpty()
+                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
+    }
+
+    /**
+     * @deprecated Please, use {@link DevServicesSharedNetworkBuildItem#isSharedNetworkRequired(DevServicesConfig, List)}
+     *             instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.18")
+    public static boolean isSharedNetworkRequired(
+            GlobalDevServicesConfig globalDevServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return globalDevServicesConfig.launchOnSharedNetwork ||
                 (!devServicesSharedNetworkBuildItem.isEmpty()

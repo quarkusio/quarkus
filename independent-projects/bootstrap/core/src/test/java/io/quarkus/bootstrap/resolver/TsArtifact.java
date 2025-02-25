@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.function.Supplier;
 
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
@@ -139,6 +138,10 @@ public class TsArtifact {
         return addDependency(new TsDependency(dep));
     }
 
+    public TsArtifact addDependency(TsArtifact dep, boolean optional) {
+        return addDependency(new TsDependency(dep, optional));
+    }
+
     public TsArtifact addDependency(TsArtifact dep, TsArtifact... excludes) {
         return addDependency(new TsDependency(dep).exclude(excludes));
     }
@@ -152,23 +155,23 @@ public class TsArtifact {
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep, boolean optional) {
-        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), optional));
+        return addDependency(dep, new TsDependency(dep.getRuntime(), optional));
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep, String scope, boolean optional) {
-        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), scope, optional));
+        return addDependency(dep, new TsDependency(dep.getRuntime(), scope, optional));
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep, TsArtifact... excludes) {
-        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), false).exclude(excludes));
+        return addDependency(dep, new TsDependency(dep.getRuntime(), false).exclude(excludes));
     }
 
-    private TsArtifact addDependency(TsQuarkusExt dep, Supplier<TsDependency> dependencyFactory) {
+    private TsArtifact addDependency(TsQuarkusExt extDep, TsDependency dep) {
         if (extDeps.isEmpty()) {
             extDeps = new ArrayList<>(1);
         }
-        extDeps.add(dep);
-        return addDependency(dependencyFactory.get());
+        extDeps.add(extDep);
+        return addDependency(dep);
     }
 
     public TsArtifact addDependency(TsDependency dep) {
@@ -177,6 +180,33 @@ public class TsArtifact {
         }
         deps.add(dep);
         return this;
+    }
+
+    /**
+     * Adds a dependency as the first in the list.
+     *
+     * @param dep dependency to add
+     * @return this artifact
+     */
+    public TsArtifact addFirstDependency(TsDependency dep) {
+        if (deps.isEmpty()) {
+            deps = new ArrayList<>();
+            deps.add(dep);
+        } else {
+            deps.add(dep);
+            Collections.rotate(deps, 1);
+        }
+        return this;
+    }
+
+    /**
+     * Adds a dependency as the first in the list.
+     *
+     * @param dep dependency to add
+     * @return this artifact
+     */
+    public TsArtifact addFirstDependency(TsArtifact dep) {
+        return addFirstDependency(new TsDependency(dep));
     }
 
     public TsArtifact addManagedDependency(TsArtifact a) {

@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
 import static io.quarkus.bootstrap.util.DependencyUtils.newDependencyBuilder;
-import static io.quarkus.bootstrap.util.DependencyUtils.toArtifact;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,10 +51,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -64,7 +61,18 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathVisit;
 
+/**
+ * The legacy {@link io.quarkus.bootstrap.model.ApplicationModel} resolver implementation.
+ * <p>
+ * This implementation is kept just in case an issue is found in the new default implementation, which is
+ * {@link ApplicationDependencyResolver},
+ * and can be enabled by setting {@code quarkus.bootstrap.legacy-model-resolver} system or POM property to {@code true}.
+ *
+ * @deprecated since 3.19.0
+ */
+@Deprecated(since = "3.19.0", forRemoval = true)
 public class ApplicationDependencyTreeResolver {
 
     private static final Logger log = Logger.getLogger(ApplicationDependencyTreeResolver.class);
@@ -73,15 +81,14 @@ public class ApplicationDependencyTreeResolver {
     private static final String QUARKUS_EXTENSION_DEPENDENCY = "quarkus.ext";
 
     /* @formatter:off */
-    private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b001;
-    private static final byte COLLECT_DIRECT_DEPS =                 0b010;
-    private static final byte COLLECT_RELOADABLE_MODULES =          0b100;
+    private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b0001;
+    private static final byte COLLECT_DIRECT_DEPS =                 0b0010;
+    private static final byte COLLECT_RELOADABLE_MODULES =          0b0100;
+    private static final byte COLLECT_DEPLOYMENT_INJECTION_POINTS = 0b1000;
     /* @formatter:on */
 
     // this is a temporary option, to enable the previous way of initializing runtime classpath dependencies
     private static final boolean CONVERGED_TREE_ONLY = PropertyUtils.getBoolean("quarkus.bootstrap.converged-tree-only", false);
-
-    private static final Artifact[] NO_ARTIFACTS = new Artifact[0];
 
     public static ApplicationDependencyTreeResolver newInstance() {
         return new ApplicationDependencyTreeResolver();
@@ -91,9 +98,9 @@ public class ApplicationDependencyTreeResolver {
         return (Artifact) dep.getData().get(QUARKUS_RUNTIME_ARTIFACT);
     }
 
-    private byte walkingFlags = COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS;
-    private final List<ExtensionDependency> topExtensionDeps = new ArrayList<>();
-    private ExtensionDependency lastVisitedRuntimeExtNode;
+    private byte walkingFlags = COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_DEPLOYMENT_INJECTION_POINTS;
+    private final List<ExtensionDependency> deploymentInjectionPoints = new ArrayList<>();
+    private ExtensionDependency currentTopLevelExtension;
     private final Map<ArtifactKey, ExtensionInfo> allExtensions = new HashMap<>();
     private List<ConditionalDependency> conditionalDepsToProcess = new ArrayList<>();
     private final Deque<Collection<Exclusion>> exclusionStack = new ArrayDeque<>();
@@ -106,6 +113,8 @@ public class ApplicationDependencyTreeResolver {
     private boolean collectReloadableModules;
     private Consumer<String> buildTreeConsumer;
     private List<Dependency> collectCompileOnly;
+    private boolean runtimeModelOnly;
+    private boolean devMode;
 
     public ApplicationDependencyTreeResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
@@ -136,6 +145,28 @@ public class ApplicationDependencyTreeResolver {
      */
     public ApplicationDependencyTreeResolver setCollectCompileOnly(List<Dependency> collectCompileOnly) {
         this.collectCompileOnly = collectCompileOnly;
+        return this;
+    }
+
+    /**
+     * Whether to limit the resulting {@link io.quarkus.bootstrap.model.ApplicationModel} to the runtime dependencies.
+     *
+     * @param runtimeModelOnly whether to limit the resulting application model to the runtime dependencies
+     * @return self
+     */
+    public ApplicationDependencyTreeResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+        this.runtimeModelOnly = runtimeModelOnly;
+        return this;
+    }
+
+    /**
+     * Whether an application model is resolved for dev mode
+     *
+     * @param devMode whether an application model is resolved for dev mode
+     * @return self
+     */
+    public ApplicationDependencyTreeResolver setDevMode(boolean devMode) {
+        this.devMode = devMode;
         return this;
     }
 
@@ -170,45 +201,11 @@ public class ApplicationDependencyTreeResolver {
         this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
 
         visitRuntimeDependencies(root.getChildren());
+        enableConditionalDeps();
 
-        List<ConditionalDependency> activatedConditionalDeps = List.of();
-
-        if (!conditionalDepsToProcess.isEmpty()) {
-            activatedConditionalDeps = new ArrayList<>();
-            List<ConditionalDependency> unsatisfiedConditionalDeps = new ArrayList<>();
-            while (!conditionalDepsToProcess.isEmpty()) {
-                final List<ConditionalDependency> tmp = unsatisfiedConditionalDeps;
-                unsatisfiedConditionalDeps = conditionalDepsToProcess;
-                conditionalDepsToProcess = tmp;
-                final int totalConditionsToProcess = unsatisfiedConditionalDeps.size();
-                final Iterator<ConditionalDependency> i = unsatisfiedConditionalDeps.iterator();
-                while (i.hasNext()) {
-                    final ConditionalDependency cd = i.next();
-                    final boolean satisfied = cd.isSatisfied();
-                    if (!satisfied) {
-                        continue;
-                    }
-                    i.remove();
-
-                    cd.activate();
-                    activatedConditionalDeps.add(cd);
-                }
-                if (totalConditionsToProcess == unsatisfiedConditionalDeps.size()) {
-                    // none of the dependencies was satisfied
-                    break;
-                }
-                conditionalDepsToProcess.addAll(unsatisfiedConditionalDeps);
-                unsatisfiedConditionalDeps.clear();
-            }
-        }
-
-        for (ExtensionDependency extDep : topExtensionDeps) {
-            injectDeploymentDependencies(extDep);
-        }
-
-        if (!activatedConditionalDeps.isEmpty()) {
-            for (ConditionalDependency cd : activatedConditionalDeps) {
-                injectDeploymentDependencies(cd.getExtensionDependency());
+        if (!runtimeModelOnly) {
+            for (ExtensionDependency extDep : deploymentInjectionPoints) {
+                injectDeploymentDependencies(extDep);
             }
         }
 
@@ -231,7 +228,35 @@ public class ApplicationDependencyTreeResolver {
         }
 
         collectPlatformProperties();
-        collectCompileOnly(collectRtDepsRequest, root);
+        if (!runtimeModelOnly) {
+            collectCompileOnly(collectRtDepsRequest, root);
+        }
+    }
+
+    private void enableConditionalDeps() {
+        if (!conditionalDepsToProcess.isEmpty()) {
+            List<ConditionalDependency> unsatisfiedConditionalDeps = new ArrayList<>();
+            while (!conditionalDepsToProcess.isEmpty()) {
+                final List<ConditionalDependency> tmp = unsatisfiedConditionalDeps;
+                unsatisfiedConditionalDeps = conditionalDepsToProcess;
+                conditionalDepsToProcess = tmp;
+                final int totalConditionsToProcess = unsatisfiedConditionalDeps.size();
+                final Iterator<ConditionalDependency> i = unsatisfiedConditionalDeps.iterator();
+                while (i.hasNext()) {
+                    final ConditionalDependency cd = i.next();
+                    if (cd.isSatisfied()) {
+                        i.remove();
+                        cd.activate();
+                    }
+                }
+                if (totalConditionsToProcess == unsatisfiedConditionalDeps.size()) {
+                    // none of the dependencies was satisfied
+                    break;
+                }
+                conditionalDepsToProcess.addAll(unsatisfiedConditionalDeps);
+                unsatisfiedConditionalDeps.clear();
+            }
+        }
     }
 
     /**
@@ -408,7 +433,6 @@ public class ApplicationDependencyTreeResolver {
     private void visitRuntimeDependency(DependencyNode node) {
 
         final byte prevWalkingFlags = walkingFlags;
-        final ExtensionDependency prevLastVisitedRtExtNode = lastVisitedRuntimeExtNode;
 
         final boolean popExclusions = !node.getDependency().getExclusions().isEmpty();
         if (popExclusions) {
@@ -449,6 +473,8 @@ public class ApplicationDependencyTreeResolver {
                     if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                         dep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     }
+                    managedDeps.add(new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
+                    collectConditionalDependencies(extDep);
                 }
                 if (isWalkingFlagOn(COLLECT_RELOADABLE_MODULES)) {
                     if (module != null) {
@@ -463,7 +489,7 @@ public class ApplicationDependencyTreeResolver {
             clearWalkingFlag(COLLECT_DIRECT_DEPS);
 
             if (extDep != null) {
-                extDep.info.ensureActivated();
+                extDep.info.ensureActivated(appBuilder);
                 visitExtensionDependency(extDep);
             }
             visitRuntimeDependencies(node.getChildren());
@@ -477,7 +503,6 @@ public class ApplicationDependencyTreeResolver {
             exclusionStack.pollLast();
         }
         walkingFlags = prevWalkingFlags;
-        lastVisitedRuntimeExtNode = prevLastVisitedRtExtNode;
     }
 
     private ExtensionDependency getExtensionDependencyOrNull(DependencyNode node, Artifact artifact)
@@ -504,21 +529,16 @@ public class ApplicationDependencyTreeResolver {
         return null;
     }
 
-    private void visitExtensionDependency(ExtensionDependency extDep)
-            throws BootstrapDependencyProcessingException {
+    private void visitExtensionDependency(ExtensionDependency extDep) {
+        if (clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
+            currentTopLevelExtension = extDep;
+        } else if (currentTopLevelExtension != null) {
+            currentTopLevelExtension.addExtensionDependency(extDep);
+        } // else it'd be an unexpected situation
 
-        managedDeps.add(new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
-
-        collectConditionalDependencies(extDep);
-
-        if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
-            clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES);
-            topExtensionDeps.add(extDep);
+        if (clearWalkingFlag(COLLECT_DEPLOYMENT_INJECTION_POINTS)) {
+            deploymentInjectionPoints.add(extDep);
         }
-        if (lastVisitedRuntimeExtNode != null) {
-            lastVisitedRuntimeExtNode.addExtensionDependency(extDep);
-        }
-        lastVisitedRuntimeExtNode = extDep;
     }
 
     private void collectConditionalDependencies(ExtensionDependency dependent)
@@ -534,19 +554,18 @@ public class ApplicationDependencyTreeResolver {
             if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, JavaScopes.RUNTIME))) {
                 continue;
             }
-            final ExtensionInfo conditionalInfo = getExtensionInfoOrNull(conditionalArtifact,
+            conditionalArtifact = resolve(conditionalArtifact, dependent.runtimeNode.getRepositories());
+            final ExtensionInfo condExtInfo = getExtensionInfoOrNull(conditionalArtifact,
                     dependent.runtimeNode.getRepositories());
-            if (conditionalInfo == null) {
-                log.warn(dependent.info.runtimeArtifact + " declares a conditional dependency on " + conditionalArtifact
-                        + " that is not a Quarkus extension and will be ignored");
+            if (condExtInfo != null && condExtInfo.activated) {
                 continue;
             }
-            if (conditionalInfo.activated) {
-                continue;
-            }
-            final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalInfo, dependent);
+            final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalArtifact, condExtInfo,
+                    dependent);
             conditionalDepsToProcess.add(conditionalDep);
-            collectConditionalDependencies(conditionalDep.getExtensionDependency());
+            if (condExtInfo != null) {
+                collectConditionalDependencies(conditionalDep.getExtensionDependency());
+            }
         }
     }
 
@@ -563,21 +582,28 @@ public class ApplicationDependencyTreeResolver {
 
         artifact = resolve(artifact, repos);
         final Path path = artifact.getFile().toPath();
-        final Properties descriptor = PathTree.ofDirectoryOrArchive(path).apply(BootstrapConstants.DESCRIPTOR_PATH, visit -> {
-            if (visit == null) {
-                return null;
-            }
-            try {
-                return readDescriptor(visit.getPath());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        final Properties descriptor = PathTree.ofDirectoryOrArchive(path).apply(BootstrapConstants.DESCRIPTOR_PATH,
+                ApplicationDependencyTreeResolver::readExtensionProperties);
         if (descriptor != null) {
-            ext = new ExtensionInfo(artifact, descriptor);
+            ext = new ExtensionInfo(artifact, descriptor, devMode);
             allExtensions.put(extKey, ext);
         }
         return ext;
+    }
+
+    private static Properties readExtensionProperties(PathVisit visit) {
+        if (visit == null) {
+            return null;
+        }
+        try {
+            final Properties rtProps = new Properties();
+            try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
+                rtProps.load(reader);
+            }
+            return rtProps;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void injectDeploymentDependencies(ExtensionDependency extDep)
@@ -597,8 +623,8 @@ public class ApplicationDependencyTreeResolver {
             clearReloadable(deploymentNode);
         }
 
-        final List<DependencyNode> deploymentDeps = deploymentNode.getChildren();
-        if (!replaceDirectDepBranch(extDep, deploymentDeps)) {
+        extDep.replaceRuntimeExtensionNodes(deploymentNode);
+        if (!extDep.presentInTargetGraph) {
             throw new BootstrapDependencyProcessingException(
                     "Quarkus extension deployment artifact " + deploymentNode.getArtifact()
                             + " does not appear to depend on the corresponding runtime artifact "
@@ -609,7 +635,7 @@ public class ApplicationDependencyTreeResolver {
         runtimeNode.setData(QUARKUS_RUNTIME_ARTIFACT, runtimeNode.getArtifact());
         runtimeNode.setArtifact(deploymentNode.getArtifact());
         runtimeNode.getDependency().setArtifact(deploymentNode.getArtifact());
-        runtimeNode.setChildren(deploymentDeps);
+        runtimeNode.setChildren(deploymentNode.getChildren());
     }
 
     private void clearReloadable(DependencyNode node) {
@@ -620,61 +646,6 @@ public class ApplicationDependencyTreeResolver {
         if (dep != null) {
             dep.clearFlag(DependencyFlags.RELOADABLE);
         }
-    }
-
-    private boolean replaceDirectDepBranch(ExtensionDependency extDep, List<DependencyNode> deploymentDeps)
-            throws BootstrapDependencyProcessingException {
-        int i = 0;
-        DependencyNode inserted = null;
-        while (i < deploymentDeps.size()) {
-            final Artifact a = deploymentDeps.get(i).getArtifact();
-            if (a == null) {
-                continue;
-            }
-            if (isSameKey(extDep.info.runtimeArtifact, a)) {
-                // we are not comparing the version in the above condition because the runtime version
-                // may appear to be different then the deployment one and that's ok
-                // e.g. the version of the runtime artifact could be managed by a BOM
-                // but overridden by the user in the project config. The way the deployment deps
-                // are resolved here, the deployment version of the runtime artifact will be the one from the BOM.
-                inserted = new DefaultDependencyNode(extDep.runtimeNode);
-                inserted.setChildren(extDep.runtimeNode.getChildren());
-                deploymentDeps.set(i, inserted);
-                break;
-            }
-            ++i;
-        }
-        if (inserted == null) {
-            return false;
-        }
-
-        if (extDep.runtimeExtensionDeps != null) {
-            for (ExtensionDependency dep : extDep.runtimeExtensionDeps) {
-                for (DependencyNode deploymentDep : deploymentDeps) {
-                    if (deploymentDep == inserted) {
-                        continue;
-                    }
-                    if (replaceRuntimeBranch(dep, deploymentDep.getChildren())) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private boolean replaceRuntimeBranch(ExtensionDependency extNode, List<DependencyNode> deploymentNodes)
-            throws BootstrapDependencyProcessingException {
-        if (replaceDirectDepBranch(extNode, deploymentNodes)) {
-            return true;
-        }
-        for (DependencyNode deploymentNode : deploymentNodes) {
-            if (replaceRuntimeBranch(extNode, deploymentNode.getChildren())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions,
@@ -745,80 +716,17 @@ public class ApplicationDependencyTreeResolver {
     }
 
     private boolean isWalkingFlagOn(byte flag) {
-        return (walkingFlags & flag) > 0;
+        return (walkingFlags & flag) == flag;
     }
 
-    private void clearWalkingFlag(byte flag) {
-        if ((walkingFlags & flag) > 0) {
-            walkingFlags ^= flag;
-        }
-    }
-
-    private static Properties readDescriptor(Path path) throws IOException {
-        final Properties rtProps = new Properties();
-        try (BufferedReader reader = Files.newBufferedReader(path)) {
-            rtProps.load(reader);
-        }
-        return rtProps;
-    }
-
-    private class ExtensionInfo {
-        final Artifact runtimeArtifact;
-        final Properties props;
-        final Artifact deploymentArtifact;
-        final Artifact[] conditionalDeps;
-        final ArtifactKey[] dependencyCondition;
-        boolean activated;
-
-        ExtensionInfo(Artifact runtimeArtifact, Properties props) throws BootstrapDependencyProcessingException {
-            this.runtimeArtifact = runtimeArtifact;
-            this.props = props;
-
-            String value = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            if (value == null) {
-                throw new BootstrapDependencyProcessingException("Extension descriptor from " + runtimeArtifact
-                        + " does not include " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            }
-            Artifact deploymentArtifact = toArtifact(value);
-            if (deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
-                deploymentArtifact = deploymentArtifact.setVersion(runtimeArtifact.getVersion());
-            }
-            this.deploymentArtifact = deploymentArtifact;
-
-            value = props.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES);
-            if (value != null) {
-                final String[] deps = BootstrapUtils.splitByWhitespace(value);
-                conditionalDeps = new Artifact[deps.length];
-                for (int i = 0; i < deps.length; ++i) {
-                    try {
-                        conditionalDeps[i] = toArtifact(deps[i]);
-                    } catch (Exception e) {
-                        throw new BootstrapDependencyProcessingException(
-                                "Failed to parse conditional dependencies configuration of " + runtimeArtifact, e);
-                    }
-                }
-            } else {
-                conditionalDeps = NO_ARTIFACTS;
-            }
-
-            dependencyCondition = BootstrapUtils
-                    .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-        }
-
-        void ensureActivated() {
-            if (activated) {
-                return;
-            }
-            activated = true;
-            appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
-
-            final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
-            if (providesCapabilities != null || requiresCapabilities != null) {
-                appBuilder.addExtensionCapabilities(
-                        CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
-            }
-        }
+    /**
+     * Clears the flags and returns {@code true}, if the flags were actually on and cleared.
+     *
+     * @param flags the flags to clear
+     * @return true if the flags were on and cleared, false if the flags were not on
+     */
+    private boolean clearWalkingFlag(byte flags) {
+        return walkingFlags != (walkingFlags &= (byte) (walkingFlags ^ flags));
     }
 
     private static class ExtensionDependency {
@@ -831,9 +739,10 @@ public class ApplicationDependencyTreeResolver {
         final DependencyNode runtimeNode;
         final Collection<Exclusion> exclusions;
         boolean conditionalDepsQueued;
-        private List<ExtensionDependency> runtimeExtensionDeps;
+        private List<ExtensionDependency> extDeps;
+        private boolean presentInTargetGraph;
 
-        ExtensionDependency(ExtensionInfo info, DependencyNode node, Collection<Exclusion> exclusions) {
+        private ExtensionDependency(ExtensionInfo info, DependencyNode node, Collection<Exclusion> exclusions) {
             this.runtimeNode = node;
             this.info = info;
             this.exclusions = exclusions;
@@ -848,37 +757,78 @@ public class ApplicationDependencyTreeResolver {
             }
         }
 
-        void addExtensionDependency(ExtensionDependency dep) {
-            if (runtimeExtensionDeps == null) {
-                runtimeExtensionDeps = new ArrayList<>();
+        private void addExtensionDependency(ExtensionDependency dep) {
+            if (extDeps == null) {
+                extDeps = new ArrayList<>();
             }
-            runtimeExtensionDeps.add(dep);
+            extDeps.add(dep);
+        }
+
+        private void replaceRuntimeExtensionNodes(DependencyNode deploymentNode) {
+            var deploymentVisitor = new OrderedDependencyVisitor(deploymentNode);
+            // skip the root node
+            deploymentVisitor.next();
+            int nodesToReplace = extDeps == null ? 1 : extDeps.size() + 1;
+            while (deploymentVisitor.hasNext() && nodesToReplace > 0) {
+                deploymentVisitor.next();
+                if (replaceRuntimeNode(deploymentVisitor)) {
+                    --nodesToReplace;
+                } else if (extDeps != null) {
+                    for (int i = 0; i < extDeps.size(); ++i) {
+                        if (extDeps.get(i).replaceRuntimeNode(deploymentVisitor)) {
+                            --nodesToReplace;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private boolean replaceRuntimeNode(OrderedDependencyVisitor depVisitor) {
+            if (!presentInTargetGraph && isSameKey(runtimeNode.getArtifact(), depVisitor.getCurrent().getArtifact())) {
+                // we are not comparing the version in the above condition because the runtime version
+                // may appear to be different from the deployment one and that's ok
+                // e.g. the version of the runtime artifact could be managed by a BOM
+                // but overridden by the user in the project config. The way the deployment deps
+                // are resolved here, the deployment version of the runtime artifact will be the one from the BOM.
+                var inserted = new DefaultDependencyNode(runtimeNode);
+                inserted.setChildren(runtimeNode.getChildren());
+                depVisitor.replaceCurrent(inserted);
+                presentInTargetGraph = true;
+                return true;
+            }
+            return false;
         }
     }
 
     private class ConditionalDependency {
 
+        final Artifact artifact;
         final ExtensionInfo info;
         final ExtensionDependency dependent;
         private ExtensionDependency dependency;
         private boolean activated;
 
-        private ConditionalDependency(ExtensionInfo info, ExtensionDependency dependent) {
-            this.info = Objects.requireNonNull(info, "Extension info is null");
+        private ConditionalDependency(Artifact artifact, ExtensionInfo info, ExtensionDependency dependent) {
+            this.artifact = Objects.requireNonNull(artifact, "artifact is null");
+            this.info = info;
             this.dependent = dependent;
         }
 
         ExtensionDependency getExtensionDependency() {
-            if (dependency == null) {
-                final DefaultDependencyNode rtNode = new DefaultDependencyNode(
-                        new Dependency(info.runtimeArtifact, JavaScopes.COMPILE));
-                rtNode.setVersion(new BootstrapArtifactVersion(info.runtimeArtifact.getVersion()));
-                rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
-                        new BootstrapArtifactVersion(info.runtimeArtifact.getVersion())));
-                rtNode.setRepositories(dependent.runtimeNode.getRepositories());
-                dependency = new ExtensionDependency(info, rtNode, dependent.exclusions);
+            if (dependency == null && info != null) {
+                dependency = new ExtensionDependency(info, initDependencyNode(), dependent.exclusions);
             }
             return dependency;
+        }
+
+        private DependencyNode initDependencyNode() {
+            final DefaultDependencyNode rtNode = new DefaultDependencyNode(new Dependency(artifact, JavaScopes.COMPILE));
+            rtNode.setVersion(new BootstrapArtifactVersion(artifact.getVersion()));
+            rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
+                    new BootstrapArtifactVersion(artifact.getVersion())));
+            rtNode.setRepositories(dependent.runtimeNode.getRepositories());
+            return rtNode;
         }
 
         void activate() {
@@ -886,26 +836,28 @@ public class ApplicationDependencyTreeResolver {
                 return;
             }
             activated = true;
-            clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES);
+            final DependencyNode originalNode = collectDependencies(artifact, dependent.exclusions,
+                    dependent.runtimeNode.getRepositories());
+
+            clearWalkingFlag((byte) (COLLECT_DIRECT_DEPS | COLLECT_TOP_EXTENSION_RUNTIME_NODES));
             final ExtensionDependency extDep = getExtensionDependency();
-            final DependencyNode originalNode = collectDependencies(info.runtimeArtifact, extDep.exclusions,
-                    extDep.runtimeNode.getRepositories());
-            final DefaultDependencyNode rtNode = (DefaultDependencyNode) extDep.runtimeNode;
-            rtNode.setRepositories(originalNode.getRepositories());
+            final DependencyNode rtNode = extDep == null ? initDependencyNode() : extDep.runtimeNode;
+            ((DefaultDependencyNode) rtNode).setRepositories(originalNode.getRepositories());
             // if this node has conditional dependencies on its own, they may have been activated by this time
             // in which case they would be included into its children
-            List<DependencyNode> currentChildren = rtNode.getChildren();
-            if (currentChildren == null || currentChildren.isEmpty()) {
+            if (rtNode.getChildren().isEmpty()) {
                 rtNode.setChildren(originalNode.getChildren());
             } else {
-                currentChildren.addAll(originalNode.getChildren());
+                rtNode.getChildren().addAll(originalNode.getChildren());
             }
+            currentTopLevelExtension = null;
+            setWalkingFlag(COLLECT_DEPLOYMENT_INJECTION_POINTS);
             visitRuntimeDependency(rtNode);
             dependent.runtimeNode.getChildren().add(rtNode);
         }
 
         boolean isSatisfied() {
-            if (info.dependencyCondition == null) {
+            if (info == null || info.dependencyCondition == null) {
                 return true;
             }
             for (ArtifactKey key : info.dependencyCondition) {
@@ -922,18 +874,5 @@ public class ApplicationDependencyTreeResolver {
                 && a2.getGroupId().equals(a1.getGroupId())
                 && a2.getClassifier().equals(a1.getClassifier())
                 && a2.getExtension().equals(a1.getExtension());
-    }
-
-    private static String toCompactCoords(Artifact a) {
-        final StringBuilder b = new StringBuilder();
-        b.append(a.getGroupId()).append(':').append(a.getArtifactId()).append(':');
-        if (!a.getClassifier().isEmpty()) {
-            b.append(a.getClassifier()).append(':');
-        }
-        if (!ArtifactCoords.TYPE_JAR.equals(a.getExtension())) {
-            b.append(a.getExtension()).append(':');
-        }
-        b.append(a.getVersion());
-        return b.toString();
     }
 }

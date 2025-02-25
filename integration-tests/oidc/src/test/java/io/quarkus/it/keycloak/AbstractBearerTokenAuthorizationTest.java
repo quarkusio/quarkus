@@ -1,7 +1,5 @@
 package io.quarkus.it.keycloak;
 
-import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getAccessToken;
-import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getRefreshToken;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -12,9 +10,15 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
 import io.restassured.RestAssured;
 
 public abstract class AbstractBearerTokenAuthorizationTest {
+
+    KeycloakTestClient client = new KeycloakTestClient(
+            new Tls("target/certificates/oidc-client-keystore.p12",
+                    "target/certificates/oidc-client-truststore.p12"));
 
     @Test
     public void testSecureAccessSuccessWithCors() {
@@ -109,7 +113,7 @@ public abstract class AbstractBearerTokenAuthorizationTest {
 
     @Test
     public void testAccessAdminResourceWithRefreshToken() {
-        RestAssured.given().auth().oauth2(getRefreshToken("admin"))
+        RestAssured.given().auth().oauth2(client.getRefreshToken("admin"))
                 .when().get("/api/admin")
                 .then()
                 .statusCode(401);
@@ -224,5 +228,9 @@ public abstract class AbstractBearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.is("true"));
+    }
+
+    String getAccessToken(String username) {
+        return client.getAccessToken(username);
     }
 }

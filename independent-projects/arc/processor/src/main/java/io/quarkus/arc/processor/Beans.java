@@ -32,6 +32,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
@@ -39,6 +40,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.processor.BeanDeployment.SkippedClass;
+import io.quarkus.arc.processor.BuiltinBean.ValidatorContext;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.Types.TypeClosure;
 import io.quarkus.gizmo.ClassTransformer;
@@ -485,7 +487,7 @@ public final class Beans {
         }
         BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
         if (builtinBean != null) {
-            builtinBean.validate(target, injectionPoint, errors::add);
+            builtinBean.getValidator().validate(new ValidatorContext(deployment, target, injectionPoint, errors::add));
             // Skip built-in beans
             return;
         }
@@ -815,6 +817,25 @@ public final class Beans {
                 }
             }
         }
+
+        if (bean.isDecorator()) {
+            DecoratorInfo decorator = (DecoratorInfo) bean;
+            for (InjectionPointInfo injectionPointInfo : bean.getAllInjectionPoints()) {
+                // the injection point is a field, an initializer method parameter or a bean constructor of a decorator,
+                // with qualifier @Decorated, then the type parameter of the injected Bean must be the same as the delegate type
+                if (injectionPointInfo.getRequiredType().name().equals(DotNames.BEAN)
+                        && injectionPointInfo.getRequiredQualifier(DotNames.DECORATED) != null
+                        && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType parameterizedType = injectionPointInfo.getRequiredType().asParameterizedType();
+                    if (parameterizedType.arguments().size() != 1
+                            || !parameterizedType.arguments().get(0).equals(decorator.getDelegateType())) {
+                        throw new DefinitionException(
+                                "Injected @Decorated Bean<> has to use the delegate type as its type parameter. " +
+                                        "Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                    }
+                }
+            }
+        }
     }
 
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
@@ -827,7 +848,7 @@ public final class Beans {
                 classifier = "Intercepted";
                 failIfNotProxyable = true;
             }
-            if (Modifier.isFinal(beanClass.flags()) && classifier != null) {
+            if (beanClass.isFinal() && classifier != null) {
                 // Client proxies and subclasses require a non-final class
                 if (beanClass.isRecord()) {
                     errors.add(new DeploymentException(String.format(
@@ -837,6 +858,13 @@ public final class Beans {
                             new BytecodeTransformer(beanClass.name().toString(), new FinalClassTransformFunction()));
                 } else if (failIfNotProxyable) {
                     errors.add(new DeploymentException(String.format("%s bean must not be final: %s", classifier, bean)));
+                } else {
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
+                }
+            }
+            if (beanClass.isSealed() && classifier != null) {
+                if (failIfNotProxyable) {
+                    errors.add(new DeploymentException(String.format("%s bean must not be sealed: %s", classifier, bean)));
                 } else {
                     bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
@@ -924,7 +952,7 @@ public final class Beans {
             ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), type);
             // null for primitive or array types, but those are covered above
             if (returnTypeClass != null && bean.getScope().isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
-                if (Modifier.isFinal(returnTypeClass.flags())) {
+                if (returnTypeClass.isFinal()) {
                     if (returnTypeClass.isRecord()) {
                         errors.add(new DeploymentException(String.format(
                                 "%s must not have a type that is a record, because records are always final: %s",
@@ -984,6 +1012,14 @@ public final class Beans {
                     } else {
                         bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                     }
+                }
+            }
+            if (returnTypeClass != null && bean.getScope().isNormal() && returnTypeClass.isSealed()) {
+                if (failIfNotProxyable) {
+                    errors.add(new DeploymentException(
+                            String.format("%s must not have a return type that is sealed: %s", classifier, bean)));
+                } else {
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
             }
         } else if (bean.isSynthetic()) {

@@ -55,7 +55,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.111</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.118</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -63,31 +63,31 @@
         <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
         <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
-        <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>11.1.0</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.12</jacoco.version>
-        <kubernetes-client.version>6.13.3</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.5.0</rest-assured.version>
-        <hibernate-orm.version>6.6.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <kubernetes-client.version>7.1.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>5.5.1</rest-assured.version>
+        <hibernate-orm.version>6.6.9.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-commons-annotations.version>7.0.1.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>2.4.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
-        <hibernate-search.version>7.2.1.Final</hibernate-search.version>
+        <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-reactive.version>2.4.5.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
+        <hibernate-search.version>7.2.2.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.65.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
         <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.43.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.51.0</proto-google-common-protos.version>
 
         <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
-        <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>
+        <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
         <testng.version>7.8.0</testng.version>
@@ -183,7 +183,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.9.5</version>
+                <version>3.9.8</version>
             </extension>
         </extensions>
     </build>
@@ -306,7 +306,7 @@
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
                         <configuration>
                             <!-- these metadata file can't affect the build -->
-                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*</excludePathsMatching>
+                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
                             <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>

@@ -299,6 +299,7 @@ distributedCache:
 
 You can use the following authentication mechanisms with the Infinispan client:
 
+* DIGEST-SHA-512 (default)
 * DIGEST-MD5
 * PLAIN (recommended only in combination with TLS encryption)
 * EXTERNAL

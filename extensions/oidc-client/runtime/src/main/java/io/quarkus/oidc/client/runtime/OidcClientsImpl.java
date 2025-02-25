@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.smallrye.mutiny.Uni;
@@ -46,7 +45,7 @@ public class OidcClientsImpl implements OidcClients, Closeable {
 
     @Override
     public Uni<OidcClient> newClient(OidcClientConfig clientConfig) {
-        if (!clientConfig.getId().isPresent()) {
+        if (clientConfig.id().isEmpty()) {
             throw new OidcClientException("'id' property must be set");
         }
         return dynamicOidcClients.apply(clientConfig);

@@ -8,10 +8,12 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -41,6 +43,7 @@ import io.vertx.redis.client.RedisOptions;
 public class VertxRedisClientFactory {
 
     public static final String DEFAULT_CLIENT = "<default>";
+    public static String NON_RESERVED_URI_PATTERN = "[^a-zA-Z0-9\\-_.~]";
 
     private static final Logger LOGGER = Logger.getLogger(VertxRedisClientFactory.class);
 
@@ -51,19 +54,30 @@ public class VertxRedisClientFactory {
     public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry) {
         RedisOptions options = new RedisOptions();
 
+        Consumer<Set<URI>> configureOptions = new Consumer<Set<URI>>() {
+            @Override
+            public void accept(Set<URI> uris) {
+                for (URI uri : uris) {
+                    if (config.configureClientName()) {
+                        String client = config.clientName().orElse(name);
+                        String newURI = applyClientQueryParam(client, uri);
+                        options.addConnectionString(newURI);
+                    } else {
+                        options.addConnectionString(uri.toString().trim());
+                    }
+                }
+            }
+        };
+
         List<URI> hosts = new ArrayList<>();
         if (config.hosts().isPresent()) {
             hosts.addAll(config.hosts().get());
-            for (URI uri : config.hosts().get()) {
-                options.addConnectionString(uri.toString().trim());
-            }
+            configureOptions.accept(config.hosts().get());
         } else if (config.hostsProviderName().isPresent()) {
             RedisHostsProvider hostsProvider = findProvider(config.hostsProviderName().get());
             Set<URI> computedHosts = hostsProvider.getHosts();
             hosts.addAll(computedHosts);
-            for (URI uri : computedHosts) {
-                options.addConnectionString(uri.toString());
-            }
+            configureOptions.accept(computedHosts);
         } else {
             throw new ConfigurationException("Redis host not configured - you must either configure 'quarkus.redis.hosts` or" +
                     " 'quarkus.redis.host-provider-name' and have a bean providing the hosts programmatically.");
@@ -85,12 +99,14 @@ public class VertxRedisClientFactory {
         config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
-        options.setPoolRecycleTimeout((int) config.poolRecycleTimeout().toMillis());
+        config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
         options.setHashSlotCacheTTL(config.hashSlotCacheTtl().toMillis());
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());
         config.replicas().ifPresent(options::setUseReplicas);
+        options.setAutoFailover(config.autoFailover());
+        config.topology().ifPresent(options::setTopology);
 
         options.setNetClientOptions(toNetClientOptions(config));
         configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);
@@ -105,6 +121,48 @@ public class VertxRedisClientFactory {
         customize(name, options);
 
         return Redis.createClient(vertx, options);
+    }
+
+    public static String applyClientQueryParam(String client, URI uri) {
+
+        if (client.matches(".*" + NON_RESERVED_URI_PATTERN + ".*")) {
+            LOGGER.warn("The client query parameter contains reserved URI characters. " +
+                    "This may result in an incorrect client name after URI encoding.");
+        }
+
+        String query = uri.getQuery();
+
+        boolean hasClient = hasRedisClientParameter(query);
+
+        if (hasClient) {
+            LOGGER.warnf("Your host already has a client name. The client name %s will be disregarded.", client);
+            return uri.toString().trim();
+        }
+
+        query = query == null ? "client=" + client
+                : uri.getQuery() + "&client=" + client;
+
+        try {
+            return new URI(
+                    uri.getScheme(), uri.getAuthority(), uri.getPath(), query, uri.getFragment()).toString().trim();
+        } catch (URISyntaxException e) {
+            LOGGER.warnf("Was not possible to generate a new Redis URL with client query parameter, " +
+                    "the value is: %s", client);
+            return uri.toString().trim();
+        }
+    }
+
+    private static boolean hasRedisClientParameter(String query) {
+        if (query != null) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=");
+                if (keyValue.length == 2 && keyValue[0].equals("client")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void customize(String name, RedisOptions options) {

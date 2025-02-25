@@ -2,7 +2,7 @@ package io.quarkus.cyclonedx.deployment;
 
 import java.util.List;
 
-import io.quarkus.cyclonedx.generator.*;
+import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;

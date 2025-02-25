@@ -89,7 +89,7 @@ public class InclusiveAuthValidationTest {
 
         @Override
         public int getPriority() {
-            return MtlsAuthenticationMechanism.PRIORITY + 1;
+            return MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY + 1;
         }
     }
 }

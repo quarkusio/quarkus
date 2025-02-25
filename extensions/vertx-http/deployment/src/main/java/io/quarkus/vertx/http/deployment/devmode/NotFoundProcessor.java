@@ -65,10 +65,12 @@ public class NotFoundProcessor {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        String baseUrl = getBaseUrl(launchMode);
+
         // Additional endpoints
         List<AdditionalRouteDescription> endpoints = additionalEndpoints
                 .stream()
-                .map(v -> new AdditionalRouteDescription(v.getEndpoint(httpRoot), v.getDescription()))
+                .map(v -> new AdditionalRouteDescription(concatenateUrl(baseUrl, v.getEndpoint(httpRoot)), v.getDescription()))
                 .sorted()
                 .collect(Collectors.toList());
 
@@ -78,7 +80,7 @@ public class NotFoundProcessor {
                 router.getMainRouter(),
                 router.getManagementRouter(),
                 beanContainer.getValue(),
-                getBaseUrl(launchMode),
+                baseUrl,
                 httpRoot.getRootPath(),
                 routes,
                 staticRoots,
@@ -95,6 +97,24 @@ public class NotFoundProcessor {
             return "http://" + host + ":" + port + "/";
         } else {
             return null;
+        }
+    }
+
+    private String concatenateUrl(String part1, String part2) {
+        if (part1 == null && part2 == null)
+            return null;
+        if (part1 == null && part2 != null)
+            return part2;
+        if (part1 != null && part2 == null)
+            return part1;
+        if (part2.startsWith("http://") || part2.startsWith("https://"))
+            return part2;
+        if (part1.endsWith("/") && part2.startsWith("/")) {
+            return part1.substring(0, part1.length() - 1) + part2;
+        } else if (!part1.endsWith("/") && !part2.startsWith("/")) {
+            return part1 + "/" + part2;
+        } else {
+            return part1 + part2;
         }
     }
 }

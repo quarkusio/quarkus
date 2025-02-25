@@ -30,7 +30,9 @@ public class EscapingTest {
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
                             "templates/bar.txt")
                     .addAsResource(new StringAsset("{@java.lang.String text}{text} {text.raw} {text.safe}"),
-                            "templates/validation.html"))
+                            "templates/validation.html")
+                    .addAsResource(new StringAsset("{ \"strVal\":\"{strVal}\", \"intVal\":{intVal} }"),
+                            "templates/val.json"))
             .overrideConfigKey("quarkus.qute.content-types.xhtml", "application/xhtml+xml")
             .overrideConfigKey("quarkus.qute.suffixes", "qute.html,qute.txt,html,txt,xhtml");
 
@@ -56,6 +58,12 @@ public class EscapingTest {
         // Item.toString() is escaped too
         assertEquals("&lt;h1&gt;Item&lt;/h1&gt; <h1>Item</h1>",
                 item.data("item", new Item()).render());
+    }
+
+    @Test
+    public void testJsonEscaper() {
+        assertEquals("{ \"strVal\":\"\\t Foo \\u000b\", \"intVal\":42 }",
+                engine.getTemplate("val.json").data("strVal", "\t Foo \u000B").data("intVal", 42).render());
     }
 
     @Test

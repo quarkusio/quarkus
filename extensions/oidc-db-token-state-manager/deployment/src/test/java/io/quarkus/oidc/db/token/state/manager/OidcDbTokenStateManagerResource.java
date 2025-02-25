@@ -26,6 +26,7 @@ public class OidcDbTokenStateManagerResource {
             token.idToken = "ID TOKEN " + i;
             token.accessToken = "ACCESS TOKEN " + i;
             token.refreshToken = "REFRESH TOKEN " + i;
+            token.accessTokenExpiresIn = 10L + i;
             token.expiresIn = expiresIn5Sec;
             token.id = UUID.randomUUID().toString() + Instant.now().getEpochSecond();
             em.persist(token);

@@ -16,12 +16,15 @@ import io.quarkus.it.kafka.fruit.Fruit;
 import io.quarkus.it.kafka.fruit.FruitDto;
 import io.quarkus.it.kafka.people.PeopleState;
 import io.quarkus.it.kafka.people.Person;
+import io.quarkus.it.kafka.pet.Pet;
 import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
 
 @ApplicationScoped
 public class KafkaReceivers {
 
     private final List<Person> people = new CopyOnWriteArrayList<>();
+
+    private final List<Pet> pets = new CopyOnWriteArrayList<>();
 
     @Channel("fruits-persisted")
     Emitter<FruitDto> emitter;
@@ -31,6 +34,11 @@ public class KafkaReceivers {
     public CompletionStage<Void> persist(Fruit fruit) {
         fruit.persist();
         return emitter.send(new FruitDto(fruit));
+    }
+
+    @Incoming("pets-in")
+    public void persist(Pet pet) {
+        pets.add(pet);
     }
 
     @Incoming("people-in")
@@ -55,6 +63,14 @@ public class KafkaReceivers {
 
     public List<Person> getPeople() {
         return people;
+    }
+
+    public List<Pet> getPets() {
+        return Pet.listAll();
+    }
+
+    public List<Pet> getPetsConsumed() {
+        return pets;
     }
 
 }

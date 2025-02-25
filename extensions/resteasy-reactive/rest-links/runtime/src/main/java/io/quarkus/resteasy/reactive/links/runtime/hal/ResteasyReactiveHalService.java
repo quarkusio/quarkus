@@ -34,7 +34,7 @@ public class ResteasyReactiveHalService extends HalService {
     private Map<String, HalLink> linksToMap(Collection<Link> refLinks) {
         Map<String, HalLink> links = new HashMap<>();
         for (Link link : refLinks) {
-            links.put(link.getRel(), new HalLink(link.getUri().toString()));
+            links.put(link.getRel(), new HalLink(link.getUri().toString(), link.getTitle(), link.getType()));
         }
 
         return links;

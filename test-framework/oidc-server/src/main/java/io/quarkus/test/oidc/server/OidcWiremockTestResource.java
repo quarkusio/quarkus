@@ -13,10 +13,13 @@ import static java.util.stream.Collectors.joining;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -25,11 +28,15 @@ import org.jboss.logging.Logger;
 import org.jose4j.keys.X509Util;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.common.ListOrSingle;
+import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
 import com.google.common.collect.ImmutableSet;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
+import wiremock.com.github.jknack.handlebars.Helper;
+import wiremock.com.github.jknack.handlebars.Options;
 
 /**
  * Provides a mock OIDC server to tests.
@@ -58,7 +65,20 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     @Override
     public Map<String, String> start() {
 
-        server = new WireMockServer(wireMockConfig().dynamicPort());
+        server = new WireMockServer(wireMockConfig().dynamicPort().extensions(
+                new TemplateHelperProviderExtension() {
+                    @Override
+                    public String getName() {
+                        return "custom-helpers";
+                    }
+
+                    @Override
+                    public Map<String, Helper<?>> provideTemplateHelpers() {
+                        Helper<String> idTokenHelper = OidcWiremockTestResource.this::buildBasicSchemeIdToken;
+                        return Map.ofEntries(Map.entry("basic-scheme-id-token", idTokenHelper));
+                    }
+                }));
+
         server.start();
 
         server.stubFor(
@@ -298,9 +318,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 "  \"access_token\": \""
                                 + getAccessToken("alice", getAdminRoles()) + "\",\n" +
                                 "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\",\n" +
-                                "  \"id_token\": \"" + getIdToken("alice", getAdminRoles())
-                                + "\"\n" +
-                                "}")));
+                                "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                "}")
+                        .withTransformers("response-template")));
     }
 
     private void definePasswordGrantTokenStub() {
@@ -378,6 +398,14 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE);
     }
 
+    public static String getIdToken(String userName, String clientId, Map<String, String> claims) {
+        return generateJwtToken(userName, Set.of(), TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE), claims);
+    }
+
+    public static String getIdToken(String userName, Set<String> groups, String clientId) {
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE));
+    }
+
     public static String generateJwtToken(String userName, Set<String> groups) {
         return generateJwtToken(userName, groups, TOKEN_SUBJECT);
     }
@@ -387,15 +415,27 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String generateJwtToken(String userName, Set<String> groups, String sub, String type) {
-        final String audience = ID_TOKEN_TYPE.equals(type) ? ID_TOKEN_AUDIENCE : TOKEN_AUDIENCE;
+        return generateJwtToken(userName, groups, sub, type, Set.of(TOKEN_AUDIENCE));
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud) {
+        return generateJwtToken(userName, groups, sub, type, aud, Map.of());
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud,
+            Map<String, String> claims) {
         JwtClaimsBuilder builder = Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
-                .audience(audience)
+                .audience(aud)
                 .claim("sid", "session-id")
                 .subject(sub);
         if (type != null) {
             builder.claim("typ", type);
+        }
+
+        if (claims != null) {
+            claims.forEach(builder::claim);
         }
 
         return builder
@@ -438,4 +478,45 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
             server = null;
         }
     }
+
+    private String buildBasicSchemeIdToken(String context, Options options) {
+
+        String clientId = getHeader("Authorization", options)
+                .map(OidcWiremockTestResource::removerBasicPrefix)
+                .map(OidcWiremockTestResource::decodeBase64)
+                .map(OidcWiremockTestResource::getClientIdFromCredentials)
+                .orElseThrow(() -> new RuntimeException("Invalid Authorization header"));
+
+        return getIdToken(context, getAdminRoles(), clientId);
+    }
+
+    private static Optional<String> getHeader(String header, Options options) {
+
+        TreeMap<String, ListOrSingle<String>> map = options.get("request.headers");
+        if (map == null || !map.containsKey(header) || map.get(header).isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(map.get(header).getFirst());
+    }
+
+    private static String removerBasicPrefix(String value) {
+        if (value.startsWith("Basic ")) {
+            return value.substring("Basic ".length());
+        }
+        return value;
+    }
+
+    private static String decodeBase64(String base64String) {
+        return new String(Base64.getDecoder().decode(base64String));
+    }
+
+    private static String getClientIdFromCredentials(String credentials) {
+        String[] tokens = credentials.split(":");
+        if (tokens.length >= 1) {
+            return tokens[0];
+        }
+        return credentials;
+    }
+
 }

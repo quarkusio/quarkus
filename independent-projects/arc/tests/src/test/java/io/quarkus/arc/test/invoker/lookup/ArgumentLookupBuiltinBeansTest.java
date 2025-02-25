@@ -11,9 +11,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.spi.AnnotatedParameter;
 import jakarta.enterprise.inject.spi.BeanManager;
-import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.invoke.Invoker;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Singleton;
@@ -40,7 +38,6 @@ public class ArgumentLookupBuiltinBeansTest {
                         .withArgumentLookup(1)
                         .withArgumentLookup(2)
                         .withArgumentLookup(3)
-                        .withArgumentLookup(4)
                         .build());
             }))
             .build();
@@ -52,7 +49,7 @@ public class ArgumentLookupBuiltinBeansTest {
         InstanceHandle<MyService> service = Arc.container().instance(MyService.class);
 
         Invoker<MyService, String> invoker = helper.getInvoker("hello");
-        assertEquals("foobar0_MyDependency__1__MyService_hello_4", invoker.invoke(service.get(), new Object[5]));
+        assertEquals("foobar0_MyDependency__1", invoker.invoke(service.get(), new Object[4]));
         assertEquals(List.of("foo", "bar", "baz"), MyService.observed);
         assertEquals(2, MyService.listAll.size());
         assertEquals(1, MyService.listAll.stream().filter(it -> it instanceof MyInterfaceImpl1).count());
@@ -71,7 +68,7 @@ public class ArgumentLookupBuiltinBeansTest {
         static final List<MyInterface> listAll = new ArrayList<>();
 
         public String hello(Instance<MyDependency> instanceOfDependency, Event<List<String>> event, BeanManager beanManager,
-                @All List<MyInterface> list, Instance<Object> lookup) {
+                @All List<MyInterface> list) {
             Class<?> beanClass = instanceOfDependency.getHandle().getBean().getBeanClass();
             MyDependency dependency1 = instanceOfDependency.get();
 
@@ -87,15 +84,7 @@ public class ArgumentLookupBuiltinBeansTest {
 
             listAll.addAll(list);
 
-            InjectionPoint ip = lookup.select(InjectionPoint.class).get();
-            String ipBeanClass = ip.getBean().getBeanClass().getSimpleName();
-            String ipMemberName = ip.getMember().getName();
-            int ipPosition = ip.getAnnotated() instanceof AnnotatedParameter<?>
-                    ? ((AnnotatedParameter<?>) ip.getAnnotated()).getPosition()
-                    : -1;
-
-            return "foobar" + dependency1.getId() + "_" + beanClass.getSimpleName() + "__" + id
-                    + "__" + ipBeanClass + "_" + ipMemberName + "_" + ipPosition;
+            return "foobar" + dependency1.getId() + "_" + beanClass.getSimpleName() + "__" + id;
         }
 
         public void observe(@Observes List<String> event) {

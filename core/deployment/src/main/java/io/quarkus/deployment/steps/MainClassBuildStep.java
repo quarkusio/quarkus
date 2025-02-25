@@ -169,7 +169,7 @@ public class MainClassBuildStep {
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-        if (!namingConfig.enableJndi && allowJNDIBuildItems.isEmpty()) {
+        if (!namingConfig.enableJndi() && allowJNDIBuildItems.isEmpty()) {
             mv.invokeStaticMethod(ofMethod(DisabledInitialContextManager.class, "register", void.class));
         }
 
@@ -240,8 +240,9 @@ public class MainClassBuildStep {
             createAppCDS.returnValue(null);
         }
 
-        // very first thing is to set system props (for run time, which use substitutions for a different
-        // storage from build-time)
+        // Make sure we set properties in doStartup as well. This is necessary because setting them in the static-init
+        // sets them at build-time, on the host JVM, while SVM has substitutions for System. get/ setProperty at
+        // run-time which will never see those properties unless we also set them at run-time.
         for (SystemPropertyBuildItem i : properties) {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));

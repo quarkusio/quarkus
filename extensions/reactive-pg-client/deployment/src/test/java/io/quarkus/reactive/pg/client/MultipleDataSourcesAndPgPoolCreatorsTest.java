@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
@@ -45,7 +45,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     static class BeanUsingDefaultDataSource {
 
         @Inject
-        PgPool pgClient;
+        Pool pgClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -65,7 +65,7 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Inject
         @ReactiveDataSource("hibernate")
-        PgPool pgClient;
+        Pool pgClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -84,9 +84,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     public static class DefaultPgPoolCreator implements PgPoolCreator {
 
         @Override
-        public PgPool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(10, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return PgPool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+            return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }
     }
@@ -96,9 +96,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     public static class HibernatePgPoolCreator implements PgPoolCreator {
 
         @Override
-        public PgPool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(7, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
-            return PgPool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
+            return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }
     }

@@ -85,6 +85,14 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                         .build());
             }
 
+            // perform type discovery for registered types
+            for (Type jandexType : registeredTypeClosures) {
+                this.types.addAll(Types.getTypeClosureFromJandexType(jandexType, beanDeployment).unrestrictedTypes());
+            }
+
+            // restrict resulting bean types if needed
+            this.types.removeAll(typesToRemove);
+
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .identifier(identifier)
@@ -105,7 +113,8 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .forceApplicationClass(forceApplicationClass)
                     .targetPackageName(targetPackageName)
                     .startupPriority(startupPriority)
-                    .interceptionProxy(interceptionProxy);
+                    .interceptionProxy(interceptionProxy)
+                    .checkActive(checkActiveConsumer);
 
             if (!injectionPoints.isEmpty()) {
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));

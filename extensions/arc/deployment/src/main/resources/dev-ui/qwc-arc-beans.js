@@ -1,8 +1,10 @@
 import { LitElement, html, css} from 'lit';
+import { JsonRpc } from 'jsonrpc';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { beans } from 'build-time-data';
 import { beanIdsWithDependencyGraphs } from 'build-time-data';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-ide-link';
@@ -13,8 +15,15 @@ import './qwc-arc-bean-graph.js';
  * This component shows the Arc Beans
  */
 export class QwcArcBeans extends LitElement {
+    jsonRpc = new JsonRpc(this);
 
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    
         .arctable {
           height: 100%;
           padding-bottom: 10px;
@@ -43,10 +52,15 @@ export class QwcArcBeans extends LitElement {
             overflow: hidden;
             height: 100%;
         }
+        .filterBar {
+            width: 99%;
+            margin-left: 5px;
+        }
         `;
 
     static properties = {
         _beans: {state: true},
+        _filteredBeans: {state: true},
         _beanIdsWithDependencyGraphs: {state: true},
         _selectedBean: {state: true}
     };
@@ -54,15 +68,33 @@ export class QwcArcBeans extends LitElement {
     constructor() {
         super();
         this._beans = beans;
+        this._filteredBeans = this._beans;
         this._beanIdsWithDependencyGraphs = beanIdsWithDependencyGraphs;
         this._selectedBean = null;
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+
+        this.jsonRpc.getInactiveBeans().then(inactiveBeans => {
+            let inactive = new Set(inactiveBeans.result);
+            let newBeans = [];
+            for (let bean of this._beans) {
+                if (inactive.has(bean.id)) {
+                    bean.inactive = true;
+                }
+                newBeans.push(bean);
+            }
+            this._beans = newBeans;
+            this._filteredBeans = this._beans;
+        });
+    }
+
     render() {
-        if (this._beans) {
-            if(this._selectedBean){
+        if (this._filteredBeans) {
+            if (this._selectedBean) {
                 return this._renderBeanGraph();
-            }else{
+            } else {
                 return this._renderBeanList();
             }
         } else {
@@ -70,19 +102,46 @@ export class QwcArcBeans extends LitElement {
         }
     }
 
+    _renderFilterBar(){
+        return html`<vaadin-text-field
+                        placeholder="Search"
+                        class="filterBar"
+                        @value-changed="${(e) => {
+                            const searchTerm = (e.detail.value || '').trim();
+                            const matchesTerm = (value) => {
+                                if(value){
+                                    return value.toLowerCase().includes(searchTerm.toLowerCase());
+                                }
+                            }
+                            if(searchTerm?.trim()){
+                                this._filteredBeans = this._beans.filter(
+                                    ({ providerType, kind }) => {
+                                        return !searchTerm ||
+                                            matchesTerm(providerType?.name) ||
+                                            matchesTerm(kind)
+                                });
+                            }else{
+                                this._filteredBeans = this._beans;
+                            }
+                        }}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                    </vaadin-text-field>`;
+    }
+
     _renderBeanList(){
-        return html`<vaadin-grid .items="${this._beans}" class="arctable" theme="no-border">
-                    <vaadin-grid-column auto-width
+        return html`${this._renderFilterBar()}
+                <vaadin-grid .items="${this._filteredBeans}" class="arctable" theme="no-border">
+                    <vaadin-grid-sort-column path="providerType.name" auto-width
                         header="Bean"
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="kind" auto-width
                         header="Kind"
                         ${columnBodyRenderer(this._kindRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
                     <vaadin-grid-column auto-width
                         header="Associated Interceptors"
@@ -112,8 +171,7 @@ export class QwcArcBeans extends LitElement {
                         ${bean.nonDefaultQualifiers.map(qualifier =>
                             html`${this._qualifierRenderer(qualifier)}`
                         )}
-                        <qui-ide-link fileName='${bean.providerType.name}'
-                            lineNumber=0><code>${bean.providerType.name}</code></qui-ide-link>
+                        <qui-ide-link fileName='${bean.providerType.name}'><code>${bean.providerType.name}</code></qui-ide-link>
       
                     </vaadin-vertical-layout>`;
     }
@@ -143,17 +201,19 @@ export class QwcArcBeans extends LitElement {
             ${level
                 ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>` 
                 : html`<qui-badge small><span>${kind}</span></qui-badge>`
-            }`;
+            } ${bean.inactive ? html`<qui-badge level='warning' small><span>Inactive</span></qui-badge>` : ''}`;
     }
 
     _kindClassRenderer(bean){
-        return html`
-            ${bean.declaringClass
-                ? html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
-                : html`<code class="producer">${bean.memberName}</code>`
-            }`;
+        if (bean.kind.toLowerCase() === "field") {
+            return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`
+        } else if (bean.kind.toLowerCase() === "method") {
+            return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+        } else {
+            return html``;
+        }
     }
-
+    
     _interceptorsRenderer(bean) {
         if (bean.interceptors && bean.interceptors.length > 0) {
             return html`<vaadin-vertical-layout>

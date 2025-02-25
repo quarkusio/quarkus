@@ -7,16 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -33,8 +37,11 @@ public class HttpUpgradeRolesAllowedAnnotationTest extends SecurityTestBase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
+                    .addAsResource(new StringAsset("""
+                            quarkus.security.events.enabled=false
+                            """), "application.properties")
                     .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            AdminEndpoint.class));
+                            AdminEndpoint.class, SecurityEventObserver.class));
 
     @TestHTTPResource("admin-end")
     URI adminEndpointUri;
@@ -56,6 +63,9 @@ public class HttpUpgradeRolesAllowedAnnotationTest extends SecurityTestBase {
             client.waitForMessages(2);
             assertEquals("hello", client.getMessages().get(1).toString());
         }
+
+        // assert no security events when the events are disabled
+        assertEquals(0, SecurityEventObserver.count.get());
     }
 
     @RolesAllowed("admin")
@@ -100,5 +110,14 @@ public class HttpUpgradeRolesAllowedAnnotationTest extends SecurityTestBase {
             return "forbidden:" + currentIdentity.getIdentity().getPrincipal().getName();
         }
 
+    }
+
+    public static class SecurityEventObserver {
+
+        private static final AtomicInteger count = new AtomicInteger();
+
+        void observe(@Observes SecurityEvent securityEvent) {
+            count.incrementAndGet();
+        }
     }
 }

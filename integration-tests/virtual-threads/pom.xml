@@ -37,6 +37,7 @@
         <module>virtual-threads-disabled</module>
         <module>reactive-routes-virtual-threads</module>
         <module>security-webauthn-virtual-threads</module>
+        <module>metrics-virtual-threads</module>
     </modules>
 
     <build>

@@ -18,6 +18,23 @@ public final class TestConfigUtil {
     private TestConfigUtil() {
     }
 
+    public static List<String> argLineValues(String argLine) {
+        if (argLine == null || argLine.isBlank()) {
+            return List.of();
+        }
+        String[] parts = argLine.split("\\s+");
+        List<String> result = new ArrayList<>(parts.length);
+        for (String s : parts) {
+            String trimmed = s.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            result.add(trimmed);
+        }
+        return result;
+    }
+
+    @Deprecated(forRemoval = true, since = "3.17")
     public static List<String> argLineValue(Config config) {
         String strValue = config.getOptionalValue("quarkus.test.arg-line", String.class)
                 .orElse(config.getOptionalValue("quarkus.test.argLine", String.class) // legacy value
@@ -37,17 +54,20 @@ public final class TestConfigUtil {
         return result;
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static Map<String, String> env(Config config) {
         return ((SmallRyeConfig) config).getOptionalValues("quarkus.test.env", String.class, String.class)
                 .orElse(Collections.emptyMap());
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static Duration waitTimeValue(Config config) {
         return config.getOptionalValue("quarkus.test.wait-time", Duration.class)
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.jar-wait-time", Duration.class) // legacy value
                         .orElseGet(() -> Duration.ofSeconds(DEFAULT_WAIT_TIME_SECONDS)));
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static String integrationTestProfile(Config config) {
         return config.getOptionalValue("quarkus.test.integration-test-profile", String.class)
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.native-image-profile", String.class)

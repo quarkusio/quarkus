@@ -61,6 +61,16 @@ ibmcom/db2:11.5.0.0a
 mcr.microsoft.com/mssql/server:2022-latest
 ----
 
+=== Capturing Logs
+
+By default, logs of the underlying database are not exposed.
+By capturing the logs, they become visible amongst other log statements:
+
+[source,properties]
+----
+quarkus.datasource.devservices.show-logs=true
+----
+
 [[reuse]]
 == Reusing Dev Services
 
@@ -158,7 +168,7 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
 ----
 
-The appropriate in-container location varies depending on the database vendor. For PostgresSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
+The appropriate in-container location varies depending on the database vendor. For PostgreSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
 
 [source,properties]
 ----
@@ -202,9 +212,9 @@ Login credentials are the same for most databases, except when the database requ
 |Database |Username |Password |Database name
 
 |PostgreSQL, MariaDB, MySQL, IBM Db2, H2
+|`quarkus`
+|`quarkus`
 |`quarkus` for the default datasource or name of the datasource
-|`quarkus`
-|`quarkus`
 
 |Microsoft SQL Server
 |`SA`

@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. This guide uses the WebSockets Next extension
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
-:extension-status: experimental
 
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 In this guide, we will develop a very simple chat application using web sockets to receive and send messages to the other connected users.
@@ -59,8 +58,8 @@ The solution is located in the `websockets-next-quickstart` link:{quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-:create-app-artifact-id: websockets-quickstart
-:create-app-extensions: websockets
+:create-app-artifact-id: websockets-next-quickstart
+:create-app-extensions: websockets-next
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the project (without any classes) and imports the `websockets-next` extension.

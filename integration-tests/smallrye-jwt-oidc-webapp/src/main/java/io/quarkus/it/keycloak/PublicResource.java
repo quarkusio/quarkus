@@ -4,13 +4,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import io.vertx.mutiny.oracleclient.OraclePool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/public")
 public class PublicResource {
 
     @Inject
-    OraclePool pool;
+    Pool pool;
 
     @Path("/token-state-count")
     @GET

@@ -12,15 +12,20 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Alternative;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -35,13 +40,16 @@ import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
+import io.smallrye.config.SmallRyeConfig;
 
-public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
+public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
+        implements ExecutionCondition {
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
@@ -208,7 +216,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
         quarkusTestProfile = profile;
         return new PrepareResult(curatedApplication
-                .createAugmentor(QuarkusTestExtension.TestBuildChainFunction.class.getName(), props), profileInstance,
+                .createAugmentor(TestBuildChainFunction.class.getName(), props), profileInstance,
                 curatedApplication, testClassLocation);
     }
 
@@ -265,6 +273,43 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
 
         return null;
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        if (!context.getTestClass().isPresent()) {
+            return ConditionEvaluationResult.enabled("No test class specified");
+        }
+        if (context.getTestInstance().isPresent()) {
+            return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
+        }
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+        Optional<List<String>> tags = testConfig.profile().tags();
+        if (tags.isEmpty() || tags.get().isEmpty()) {
+            return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
+        }
+        Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
+        if (testProfile == null) {
+            return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                    + "' is not annotated with '@QuarkusTestProfile' but 'quarkus.profile.test.tags' was set");
+        }
+        QuarkusTestProfile profileInstance;
+        try {
+            profileInstance = testProfile.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Set<String> testProfileTags = profileInstance.tags();
+        for (String tag : tags.get()) {
+            String trimmedTag = tag.trim();
+            if (testProfileTags.contains(trimmedTag)) {
+                return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile
+                        + "' which is used on test '" + context.getRequiredTestClass());
+            }
+        }
+        return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
     }
 
     protected static class PrepareResult {

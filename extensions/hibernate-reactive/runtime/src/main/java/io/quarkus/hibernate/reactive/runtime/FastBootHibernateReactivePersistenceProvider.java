@@ -28,9 +28,10 @@ import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -192,7 +193,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    runtimeSettings, recordedState, persistenceUnitName);
+                    persistenceUnitName, recordedState, runtimeSettings, puConfig);
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -209,11 +210,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         return null;
     }
 
-    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,
-            RecordedState rs,
-            String persistenceUnitName) {
+    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,
+            RuntimeSettings runtimeSettings, HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         PreconfiguredReactiveServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredReactiveServiceRegistryBuilder(
-                persistenceUnitName, rs);
+                persistenceUnitName, rs, puConfig);
 
         registerVertxAndPool(persistenceUnitName, runtimeSettings, serviceRegistryBuilder);
 
@@ -284,14 +284,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         String datasourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
         Pool pool;
         try {
-            if (Arc.container().instance(DataSourceSupport.class).get().getInactiveNames().contains(datasourceName)) {
-                throw DataSourceUtil.dataSourceInactive(datasourceName);
-            }
-            InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
-            if (!poolHandle.isAvailable()) {
+            InjectableInstance<Pool> poolHandle = Arc.container().select(Pool.class);
+            if (!poolHandle.isResolvable()) {
                 throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
             }
-            pool = poolHandle.get();
+            // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
+            pool = ClientProxy.unwrap(poolHandle.get());
         } catch (RuntimeException e) {
             throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, datasourceName, e);
         }

@@ -101,7 +101,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.util.HashUtil;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -172,7 +172,7 @@ public final class ExtensionLoader {
 
         // this has to be an identity hash map else the recorder will get angry
         Map<Object, FieldDescriptor> rootFields = new IdentityHashMap<>();
-        Map<Object, ConfigClassWithPrefix> mappingClasses = new IdentityHashMap<>();
+        Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
             // ConfigRoot
             RootDefinition root = readResult.getAllRootsByClass().get(entry.getKey());
@@ -182,7 +182,7 @@ public final class ExtensionLoader {
             }
 
             // ConfigMapping
-            ConfigClassWithPrefix mapping = readResult.getAllMappings().get(entry.getKey());
+            ConfigClass mapping = readResult.getAllMappingsByClass().get(entry.getKey());
             if (mapping != null) {
                 mappingClasses.put(entry.getValue(), mapping);
                 continue;
@@ -210,7 +210,7 @@ public final class ExtensionLoader {
                 ObjectLoader mappingLoader = new ObjectLoader() {
                     @Override
                     public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
-                        ConfigClassWithPrefix mapping = mappingClasses.get(obj);
+                        ConfigClass mapping = mappingClasses.get(obj);
                         MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class);
                         ResultHandle config = body.invokeStaticMethod(getConfig);
                         MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",

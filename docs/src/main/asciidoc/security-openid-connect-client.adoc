@@ -172,7 +172,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import io.quarkus.oidc.client.filter.OidcClientFilter;
@@ -237,10 +236,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 
 import io.smallrye.mutiny.Uni;
 
@@ -277,9 +275,9 @@ import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig;
-import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -305,14 +303,14 @@ public class OidcClientCreator {
     }
 
     private Uni<OidcClient> createOidcClient() {
-        OidcClientConfig cfg = new OidcClientConfig();
-        cfg.setId("myclient");
-        cfg.setAuthServerUrl(oidcProviderAddress);
-        cfg.setClientId("backend-service");
-        cfg.getCredentials().setSecret("secret");
-        cfg.getGrant().setType(Type.PASSWORD);
-        cfg.setGrantOptions(Map.of("password",
-        		Map.of("username", "alice", "password", "alice")));
+        OidcClientConfig cfg = OidcClientConfig
+            .authServerUrl(oidcProviderAddress)
+            .id("myclient")
+            .clientId("backend-service")
+            .credentials("secret")
+            .grant(Type.PASSWORD)
+            .grantOptions("password", Map.of("username", "alice", "password", "alice"))
+            .build();
         return oidcClients.newClient(cfg);
     }
 }
@@ -446,7 +444,7 @@ public class FrontendExceptionMapper implements ExceptionMapper<ClientWebApplica
 ----
 
 This exception mapper is only added to verify during the tests that `ProtectedResource` returns `403` when the token has no expected role.
-Without this mapper, `Quarkus REST (formerly RESTEasy Reactive)` would correctly convert the exceptions that escape from REST client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource`.
+Without this mapper, Quarkus REST (formerly RESTEasy Reactive) would correctly convert the exceptions that escape from REST client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource`.
 However, in the tests, it would not be possible to assert that `500` is caused by an authorization exception instead of some internal error.
 
 == Configuring the application
@@ -487,7 +485,7 @@ org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-
 ----
 
 The preceding configuration references Keycloak, which is used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` by using a `password` grant.
-Both REST clients point to `ProtectedResource`'s HTTP address.
+Both REST clients point to ``ProtectedResource``'s HTTP address.
 
 NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` launches a container for you when the application is run in dev or test modes.
 For more information, see the <<oidc-client-keycloak-dev-mode,Running the application in dev mode>> section.
@@ -504,10 +502,10 @@ To start a Keycloak Server, you can use Docker and just run the following comman
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
+docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-Set `{keycloak.version}` to `25.0.6` or later.
+Set `{keycloak.version}` to `26.0.7` or later.
 
 You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 
@@ -530,18 +528,18 @@ include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] launches a Keycloak container and imports `quarkus-realm.json`.
 
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Provider: Keycloak` link in the *OpenID Connect Dev UI* card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Keycloak provider` link in the *OpenID Connect Dev UI* card.
 
 When asked, log in to a `Single Page Application` provided by the OpenID Connect Dev UI:
 
- * Log in as `alice`, with the password, `alice`.
-This user has a `user` role.
- ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
- ** Access `/frontend/admin-name-with-propagated-token`, which returns `403`.
- * Log out and back in as `admin` with the password, `admin`.
+ * Log in as `admin`, with the password, `admin`.
 This user has both `admin` and `user` roles.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `200`.
+ * Log out and back in as `alice` with the password, `alice`.
+This user has a `user` role.
+ ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
+ ** Access `/frontend/admin-name-with-propagated-token`, which returns `403`.
 
 You have tested that `FrontendResource` can propagate the access tokens from the OpenID Connect Dev UI.
 
@@ -681,7 +679,7 @@ Call the `/admin-name-with-oidc-client-token-header-param`. In contrast with the
 [source,bash]
 ----
 curl -i -X GET \
-  http://localhost:8080/frontend/admin-name-with-oidc-client-token-param
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token-header-param
 ----
 
 Next, test the endpoints which use OIDC client in in the blocking mode.
@@ -699,7 +697,7 @@ Call the `/admin-name-with-oidc-client-token-header-param-blocking`. In contrast
 [source,bash]
 ----
 curl -i -X GET \
-  http://localhost:8080/frontend/admin-name-with-oidc-client-token-param-blocking
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token-header-param-blocking
 ----
 
 == References

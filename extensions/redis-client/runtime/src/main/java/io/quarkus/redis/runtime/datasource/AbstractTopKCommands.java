@@ -34,7 +34,7 @@ public class AbstractTopKCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(items, "items");
         if (items.length == 0) {
-            throw new IllegalArgumentException("`items` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`items` must not be empty"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.TOPK_ADD)
@@ -106,7 +106,7 @@ public class AbstractTopKCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(items, "items");
         if (items.length == 0) {
-            throw new IllegalArgumentException("`items` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`items` must not be empty"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.TOPK_QUERY)

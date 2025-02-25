@@ -46,6 +46,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
@@ -1091,6 +1093,55 @@ public class BeanGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PRIVATE);
         bean.getCreatorConsumer().accept(createSynthetic);
 
+        Consumer<MethodCreator> checkActiveConsumer = bean.getCheckActiveConsumer();
+        if (checkActiveConsumer != null) {
+            MethodCreator checkActive = beanCreator.getMethodCreator("checkActive", ActiveResult.class);
+            checkActiveConsumer.accept(checkActive);
+
+            List<InjectionPointInfo> matchingIPs = new ArrayList<>();
+            for (InjectionPointInfo injectionPoint : bean.getDeployment().getInjectionPoints()) {
+                if (!injectionPoint.isSynthetic() && bean.equals(injectionPoint.getResolvedBean())) {
+                    matchingIPs.add(injectionPoint);
+                }
+            }
+
+            ResultHandle active = doCreate.invokeVirtualMethod(checkActive.getMethodDescriptor(), doCreate.getThis());
+            ResultHandle activeBool = doCreate.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_VALUE, active);
+            BytecodeCreator ifNotActive = doCreate.ifFalse(activeBool).trueBranch();
+            StringBuilderGenerator msg = Gizmo.newStringBuilder(ifNotActive);
+            msg.append("Bean is not active: ");
+            msg.append(Gizmo.toString(ifNotActive, ifNotActive.getThis()));
+            msg.append("\nReason: ");
+            msg.append(ifNotActive.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_REASON, active));
+            AssignableResultHandle cause = ifNotActive.createVariable(ActiveResult.class);
+            ifNotActive.assign(cause, ifNotActive.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_CAUSE, active));
+            BytecodeCreator loop = ifNotActive.whileLoop(bc -> bc.ifNotNull(cause)).block();
+            loop.invokeVirtualMethod(MethodDescriptors.STRING_BUILDER_APPEND, msg.getInstance(), loop.load("\nCause: "));
+            ResultHandle causeReason = loop.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_REASON, cause);
+            loop.invokeVirtualMethod(MethodDescriptors.STRING_BUILDER_APPEND, msg.getInstance(), causeReason);
+            loop.assign(cause, loop.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_CAUSE, cause));
+            msg.append("\nTo avoid this exception while keeping the bean inactive:");
+            msg.append("\n\t- Configure all extensions consuming this bean as inactive as well, if they allow it,"
+                    + " e.g. 'quarkus.someextension.active=false'");
+            msg.append("\n\t- Make sure that custom code only accesses this bean if it is active");
+            if (!matchingIPs.isEmpty()) {
+                ResultHandle implClassName = ifNotActive.load(bean.getImplClazz().name().toString());
+                msg.append("\n\t- Inject the bean with 'Instance<")
+                        .append(implClassName)
+                        .append(">' instead of '")
+                        .append(implClassName)
+                        .append("'");
+                msg.append("\nThis bean is injected into:");
+                for (InjectionPointInfo matchingIP : matchingIPs) {
+                    msg.append("\n\t- ");
+                    msg.append(matchingIP.getTargetInfo());
+                }
+            }
+            ifNotActive.throwException(ifNotActive.newInstance(
+                    MethodDescriptor.ofConstructor(InactiveBeanException.class, String.class),
+                    msg.callToString()));
+        }
+
         ResultHandle injectedReferences;
         if (injectionPointToProviderSupplierField.isEmpty()) {
             injectedReferences = doCreate.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
@@ -2128,10 +2179,13 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementGetPriority(BeanInfo bean, ClassCreator beanCreator) {
         if (bean.getPriority() != null) {
+            MethodCreator hasPriority = beanCreator.getMethodCreator("hasPriority", boolean.class)
+                    .setModifiers(ACC_PUBLIC);
+            hasPriority.returnBoolean(true);
+
             MethodCreator getPriority = beanCreator.getMethodCreator("getPriority", int.class)
                     .setModifiers(ACC_PUBLIC);
-            getPriority
-                    .returnValue(getPriority.load(bean.getPriority()));
+            getPriority.returnInt(bean.getPriority());
         }
     }
 
@@ -2335,7 +2389,6 @@ public class BeanGenerator extends AbstractGenerator {
         if (injectionPoint.isSynthetic()) {
             return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
         }
-        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
@@ -2345,6 +2398,10 @@ public class BeanGenerator extends AbstractGenerator {
             annotations = Annotations.getParameterAnnotations(beanDeployment,
                     method, injectionPoint.getPosition());
         }
+        if (annotations.isEmpty()) {
+            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+        }
+        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (AnnotationInstance annotation : annotations) {
             if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
                 continue;

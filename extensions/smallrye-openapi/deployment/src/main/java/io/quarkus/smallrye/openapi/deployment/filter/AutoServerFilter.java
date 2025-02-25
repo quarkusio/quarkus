@@ -3,11 +3,10 @@ package io.quarkus.smallrye.openapi.deployment.filter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.servers.Server;
-
-import io.smallrye.openapi.api.models.servers.ServerImpl;
 
 /**
  * Automatically add default server if none is provided
@@ -46,16 +45,16 @@ public class AutoServerFilter implements OASFilter {
 
             // In case of 0.0.0.0, also add localhost
             if (this.defaultHost.equals(ZEROS)) {
-                ServerImpl localhost = new ServerImpl();
+                Server localhost = OASFactory.createServer();
                 localhost.setUrl(getUrl(this.defaultScheme, LOCALHOST, this.defaultPort));
                 localhost.setDescription(this.description);
                 servers.add(localhost);
             }
 
-            ServerImpl serverImpl = new ServerImpl();
-            serverImpl.setUrl(getUrl(this.defaultScheme, this.defaultHost, this.defaultPort));
-            serverImpl.setDescription(this.description);
-            servers.add(serverImpl);
+            Server server = OASFactory.createServer();
+            server.setUrl(getUrl(this.defaultScheme, this.defaultHost, this.defaultPort));
+            server.setDescription(this.description);
+            servers.add(server);
 
             openAPI.setServers(servers);
         }

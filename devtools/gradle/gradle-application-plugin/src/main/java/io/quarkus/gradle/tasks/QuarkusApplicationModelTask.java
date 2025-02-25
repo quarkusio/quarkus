@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -48,6 +49,7 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
@@ -69,7 +71,6 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.workspace.descriptors.DefaultProjectDescriptor;
-import io.quarkus.gradle.workspace.descriptors.ProjectDescriptor;
 import io.quarkus.gradle.workspace.descriptors.ProjectDescriptor.TaskType;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
@@ -106,6 +107,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
      */
     @CompileClasspath
     public abstract ConfigurableFileCollection getOriginalClasspath();
+
+    @InputFiles
+    public abstract ConfigurableFileCollection getDeploymentResolvedWorkaround();
 
     @Nested
     public abstract QuarkusResolvedClasspath getPlatformConfiguration();
@@ -190,10 +194,13 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 .setBuildDir(getLayout().getBuildDirectory().getAsFile().get().toPath())
                 .setBuildFile(getProjectBuildFile().getAsFile().get().toPath());
 
-        ProjectDescriptor projectDescriptor = getProjectDescriptor().get();
-        initProjectModule(projectDescriptor, mainModule, ArtifactSources.MAIN, DEFAULT_CLASSIFIER);
+        DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get();
+
+        initProjectModule(projectDescriptor, mainModule, ArtifactSources.MAIN, DEFAULT_CLASSIFIER,
+                getProjectDescriptor().get().getSourceSetTasksRaw());
         if (getLaunchMode().get().isDevOrTest()) {
-            initProjectModule(projectDescriptor, mainModule, ArtifactSources.TEST, "tests");
+            initProjectModule(projectDescriptor, mainModule, ArtifactSources.TEST, "tests",
+                    getProjectDescriptor().get().getSourceSetTasksRaw());
         }
         final PathList.Builder paths = PathList.builder();
         collectDestinationDirs(mainModule.getMainSources().getSourceDirs(), paths);
@@ -202,8 +209,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         return appArtifact.setWorkspaceModule(mainModule).setResolvedPaths(paths.build());
     }
 
-    private static void initProjectModule(ProjectDescriptor projectDescriptor, WorkspaceModule.Mutable module,
-            String sourceSetName, String classifier) {
+    private static void initProjectModule(DefaultProjectDescriptor projectDescriptor, WorkspaceModule.Mutable module,
+            String sourceSetName, String classifier, Map<String, Set<String>> sourceSetTasksRaw) {
         List<SourceDir> sourceDirs = new ArrayList<>();
         List<SourceDir> resources = new ArrayList<>();
         Set<String> tasks = projectDescriptor.getTasksForSourceSet(sourceSetName.isEmpty()
@@ -218,6 +225,23 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             } else if (type == TaskType.RESOURCES) {
                 resources.add(new DefaultSourceDir(source, destDir, null));
             }
+        }
+
+        // Issue https://github.com/quarkusio/quarkus/issues/44384
+        // no java sources are detected for compileJava before grpc configuration
+        // so we need to verify if the destination source for the task exist and add it manually
+        boolean containsJavaCompile = sourceDirs.stream()
+                .anyMatch(sourceDir -> "compileJava".equals(sourceDir.getValue("compiler", String.class)));
+        if (!containsJavaCompile && sourceSetTasksRaw.get("compileJava") != null) {
+
+            sourceSetTasksRaw.get("compileJava").forEach(s -> {
+                File output = new File(s);
+                if (output.exists() && Objects.requireNonNull(output.listFiles()).length > 0) {
+                    sourceDirs.add(
+                            new DefaultSourceDir(output.toPath(), output.toPath(), null, Map.of("compiler", "compileJava")));
+                }
+            });
+
         }
         module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
     }
@@ -585,13 +609,13 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 return false;
             }
             artifactBuilder.setRuntimeExtensionArtifact();
-            final String extensionCoords = artifactBuilder.toGACTVString();
-            modelBuilder.handleExtensionProperties(extProps, extensionCoords);
+            modelBuilder.handleExtensionProperties(extProps, artifactBuilder.getKey());
 
             final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
             if (providesCapabilities != null) {
                 modelBuilder
-                        .addExtensionCapabilities(CapabilityContract.of(extensionCoords, providesCapabilities, null));
+                        .addExtensionCapabilities(
+                                CapabilityContract.of(artifactBuilder.toGACTVString(), providesCapabilities, null));
             }
             return true;
         }

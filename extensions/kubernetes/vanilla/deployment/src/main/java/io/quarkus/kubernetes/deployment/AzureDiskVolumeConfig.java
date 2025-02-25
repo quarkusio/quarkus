@@ -1,19 +1,15 @@
-
 package io.quarkus.kubernetes.deployment;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class AzureDiskVolumeConfig {
-
-    public enum CachingMode {
+public interface AzureDiskVolumeConfig {
+    enum CachingMode {
         ReadWrite,
         ReadOnly,
         None
     }
 
-    public enum Kind {
+    enum Kind {
         Managed,
         Shared
     }
@@ -21,37 +17,34 @@ public class AzureDiskVolumeConfig {
     /**
      * The name of the disk to mount.
      */
-    @ConfigItem
-    String diskName;
+    String diskName();
 
     /**
      * The URI of the vhd blob object OR the resourceID of an Azure managed data disk if Kind is Managed
      */
-    @ConfigItem
-    String diskURI;
+    String diskURI();
 
     /**
      * Kind of disk.
      */
-    @ConfigItem(defaultValue = "Managed")
-    Kind kind;
+    @WithDefault("Managed")
+    Kind kind();
 
     /**
      * Disk caching mode.
      */
-    @ConfigItem(defaultValue = "ReadWrite")
-    CachingMode cachingMode;
+    @WithDefault("ReadWrite")
+    CachingMode cachingMode();
 
     /**
      * File system type.
      */
-    @ConfigItem(defaultValue = "ext4")
-    String fsType;
+    @WithDefault("ext4")
+    String fsType();
 
     /**
      * Whether the volumeName is read only or not.
      */
-    @ConfigItem
-    boolean readOnly;
-
+    @WithDefault("false")
+    boolean readOnly();
 }

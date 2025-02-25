@@ -13,6 +13,9 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
 
+include::{includes}/observability-include.adoc[]
+
+
 [NOTE]
 ====
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.
@@ -121,7 +124,7 @@ We have 2 options:
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
-This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides an OTel collector to receive the data.
 
 === Jaeger to see traces option
 
@@ -148,7 +151,7 @@ services:
       - "16686:16686" # Jaeger UI
       - "14268:14268" # Receive legacy OpenTracing traces, optional
       - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver, not yet used by Quarkus, optional
+      - "4318:4318"   # OTLP HTTP receiver
       - "14250:14250" # Receive from external otel-collector, optional
     environment:
       - COLLECTOR_OTLP_ENABLED=true
@@ -359,7 +362,7 @@ quarkus.otel.traces.sampler.arg=0.5
 [TIP]
 ====
 
-An interesting use case for the sampler is to activate and deactivate tracing export at runtime, acording to this example:
+An interesting use case for the sampler is to activate and deactivate tracing export at runtime, according to this example:
 [source,application.properties]
 ----
 # build time property only:
@@ -526,6 +529,60 @@ public void tracedWork() {
 }
 ----
 
+=== Mutiny
+Methods returning reactive types can also be annotated with `@WithSpan` and `@AddingSpanAttributes` to create a new span or add attributes to the current span.
+
+If you need to create spans manually within a mutiny pipeline, use `wrapWithSpan` method from `io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper`.
+
+Example. Assuming you have the following pipeline:
+[source,java]
+----
+Uni<String> uni = Uni.createFrom().item("hello")
+        //start trace here
+        .onItem().transform(item -> item + " world")
+        .onItem().transform(item -> item + "!")
+        //end trace here
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+----
+wrap it like this:
+[source,java]
+----
+import static io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper.wrapWithSpan;
+...
+@Inject
+Tracer tracer;
+...
+Context context = Context.current();
+Uni<String> uni = Uni.createFrom().item("hello")
+        .transformToUni(m -> wrapWithSpan(tracer, Optional.of(context), "my-span-name",
+                                Uni.createFrom().item(m)
+                                    .onItem().transform(item -> item + " world")
+                                    .onItem().transform(item -> item + "!")
+        ))
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+
+----
+for multi-pipelines it works similarly:
+[source,java]
+----
+Multi.createFrom().items("Alice", "Bob", "Charlie")
+        .transformToMultiAndConcatenate(m -> TracingHelper.withTrace("my-span-name",
+                                Multi.createFrom().item(m)
+                                    .onItem().transform(name -> "Hello " + name)
+        ))
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+----
+Instead of `transformToMultiAndConcatenate` you can use `transformToMultiAndMerge` if you don't care about the order of the items.
+
 === Quarkus Messaging - Kafka
 
 When using the Quarkus Messaging extension for Kafka,
@@ -560,9 +617,10 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 * https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
 * https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
 * https://quarkus.io/guides/redis[`quarkus-redis-client`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
 * https://quarkus.io/guides/rest[`quarkus-rest`]
-* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
+* https://quarkus.io/guides/rest[`quarkus-rest-client`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
+* https://quarkus.io/guides/resteasy[`quarkus-resteasy`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
@@ -573,6 +631,7 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 ** Kafka
 ** Pulsar
 * https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+* xref:websockets-next-reference.adoc[`websockets-next`]
 
 
 === Disable parts of the automatic tracing
@@ -588,6 +647,30 @@ quarkus.otel.instrument.resteasy-client=false
 quarkus.otel.instrument.rest=false
 quarkus.otel.instrument.resteasy=false
 ----
+
+[[disabling-traces-for-app-endpoints]]
+=== Disabling Specific Traces for Application Endpoints
+
+You can use the `quarkus.otel.traces.suppress-application-uris` property to exclude specific endpoints from being traced.
+
+==== Example Configuration
+
+[source,properties]
+----
+# application.properties
+quarkus.otel.traces.suppress-application-uris=trace,ping,people*
+----
+
+This configuration will:
+
+- Disable tracing for the `/trace` URI.
+- Disable tracing for the `/ping` URI.
+- Disable tracing for the `/people` URI and all subpaths, such as `/people/1` and `/people/1/cars`.
+
+[NOTE]
+====
+If you are using `quarkus.http.root-path`, ensure you include the root path in the configuration.
+====
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference

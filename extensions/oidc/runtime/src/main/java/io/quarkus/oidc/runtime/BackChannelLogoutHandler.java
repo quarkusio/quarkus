@@ -4,13 +4,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
-import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -27,47 +25,42 @@ public class BackChannelLogoutHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
     private static final String SLASH = "/";
 
-    @Inject
-    DefaultTenantConfigResolver resolver;
-
-    private final OidcConfig oidcConfig;
-
-    public BackChannelLogoutHandler(OidcConfig oidcConfig) {
-        this.oidcConfig = oidcConfig;
-    }
-
-    public void setup(@Observes Router router) {
-        addRoute(router, oidcConfig.defaultTenant);
-
-        for (OidcTenantConfig oidcTenantConfig : oidcConfig.namedTenants.values()) {
-            addRoute(router, oidcTenantConfig);
+    void setup(@Observes Router router, DefaultTenantConfigResolver resolver) {
+        final TenantConfigBean tenantConfigBean = resolver.getTenantConfigBean();
+        addRoute(router, tenantConfigBean.getDefaultTenant().oidcConfig(), resolver);
+        for (var nameToOidcTenantConfig : tenantConfigBean.getStaticTenantsConfig().values()) {
+            if (nameToOidcTenantConfig.oidcConfig() != null) {
+                addRoute(router, nameToOidcTenantConfig.oidcConfig(), resolver);
+            }
         }
     }
 
-    private void addRoute(Router router, OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig.isTenantEnabled() && oidcTenantConfig.logout.backchannel.path.isPresent()) {
-            router.route(oidcTenantConfig.logout.backchannel.path.get())
-                    .handler(new RouteHandler(oidcTenantConfig));
+    private static void addRoute(Router router, OidcTenantConfig oidcTenantConfig, DefaultTenantConfigResolver resolver) {
+        if (oidcTenantConfig.tenantEnabled() && oidcTenantConfig.logout().backchannel().path().isPresent()) {
+            router.route(oidcTenantConfig.logout().backchannel().path().get())
+                    .handler(new RouteHandler(oidcTenantConfig, resolver));
         }
     }
 
-    class RouteHandler implements Handler<RoutingContext> {
+    private static class RouteHandler implements Handler<RoutingContext> {
         private final OidcTenantConfig oidcTenantConfig;
+        private final DefaultTenantConfigResolver resolver;
 
-        RouteHandler(OidcTenantConfig oidcTenantConfig) {
+        RouteHandler(OidcTenantConfig oidcTenantConfig, DefaultTenantConfigResolver resolver) {
             this.oidcTenantConfig = oidcTenantConfig;
+            this.resolver = resolver;
         }
 
         @Override
         public void handle(RoutingContext context) {
-            LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().get());
+            LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.tenantId().get());
             final String requestPath = context.request().path();
             final TenantConfigContext tenantContext = getTenantConfigContext(requestPath);
             if (tenantContext == null) {
                 LOG.errorf(
                         "Tenant configuration for the tenant %s is not available "
                                 + "or does not match the backchannel logout path %s",
-                        oidcTenantConfig.getTenantId().get(), requestPath);
+                        oidcTenantConfig.tenantId().get(), requestPath);
                 context.response().setStatusCode(400);
                 context.response().end();
                 return;
@@ -92,12 +85,12 @@ public class BackChannelLogoutHandler {
 
                                         if (verifyLogoutTokenClaims(result)) {
                                             String key = result.localVerificationResult
-                                                    .getString(oidcTenantConfig.logout.backchannel.logoutTokenKey);
+                                                    .getString(oidcTenantConfig.logout().backchannel().logoutTokenKey());
                                             BackChannelLogoutTokenCache tokens = resolver
-                                                    .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId.get());
+                                                    .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId().get());
                                             if (tokens == null) {
                                                 tokens = new BackChannelLogoutTokenCache(oidcTenantConfig, context.vertx());
-                                                resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId.get(),
+                                                resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId().get(),
                                                         tokens);
                                             }
                                             tokens.addTokenVerification(key, result);
@@ -137,8 +130,9 @@ public class BackChannelLogoutHandler {
                 LOG.debug("Back channel logout token does not have a valid 'events' claim");
                 return false;
             }
-            if (!result.localVerificationResult.containsKey(oidcTenantConfig.logout.backchannel.logoutTokenKey)) {
-                LOG.debugf("Back channel logout token does not have %s", oidcTenantConfig.logout.backchannel.logoutTokenKey);
+            if (!result.localVerificationResult.containsKey(oidcTenantConfig.logout().backchannel().logoutTokenKey())) {
+                LOG.debugf("Back channel logout token does not have %s",
+                        oidcTenantConfig.logout().backchannel().logoutTokenKey());
                 return false;
             }
             if (result.localVerificationResult.containsKey(Claims.nonce.name())) {
@@ -162,20 +156,20 @@ public class BackChannelLogoutHandler {
         }
 
         private boolean isMatchingTenant(String requestPath, TenantConfigContext tenant) {
-            return tenant.oidcConfig().isTenantEnabled()
-                    && tenant.oidcConfig().getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
-                    && requestPath.equals(getRootPath() + tenant.oidcConfig().logout.backchannel.path.orElse(null));
+            return tenant.oidcConfig().tenantEnabled()
+                    && tenant.oidcConfig().tenantId().get().equals(oidcTenantConfig.tenantId().get())
+                    && requestPath.equals(getRootPath() + tenant.oidcConfig().logout().backchannel().path().orElse(null));
         }
-    }
 
-    private String getRootPath() {
-        // Prepend '/' if it is not present
-        String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
-        // Strip trailing '/' if the length is > 1
-        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
-            rootPath = rootPath.substring(rootPath.length() - 1);
+        private String getRootPath() {
+            // Prepend '/' if it is not present
+            String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
+            // Strip trailing '/' if the length is > 1
+            if (rootPath.length() > 1 && rootPath.endsWith("/")) {
+                rootPath = rootPath.substring(rootPath.length() - 1);
+            }
+            // if it is only '/' then return an empty value
+            return SLASH.equals(rootPath) ? "" : rootPath;
         }
-        // if it is only '/' then return an empty value
-        return SLASH.equals(rootPath) ? "" : rootPath;
     }
 }

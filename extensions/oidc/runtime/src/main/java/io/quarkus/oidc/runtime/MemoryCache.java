@@ -14,7 +14,7 @@ public class MemoryCache<T> {
     private volatile Long timerId = null;
 
     private final Map<String, CacheEntry<T>> cacheMap = new ConcurrentHashMap<>();
-    private AtomicInteger size = new AtomicInteger();
+    private final AtomicInteger size = new AtomicInteger();
     private final Duration cacheTimeToLive;
     private final int cacheSize;
 
@@ -26,7 +26,7 @@ public class MemoryCache<T> {
     }
 
     private void init(Vertx vertx, Optional<Duration> cleanUpTimerInterval) {
-        if (cleanUpTimerInterval.isPresent()) {
+        if (vertx != null && cleanUpTimerInterval.isPresent()) {
             timerId = vertx.setPeriodic(cleanUpTimerInterval.get().toMillis(), new Handler<Long>() {
                 @Override
                 public void handle(Long event) {

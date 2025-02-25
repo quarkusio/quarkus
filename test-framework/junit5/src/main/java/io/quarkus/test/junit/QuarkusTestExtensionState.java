@@ -15,11 +15,13 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
     protected final Closeable testResourceManager;
     protected final Closeable resource;
     private final Thread shutdownHook;
+    private final Runnable clearCallbacks;
     private Throwable testErrorCause;
 
-    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource) {
+    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
         this.testResourceManager = testResourceManager;
         this.resource = resource;
+        this.clearCallbacks = clearCallbacks;
         this.shutdownHook = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -40,6 +42,7 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
     public void close() throws IOException {
         if (closed.compareAndSet(false, true)) {
             doClose();
+            clearCallbacks.run();
 
             try {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);

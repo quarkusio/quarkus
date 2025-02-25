@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -19,17 +18,7 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 /**
  * CDI bean than manages the lifecycle of the {@link io.quarkus.security.identity.IdentityProviderManager}
  */
-@ApplicationScoped
 public class IdentityProviderManagerCreator {
-
-    @Inject
-    Instance<IdentityProvider<?>> identityProviders;
-
-    @Inject
-    Instance<SecurityIdentityAugmentor> augmentors;
-
-    @Inject
-    BlockingSecurityExecutor blockingExecutor;
 
     @ApplicationScoped
     @DefaultBean
@@ -45,10 +34,11 @@ public class IdentityProviderManagerCreator {
 
     @Produces
     @ApplicationScoped
-    public IdentityProviderManager ipm() {
+    public IdentityProviderManager ipm(Instance<IdentityProvider<?>> identityProviders,
+            Instance<SecurityIdentityAugmentor> augmentors, BlockingSecurityExecutor blockingExecutor) {
         boolean customAnon = false;
         QuarkusIdentityProviderManagerImpl.Builder builder = QuarkusIdentityProviderManagerImpl.builder();
-        for (IdentityProvider i : identityProviders) {
+        for (var i : identityProviders) {
             builder.addProvider(i);
             if (i.getRequestType() == AnonymousAuthenticationRequest.class) {
                 customAnon = true;

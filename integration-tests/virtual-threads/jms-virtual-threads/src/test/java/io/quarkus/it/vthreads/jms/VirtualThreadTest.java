@@ -6,6 +6,7 @@ import static com.github.tomakehurst.wiremock.http.RequestMethod.POST;
 import static com.github.tomakehurst.wiremock.matching.RequestPatternBuilder.newRequestPattern;
 import static org.awaitility.Awaitility.await;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -20,6 +21,7 @@ import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
 @QuarkusTestResource(WireMockExtension.class)
 @VirtualThreadUnit
 @ShouldNotPin
+@Disabled("Depends on Quarkiverse which causes a circular dependency")
 public class VirtualThreadTest {
 
     public static final int EXPECTED_CALLS = 10;

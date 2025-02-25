@@ -84,10 +84,12 @@ import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Processor that builds the RESTEasy server configuration.
@@ -125,7 +127,8 @@ public class ResteasyServerCommonProcessor {
     ResteasyCommonConfig commonConfig;
 
     @ConfigRoot(phase = BUILD_TIME)
-    static final class ResteasyConfig {
+    @ConfigMapping(prefix = "quarkus.resteasy")
+    interface ResteasyConfig {
         /**
          * If this is true then JAX-RS will use only a single instance of a resource
          * class to service all requests.
@@ -142,8 +145,8 @@ public class ResteasyServerCommonProcessor {
          * a stereotype which has a different default scope the deployment fails with
          * IllegalStateException.
          */
-        @ConfigItem(defaultValue = "true")
-        boolean singletonResources;
+        @WithDefault("true")
+        boolean singletonResources();
 
         /**
          * Set this to override the default path for JAX-RS resources if there are no
@@ -156,9 +159,9 @@ public class ResteasyServerCommonProcessor {
          * be {@literal /foo/bar}</li>
          * </ul>
          */
-        @ConfigItem(defaultValue = "/")
-        @ConvertWith(NormalizeRootHttpPathConverter.class)
-        String path;
+        @WithDefault("/")
+        @WithConverter(NormalizeRootHttpPathConverter.class)
+        String path();
 
         /**
          * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics
@@ -171,22 +174,22 @@ public class ResteasyServerCommonProcessor {
          * @deprecated Use {@code quarkus.smallrye-metrics.jaxrs.enabled} instead.
          */
         @Deprecated(forRemoval = true)
-        @ConfigItem(name = "metrics.enabled")
-        public Optional<Boolean> metricsEnabled;
+        @WithName("metrics.enabled")
+        Optional<Boolean> metricsEnabled();
 
         /**
          * Ignore all explicit JAX-RS {@link Application} classes.
          * As multiple JAX-RS applications are not supported, this can be used to effectively merge all JAX-RS applications.
          */
-        @ConfigItem(defaultValue = "false")
-        boolean ignoreApplicationClasses;
+        @WithDefault("false")
+        boolean ignoreApplicationClasses();
 
         /**
          * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
          * into account when used on JAX-RS classes.
          */
-        @ConfigItem(defaultValue = "true")
-        boolean buildTimeConditionAware;
+        @WithDefault("true")
+        boolean buildTimeConditionAware();
     }
 
     @BuildStep
@@ -222,43 +225,43 @@ public class ResteasyServerCommonProcessor {
             CustomScopeAnnotationsBuildItem scopes) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        Collection<AnnotationInstance> applicationPaths = Collections.emptySet();
-        final Set<String> allowedClasses;
+        final AnnotationInstance applicationPath;
         final Set<String> excludedClasses;
-        if (resteasyConfig.buildTimeConditionAware) {
+        if (resteasyConfig.buildTimeConditionAware()) {
             excludedClasses = getExcludedClasses(buildTimeConditions);
         } else {
             excludedClasses = Collections.emptySet();
         }
+        final Set<String> allowedClasses;
         final String appClass;
-        if (resteasyConfig.ignoreApplicationClasses) {
+        if (resteasyConfig.ignoreApplicationClasses()) {
+            applicationPath = null;
             allowedClasses = Collections.emptySet();
             appClass = null;
         } else {
-            applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
-            allowedClasses = getAllowedClasses(index);
-            jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
-                    jaxrsProvidersToRegisterBuildItem, allowedClasses, excludedClasses);
-
-            Collection<ClassInfo> knownApplications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION).stream()
+            Collection<ClassInfo> jakartaRestApplicationClasses = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION)
+                    .stream()
                     .filter(ci -> !ci.isAbstract()).collect(
                             Collectors.toSet());
-            // getAllowedClasses throws an Exception if multiple Applications are found, so we should only get 1
-            if (knownApplications.size() == 1) {
-                appClass = knownApplications.iterator().next().name().toString();
-            } else {
-                appClass = null;
+            if (jakartaRestApplicationClasses.size() > 1) {
+                throw new RuntimeException("More than one Application class: " + jakartaRestApplicationClasses);
             }
+            if (jakartaRestApplicationClasses.isEmpty()) {
+                applicationPath = null;
+                allowedClasses = Collections.emptySet();
+                appClass = null;
+            } else {
+                ClassInfo jakartaRestApplicationClass = jakartaRestApplicationClasses.iterator().next();
+                applicationPath = jakartaRestApplicationClass.annotation(ResteasyDotNames.APPLICATION_PATH);
+                allowedClasses = getAllowedClasses(jakartaRestApplicationClass);
+                appClass = jakartaRestApplicationClass.name().toString();
+            }
+
+            jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
+                    jaxrsProvidersToRegisterBuildItem, allowedClasses, excludedClasses);
         }
 
         boolean filterClasses = !allowedClasses.isEmpty() || !excludedClasses.isEmpty();
-
-        // currently we only examine the first class that is annotated with @ApplicationPath so best
-        // fail if the user code has multiple such annotations instead of surprising the user
-        // at runtime
-        if (applicationPaths.size() > 1) {
-            throw createMultipleApplicationsException(applicationPaths);
-        }
 
         Set<AnnotationInstance> additionalPaths = new HashSet<>();
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem annotation : additionalJaxRsResourceDefiningAnnotations) {
@@ -284,8 +287,7 @@ public class ResteasyServerCommonProcessor {
 
         final String rootPath;
         final String path;
-        if (!applicationPaths.isEmpty()) {
-            AnnotationInstance applicationPath = applicationPaths.iterator().next();
+        if (applicationPath != null) {
             rootPath = "/";
             path = Encode.decode(applicationPath.value().asString());
         } else {
@@ -298,8 +300,8 @@ public class ResteasyServerCommonProcessor {
                 }
                 path = rootPath;
             } else {
-                rootPath = resteasyConfig.path;
-                path = resteasyConfig.path;
+                rootPath = resteasyConfig.path();
+                path = resteasyConfig.path();
             }
         }
 
@@ -515,7 +517,7 @@ public class ResteasyServerCommonProcessor {
                 } else if (subresources.contains(clazz.name())) {
                     // Transform a class annotated with a request method designator
                     Transformation transformation = context.transform()
-                            .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
+                            .add(resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName()
                                     : BuiltinScope.DEPENDENT.getName());
                     if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MySubresource.class)
@@ -621,7 +623,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         if (!additionalClassWithPath.isEmpty()) {
             AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
-                    .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
+                    .setDefaultScope(resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null)
                     .setUnremovable();
             for (Map.Entry<DotName, ClassInfo> classWithPath : additionalClassWithPath.entrySet()) {
                 if (scopes.isScopeDeclaredOn(classWithPath.getValue())) {
@@ -642,7 +644,7 @@ public class ResteasyServerCommonProcessor {
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PATH,
-                        resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null));
+                        resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null));
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
@@ -1003,21 +1005,6 @@ public class ResteasyServerCommonProcessor {
         return false;
     }
 
-    private static RuntimeException createMultipleApplicationsException(Collection<AnnotationInstance> applicationPaths) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (AnnotationInstance annotationInstance : applicationPaths) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append(",");
-            }
-            sb.append(annotationInstance.target().asClass().name().toString());
-        }
-        return new RuntimeException("Multiple classes ( " + sb.toString()
-                + ") have been annotated with @ApplicationPath which is currently not supported");
-    }
-
     /**
      * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
@@ -1098,49 +1085,37 @@ public class ResteasyServerCommonProcessor {
     }
 
     /**
-     * @param index the index to use to find the existing {@link Application}.
      * @return the set of classes returned by the methods {@link Application#getClasses()} and
      *         {@link Application#getSingletons()}.
      */
-    private static Set<String> getAllowedClasses(IndexView index) {
-        final Collection<ClassInfo> applications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION);
+    private Set<String> getAllowedClasses(ClassInfo jakartaRestApplicationClass) {
         final Set<String> allowedClasses = new HashSet<>();
         Application application;
-        ClassInfo selectedAppClass = null;
-        for (ClassInfo applicationClassInfo : applications) {
-            if (Modifier.isAbstract(applicationClassInfo.flags())) {
-                continue;
-            }
-            if (selectedAppClass != null) {
-                throw new RuntimeException("More than one Application class: " + applications);
-            }
-            selectedAppClass = applicationClassInfo;
-            if (selectedAppClass.annotationsMap().containsKey(ResteasyDotNames.CDI_INJECT)) {
-                throw new RuntimeException(
-                        "Usage of '@Inject' is not allowed in 'jakarta.ws.rs.core.Application' classes. Offending class is '"
-                                + selectedAppClass.name() + "'");
-            }
+        if (jakartaRestApplicationClass.annotationsMap().containsKey(ResteasyDotNames.CDI_INJECT)) {
+            throw new RuntimeException(
+                    "Usage of '@Inject' is not allowed in 'jakarta.ws.rs.core.Application' classes. Offending class is '"
+                            + jakartaRestApplicationClass.name() + "'");
+        }
 
-            String applicationClass = applicationClassInfo.name().toString();
-            try {
-                Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
-                application = (Application) appClass.getConstructor().newInstance();
-                Set<Class<?>> classes = application.getClasses();
-                if (!classes.isEmpty()) {
-                    for (Class<?> klass : classes) {
-                        allowedClasses.add(klass.getName());
-                    }
+        String applicationClass = jakartaRestApplicationClass.name().toString();
+        try {
+            Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
+            application = (Application) appClass.getConstructor().newInstance();
+            Set<Class<?>> classes = application.getClasses();
+            if (!classes.isEmpty()) {
+                for (Class<?> klass : classes) {
+                    allowedClasses.add(klass.getName());
                 }
-                classes = application.getSingletons().stream().map(Object::getClass).collect(Collectors.toSet());
-                if (!classes.isEmpty()) {
-                    for (Class<?> klass : classes) {
-                        allowedClasses.add(klass.getName());
-                    }
-                }
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
-                    | InvocationTargetException e) {
-                throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
+            classes = application.getSingletons().stream().map(Object::getClass).collect(Collectors.toSet());
+            if (!classes.isEmpty()) {
+                for (Class<?> klass : classes) {
+                    allowedClasses.add(klass.getName());
+                }
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
+            throw new RuntimeException("Unable to handle class: " + applicationClass, e);
         }
         return allowedClasses;
     }

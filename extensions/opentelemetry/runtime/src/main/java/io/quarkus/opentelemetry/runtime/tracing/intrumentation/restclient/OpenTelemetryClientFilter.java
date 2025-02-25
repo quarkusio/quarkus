@@ -15,6 +15,8 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -29,6 +31,8 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data. This is only used
@@ -56,17 +60,22 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
     // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
     public OpenTelemetryClientFilter() {
-        this(GlobalOpenTelemetry.get());
+        this(GlobalOpenTelemetry.get(),
+                ConfigProvider.getConfig()
+                        .unwrap(SmallRyeConfig.class)
+                        .getConfigMapping(OTelRuntimeConfig.class));
     }
 
     @Inject
-    public OpenTelemetryClientFilter(final OpenTelemetry openTelemetry) {
+    public OpenTelemetryClientFilter(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
 
         InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 HttpSpanNameExtractor.create(clientAttributesExtractor));
+
+        builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))

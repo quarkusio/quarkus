@@ -7,12 +7,14 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class QuteConfig {
+@ConfigMapping(prefix = "quarkus.qute")
+public interface QuteConfig {
 
     /**
      * The list of suffixes used when attempting to locate a template file.
@@ -21,16 +23,15 @@ public class QuteConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "qute.html,qute.txt,html,txt")
-    public List<String> suffixes;
+    @WithDefault("qute.html,qute.txt,html,txt")
+    List<String> suffixes();
 
     /**
      * The additional map of suffixes to content types. This map is used when working with template variants. By default, the
      * {@link java.net.URLConnection#getFileNameMap()} is used to determine the content type of a template file.
      */
-    @ConfigItem
     @ConfigDocMapKey("file-suffix")
-    public Map<String, String> contentTypes;
+    Map<String, String> contentTypes();
 
     /**
      * The list of exclude rules used to intentionally ignore some parts of an expression when performing type-safe validation.
@@ -45,20 +46,18 @@ public class QuteConfig {
      * <li>{@code *.age} - exclude the property/method {@code age} on any class</li>
      * </ul>
      */
-    @ConfigItem
-    public Optional<List<String>> typeCheckExcludes;
+    Optional<List<String>> typeCheckExcludes();
 
     /**
-     * This regular expression is used to exclude template files from the {@code templates} directory. Excluded templates are
+     * This regular expression is used to exclude template files found in template roots. Excluded templates are
      * neither parsed nor validated during build and are not available at runtime.
      * <p>
-     * The matched input is the file path relative from the {@code templates} directory and the
-     * {@code /} is used as a path separator.
+     * The matched input is the file path relative from the root directory and the {@code /} is used as a path separator.
      * <p>
      * By default, the hidden files are excluded. The name of a hidden file starts with a dot.
      */
-    @ConfigItem(defaultValue = "^\\..*|.*\\/\\..*$")
-    public Pattern templatePathExclude;
+    @WithDefault("^\\..*|.*\\/\\..*$")
+    Pattern templatePathExclude();
 
     /**
      * The prefix is used to access the iteration metadata inside a loop section.
@@ -74,32 +73,30 @@ public class QuteConfig {
      * </ul>
      * By default, the {@code <alias_>} constant is set.
      */
-    @ConfigItem(defaultValue = "<alias_>")
-    public String iterationMetadataPrefix;
+    @WithDefault("<alias_>")
+    String iterationMetadataPrefix();
 
     /**
      * The list of content types for which the {@code '}, {@code "}, {@code <}, {@code >} and {@code &} characters are escaped
      * if a template variant is set.
      */
-    @ConfigItem(defaultValue = "text/html,text/xml,application/xml,application/xhtml+xml")
-    public List<String> escapeContentTypes;
+    @WithDefault("text/html,text/xml,application/xml,application/xhtml+xml")
+    List<String> escapeContentTypes();
 
     /**
      * The default charset of the templates files.
      */
-    @ConfigItem(defaultValue = "UTF-8")
-    public Charset defaultCharset;
+    @WithDefault("UTF-8")
+    Charset defaultCharset();
 
     /**
      * Development mode configuration.
      */
-    @ConfigItem
-    public QuteDevModeConfig devMode;
+    QuteDevModeConfig devMode();
 
     /**
      * Test mode configuration.
      */
-    @ConfigItem
-    public QuteTestModeConfig testMode;
+    QuteTestModeConfig testMode();
 
 }

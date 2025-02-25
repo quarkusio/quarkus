@@ -5,10 +5,29 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public record Extension(String groupId, String artifactId, String name,
-        NameSource nameSource, boolean detected) implements Comparable<Extension> {
+        NameSource nameSource, boolean commonOrInternal, String guideUrl,
+        boolean splitOnConfigRootDescription, boolean detected) implements Comparable<Extension> {
+
+    private static final String ARTIFACT_COMMON_SUFFIX = "-common";
+    private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
+    private static final String NAME_COMMON_SUFFIX = "Common";
+    private static final String NAME_INTERNAL_SUFFIX = "Internal";
+    private static final String NAME_SEPARATOR = " - ";
+
+    public static Extension of(String groupId, String artifactId, String name,
+            NameSource nameSource, String guideUrl, boolean splitOnConfigRootDescription) {
+        boolean commonOrInternal = artifactId.endsWith(ARTIFACT_COMMON_SUFFIX) || artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX);
+        if (commonOrInternal) {
+            nameSource = nameSource == NameSource.EXTENSION_METADATA ? NameSource.EXTENSION_METADATA_COMMON_INTERNAL
+                    : (nameSource == NameSource.POM_XML ? NameSource.POM_XML_COMMON_INTERNAL : nameSource);
+        }
+
+        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, splitOnConfigRootDescription,
+                true);
+    }
 
     public static Extension createNotDetected() {
-        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false);
+        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false, false);
     }
 
     @Override
@@ -40,14 +59,42 @@ public record Extension(String groupId, String artifactId, String name,
     @Deprecated(forRemoval = true)
     @JsonIgnore
     public boolean isMixedModule() {
-        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-messaging".equals(artifactId));
+        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-vertx-http".equals(artifactId));
     }
 
     @JsonIgnore
-    public boolean splitOnConfigRootDescription() {
-        // quarkus-core has a lot of config roots and they are very specific
-        // we need to split them properly in the generated documentation
-        return "io.quarkus".equals(groupId) && "quarkus-core".equals(artifactId);
+    public Extension normalizeCommonOrInternal() {
+        if (!commonOrInternal()) {
+            return this;
+        }
+
+        String normalizedArtifactId = artifactId;
+        String normalizedName = name;
+        if (artifactId.endsWith(ARTIFACT_COMMON_SUFFIX)) {
+            normalizedArtifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_COMMON_SUFFIX.length());
+
+            if (name != null && name.endsWith(NAME_COMMON_SUFFIX)) {
+                normalizedName = name.substring(0, name.length() - NAME_COMMON_SUFFIX.length());
+            }
+        }
+        if (artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX)) {
+            normalizedArtifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_INTERNAL_SUFFIX.length());
+
+            if (name != null && name.endsWith(NAME_INTERNAL_SUFFIX)) {
+                normalizedName = name.substring(0, name.length() - NAME_INTERNAL_SUFFIX.length());
+            }
+        }
+
+        if (normalizedName != null && normalizedName.endsWith(NAME_SEPARATOR)) {
+            normalizedName = normalizedName.substring(0, normalizedName.length() - NAME_SEPARATOR.length());
+        }
+
+        if (normalizedArtifactId.equals(artifactId) && Objects.equals(normalizedName, name)) {
+            return this;
+        }
+
+        return new Extension(groupId, normalizedArtifactId, normalizedName, nameSource, commonOrInternal, null,
+                splitOnConfigRootDescription, detected);
     }
 
     @Override

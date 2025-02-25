@@ -2,7 +2,6 @@ package io.quarkus.oidc.runtime;
 
 import jakarta.enterprise.event.Observes;
 
-import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.vertx.core.Vertx;
 
@@ -11,8 +10,9 @@ public class BackChannelLogoutTokenCache {
     final MemoryCache<TokenVerificationResult> cache;
 
     public BackChannelLogoutTokenCache(OidcTenantConfig oidcTenantConfig, Vertx vertx) {
-        cache = new MemoryCache<TokenVerificationResult>(vertx, oidcTenantConfig.logout.backchannel.cleanUpTimerInterval,
-                oidcTenantConfig.logout.backchannel.tokenCacheTimeToLive, oidcTenantConfig.logout.backchannel.tokenCacheSize);
+        cache = new MemoryCache<TokenVerificationResult>(vertx, oidcTenantConfig.logout().backchannel().cleanUpTimerInterval(),
+                oidcTenantConfig.logout().backchannel().tokenCacheTimeToLive(),
+                oidcTenantConfig.logout().backchannel().tokenCacheSize());
     }
 
     public void addTokenVerification(String token, TokenVerificationResult result) {

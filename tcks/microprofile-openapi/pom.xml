@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile OpenAPI</name>
 
     <properties>
-        <microprofile-openapi-tck.version>3.1.1</microprofile-openapi-tck.version>
+        <microprofile-openapi-tck.version>4.0.2</microprofile-openapi-tck.version>
     </properties>
 
     <build>
@@ -30,6 +30,7 @@
                         <!-- Change metrics endpoint to be /metrics -->
                         <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
                         <quarkus.smallrye-openapi.auto-add-tags>false</quarkus.smallrye-openapi.auto-add-tags>
+                        <quarkus.smallrye-openapi.auto-add-bad-request-response>false</quarkus.smallrye-openapi.auto-add-bad-request-response>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

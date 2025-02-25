@@ -205,11 +205,20 @@ or implicitly set by the Quarkus build process to a minimum supported version of
 Quarkus will try to check this preconfigured version against the actual database version on startup,
 leading to a startup failure when the actual version is lower.
 
-This is because Hibernate ORM may generate SQL that is invalid
-for versions of the database older than what is configured,
-which would lead to runtime exceptions.
+This is a safeguard: for versions of the database older than what is configured,
+Hibernate ORM may generate SQL that is invalid which would lead to runtime exceptions.
 
+// TODO disable the check by default when offline startup is opted in
+//   See https://github.com/quarkusio/quarkus/issues/13522
 If the database cannot be reached, a warning will be logged but startup will proceed.
+You can optionally disable the version check if you know the database won't be reachable on startup
+using <<quarkus-hibernate-orm_quarkus-hibernate-orm-database-version-check-enabled,`quarkus.hibernate-orm.database.version-check.enabled=false`>>.
+
+// TODO change the default to "always enabled" when we solve version detection problems
+//   See https://github.com/quarkusio/quarkus/issues/43703
+//   See https://github.com/quarkusio/quarkus/issues/42255
+The version check is disabled by default when a dialect is set explicitly,
+as a workaround for https://github.com/quarkusio/quarkus/issues/42255[#42255]/link:https://github.com/quarkusio/quarkus/issues/43703[#43703].
 ====
 
 [[hibernate-dialect-other-databases]]
@@ -497,8 +506,10 @@ by default it is active at runtime,
 that is Quarkus will start the corresponding Hibernate ORM `SessionFactory` on application startup.
 
 To deactivate a persistence unit at runtime, set `quarkus.hibernate-orm[.optional name].active` to `false`.
-Then Quarkus will not start the corresponding Hibernate ORM `SessionFactory` on application startup.
-Any attempt to use the corresponding persistence unit at runtime will fail with a clear error message.
+If a persistence unit is not active:
+
+* The `SessionFactory` will not start during application startup.
+* Accessing the `EntityManagerFactory`/`EntityManager` or `SessionFactory`/`Session` will cause an exception to be thrown.
 
 This is in particular useful when you want an application to be able
 to xref:datasource.adoc#datasource-active[use one of a pre-determined set of datasources at runtime].
@@ -549,16 +560,19 @@ xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
 ----
 ====
 
-[TIP]
-====
-It can also be useful to define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] redirecting to the currently active persistence unit,
-like this:
+With such a setup, you will need to take care to only ever access the _active_ persistence unit.
+To do so, you may define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] for the default `Session` redirecting to the currently active named `Session`, so that it can be injected directly, like this:
 
 [source,java,indent=0]
 ----
 public class MyProducer {
     @Inject
-    DataSourceSupport dataSourceSupport;
+    @DataSource("pg")
+    InjectableInstance<AgroalDataSource> pgDataSourceBean; // <1>
+
+    @Inject
+    @DataSource("oracle")
+    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
 
     @Inject
     @PersistenceUnit("pg")
@@ -568,18 +582,36 @@ public class MyProducer {
     @PersistenceUnit("oracle")
     Session oracleSessionBean;
 
-    @Produces
+    @Produces // <2>
     @ApplicationScoped
     public Session session() {
-        if (dataSourceSupport.getInactiveNames().contains("pg")) {
+        if (pgDataSourceBean.getHandle().getBean().isActive()) { // <3>
+            return pgSessionBean;
+        } else if (oracleDataSourceBean.getHandle().getBean().isActive()) { // <3>
             return oracleSessionBean;
         } else {
-            return pgSessionBean;
+            throw new RuntimeException("No active datasource!");
         }
     }
 }
+
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    Session session; // <4>
+
+    public void doSomething() {
+        // .. just use the injected session ...
+    }
+}
 ----
-====
+<1> Don't inject a `DataSource` or `AgroalDatasource` directly,
+because that would lead to a failure on startup (can't inject inactive beans).
+Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`.
+<2> Declare a CDI producer method that will define the default session
+as either PostgreSQL or Oracle, depending on what is active.
+<3> Check whether datasource beans are active before retrieving the corresponding session.
+<4> This will get injected with the (only) active session.
 
 [[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
@@ -1050,7 +1082,7 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 
 Quarkus currently supports the link:{hibernate-orm-docs-url}#multitenacy-separate-database[separate database] approach, the link:{hibernate-orm-docs-url}#multitenacy-separate-schema[separate schema] approach and the link:{hibernate-orm-docs-url}#multitenacy-discriminator[discriminator] approach.
 
-To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
+To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-schema-quickstart[hibernate-orm-multi-tenancy-schema-quickstart] or link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-database-quickstart[hibernate-orm-multi-tenancy-database-quickstart].
 
 === Writing the application
 
@@ -1127,11 +1159,13 @@ From the implementation above, tenants are resolved from the request path so tha
 
 [NOTE]
 ====
-If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same,
+you can get the OIDC tenant id from a `RoutingContext` attribute like in the example below:
 
 [source,java]
 ----
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnitExtension
@@ -1139,15 +1173,19 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantResolver implements TenantResolver {
 
     @Inject
-    RoutingContext context;
+    RoutingContext context; <1>
     ...
     @Override
     public String resolveTenantId() {
-        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
-        return context.get("tenantId");
+        // OIDC has saved the tenant id as the RoutingContext attribute:
+        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
     }
 }
 ----
+<1> If the Hibernate `TenantResolver` also resolves tenants when there is no active HTTP request,
+for example when you query database from a scheduler, the `RoutingContext` CDI bean will not be available.
+Please inject the `io.quarkus.vertx.http.runtime.CurrentVertxRequest` CDI bean instead and get the `RoutingContext` from this bean.
+
 ====
 
 === Configuring the application
@@ -1172,7 +1210,7 @@ quarkus.hibernate-orm.multitenant=SCHEMA <2>
 quarkus.datasource.db-kind=postgresql <3>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 
 quarkus.flyway.schemas=base,mycompany <4>
 quarkus.flyway.locations=classpath:schema
@@ -1240,7 +1278,7 @@ quarkus.hibernate-orm.datasource=base <3>
 quarkus.datasource.base.db-kind=postgresql <4>
 quarkus.datasource.base.username=quarkus_test
 quarkus.datasource.base.password=quarkus_test
-quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+%prod.quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 quarkus.flyway.base.locations=classpath:database/base <5>
 quarkus.flyway.base.migrate-at-start=true
 
@@ -1248,7 +1286,7 @@ quarkus.flyway.base.migrate-at-start=true
 quarkus.datasource.mycompany.db-kind=postgresql <6>
 quarkus.datasource.mycompany.username=mycompany
 quarkus.datasource.mycompany.password=mycompany
-quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
+%prod.quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
 quarkus.flyway.mycompany.locations=classpath:database/mycompany <7>
 quarkus.flyway.mycompany.migrate-at-start=true
 ----

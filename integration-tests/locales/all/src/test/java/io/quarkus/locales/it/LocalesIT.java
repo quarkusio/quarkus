@@ -4,12 +4,17 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
+import java.util.Locale;
+
 import org.apache.http.HttpStatus;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
+import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -125,4 +130,31 @@ public class LocalesIT {
                 .then()
                 .body(containsString(expectedMessage));
     }
+
+    // This test works best in a non-english locale.
+    @Test
+    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_999)
+    public void testDefaultLocalePre24_2() {
+        RestAssured.given().when()
+                .get("/default/de-CH")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                // With GraalVM < 24.2, the default locale is picked up by the build system when not set by the user.
+                .body(is(Locale.forLanguageTag("de-CH").getDisplayCountry()))
+                .log().all();
+    }
+
+    // This test works best in a non-english locale.
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(value = GraalVMVersion.GRAALVM_24_2_0)
+    public void testDefaultLocalePost24_1() {
+        RestAssured.given().when()
+                .get("/default/de-CH")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                // Starting with GraalVM 24.2, the default locale is en-US when not set by the user.
+                .body(is("Switzerland"))
+                .log().all();
+    }
+
 }

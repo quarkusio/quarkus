@@ -19,6 +19,7 @@ import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -55,6 +56,9 @@ public class ProtectedResource {
 
     @Inject
     AccessTokenCredential accessTokenCredential;
+
+    @Inject
+    OidcProviderClient oidcProviderClient;
 
     @Inject
     RefreshToken refreshToken;
@@ -189,7 +193,13 @@ public class ProtectedResource {
             throw new OIDCException("Access token values are not equal");
         }
 
-        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "no access";
+        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty()
+                ? "AT injected, active: " + isTokenActive()
+                : "no access";
+    }
+
+    private boolean isTokenActive() {
+        return oidcProviderClient.introspectAccessToken(accessTokenCredential.getToken()).await().indefinitely().isActive();
     }
 
     @GET

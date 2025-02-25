@@ -27,7 +27,7 @@ import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -75,14 +75,14 @@ public class FunqyKnativeEventsBuildStep {
             BuildProducer<RouteBuildItem> routes,
             CoreVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
-            HttpBuildTimeConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ExecutorBuildItem executorBuildItem) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
         feature.produce(new FeatureBuildItem(FUNQY_KNATIVE_FEATURE));
 
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpBuildTimeConfig.rootPath();
         if (rootPath == null) {
             rootPath = "/";
         } else if (!rootPath.endsWith("/")) {

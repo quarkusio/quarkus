@@ -197,7 +197,7 @@ public class MyReflectionConfiguration {
 }
 ----
 
-Note: By default the `@RegisterForReflection` annotation will also registered any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
+Note: By default the `@RegisterForReflection` annotation will also register any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
 
 ==== Using a configuration file
 
@@ -320,6 +320,7 @@ and in the case of using the Maven configuration instead of `application.propert
 ----
 ====
 
+[[managing-proxy-classes-app]]
 === Managing Proxy Classes
 
 While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
@@ -331,9 +332,10 @@ In such a situation, the error you might encounter is:
 com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
 ----
 
-Solving this issue requires creating a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-This way the configuration will be automatically parsed by the native build, without additional configuration.
-For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
+To solve the issue you can create a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+For more information about the format of the `proxy-config.json`, see the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
+
+Alternatively, you can create a quarkus extension and register the proxy classes as described in <<managing-proxy-classes-extension>>.
 
 [[modularity-benefits]]
 === Modularity Benefits
@@ -537,7 +539,7 @@ depending on your use case.
 
 === Beware of common Java API overrides
 
-Certain commonly used Java methods are overriden by user classes,
+Certain commonly used Java methods are overridden by user classes,
 e.g. `toString`, `equals`, `hashCode`...etc.
 The majority of overrides do not cause problems,
 but if they use third party libraries (e.g. for additional formatting),
@@ -633,9 +635,10 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 For more information about the `--initialize-at-run-time` option, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
+[[managing-proxy-classes-extension]]
 === Managing Proxy Classes
 
-Very similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
+Similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
 
 [source,java]
 ----
@@ -650,11 +653,15 @@ public class S3Processor {
 }
 ----
 
-Using such a construct means that a `-H:DynamicProxyConfigurationResources` option will automatically be added to the `native-image` command line.
+This will allow Quarkus to generate the necessary configuration for handling the proxy class.
+
+Alternatively, you may create a `proxy-config.json` as described in <<managing-proxy-classes-app>>.
 
 [NOTE]
 ====
-For more information about Proxy Classes, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
+In both cases the configuration will be automatically parsed by the native build, without additional configuration.
+
+For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually].
 ====
 
 === Logging with Native Image

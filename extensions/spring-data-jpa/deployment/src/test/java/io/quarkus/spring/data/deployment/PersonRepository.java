@@ -4,12 +4,18 @@ import java.util.List;
 
 import org.springframework.data.repository.Repository;
 
-// issue 13067:
+// issue 13067: This repo is used to test the MethodNameParser class. See MethodNameParserTest class
 public interface PersonRepository extends Repository<Person, Integer> {
 
     List<Person> findAllByAddressZipCode(String zipCode);
 
     List<Person> findAllByAddressCountry(String zipCode);
+
+    List<Person> findAllByNameAndAgeAndActive(String name, int age, boolean active);
+
+    List<Person> findAllByNameAndAgeOrActive(String name, int age, boolean active);
+
+    List<Person> findAllByNameOrAgeOrActive(String name, int age, boolean active);
 
     List<Person> findAllByAddress_Country(String zipCode);
 

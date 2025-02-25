@@ -3,6 +3,9 @@ package io.quarkus.resteasy.reactive.links.deployment;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
 
@@ -89,5 +92,19 @@ public abstract class AbstractHalLinksTest {
                 .thenReturn();
 
         assertThat(response.body().jsonPath().getString("_links.self.href")).endsWith("/records/with-rest-link-id/100");
+        assertThat(response.body().jsonPath().getString("_links.self.title")).isEqualTo("The with rest link title");
+        assertThat(response.body().jsonPath().getString("_links.self.type")).isEqualTo(MediaType.APPLICATION_JSON);
+    }
+
+    @Test
+    void shouldIncludeAllFieldsFromLink() {
+        Response response = given()
+                .header(HttpHeaders.ACCEPT, RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-rest-link-with-all-fields")
+                .thenReturn();
+
+        assertThat(response.body().jsonPath().getString("_links.all.href")).endsWith("/records/with-rest-link-id/100");
+        assertThat(response.body().jsonPath().getString("_links.all.title")).isEqualTo("The title link");
+        assertThat(response.body().jsonPath().getString("_links.all.type")).isEqualTo(MediaType.APPLICATION_JSON);
     }
 }

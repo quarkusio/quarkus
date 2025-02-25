@@ -12,13 +12,6 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
 
     private static volatile SmallRyeConfig config;
 
-    /**
-     * Construct a new instance. Called by service loader.
-     */
-    public QuarkusConfigFactory() {
-        // todo: replace with {@code provider()} post-Java 11
-    }
-
     @Override
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
@@ -37,14 +30,11 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
             configProviderResolver.releaseConfig(QuarkusConfigFactory.config);
             QuarkusConfigFactory.config = null;
         }
-        // Also release the TCCL config, in case that config was not QuarkusConfigFactory.config
-        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
         // Install new config
         if (config != null) {
             QuarkusConfigFactory.config = config;
-            // Register the new config for the TCCL,
-            // just in case the TCCL was using a different config
-            // than the one we uninstalled above.
+            // Someone may have called ConfigProvider.getConfig which automatically registers a Config in the TCCL
+            configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
             configProviderResolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
         }
     }

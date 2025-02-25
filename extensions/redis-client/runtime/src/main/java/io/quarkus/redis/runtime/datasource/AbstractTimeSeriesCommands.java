@@ -176,7 +176,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
     Uni<Response> _tsMAdd(SeriesSample<K>... samples) {
         doesNotContainNull(samples, "samples");
         if (samples.length == 0) {
-            throw new IllegalArgumentException("`samples` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`samples` must not be empty"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.TS_MADD);
@@ -196,7 +196,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(args, "args");
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.TS_MGET).putArgs(args);
         cmd.put("FILTER");
@@ -210,7 +210,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
     Uni<Response> _tsMGet(Filter... filters) {
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.TS_MGET);
         cmd.put("FILTER");
@@ -226,7 +226,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(range, "range");
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.TS_MRANGE).putAll(range.toArgs());
@@ -244,7 +244,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(args, "args");
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.TS_MRANGE).putAll(range.toArgs()).putArgs(args);
@@ -277,7 +277,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(range, "range");
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.TS_MREVRANGE).putAll(range.toArgs()).putArgs(args);
@@ -293,7 +293,7 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
 
         doesNotContainNull(filters, "filters");
         if (filters.length == 0) {
-            throw new IllegalArgumentException("`filters` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`filters` must not be empty"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.TS_QUERYINDEX);

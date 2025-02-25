@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.LEGACY_JAR;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
@@ -75,12 +74,10 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -197,10 +194,8 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarRequiredBuildItem> uberJarRequired,
             List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
             List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
-            List<LegacyJarRequiredBuildItem> legacyJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
             MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
@@ -209,27 +204,21 @@ public class JarResultBuildStep {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
         }
 
-        if (!uberJarRequired.isEmpty() && !legacyJarRequired.isEmpty()) {
-            throw new RuntimeException(
-                    "Extensions with conflicting package types. One extension requires uber-jar another requires legacy format");
-        }
-
-        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.jar().type() == UBER_JAR)) {
-            return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
-                    uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.jar().type() == LEGACY_JAR) {
-            return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+        return switch (packageConfig.jar().type()) {
+            case UBER_JAR ->
+                buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
+                        packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
+                        uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
+            case LEGACY_JAR -> buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
                     classLoadingConfig);
-        } else {
-            return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, classLoadingConfig, applicationInfo, generatedClasses,
-                    generatedResources,
-                    additionalApplicationArchiveBuildItems, mainClassBuildItem);
-        }
+            case FAST_JAR, MUTABLE_JAR ->
+                buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
+                        packageConfig, classLoadingConfig, applicationInfo, generatedClasses,
+                        generatedResources,
+                        additionalApplicationArchiveBuildItems, mainClassBuildItem);
+        };
     }
 
     // the idea here is to just dump the class names of the generated and transformed classes into a file
@@ -329,13 +318,14 @@ public class JarResultBuildStep {
                     .build();
         }
         final ApplicationManifestConfig manifestConfig = ApplicationManifestConfig.builder()
-                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
                 .setMainComponent(ApplicationComponent.builder()
                         .setPath(runnerJar)
                         .setResolvedDependency(appArtifact)
                         .build())
                 .setRunnerPath(runnerJar)
+                .addComponents(curateOutcomeBuildItem.getApplicationModel().getDependencies())
                 .build();
+
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }
@@ -367,7 +357,7 @@ public class JarResultBuildStep {
             final Set<String> mergeResourcePaths = mergedResources.stream()
                     .map(UberJarMergedResourceBuildItem::getPath)
                     .collect(Collectors.toSet());
-            final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
+            final Set<ArtifactKey> removed = getRemovedArtifactKeys(classLoadingConfig);
 
             Set<String> ignoredEntries = new HashSet<>();
             packageConfig.jar().userConfiguredIgnoredEntries().ifPresent(ignoredEntries::addAll);
@@ -563,7 +553,7 @@ public class JarResultBuildStep {
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo,
                     packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem,
-                    classLoadingConfig);
+                    getRemovedArtifactKeys(classLoadingConfig));
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -706,6 +696,9 @@ public class JarResultBuildStep {
         fastJarJarsBuilder.setRunner(runnerJar);
 
         if (!rebuild) {
+            manifestConfig.addComponent(ApplicationComponent.builder()
+                    .setResolvedDependency(applicationArchivesBuildItem.getRootArchive().getResolvedDependency())
+                    .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
                 copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
@@ -713,7 +706,7 @@ public class JarResultBuildStep {
         }
         final Set<ArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
         final StringBuilder classPath = new StringBuilder();
-        final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
+        final Set<ArtifactKey> removed = getRemovedArtifactKeys(classLoadingConfig);
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
         for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
@@ -776,7 +769,9 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
-        manifestConfig.setMainComponent(ApplicationComponent.builder().setPath(initJar))
+        manifestConfig.setMainComponent(ApplicationComponent.builder()
+                .setPath(initJar)
+                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
                 .setRunnerPath(initJar);
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
@@ -886,7 +881,7 @@ public class JarResultBuildStep {
                 parentFirstKeys.add(d.getKey());
             }
         });
-        classLoadingConfig.parentFirstArtifacts.ifPresent(
+        classLoadingConfig.parentFirstArtifacts().ifPresent(
                 parentFirstArtifacts -> {
                     for (String artifact : parentFirstArtifacts) {
                         parentFirstKeys.add(new GACT(artifact.split(":")));
@@ -895,18 +890,16 @@ public class JarResultBuildStep {
         return parentFirstKeys;
     }
 
-    /**
-     * @return a {@code Set} containing the key of the artifacts to load from the parent ClassLoader first.
-     */
-    private Set<ArtifactKey> getRemovedKeys(ClassLoadingConfig classLoadingConfig) {
-        final Set<ArtifactKey> removed = new HashSet<>();
-        classLoadingConfig.removedArtifacts.ifPresent(
-                removedArtifacts -> {
-                    for (String artifact : removedArtifacts) {
-                        removed.add(new GACT(artifact.split(":")));
-                    }
-                });
-        return removed;
+    private Set<ArtifactKey> getRemovedArtifactKeys(ClassLoadingConfig classLoadingConfig) {
+        if (classLoadingConfig.removedArtifacts().isEmpty()) {
+            return Set.of();
+        }
+
+        Set<ArtifactKey> removedArtifacts = new HashSet<>();
+        for (String artifact : classLoadingConfig.removedArtifacts().get()) {
+            removedArtifacts.add(GACT.fromString(artifact));
+        }
+        return Collections.unmodifiableSet(removedArtifacts);
     }
 
     private void copyDependency(Set<ArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
@@ -1048,16 +1041,13 @@ public class JarResultBuildStep {
 
             log.info("Building native image source jar: " + runnerJar);
 
+            final Set<ArtifactKey> removedArtifacts = new HashSet<>(getRemovedArtifactKeys(classLoadingConfig));
             // Remove svm and graal-sdk artifacts as they are provided by GraalVM itself
-            if (classLoadingConfig.removedArtifacts.isEmpty()) {
-                classLoadingConfig.removedArtifacts = Optional.of(new ArrayList<>(6));
-            }
-            List<String> removedArtifacts = classLoadingConfig.removedArtifacts.get();
-            removedArtifacts.add("org.graalvm.nativeimage:svm");
-            removedArtifacts.add("org.graalvm.sdk:graal-sdk");
-            removedArtifacts.add("org.graalvm.sdk:nativeimage");
-            removedArtifacts.add("org.graalvm.sdk:word");
-            removedArtifacts.add("org.graalvm.sdk:collections");
+            removedArtifacts.add(GACT.fromString("org.graalvm.nativeimage:svm"));
+            removedArtifacts.add(GACT.fromString("org.graalvm.sdk:graal-sdk"));
+            removedArtifacts.add(GACT.fromString("org.graalvm.sdk:nativeimage"));
+            removedArtifacts.add(GACT.fromString("org.graalvm.sdk:word"));
+            removedArtifacts.add(GACT.fromString("org.graalvm.sdk:collections"));
 
             // complain if graal-sdk is present as a dependency as nativeimage should be preferred
             if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
@@ -1069,7 +1059,7 @@ public class JarResultBuildStep {
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
-                    runnerZipFs, mainClassBuildItem, classLoadingConfig);
+                    runnerZipFs, mainClassBuildItem, removedArtifacts);
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
@@ -1113,7 +1103,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             FileSystem runnerZipFs,
             MainClassBuildItem mainClassBuildItem,
-            ClassLoadingConfig classLoadingConfig)
+            Set<ArtifactKey> removedArtifacts)
             throws IOException {
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
@@ -1124,9 +1114,8 @@ public class JarResultBuildStep {
 
         Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
-        final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
         copyLibraryJars(runnerZipFs, outputTargetBuildItem, transformedClasses, libDir, classPath, appDeps, services,
-                ignoredEntriesPredicate, removed);
+                ignoredEntriesPredicate, removedArtifacts);
 
         ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly

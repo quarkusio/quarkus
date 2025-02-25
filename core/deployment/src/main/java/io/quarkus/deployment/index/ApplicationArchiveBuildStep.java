@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -46,37 +47,55 @@ import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
 public class ApplicationArchiveBuildStep {
 
     private static final Logger LOGGER = Logger.getLogger(ApplicationArchiveBuildStep.class);
 
-    IndexDependencyConfiguration config;
-
     /**
      * Indexing
      */
+    @ConfigMapping(prefix = "quarkus.index-dependency")
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-    static final class IndexDependencyConfiguration {
+    interface IndexDependencyConfiguration {
         /**
          * Artifacts on the classpath that should also be indexed.
          * <p>
          * Their classes will be in the index and processed by Quarkus processors.
          */
-        @ConfigItem(name = ConfigItem.PARENT)
+        @WithParentName
         @ConfigDocSection
         @ConfigDocMapKey("dependency-name")
-        Map<String, IndexDependencyConfig> indexDependency;
+        Map<String, IndexDependencyConfig> indexDependency();
+
+        interface IndexDependencyConfig {
+            /**
+             * The maven groupId of the artifact.
+             */
+            String groupId();
+
+            /**
+             * The maven artifactId of the artifact (optional).
+             */
+            Optional<String> artifactId();
+
+            /**
+             * The maven classifier of the artifact (optional).
+             */
+            Optional<String> classifier();
+        }
     }
 
     @BuildStep
-    void addConfiguredIndexedDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
-        for (IndexDependencyConfig indexDependencyConfig : config.indexDependency.values()) {
-            indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId,
-                    indexDependencyConfig.artifactId.orElse(null), indexDependencyConfig.classifier.orElse(null)));
+    void addConfiguredIndexedDependencies(IndexDependencyConfiguration config,
+            BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
+        for (IndexDependencyConfiguration.IndexDependencyConfig indexDependencyConfig : config.indexDependency().values()) {
+            indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId(),
+                    indexDependencyConfig.artifactId().orElse(null), indexDependencyConfig.classifier().orElse(null)));
         }
     }
 
@@ -98,7 +117,7 @@ public class ApplicationArchiveBuildStep {
         }
 
         Map<ArtifactKey, Set<String>> removedResources = new HashMap<>();
-        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources().entrySet()) {
             removedResources.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
 

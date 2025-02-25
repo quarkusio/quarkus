@@ -75,18 +75,17 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
@@ -95,6 +94,7 @@ import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
 import io.quarkus.kafka.client.runtime.devui.KafkaTopicClient;
 import io.quarkus.kafka.client.runtime.devui.KafkaUiUtils;
+import io.quarkus.kafka.client.runtime.graal.SnappyFeature;
 import io.quarkus.kafka.client.serialization.BufferDeserializer;
 import io.quarkus.kafka.client.serialization.BufferSerializer;
 import io.quarkus.kafka.client.serialization.JsonArrayDeserializer;
@@ -310,27 +310,14 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = { HasSnappy.class, NativeOrNativeSourcesBuild.class })
-    public void handleSnappyInNative(NativeImageRunnerBuildItem nativeImageRunner,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
+    public void handleSnappyInNative(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageFeatureBuildItem> feature) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.xerial.snappy.SnappyInputStream",
                 "org.xerial.snappy.SnappyOutputStream")
                 .reason(getClass().getName() + " snappy support")
                 .methods().fields().build());
 
-        String root = "org/xerial/snappy/native/";
-        // add linux64 native lib when targeting containers
-        if (nativeImageRunner.isContainerBuild()) {
-            String dir = "Linux/x86_64";
-            String snappyNativeLibraryName = "libsnappyjava.so";
-            String path = root + dir + "/" + snappyNativeLibraryName;
-            nativeLibs.produce(new NativeImageResourceBuildItem(path));
-        } else { // otherwise the native lib of the platform this build runs on
-            String dir = SnappyUtils.getNativeLibFolderPathForCurrentOS();
-            String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
-            String path = root + dir + "/" + snappyNativeLibraryName;
-            nativeLibs.produce(new NativeImageResourceBuildItem(path));
-        }
+        feature.produce(new NativeImageFeatureBuildItem(SnappyFeature.class));
     }
 
     @BuildStep(onlyIf = HasSnappy.class)
@@ -338,7 +325,7 @@ public class KafkaProcessor {
     void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
         boolean loadFromSharedClassLoader = false;
         if (launch.isTest()) {
-            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader;
+            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader();
         }
         recorder.loadSnappy(loadFromSharedClassLoader);
     }
@@ -495,7 +482,7 @@ public class KafkaProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     @BuildStep
@@ -559,7 +546,7 @@ public class KafkaProcessor {
 
         @Override
         public boolean getAsBoolean() {
-            return QuarkusClassLoader.isClassPresentAtRuntime("org.xerial.snappy.OSInfo") && config.snappyEnabled;
+            return QuarkusClassLoader.isClassPresentAtRuntime("org.xerial.snappy.OSInfo") && config.snappyEnabled();
         }
     }
 

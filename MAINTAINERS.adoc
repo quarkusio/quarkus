@@ -100,9 +100,6 @@ If you think some information is outdated, either provide a pull request or emai
 |Jackson
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
 
-|Jaeger
-|https://github.com/objectiser[Gary Brown]
-
 |JAXB
 |https://github.com/gsmet[Guillaume Smet]
 
@@ -120,12 +117,6 @@ If you think some information is outdated, either provide a pull request or emai
 
 |JDBC - SQL Server
 |https://github.com/Sanne[Sanne Grinovero]
-
-|JGit
-|https://github.com/gastaldi[George Gastaldi]
-
-|JSch
-|https://github.com/gastaldi[George Gastaldi]
 
 |JSON-B
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
@@ -258,9 +249,6 @@ If you think some information is outdated, either provide a pull request or emai
 
 |SmallRye GraphQL Client
 |https://github.com/jmartisk[Jan Martiska], https://github.com/phillip-kruger[Phillip Kruger]
-
-|SmallRye OpenTracing
-|https://github.com/radcortez[Roberto Cortez]
 
 |SmallRye Reactive Messaging
 |https://github.com/cescoffier[Clément Escoffier]

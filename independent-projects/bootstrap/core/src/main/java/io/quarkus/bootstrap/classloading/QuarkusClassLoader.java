@@ -23,11 +23,13 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.paths.ManifestAttributes;
+import io.quarkus.paths.PathVisit;
 
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
@@ -48,14 +50,42 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         registerAsParallelCapable();
     }
 
+    private static RuntimeException nonQuarkusClassLoaderError() {
+        return new IllegalStateException("The current classloader is not an instance of "
+                + QuarkusClassLoader.class.getName() + " but "
+                + Thread.currentThread().getContextClassLoader().getClass().getName());
+    }
+
+    /**
+     * Visits every found runtime resource with a given name. If a resource is not found, the visitor will
+     * simply not be called.
+     * <p>
+     * IMPORTANT: this method works only when the current class loader is an instance of {@link QuarkusClassLoader},
+     * otherwise it throws an error with the corresponding message.
+     *
+     * @param resourceName runtime resource name to visit
+     * @param visitor runtime resource visitor
+     */
+    public static void visitRuntimeResources(String resourceName, Consumer<PathVisit> visitor) {
+        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
+            for (var element : classLoader.getElementsWithResource(resourceName)) {
+                if (element.isRuntime()) {
+                    element.apply(tree -> {
+                        tree.accept(resourceName, visitor);
+                        return null;
+                    });
+                }
+            }
+        } else {
+            throw nonQuarkusClassLoaderError();
+        }
+    }
+
     public static List<ClassPathElement> getElements(String resourceName, boolean onlyFromCurrentClassLoader) {
         if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
             return classLoader.getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
         }
-
-        throw new IllegalStateException("The current classloader is not an instance of "
-                + QuarkusClassLoader.class.getName() + " but "
-                + Thread.currentThread().getContextClassLoader().getClass().getName());
+        throw nonQuarkusClassLoaderError();
     }
 
     /**
@@ -78,10 +108,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
             return classPathResourceIndex.getFirstClassPathElement(resourceName) != null;
         }
-
-        throw new IllegalStateException("The current classloader is not an instance of "
-                + QuarkusClassLoader.class.getName() + " but "
-                + Thread.currentThread().getContextClassLoader().getClass().getName());
+        throw nonQuarkusClassLoaderError();
     }
 
     /**
@@ -598,22 +625,77 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     public List<ClassPathElement> getElementsWithResource(String name, boolean localOnly) {
         ensureOpen(name);
 
-        boolean parentFirst = parentFirst(name, getClassPathResourceIndex());
+        final boolean parentFirst = parentFirst(name, getClassPathResourceIndex());
 
-        List<ClassPathElement> ret = new ArrayList<>();
+        List<ClassPathElement> result = List.of();
 
-        if (parentFirst && !localOnly && parent instanceof QuarkusClassLoader) {
-            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+        if (parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+            result = parentQcl.getElementsWithResource(name);
         }
 
-        List<ClassPathElement> classPathElements = getClassPathResourceIndex().getClassPathElements(name);
-        ret.addAll(classPathElements);
+        result = joinAndDedupe(result, getClassPathResourceIndex().getClassPathElements(name));
 
-        if (!parentFirst && !localOnly && parent instanceof QuarkusClassLoader) {
-            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+        if (!parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+            result = joinAndDedupe(result, parentQcl.getElementsWithResource(name));
         }
 
-        return ret;
+        return result;
+    }
+
+    /**
+     * Returns a list containing elements from two lists eliminating duplicates. Elements from the first list
+     * will appear in the result before elements from the second list.
+     * <p>
+     * The current implementation assumes that none of the lists contains duplicates on their own but some elements
+     * may be present in both lists.
+     *
+     * @param list1 first list
+     * @param list2 second list
+     * @return resulting list
+     */
+    private static <T> List<T> joinAndDedupe(List<T> list1, List<T> list2) {
+        // it appears, in the vast majority of cases at least one of the lists will be empty
+        if (list1.isEmpty()) {
+            return list2;
+        }
+        if (list2.isEmpty()) {
+            return list1;
+        }
+        final List<T> result = new ArrayList<>(list1.size() + list2.size());
+        // it looks like in most cases at this point list1 (representing elements from the parent cl) will contain only one element
+        if (list1.size() == 1) {
+            final T firstCpe = list1.get(0);
+            result.add(firstCpe);
+            for (var cpe : list2) {
+                if (cpe != firstCpe) {
+                    result.add(cpe);
+                }
+            }
+            return result;
+        }
+        result.addAll(list1);
+        for (var cpe : list2) {
+            if (!containsReference(list1, cpe)) {
+                result.add(cpe);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Checks whether a list contains an element that references the other argument.
+     *
+     * @param list list of elements
+     * @param e element to look for
+     * @return true if the list contains an element referencing {@code e}, otherwise - false
+     */
+    private static <T> boolean containsReference(List<T> list, T e) {
+        for (int i = list.size() - 1; i >= 0; --i) {
+            if (e == list.get(i)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Set<String> getReloadableClassNames() {
@@ -875,6 +957,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             return new QuarkusClassLoader(this);
         }
 
+        @Override
+        public String toString() {
+            return "QuarkusClassLoader.Builder:" + name + "@" + Integer.toHexString(hashCode());
+        }
     }
 
     public ClassLoader parent() {

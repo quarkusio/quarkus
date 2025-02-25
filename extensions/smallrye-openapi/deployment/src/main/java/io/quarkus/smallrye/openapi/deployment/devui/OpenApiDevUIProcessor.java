@@ -14,18 +14,23 @@ public class OpenApiDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
-        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+
+        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
+                .url(uiPath + "/index.html?embed=true", uiPath)
+                .isHtmlContent()
+                .icon("font-awesome-solid:signs-post"));
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
                 .url(schemaPath, schemaPath)
@@ -37,11 +42,6 @@ public class OpenApiDevUIProcessor {
                 .url(jsonSchema, jsonSchema)
                 .isJsonContent()
                 .icon("font-awesome-solid:file-code"));
-
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
-                .url(uiPath + "/index.html?embed=true", uiPath)
-                .isHtmlContent()
-                .icon("font-awesome-solid:signs-post"));
 
         return cardPageBuildItem;
     }

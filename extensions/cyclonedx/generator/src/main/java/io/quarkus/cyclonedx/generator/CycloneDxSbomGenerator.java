@@ -174,15 +174,16 @@ public class CycloneDxSbomGenerator {
     private void addComponent(Bom bom, ApplicationComponent component) {
         final org.cyclonedx.model.Component c = getComponent(component);
         bom.addComponent(c);
-        if (component.getResolvedDependency() != null) {
-            var deps = component.getResolvedDependency().getDependencies();
-            if (!deps.isEmpty()) {
-                final Dependency d = new Dependency(c.getBomRef());
-                for (var depCoords : sortAlphabetically(deps)) {
-                    d.addDependency(new Dependency(getPackageURL(depCoords).toString()));
-                }
-                bom.addDependency(d);
+        recordDependencies(bom, component, c);
+    }
+
+    private static void recordDependencies(Bom bom, ApplicationComponent component, Component c) {
+        if (!component.getDependencies().isEmpty()) {
+            final Dependency d = new Dependency(c.getBomRef());
+            for (var depCoords : sortAlphabetically(component.getDependencies())) {
+                d.addDependency(new Dependency(getPackageURL(depCoords).toString()));
             }
+            bom.addDependency(d);
         }
     }
 
@@ -191,6 +192,7 @@ public class CycloneDxSbomGenerator {
         c.setType(org.cyclonedx.model.Component.Type.APPLICATION);
         bom.getMetadata().setComponent(c);
         bom.addComponent(c);
+        recordDependencies(bom, component, c);
     }
 
     private org.cyclonedx.model.Component getComponent(ApplicationComponent component) {

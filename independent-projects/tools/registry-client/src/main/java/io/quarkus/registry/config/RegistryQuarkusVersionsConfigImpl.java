@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.quarkus.registry.json.JsonBuilder;
 
@@ -19,6 +20,7 @@ import io.quarkus.registry.json.JsonBuilder;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@JsonPropertyOrder({ "recognizedVersionsExpression", "recognizedGroupIds", "exclusiveProvider" })
 public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersionsConfig {
 
     private final String recognizedVersionsExpression;

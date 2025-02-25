@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     private final WorkspaceRepository wsRepo = new WorkspaceRepository();
     private ArtifactKey lastFindVersionsKey;
     private List<String> lastFindVersions;
-    private long lastModified;
-    private int id = 1;
+    private volatile long lastModified = -1;
+    private volatile int id = -1;
 
     // value of the resolved version in case the raw version contains a property like ${revision} (see "Maven CI Friendly Versions")
     private String resolvedVersion;
@@ -45,12 +46,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     private BootstrapMavenContext mvnCtx;
     private LocalProject currentProject;
 
-    protected void addProject(LocalProject project, long lastModified) {
+    protected void addProject(LocalProject project) {
         projects.put(project.getKey(), project);
-        if (lastModified > this.lastModified) {
-            this.lastModified = lastModified;
-        }
-        id = 31 * id + (int) (lastModified ^ (lastModified >>> 32));
     }
 
     public LocalProject getProject(String groupId, String artifactId) {
@@ -61,12 +58,41 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
         return projects.get(key);
     }
 
+    /**
+     * The latest last modified time of all the POMs in the workspace.
+     *
+     * @return the latest last modified time of all the POMs in the workspace
+     */
     public long getLastModified() {
+        if (lastModified < 0) {
+            initLastModifiedAndHash();
+        }
         return lastModified;
     }
 
+    /**
+     * This is essentially a hash code derived from each module's key.
+     *
+     * @return a hash code derived from each module's key
+     */
     public int getId() {
+        if (id < 0) {
+            initLastModifiedAndHash();
+        }
         return id;
+    }
+
+    private void initLastModifiedAndHash() {
+        long lastModified = 0;
+        final int[] hashes = new int[projects.size()];
+        int i = 0;
+        for (var project : projects.values()) {
+            lastModified = Math.max(project.getPomLastModified(), lastModified);
+            hashes[i++] = project.getKey().hashCode();
+        }
+        Arrays.sort(hashes);
+        this.id = Arrays.hashCode(hashes);
+        this.lastModified = lastModified;
     }
 
     @Override
@@ -124,16 +150,12 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
             return path.toFile();
         }
 
-        if (!artifact.getClassifier().isEmpty()) {
-            if ("tests".equals(artifact.getClassifier())) {
-                //special classifier used for test jars
-                path = lp.getTestClassesDir();
-                if (Files.exists(path)) {
-                    return path.toFile();
-                }
+        if ("tests".equals(artifact.getClassifier())) {
+            //special classifier used for test jars
+            path = lp.getTestClassesDir();
+            if (Files.exists(path)) {
+                return path.toFile();
             }
-            // otherwise, this artifact hasn't been built yet
-            return null;
         }
 
         if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {

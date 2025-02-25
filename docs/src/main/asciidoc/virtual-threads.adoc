@@ -349,7 +349,7 @@ To containerize your Quarkus application that use `@RunOnVirtualThread`, add the
 quarkus.container-image.build=true
 quarkus.container-image.group=<your-group-name>
 quarkus.container-image.name=<you-container-name>
-quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi8/openjdk-21-runtime <1>
+quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi9/openjdk-21-runtime <1>
 quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
 ----
 <1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21. Quarkus picks an image providing Java 21+ automatically if you do not set one.
@@ -548,6 +548,38 @@ public class LoomUnitExampleTest {
     }
 
 }
+----
+
+== Virtual thread metrics
+
+You can enable the Micrometer Virtual Thread _binder_ by adding the following artifact to your application:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-java21</artifactId>
+</dependency>
+----
+
+This binder keeps track of the number of pinning events and the number of virtual threads failed to be started or un-parked.
+See the https://docs.micrometer.io/micrometer/reference/reference/jvm.html#_java_21_metrics[MicroMeter documentation] for more information.
+
+You can explicitly disable the binder by setting the following property in your `application.properties`:
+
+[source,properties]
+----
+# The binder is automatically enabled if the micrometer-java21 dependency is present
+quarkus.micrometer.binder.virtual-threads.enabled=false
+----
+
+In addition, if the application is running on a JVM that does not support virtual threads (prior to Java 21), the binder is automatically disabled.
+
+You can associate tags to the collected metrics by setting the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.micrometer.binder.virtual-threads.tags=tag_1=value_1, tag_2=value_2
 ----
 
 == Additional references

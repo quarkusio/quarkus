@@ -12,11 +12,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -29,9 +28,10 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -47,7 +47,7 @@ import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class,
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class,
         ObservabilityDevServiceProcessor.IsEnabled.class })
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
@@ -55,7 +55,7 @@ class ObservabilityDevServiceProcessor {
     private static final Map<String, DevServicesResultBuildItem.RunningDevService> devServices = new ConcurrentHashMap<>();
     private static final Map<String, ContainerConfig> capturedDevServicesConfigurations = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> firstStart = new ConcurrentHashMap<>();
-    public static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
+    private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
@@ -83,9 +83,9 @@ class ObservabilityDevServiceProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig,
+            DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
-            BeanArchiveIndexBuildItem indexBuildItem,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> properties,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<ObservabilityDevServicesConfigBuildItem> configBuildProducer) {
@@ -120,8 +120,10 @@ class ObservabilityDevServiceProcessor {
             ContainerConfig currentDevServicesConfiguration = dev.config(
                     configuration,
                     new ExtensionsCatalog(
+                            QuarkusClassLoader::isResourcePresentAtRuntime,
+                            QuarkusClassLoader::isClassPresentAtRuntime,
                             capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
-                            hasMicrometerOtlp(metricsConfiguration, indexBuildItem)));
+                            hasMicrometerOtlp(metricsConfiguration)));
 
             if (devService != null) {
                 ContainerConfig capturedDevServicesConfiguration = capturedDevServicesConfigurations.get(devId);
@@ -142,19 +144,28 @@ class ObservabilityDevServiceProcessor {
             devServices.remove(devId); // clean-up
             capturedDevServicesConfigurations.put(devId, currentDevServicesConfiguration);
 
+            // override some OTel, etc defaults - rates, intervals, delays, ...
+            Map<String, Object> propertiesToOverride = ContainerConfigUtil
+                    .propertiesToOverride(currentDevServicesConfiguration);
+            propertiesToOverride
+                    .forEach((k, v) -> properties.produce(new RunTimeConfigurationDefaultBuildItem(k, v.toString())));
+            log.infof("Dev Service %s properties override: %s", devId, propertiesToOverride);
+
             StartupLogCompressor compressor = new StartupLogCompressor(
                     (launchMode.isTest() ? "(test) " : "") + devId + " Dev Services Starting:",
                     consoleInstalledBuildItem,
                     loggingSetupBuildItem,
                     s -> false,
-                    s -> s.contains(getClass().getSimpleName())); // log if it comes from this class
+                    s -> s.contains(getClass().getSimpleName()) ||
+                            s.contains("Resource") ||
+                            s.contains("Container")); // log if it comes from this class or Resource / Container
             try {
                 DevServicesResultBuildItem.RunningDevService newDevService = startContainer(
                         devId,
                         dev,
                         currentDevServicesConfiguration,
                         configuration,
-                        devServicesConfig.timeout);
+                        devServicesConfig.timeout());
                 if (newDevService == null) {
                     compressor.closeAndDumpCaptured();
                     return;
@@ -195,14 +206,10 @@ class ObservabilityDevServiceProcessor {
         });
     }
 
-    private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration,
-            BeanArchiveIndexBuildItem indexBuildItem) {
+    private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
         if (metricsConfiguration.isPresent() &&
                 metricsConfiguration.get().metricsSupported(MetricsFactory.MICROMETER)) {
-            ClassInfo clazz = indexBuildItem.getIndex().getClassByName(OTLP_REGISTRY);
-            if (clazz != null) {
-                return true;
-            }
+            return QuarkusClassLoader.isClassPresentAtRuntime(OTLP_REGISTRY.toString());
         }
         return false;
     }

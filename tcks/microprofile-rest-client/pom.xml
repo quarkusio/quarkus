@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile REST Client</name>
 
     <properties>
-        <microprofile-rest-client-tck.version>3.0.1</microprofile-rest-client-tck.version>
+        <microprofile-rest-client-tck.version>4.0</microprofile-rest-client-tck.version>
         <!--
         Disabling the enforcer because of:
 

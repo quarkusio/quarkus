@@ -18,7 +18,8 @@ public class ClientResponseFilterRestHandler implements ClientRestHandler {
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         try {
-            filter.filter(requestContext.getClientRequestContext(), requestContext.getOrCreateClientResponseContext());
+            filter.filter(requestContext.getOrCreateClientRequestContext(),
+                    requestContext.getOrCreateClientResponseContext());
         } catch (WebApplicationException | ProcessingException x) {
             throw x;
         } catch (Exception x) {

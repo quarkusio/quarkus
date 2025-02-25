@@ -18,8 +18,8 @@ import org.apache.maven.settings.io.DefaultSettingsWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -143,15 +143,24 @@ public class ResolverSetupCleanup {
         return true;
     }
 
-    protected boolean isBootstrapForTestMode() {
-        return false;
+    protected QuarkusBootstrap.Mode getBootstrapMode() {
+        return QuarkusBootstrap.Mode.PROD;
     }
 
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(newArtifactResolver(currentProject));
-        appModelResolver.setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(null));
-        if (isBootstrapForTestMode()) {
-            appModelResolver.setTest(true);
+        appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(null));
+        switch (getBootstrapMode()) {
+            case PROD:
+                break;
+            case TEST:
+                appModelResolver.setTest(true);
+                break;
+            case DEV:
+                appModelResolver.setDevMode(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported bootstrap mode " + getBootstrapMode());
         }
         return appModelResolver;
     }

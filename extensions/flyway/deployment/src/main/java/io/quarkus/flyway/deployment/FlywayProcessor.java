@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.sql.DataSource;
+
 import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
@@ -32,7 +34,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
@@ -59,7 +61,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
@@ -120,10 +121,10 @@ class FlywayProcessor {
         Map<String, Collection<String>> applicationMigrationsToDs = new HashMap<>();
         for (var dataSourceName : dataSourceNames) {
             FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
-                    .getConfigForDataSourceName(dataSourceName);
+                    .datasources().get(dataSourceName);
 
             Collection<String> migrationLocations = discoverApplicationMigrations(
-                    flywayDataSourceBuildTimeConfig.locations);
+                    flywayDataSourceBuildTimeConfig.locations());
             applicationMigrationsToDs.put(dataSourceName, migrationLocations);
         }
         Set<String> datasourcesWithMigrations = new HashSet<>();
@@ -182,7 +183,6 @@ class FlywayProcessor {
 
     @BuildStep
     @Produce(SyntheticBeansRuntimeInitBuildItem.class)
-    @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(FlywayRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
@@ -212,7 +212,10 @@ class FlywayProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
+                            AgroalDataSourceBuildUtil.qualifier(dataSourceName))
+                    .startup()
+                    .checkActive(recorder.flywayCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
 
             AnnotationInstance flywayContainerQualifier;
@@ -246,6 +249,8 @@ class FlywayProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)), flywayContainerQualifier)
+                    .startup()
+                    .checkActive(recorder.flywayCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
@@ -291,8 +296,8 @@ class FlywayProcessor {
     public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
         return InitTaskBuildItem.create()
                 .withName(app.getName() + "-flyway-init")
-                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
-                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
+                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ACTIVE", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ACTIVE", "false"))
                 .withSharedEnvironment(true)
                 .withSharedFilesystem(true);
     }

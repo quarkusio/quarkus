@@ -3,6 +3,7 @@ package io.quarkus.datasource.runtime;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -25,7 +26,8 @@ public class DataSourceRecorder {
 
         Stream.Builder<String> inactive = Stream.builder();
         for (Map.Entry<String, DataSourceRuntimeConfig> entry : runtimeConfig.dataSources().entrySet()) {
-            if (!entry.getValue().active()) {
+            Optional<Boolean> active = entry.getValue().active();
+            if (active.isPresent() && !active.get()) {
                 inactive.add(entry.getKey());
             }
         }

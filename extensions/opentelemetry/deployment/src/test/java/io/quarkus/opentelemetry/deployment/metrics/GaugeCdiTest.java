@@ -14,11 +14,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class GaugeCdiTest {
@@ -26,10 +25,8 @@ public class GaugeCdiTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClass(TestUtil.class)
-                            .addClass(MeterBean.class)
-                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+                            .addPackage(InMemoryMetricExporter.class.getPackage())
+                            .addClasses(TestUtil.class, MeterBean.class)
                             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),

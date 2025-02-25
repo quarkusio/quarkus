@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.IsDevelopment;
@@ -119,14 +117,20 @@ public class IdeProcessor {
 
     public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
             String port) {
+        IdeProcessor.openBrowser(rp, np, "http", path, host, port);
+    }
+
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String protocol, String path,
+            String host,
+            String port) {
         if (path.startsWith("/q")) {
             path = np.resolvePath(path.substring(3));
         } else {
             path = rp.resolvePath(path.substring(1));
         }
 
-        StringBuilder sb = new StringBuilder("http://");
-        Config c = ConfigProvider.getConfig();
+        StringBuilder sb = new StringBuilder(protocol);
+        sb.append("://");
         sb.append(host);
         sb.append(":");
         sb.append(port);

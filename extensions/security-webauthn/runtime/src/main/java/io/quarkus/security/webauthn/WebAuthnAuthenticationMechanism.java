@@ -22,9 +22,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * An AuthenticationMechanism for WebAuthn which mostly delegates to @{link PersistentLoginManager}
- * and @{TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController}
- * or @{link WebAuthnSecurity}.
+ * An AuthenticationMechanism for WebAuthn which mostly delegates to {@link PersistentLoginManager}
+ * and {@link TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController}
+ * or {@link WebAuthnSecurity}.
  */
 public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechanism {
 
@@ -69,7 +69,7 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     @Override
     public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
-        return new HashSet<>(Arrays.asList(WebAuthnAuthenticationRequest.class, TrustedAuthenticationRequest.class));
+        return new HashSet<>(Arrays.asList(TrustedAuthenticationRequest.class));
     }
 
     @Override

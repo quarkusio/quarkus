@@ -22,13 +22,13 @@ public class PrometheusEnabledOnManagementInterfaceTest {
     public void metricsEndpoint() {
         RestAssured.given()
                 .accept("application/json")
-                .get("http://0.0.0.0:9001/q/metrics")
+                .get("http://localhost:9001/q/metrics")
                 .then()
                 .log().all()
                 .statusCode(406);
 
         RestAssured.given()
-                .get("http://0.0.0.0:9001/q/metrics")
+                .get("http://localhost:9001/q/metrics")
                 .then()
                 .statusCode(200);
     }

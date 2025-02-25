@@ -1,9 +1,10 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
@@ -14,14 +15,13 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 class DropTargetsSamplerTest {
 
     @Test
     void testDropTargets() {
         CountingSampler countingSampler = new CountingSampler();
-        var sut = new DropTargetsSampler(countingSampler, List.of("/q/swagger-ui", "/q/swagger-ui*"));
+        var sut = new DropTargetsSampler(countingSampler, Set.of("/q/swagger-ui", "/q/swagger-ui*"));
 
         assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other"));
         assertEquals(1, countingSampler.count.get());
@@ -39,9 +39,36 @@ class DropTargetsSamplerTest {
         assertEquals(2, countingSampler.count.get());
     }
 
+    @Test
+    void testDropTargetsWildcards() {
+        CountingSampler countingSampler = new CountingSampler();
+        var sut = new DropTargetsSampler(countingSampler, Set.of("/q/dev-ui", "/q/dev-ui/*"));
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other"));
+        assertEquals(1, countingSampler.count.get());
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/dev-ui-test"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/whatever"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/whatever/wherever/whenever"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/test"));
+        assertEquals(3, countingSampler.count.get());
+    }
+
     private static SamplingResult getShouldSample(DropTargetsSampler sut, String target) {
         return sut.shouldSample(null, null, null, SpanKind.SERVER,
-                Attributes.of(SemanticAttributes.URL_PATH, target), null);
+                Attributes.of(URL_PATH, target), null);
     }
 
     private static final class CountingSampler implements Sampler {

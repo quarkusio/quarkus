@@ -42,6 +42,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.TextStyle;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -258,10 +259,15 @@ public class AnalyticsService implements AutoCloseable {
     }
 
     private String getQuarkusVersion(ApplicationModel applicationModel) {
-        return applicationModel.getPlatforms().getImportedPlatformBoms().stream()
+        final Collection<ArtifactCoords> platformBoms = applicationModel.getPlatforms().getImportedPlatformBoms();
+        if (platformBoms.isEmpty()) {
+            // Typically, this situation should result in a build error, but it's not up to this service to fail it
+            return "N/A";
+        }
+        return platformBoms.stream()
                 .filter(artifactCoords -> artifactCoords.getArtifactId().equals("quarkus-bom"))
                 .map(ArtifactCoords::getVersion)
                 .findFirst()
-                .orElse("N/A");
+                .orElse("CUSTOM");
     }
 }

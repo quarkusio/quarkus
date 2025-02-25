@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -92,7 +93,7 @@ final class StaticTenantResolver {
             String[] pathSegments = context.request().path().split("/");
             if (pathSegments.length > 0) {
                 String lastPathSegment = pathSegments[pathSegments.length - 1];
-                if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
+                if (tenantConfigBean.getStaticTenant(lastPathSegment) != null) {
                     LOG.debugf(
                             "Tenant id '%s' is selected on the '%s' request path", lastPathSegment, context.normalizedPath());
                     return lastPathSegment;
@@ -133,8 +134,8 @@ final class StaticTenantResolver {
 
         private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant, OidcTenantConfig config,
                 ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
-            if (config != null && config.tenantPaths.isPresent()) {
-                for (String path : config.tenantPaths.get()) {
+            if (config != null && config.tenantPaths().isPresent()) {
+                for (String path : config.tenantPaths().get()) {
                     builder.addPath(path, tenant);
                 }
             }
@@ -213,21 +214,21 @@ final class StaticTenantResolver {
          * this strategy permits one more attempt on the first request when the issuer-based tenant resolver is applied.
          */
         private boolean tryToInitialize(TenantConfigContext context) {
-            var tenantId = context.oidcConfig().tenantId.get();
+            var tenantId = context.oidcConfig().tenantId().get();
             return this.tenantToRetry.get(tenantId).compareAndExchange(true, false);
         }
 
         private static String getTenantId(RoutingContext context, TenantConfigContext tenantContext) {
             final String token = OidcUtils.extractBearerToken(context, tenantContext.oidcConfig());
             if (token != null && !OidcUtils.isOpaqueToken(token)) {
-                final var tokenJson = OidcUtils.decodeJwtContent(token);
+                final var tokenJson = OidcCommonUtils.decodeJwtContent(token);
                 if (tokenJson != null) {
 
                     final String iss = tokenJson.getString(Claims.iss.name());
                     if (tenantContext.getOidcMetadata().getIssuer().equals(iss)) {
                         OidcUtils.storeExtractedBearerToken(context, token);
 
-                        final String tenantId = tenantContext.oidcConfig().tenantId.get();
+                        final String tenantId = tenantContext.oidcConfig().tenantId().get();
                         LOG.debugf("Resolved the '%s' OIDC tenant based on the matching issuer '%s'", tenantId, iss);
                         return tenantId;
                     }
@@ -246,12 +247,12 @@ final class StaticTenantResolver {
             boolean detectedTenantWithoutMetadata = false;
             Map<String, AtomicBoolean> tenantToRetry = new HashMap<>();
             for (TenantConfigContext context : tenantConfigContexts.values()) {
-                if (context.oidcConfig().tenantEnabled && !OidcUtils.isWebApp(context.oidcConfig())) {
+                if (context.oidcConfig().tenantEnabled() && !OidcUtils.isWebApp(context.oidcConfig())) {
                     if (context.getOidcMetadata() == null) {
                         // if the tenant metadata are not available, we can't decide now
                         detectedTenantWithoutMetadata = true;
                         contextsWithIssuer.add(context);
-                        tenantToRetry.put(context.oidcConfig().tenantId.get(), new AtomicBoolean(true));
+                        tenantToRetry.put(context.oidcConfig().tenantId().get(), new AtomicBoolean(true));
                     } else if (context.getOidcMetadata().getIssuer() != null
                             && !ANY_ISSUER.equals(context.getOidcMetadata().getIssuer())) {
                         contextsWithIssuer.add(context);

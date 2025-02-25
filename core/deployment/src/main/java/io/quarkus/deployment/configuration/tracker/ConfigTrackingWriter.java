@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.ConfigValue;
 
 public class ConfigTrackingWriter {
 
@@ -77,8 +78,8 @@ public class ConfigTrackingWriter {
         final List<Pattern> excludePatterns = config.getExcludePatterns();
         final ConfigTrackingValueTransformer valueTransformer = ConfigTrackingValueTransformer.newInstance(config);
 
-        final Map<String, String> allBuildTimeValues = configReadResult.getAllBuildTimeValues();
-        final Map<String, String> buildTimeRuntimeValues = configReadResult.getBuildTimeRunTimeValues();
+        final Map<String, ConfigValue> allBuildTimeValues = configReadResult.getAllBuildTimeValues();
+        final Map<String, ConfigValue> buildTimeRuntimeValues = configReadResult.getBuildTimeRunTimeValues();
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             final List<String> names = new ArrayList<>(readOptions.size());
             for (var name : readOptions.keySet()) {

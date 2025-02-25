@@ -75,8 +75,8 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     }
 
     /**
-     * Deduct current config from params.
-     * If port are too dynamic / configured, it's hard to deduct,
+     * Deduce current config from params.
+     * If port are too dynamic / configured, it's hard to deduce,
      * since configuration is not part of the devservice state.
      * e.g. different ports then usual - Grafana UI is 3000, if you do not use 3000,
      * it's hard or impossible to know which port belongs to certain property.

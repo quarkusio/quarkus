@@ -276,7 +276,7 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
-     * The max HTTP chunk size (8096 bytes by default).
+     * The max HTTP chunk size (8096 bytes by default), up to {@code Integer.MAX_VALUE} bytes.
      * <p>
      * Can be overwritten by client-specific settings.
      */
@@ -607,7 +607,7 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
-         * The max HTTP chunk size (8096 bytes by default).
+         * The max HTTP chunk size (8096 bytes by default), up to {@code Integer.MAX_VALUE} bytes.
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */

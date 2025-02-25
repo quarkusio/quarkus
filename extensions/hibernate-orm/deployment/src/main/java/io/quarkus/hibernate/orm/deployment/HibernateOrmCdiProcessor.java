@@ -214,7 +214,6 @@ public class HibernateOrmCdiProcessor {
             return;
         }
 
-
         SyntheticBeanBuildItem sessionFactoryBean = null;
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();

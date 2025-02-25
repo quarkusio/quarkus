@@ -46,6 +46,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private static final String NAME = "FacadeLoader";
     private static final String IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION = "io.quarkus.test.junit.QuarkusTestExtension";
+    public static final String VALUE = "value";
     // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
     // TODO and if we don't, how do we get a re-usable deployment classloader?
 
@@ -68,16 +69,14 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * does use a similar approach, although they have a default loader rather than a canary loader.
      */
     private final URLClassLoader peekingClassLoader;
-    private Class<? extends Annotation> quarkusTestAnnotation;
-    private Class<? extends Annotation> quarkusIntegrationTestAnnotation;
-    private Class<? extends Annotation> profileAnnotation;
-    // TODO make not final
-    private Class<? extends Annotation> extendWithAnnotation;
-    private Class<? extends Annotation> registerExtensionAnnotation;
-    private Map<String, Class<?>> profiles;
-    private String classesPath;
-    private Set<String> quarkusTestClasses;
-    private boolean isAuxiliaryApplication;
+    private final Class<? extends Annotation> quarkusTestAnnotation;
+    private final Class<? extends Annotation> quarkusIntegrationTestAnnotation;
+    private final Class<? extends Annotation> profileAnnotation;
+    private final Class<? extends Annotation> extendWithAnnotation;
+    private final Class<? extends Annotation> registerExtensionAnnotation;
+    private final Map<String, Class<?>> profiles;
+    private final Set<String> quarkusTestClasses;
+    private final boolean isAuxiliaryApplication;
     private QuarkusClassLoader keyMakerClassLoader;
 
     private static volatile FacadeClassLoader instance;
@@ -123,10 +122,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         this.quarkusTestClasses = quarkusTestClasses;
         this.isAuxiliaryApplication = isAuxiliaryApplication;
 
-        this.classesPath = classesPath;
-
-        boolean isolatedClassloader = !(classesPath.contains(File.pathSeparator));
-
         URL[] urls = Arrays.stream(classesPath.split(File.pathSeparator))
                 .map(spec -> {
                     try {
@@ -140,16 +135,18 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                                 .toURL();
                     } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
                     }
                 })
                 .toArray(URL[]::new);
 
         // TODO this special casing is pretty fragile and pretty ugly; without it, @WithFunction tests do not pass, such as google cloud functions
-        // TODO what happens in continuous testing for those tests?
+        // Tests using an isolated classloader do not work correctly with continuous testing, but this issue predates the facade classloader - see https://github.com/quarkusio/quarkus/issues/46478
+        // What kind of tests use an isolated classloader? Maven will create one (and also a normal classloader) for tests with `@WithFunction`
+        boolean isolatedClassloader = !(classesPath.contains(File.pathSeparator));
+
         ClassLoader annotationLoader;
         if (isolatedClassloader) {
+            // If the classloader is isolated, putting the parent into the peeking classloader will just load all classes with the parent, which isn't what's wanted (and causes @WithFunction tests to fail)
             peekingClassLoader = new URLClassLoader(urls, null);
             annotationLoader = parent;
         } else {
@@ -191,13 +188,16 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
 
             });
+        } else {
+            // We set it to null so we know not to look in it
+            this.profiles = null;
         }
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         System.out.println("HOLLY facade classloader loading " + name);
-        boolean isQuarkusTest = false;
+        boolean isQuarkusTest;
 
         boolean isIntegrationTest = false;
         Class<?> inspectionClass = null;
@@ -208,30 +208,29 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (profiles != null) {
 
                 isQuarkusTest = quarkusTestClasses.contains(name);
-                isIntegrationTest = false;
 
                 profile = profiles.get(name);
 
                 // In continuous testing, only load an inspection version of the class if it's a QuarkusTest
                 if (isQuarkusTest) {
                     try {
-                        inspectionClass = peekingClassLoader
-                                .loadClass(name);
+                        inspectionClass = peekingClassLoader.loadClass(name);
                     } catch (ClassNotFoundException | NoClassDefFoundError e) {
                         return super.loadClass(name);
                     }
                 }
 
             } else {
+
+                // If it's not continuous testing, we need to load everything in order to decide if it's a QuarkusTest
                 try {
-                    inspectionClass = peekingClassLoader
-                            .loadClass(name);
+                    inspectionClass = peekingClassLoader.loadClass(name);
                 } catch (ClassNotFoundException | NoClassDefFoundError e) {
                     return super.loadClass(name);
                 }
 
                 // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
-                // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass - except that fails for things whose superclass isn't on the classpath, like javax.tools subclasses
+                // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
                 isQuarkusTest = !inspectionClass.isAnnotation()
                         && (AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where an class is annotated with an annotation which itself includes the annotation we care about
                                 || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
@@ -242,25 +241,19 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     isIntegrationTest = !inspectionClass.isAnnotation()
                             && (AnnotationSupport.isAnnotated(inspectionClass, quarkusIntegrationTestAnnotation));
 
-                    Optional<? extends Annotation> profileDeclaration = AnnotationSupport.findAnnotation(
-                            inspectionClass,
+                    Optional<? extends Annotation> profileDeclaration = AnnotationSupport.findAnnotation(inspectionClass,
                             profileAnnotation);
                     if (profileDeclaration.isPresent()) {
 
                         Method m = profileDeclaration.get()
                                 .getClass()
-                                .getMethod("value");
+                                .getMethod(VALUE);
                         // We can't be specific about what the class extends, because it's loaded with another classloader
                         profile = (Class<?>) m.invoke(profileDeclaration.get());
                     }
                 }
             }
 
-            // TODO move this into the getclassloade method
-            // TODO would we ever load if it's not a quarkus test?
-            final String profileName = profile != null ? profile.getName() : NO_PROFILE;
-            String profileKey = isQuarkusTest ? "QuarkusTest" + "-" + profileName
-                    : "vanilla";
             // TODO do we need to do extra work to make sure all of the quarkus app is in the cp? We'll return versions from the parent otherwise
             // TODO think we need to make a 'first' runtime cl, and then switch for each new test?
             // TODO how do we decide what to load with our classloader - everything?
@@ -270,7 +263,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (isQuarkusTest && !isIntegrationTest) {
 
                 preloadTestResourceClasses(inspectionClass);
-                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, inspectionClass, profile);
+                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
                 System.out.println("HOLLY made classloader " + runtimeClassLoader);
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
@@ -295,21 +288,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private boolean registersQuarkusTestExtensionWithExtendsWith(Class<?> inspectionClass) {
 
-        Optional a = (AnnotationSupport.findAnnotation(inspectionClass, extendWithAnnotation));
+        Optional<? extends Annotation> a = AnnotationSupport.findAnnotation(inspectionClass, extendWithAnnotation);
         // This toString looks sloppy, but we cannot do an equals() because there might be multiple JUnit extensions, and getting the annotation value would need a reflective call, which may not be any cheaper or prettier than doing the string
         return (a.isPresent() && a.get().toString().contains(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
 
-    }
-
-    private boolean hasQuarkusTestAnnotation(Class<?> inspectionClass) {
-        Class<?> clazz = inspectionClass;
-        while (clazz != null) {
-            if (clazz.getDeclaredAnnotation(quarkusTestAnnotation) != null) {
-                return true;
-            }
-            clazz = clazz.getSuperclass();
-        }
-        return false;
     }
 
     /*
@@ -335,7 +317,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             for (Annotation a : ans) {
                 Method m = a
                         .getClass()
-                        .getMethod("value");
+                        .getMethod(VALUE);
                 Class resourceClass = (Class) m.invoke(a);
                 // Only do this hack for the resources we know need it, since it can cause failures in other areas
                 if (resourceClass.getName().contains("Kubernetes")) {
@@ -368,40 +350,36 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         return false;
     }
 
-    private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, Class<?> profile) {
-        try {
+    private QuarkusClassLoader getQuarkusClassLoader(Class requiredTestClass, Class<?> profile) {
+        final String profileName = profile != null ? profile.getName() : NO_PROFILE;
+        String profileKey = "QuarkusTest" + "-" + profileName;
 
+        try {
             StartupAction startupAction;
-            String key = null;
+            String key;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
 
-            // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that TODO issue is fixed, could reconsider
+            // TODO do the experiment - can it now work to use the peekingclassloader instead of the keymaker?
+
+            // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
-                // TODO this may need to be a dummy startup action with no profile,
-                //so must not re-use it unless confirmed profile is null
-
                 startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
                 keyMakerClassLoader = startupAction.getClassLoader();
-                // TODO if we do keep it as the system classloader, all this can become much simpler
-                // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
 
+                // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
                 final String resourceKey = getResourceKey(requiredTestClass, profile);
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
             } else {
-
                 final String resourceKey = getResourceKey(requiredTestClass, profile);
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
-                // TODO only do this and the next bit if the keymaker classloader is not suitable
                 startupAction = runtimeClassLoaders.get(key);
-                System.out.println("HOLLY seen this key before " + startupAction);
-
                 if (startupAction == null) {
                     // TODO can we make this less confusing?
 
@@ -414,7 +392,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             System.out.println("HOLLY With resources, key is " + key);
 
             // If we didn't have a classloader and didn't get a resource key
-
             runtimeClassLoaders.put(key, startupAction);
 
             return startupAction.getClassLoader();
@@ -426,22 +403,16 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    private String getResourceKey(Class requiredTestClass, Class profile)
+    private String getResourceKey(Class<?> requiredTestClass, Class profile)
             throws NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException {
 
         String resourceKey;
-        // TODO revise this comment Make sure to use a classloader for the testresourceutil which is compatible with the profile we are passing in
-        // TODO we can probably just use it without reflectively invoking it? Ah, no, wrong module - which brings us back to wanting to get this into the JUnit5 module
-        //TODO does it need to be the key maker, or can it be our classloader? That'd be a lot simpler ...
-        // TODO cache this?
+
         ClassLoader classLoader = keyMakerClassLoader;
         Method method = Class
                 .forName("io.quarkus.test.junit.TestResourceUtil", true, classLoader) // TODO use class, not string, but that would need us to be in a different module
                 .getMethod("getReloadGroupIdentifier", Class.class, Class.class);
 
-        // TODO this is kind of annoying, can we find a nicer way?
-        // The resource checks assume that there's a useful TCCL and load the class with that TCCL to do reference equality checks and casting against resource classes
-        // That does mean we potentially load the test class three times, if there's resources
         ClassLoader original = Thread.currentThread()
                 .getContextClassLoader();
         try {
@@ -461,44 +432,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private StartupAction makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
 
-        // This interception is only actually needed in limited circumstances; when
-        // - running in normal mode
-        // - *and* there is a @QuarkusTest to run
-
-        // This class sets a Thead Context Classloader, which JUnit uses to load classes.
-        // However, in continuous testing mode, setting a TCCL here isn't sufficient for the
-        // tests to come in with our desired classloader;
-        // downstream code sets the classloader to the deployment classloader, so we then need
-        // to come in *after* that code.
-
-        // TODO sometimes this is called in dev mode and sometimes it isn't? Ah, it's only not
-        //  called if we die early, before we get to this
-
-        // In continuous testing mode, the runner code will have executed before this
-        // interceptor, so
-        // this interceptor doesn't need to do anything.
-        // TODO what if we removed the changes in the runner code?
-
-        //  TODO I think all these comments are wrong? Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
-        // of detecting it
-
-        // TODO alternate way of detecting it ? Needs the build item, though
-        // TODO could the extension pass this through to us? no, I think we're invoked before anything quarkusy, and junit5 isn't even an extension
-        //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
-        //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
-        //            return;
-        //        }
-
-        // Some places do this, but that assumes we already have a classloader!         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
-
-        Thread currentThread = Thread.currentThread();
-
         AppMakerHelper appMakerHelper = new AppMakerHelper();
 
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
-            Collection shutdownTasks = new HashSet();
+            Collection<Runnable> shutdownTasks = new HashSet();
 
             String displayName = "JUnit" + key; // TODO come up with a good display name
             curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
@@ -535,7 +474,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .setContextClassLoader(original);
         }
 
-        System.out.println("HOLLY at end of classload TCCL is " + currentThread.getContextClassLoader());
+        System.out.println("HOLLY at end of classload TCCL is " + Thread.currentThread().getContextClassLoader());
         return startupAction;
 
     }

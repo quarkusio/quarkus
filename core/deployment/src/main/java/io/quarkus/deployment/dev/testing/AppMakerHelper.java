@@ -324,18 +324,14 @@ public class AppMakerHelper {
         }
     }
 
-    // TODO surely there's a cleaner way to see if it's continuous testing?
-    // TODO should we be doing something with these unused arguments?
     // Note that curated application cannot be re-used between restarts, so this application
     // should have been freshly created
-    // TODO maybe don't even accept one?
+    // TODO maybe don't even accept one? is that comment right?
     public StartupAction getStartupAction(Class testClass, CuratedApplication curatedApplication,
             boolean isContinuousTesting, Class profile)
             throws Exception {
 
-        // TODO do we want any of these?
-        Collection shutdownTasks = new HashSet();
-        // TODO work out a good display name
+        Collection<Runnable> shutdownTasks = new HashSet();
         PrepareResult result = createAugmentor(testClass, "(QuarkusTest)", isContinuousTesting, curatedApplication, profile,
                 shutdownTasks);
         AugmentAction augmentAction = result.augmentAction;
@@ -344,17 +340,13 @@ public class AppMakerHelper {
             System.out.println("HOLLY about to make app for " + testClass);
             StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
 
-            // TODO this seems to be safe to do because the classloaders are the same
-            // TODO not doing it startupAction.store();
-            System.out.println("HOLLY did store " + startupAction);
-
-            // TODO this is ugly, there must be a better way?
-            // TODO tests to run to check changes here are integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
+            // To check changes here run integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
 
             return startupAction;
         } catch (Throwable e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers
+            // TODO how best to handle?
             System.out.println("HOLLY IT ALL WENT WRONG + + e" + e);
             e.printStackTrace();
             throw e;
@@ -365,10 +357,6 @@ public class AppMakerHelper {
             }
         }
 
-    }
-
-    // TODO prepareResult is no longer used, so we can get rid of this whole record
-    public record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
     }
 
 }

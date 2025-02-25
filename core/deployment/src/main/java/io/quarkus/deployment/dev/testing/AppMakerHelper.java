@@ -96,12 +96,6 @@ public class AppMakerHelper {
         QuarkusTestProfile profileInstance = null;
         if (profile != null) {
 
-            // this.getClass().getClassloader - works in cli, is AUgmentation CL in continuous testing, cannot see profile classes
-            // if we use app classloader, in continuous testing, it cannot see profile classes
-            // TCCL cannot see QuarkusTestProfile??
-            //            profile = (Class<? extends QuarkusTestProfile>) Thread.currentThread().getContextClassLoader()
-            //                    .loadClass(profile.getName());
-
             profileInstance = new ClassCoercingTestProfile(profile.getConstructor()
                     .newInstance());
             // TODO we make this twice, also in abstractjvmextension can we streamline that?

@@ -7,7 +7,6 @@ import java.util.function.Function;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -62,13 +61,14 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         return interceptorCreator;
     }
 
-    public String getBindingValue(AnnotationInstance annotationInstance, DotName annotation, MethodInfo classEndpoint) {
+    public String getBindingValue(AnnotationInstance annotationInstance, DotName annotation,
+            AnnotationTarget annotationTarget) {
         if (bindingToValue.containsKey(annotation.toString())) {
             return bindingToValue.get(annotation.toString());
         }
         if (annotationInstance.value() == null || annotationInstance.value().asString().isBlank()) {
             throw new ConfigurationException("Annotation '" + annotation + "' placed on '"
-                    + toTargetName(classEndpoint) + "' must not have blank value");
+                    + toTargetName(annotationTarget) + "' must not have blank value");
         }
         return annotationInstance.value().asString();
     }

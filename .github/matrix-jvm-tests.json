@@ -1,25 +1,31 @@
 [
     {
         "name": "JVM Tests - JDK 17",
+        "category": "Runtime",
         "java-version": 17,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-        "os-name": "ubuntu-latest"
+        "os-name": "ubuntu-latest",
+        "modules": "-pl !docs -Dno-test-modules"
     },
     {
         "name": "JVM Tests - JDK 21",
+        "category": "Runtime",
         "java-version": 21,
         "java-version-gradle": 20,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
-        "os-name": "ubuntu-latest"
+        "os-name": "ubuntu-latest",
+        "modules": "-pl !docs -Dno-test-modules"
     },
     {
         "name": "JVM Tests - JDK 17 Windows",
+        "category": "Runtime",
         "java-version": 17,
         "maven_args": "-DskipDocs -Dformat.skip",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-        "os-name": "windows-latest"
+        "os-name": "windows-latest",
+        "modules": "-pl !docs -Dno-test-modules"
     },
     {
         "name": "JVM Integration Tests - JDK 17",
@@ -27,7 +33,8 @@
         "java-version": 17,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-        "os-name": "ubuntu-latest"
+        "os-name": "ubuntu-latest",
+        "modules": "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
     },
     {
         "name": "JVM Integration Tests - JDK 21",
@@ -36,7 +43,8 @@
         "java-version-gradle": 20,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
-        "os-name": "ubuntu-latest"
+        "os-name": "ubuntu-latest",
+        "modules": "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
     },
     {
         "name": "JVM Integration Tests - JDK 17 Windows",
@@ -44,6 +52,7 @@
         "java-version": 17,
         "maven_args": "-DskipDocs -Dformat.skip",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-        "os-name": "windows-latest"
+        "os-name": "windows-latest",
+        "modules": "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
     }
 ]

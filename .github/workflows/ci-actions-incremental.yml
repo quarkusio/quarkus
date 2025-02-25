@@ -347,7 +347,6 @@ jobs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
-      run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
@@ -366,7 +365,7 @@ jobs:
       - name: Calculate matrix from matrix-jvm-tests.json
         id: calc-jvm-matrix
         run: |
-          json=$(.github/filter-jvm-tests-json.sh)
+          json=$(.github/filter-jvm-tests-json.sh "${GIB_IMPACTED_MODULES}")
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from virtual-threads-tests.json
@@ -379,15 +378,14 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true
+          run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true
           if [ -z "${GIB_IMPACTED_MODULES}" ]
           then
-            run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
+            run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
           elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv 'integration-tests/(devtools|gradle|maven|devmode|kubernetes/.*)|tcks/.*' > /dev/null); then run_jvm=false; fi
             if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
             if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
             if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
@@ -395,8 +393,7 @@ jobs:
             if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
             if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
           fi
-          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
-          echo "run_jvm=${run_jvm}" >> $GITHUB_OUTPUT
+          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
           echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
           echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
@@ -409,7 +406,7 @@ jobs:
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))) }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.calculate-test-jobs.outputs.jvm_matrix && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) }}
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -507,15 +504,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          if [[ "${{ matrix.java.category }}" == *"Integration"* ]]; then
-            PL=$JVM_TEST_INTEGRATION_TESTS_SELECTOR
-            WORKAROUND=""
-          else
-            PL=$JVM_TEST_NORMAL_TESTS_SELECTOR
-            WORKAROUND="${{ needs.build-jdk17.outputs.gib_args }}"
-          fi
-          # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} $WORKAROUND
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $PL clean install -Dsurefire.timeout=1200  -Dno-test-kubernetes ${{ matrix.java.maven_args }} ${{ matrix.java.modules }}
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
@@ -639,7 +628,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
+        # Despite the pre-calculated run_maven flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()

@@ -1299,6 +1299,16 @@ jobs:
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
         uses: quarkusio/cache-action@v4
+        if: github.event_name == 'push'
+        with:
+          path: '**/.quarkus/quarkus-prod-config-dump'
+          key: ${{ needs.configure.outputs.quarkus-metadata-cache-key }}
+          # The key is restored from default branch if not found, but still branch specific to override the default after first run
+          restore-keys: ${{ needs.configure.outputs.quarkus-metadata-cache-key-default }}
+          runs-on: ${{ env.RUNS_ON_ENABLED }}
+      - name: Cache Quarkus metadata
+        uses: quarkusio/cache-action/restore@v4
+        if: github.event_name == 'pull_request'
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ needs.configure.outputs.quarkus-metadata-cache-key }}

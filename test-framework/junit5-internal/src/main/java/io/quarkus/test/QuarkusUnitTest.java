@@ -401,6 +401,14 @@ public class QuarkusUnitTest
     }
 
     @Override
+    public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
+            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+        T result = (T) runExtensionMethod(invocationContext, extensionContext, false);
+        invocation.skip();
+        return result;
+    }
+
+    @Override
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
@@ -438,7 +446,7 @@ public class QuarkusUnitTest
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
+    private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
             boolean testMethodInvokersAllowed) throws Throwable {
         Method newMethod = null;
         Class<?> c = actualTestClass;
@@ -505,12 +513,12 @@ public class QuarkusUnitTest
                         effectiveArguments.add(originalValue);
                     }
                 }
-                testMethodInvokerToUse.getClass()
+                return testMethodInvokerToUse.getClass()
                         .getMethod("invoke", Object.class, Method.class, List.class, String.class)
                         .invoke(testMethodInvokerToUse, actualTestInstance, newMethod, effectiveArguments,
                                 extensionContext.getRequiredTestClass().getName());
             } else {
-                newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+                return newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
             }
         } catch (InvocationTargetException e) {
             throw e.getCause();

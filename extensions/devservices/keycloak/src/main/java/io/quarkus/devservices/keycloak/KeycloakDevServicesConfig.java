@@ -204,7 +204,7 @@ public interface KeycloakDevServicesConfig {
     Map<String, String> containerEnv();
 
     /**
-     * Memory limit for Keycloak container
+     * Memory limit for Keycloak container, up to {@code Long.MAX_VALUE} bytes.
      * </p>
      * If not specified, 750MiB is the default memory limit.
      */

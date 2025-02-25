@@ -678,6 +678,7 @@ public class JunitTestRunner {
                 }
             }
         }
+
         Map<String, String> profiles = new HashMap<>();
 
         for (AnnotationInstance i : index.getAnnotations(TEST_PROFILE)) {

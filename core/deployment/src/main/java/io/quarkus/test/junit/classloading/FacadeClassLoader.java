@@ -68,11 +68,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * does use a similar approach, although they have a default loader rather than a canary loader.
      */
     private final URLClassLoader peekingClassLoader;
-    private final Class<? extends Annotation> quarkusTestAnnotation;
-    private final Class<? extends Annotation> quarkusIntegrationTestAnnotation;
-    private final Class<? extends Annotation> profileAnnotation;
-    private final Class<? extends Annotation> extendWithAnnotation;
-    private final Class<? extends Annotation> registerExtensionAnnotation;
+    private Class<? extends Annotation> quarkusTestAnnotation;
+    private Class<? extends Annotation> quarkusIntegrationTestAnnotation;
+    private Class<? extends Annotation> profileAnnotation;
+    // TODO make not final
+    private Class<? extends Annotation> extendWithAnnotation;
+    private Class<? extends Annotation> registerExtensionAnnotation;
     private Map<String, Class<?>> profiles;
     private String classesPath;
     private Set<String> quarkusTestClasses;
@@ -100,7 +101,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     public static FacadeClassLoader instance(ClassLoader parent, boolean isAuxiliaryApplication, Map<String, String> profiles,
             Set<String> quarkusTestClasses, String... classesPath) {
         if (instance == null) {
-            instance = new FacadeClassLoader(parent, isAuxiliaryApplication, profiles, quarkusTestClasses, classesPath);
+            instance = new FacadeClassLoader(parent, isAuxiliaryApplication, profiles, quarkusTestClasses,
+                    String.join(File.pathSeparator, classesPath));
         }
         return instance;
     }
@@ -116,12 +118,15 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     public FacadeClassLoader(ClassLoader parent, boolean isAuxiliaryApplication, Map<String, String> profileNames,
             Set<String> quarkusTestClasses,
-            String... classPaths) {
+            String classesPath) {
         super(parent);
         this.quarkusTestClasses = quarkusTestClasses;
         this.isAuxiliaryApplication = isAuxiliaryApplication;
 
-        this.classesPath = String.join(File.pathSeparator, classPaths);
+        this.classesPath = classesPath;
+
+        boolean isolatedClassloader = !(classesPath.contains(File.pathSeparator));
+
         URL[] urls = Arrays.stream(classesPath.split(File.pathSeparator))
                 .map(spec -> {
                     try {
@@ -140,17 +145,30 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     }
                 })
                 .toArray(URL[]::new);
-        peekingClassLoader = new ParentLastURLClassLoader(urls, parent);
+
+        // TODO this special casing is pretty fragile and pretty ugly; without it, @WithFunction tests do not pass, such as google cloud functions
+        // TODO what happens in continuous testing for those tests?
+        ClassLoader annotationLoader;
+        if (isolatedClassloader) {
+            peekingClassLoader = new URLClassLoader(urls, null);
+            annotationLoader = parent;
+        } else {
+            peekingClassLoader = new ParentLastURLClassLoader(urls, parent);
+            annotationLoader = peekingClassLoader;
+        }
+
+        // In the isolated classloader case, we actually never discover any quarkus tests, and a new instance gets created;
+        // but to be safe, initialise our instance variables. We can't use the peekingClassLoader because it can't see JUnit classes, so just use the parent
         try {
-            extendWithAnnotation = (Class<? extends Annotation>) peekingClassLoader.loadClass(ExtendWith.class.getName());
-            registerExtensionAnnotation = (Class<? extends Annotation>) peekingClassLoader
+            extendWithAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(ExtendWith.class.getName());
+            registerExtensionAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(RegisterExtension.class.getName());
-            quarkusTestAnnotation = (Class<? extends Annotation>) peekingClassLoader
+            quarkusTestAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass("io.quarkus.test.junit.QuarkusTest");
             // TODO if this was in the right module, could use class getname
-            quarkusIntegrationTestAnnotation = (Class<? extends Annotation>) peekingClassLoader
+            quarkusIntegrationTestAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass("io.quarkus.test.junit.QuarkusIntegrationTest");
-            profileAnnotation = (Class<? extends Annotation>) peekingClassLoader
+            profileAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass("io.quarkus.test.junit.TestProfile");
         } catch (ClassNotFoundException e) {
             // TODO do we want to allow these to not be on the classpath?
@@ -185,11 +203,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         Class<?> inspectionClass = null;
 
         try {
-
-            // TODO  should we use JUnit's AnnotationSupport? It searches class hierarchies. Unless we have a good reason not to use it, perhaps we should?
-            // See, for example, https://github.com/marcphilipp/gradle-sandbox/blob/baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/ClassLoaderReplacingLauncherSessionListener.java#L23-L44
-            // One reason not to use it is that it needs an annotation class, but we can load one with the canary
-            // It looks up the hierarchy which our current logic doesn't, which is risky
 
             Class<?> profile = null;
             if (profiles != null) {
@@ -234,7 +247,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                             profileAnnotation);
                     if (profileDeclaration.isPresent()) {
 
-                        // TODO could do getAnnotationsByType if we were in the same module
                         Method m = profileDeclaration.get()
                                 .getClass()
                                 .getMethod("value");

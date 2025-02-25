@@ -30,7 +30,7 @@ then
   exit 0
 fi
 
-RUNTIME_MODULES=$(echo -n "$1" | grep -Pv '^(integration-tests|tcks)($|/.*)' || echo '')
+RUNTIME_MODULES=$(echo -n "$1" | grep -Pv '^(integration-tests|tcks|docs)($|/.*)' || echo '')
 INTEGRATION_TESTS=$(echo -n "$1" | grep -Po '^integration-tests/.+' | grep -Pv '^integration-tests/(devtools|gradle|maven|devmode|kubernetes)($|/.*)' || echo '')
 
 if [ -z "$RUNTIME_MODULES" ] && [ -z "$INTEGRATION_TESTS" ]; then

@@ -30,7 +30,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
-import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.logging.DefaultClientLogger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -279,7 +278,7 @@ public class ClientBuilderImpl extends ClientBuilder {
         }
 
         if (Boolean.TRUE.equals(enableCompression)) {
-            configuration.register(ClientGZIPDecodingInterceptor.class);
+            options.setDecompressionSupported(true);
         }
 
         clientLogger.setBodySize(loggingBodySize);

@@ -85,7 +85,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(fields, "fields");
         if (fields.length == 0) {
-            throw new IllegalArgumentException("`fields` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`fields` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.HMGET);
         cmd.put(marshaller.encode(key));
@@ -101,7 +101,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(map, "map");
         if (map.isEmpty()) {
-            throw new IllegalArgumentException("`map` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`map` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.HMSET);
         cmd.put(marshaller.encode(key));
@@ -142,7 +142,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(map, "map");
         if (map.isEmpty()) {
-            throw new IllegalArgumentException("`map` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`map` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.HSET);
         cmd.put(marshaller.encode(key));

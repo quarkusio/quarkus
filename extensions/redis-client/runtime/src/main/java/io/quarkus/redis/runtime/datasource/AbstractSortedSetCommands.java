@@ -130,7 +130,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.ZDIFF)
                 .put(keys.length)
@@ -142,7 +142,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.ZDIFF)
@@ -162,7 +162,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.ZDIFFSTORE)
                 .put(marshaller.encode(destination))
@@ -189,7 +189,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.ZINTER)
                 .put(keys.length);
@@ -210,7 +210,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.ZINTER)
                 .put(keys.length);
@@ -231,7 +231,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.ZINTERCARD)
                 .put(keys.length);
@@ -247,7 +247,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         positive(limit, "limit");
         RedisCommand cmd = RedisCommand.of(Command.ZINTERCARD)
@@ -267,7 +267,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length < 2) {
-            throw new IllegalArgumentException("Need at least two keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("Need at least two keys"));
         }
         nonNull(arguments, "arguments");
         nonNull(destination, "destination");

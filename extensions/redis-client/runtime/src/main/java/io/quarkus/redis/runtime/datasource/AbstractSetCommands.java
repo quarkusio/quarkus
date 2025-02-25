@@ -40,7 +40,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SDIFF).put(marshaller.encode(keys)));
     }
@@ -54,7 +54,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SDIFFSTORE)
                 .put(marshaller.encode(destination))
@@ -66,7 +66,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SINTER).put(marshaller.encode(keys)));
     }
@@ -75,7 +75,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys));
@@ -89,7 +89,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         positive(limit, "limit");
 
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
 
         RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys))
@@ -101,7 +101,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(destination, "destination");
         notNullOrEmpty(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SINTERSTORE)
                 .put(marshaller.encode(destination))
@@ -186,7 +186,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SUNION).put(marshaller.encode(keys)));
     }
@@ -196,7 +196,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SUNIONSTORE)
                 .put(marshaller.encode(destination))

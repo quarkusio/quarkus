@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
@@ -27,8 +28,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.vertx.core.Vertx;
 
-public class JavaNetSslTlsBucketConfigTest {
+public class JavaxNetSslTrustStoreProviderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = createConfig();
 
@@ -45,7 +47,6 @@ public class JavaNetSslTlsBucketConfigTest {
                 .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
                 .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".path", tsPath.toString())
                 .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".password", password);
-
     }
 
     static Path defaultTrustStorePath() {
@@ -78,6 +79,9 @@ public class JavaNetSslTlsBucketConfigTest {
 
     @Inject
     TlsConfigurationRegistry certificates;
+
+    @Inject
+    Vertx vertx;
 
     @Test
     void test() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
@@ -126,18 +130,31 @@ public class JavaNetSslTlsBucketConfigTest {
                 throw lastException;
             }
         }
+
     }
 
     @Test
-    void checkDefaults() {
+    void certs() throws Exception {
         /*
-         * The javaNetSslLike named TLS bucket mimics what JavaNetSslTlsBucketConfig does programmatically.
-         * By asserting that their SSLOptions are equal, we make sure that all defaults set programmatically
-         * in JavaNetSslTlsBucketConfig are in sync with @WithDefault values defined in TlsBucketConfig
+         * The javaNetSslLike named TLS bucket mimics what JavaNetSslTrustStoreProvider does programmatically.
+         * By asserting that the set of certs they contain are equal, we make sure that JavaNetSslTrustStoreProvider
+         * behaves correctly.
          */
-        final TlsConfiguration javaNetSsl = certificates.get("javax.net.ssl").orElseThrow();
-        final TlsConfiguration javaNetSslLike = certificates.get("javaNetSslLike").orElseThrow();
-        assertThat(javaNetSsl.getSSLOptions()).isEqualTo(javaNetSslLike.getSSLOptions());
+        final TrustManager[] javaNetSslTrustManagers = trustManagers("javax.net.ssl");
+        final TrustManager[] javaNetSslLikeTrustManagers = trustManagers("javaNetSslLike");
+        assertThat(javaNetSslTrustManagers.length).isEqualTo(javaNetSslLikeTrustManagers.length);
+        for (int i = 0; i < javaNetSslTrustManagers.length; i++) {
+            X509TrustManager javaNetSslTm = (X509TrustManager) javaNetSslTrustManagers[i];
+            X509TrustManager javaNetSslLikeTm = (X509TrustManager) javaNetSslLikeTrustManagers[i];
+            assertThat(javaNetSslTm.getAcceptedIssuers().length).isGreaterThan(0);
+            assertThat(javaNetSslTm.getAcceptedIssuers()).containsExactlyInAnyOrder(javaNetSslLikeTm.getAcceptedIssuers());
+        }
+    }
 
+    TrustManager[] trustManagers(String key) throws Exception {
+        final TlsConfiguration javaNetSsl = certificates.get(key).orElseThrow();
+        final TrustManagerFactory javaNetSslTrustManagerFactory = javaNetSsl.getSSLOptions().getTrustOptions()
+                .getTrustManagerFactory(vertx);
+        return javaNetSslTrustManagerFactory.getTrustManagers();
     }
 }

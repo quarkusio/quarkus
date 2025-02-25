@@ -179,13 +179,17 @@ public class VertxHttpRecorder {
             //as it is possible filters such as the auth filter can do blocking tasks
             //as the underlying handler has not had a chance to install a read handler yet
             //and data that arrives while the blocking task is being processed will be lost
-            httpServerRequest.pause();
+            if (!httpServerRequest.isEnded()) {
+                httpServerRequest.pause();
+            }
             Handler<HttpServerRequest> rh = VertxHttpRecorder.rootHandler;
             if (rh != null) {
                 rh.handle(httpServerRequest);
             } else {
                 //very rare race condition, that can happen when dev mode is shutting down
-                httpServerRequest.resume();
+                if (!httpServerRequest.isEnded()) {
+                    httpServerRequest.resume();
+                }
                 httpServerRequest.response().setStatusCode(503).end();
             }
         }

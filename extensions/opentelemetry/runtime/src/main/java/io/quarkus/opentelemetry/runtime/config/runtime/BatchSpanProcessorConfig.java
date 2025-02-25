@@ -10,16 +10,16 @@ import io.smallrye.config.WithName;
 public interface BatchSpanProcessorConfig {
 
     /**
-     * The interval, in milliseconds, between two consecutive exports.
+     * The Batch Span Processor interval {@link Duration} between two consecutive exports.
      * <p>
-     * Default is `5000`.
+     * Default is `5s`.
      */
     @WithName("schedule.delay")
     @WithDefault("5s")
     Duration scheduleDelay();
 
     /**
-     * The maximum queue size.
+     * The Batch Span Processor maximum queue size.
      * <p>
      * Default is `2048`.
      */
@@ -28,7 +28,7 @@ public interface BatchSpanProcessorConfig {
     Integer maxQueueSize();
 
     /**
-     * The maximum batch size.
+     * The Batch Span Processor maximum batch size.
      * <p>
      * Default is `512`.
      */
@@ -37,7 +37,7 @@ public interface BatchSpanProcessorConfig {
     Integer maxExportBatchSize();
 
     /**
-     * The maximum allowed time, in milliseconds, to export data.
+     * The Batch Span Processor maximum allowed time {@link Duration} to export data.
      * <p>
      * Default is `30s`.
      */

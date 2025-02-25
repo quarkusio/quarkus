@@ -152,9 +152,6 @@
                     <systemPropertyVariables>
                         <!-- force the locale as we want to explicitly test message interpolation -->
                         <user.language>en</user.language>
-                        <javax.net.ssl.trustStore>${self-signed.trust-store}</javax.net.ssl.trustStore>
-                        <javax.net.ssl.trustStorePassword>${self-signed.trust-store-password}
-                        </javax.net.ssl.trustStorePassword>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

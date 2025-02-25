@@ -1,12 +1,13 @@
 package io.quarkus.grpc.auth;
 
+import static io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider.transformToStatusException;
+
 import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
-import io.grpc.Status;
 import io.quarkus.grpc.ExceptionHandler;
-import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationException;
 
 /**
  * Exception mapper for authentication and authorization exceptions
@@ -16,9 +17,17 @@ import io.quarkus.security.AuthenticationFailedException;
  */
 public class AuthExceptionHandler<ReqT, RespT> extends ExceptionHandler<ReqT, RespT> implements Prioritized {
 
+    private final boolean addStatusDescription;
+
+    public AuthExceptionHandler(ServerCall.Listener<ReqT> listener, ServerCall<ReqT, RespT> serverCall,
+            Metadata metadata, boolean addStatusDescription) {
+        super(listener, serverCall, metadata);
+        this.addStatusDescription = addStatusDescription;
+    }
+
     public AuthExceptionHandler(ServerCall.Listener<ReqT> listener, ServerCall<ReqT, RespT> serverCall,
             Metadata metadata) {
-        super(listener, serverCall, metadata);
+        this(listener, serverCall, metadata, false);
     }
 
     /**
@@ -29,10 +38,8 @@ public class AuthExceptionHandler<ReqT, RespT> extends ExceptionHandler<ReqT, Re
      * @param metadata call metadata
      */
     protected void handleException(Throwable exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
-        if (exception instanceof AuthenticationFailedException) {
-            serverCall.close(Status.UNAUTHENTICATED.withDescription(exception.getMessage()), metadata);
-        } else if (exception instanceof SecurityException) {
-            serverCall.close(Status.PERMISSION_DENIED.withDescription(exception.getMessage()), metadata);
+        if (exception instanceof AuthenticationException || exception instanceof SecurityException) {
+            serverCall.close(transformToStatusException(addStatusDescription, exception), metadata);
         } else if (exception instanceof RuntimeException) {
             throw (RuntimeException) exception;
         } else {

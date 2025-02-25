@@ -28,6 +28,7 @@ import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency;
 import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -377,7 +378,8 @@ public class DependencyUtils {
                     ped.getDeploymentModule().getName(),
                     ped.getDeploymentModule().getVersion().toString());
         } else if (ped.getDeploymentModule() instanceof ProjectInternal) {
-            return handler.create(new DefaultProjectDependency((ProjectInternal) ped.getDeploymentModule(), true));
+            return handler.create(new DefaultProjectDependency((ProjectInternal) ped.getDeploymentModule(), true,
+                    DefaultTaskDependencyFactory.withNoAssociatedProject()));
         } else {
             return handler.create(handler.project(Collections.singletonMap("path", ped.getDeploymentModule().getPath())));
         }

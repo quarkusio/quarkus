@@ -24,7 +24,8 @@ public class HibernateBeanValidationConfigValidator implements BeanValidationCon
                 .ignoreXmlConfiguration()
                 .builtinConstraints(constraints)
                 .initializeBeanMetaData(classesToBeValidated)
-                .constraintValidatorFactory(new ConstraintValidatorFactoryImpl());
+                .constraintValidatorFactory(new ConstraintValidatorFactoryImpl())
+                .traversableResolver(new TraverseAllTraversableResolver());
 
         ConfigValidatorHolder.initialize(configuration.buildValidatorFactory());
     }

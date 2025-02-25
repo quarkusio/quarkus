@@ -5,7 +5,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 
-final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
+public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
 
     private final String name;
 
@@ -17,7 +17,7 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     private final String resolvedDriverClass;
 
-    AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+    public AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceJdbcBuildTimeConfig jdbcConfig,
             String dbKind,
             String resolvedDriverClass) {

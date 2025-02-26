@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.testing;
+package io.quarkus.test.junit;
 
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
@@ -34,12 +34,12 @@ import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
+import io.quarkus.deployment.dev.testing.ClassCoercingTestProfile;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestorableSystemProperties;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestBuildChainFunction;
+import io.quarkus.test.common.TestClassIndexer;
 
 public class AppMakerHelper {
 

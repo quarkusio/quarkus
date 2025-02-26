@@ -42,10 +42,9 @@ import io.smallrye.config.SmallRyeConfig;
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
         implements ExecutionCondition {
 
-    // TODO it would be nicer to store these here, but cannot while some consumers are in the core module
-    protected static final String TEST_LOCATION = TestBuildChainFunction.TEST_LOCATION;
-    protected static final String TEST_CLASS = TestBuildChainFunction.TEST_CLASS;
-    protected static final String TEST_PROFILE = TestBuildChainFunction.TEST_PROFILE;
+    protected static final String TEST_LOCATION = "test-location";
+    protected static final String TEST_CLASS = "test-class";
+    protected static final String TEST_PROFILE = "test-profile";
 
     protected ClassLoader originalCl;
 

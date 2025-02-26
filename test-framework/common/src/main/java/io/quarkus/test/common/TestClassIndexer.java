@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.testing;
+package io.quarkus.test.common;
 
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
@@ -22,7 +22,6 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.UnsupportedVersion;
 
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.test.common.PathTestHelper;
 
 public final class TestClassIndexer {
 

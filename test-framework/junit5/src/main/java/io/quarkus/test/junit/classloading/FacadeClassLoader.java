@@ -30,7 +30,10 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.deployment.dev.testing.AppMakerHelper;
+import io.quarkus.test.junit.AppMakerHelper;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.TestResourceUtil;
 
 /**
  * JUnit has many interceptors and listeners, but it does not allow us to intercept test discovery in a fine-grained way that
@@ -48,6 +51,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final String NAME = "FacadeLoader";
     private static final String IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION = "io.quarkus.test.junit.QuarkusTestExtension";
     public static final String VALUE = "value";
+    public static final String KEY_PREFIX = "QuarkusTest-";
+    public static final String DISPLAY_NAME_PREFIX = "JUnit";
     // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
     // TODO and if we don't, how do we get a re-usable deployment classloader?
 
@@ -169,11 +174,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .loadClass(RegisterExtension.class.getName());
             quarkusTestAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass("io.quarkus.test.junit.QuarkusTest");
-            // TODO if this was in the right module, could use class getname
             quarkusIntegrationTestAnnotation = (Class<? extends Annotation>) annotationLoader
-                    .loadClass("io.quarkus.test.junit.QuarkusIntegrationTest");
+                    .loadClass(QuarkusIntegrationTest.class.getName());
             profileAnnotation = (Class<? extends Annotation>) annotationLoader
-                    .loadClass("io.quarkus.test.junit.TestProfile");
+                    .loadClass(TestProfile.class.getName());
         } catch (ClassNotFoundException e) {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
             log.debug("Could not load annotations for FacadeClassLoader: " + e);
@@ -349,7 +353,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private QuarkusClassLoader getQuarkusClassLoader(Class requiredTestClass, Class<?> profile) {
         final String profileName = profile != null ? profile.getName() : NO_PROFILE;
-        String profileKey = "QuarkusTest" + "-" + profileName;
+        String profileKey = KEY_PREFIX + profileName;
 
         try {
             StartupAction startupAction;
@@ -378,8 +382,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 key = profileKey + resourceKey;
                 startupAction = runtimeClassLoaders.get(key);
                 if (startupAction == null) {
-                    // TODO can we make this less confusing?
-
                     // Making a classloader uses the profile key to look up a curated application
                     startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
                 }
@@ -406,8 +408,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         String resourceKey;
 
         ClassLoader classLoader = keyMakerClassLoader;
+        // We have to access TestResourceUtil reflectively, because if we used this class's classloader, it might be an augmentation classloader without access to application classes
+        // TODO check this is true, try skipping reflection and also using the peeking loader
         Method method = Class
-                .forName("io.quarkus.test.junit.TestResourceUtil", true, classLoader) // TODO use class, not string, but that would need us to be in a different module
+                .forName(TestResourceUtil.class.getName(), true, classLoader)
                 .getMethod("getReloadGroupIdentifier", Class.class, Class.class);
 
         ClassLoader original = Thread.currentThread()
@@ -436,7 +440,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         if (curatedApplication == null) {
             Collection<Runnable> shutdownTasks = new HashSet();
 
-            String displayName = "JUnit" + key; // TODO come up with a good display name
+            String displayName = DISPLAY_NAME_PREFIX + key;
             curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
                     isAuxiliaryApplication,
                     shutdownTasks);

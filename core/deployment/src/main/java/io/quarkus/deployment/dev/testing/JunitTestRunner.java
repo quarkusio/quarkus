@@ -4,6 +4,8 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,7 +76,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
-import io.quarkus.test.junit.classloading.FacadeClassLoader;
+import io.quarkus.logging.Log;
 
 /**
  * This class is responsible for running a single run of JUnit tests.
@@ -602,8 +604,6 @@ public class JunitTestRunner {
         //we will need to fix this sooner rather than later though
 
         //we also only run tests from the current module, which we can also revisit later
-
-        // TODO consolidate logic here with facadeclassloader, which is trying to solve similar problems; maybe even share the canary loader class?
         Indexer indexer = new Indexer();
         moduleInfo.getTest()
                 .ifPresent(test -> {
@@ -755,26 +755,40 @@ public class JunitTestRunner {
         List<Class<?>> utClasses = new ArrayList<>();
 
         // TODO guard to only do this once? is this guard sufficient? see "wrongprofile" in QuarkusTestExtension
+        ClassLoader testLoadingClassLoader;
+        try {
+            Class fclClazz = Class.forName("io.quarkus.test.junit.classloading.FacadeClassLoader");
+            Method clearSingleton = fclClazz.getMethod("clearSingleton");
+            Method instance = fclClazz.getMethod("instance", ClassLoader.class, boolean.class, Map.class, Set.class,
+                    String[].class);
 
-        FacadeClassLoader.clearSingleton();
-        // Passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
+            clearSingleton.invoke(null);
 
-        FacadeClassLoader facadeClassLoader = FacadeClassLoader.instance(this.getClass().getClassLoader(), true, profiles,
-                quarkusTestClassesForFacadeClassLoader, moduleInfo.getMain()
-                        .getClassesPath(),
-                moduleInfo.getTest()
-                        .get()
-                        .getClassesPath()); // TODO ideally it would be in a different module, but that is hard CollaboratingClassLoader.construct(parent);
+            // Passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
+            testLoadingClassLoader = (ClassLoader) instance.invoke(this.getClass().getClassLoader(), true, profiles,
+                    quarkusTestClassesForFacadeClassLoader, moduleInfo.getMain()
+                            .getClassesPath(),
+                    moduleInfo.getTest()
+                            .get()
+                            .getClassesPath());
 
-        Thread.currentThread()
-                .setContextClassLoader(facadeClassLoader);
+            Thread.currentThread()
+                    .setContextClassLoader(testLoadingClassLoader);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace(); // TODO remove this
+            // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
+            // In that case, fallback to loading classes as we normally would, using our own classloader
+            Log.debug("Could not create FacadeClassLoader: " + e);
+
+            testLoadingClassLoader = Thread.currentThread().getContextClassLoader();
+        }
 
         for (String i : quarkusTestClasses) {
             try {
                 // We could load these classes directly, since we know the profile and we have a handy interception point;
                 // but we need to signal to the downstream interceptor that it shouldn't interfere with the classloading
                 // While we're doing that, we may as well share the classloading logic
-                itClasses.add(facadeClassLoader.loadClass(i));
+                itClasses.add(testLoadingClassLoader.loadClass(i));
             } catch (Exception e) {
                 // TODO how handle this?
                 e.printStackTrace();

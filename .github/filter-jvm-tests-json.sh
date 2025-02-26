@@ -41,22 +41,20 @@ fi
 if [ -z "$RUNTIME_MODULES" ]; then
   JSON=$(echo -n $JSON | jq --arg category Runtime 'del( .[] | select(.category == $category) )')
 else
-  RUNTIME_MODULES_COMMAND="-pl\n'"
+  RUNTIME_MODULES_COMMAND="-pl\n"
   for RUNTIME_MODULE in $RUNTIME_MODULES; do
     RUNTIME_MODULES_COMMAND+="${RUNTIME_MODULE},"
   done
-  RUNTIME_MODULES_COMMAND+="'"
   JSON=$(echo -n $JSON | jq --arg category Runtime --arg modules "${RUNTIME_MODULES_COMMAND}" '( .[] | select(.category == $category) ).modules = $modules')
 fi
 
 if [ -z "$INTEGRATION_TESTS" ]; then
   JSON=$(echo -n $JSON | jq --arg category Integration 'del( .[] | select(.category == $category) )')
 else
-  INTEGRATION_TESTS_COMMAND="-pl\n'"
+  INTEGRATION_TESTS_COMMAND="-pl\n"
   for INTEGRATION_TEST in $INTEGRATION_TESTS; do
     INTEGRATION_TESTS_COMMAND+="${INTEGRATION_TEST},"
   done
-  INTEGRATION_TESTS_COMMAND+="'"
   JSON=$(echo -n $JSON | jq --arg category Integration --arg modules "${INTEGRATION_TESTS_COMMAND}" '( .[] | select(.category == $category) ).modules = $modules')
 fi
 

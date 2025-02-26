@@ -30,7 +30,7 @@ then
   exit 0
 fi
 
-RUNTIME_MODULES=$(echo -n "$1" | grep -Pv '^(integration-tests|tcks)($|/.*)' || echo '')
+RUNTIME_MODULES=$(echo -n "$1" | grep -Pv '^(integration-tests|tcks|docs)($|/.*)' || echo '')
 INTEGRATION_TESTS=$(echo -n "$1" | grep -Po '^integration-tests/.+' | grep -Pv '^integration-tests/(devtools|gradle|maven|devmode|kubernetes)($|/.*)' || echo '')
 
 if [ -z "$RUNTIME_MODULES" ] && [ -z "$INTEGRATION_TESTS" ]; then
@@ -41,7 +41,7 @@ fi
 if [ -z "$RUNTIME_MODULES" ]; then
   JSON=$(echo -n $JSON | jq --arg category Runtime 'del( .[] | select(.category == $category) )')
 else
-  RUNTIME_MODULES_COMMAND="-pl '"
+  RUNTIME_MODULES_COMMAND="-pl\n'"
   for RUNTIME_MODULE in $RUNTIME_MODULES; do
     RUNTIME_MODULES_COMMAND+="${RUNTIME_MODULE},"
   done
@@ -52,7 +52,7 @@ fi
 if [ -z "$INTEGRATION_TESTS" ]; then
   JSON=$(echo -n $JSON | jq --arg category Integration 'del( .[] | select(.category == $category) )')
 else
-  INTEGRATION_TESTS_COMMAND="-pl '"
+  INTEGRATION_TESTS_COMMAND="-pl\n'"
   for INTEGRATION_TEST in $INTEGRATION_TESTS; do
     INTEGRATION_TESTS_COMMAND+="${INTEGRATION_TEST},"
   done

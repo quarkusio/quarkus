@@ -5,6 +5,8 @@ public interface ResteasyReactiveInjectionContext {
 
     Object getQueryParameter(String name, boolean single, boolean encoded, String separator);
 
+    public Object getMapQueryParameter();
+
     String getPathParameter(String name, boolean encoded);
 
     Object getMatrixParameter(String name, boolean single, boolean encoded);

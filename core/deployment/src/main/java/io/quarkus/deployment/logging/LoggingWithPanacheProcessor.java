@@ -5,6 +5,7 @@ import org.jboss.jandex.DotName;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -26,6 +27,8 @@ public class LoggingWithPanacheProcessor {
     private static final String JBOSS_LOGGER_BINARY_NAME = "org/jboss/logging/Logger";
     private static final String JBOSS_LOGGER_DESCRIPTOR = "L" + JBOSS_LOGGER_BINARY_NAME + ";";
     private static final String GET_LOGGER_DESCRIPTOR = "(Ljava/lang/String;)" + JBOSS_LOGGER_DESCRIPTOR;
+
+    private static final String LAMBDA_METAFACTORY = "java/lang/invoke/LambdaMetafactory";
 
     @BuildStep
     public void process(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers) {
@@ -167,6 +170,51 @@ public class LoggingWithPanacheProcessor {
                     }
 
                     super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, JBOSS_LOGGER_BINARY_NAME, name, descriptor, false);
+                }
+
+                @Override
+                public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
+                        Object... bootstrapMethodArguments) {
+
+                    // we only transform method references, so skip if this indy doesn't bootstrap with a `LambdaMetafactory`
+                    if (!LAMBDA_METAFACTORY.equals(bootstrapMethodHandle.getOwner())) {
+                        super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
+                        return;
+                    }
+                    // skip if this `LambdaMetafactory` handle doesn't belong to `Log`
+                    // (this covers non-logging cases, as well as cases where `Log` is used in a lambda expression)
+                    //
+                    // we access `bootstrapMethodArguments[1]` directly (here and below) because that's how
+                    // the `LambdaMetafactory` is specified (both the standard `metafactory` and the `altMetafactory`):
+                    // the first 3 arguments are provided by the JVM, and in the remaining arguments, the method
+                    // handle is 2nd
+                    boolean isLogging = bootstrapMethodArguments.length > 1
+                            && bootstrapMethodArguments[1] instanceof Handle handle
+                            && QUARKUS_LOG_BINARY_NAME.equals(handle.getOwner());
+                    if (!isLogging) {
+                        super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
+                        return;
+                    }
+
+                    // we transform a static invocation to a virtual invocation, so need the target instance on the stack
+                    super.visitFieldInsn(Opcodes.GETSTATIC, classNameBinary, SYNTHETIC_LOGGER_FIELD_NAME,
+                            JBOSS_LOGGER_DESCRIPTOR);
+
+                    Handle handle = (Handle) bootstrapMethodArguments[1];
+                    bootstrapMethodArguments[1] = new Handle(Opcodes.H_INVOKEVIRTUAL, JBOSS_LOGGER_BINARY_NAME,
+                            handle.getName(), handle.getDesc(), false);
+
+                    // we transform a static invocation to a virtual invocation,
+                    // so need to prepend the `Logger` type to the descriptor
+                    Type oldDesc = Type.getType(descriptor);
+                    Type[] oldArgs = oldDesc.getArgumentTypes();
+                    Type[] newArgs = new Type[oldArgs.length + 1];
+                    newArgs[0] = Type.getObjectType(JBOSS_LOGGER_BINARY_NAME);
+                    System.arraycopy(oldArgs, 0, newArgs, 1, oldArgs.length);
+                    Type newDesc = Type.getMethodType(oldDesc.getReturnType(), newArgs);
+
+                    super.visitInvokeDynamicInsn(name, newDesc.getDescriptor(), bootstrapMethodHandle,
+                            bootstrapMethodArguments);
                 }
 
                 private boolean isDirectStackManipulationPossible(Type[] argTypes) {

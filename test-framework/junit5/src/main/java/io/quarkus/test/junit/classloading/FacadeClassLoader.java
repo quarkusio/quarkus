@@ -345,18 +345,18 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {
 
         try {
+            // We are looking for an instance of QuarkusTestExtension with a @RegistersExtension annotation
             List<Field> fields = AnnotationSupport.findAnnotatedFields(inspectionClass, registerExtensionAnnotation,
                     f -> f.getType()
                             .getName()
                             .equals(QuarkusTestExtension.class.getName()));
 
             return fields != null && !fields.isEmpty();
-        } catch (RuntimeException e) {
-            // Under the covers, JUnit calls getDefinedFields, and that sometimes throws ClassNotFoundExceptions in native mode
-            // The JUnit library will wrap ClassNotFoundExceptions in RuntimeException
+        } catch (NoClassDefFoundError e) {
+            // Under the covers, JUnit calls getDefinedFields, and that sometimes throws class-related in native mode
             // With -Dnative loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
             // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
-            // TODO it would be nice to diagnose why that's happening 
+            // TODO it would be nice to diagnose why that's happening
             Log.warn("Could not discover field annotations: " + e);
             return false;
         }

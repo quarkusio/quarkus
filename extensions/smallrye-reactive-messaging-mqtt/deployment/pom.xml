@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-messaging-mqtt-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.19.1</version>
     </parent>
 
     <artifactId>quarkus-messaging-mqtt-deployment</artifactId>

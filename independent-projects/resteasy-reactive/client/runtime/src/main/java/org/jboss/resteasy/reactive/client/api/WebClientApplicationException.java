@@ -20,10 +20,19 @@ import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 /**
- * Subclass of {@link WebApplicationException} for use by clients.
+ * Subclass of {@link WebApplicationException} for use by clients, which forbids setting a response that
+ * would be used by the server.
+ * FIXME: I'd rather this be disjoint from WebApplicationException, but changing the exception type could break existing
+ * clients catching this exception.
  */
 @SuppressWarnings("serial")
 public class WebClientApplicationException extends WebApplicationException implements ResteasyReactiveClientProblem {
+
+    /**
+     * The response received by the client after making the request.
+     * Saved in an alternate field to prevent it from being used by the server.
+     */
+    private final transient Response clientResponse;
 
     public WebClientApplicationException(int responseStatus) {
         this(responseStatus, (String) null);
@@ -31,14 +40,23 @@ public class WebClientApplicationException extends WebApplicationException imple
 
     public WebClientApplicationException(int responseStatus, String responseReasonPhrase) {
         super("Server response is: " + responseStatus, null, new DummyResponse(responseStatus, responseReasonPhrase));
+        this.clientResponse = getResponse();
     }
 
-    public WebClientApplicationException(int responseStatus, Response response) {
-        super("Server response is: " + responseStatus, response);
+    public WebClientApplicationException(Response clientResponse) {
+        super("Server response is: " + clientResponse.getStatus(), new DummyResponse(clientResponse.getStatus(),
+                clientResponse.getStatusInfo().getReasonPhrase()));
+        this.clientResponse = clientResponse;
     }
 
-    public WebClientApplicationException(int responseStatus, Throwable cause, Response response) {
-        super("Server response is: " + responseStatus, cause, response);
+    public WebClientApplicationException(Throwable cause, Response clientResponse) {
+        super("Server response is: " + clientResponse.getStatus(), cause, new DummyResponse(clientResponse.getStatus(),
+                clientResponse.getStatusInfo().getReasonPhrase()));
+        this.clientResponse = clientResponse;
+    }
+
+    public Response getClientResponse() {
+        return clientResponse;
     }
 
     /**

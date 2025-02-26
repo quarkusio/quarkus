@@ -26,7 +26,7 @@ public class TemplateGlobalTest {
             .withApplicationRoot(root -> root
                     .addClasses(Globals.class, NextGlobals.class)
                     .addAsResource(new StringAsset(
-                            "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old."),
+                            "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old. [{serviceEnabled || true}]"),
                             "templates/hello.txt"));
 
     @Inject
@@ -42,13 +42,13 @@ public class TemplateGlobalTest {
         assertEquals("Hello 40!", instance.render());
         assertTrue(Globals.AGE_USED.get());
 
-        assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old.", hello.render());
+        assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old. [true]", hello.render());
         assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old.",
                 Qute.fmt(
                         "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
                         .render());
         Globals.user = "Hu";
-        assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old.", hello.render());
+        assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old. [true]", hello.render());
         assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old.",
                 Qute.fmt(
                         "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
@@ -68,6 +68,11 @@ public class TemplateGlobalTest {
         static int age() {
             AGE_USED.set(true);
             return user.equals("Fu") ? 40 : 20;
+        }
+
+        @TemplateGlobal
+        static boolean serviceEnabled() {
+            return true;
         }
 
     }

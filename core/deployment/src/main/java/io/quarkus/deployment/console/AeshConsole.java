@@ -1,8 +1,13 @@
 package io.quarkus.deployment.console;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -11,6 +16,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +33,12 @@ import org.aesh.terminal.tty.Size;
 
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.console.StatusLine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AeshConsole extends QuarkusConsole {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AeshConsole.class);
 
     public static final String ALTERNATE_SCREEN_BUFFER = "\u001b[?1049h\n";
     public static final String EXIT_ALTERNATE_SCREEN = "\u001b[?1049l";
@@ -624,7 +634,38 @@ public class AeshConsole extends QuarkusConsole {
                     .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
                     .enableAlias(true)
                     .aliasManager(
-                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true) {
+                                private static final Lock fileLock = new ReentrantLock();
+
+                                @Override
+                                public void persist() {
+                                    File aliasFile = Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile();
+                                    try (FileChannel channel = FileChannel.open(aliasFile.toPath(),
+                                            StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                                         FileLock lock = channel.tryLock()) {
+
+                                        if (lock == null) {
+                                            LOGGER.warn("File is currently locked by another process, skipping write operation.");
+                                            return;
+                                        }
+
+                                        Map<String, String> aliases = getAliases();
+                                        if (aliases.isEmpty()) {
+                                            return;
+                                        }
+
+                                        File tempFile = new File(aliasFile.getParentFile(), aliasFile.getName() + ".tmp");
+                                        writeAliasesToFile(tempFile);
+
+                                        Files.move(tempFile.toPath(), aliasFile.toPath(),
+                                                StandardCopyOption.ATOMIC_MOVE,
+                                                StandardCopyOption.REPLACE_EXISTING);
+
+                                    } catch (IOException e) {
+                                        LOGGER.warn("Failed to write aliases to file", e);
+                                    }
+                                }
+                            })
                     .connection(delegateConnection)
                     .commandRegistry(registry)
                     .build();
@@ -633,6 +674,39 @@ public class AeshConsole extends QuarkusConsole {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void writeAliasesToFile(File file) throws IOException {
+        Map<String, String> aliases = getAliases();
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
+            writer.println("# Alias Configuration File");
+            writer.println("# Automatically generated aliases");
+
+            for (Map.Entry<String, String> entry : aliases.entrySet()) {
+                String value = entry.getValue();
+                if (value.contains(" ") && !value.startsWith("\"") && !value.endsWith("\"")) {
+                    if (!value.contains("\\ ")) {
+                        value = value.replaceAll("(?<!\\\\) ", "\\ ");
+                    }
+                    if (!value.contains("\\ ")) {
+                        value = "\"" + value + "\"";
+                    }
+                }
+
+                writer.printf("alias %s=%s%n", entry.getKey(), value);
+            }
+        } catch (IOException e) {
+            throw new IOException("Failed to write aliases to file", e);
+        }
+    }
+
+    private Map<String, String> getAliases() {
+        Map<Character, String> singleLetterAliases = singleLetterAliases();
+        Map<String, String> aliases = new HashMap<>();
+        for (Map.Entry<Character, String> entry : singleLetterAliases.entrySet()) {
+            aliases.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return aliases;
     }
 
     public void exitCliMode() {

@@ -153,9 +153,10 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class, boolean.class,
+                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class,
+                                boolean.class, QueryParamExtractor.Type.class, boolean.class,
                                 String.class),
-                        m.getMethodParam(0), m.load(true), m.load(false), m.loadNull());
+                        m.getMethodParam(0), m.load(true), m.load(QueryParamExtractor.Type.Other), m.load(false), m.loadNull());
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(QueryParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);

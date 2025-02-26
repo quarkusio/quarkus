@@ -1,10 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -214,7 +210,7 @@ public class HibernateOrmCdiProcessor {
             return;
         }
 
-        SyntheticBeanBuildItem sessionFactoryBean = null;
+        Set<String> createdSessionFactory = new HashSet<>();
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
             // Hibernate Reactive does not use the same name for its default persistence unit,
@@ -239,13 +235,13 @@ public class HibernateOrmCdiProcessor {
             //   The Mutiny.SessionFactory API doesn't expose every method the Hibernate SessionFactory does, hence this hack
             // - We have multiple PersistenceUnitDescriptorBuildItem, (Reactive + Hibernate scenario), we want to make sure this is created only once
             //   with the correct info from the blocking PersistenceUnitDescriptorBuildItem
-            if (sessionFactoryBean == null && (!isReactive || persistenceUnitDescriptors.size() == 1)) {
-                sessionFactoryBean = persistenceUnitBean
-                        .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
-                        .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                        .done();
+            if (!createdSessionFactory.contains(persistenceUnitName)
+                    && (!isReactive || persistenceUnitDescriptors.size() == 1)) {
                 syntheticBeanBuildItemBuildProducer
-                        .produce(sessionFactoryBean);
+                        .produce(persistenceUnitBean
+                                .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                                .done());
             }
 
             if (capabilities.isPresent(Capability.TRANSACTIONS)

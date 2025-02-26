@@ -15,11 +15,12 @@ import io.quarkus.test.component.TestConfigProperty.TestConfigProperties;
 /**
  * Set the value of a configuration property.
  * <p>
- * If declared on a class then the configuration property is used for all test methods declared on the test class.
+ * If declared on a top-level test class then the configuration property is used for all test methods declared on the test class
+ * and all nested test classes.
  * <p>
  * If declared on a method then the configuration property is only used for that test method.
- * If the test instance lifecycle is {@link Lifecycle#_PER_CLASS}, this annotation can only be used on the test class and is
- * ignored on test methods.
+ * If the test instance lifecycle is {@link Lifecycle#_PER_CLASS}, this annotation can only be declared on a top-level test
+ * class, otherwise it's ignored.
  * <p>
  * Configuration properties declared on test methods take precedence over the configuration properties declared on test class.
  *

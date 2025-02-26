@@ -27,6 +27,7 @@ import jakarta.inject.Provider;
 
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.mockito.Mock;
 
 import io.quarkus.arc.InjectableInstance;
@@ -101,6 +102,12 @@ class QuarkusComponentTestConfiguration {
         List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>(this.annotationsTransformers);
         List<Converter<?>> configConverters = new ArrayList<>(this.configConverters);
 
+        if (testClass.isAnnotationPresent(Nested.class)) {
+            while (testClass.getEnclosingClass() != null) {
+                testClass = testClass.getEnclosingClass();
+            }
+        }
+
         QuarkusComponentTest testAnnotation = testClass.getAnnotation(QuarkusComponentTest.class);
         if (testAnnotation != null) {
             Collections.addAll(componentClasses, testAnnotation.value());
@@ -130,67 +137,78 @@ class QuarkusComponentTestConfiguration {
         }
         Class<?> current = testClass;
         while (current != null && current != Object.class) {
-            // All fields annotated with @Inject represent component classes
-            for (Field field : current.getDeclaredFields()) {
-                if (field.isAnnotationPresent(Inject.class)) {
-                    if (Instance.class.isAssignableFrom(field.getType())
-                            || QuarkusComponentTestExtension.isListAllInjectionPoint(field.getGenericType(),
-                                    field.getAnnotations(),
-                                    field)) {
-                        // Special handling for Instance<Foo> and @All List<Foo>
-                        componentClasses
-                                .add(getRawType(
-                                        QuarkusComponentTestExtension.getFirstActualTypeArgument(field.getGenericType())));
-                    } else if (!resolvesToBuiltinBean(field.getType())) {
-                        componentClasses.add(field.getType());
-                    }
-                }
-            }
-            // All static nested classes declared on the test class are components
-            if (addNestedClassesAsComponents) {
-                for (Class<?> declaredClass : current.getDeclaredClasses()) {
-                    if (Modifier.isStatic(declaredClass.getModifiers())) {
-                        componentClasses.add(declaredClass);
-                    }
-                }
-            }
-            // All params of test methods but:
-            // - not covered by built-in extensions
-            // - not annotated with @InjectMock, @SkipInject, @org.mockito.Mock
-            for (Method method : current.getDeclaredMethods()) {
-                if (QuarkusComponentTestExtension.isTestMethod(method)) {
-                    for (Parameter param : method.getParameters()) {
-                        if (QuarkusComponentTestExtension.BUILTIN_PARAMETER.test(param)
-                                || param.isAnnotationPresent(InjectMock.class)
-                                || param.isAnnotationPresent(SkipInject.class)
-                                || param.isAnnotationPresent(Mock.class)) {
-                            continue;
-                        }
-                        if (Instance.class.isAssignableFrom(param.getType())
-                                || QuarkusComponentTestExtension.isListAllInjectionPoint(param.getParameterizedType(),
-                                        param.getAnnotations(),
-                                        param)) {
-                            // Special handling for Instance<Foo> and @All List<Foo>
-                            componentClasses.add(getRawType(
-                                    QuarkusComponentTestExtension.getFirstActualTypeArgument(param.getParameterizedType())));
-                        } else {
-                            componentClasses.add(param.getType());
-                        }
-                    }
-                }
-            }
+            collectComponents(current, addNestedClassesAsComponents, componentClasses);
             current = current.getSuperclass();
         }
 
-        List<TestConfigProperty> testConfigProperties = new ArrayList<>();
-        Collections.addAll(testConfigProperties, testClass.getAnnotationsByType(TestConfigProperty.class));
-        for (TestConfigProperty testConfigProperty : testConfigProperties) {
+        // @TestConfigProperty annotations
+        for (TestConfigProperty testConfigProperty : testClass.getAnnotationsByType(TestConfigProperty.class)) {
             configProperties.put(testConfigProperty.key(), testConfigProperty.value());
         }
 
         return new QuarkusComponentTestConfiguration(Map.copyOf(configProperties), Set.copyOf(componentClasses),
                 this.mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
                 List.copyOf(annotationsTransformers), List.copyOf(configConverters), configBuilderCustomizer);
+    }
+
+    private static void collectComponents(Class<?> testClass, boolean addNestedClassesAsComponents,
+            List<Class<?>> componentClasses) {
+        // All fields annotated with @Inject represent component classes
+        for (Field field : testClass.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Inject.class)) {
+                if (Instance.class.isAssignableFrom(field.getType())
+                        || QuarkusComponentTestExtension.isListAllInjectionPoint(field.getGenericType(),
+                                field.getAnnotations(),
+                                field)) {
+                    // Special handling for Instance<Foo> and @All List<Foo>
+                    componentClasses
+                            .add(getRawType(
+                                    QuarkusComponentTestExtension.getFirstActualTypeArgument(field.getGenericType())));
+                } else if (!resolvesToBuiltinBean(field.getType())) {
+                    componentClasses.add(field.getType());
+                }
+            }
+        }
+        // All static nested classes declared on the test class are components
+        if (addNestedClassesAsComponents) {
+            for (Class<?> declaredClass : testClass.getDeclaredClasses()) {
+                if (Modifier.isStatic(declaredClass.getModifiers())) {
+                    componentClasses.add(declaredClass);
+                }
+            }
+        }
+        // All params of test methods but:
+        // - not covered by built-in extensions
+        // - not annotated with @InjectMock, @SkipInject, @org.mockito.Mock
+        for (Method method : testClass.getDeclaredMethods()) {
+            if (QuarkusComponentTestExtension.isTestMethod(method)) {
+                for (Parameter param : method.getParameters()) {
+                    if (QuarkusComponentTestExtension.BUILTIN_PARAMETER.test(param)
+                            || param.isAnnotationPresent(InjectMock.class)
+                            || param.isAnnotationPresent(SkipInject.class)
+                            || param.isAnnotationPresent(Mock.class)) {
+                        continue;
+                    }
+                    if (Instance.class.isAssignableFrom(param.getType())
+                            || QuarkusComponentTestExtension.isListAllInjectionPoint(param.getParameterizedType(),
+                                    param.getAnnotations(),
+                                    param)) {
+                        // Special handling for Instance<Foo> and @All List<Foo>
+                        componentClasses.add(getRawType(
+                                QuarkusComponentTestExtension.getFirstActualTypeArgument(param.getParameterizedType())));
+                    } else {
+                        componentClasses.add(param.getType());
+                    }
+                }
+            }
+        }
+
+        // All @Nested inner classes
+        for (Class<?> nested : testClass.getDeclaredClasses()) {
+            if (nested.isAnnotationPresent(Nested.class) && !Modifier.isStatic(nested.getModifiers())) {
+                collectComponents(nested, addNestedClassesAsComponents, componentClasses);
+            }
+        }
     }
 
     QuarkusComponentTestConfiguration update(Method testMethod) {

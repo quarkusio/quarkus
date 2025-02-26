@@ -765,12 +765,12 @@ public class JunitTestRunner {
             clearSingleton.invoke(null);
 
             // Passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
-            testLoadingClassLoader = (ClassLoader) instance.invoke(this.getClass().getClassLoader(), true, profiles,
-                    quarkusTestClassesForFacadeClassLoader, moduleInfo.getMain()
+            testLoadingClassLoader = (ClassLoader) instance.invoke(null, this.getClass().getClassLoader(), true, profiles,
+                    quarkusTestClassesForFacadeClassLoader, new String[] { moduleInfo.getMain()
                             .getClassesPath(),
-                    moduleInfo.getTest()
-                            .get()
-                            .getClassesPath());
+                            moduleInfo.getTest()
+                                    .get()
+                                    .getClassesPath() }); // TODO just make this a string
 
             Thread.currentThread()
                     .setContextClassLoader(testLoadingClassLoader);

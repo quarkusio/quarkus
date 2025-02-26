@@ -31,6 +31,7 @@ import jakarta.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
@@ -199,10 +200,12 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                         + invokedMethod.getDeclaringClass().getName() + "#"
                         + invokedMethod.getName() + "'";
             }
+            Response response = webApplicationException instanceof WebClientApplicationException wcae ? wcae.getClientResponse()
+                    : webApplicationException.getResponse();
             return new ClientWebApplicationException(message,
                     webApplicationException instanceof ClientWebApplicationException ? webApplicationException.getCause()
                             : webApplicationException,
-                    webApplicationException.getResponse());
+                    response);
         }
         return res;
     }

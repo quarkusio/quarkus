@@ -33,6 +33,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.test.junit.QuarkusTestExtension;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.TestResourceUtil;
 
@@ -49,7 +50,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final Logger log = Logger.getLogger(FacadeClassLoader.class);
 
     private static final String NAME = "FacadeLoader";
-    private static final String IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION = "io.quarkus.test.junit.QuarkusTestExtension";
     public static final String VALUE = "value";
     public static final String KEY_PREFIX = "QuarkusTest-";
     public static final String DISPLAY_NAME_PREFIX = "JUnit";
@@ -242,13 +242,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
                     // If a whole test class has an @Disabled annotation, do not bother creating a quarkus app for it
                     // Pragmatically, this fixes a LinkageError in grpc-cli which only reproduces in CI, but it's also probably what users would expect
-                    if (isEnabled) {
+                    if (isEnabled && !inspectionClass.isAnnotation()) {
                         // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
                         // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
-                        isQuarkusTest = !inspectionClass.isAnnotation()
-                                && (AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where an class is annotated with an annotation which itself includes the annotation we care about
-                                        || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
-                                        || registersQuarkusTestExtensionOnField(inspectionClass));
+
+                        isQuarkusTest = AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
+                                || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
+                                || registersQuarkusTestExtensionOnField(inspectionClass);
 
                         if (isQuarkusTest) {
                             // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
@@ -302,7 +302,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
         Optional<? extends Annotation> a = AnnotationSupport.findAnnotation(inspectionClass, extendWithAnnotation);
         // This toString looks sloppy, but we cannot do an equals() because there might be multiple JUnit extensions, and getting the annotation value would need a reflective call, which may not be any cheaper or prettier than doing the string
-        return (a.isPresent() && a.get().toString().contains(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
+        return (a.isPresent() && a.get().toString().contains(QuarkusTestExtension.class.getName()));
 
     }
 
@@ -348,13 +348,15 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             List<Field> fields = AnnotationSupport.findAnnotatedFields(inspectionClass, registerExtensionAnnotation,
                     f -> f.getType()
                             .getName()
-                            .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
+                            .equals(QuarkusTestExtension.class.getName()));
 
             return fields != null && !fields.isEmpty();
         } catch (RuntimeException e) {
+            // Under the covers, JUnit calls getDefinedFields, and that sometimes throws ClassNotFoundExceptions in native mode
             // The JUnit library will wrap ClassNotFoundExceptions in RuntimeException
-            // For some reason, on some OSes/JDKs, loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
+            // With -Dnative loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
             // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
+            // TODO it would be nice to diagnose why that's happening 
             Log.warn("Could not discover field annotations: " + e);
             return false;
         }

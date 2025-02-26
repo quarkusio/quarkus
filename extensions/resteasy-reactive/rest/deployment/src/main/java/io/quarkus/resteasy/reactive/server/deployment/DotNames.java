@@ -13,6 +13,7 @@ import io.quarkus.arc.NoClassInterceptors;
 final class DotNames {
 
     static final String POPULATE_METHOD_NAME = "populate";
+    static final DotName CLASS_NAME = DotName.createSimple(Class.class.getName());
     static final DotName OBJECT_NAME = DotName.createSimple(Object.class.getName());
     static final DotName STRING_NAME = DotName.createSimple(String.class.getName());
     static final DotName BYTE_NAME = DotName.createSimple(byte.class.getName());

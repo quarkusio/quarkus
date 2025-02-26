@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.testing;
+package io.quarkus.test.common;
 
 public class TestStatus {
 

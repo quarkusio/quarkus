@@ -1,12 +1,10 @@
-package io.quarkus.deployment.dev.testing;
+package io.quarkus.test.junit;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import io.quarkus.test.junit.QuarkusTestProfile;
 
 // TODO maybe use this in the resource maker too?
 

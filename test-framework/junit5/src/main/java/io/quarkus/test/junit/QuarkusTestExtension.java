@@ -77,7 +77,6 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestProfileBuildItem;
-import io.quarkus.deployment.dev.testing.DotNames;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -211,25 +210,22 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            //            PrepareResult result = createAugmentor(context, profile, shutdownTasks);
-            //            AugmentAction augmentAction = result.augmentAction;
-            //            QuarkusTestProfile profileInstance = result.profileInstance;
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
             System.out.println("HOLLY during execution, TCCL is " + Thread.currentThread().getContextClassLoader());
             System.out.println("HOLLY the test was loaded with " + requiredTestClass + requiredTestClass.getClassLoader());
 
-            //            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
             // clear the test.url system property as the value leaks into the run when using different profiles
             System.clearProperty("test.url");
             Map<String, String> additional = new HashMap<>();
             QuarkusTestProfile profileInstance = getQuarkusTestProfile(profile, shutdownTasks, additional);
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
+            System.out.println(
+                    "HOLLY startup action " + startupAction + " from " + getClassLoaderFromTestClass(requiredTestClass));
 
             System.out.println("HOLLY made initial app");
             // TODO this might be a good idea, but if so, we'd need to undo it
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
-            //   populateDeepCloneField(startupAction);
 
             System.out.println("HOLLY class has come in as " + requiredTestClass.getClassLoader());
             System.out.println("HOLLY will now get a locextsion for "

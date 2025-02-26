@@ -48,9 +48,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 //TODO  We want to tidy up classloaders we created, but not ones created upstream
                 facadeLoader = null; // TODO diagnostics
                 // Although in principle we only go through a few times
-                // TODO we should probably drop the parameter
                 if (facadeLoader == null) {
-                    facadeLoader = FacadeClassLoader.instance(old); // TODO want to do it reflectively CollaboratingClassLoader.construct(old);
+                    facadeLoader = FacadeClassLoader.instance(old);
                 }
                 Thread.currentThread()
                         .setContextClassLoader(facadeLoader);

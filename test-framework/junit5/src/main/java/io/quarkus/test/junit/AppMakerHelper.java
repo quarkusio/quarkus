@@ -34,7 +34,6 @@ import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
-import io.quarkus.deployment.dev.testing.ClassCoercingTestProfile;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;

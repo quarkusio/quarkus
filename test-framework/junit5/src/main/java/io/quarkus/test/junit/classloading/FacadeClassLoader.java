@@ -30,6 +30,7 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
@@ -46,7 +47,6 @@ import io.quarkus.test.junit.TestResourceUtil;
  */
 public class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final Logger log = Logger.getLogger(FacadeClassLoader.class);
-    protected static final String JAVA = "java.";
 
     private static final String NAME = "FacadeLoader";
     private static final String IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION = "io.quarkus.test.junit.QuarkusTestExtension";
@@ -90,6 +90,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private static volatile FacadeClassLoader instance;
 
+    // Used reflectively
     public static void clearSingleton() {
         if (instance != null) {
             instance.close();
@@ -107,10 +108,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     public static FacadeClassLoader instance(ClassLoader parent, boolean isAuxiliaryApplication, Map<String, String> profiles,
-            Set<String> quarkusTestClasses, String... classesPath) {
+            Set<String> quarkusTestClasses, String classesPath) {
         if (instance == null) {
-            instance = new FacadeClassLoader(parent, isAuxiliaryApplication, profiles, quarkusTestClasses,
-                    String.join(File.pathSeparator, classesPath));
+            instance = new FacadeClassLoader(parent, isAuxiliaryApplication, profiles, quarkusTestClasses, classesPath);
         }
         return instance;
     }
@@ -344,11 +344,21 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {
 
-        List<Field> fields = AnnotationSupport.findAnnotatedFields(inspectionClass, registerExtensionAnnotation,
-                f -> f.getType().getName()
-                        .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
+        try {
+            List<Field> fields = AnnotationSupport.findAnnotatedFields(inspectionClass, registerExtensionAnnotation,
+                    f -> f.getType()
+                            .getName()
+                            .equals(IO_QUARKUS_TEST_JUNIT_QUARKUS_TEST_EXTENSION));
 
-        return fields != null && fields.size() > 0;
+            return fields != null && !fields.isEmpty();
+        } catch (RuntimeException e) {
+            // The JUnit library will wrap ClassNotFoundExceptions in RuntimeException
+            // For some reason, on some OSes/JDKs, loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
+            // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
+            Log.warn("Could not discover field annotations: " + e);
+            return false;
+        }
+
     }
 
     private QuarkusClassLoader getQuarkusClassLoader(Class requiredTestClass, Class<?> profile) {
@@ -438,7 +448,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
-            Collection<Runnable> shutdownTasks = new HashSet();
+            Collection<Runnable> shutdownTasks = new HashSet<>();
 
             String displayName = DISPLAY_NAME_PREFIX + key;
             curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,

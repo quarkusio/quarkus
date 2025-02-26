@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev.testing;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -369,7 +370,8 @@ public class JunitTestRunner {
                                                         .getDisplayName(),
                                                         result.getTestClass(),
                                                         toTagList(testIdentifier),
-                                                        currentNonDynamicTest.get().getUniqueIdObject(),
+                                                        currentNonDynamicTest.get()
+                                                                .getUniqueIdObject(),
                                                         TestExecutionResult.failed(failure), List.of(), false, runId, 0,
                                                         false));
                                         results.put(UniqueId.parse(currentNonDynamicTest.get()
@@ -757,20 +759,20 @@ public class JunitTestRunner {
         // TODO guard to only do this once? is this guard sufficient? see "wrongprofile" in QuarkusTestExtension
         ClassLoader testLoadingClassLoader;
         try {
-            Class fclClazz = Class.forName("io.quarkus.test.junit.classloading.FacadeClassLoader");
+            Class fclClazz = Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass("io.quarkus.test.junit.classloading.FacadeClassLoader");
             Method clearSingleton = fclClazz.getMethod("clearSingleton");
             Method instance = fclClazz.getMethod("instance", ClassLoader.class, boolean.class, Map.class, Set.class,
-                    String[].class);
+                    String.class);
 
             clearSingleton.invoke(null);
 
-            // Passing in the test classes is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
-            testLoadingClassLoader = (ClassLoader) instance.invoke(null, this.getClass().getClassLoader(), true, profiles,
-                    quarkusTestClassesForFacadeClassLoader, new String[] { moduleInfo.getMain()
-                            .getClassesPath(),
-                            moduleInfo.getTest()
-                                    .get()
-                                    .getClassesPath() }); // TODO just make this a string
+            // Passing in the test classes is necessary because in dev mode getAnnotations() on the class returns an empty array, for some reason (plus it saves rediscovery effort)
+            String classPath = moduleInfo.getMain()
+                    .getClassesPath() + File.pathSeparator + moduleInfo.getTest().get().getClassesPath();
+            testLoadingClassLoader = (ClassLoader) instance.invoke(null, Thread.currentThread()
+                    .getContextClassLoader(), true, profiles, quarkusTestClassesForFacadeClassLoader, classPath);
 
             Thread.currentThread()
                     .setContextClassLoader(testLoadingClassLoader);
@@ -778,9 +780,12 @@ public class JunitTestRunner {
             e.printStackTrace(); // TODO remove this
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
             // In that case, fallback to loading classes as we normally would, using a TCCL
-            Log.debug("Could not create FacadeClassLoader: " + e);
+            Log.debug(
+                    "Could not load class for FacadeClassLoader. This might be because quarkus-junit5 is not on the project classpath: "
+                            + e);
 
-            testLoadingClassLoader = Thread.currentThread().getContextClassLoader();
+            testLoadingClassLoader = Thread.currentThread()
+                    .getContextClassLoader();
         }
 
         for (String i : quarkusTestClasses) {

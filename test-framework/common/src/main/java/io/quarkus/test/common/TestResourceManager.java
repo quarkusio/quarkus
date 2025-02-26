@@ -39,8 +39,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.deployment.dev.testing.TestStatus;
-
 /**
  * Manages {@link QuarkusTestResourceLifecycleManager}
  */

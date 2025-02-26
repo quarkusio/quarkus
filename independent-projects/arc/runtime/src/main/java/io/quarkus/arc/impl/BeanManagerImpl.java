@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import jakarta.el.ELResolver;
-import jakarta.el.ExpressionFactory;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.spi.Context;
 import jakarta.enterprise.context.spi.Contextual;
@@ -234,16 +232,6 @@ public class BeanManagerImpl implements BeanManager {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Collection<Context> getContexts(Class<? extends Annotation> scopeType) {
         return (Collection) Arc.requireContainer().getContexts(scopeType);
-    }
-
-    @Override
-    public ELResolver getELResolver() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ExpressionFactory wrapExpressionFactory(ExpressionFactory expressionFactory) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

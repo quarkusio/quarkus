@@ -51,7 +51,9 @@ final class TypeInfos {
 
     static Info create(String typeInfo, Expression.Part part, IndexView index, Function<String, String> templateIdToPathFun,
             Origin expressionOrigin) {
-        if (typeInfo.startsWith(TYPE_INFO_SEPARATOR)) {
+        if (typeInfo.startsWith(TYPE_INFO_SEPARATOR)
+                && (typeInfo.endsWith(TYPE_INFO_SEPARATOR) || typeInfo.endsWith(RIGHT_ANGLE))) {
+            // |TYPE_INFO| or |TYPE_INFO|<section-hint>
             int endIdx = typeInfo.substring(1, typeInfo.length()).indexOf(Expressions.TYPE_INFO_SEPARATOR);
             if (endIdx < 1) {
                 throw new IllegalArgumentException("Invalid type info: " + typeInfo);

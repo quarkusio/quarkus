@@ -777,7 +777,7 @@ public class JunitTestRunner {
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace(); // TODO remove this
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
-            // In that case, fallback to loading classes as we normally would, using our own classloader
+            // In that case, fallback to loading classes as we normally would, using a TCCL
             Log.debug("Could not create FacadeClassLoader: " + e);
 
             testLoadingClassLoader = Thread.currentThread().getContextClassLoader();

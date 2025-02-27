@@ -121,13 +121,9 @@ export class QwcContainerImageBuild extends LitElement {
         this.build_error = false;
         this.result = "";
         this.jsonRpc.build({'type': this.selected_type, 'builder': this.selected_builder})
-            .onNext(jsonRpcResponse => {
+            .then(jsonRpcResponse => {
                 const msg = jsonRpcResponse.result;
-                if (msg === "started") {
-                    this.build_complete = false;
-                    this.build_in_progress = true;
-                    this.build_error = false;
-                } else if (msg.includes("created.")) {
+                if (msg.includes("created.")) {
                     this.result = msg;
                     this.build_complete = true;
                     this.build_in_progress = false;

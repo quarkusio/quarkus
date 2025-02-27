@@ -2847,8 +2847,59 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramArray;
             String componentType = null;
             if (type.kind() == Type.Kind.ARRAY) {
-                componentType = type.asArrayType().constituent().name().toString();
-                paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
+                Type constituentType = type.asArrayType().constituent();
+                if (constituentType.kind() == PRIMITIVE) {
+                    PrimitiveType primitiveType = constituentType.asPrimitiveType();
+                    if (primitiveType == PrimitiveType.BYTE) {
+                        componentType = DotNames.BYTE.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Byte[].class, byte[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.CHAR) {
+                        componentType = DotNames.CHARACTER.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Character[].class,
+                                        char[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.DOUBLE) {
+                        componentType = DotNames.DOUBLE.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Double[].class,
+                                        double[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.FLOAT) {
+                        componentType = DotNames.FLOAT.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Float[].class, float[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.INT) {
+                        componentType = DotNames.INTEGER.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Integer[].class, int[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.LONG) {
+                        componentType = DotNames.LONG.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Long[].class, long[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.SHORT) {
+                        componentType = DotNames.SHORT.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Short[].class, short[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.BOOLEAN) {
+                        componentType = DotNames.BOOLEAN.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Boolean[].class,
+                                        boolean[].class),
+                                queryParamHandle);
+                    } else {
+                        throw new IllegalArgumentException("not supported yet");
+                    }
+                } else {
+                    componentType = constituentType.name().toString();
+                    paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
+                }
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);

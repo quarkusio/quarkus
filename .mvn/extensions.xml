@@ -1,4 +1,4 @@
- <extensions>
+<extensions>
     <extension>
         <groupId>com.gradle</groupId>
         <artifactId>develocity-maven-extension</artifactId>
@@ -18,5 +18,15 @@
         <groupId>io.quarkus.develocity</groupId>
         <artifactId>quarkus-project-develocity-extension</artifactId>
         <version>1.1.9</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.nisse</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.3.4</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.nisse</groupId>
+        <artifactId>extension4</artifactId>
+        <version>0.3.4</version>
     </extension>
 </extensions>

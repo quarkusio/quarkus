@@ -7,7 +7,6 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 
 public abstract class QuarkusInfo extends QuarkusPlatformTask {
@@ -41,10 +40,6 @@ public abstract class QuarkusInfo extends QuarkusPlatformTask {
             outcome = invoker.execute();
         } catch (Exception e) {
             throw new GradleException("Failed to collect Quarkus project information", e);
-        }
-        if (outcome.getValue(ProjectInfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
-            getLogger().warn(
-                    "Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'gradle quarkusUpdate --rectify'");
         }
     }
 }

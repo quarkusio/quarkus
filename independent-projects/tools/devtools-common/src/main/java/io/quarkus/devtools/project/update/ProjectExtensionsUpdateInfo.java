@@ -39,7 +39,8 @@ public class ProjectExtensionsUpdateInfo {
     }
 
     public List<ExtensionUpdateInfo> getSimpleVersionUpdates() {
-        return streamExtensions().filter(ExtensionUpdateInfo::isSimpleVersionUpdate).collect(Collectors.toList());
+        return streamExtensions().filter(ExtensionUpdateInfo::isSimpleVersionUpdate)
+                .filter(ExtensionUpdateInfo::isUpdateRecommended).collect(Collectors.toList());
     }
 
     public List<ExtensionUpdateInfo> getVersionUpdates() {

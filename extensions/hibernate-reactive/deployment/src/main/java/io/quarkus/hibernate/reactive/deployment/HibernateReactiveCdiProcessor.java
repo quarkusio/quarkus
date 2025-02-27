@@ -28,8 +28,6 @@ public class HibernateReactiveCdiProcessor {
     private static final List<DotName> MUTINY_SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
             MUTINY_SESSION_FACTORY, IMPLEMENTOR);
 
-    // These beans must be initialized at runtime because their initialization
-    // depends on runtime configuration (to activate/deactivate a persistence unit)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void generateDataSourceBeans(

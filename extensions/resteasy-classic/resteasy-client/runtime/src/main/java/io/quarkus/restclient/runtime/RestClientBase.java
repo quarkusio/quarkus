@@ -29,6 +29,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientBase {
@@ -92,6 +93,20 @@ public class RestClientBase {
         if (connectionTTL.isPresent()) {
             builder.property("resteasy.connectionTTL",
                     Arrays.asList(connectionTTL.getAsInt(), TimeUnit.MILLISECONDS));
+        }
+
+        Optional<MemorySize> fileThreshold = oneOf(restClientConfig.multipart().fileThreshold(),
+                configRoot.multipart().fileThreshold());
+        if (fileThreshold.isPresent()) {
+            builder.property("dev.resteasy.entity.file.threshold",
+                    fileThreshold.get().asLongValue());
+        }
+
+        Optional<MemorySize> memoryThreshold = oneOf(restClientConfig.multipart().memoryThreshold(),
+                configRoot.multipart().memoryThreshold());
+        if (memoryThreshold.isPresent()) {
+            builder.property("dev.resteasy.entity.memory.threshold",
+                    memoryThreshold.get().asLongValue());
         }
     }
 

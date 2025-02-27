@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
-            <version>1.8</version>
+            <version>3.8.6.1</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

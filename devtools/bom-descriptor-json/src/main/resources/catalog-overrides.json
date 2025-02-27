@@ -91,7 +91,6 @@
       "name": "Artificial Intelligence (AI)",
       "id": "ai",
       "description": "Help making Artificial Intgelligence (AI)-infused applications using Large Language Models and more"
-      
     },
     {
       "name": "Cloud",
@@ -146,6 +145,11 @@
   "metadata":{
     "project": {
       "default-codestart": "rest",
+      "codestart-data": {
+        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+      },
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "${rest-assured.version}",

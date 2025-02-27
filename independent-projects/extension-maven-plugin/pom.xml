@@ -5,11 +5,11 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.3.1</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-extension-maven-plugin</artifactId>
-    <version>3.15.999-SNAPSHOT</version>
+    <version>3.15.3.1</version>
     <name>Quarkus - Extension Maven plugin</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>maven-plugin</packaging>

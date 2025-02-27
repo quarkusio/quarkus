@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.3.1</version>
     </parent>
 
     <artifactId>quarkus-integration-test-devtools-registry-client</artifactId>

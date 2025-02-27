@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
-    <version>3.8.999-SNAPSHOT</version>
+    <version>3.8.6.1</version>
 
     <name>Quarkus - Parent POM</name>
     <description>Quarkus Parent POM</description>

@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-rest-client-reactive-kotlin-serialization-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.8.999-SNAPSHOT</version>
+        <version>3.8.6.1</version>
     </parent>
     <artifactId>quarkus-rest-client-reactive-kotlin-serialization-tests</artifactId>
     <name>Quarkus - RESTEasy Reactive's REST Client Kotlin Serialization - Tests</name>

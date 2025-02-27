@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-smallrye-reactive-type-converters-parent</artifactId>
-        <version>3.8.999-SNAPSHOT</version>
+        <version>3.8.6.1</version>
     </parent>
 
     <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>

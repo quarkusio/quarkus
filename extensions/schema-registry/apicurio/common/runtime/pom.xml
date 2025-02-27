@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-apicurio-registry-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.8.999-SNAPSHOT</version>
+        <version>3.8.6.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

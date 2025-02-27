@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-rest-client-reactive-jaxb-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.8.999-SNAPSHOT</version>
+        <version>3.8.6.1</version>
     </parent>
     <artifactId>quarkus-rest-client-reactive-jaxb-deployment</artifactId>
     <name>Quarkus - RESTEasy Reactive's REST Client JAXB - Deployment</name>

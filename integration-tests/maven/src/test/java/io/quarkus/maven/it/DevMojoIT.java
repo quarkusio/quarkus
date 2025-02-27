@@ -592,6 +592,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     @Test
     void testTestProfilesAreHandled()
             throws MavenInvocationException, IOException {
+        // This project is a somewhat complex project with a mix of profile-d tests and plain tests, and some tests which exercise that the settings in the profile is honoured
         testDir = initProject("projects/test-test-profile");
         runAndCheck();
 
@@ -600,7 +601,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //check that the tests in both class files ran
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(2, results.getTestsPassed());
+        Assertions.assertEquals(9, results.getTestsPassed());
 
         // Edit the "Hello" message.
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
@@ -620,9 +621,47 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         results = testingTestUtils.waitForNextCompletion();
 
-        //make sure the test is failing now
-        Assertions.assertEquals(0, results.getTestsPassed());
+        //make sure the test is failing now, but others should still pass
         Assertions.assertEquals(2, results.getTestsFailed());
+        Assertions.assertEquals(7, results.getTestsPassed());
+    }
+
+    @Disabled // Not currently working, see https://github.com/quarkusio/quarkus/issues/46362
+    @Test
+    void testTestProfilesWhichRunMainAreHandled()
+            throws MavenInvocationException, IOException {
+        // This project is a somewhat complex project with a mix of profile-d tests and plain tests, and some tests which exercise that the settings in the profile is honoured
+        testDir = initProject("projects/test-test-profile-run-main");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both class files ran
+        Assertions.assertEquals(0, results.getTestsFailed());
+        Assertions.assertEquals(9, results.getTestsPassed());
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now, but others should still pass
+        Assertions.assertEquals(2, results.getTestsFailed());
+        Assertions.assertEquals(7, results.getTestsPassed());
     }
 
     @Test

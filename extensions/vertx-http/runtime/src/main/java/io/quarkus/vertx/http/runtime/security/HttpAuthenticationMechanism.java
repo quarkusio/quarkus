@@ -41,23 +41,11 @@ public interface HttpAuthenticationMechanism {
     /**
      * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
      * mechanism is installed.
-     * and finding the best candidate for issuing a challenge when more than one mechanism is installed.
      *
-     * May be null if this mechanism cannot interfere with other mechanisms
-     */
-    @Deprecated(since = "2.8", forRemoval = true)
-    default HttpCredentialTransport getCredentialTransport() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
-     * mechanism is installed.
-     *
-     * May be null if this mechanism cannot interfere with other mechanisms
+     * May be {@link Uni} with null item if this mechanism cannot interfere with other mechanisms.
      */
     default Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        throw new UnsupportedOperationException();
+        return Uni.createFrom().nullItem();
     }
 
     class ChallengeSender implements Function<ChallengeData, Boolean> {

@@ -370,7 +370,7 @@ public final class HttpAuthenticator {
 
     private Uni<SecurityIdentity> authenticateWithAllMechanisms(SecurityIdentity identity, int i,
             RoutingContext routingContext) {
-        return getCredentialTransport(mechanisms[i], routingContext)
+        return mechanisms[i].getCredentialTransport(routingContext)
                 .onItem().transformToUni(new Function<HttpCredentialTransport, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(HttpCredentialTransport httpCredentialTransport) {
@@ -425,7 +425,7 @@ public final class HttpAuthenticator {
 
     private Uni<HttpAuthenticationMechanism> getPathSpecificMechanism(int index, RoutingContext routingContext,
             String pathSpecificMechanism) {
-        return getCredentialTransport(mechanisms[index], routingContext).onItem()
+        return mechanisms[index].getCredentialTransport(routingContext).onItem()
                 .transform(new Function<HttpCredentialTransport, HttpAuthenticationMechanism>() {
                     @Override
                     public HttpAuthenticationMechanism apply(HttpCredentialTransport t) {
@@ -458,15 +458,6 @@ public final class HttpAuthenticator {
         routingContext.put(AUTH_MECHANISM, authMechanism);
     }
 
-    private static Uni<HttpCredentialTransport> getCredentialTransport(HttpAuthenticationMechanism mechanism,
-            RoutingContext routingContext) {
-        try {
-            return mechanism.getCredentialTransport(routingContext);
-        } catch (UnsupportedOperationException ex) {
-            return Uni.createFrom().item(mechanism.getCredentialTransport());
-        }
-    }
-
     private static void rememberAuthAttempted(RoutingContext routingContext) {
         routingContext.put(ATTEMPT_AUTH_INVOKED, TRUE);
     }
@@ -489,7 +480,7 @@ public final class HttpAuthenticator {
      * when the selected mechanism is same as the one already used.
      */
     private static Uni<HttpCredentialTransport> rememberAuthMechScheme(HttpAuthenticationMechanism mech, RoutingContext event) {
-        return getCredentialTransport(mech, event)
+        return mech.getCredentialTransport(event)
                 .onItem().ifNotNull().invoke(new Consumer<HttpCredentialTransport>() {
                     @Override
                     public void accept(HttpCredentialTransport t) {

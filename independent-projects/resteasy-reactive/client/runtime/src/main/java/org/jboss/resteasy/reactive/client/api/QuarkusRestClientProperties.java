@@ -10,6 +10,15 @@ public class QuarkusRestClientProperties {
     public static final String MAX_CHUNK_SIZE = "io.quarkus.rest.client.max-chunk-size";
 
     /**
+     * Configure the threshold to use for the amount of data to store in memory for entities.
+     */
+    public static final String MULTIPART_FILE_THRESHOLD = "io.quarkus.rest.client.multipart.file-threshold";
+    /**
+     * Configure the threshold to use for the amount of data that can be stored in a file for entities.
+     */
+    public static final String MULTIPART_MEMORY_THRESHOLD = "io.quarkus.rest.client.multipart.memory-threshold";
+
+    /**
      * Configure the connect timeout in ms.
      */
     public static final String CONNECT_TIMEOUT = "io.quarkus.rest.client.connect-timeout";

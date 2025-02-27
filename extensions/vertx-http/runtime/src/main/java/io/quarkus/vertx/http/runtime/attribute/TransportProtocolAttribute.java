@@ -1,15 +1,25 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
-public class TransportProtocolAttribute implements ExchangeAttribute {
+public class TransportProtocolAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String TRANSPORT_PROTOCOL = "%{TRANSPORT_PROTOCOL}";
 
     public static final ExchangeAttribute INSTANCE = new TransportProtocolAttribute();
 
+    private static final String NAME = "Transport Protocol";
+
     private TransportProtocolAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -19,14 +29,14 @@ public class TransportProtocolAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("transport getProtocol", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Transport Protocol";
+            return TransportProtocolAttribute.NAME;
         }
 
         @Override

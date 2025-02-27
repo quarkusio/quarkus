@@ -512,7 +512,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     Method m = testHTTPEndpointClazz.getMethod("value");
 
                     value = m.invoke(testHTTPEndpoint);
-                    System.out.println("Did get value on " + testHTTPEndpoint + " and value wa " + value);
 
                     endpointPath = i.apply((Class<?>) value);
                     if (endpointPath != null) {
@@ -728,7 +727,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 setState(extensionContext, state);
 
             } catch (Throwable e) {
-                System.out.println("OHH NOOO failed java start for " + extensionContext.getRequiredTestClass() + " e is " + e);
                 failedBoot = true;
                 markTestAsFailed(extensionContext, e);
                 firstException = e;
@@ -775,7 +773,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         GroovyClassValue.disable();
         currentTestClassStack.push(requiredTestClass);
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        // TODO should this be done in the FacadeClassLoader?
         LaunchMode.set(LaunchMode.TEST);
         if (isNativeOrIntegrationTest(requiredTestClass)) {
             return;
@@ -1029,6 +1026,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         return result;
     }
 
+    // TODO can this and the other interceptions go away?
     @Override
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
@@ -1138,6 +1136,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
+    // TODO surely this whole method can go away?
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
         Class<?> declaringClass = resolveDeclaringClass(originalMethod, c);
@@ -1151,10 +1150,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (type.isPrimitive()) {
                     parameterTypesFromTccl.add(type);
                 } else {
-                    // TODO surely this whole method can go away?
-                    //                    parameterTypesFromTccl
-                    //                            .add(Class.forName(type.getName(), true,
-                    //                                    Thread.currentThread().getContextClassLoader()));
                     parameterTypesFromTccl.add(type);
                 }
             }

@@ -333,3 +333,8 @@ consider xref:hibernate-reactive-panache.adoc#transactions[using `@WithTransacti
 The xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] extension facilitates the usage of Hibernate Reactive
 by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
 
+== Validation modes and Hibernate Validator integration
+
+To find out more on how the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
+influence your Hibernate Reactive application see the xref:hibernate-orm.adoc#validator_integration[corresponding Hibernate ORM guide],
+as these modes work the same in both cases.

@@ -3219,6 +3219,17 @@
                             <versionString>${hibernate-search.version}</versionString>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>parse-version-hibernate-validator</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <propertyPrefix>hibernate-validator</propertyPrefix>
+                            <versionString>${hibernate-validator.version}</versionString>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

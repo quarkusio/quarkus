@@ -1569,3 +1569,81 @@ Format mappers *must* have both `@PersistenceUnitExtension` and either `@JsonFor
 
 Having multiple JSON (or XML) format mappers registered for the same persistence unit will result in an exception, because of the ambiguity.
 ====
+
+[[validator_integration]]
+== Validation modes and Hibernate Validator integration
+
+Hibernate Validator integration into Hibernate ORM opens up the following capabilities:
+
+- performing entity validation on lifecycle events
+- applying constraint information from entities to DDL
+
+From Quarkus's perspective, this is controlled by the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
+The available validation modes are:
+
+- `auto` -- the default option; works the same as `callback` and `ddl` enabled simultaneously
+when the application uses `quarkus-hibernate-validator`,
+and as `none` otherwise.
+- `callback` -- Hibernate Validator will perform the lifecycle event validation.
+- `ddl` -- Hibernate Validator constraints will be considered for the <<dev-mode,DDL operations>>
+- `none` -- Hibernate Validator integration will be disabled.
+
+While all constraints with corresponding Jakarta Validation rules will apply during the `callback` validation,
+in the `ddl` mode, only a subset of constraints is used to influence the DDL.
+In the Hibernate Validator documentation, you can find link:{hibernate-validator-docs-url}#section-builtin-constraints[the list of available constraints] and their impact on the DDL generation.
+
+Let's consider having a simple entity with some constraints applied to its properties:
+
+[source,java]
+----
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Entity
+public class MyEntity {
+    @Id
+    public long id;
+
+    @NotNull
+    @NotEmpty
+    @Size(max = 50)
+    public String name;
+
+    public String value;
+}
+----
+
+With the `ddl` mode enabled, the resulting schema would be expected to have the following constraints:
+[source,sql]
+----
+create table myentity
+(
+    id    bigint      not null  primary key,
+    name  varchar(50) not null, // <1>
+    value varchar(255),         // <2>
+);
+----
+<1> The `name` column has a `not null` constraint because of the `@NotNull` constraint,
+and the length of the values is limited to `50` because of the `@Size(max=50)` constraint.
++
+<2> Since the `value` property in the entity has no constraints, there are no additional constraints in the DDL,
+and the `255` length limit comes from the default `jakarta.persistence.Column#lenght()`.
+
+With the `callback` mode, expect getting a `jakarta.validation.ConstraintViolationException` thrown:
+
+[source,java]
+----
+try {
+    MyEntity entity = new MyEntity();
+    entity.setName(veryLongName);
+    em.persist(entity);
+    em.flush();
+} catch (ConstraintViolationException exception) {
+    // handle the constraint violations somehow
+}
+----
+
+Since Quarkus has built-in exception mappers for `jakarta.validation.ConstraintViolationException`,
+explicitly handling these exceptions might be redundant. See the xref:validation.adoc#rest-end-point-validation[REST end point validation]
+section of the Hibernate Validator guide for more details.

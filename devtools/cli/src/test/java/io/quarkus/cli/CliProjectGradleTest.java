@@ -25,7 +25,7 @@ import picocli.CommandLine;
  */
 public class CliProjectGradleTest {
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/");
+            .resolve("target/test-classes/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliProjectGradleTest");
     static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 

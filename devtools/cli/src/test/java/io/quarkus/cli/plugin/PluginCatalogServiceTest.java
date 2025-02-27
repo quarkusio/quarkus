@@ -29,12 +29,12 @@ public class PluginCatalogServiceTest {
     @BeforeEach
     public void initial() throws Exception {
         userRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-                .resolve("target/test-project/PluginCatalogServiceTest/user-root");
+                .resolve("target/test-classes/test-project/PluginCatalogServiceTest/user-root");
         CliDriver.deleteDir(userRoot);
         Files.createDirectories(userRoot);
 
         projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-                .resolve("target/test-project/PluginCatalogServiceTest/project-root");
+                .resolve("target/test-classes/test-project/PluginCatalogServiceTest/project-root");
         CliDriver.deleteDir(projectRoot);
         Files.createDirectories(projectRoot);
         Files.createDirectories(projectRoot.resolve(".git"));

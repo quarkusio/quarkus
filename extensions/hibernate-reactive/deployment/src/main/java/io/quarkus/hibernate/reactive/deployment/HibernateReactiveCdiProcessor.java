@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.deployment;
 
-import static io.quarkus.hibernate.orm.deployment.ClassNames.IMPLEMENTOR;
-import static io.quarkus.hibernate.orm.deployment.ClassNames.MUTINY_SESSION_FACTORY;
+import static io.quarkus.hibernate.reactive.deployment.ClassNames.IMPLEMENTOR;
+import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_SESSION_FACTORY;
 
 import java.util.Arrays;
 import java.util.List;

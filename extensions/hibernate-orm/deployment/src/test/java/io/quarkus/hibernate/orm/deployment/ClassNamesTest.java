@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
@@ -52,12 +55,12 @@ public class ClassNamesTest {
         hibernateIndex = IndexingUtil.indexJar(determineHibernateJarLocation());
     }
 
-    //    @ParameterizedTest
-    //    @MethodSource("provideConstantsToTest")
-    //    void testClassNameRefersToExistingClass(DotName constant) {
-    //        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString()))
-    //                .doesNotThrowAnyException();
-    //    }
+    @ParameterizedTest
+    @MethodSource("provideConstantsToTest")
+    void testClassNameRefersToExistingClass(DotName constant) {
+        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString()))
+                .doesNotThrowAnyException();
+    }
 
     private static Set<DotName> provideConstantsToTest() {
         return ClassNames.CREATED_CONSTANTS;

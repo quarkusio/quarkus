@@ -22,18 +22,6 @@ This functionality is provided by the `quarkus-openshift` extension, which suppo
 * xref:deploying-to-openshift-S2I-howto.adoc[By using a Source-to-Image (S2I) strategy]
 * xref:deploying-to-openshift-native-howto.adoc[Compiled to native executables]
 
-
-== Prerequisites
-
-* You have OpenJDK {JDK-ver-all} installed.
-* You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
-* You have Apache Maven {mavenversion} installed.
-* You have a {project-name} Maven project that includes the `quarkus-openshift` extension.
-** To add the `quarkus-openshift` extension, see xref:proc_adding-the-quarkus-openshift-extension_quarkus-openshift[Adding the {ProductName} OpenShift extension].
-* You have access to an {openshift} cluster and the latest compatible version of the `oc` tool installed.
-* Optional: If you want to use the Quarkus command-line interface (CLI), ensure that it is installed.
-
-
 == Overview of OpenShift Container Platform build strategies
 
 Docker build:: This strategy builds the artifacts outside the {openshift} cluster, locally or in a CI environment, and provides them to the {openshift} build system together with a Dockerfile.
@@ -64,6 +52,125 @@ The following table outlines the build strategies that {project-name} supports:
 |Source S2I | NO | YES| NO | NO | NO
 |====
 
+== Bootstrapping the project
+
+First, you need a new project that contains the OpenShift extension.
+Then, before you build and deploy our application, you must log into an OpenShift cluster.
+
+=== Adding the OpenShift extension
+
+To build and deploy your applications as a container image that runs inside your {openshift} cluster, you must add the {project-name} OpenShift extension `quarkus-openshift` as a dependency to your project.
+
+This extension also generates {openshift} resources such as image streams, build configuration, deployment, and service definitions.
+If your application includes the `quarkus-smallrye-health` extension, {openshift} can access the health endpoint and verify the startup, liveness, and readiness of your application.
+
+[IMPORTANT]
+====
+From {project-name} 3.8, the `DeploymentConfig` object, deprecated in OpenShift, is also deprecated in {project-name}.
+`Deployment` is the default and preferred deployment kind for the `quarkus-openshift` extension.
+
+If you redeploy applications that you deployed before by using `DeploymentConfig`, by default, those applications use `Deployment` but do not remove the previous `DeploymentConfig`.
+
+This leads to a deployment of both new and old applications, so, you must remove the old `DeploymentConfig` manually.
+However, if you want to continue to use `DeploymentConfig`, it is still possible to do so by explicitly setting `quarkus.openshift.deployment-kind` to `DeploymentConfig`.
+====
+
+.Prerequisites
+
+* You have a Quarkus Maven project.
+
+.Procedure
+
+. To add the `quarkus-openshift` extension to your project, use one of the following methods:
+* Configure the `pom.xml` file:
++
+.pom.xml
+[source,xml,subs="+quotes,attributes+"]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-openshift</artifactId>
+</dependency>
+----
+* Enter the following command on the {openshift} CLI:
++
+[source,bash,subs="+quotes,attributes+"]
+----
+./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-openshift"
+----
++
+* Enter the following command on the Quarkus CLI:
++
+[source,bash,subs="+quotes,attributes+"]
+----
+quarkus extension add 'quarkus-openshift'
+----
+
+== Logging in to an OpenShift cluster
+
+You can log in to an OpenShift cluster by using the https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI]:
+
+.Example: Log in by using the OpenShift CLI
+[source,bash]
+----
+oc login -u myUsername <1>
+----
+<1> You are prompted for the required information such as server URL, password, and so on.
+
+Alternatively, you can log in by using the API token:
+
+.Example: Log in by using the OpenShift command-line interface (CLI) with API token
+[source,bash]
+----
+oc login --token=myToken --server=myServerUrl
+----
+
+TIP: You can request the token by using the _Copy Login Command_ link in the OpenShift web console.
+
+Finally, you do not need to use the OpenShift CLI at all.
+Instead, set the `quarkus.kubernetes-client.api-server-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
+
+:build-additional-parameters: -Dquarkus.kubernetes-client.api-server-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
+include::{includes}/devtools/build.adoc[]
+:!build-additional-parameters:
+
+=== Switching to the required {openshift} project
+
+You can use the {openshift-long} CLI to create applications and manage your {openshift} projects.
+Use the information provided to create an {openshift} project or to switch to an existing one.
+
+.Prerequisites
+
+* You have access to an {openshift} cluster and the latest compatible version of the `oc` tool installed.
+
+.Procedure
+
+. Log in to the `oc` tool:
++
+[source,shell]
+----
+oc login
+----
+. To show the current project space, enter the following command:
++
+[source,shell]
+----
+oc project -q
+----
+. Use one of the following steps to go to the required {openshift} project:
+.. If the project already exists, switch to the project:
++
+[source,shell]
+----
+oc project <project_name>
+----
++
+.. If the project does not exist, create a new project:
++
+[source,shell]
+----
+oc new-project <project_name>
+----
 
 == Bootstrapping the project
 

@@ -176,6 +176,10 @@ class Contexts {
                 // If a custom request context is registered then add the built-in context as well
                 putContext(requestContext);
             }
+            if (contexts.containsKey(SessionScoped.class)) {
+                // If a custom session context is registered then add the built-in context as well
+                putContext(sessionContext);
+            }
             return new Contexts(requestContext, sessionContext, applicationContext, singletonContext, dependentContext,
                     contexts);
         }

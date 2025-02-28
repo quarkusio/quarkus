@@ -44,7 +44,6 @@ public final class ClassNames {
     public static final DotName EMBEDDED = createConstant("jakarta.persistence.Embedded");
     public static final DotName EMBEDDED_ID = createConstant("jakarta.persistence.EmbeddedId");
     public static final DotName ELEMENT_COLLECTION = createConstant("jakarta.persistence.ElementCollection");
-    public static final DotName PROXY = createConstant("org.hibernate.annotations.Proxy");
     public static final DotName HIBERNATE_PROXY = createConstant("org.hibernate.proxy.HibernateProxy");
     public static final DotName TYPE = createConstant("org.hibernate.annotations.Type");
     public static final DotName INJECT_SERVICE = createConstant("org.hibernate.service.spi.InjectService");
@@ -60,7 +59,12 @@ public final class ClassNames {
     public static final DotName JSON_FORMAT = createConstant("io.quarkus.hibernate.orm.JsonFormat");
     public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
 
+    public static final List<DotName> RANDOM_HOLDERS = List.of(
+            createConstant("org.hibernate.id.uuid.UuidVersion6Strategy$Holder"),
+            createConstant("org.hibernate.id.uuid.UuidVersion7Strategy$Holder"));
+
     public static final List<DotName> GENERATORS = List.of(
+            createConstant("org.hibernate.generator.Assigned"),
             createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
@@ -73,17 +77,31 @@ public final class ClassNames {
             createConstant("org.hibernate.id.GUIDGenerator"),
             createConstant("org.hibernate.id.IdentityGenerator"),
             createConstant("org.hibernate.id.IncrementGenerator"),
+            createConstant("org.hibernate.id.NativeGenerator"),
             createConstant("org.hibernate.id.SelectGenerator"),
             createConstant("org.hibernate.id.UUIDGenerator"),
             createConstant("org.hibernate.id.UUIDHexGenerator"),
             createConstant("org.hibernate.id.enhanced.SequenceStyleGenerator"),
             createConstant("org.hibernate.id.enhanced.TableGenerator"),
             createConstant("org.hibernate.id.uuid.UuidGenerator"),
-            createConstant("org.hibernate.tuple.CreationTimestampGeneration"),
-            createConstant("org.hibernate.tuple.UpdateTimestampGeneration"),
-            createConstant("org.hibernate.tuple.VmValueGeneration"));
+            createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$CompositeBeforeExecutionGenerator"),
+            createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$CompositeOnExecutionGenerator"),
+            createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$DummyGenerator"));
+
+    // Only including naming strategies that will for sure be in every native binary and be instantiated at runtime.
+    // PhysicalNamingStrategy and ImplicitNamingStrategy implementations,
+    // in particular, are instantiated at static init.
+    // ImplicitDatabaseObjectNamingStrategy cannot be overridden through supported settings in Quarkus ATM,
+    // so we're left with only the default (and the legacy one for ORM 5.6 compatibility).
+    public static final List<DotName> NAMING_STRATEGIES = List.of(
+            createConstant("org.hibernate.id.enhanced.LegacyNamingStrategy"),
+            createConstant("org.hibernate.id.enhanced.StandardNamingStrategy"));
 
     public static final List<DotName> PACKAGE_ANNOTATIONS = List.of(
+            createConstant("jakarta.persistence.SequenceGenerator"),
+            createConstant("jakarta.persistence.SequenceGenerators"),
+            createConstant("jakarta.persistence.TableGenerator"),
+            createConstant("jakarta.persistence.TableGenerators"),
             createConstant("org.hibernate.annotations.CollectionTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistrations"),
@@ -110,6 +128,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.NamedNativeQuery"),
             createConstant("org.hibernate.annotations.NamedQueries"),
             createConstant("org.hibernate.annotations.NamedQuery"),
+            createConstant("org.hibernate.annotations.NativeGenerator"),
             createConstant("org.hibernate.annotations.SoftDelete"),
             createConstant("org.hibernate.annotations.TypeRegistration"),
             createConstant("org.hibernate.annotations.TypeRegistrations"));
@@ -122,6 +141,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.AttributeOverrides"),
             createConstant("jakarta.persistence.Basic"),
             createConstant("jakarta.persistence.Cacheable"),
+            createConstant("jakarta.persistence.CheckConstraint"),
             createConstant("jakarta.persistence.CollectionTable"),
             createConstant("jakarta.persistence.Column"),
             createConstant("jakarta.persistence.ColumnResult"),
@@ -135,6 +155,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.Embeddable"),
             createConstant("jakarta.persistence.Embedded"),
             createConstant("jakarta.persistence.EmbeddedId"),
+            createConstant("jakarta.persistence.EnumeratedValue"),
             createConstant("jakarta.persistence.Entity"),
             createConstant("jakarta.persistence.EntityListeners"),
             createConstant("jakarta.persistence.EntityResult"),
@@ -212,6 +233,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.AnyDiscriminator"),
             createConstant("org.hibernate.annotations.AnyDiscriminatorValue"),
             createConstant("org.hibernate.annotations.AnyDiscriminatorValues"),
+            createConstant("org.hibernate.annotations.AnyDiscriminatorImplicitValues"),
             createConstant("org.hibernate.annotations.AnyKeyJavaClass"),
             createConstant("org.hibernate.annotations.AnyKeyJavaType"),
             createConstant("org.hibernate.annotations.AnyKeyJdbcType"),
@@ -265,8 +287,6 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.DialectOverride$GeneratedColumns"),
             createConstant("org.hibernate.annotations.DialectOverride$JoinFormula"),
             createConstant("org.hibernate.annotations.DialectOverride$JoinFormulas"),
-            createConstant("org.hibernate.annotations.DialectOverride$OrderBy"),
-            createConstant("org.hibernate.annotations.DialectOverride$OrderBys"),
             createConstant("org.hibernate.annotations.DialectOverride$OverridesAnnotation"),
             createConstant("org.hibernate.annotations.DialectOverride$SQLDelete"),
             createConstant("org.hibernate.annotations.DialectOverride$SQLDeleteAll"),
@@ -283,8 +303,6 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.DialectOverride$SQLUpdate"),
             createConstant("org.hibernate.annotations.DialectOverride$SQLUpdates"),
             createConstant("org.hibernate.annotations.DialectOverride$Version"),
-            createConstant("org.hibernate.annotations.DialectOverride$Where"),
-            createConstant("org.hibernate.annotations.DialectOverride$Wheres"),
             createConstant("org.hibernate.annotations.DiscriminatorFormula"),
             createConstant("org.hibernate.annotations.DiscriminatorOptions"),
             createConstant("org.hibernate.annotations.DynamicInsert"),
@@ -304,20 +322,16 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.FilterJoinTable"),
             createConstant("org.hibernate.annotations.FilterJoinTables"),
             createConstant("org.hibernate.annotations.Filters"),
-            createConstant("org.hibernate.annotations.ForeignKey"),
             createConstant("org.hibernate.annotations.Formula"),
             createConstant("org.hibernate.annotations.FractionalSeconds"),
             createConstant("org.hibernate.annotations.Generated"),
             createConstant("org.hibernate.annotations.GeneratedColumn"),
-            createConstant("org.hibernate.annotations.GeneratorType"),
             createConstant("org.hibernate.annotations.GenericGenerator"),
             createConstant("org.hibernate.annotations.GenericGenerators"),
             createConstant("org.hibernate.annotations.HQLSelect"),
             createConstant("org.hibernate.annotations.IdGeneratorType"),
             createConstant("org.hibernate.annotations.Immutable"),
             createConstant("org.hibernate.annotations.Imported"),
-            createConstant("org.hibernate.annotations.Index"),
-            createConstant("org.hibernate.annotations.IndexColumn"),
             createConstant("org.hibernate.annotations.Instantiator"),
             createConstant("org.hibernate.annotations.JavaType"),
             createConstant("org.hibernate.annotations.JavaTypeRegistration"),
@@ -329,14 +343,11 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.JoinColumnOrFormula"),
             createConstant("org.hibernate.annotations.JoinColumnsOrFormulas"),
             createConstant("org.hibernate.annotations.JoinFormula"),
-            createConstant("org.hibernate.annotations.LazyCollection"),
             createConstant("org.hibernate.annotations.LazyGroup"),
-            createConstant("org.hibernate.annotations.LazyToOne"),
             createConstant("org.hibernate.annotations.ListIndexBase"),
             createConstant("org.hibernate.annotations.ListIndexJavaType"),
             createConstant("org.hibernate.annotations.ListIndexJdbcType"),
             createConstant("org.hibernate.annotations.ListIndexJdbcTypeCode"),
-            createConstant("org.hibernate.annotations.Loader"),
             createConstant("org.hibernate.annotations.ManyToAny"),
             createConstant("org.hibernate.annotations.MapKeyJavaType"),
             createConstant("org.hibernate.annotations.MapKeyJdbcType"),
@@ -349,20 +360,18 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.NamedQueries"),
             createConstant("org.hibernate.annotations.NamedQuery"),
             createConstant("org.hibernate.annotations.Nationalized"),
+            createConstant("org.hibernate.annotations.NativeGenerator"),
             createConstant("org.hibernate.annotations.NaturalId"),
             createConstant("org.hibernate.annotations.NaturalIdCache"),
             createConstant("org.hibernate.annotations.NotFound"),
             createConstant("org.hibernate.annotations.OnDelete"),
             createConstant("org.hibernate.annotations.OptimisticLock"),
             createConstant("org.hibernate.annotations.OptimisticLocking"),
-            createConstant("org.hibernate.annotations.OrderBy"),
             createConstant("org.hibernate.annotations.ParamDef"),
             createConstant("org.hibernate.annotations.Parameter"),
             createConstant("org.hibernate.annotations.Parent"),
             createConstant("org.hibernate.annotations.PartitionKey"),
-            createConstant("org.hibernate.annotations.Persister"),
-            createConstant("org.hibernate.annotations.Polymorphism"),
-            createConstant("org.hibernate.annotations.Proxy"),
+            createConstant("org.hibernate.annotations.PropertyRef"),
             createConstant("org.hibernate.annotations.QueryCacheLayout"),
             createConstant("org.hibernate.annotations.RowId"),
             createConstant("org.hibernate.annotations.SQLDelete"),
@@ -378,7 +387,6 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.SQLUpdates"),
             createConstant("org.hibernate.annotations.SecondaryRow"),
             createConstant("org.hibernate.annotations.SecondaryRows"),
-            createConstant("org.hibernate.annotations.SelectBeforeUpdate"),
             createConstant("org.hibernate.annotations.SoftDelete"),
             createConstant("org.hibernate.annotations.SortComparator"),
             createConstant("org.hibernate.annotations.SortNatural"),
@@ -387,8 +395,6 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.Struct"),
             createConstant("org.hibernate.annotations.Subselect"),
             createConstant("org.hibernate.annotations.Synchronize"),
-            createConstant("org.hibernate.annotations.Table"),
-            createConstant("org.hibernate.annotations.Tables"),
             createConstant("org.hibernate.annotations.Target"),
             createConstant("org.hibernate.annotations.TenantId"),
             createConstant("org.hibernate.annotations.TimeZoneColumn"),
@@ -400,9 +406,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.UpdateTimestamp"),
             createConstant("org.hibernate.annotations.UuidGenerator"),
             createConstant("org.hibernate.annotations.ValueGenerationType"),
-            createConstant("org.hibernate.annotations.View"),
-            createConstant("org.hibernate.annotations.Where"),
-            createConstant("org.hibernate.annotations.WhereJoinTable"));
+            createConstant("org.hibernate.annotations.View"));
 
     public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = List.of(
             createConstant("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"));
@@ -454,9 +458,6 @@ public final class ClassNames {
             createConstant("java.util.TimeZone"),
             createConstant("java.util.UUID"),
             createConstant("java.lang.Void"));
-
-    public static final List<DotName> STANDARD_STACK_ELEMENT_TYPES = List.of(
-            createConstant("org.hibernate.query.sqm.tree.select.SqmQueryPart"));
 
     public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
             "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");

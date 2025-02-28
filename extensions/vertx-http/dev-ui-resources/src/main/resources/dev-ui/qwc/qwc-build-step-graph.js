@@ -45,7 +45,7 @@ export class QwcBuildStepGraph extends LitElement {
         this._categories =     ['root'   , 'direct dependencies', 'direct dependents'];
         this._categoriesEnum = ['root'   , 'directDependency'   , 'directDependent'];
         this._colors =         ['#ee6666', '#5470c6'            , '#fac858'];
-        this._edgeLength = 120;
+        this._edgeLength = 250;
         this._nodes = null;
         this._links = null;
         this._showSimpleDescription = [];
@@ -66,39 +66,46 @@ export class QwcBuildStepGraph extends LitElement {
         }
     }
 
-    _createNodes(){
-        if(this._dependencyGraph){
-            
+    _createNodes() {
+        if (this._dependencyGraph) {
             let dependencyGraphNodes = this._dependencyGraph.nodes;
             let dependencyGraphLinks = this._dependencyGraph.links;
-            
+
             this._links = []
             this._nodes = []
+
             for (var l = 0; l < dependencyGraphLinks.length; l++) {
-                let link = new Object();
-                link.source = dependencyGraphNodes.findIndex(item => item.stepId === dependencyGraphLinks[l].source);
-                link.target = dependencyGraphNodes.findIndex(item => item.stepId === dependencyGraphLinks[l].target);
-                let catindex = this._categoriesEnum.indexOf(dependencyGraphLinks[l].type);
-                
-                this._addToNodes(dependencyGraphNodes[link.source],catindex);
-                this._addToNodes(dependencyGraphNodes[link.target],catindex);
+                const sourceNode = dependencyGraphNodes.find(node => node.stepId === dependencyGraphLinks[l].source);
+                const targetNode = dependencyGraphNodes.find(node => node.stepId === dependencyGraphLinks[l].target);
+                //console.log('Adding link: ' + sourceNode.stepId + ' -> ' + targetNode.stepId);
+
+                // We need to make sure that the nodes are added first,
+                // because the node index is used as a link source/target
+                const catindex = this._categoriesEnum.indexOf(dependencyGraphLinks[l].type);
+                const sourceIdx = this._addToNodes(sourceNode, catindex);
+                const targetIdx = this._addToNodes(targetNode, catindex);
+
+                const link = new Object();
+                link.source = sourceIdx;
+                link.target = targetIdx;
                 this._links.push(link);
             }
         }
-        
     }
-
+    
     _addToNodes(dependencyGraphNode, catindex){
-        let newNode = this._createNode(dependencyGraphNode);
+        const newNode = this._createNode(dependencyGraphNode);
         let index = this._nodes.findIndex(item => item.name === newNode.name);
         if (index < 0 ) {
             if(dependencyGraphNode.stepId === this.stepId){
-                newNode.category = 0; // Root
+                newNode.category = 0; // root
             }else {
                 newNode.category = catindex;
             }
-            this._nodes.push(newNode);
+            //console.log('Adding node: ' + newNode.name);
+            return this._nodes.push(newNode) - 1;
         }
+        return index;
     }
 
     _createNode(node){
@@ -108,8 +115,8 @@ export class QwcBuildStepGraph extends LitElement {
         }else{
             nodeObject.name = node.stepId;
         }
-
-        nodeObject.value = 1;
+        nodeObject.value = node.stepId == this.stepId ? 20 : 10;
+        nodeObject.symbolSize = nodeObject.value;
         nodeObject.id = node.stepId;
         nodeObject.description = node.simpleName;
         return nodeObject;
@@ -181,15 +188,15 @@ export class QwcBuildStepGraph extends LitElement {
     }
     
     _zoomIn(){
-        if(this._edgeLength>10){
-            this._edgeLength = this._edgeLength - 10;
-        }else{
-            this._edgeLength = 10;
-        }
+        this._edgeLength = this._edgeLength + 20;
     }
-    
+
     _zoomOut(){
-        this._edgeLength = this._edgeLength + 10;
+        if (this._edgeLength > 20){
+            this._edgeLength = this._edgeLength - 20;
+        }else {
+            this._edgeLength = 20;
+        }
     }
     
     _echartClicked(e){

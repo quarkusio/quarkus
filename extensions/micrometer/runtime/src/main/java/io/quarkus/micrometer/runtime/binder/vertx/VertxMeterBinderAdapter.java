@@ -79,7 +79,8 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
-            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper);
+            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper,
+                    options);
         }
         return null;
     }

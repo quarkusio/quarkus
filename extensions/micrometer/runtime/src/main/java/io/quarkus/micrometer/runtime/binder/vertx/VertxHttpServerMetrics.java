@@ -22,6 +22,7 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
@@ -53,13 +54,14 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
-            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper) {
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions) {
         super(registry, "http.server", null);
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
 
         activeRequests = new LongAdder();
         Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
+                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
                 .register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();

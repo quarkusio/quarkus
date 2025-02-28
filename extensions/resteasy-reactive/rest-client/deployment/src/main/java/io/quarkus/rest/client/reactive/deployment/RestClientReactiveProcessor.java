@@ -61,7 +61,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
-import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
@@ -375,17 +374,6 @@ class RestClientReactiveProcessor {
             }
         }
         return builder.build();
-    }
-
-    @BuildStep
-    void registerCompressionInterceptors(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        Boolean enableCompression = ConfigProvider.getConfig()
-                .getOptionalValue(ENABLE_COMPRESSION, Boolean.class)
-                .orElse(false);
-        if (enableCompression) {
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ClientGZIPDecodingInterceptor.class)
-                    .reason(getClass().getName()).build());
-        }
     }
 
     @BuildStep

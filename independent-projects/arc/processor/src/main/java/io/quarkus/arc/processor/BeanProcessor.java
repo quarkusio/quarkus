@@ -591,6 +591,7 @@ public class BeanProcessor {
         Map<DotName, Integer> contextsForScope = new HashMap<>();
         // built-in contexts
         contextsForScope.put(BuiltinScope.REQUEST.getName(), 1);
+        contextsForScope.put(BuiltinScope.SESSION.getName(), 1);
         // custom contexts
         for (Map.Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment
                 .getCustomContexts()

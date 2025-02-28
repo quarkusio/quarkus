@@ -3,16 +3,17 @@ package io.quarkus.arc.deployment.devui;
 import java.util.Objects;
 
 public class Link {
-    static Link dependent(String source, String target, int level) {
-        return new Link(source, target, level == 0 ? "directDependent" : "dependency", level);
-    }
 
     static Link dependency(String source, String target, int level) {
-        return new Link(source, target, level == 0 ? "directDependency" : "dependency", level);
+        return new Link(source, target, "dependency", level);
     }
 
     static Link lookup(String source, String target, int level) {
         return new Link(source, target, "lookup", level);
+    }
+
+    static Link builtin(String source, String target, int level) {
+        return new Link(source, target, "builtin", level);
     }
 
     static Link producer(String source, String target, int level) {

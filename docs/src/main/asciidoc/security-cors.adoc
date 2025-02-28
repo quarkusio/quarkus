@@ -26,7 +26,7 @@ To enforce CORS policies in your application, enable the Quarkus CORS filter by 
 
 [source, properties]
 ----
-quarkus.http.cors=true
+quarkus.http.cors.enabled=true
 ----
 
 The filter intercepts all incoming HTTP requests to identify cross-origin requests and applies the configured policy.
@@ -44,7 +44,7 @@ The following example shows a complete CORS filter configuration, including a re
 
 [source, properties]
 ----
-quarkus.http.cors=true <1>
+quarkus.http.cors.enabled=true <1>
 quarkus.http.cors.origins=http://example.com,http://www.example.io,/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/ <2>
 quarkus.http.cors.methods=GET,PUT,POST <3>
 quarkus.http.cors.headers=X-Custom <4>
@@ -80,7 +80,7 @@ To simplify development, consider allowing all origins in development mode only:
 
 [source, properties]
 ----
-quarkus.http.cors=true
+quarkus.http.cors.enabled=true
 %dev.quarkus.http.cors.origins=/.*/
 ----
 

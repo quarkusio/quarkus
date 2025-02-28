@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,8 +67,11 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private static final String USE_ARG_FILE = "quarkus.generate-code.grpc.use-arg-file";
 
+    private static final String GENERATE_KOTLIN = "quarkus.generate-code.grpc.kotlin.generate";
+
     private Executables executables;
     private String input;
+    private boolean hasQuarkusKotlinDependency;
 
     @Override
     public String providerId() {
@@ -95,6 +99,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     @Override
     public void init(ApplicationModel model, Map<String, String> properties) {
         this.input = properties.get("quarkus.grpc.codegen.proto-directory");
+        this.hasQuarkusKotlinDependency = containsQuarkusKotlin(model.getDependencies());
     }
 
     @Override
@@ -161,6 +166,10 @@ public class GrpcCodeGen implements CodeGenProvider {
                         "--q-grpc_out=" + outDir,
                         "--grpc_out=" + outDir,
                         "--java_out=" + outDir));
+
+                if (shouldGenerateKotlin(context.config())) {
+                    command.add("--kotlin_out=" + outDir);
+                }
 
                 if (shouldGenerateDescriptorSet(context.config())) {
                     command.add(String.format("--descriptor_set_out=%s", getDescriptorSetOutputFile(context)));
@@ -294,6 +303,11 @@ public class GrpcCodeGen implements CodeGenProvider {
     private boolean isGeneratingFromAppDependenciesEnabled(Config config) {
         return config.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
                 .filter(value -> !"none".equals(value)).isPresent();
+    }
+
+    private boolean shouldGenerateKotlin(Config config) {
+        return config.getOptionalValue(GENERATE_KOTLIN, Boolean.class).orElse(
+                hasQuarkusKotlinDependency);
     }
 
     private boolean shouldGenerateDescriptorSet(Config config) {
@@ -524,6 +538,16 @@ public class GrpcCodeGen implements CodeGenProvider {
         writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
                 pluginPath.toAbsolutePath() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
+    }
+
+    private static boolean containsQuarkusKotlin(Collection<ResolvedDependency> dependencies) {
+        return dependencies.stream().anyMatch(new Predicate<ResolvedDependency>() {
+            @Override
+            public boolean test(ResolvedDependency rd) {
+                return rd.getGroupId().equalsIgnoreCase("io.quarkus")
+                        && rd.getArtifactId().equalsIgnoreCase("quarkus-kotlin");
+            }
+        });
     }
 
     private static class Executables {

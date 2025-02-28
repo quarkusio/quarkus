@@ -20,9 +20,9 @@ The Keycloak Authorization extension, `quarkus-keycloak-authorization`, extends 
 It features a policy enforcer that dynamically manages access to secured resources.
 Access is governed by permissions defined in Keycloak, supporting flexible and dynamic Resource-Based Access Control (RBAC).
 
-Use the `quarkus-keycloak-authorization` extension only if you are using Keycloak and Keycloak Authorization Services is enabled in your environment to handle authorization decisions.
+Use the `quarkus-keycloak-authorization` extension only if you are using Keycloak and the Keycloak Authorization Services feature is enabled in your environment to handle authorization decisions.
 
-If you are not using Keycloak, or if Keycloak is configured without Keycloak Authorization Services, use the `quarkus-oidc` extension instead.
+If you are not using Keycloak, or if Keycloak is configured without the Keycloak Authorization Services feature, use the `quarkus-oidc` extension instead.
 
 .How it works
 
@@ -52,7 +52,7 @@ It complements explicit mechanisms such as role-based access control with dynami
 
 Before using this extension, ensure the following:
 
-. Keycloak Authorization Services is enabled in your Keycloak instance.
+. Keycloak Authorization Services feature is enabled in your Keycloak instance.
 . Your Quarkus application includes the `quarkus-keycloak-authorization` extension.
 
 For detailed steps, see the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer Token Authentication] guide.
@@ -319,7 +319,6 @@ docker run --name keycloak \
   quay.io/keycloak/keycloak:{keycloak.version} \ <1>
   start --hostname-strict=false --https-key-store-file=/etc/keycloak-keystore.jks <2>
 ----
-
 <1> For `keycloak.version`, ensure the version is `26.0.7` or later.
 <2> For Keycloak keystore, use the `keycloak-keystore.jks` file located at https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/config/keycloak-keystore.jks[quarkus-quickstarts/security-keycloak-authorization-quickstart/config].
 
@@ -335,7 +334,8 @@ docker run --name keycloak \
 To create a new realm, import the link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[realm configuration file].
 For detailed steps on creating realms, refer to the Keycloak documentation: https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[Create a new realm].
 
-After importing the realm, you can review the resource permissions:
+After importing the realm, go to Clients, choose the `backend-service` client, and select the Authorization and Resources tab for this client.
+You can now review the resource permissions:
 
 image::keycloak-authorization-permissions.png[alt=Keycloak Authorization Permissions,role="center"]
 
@@ -432,7 +432,7 @@ After a while, run the native binary:
 
 [source,bash]
 ----
-./target/security-keycloak-authorization-quickstart-runner
+./target/security-keycloak-authorization-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 [[testing]]
@@ -661,7 +661,7 @@ public class ProtectedResource {
 <1> The `/standard-way` sub-path requires both the resource permission and the `read` scope, based on the configuration set in the `application.properties` file.
 <2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default. However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
 <3> The `@PermissionsAllowed` annotation at `/annotation-way` restricts access to requests that have the `Scope Permission Resource` permission along with the `read` scope.
-For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Security Authorization guide.
+For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Authorization of web endpoints guide.
 
 == Multi-tenancy
 
@@ -735,7 +735,7 @@ public class CustomTenantPolicyConfigResolver implements TenantPolicyConfigResol
     private final KeycloakPolicyEnforcerTenantConfig newTenantConfig;
 
     public CustomTenantPolicyConfigResolver(KeycloakPolicyEnforcerConfig enforcerConfig) {
-        this.enhancedTenantConfig = KeycloakPolicyEnforcerTenantConfig.builder(config) <1>
+        this.enhancedTenantConfig = KeycloakPolicyEnforcerTenantConfig.builder(enforcerConfig.defaultTenant()) <1>
             .paths("/enhanced-config")
             .permissionName("Permission Name")
             .get("read-scope")
@@ -750,7 +750,7 @@ public class CustomTenantPolicyConfigResolver implements TenantPolicyConfigResol
     public Uni<KeycloakPolicyEnforcerTenantConfig> resolve(RoutingContext routingContext, OidcTenantConfig tenantConfig,
                                                 OidcRequestContext<KeycloakPolicyEnforcerTenantConfig> requestContext) {
         String path = routingContext.normalizedPath();
-        String tenantId = tenantConfig.tenantId.orElse(null);
+        String tenantId = tenantConfig.tenantId().orElse(null);
         if ("enhanced-config-tenant".equals(tenantId) && path.equals("/enhanced-config")) {
             return Uni.createFrom().item(enhancedTenantConfig);
         } else if ("new-config-tenant".equals(tenantId) && path.equals("/new-config")) {

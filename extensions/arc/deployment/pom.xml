@@ -47,6 +47,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-test-supplement</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- Used to test wrong @Singleton detection -->
         <dependency>

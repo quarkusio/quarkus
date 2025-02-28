@@ -42,7 +42,19 @@ public class LoggingWithPanacheTest {
                         "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException",
                         "[INFO] Hi!",
                         "[INFO] number 42",
-                        "[INFO] string now");
+                        "[INFO] string now",
+                        "[INFO] foo",
+                        "[INFO] bar",
+                        "[INFO] baz",
+                        "[INFO] quux",
+                        "[DEBUG] foo: io.quarkus.logging.NoStackTraceTestException",
+                        "[DEBUG] bar: io.quarkus.logging.NoStackTraceTestException",
+                        "[WARN] foo bar",
+                        "[WARN] baz quux",
+                        "[INFO] foo bar baz",
+                        "[ERROR] foo bar baz quux",
+                        "[INFO] foo bar baz qux quux",
+                        "[INFO] foo bar baz qux quux quuux");
             });
 
     @Inject
@@ -54,5 +66,6 @@ public class LoggingWithPanacheTest {
         new LoggingEntity().something();
 
         bean.reproduceStackDisciplineIssue();
+        bean.reproduceMethodReferenceIssue();
     }
 }

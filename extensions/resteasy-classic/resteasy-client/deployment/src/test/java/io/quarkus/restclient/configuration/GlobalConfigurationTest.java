@@ -65,9 +65,9 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.headers()).isEqualTo(Collections.singletonMap("foo", "bar"));
         assertThat(configRoot.hostnameVerifier().get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyHostnameVerifier");
-        assertThat(configRoot.connectionTTL().get()).isEqualTo(20000); // value in ms, will be converted to seconds
-        assertThat(configRoot.connectionPoolSize().get()).isEqualTo(2);
-        assertThat(configRoot.maxRedirects().get()).isEqualTo(2);
+        assertThat(configRoot.connectionTTL().getAsInt()).isEqualTo(20000); // value in ms, will be converted to seconds
+        assertThat(configRoot.connectionPoolSize().getAsInt()).isEqualTo(2);
+        assertThat(configRoot.maxRedirects().getAsInt()).isEqualTo(2);
         assertThat(configRoot.followRedirects().get()).isTrue();
         assertThat(configRoot.providers().get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");

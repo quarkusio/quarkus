@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -143,14 +144,15 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<Integer> connectionTTL();
+    OptionalInt connectionTTL();
 
     /**
      * The size of the connection pool for this client.
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<Integer> connectionPoolSize();
+    @ConfigDocDefault("50")
+    OptionalInt connectionPoolSize();
 
     /**
      * If set to false disables the keep alive completely.
@@ -167,7 +169,7 @@ public interface RestClientsConfig {
      * <p>
      * This property is not applicable to the RESTEasy Client.
      */
-    Optional<Integer> maxRedirects();
+    OptionalInt maxRedirects();
 
     /**
      * A boolean value used to determine whether the client should follow HTTP redirect responses.
@@ -362,7 +364,7 @@ public interface RestClientsConfig {
          * @deprecated Use {@code quarkus.rest-client.max-chunk-size} instead
          */
         @Deprecated
-        Optional<Integer> maxChunkSize();
+        OptionalInt maxChunkSize();
     }
 
     interface RestClientConfig {
@@ -548,12 +550,13 @@ public interface RestClientsConfig {
          * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
          * A timeout of {@code 0} means there is no timeout.
          */
-        Optional<Integer> connectionTTL();
+        OptionalInt connectionTTL();
 
         /**
          * The size of the connection pool for this client.
          */
-        Optional<Integer> connectionPoolSize();
+        @ConfigDocDefault("50")
+        OptionalInt connectionPoolSize();
 
         /**
          * If set to false disables the keep alive completely.
@@ -565,7 +568,7 @@ public interface RestClientsConfig {
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
-        Optional<Integer> maxRedirects();
+        OptionalInt maxRedirects();
 
         /**
          * The HTTP headers that should be applied to all requests of the rest client.

@@ -737,7 +737,7 @@ public class ResteasyReactiveProcessor {
                     if (type.kind() == Type.Kind.CLASS) {
                         return typeName;
                     } else if (type.kind() == Type.Kind.PARAMETERIZED_TYPE
-                            && typeName.equals(DotName.createSimple(Class.class))) {
+                            && DotNames.CLASS_NAME.equals(typeName)) {
                         // spec allows for Class<SubResource> to be returned that the container should instantiate
                         return type.asParameterizedType().arguments().get(0).name();
                     }
@@ -833,7 +833,7 @@ public class ResteasyReactiveProcessor {
                         }
 
                         Set<DotName> all = new HashSet<>();
-                        if (dotName.equals(DotName.createSimple(Object.class.getName()))) {
+                        if (DotNames.OBJECT_NAME.equals(dotName)) {
                             all.addAll(returnsBySubResources.keySet());
                             for (DotName name : returnsBySubResources.keySet()) {
                                 //we need to also look for all subclasses and interfaces

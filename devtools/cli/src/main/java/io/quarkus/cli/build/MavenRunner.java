@@ -149,7 +149,7 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
@@ -167,9 +167,6 @@ public class MavenRunner implements BuildSystemRunner {
         if (targetQuarkusVersion.streamId != null) {
             args.add("-Dstream=" + targetQuarkusVersion.streamId);
         }
-        if (rewrite.noRewrite) {
-            args.add("-DnoRewrite");
-        }
         if (rewrite.pluginVersion != null) {
             args.add("-DrewritePluginVersion=" + rewrite.pluginVersion);
         }
@@ -179,11 +176,16 @@ public class MavenRunner implements BuildSystemRunner {
         if (rewrite.additionalUpdateRecipes != null) {
             args.add("-DadditionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
-        if (rewrite.dryRun) {
-            args.add("-DrewriteDryRun");
-        }
-        if (perModule) {
-            args.add("-DperModule");
+        if (rewrite.run != null) {
+            if (rewrite.run.yes) {
+                args.add("-Drewrite");
+            }
+            if (rewrite.run.no) {
+                args.add("-Drewrite=false");
+            }
+            if (rewrite.run.dryRun) {
+                args.add("-DrewriteDryRun");
+            }
         }
         args.add("-ntp");
         return run(prependExecutable(args));

@@ -43,6 +43,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-test-utils</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>

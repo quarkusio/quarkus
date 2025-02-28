@@ -522,7 +522,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         } else if (restClients.maxChunkSize().isPresent()) {
             clientBuilder.maxChunkSize((int) restClients.maxChunkSize().get().asLongValue());
         } else if (restClients.multipart().maxChunkSize().isPresent()) {
-            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().get());
+            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }

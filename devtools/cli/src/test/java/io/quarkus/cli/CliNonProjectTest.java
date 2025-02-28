@@ -29,7 +29,7 @@ public class CliNonProjectTest {
     @BeforeAll
     public static void initial() throws Exception {
         workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-                .resolve("target/test-project/CliNonProjectTest");
+                .resolve("target/test-classes/test-project/CliNonProjectTest");
         CliDriver.deleteDir(workspaceRoot);
         Files.createDirectories(workspaceRoot);
     }

@@ -108,6 +108,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <!-- copy of the default `<includes>` with removed `**/Test*.java`,
+                             because it matches `TestMojoIT`, which is NOT a Surefire test -->
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
+                </configuration>
             </plugin>
 
             <plugin>

@@ -95,6 +95,10 @@ public class TestTracingProcessor {
                 config.excludeTags().orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern().orElse(null),
                 config.excludePattern().orElse(null));
+        String specificSelection = System.getProperty("quarkus-internal.test.specific-selection");
+        if (specificSelection != null) {
+            testSupport.setSpecificSelection(specificSelection);
+        }
         testSupport.setEngines(config.includeEngines().orElse(Collections.emptyList()),
                 config.excludeEngines().orElse(Collections.emptyList()));
         testSupport.setConfiguredDisplayTestOutput(config.displayTestOutput());

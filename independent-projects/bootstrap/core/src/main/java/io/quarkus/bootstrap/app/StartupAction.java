@@ -1,10 +1,10 @@
 package io.quarkus.bootstrap.app;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-
 import java.io.Closeable;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 
 public interface StartupAction {
 

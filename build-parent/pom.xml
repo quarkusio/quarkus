@@ -16,7 +16,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <!-- Maven plugin versions -->
+        <!-- OS detection, compatibility layer for Netty dependencies -->
+        <os.detected.classifier>${nisse.os.classifier}</os.detected.classifier>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>

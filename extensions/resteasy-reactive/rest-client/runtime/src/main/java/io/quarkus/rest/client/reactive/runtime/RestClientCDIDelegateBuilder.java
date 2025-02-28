@@ -17,6 +17,7 @@ import java.security.cert.CertificateException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -103,15 +104,15 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
         }
 
-        Optional<Integer> poolSize = oneOf(restClientConfig.connectionPoolSize(), configRoot.connectionPoolSize());
+        OptionalInt poolSize = oneOf(restClientConfig.connectionPoolSize(), configRoot.connectionPoolSize());
         if (poolSize.isPresent()) {
-            builder.property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, poolSize.get());
+            builder.property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, poolSize.getAsInt());
         }
 
-        Optional<Integer> connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
+        OptionalInt connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
         if (connectionTTL.isPresent()) {
             // configuration bean contains value in milliseconds
-            int connectionTTLSeconds = connectionTTL.get() / 1000;
+            int connectionTTLSeconds = connectionTTL.getAsInt() / 1000;
             builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
         }
 
@@ -138,9 +139,13 @@ public class RestClientCDIDelegateBuilder<T> {
 
         Optional<Integer> maxChunkSize = oneOf(
                 restClientConfig.maxChunkSize().map(intChunkSize()),
-                restClientConfig.multipart().maxChunkSize(),
+                restClientConfig.multipart().maxChunkSize().isPresent()
+                        ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
+                        : Optional.empty(),
                 configRoot.maxChunkSize().map(intChunkSize()),
-                configRoot.multipart().maxChunkSize());
+                configRoot.multipart().maxChunkSize().isPresent()
+                        ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
+                        : Optional.empty());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
         Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
@@ -195,9 +200,9 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureRedirects(QuarkusRestClientBuilder builder) {
-        Optional<Integer> maxRedirects = oneOf(restClientConfig.maxRedirects(), configRoot.maxRedirects());
+        OptionalInt maxRedirects = oneOf(restClientConfig.maxRedirects(), configRoot.maxRedirects());
         if (maxRedirects.isPresent()) {
-            builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.get());
+            builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.getAsInt());
         }
 
         Optional<Boolean> maybeFollowRedirects = oneOf(restClientConfig.followRedirects(), configRoot.followRedirects());
@@ -418,5 +423,14 @@ public class RestClientCDIDelegateBuilder<T> {
             }
         }
         return Optional.empty();
+    }
+
+    private static OptionalInt oneOf(OptionalInt... optionals) {
+        for (OptionalInt o : optionals) {
+            if (o != null && o.isPresent()) {
+                return o;
+            }
+        }
+        return OptionalInt.empty();
     }
 }

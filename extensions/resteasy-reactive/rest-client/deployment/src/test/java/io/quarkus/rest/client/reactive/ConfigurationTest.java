@@ -94,13 +94,13 @@ class ConfigurationTest {
 
         if (checkExtraProperties) {
             assertTrue(clientConfig.connectionTTL().isPresent());
-            assertThat(clientConfig.connectionTTL().get()).isEqualTo(30000);
+            assertThat(clientConfig.connectionTTL().getAsInt()).isEqualTo(30000);
             assertTrue(clientConfig.connectionPoolSize().isPresent());
-            assertThat(clientConfig.connectionPoolSize().get()).isEqualTo(10);
+            assertThat(clientConfig.connectionPoolSize().getAsInt()).isEqualTo(10);
             assertTrue(clientConfig.keepAliveEnabled().isPresent());
             assertThat(clientConfig.keepAliveEnabled().get()).isFalse();
             assertTrue(clientConfig.maxRedirects().isPresent());
-            assertThat(clientConfig.maxRedirects().get()).isEqualTo(5);
+            assertThat(clientConfig.maxRedirects().getAsInt()).isEqualTo(5);
         }
     }
 

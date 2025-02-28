@@ -366,9 +366,9 @@ class RestClientConfigTest {
         assertTrue(config.hostnameVerifier().isPresent());
         assertThat(config.hostnameVerifier().get()).isEqualTo("io.quarkus.restclient.configuration.MyHostnameVerifier");
         assertTrue(config.connectionTTL().isPresent());
-        assertThat(config.connectionTTL().get()).isEqualTo(30000);
+        assertThat(config.connectionTTL().getAsInt()).isEqualTo(30000);
         assertTrue(config.connectionPoolSize().isPresent());
-        assertThat(config.connectionPoolSize().get()).isEqualTo(10);
+        assertThat(config.connectionPoolSize().getAsInt()).isEqualTo(10);
         assertTrue(config.maxChunkSize().isPresent());
         assertThat(config.maxChunkSize().get().asBigInteger()).isEqualTo(BigInteger.valueOf(1024));
     }

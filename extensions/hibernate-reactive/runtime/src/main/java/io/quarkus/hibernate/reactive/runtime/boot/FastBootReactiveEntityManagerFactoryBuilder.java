@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime.boot;
 
+import static io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider.REACTIVE_PERSISTENCE_UNIT_NAME;
+
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -7,7 +9,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 
-import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -27,7 +28,7 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-            populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
+            populate(REACTIVE_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
             SessionFactoryOptions options = optionsBuilder.buildOptions();
             return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
         } catch (Exception e) {

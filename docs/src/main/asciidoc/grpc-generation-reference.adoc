@@ -165,6 +165,17 @@ quarkus.generate-code.grpc.scan-for-proto-exclude."<groupId>:<artifactId>"=foo/p
 
 Note that `:` characters in the property keys must be escaped.
 
+== Kotlin code generation
+
+`protoc` also supports https://protobuf.dev/reference/kotlin/kotlin-generated/[generating Kotlin code] in addition to the generated Java code.
+
+By default, the Kotlin code generation is enabled if the dependency `io.quarkus:quarkus-kotlin` is present.
+
+To explicitly en-/disable this feature, set the `quarkus.generate-code.grpc.kotlin.generate` property in your `application.properties` file to `true` or `false`.
+
+
+IMPORTANT: When using Gradle, you also have to include `com.google.protobuf:protobuf-kotlin` as a `compileOnly` dependency in your project.
+
 == Skipping code generation
 
 You can skip gRPC code generation using:

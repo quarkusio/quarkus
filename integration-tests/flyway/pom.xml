@@ -25,12 +25,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
-         <dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
-       
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
@@ -151,5 +151,20 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- Skip the tests on Windows; they are already skipped in code but that is not sufficient due to https://github.com/quarkusio/quarkus/issues/45785 (the dev service is started in the augmentation phase, during test discovery) -->
+        <profile>
+            <id>skip-tests-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

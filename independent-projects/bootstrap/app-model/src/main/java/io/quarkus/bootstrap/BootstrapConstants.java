@@ -19,6 +19,9 @@ public interface BootstrapConstants {
      */
     String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
 
+    // Added because OUTPUT_SOURCES_DIR does not include additional sources and we sometimes (always?) need them
+    String ALL_OUTPUT_SOURCES_DIR = "ALL_OUTPUT_SOURCES_DIR";
+
     String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
 
     String QUARKUS_EXTENSION_FILE_NAME = "quarkus-extension.yaml";

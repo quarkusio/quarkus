@@ -13,7 +13,7 @@ public class GeneratedStaticResourcesDevModeTest {
     @RegisterExtension
     final static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .add(new StringAsset("quarkus.http.enable-compression=true\n"),
+                    .add(new StringAsset("quarkus.http.enable-compression=true\nquarkus.test.display-test-output=true\n"),
                             "application.properties")
                     .addAsResource("static-file.html", "META-INF/generated-resources-test/bytes/static-file.html")
                     .addAsResource("static-file.html", "META-INF/generated-resources-test/bytes/.hidden-file.html")

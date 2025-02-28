@@ -409,7 +409,7 @@ public class QuarkusProdModeTest
             // sources nor resources, we need to create an empty classes dir to satisfy the resolver
             // as this project will appear as the root application artifact during the bootstrap
             if (Files.isDirectory(testLocation)) {
-                final Path projectClassesDir = PathTestHelper.getAppClassLocationForTestLocation(testLocation.toString());
+                final Path projectClassesDir = PathTestHelper.getAppClassLocationForTestLocation(testLocation);
                 if (!Files.exists(projectClassesDir)) {
                     Files.createDirectories(projectClassesDir);
                 }

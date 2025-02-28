@@ -42,10 +42,10 @@ export class QwcArcBeanGraph extends LitElement {
         this.beanId = null;
         this.beanDescription = null;
         this._dependencyGraphs = dependencyGraphs;
-        this._categories =     ['root'   , 'direct dependencies', 'direct dependents', 'dependencies', 'declaring bean of a producer', 'potential dependency'];
-        this._categoriesEnum = ['root'   , 'directDependency'   , 'directDependent'  , 'dependency'  , 'producer'                    , 'lookup'];
-        this._colors =         ['#ee6666', '#5470c6'            , '#fac858'          , '#91cc75'     , '#73c0de'                     , '#ff00ff'];
-        this._edgeLength = 120;
+        this._categories =     ['root'   , 'dependencies', 'declaring bean of a producer', 'lookup dependency'];
+        this._categoriesEnum = ['root'   , 'dependency'  , 'producer'                    , 'lookup'];
+        this._colors =         ['#ee6666', '#91cc75'     , '#73c0de'                     , '#fac858'];
+        this._edgeLength = 250;
         this._nodes = null;
         this._links = null;
         this._showSimpleDescription = [];
@@ -65,40 +65,48 @@ export class QwcArcBeanGraph extends LitElement {
         this._links = []
         this._nodes = []
         for (var l = 0; l < dependencyGraphsLinks.length; l++) {
-            let link = new Object();
-            link.source = dependencyGraphsNodes.findIndex(item => item.id === dependencyGraphsLinks[l].source);
-            link.target = dependencyGraphsNodes.findIndex(item => item.id === dependencyGraphsLinks[l].target);
-            let catindex = this._categoriesEnum.indexOf(dependencyGraphsLinks[l].type);
+            const sourceNode = dependencyGraphsNodes.find(node => node.id === dependencyGraphsLinks[l].source);
+            const targetNode = dependencyGraphsNodes.find(node => node.id === dependencyGraphsLinks[l].target);
+            //console.log('Adding link: ' + sourceNode.description + ' -> ' + targetNode.description);
             
-            this._addToNodes(dependencyGraphsNodes[link.source],catindex);
-            this._addToNodes(dependencyGraphsNodes[link.target],catindex);
+            // We need to make sure that the nodes are added first,
+            // because the node index is used as a link source/target
+            const catindex = this._categoriesEnum.indexOf(dependencyGraphsLinks[l].type);
+            const sourceIdx = this._addToNodes(sourceNode,catindex);
+            const targetIdx = this._addToNodes(targetNode,catindex);
+            
+            const link = new Object();
+            link.source = sourceIdx;
+            link.target = targetIdx;
             this._links.push(link);
         }
         
     }
 
     _addToNodes(dependencyGraphsNode, catindex){
-        let newNode = this._createNode(dependencyGraphsNode);
+        const newNode = this._createNode(dependencyGraphsNode);
         let index = this._nodes.findIndex(item => item.name === newNode.name);
         if (index < 0 ) {
             if(dependencyGraphsNode.id === this.beanId){
-                newNode.category = 0; // Root
+                newNode.category = 0; // root
             }else {
                 newNode.category = catindex;
             }
-            this._nodes.push(newNode);
+            //console.log('Adding node: ' + newNode.name);
+            return this._nodes.push(newNode) - 1;
         }
+        return index;
     }
 
     _createNode(node){
         let nodeObject = new Object();
-        if(this._showSimpleDescription.length>0){
+        if(this._showSimpleDescription.length > 0){
             nodeObject.name = node.simpleDescription;
         }else{
             nodeObject.name = node.description;
         }
-
-        nodeObject.value = 1;
+        nodeObject.value = node.id == this.beanId ? 20 : 10;
+        nodeObject.symbolSize = nodeObject.value;
         nodeObject.id = node.id;
         nodeObject.description = node.description;
         return nodeObject;
@@ -113,6 +121,7 @@ export class QwcArcBeanGraph extends LitElement {
                             colors="${JSON.stringify(this._colors)}"
                             nodes="${JSON.stringify(this._nodes)}"
                             links="${JSON.stringify(this._links)}"
+                            repulsion=500
                             @echarts-click=${this._echartClicked}>
                         </echarts-force-graph>`;
         }else{
@@ -163,15 +172,15 @@ export class QwcArcBeanGraph extends LitElement {
     }
     
     _zoomIn(){
-        if(this._edgeLength>10){
-            this._edgeLength = this._edgeLength - 10;
-        }else{
-            this._edgeLength = 10;
-        }
+        this._edgeLength = this._edgeLength + 20;
     }
     
     _zoomOut(){
-        this._edgeLength = this._edgeLength + 10;
+        if (this._edgeLength > 20){
+            this._edgeLength = this._edgeLength - 20;
+        }else {
+            this._edgeLength = 20;
+        }
     }
     
     _echartClicked(e){

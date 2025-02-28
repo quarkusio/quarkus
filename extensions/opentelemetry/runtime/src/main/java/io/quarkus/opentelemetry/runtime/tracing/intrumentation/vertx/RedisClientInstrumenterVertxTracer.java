@@ -123,8 +123,9 @@ public class RedisClientInstrumenterVertxTracer implements
             return attributes.get(PEER_ADDRESS);
         }
 
-        public long dbIndex() {
-            return Long.parseLong(attributes.get(DB_INSTANCE));
+        public Long dbIndex() {
+            String dbInstance = attributes.get(DB_INSTANCE);
+            return dbInstance != null ? Long.valueOf(dbInstance) : null;
         }
     }
 

@@ -1,11 +1,13 @@
 package io.quarkus.mongodb;
 
+import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -93,5 +95,12 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
         assertThat(clientImpl.getSettings().getWriteConcern().getWTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getReadConcern()).isEqualTo(new ReadConcern(ReadConcernLevel.SNAPSHOT));
         assertThat(clientImpl.getSettings().getReadPreference()).isEqualTo(ReadPreference.primary());
+    }
+
+    @Test
+    public void healthCheck() {
+        when().get("/q/health/ready")
+                .then()
+                .body("status", CoreMatchers.equalTo("UP"));
     }
 }

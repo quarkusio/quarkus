@@ -130,6 +130,7 @@ class BeanMethodInvocationGenerator {
                 instanceNullTrue.returnValue(newInstance);
             }
 
+            boolean checkRequiresMethodArguments = false;
             try (MethodCreator check = cc.getMethodCreator("check", boolean.class, SecurityIdentity.class, Object[].class)
                     .setModifiers(Modifier.PROTECTED)) {
                 ResultHandle arcContainer = check
@@ -155,6 +156,7 @@ class BeanMethodInvocationGenerator {
 
                         argHandles[i] = check.load(argumentExpression.replace("'", ""));
                     } else if (trimmedArgumentExpression.matches(METHOD_PARAMETER_REGEX)) { // secured method's parameter case
+                        checkRequiresMethodArguments = true;
                         Matcher parameterMatcher = METHOD_PARAMETER_PATTERN.matcher(trimmedArgumentExpression);
                         if (!parameterMatcher.find()) { // should never happen
                             throw createGenericMalformedException(securedMethodInfo, expression);
@@ -205,6 +207,13 @@ class BeanMethodInvocationGenerator {
                 }
 
                 check.returnValue(result);
+            }
+
+            if (checkRequiresMethodArguments) {
+                try (MethodCreator check = cc.getMethodCreator("requiresMethodArguments", boolean.class)
+                        .setModifiers(Modifier.PUBLIC)) {
+                    check.returnBoolean(true);
+                }
             }
         }
 

@@ -132,4 +132,13 @@ class FilePathTree implements OpenPathTree {
         FilePathTree other = (FilePathTree) obj;
         return Objects.equals(file, other.file) && Objects.equals(pathFilter, other.pathFilter);
     }
+
+    @Override
+    public String toString() {
+        if (pathFilter == null) {
+            return file.toString();
+        }
+
+        return file + " (filtered)";
+    }
 }

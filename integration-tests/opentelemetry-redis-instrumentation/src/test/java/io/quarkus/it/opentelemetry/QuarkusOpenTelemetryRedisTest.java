@@ -13,6 +13,8 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
@@ -193,6 +195,24 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("exception", event.get("name"));
 
         checkForException(exception);
+    }
+
+    @Test
+    public void taintedConnection() {
+        RestAssured.get("redis/tainted")
+                .then()
+                .statusCode(200)
+                .body(CoreMatchers.is("OK"));
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 3);
+
+        Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind"))
+                && "get".equals(m.get("name")));
+        Map<String, Object> attributes = (Map<String, Object>) span.get("attributes");
+
+        assertEquals("redis", attributes.get("db.system"));
+        assertEquals("get", attributes.get("db.operation"));
+        assertFalse(span.containsKey("db.redis.database_index"));
     }
 
     private List<Map<String, Object>> getSpans() {

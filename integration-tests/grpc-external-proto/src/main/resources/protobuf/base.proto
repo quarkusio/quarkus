@@ -6,7 +6,7 @@ option java_outer_classname = "BASEProtos";
 option optimize_for = CODE_SIZE;
 
 // Import the extra proto file
-import "role.proto";
+import "protobuf/role.proto";
 
 package org.acme.protos.base;
 

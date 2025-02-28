@@ -519,8 +519,9 @@ public class VertxHttpRecorder {
             };
         }
 
+        final boolean mustResumeRequest = httpConfiguration.limits.maxBodySize.isPresent();
         Handler<HttpServerRequest> delegate = root;
-        root = HttpServerCommonHandlers.enforceDuplicatedContext(delegate);
+        root = HttpServerCommonHandlers.enforceDuplicatedContext(delegate, mustResumeRequest);
         if (httpConfiguration.recordRequestStartTime) {
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_RECORD_START_TIME).handler(new Handler<RoutingContext>() {
                 @Override
@@ -560,7 +561,7 @@ public class VertxHttpRecorder {
             HttpServerCommonHandlers.applyHeaders(managementConfiguration.getValue().header, mr);
             applyCompression(managementBuildTimeConfig.enableCompression, mr);
 
-            Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr);
+            Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr, mustResumeRequest);
             handler = HttpServerCommonHandlers.applyProxy(managementConfiguration.getValue().proxy, handler, vertx);
 
             int routesBeforeMiEvent = mr.getRoutes().size();

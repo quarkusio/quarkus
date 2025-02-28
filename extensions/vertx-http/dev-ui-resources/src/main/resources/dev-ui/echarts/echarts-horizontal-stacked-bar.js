@@ -45,7 +45,7 @@ class EchartsHorizontalStackedBar extends EchartsAbstractCanvas {
 
         const sectionTitlesArray = this.sectionTitles.split(',');
         const sectionValuesArray = this.sectionValues.split(',');
-        
+
         const option = new Object();
         // Tooltip
         option.tooltip = new Object();
@@ -53,7 +53,7 @@ class EchartsHorizontalStackedBar extends EchartsAbstractCanvas {
         // Legend
         option.legend = new Object();
         option.legend.show = false;
-        
+
         // Grid
         option.grid = new Object();
         option.grid.left = '3%';
@@ -86,7 +86,7 @@ class EchartsHorizontalStackedBar extends EchartsAbstractCanvas {
             serie.name = title;
             serie.type = 'bar';
             serie.stack = 'total';
-            serie.data = [value],
+            serie.data = [value];
             serie.color =  color;
             option.series.push(serie);
         }

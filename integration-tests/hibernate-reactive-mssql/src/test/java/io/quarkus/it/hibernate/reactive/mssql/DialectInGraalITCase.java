@@ -6,6 +6,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
  * DialectTest, but in native mode.
  */
 @QuarkusIntegrationTest
-public class DialectInGraalITCase extends DefaultDialectVersionTest {
+public class DialectInGraalITCase extends DialectTest {
 
 }

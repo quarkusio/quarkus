@@ -210,7 +210,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             timerId = -1;
         }
         // schedule a new reconnect if the client closed us
-        if (clientClosed) {
+        if (clientClosed && reconnectDelay != Integer.MAX_VALUE) {
             timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(reconnectDelay, reconnectUnit), this);
         }
     }

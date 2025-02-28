@@ -202,9 +202,9 @@ Login credentials are the same for most databases, except when the database requ
 |Database |Username |Password |Database name
 
 |PostgreSQL, MariaDB, MySQL, IBM Db2, H2
+|`quarkus`
+|`quarkus`
 |`quarkus` for the default datasource or name of the datasource
-|`quarkus`
-|`quarkus`
 
 |Microsoft SQL Server
 |`SA`

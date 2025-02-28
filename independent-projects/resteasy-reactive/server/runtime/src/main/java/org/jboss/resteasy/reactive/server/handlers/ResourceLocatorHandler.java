@@ -63,29 +63,29 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
         boolean hadNullMethodMapper = false;
         if (mapper == null) {
-            String requestMethod = requestContext.getMethod();
-            if (requestMethod.equals(HttpMethod.HEAD)) {
-                mapper = target.get(HttpMethod.GET);
-            } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
-                Set<String> allowedMethods = new HashSet<>();
-                for (String method : target.keySet()) {
-                    if (method == null) {
-                        continue;
-                    }
-                    allowedMethods.add(method);
-                }
-                allowedMethods.add(HttpMethod.OPTIONS);
-                allowedMethods.add(HttpMethod.HEAD);
-                requestContext.abortWith(Response.ok().allow(allowedMethods).build());
-                return;
-            }
+            mapper = target.get(null); //another layer of resource locators maybe
+            // we set this without checking if we matched, but we only use it after
+            // we check for a null mapper, so by the time we use it, it must have meant that
+            // we had a matcher for a null method
+            hadNullMethodMapper = true;
 
             if (mapper == null) {
-                mapper = target.get(null); //another layer of resource locators maybe
-                // we set this without checking if we matched, but we only use it after
-                // we check for a null mapper, so by the time we use it, it must have meant that
-                // we had a matcher for a null method
-                hadNullMethodMapper = true;
+                String requestMethod = requestContext.getMethod();
+                if (requestMethod.equals(HttpMethod.HEAD)) {
+                    mapper = target.get(HttpMethod.GET);
+                } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
+                    Set<String> allowedMethods = new HashSet<>();
+                    for (String method : target.keySet()) {
+                        if (method == null) {
+                            continue;
+                        }
+                        allowedMethods.add(method);
+                    }
+                    allowedMethods.add(HttpMethod.OPTIONS);
+                    allowedMethods.add(HttpMethod.HEAD);
+                    requestContext.abortWith(Response.ok().allow(allowedMethods).build());
+                    return;
+                }
             }
         }
         if (mapper == null) {

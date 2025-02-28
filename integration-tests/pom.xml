@@ -213,6 +213,7 @@
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mariadb</module>
+                <module>hibernate-reactive-mssql</module>
                 <module>hibernate-reactive-mysql</module>
                 <module>hibernate-reactive-mysql-agroal-flyway</module>
                 <module>hibernate-reactive-postgresql</module>

@@ -32,6 +32,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final RouteType routeType;
     private final RouteType routerType;
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
+    private final String absolutePath;
     private final ConfiguredPathInfo configuredPathInfo;
 
     RouteBuildItem(Builder builder, RouteType routeType, RouteType routerType, boolean management) {
@@ -43,6 +44,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routerType = routerType;
         this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
         this.configuredPathInfo = builder.getRouteConfigInfo();
+        this.absolutePath = builder.absolutePath;
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -79,6 +81,10 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     public NotFoundPageDisplayableEndpointBuildItem getNotFoundPageDisplayableEndpoint() {
         return notFoundPageDisplayableEndpoint;
+    }
+
+    public String getAbsolutePath() {
+        return absolutePath;
     }
 
     public ConfiguredPathInfo getConfiguredPathInfo() {
@@ -172,6 +178,20 @@ public final class RouteBuildItem extends MultiBuildItem {
          */
         public Builder orderedRoute(String route, Integer order, Consumer<Route> routeCustomizer) {
             this.routeFunction = new BasicRoute(route, order, routeCustomizer);
+            this.notFoundPagePath = this.routePath = route;
+            return this;
+        }
+
+        /**
+         * @param name The name of the route. It is used to identify the route in the metrics.
+         * @param route A normalized path used to define a basic route
+         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
+         *        used on the "Not Found" page in dev mode.
+         * @param order Priority ordering of the route
+         * @param routeCustomizer Route customizer.
+         */
+        public Builder orderedRoute(String name, String route, Integer order, Consumer<Route> routeCustomizer) {
+            this.routeFunction = new BasicRoute(name, route, order, routeCustomizer);
             this.notFoundPagePath = this.routePath = route;
             return this;
         }

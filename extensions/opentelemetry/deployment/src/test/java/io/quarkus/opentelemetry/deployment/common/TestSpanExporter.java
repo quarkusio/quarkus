@@ -4,6 +4,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,9 +51,25 @@ public class TestSpanExporter implements SpanExporter {
         return finishedSpanItems.stream().collect(toList());
     }
 
+    /**
+     * Careful when retrieving the list of finished spans. There is a chance when the response is already sent to the
+     * client and Vert.x still writing the end of the spans. This means that a response is available to assert from the
+     * test side but not all spans may be available yet. For this reason, this method requires the number of expected
+     * spans.
+     */
+    public List<SpanData> getFinishedSpanItemsAtLeast(int spanCount) {
+        assertSpanAtLeast(spanCount);
+        return finishedSpanItems;
+    }
+
     public void assertSpanCount(int spanCount) {
-        await().atMost(30, SECONDS).untilAsserted(
+        await().atMost(5, SECONDS).untilAsserted(
                 () -> assertEquals(spanCount, finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
+    }
+
+    public void assertSpanAtLeast(int spanCount) {
+        await().atMost(5, SECONDS).untilAsserted(
+                () -> assertTrue(spanCount <= finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
     }
 
     public void reset() {

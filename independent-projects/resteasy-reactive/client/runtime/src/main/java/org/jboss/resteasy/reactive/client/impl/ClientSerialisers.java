@@ -26,7 +26,7 @@ import jakarta.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.UnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -115,16 +115,13 @@ public class ClientSerialisers extends Serialisers {
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
             if ((writerInterceptors == null) || writerInterceptors.length == 0) {
                 VertxBufferOutputStream out = new VertxBufferOutputStream();
-                if (writer instanceof ClientRestHandler) {
-                    try {
-                        ((ClientRestHandler) writer).handle(clientRequestContext);
-                    } catch (Exception e) {
-                        throw new WebApplicationException("Can't inject the client request context", e);
-                    }
+                if (writer instanceof ClientMessageBodyWriter cw) {
+                    cw.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
+                            entity.getMediaType(), headerMap, out, clientRequestContext);
+                } else {
+                    writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
+                            entity.getMediaType(), headerMap, out);
                 }
-
-                writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
-                        entity.getMediaType(), headerMap, out);
                 return out.getBuffer();
             } else {
                 return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),

@@ -57,7 +57,7 @@ class SharedArchivePathTree extends ArchivePathTree {
             return new CallerOpenPathTree(lastOpen);
         }
         try {
-            this.lastOpen = new SharedOpenArchivePathTree(archive, openFs());
+            this.lastOpen = new SharedOpenArchivePathTree(openFs());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -68,7 +68,7 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         private final AtomicInteger users = new AtomicInteger(1);
 
-        protected SharedOpenArchivePathTree(Path archivePath, FileSystem fs) {
+        protected SharedOpenArchivePathTree(FileSystem fs) {
             super(fs);
             openCount.incrementAndGet();
         }
@@ -105,6 +105,11 @@ class SharedArchivePathTree extends ArchivePathTree {
             } finally {
                 writeLock().unlock();
             }
+        }
+
+        @Override
+        public String toString() {
+            return SharedArchivePathTree.this.toString();
         }
     }
 
@@ -196,6 +201,11 @@ class SharedArchivePathTree extends ArchivePathTree {
             } finally {
                 delegate.writeLock().unlock();
             }
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
         }
     }
 }

@@ -286,7 +286,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         options.setMaxChunkSize(maxChunkSize);
         return new ClientImpl(options,
-                configuration,
+                new ConfigurationImpl(configuration),
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
                 null,
                 null,

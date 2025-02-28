@@ -2955,10 +2955,9 @@ If there is a message bundle method that accepts a single parameter of an enum t
 @Message <1>
 String methodName(MyEnum enum);
 ----
-<1> The value is intentionally not provided. There's also no key for the method in a localized file.
+<1> The value is intentionally not provided. There's also no key/value pair for this method in a localized file.
 
-Then it receives a generated template:
-
+Then it receives a generated template like:
 [source,html]
 ----
 {#when enumParamName}
@@ -2967,7 +2966,8 @@ Then it receives a generated template:
 {/when}
 ----
 
-Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and values for all constant message keys:
+Furthermore, a special message method is generated for each enum constant. 
+Finally, each localized file must contain keys and values for all enum constants:
 
 [source,poperties]
 ----
@@ -2975,7 +2975,18 @@ methodName_CONSTANT1=Value 1
 methodName_CONSTANT2=Value 2
 ----
 
-In a template, an enum constant can be localized with a message bundle method like `{msg:methodName(enumConstant)}`.
+// We need to escape the first underscore 
+// See https://docs.asciidoctor.org/asciidoc/latest/subs/prevent/
+[IMPORTANT] 
+.Message keys for enum constants
+==== 
+By default, the message key consists of the method name followed by the `\_` separator and the constant name.
+If any constant name of a particular enum contains the `_` or the `$` character then the `\_$` separator must be used for all message keys for this enum instead.
+For example, `methodName_$CONSTANT_1=Value 1` or `methodName_$CONSTANT$1=Value 1`.
+A constant of a localized enum may not contain the `_$` separator.
+====
+
+In a template, the localized message for an enum constant can be obtained with a message bundle method like `{msg:methodName(enumConstant)}`.
 
 TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a convenient annotation to access enum constants in a template.
 

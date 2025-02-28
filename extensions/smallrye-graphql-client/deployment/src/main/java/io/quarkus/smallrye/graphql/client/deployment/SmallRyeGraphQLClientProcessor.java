@@ -4,6 +4,12 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.Closeable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -98,7 +104,7 @@ public class SmallRyeGraphQLClientProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void initializeTypesafeClient(BeanArchiveIndexBuildItem index,
+    void initializeTypesafeClient(CombinedIndexBuildItem index,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -138,6 +144,14 @@ public class SmallRyeGraphQLClientProcessor {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods().build());
+        // some more classes that the client may need to serialize
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OffsetDateTime.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Instant.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ZonedDateTime.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(LocalDateTime.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(LocalTime.class).methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OffsetTime.class).methods().build());
+
     }
 
     /**

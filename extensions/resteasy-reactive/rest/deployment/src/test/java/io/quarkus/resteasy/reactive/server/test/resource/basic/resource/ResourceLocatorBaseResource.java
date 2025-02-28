@@ -6,6 +6,7 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.OPTIONS;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -59,6 +60,12 @@ public class ResourceLocatorBaseResource {
     @Path("sub3/{param}/resources")
     public ResourceLocatorSubresource getSubresource() {
         return new ResourceLocatorSubresource();
+    }
+
+    @OPTIONS
+    @Path("{any:.*}")
+    public Object preflight() {
+        return "Here might be a custom handler for HTTP OPTIONS method";
     }
 
 }

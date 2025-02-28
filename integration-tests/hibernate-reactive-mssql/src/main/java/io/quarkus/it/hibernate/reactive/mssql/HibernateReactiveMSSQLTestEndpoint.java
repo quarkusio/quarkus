@@ -87,7 +87,7 @@ public class HibernateReactiveMSSQLTestEndpoint {
     }
 
     private Uni<String> selectNameFromId(Integer id) {
-        return mssqlPool.preparedQuery("SELECT name FROM Pig WHERE id = ?").execute(Tuple.of(id)).map(rowSet -> {
+        return mssqlPool.preparedQuery("SELECT name FROM Pig WHERE id = @p1").execute(Tuple.of(id)).map(rowSet -> {
             if (rowSet.size() == 1) {
                 return rowSet.iterator().next().getString(0);
             } else if (rowSet.size() > 1) {

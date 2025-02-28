@@ -68,4 +68,14 @@ public class RedisResource {
                 .replaceWithVoid();
     }
 
+    // tainted
+    @GET
+    @Path("/tainted")
+    public String getTainted() {
+        ds.withConnection(conn -> {
+            conn.select(7); // taints the connection
+            conn.value(String.class).get("foobar");
+        });
+        return "OK";
+    }
 }

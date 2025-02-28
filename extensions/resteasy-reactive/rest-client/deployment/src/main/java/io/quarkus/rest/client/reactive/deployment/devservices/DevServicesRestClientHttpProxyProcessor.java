@@ -207,10 +207,12 @@ public class DevServicesRestClientHttpProxyProcessor {
 
             var urlKeyName = String.format("quarkus.rest-client.\"%s\".override-uri", bi.getClassName());
             var urlKeyValue = String.format("http://%s:%d", createResult.host(), createResult.port());
-            if (baseUri.getPath() != null) {
-                if (!"/".equals(baseUri.getPath()) && !baseUri.getPath().isEmpty()) {
-                    urlKeyValue = urlKeyValue + "/" + baseUri.getPath();
+            String basePath = baseUri.getPath();
+            if ((basePath != null) && !basePath.isEmpty()) {
+                if (basePath.startsWith("/")) {
+                    basePath = basePath.substring(1);
                 }
+                urlKeyValue = urlKeyValue + "/" + basePath;
             }
 
             devServicePropertiesProducer.produce(

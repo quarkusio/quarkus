@@ -65,7 +65,8 @@ public class HttpServerCommonHandlers {
         }
     }
 
-    public static Handler<HttpServerRequest> enforceDuplicatedContext(Handler<HttpServerRequest> delegate) {
+    public static Handler<HttpServerRequest> enforceDuplicatedContext(Handler<HttpServerRequest> delegate,
+            boolean mustResumeRequest) {
         return new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
@@ -78,12 +79,12 @@ public class HttpServerCommonHandlers {
                         @Override
                         public void handle(Void x) {
                             setCurrentContextSafe(true);
-                            delegate.handle(new ResumingRequestWrapper(event));
+                            delegate.handle(new ResumingRequestWrapper(event, mustResumeRequest));
                         }
                     });
                 } else {
                     setCurrentContextSafe(true);
-                    delegate.handle(new ResumingRequestWrapper(event));
+                    delegate.handle(new ResumingRequestWrapper(event, mustResumeRequest));
                 }
             }
         };

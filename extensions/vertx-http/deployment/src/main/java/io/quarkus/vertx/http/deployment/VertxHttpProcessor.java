@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
-import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 import static io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem.getBodyHandlerRequiredConditions;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
 
@@ -9,8 +8,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -67,7 +68,6 @@ import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
-import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -134,30 +134,14 @@ class VertxHttpProcessor {
     FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             List<RouteBuildItem> routes) {
-        List<String> frameworkEndpoints = new ArrayList<>();
+        Set<String> frameworkEndpoints = new HashSet<>();
         for (RouteBuildItem route : routes) {
             if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
-                if (route.getConfiguredPathInfo() != null) {
-                    String endpointPath = route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath,
-                            managementInterfaceBuildTimeConfig, launchModeBuildItem);
-                    frameworkEndpoints.add(endpointPath);
+                if (route.getAbsolutePath() == null) {
                     continue;
                 }
-                if (route.getRouteFunction() != null && route.getRouteFunction() instanceof BasicRoute) {
-                    BasicRoute basicRoute = (BasicRoute) route.getRouteFunction();
-                    if (basicRoute.getPath() != null) {
-                        if (basicRoute.getPath().startsWith(nonApplicationRootPath.getNonApplicationRootPath())) {
-                            // Do not repeat the non application root path.
-                            frameworkEndpoints.add(basicRoute.getPath());
-                        } else {
-                            // Calling TemplateHtmlBuilder does not see very correct here, but it is the underlying API for ConfiguredPathInfo
-                            String adjustRoot = adjustRoot(nonApplicationRootPath.getNonApplicationRootPath(),
-                                    basicRoute.getPath());
-                            frameworkEndpoints.add(adjustRoot);
-                        }
 
-                    }
-                }
+                frameworkEndpoints.add(route.getAbsolutePath());
             }
         }
         return new FrameworkEndpointsBuildItem(frameworkEndpoints);

@@ -1,16 +1,19 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.OPTIONS;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class ResourceLocatorSubresource2 {
-
+    public static final String TEST_PREFLIGHT_HEADER = "test-preflight-header";
     private static final Logger LOG = Logger.getLogger(ResourceLocatorSubresource2.class);
 
     @GET
@@ -34,5 +37,11 @@ public class ResourceLocatorSubresource2 {
             LOG.debugv("   {0}", ancestor.getClass().getName());
         Assertions.assertEquals("2", param);
         return this.getClass().getName() + "-" + param;
+    }
+
+    @OPTIONS
+    @Path("{any:.*}")
+    public Response preflight() {
+        return Response.ok().allow(HttpMethod.GET).header(TEST_PREFLIGHT_HEADER, "test").build();
     }
 }

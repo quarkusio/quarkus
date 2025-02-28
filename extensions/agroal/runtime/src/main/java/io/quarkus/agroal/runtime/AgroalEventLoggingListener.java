@@ -67,7 +67,12 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
 
     @Override
     public void onWarning(String warning) {
-        log.warnv("{0}: {1}", datasourceName, warning);
+        // See https://github.com/quarkusio/quarkus/issues/44047
+        if (warning != null && warning.contains("JDBC resources leaked")) {
+            log.debugv("{0}: {1}", datasourceName, warning);
+        } else {
+            log.warnv("{0}: {1}", datasourceName, warning);
+        }
     }
 
     @Override

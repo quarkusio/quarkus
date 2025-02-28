@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  * There is a convenient way to localize enums.
  * <p>
  * If there is a message bundle method that accepts a single parameter of an enum type and has no message template defined then
- * it receives a generated template:
+ * it receives a generated template like:
  *
  * <pre>
  * {#when enumParamName}
@@ -37,14 +37,20 @@ import java.lang.annotation.Target;
  * </pre>
  *
  * Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and
- * values for all constant message keys:
+ * values for all enum constants.
  *
  * <pre>
  * methodName_CONSTANT1=Value 1
  * methodName_CONSTANT2=Value 2
  * </pre>
  *
- * In a template, an enum constant can be localized with a message bundle method {@code msg:methodName(enumConstant)}.
+ * By default, the message key consists of the method name followed by the {@code _} separator and the constant name. If any
+ * constant name of a particular enum contains the {@code _} or the {@code $} character then the {@code _$} separator must be
+ * used for all message keys for this enum instead. For example, {@code methodName_$CONSTANT_1=Value 1} or
+ * {@code methodName_$CONSTANT$1=Value 1}.
+ * </p>
+ * In a template, the localized message for an enum constant can be obtained with a message bundle method like
+ * {@code msg:methodName(enumConstant)}.
  *
  * @see MessageBundle
  */

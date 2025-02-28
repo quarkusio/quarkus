@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -42,14 +41,7 @@ public class InjectionPointModifier {
                 transformer.transform(transformationContext);
             }
         }
-        if (methodParameterTarget != null && AnnotationTarget.Kind.METHOD_PARAMETER.equals(methodParameterTarget.kind())) {
-            // only return set of qualifiers related to the given method parameter
-            return transformationContext.getQualifiers().stream().filter(
-                    annotationInstance -> methodParameterTarget.equals(annotationInstance.target()))
-                    .collect(Collectors.toSet());
-        } else {
-            return transformationContext.getQualifiers();
-        }
+        return transformationContext.getQualifiers();
     }
 
     // method variant used for field and resource field injection; a case where we don't need to deal with method. params

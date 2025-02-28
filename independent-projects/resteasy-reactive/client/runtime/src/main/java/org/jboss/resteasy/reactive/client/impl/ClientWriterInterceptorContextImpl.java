@@ -16,7 +16,7 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.WriterInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptorContext;
 
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
@@ -70,16 +70,14 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
                 effectiveWriter = newWriters.get(0);
             }
 
-            if (effectiveWriter instanceof ClientRestHandler) {
-                try {
-                    ((ClientRestHandler) effectiveWriter).handle(clientRequestContext);
-                } catch (Exception e) {
-                    throw new WebApplicationException("Can't inject the client request context", e);
-                }
+            if (effectiveWriter instanceof ClientMessageBodyWriter cw) {
+                cw.writeTo(entity, entityClass, entityType,
+                        annotations, mediaType, headers, outputStream, clientRequestContext);
+            } else {
+                effectiveWriter.writeTo(entity, entityClass, entityType,
+                        annotations, mediaType, headers, outputStream);
             }
 
-            effectiveWriter.writeTo(entity, entityClass, entityType,
-                    annotations, mediaType, headers, outputStream);
             outputStream.close();
             result = Buffer.buffer(baos.toByteArray());
             done = true;

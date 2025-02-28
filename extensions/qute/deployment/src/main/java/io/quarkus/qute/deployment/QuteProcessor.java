@@ -1386,12 +1386,8 @@ public class QuteProcessor {
                         ignoring = true;
                     }
                 } else {
-                    // No global and no namespace extension method found - incorrect expression
-                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            String.format("No matching namespace [%s] extension method found", namespace.namespace),
-                            expression.getOrigin()));
+                    // No global and no namespace extension method found - just ignore the expression
                     match.clearValues();
-                    putResult(match, results, expression);
                     ignoring = true;
                 }
             }

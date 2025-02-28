@@ -8,6 +8,7 @@ class EchartsForceGraph extends EchartsAbstractCanvas {
     static get properties() {
         return {
             edgeLength: {type: Number},
+            repulsion: {type: Number},
             nodes: {type: String},
             links: {type: String},
             colors: {type: String},
@@ -21,6 +22,7 @@ class EchartsForceGraph extends EchartsAbstractCanvas {
     constructor() {
         super();
         this.edgeLength = 60;
+        this.repulsion = 300;
         this.nodes = null;
         this.links = null;
         this.colors = null;
@@ -69,7 +71,8 @@ class EchartsForceGraph extends EchartsAbstractCanvas {
         serie.type = 'graph';
         serie.layout = 'force';
         serie.animation = true;
-        serie.edgeSymbol = ['arrow', ''];
+        // source -> target
+        serie.edgeSymbol = ['', 'arrow'];
         serie.label = new Object();
         serie.label.position = 'right';
         serie.label.show = true;
@@ -85,11 +88,12 @@ class EchartsForceGraph extends EchartsAbstractCanvas {
         
         serie.force = new Object();
         serie.force.edgeLength = this.edgeLength;
-        serie.force.repulsion = 300;
+        serie.force.repulsion = this.repulsion;
         
         serie.edges = JSON.parse(this.links);
 
         serie.lineStyle = new Object();
+        // Use the color of the "source" by default
         serie.lineStyle.color = 'source';
         serie.lineStyle.curveness = 0.3;
         

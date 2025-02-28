@@ -18,11 +18,20 @@ import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 
 class DevServicesConfigBuildStep {
     static volatile Map<String, String> oldConfig;
+
+    @BuildStep
+    void sharedNetwork(GlobalDevServicesConfig config, BuildProducer<DevServicesSharedNetworkBuildItem> producer) {
+        if (config.launchOnSharedNetwork.orElse(false)) {
+            producer.produce(new DevServicesSharedNetworkBuildItem());
+        }
+    }
 
     @BuildStep
     List<DevServicesConfigResultBuildItem> deprecated(List<DevServicesNativeConfigResultBuildItem> items) {

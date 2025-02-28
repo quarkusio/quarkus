@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -82,15 +83,15 @@ public class RestClientBase {
     }
 
     protected void configureCustomProperties(RestClientBuilder builder) {
-        Optional<Integer> connectionPoolSize = oneOf(restClientConfig.connectionPoolSize(), configRoot.connectionPoolSize());
+        OptionalInt connectionPoolSize = oneOf(restClientConfig.connectionPoolSize(), configRoot.connectionPoolSize());
         if (connectionPoolSize.isPresent()) {
-            builder.property("resteasy.connectionPoolSize", connectionPoolSize.get());
+            builder.property("resteasy.connectionPoolSize", connectionPoolSize.getAsInt());
         }
 
-        Optional<Integer> connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
+        OptionalInt connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
         if (connectionTTL.isPresent()) {
             builder.property("resteasy.connectionTTL",
-                    Arrays.asList(connectionTTL.get(), TimeUnit.MILLISECONDS));
+                    Arrays.asList(connectionTTL.getAsInt(), TimeUnit.MILLISECONDS));
         }
     }
 
@@ -320,5 +321,14 @@ public class RestClientBase {
             }
         }
         return Optional.empty();
+    }
+
+    private static OptionalInt oneOf(OptionalInt... optionals) {
+        for (OptionalInt o : optionals) {
+            if (o != null && o.isPresent()) {
+                return o;
+            }
+        }
+        return OptionalInt.empty();
     }
 }

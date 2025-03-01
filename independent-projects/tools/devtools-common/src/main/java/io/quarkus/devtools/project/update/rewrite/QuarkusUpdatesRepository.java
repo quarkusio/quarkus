@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.aether.artifact.Artifact;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -173,9 +173,9 @@ public final class QuarkusUpdatesRepository {
 
     static boolean shouldApplyRecipe(String recipeFileName, String currentVersion, String targetVersion) {
         String recipeVersion = VERSION_EXTRACTION_PATTERN.matcher(recipeFileName).replaceFirst("");
-        final DefaultArtifactVersion recipeAVersion = new DefaultArtifactVersion(recipeVersion);
-        final DefaultArtifactVersion currentAVersion = new DefaultArtifactVersion(currentVersion);
-        final DefaultArtifactVersion targetAVersion = new DefaultArtifactVersion(targetVersion);
+        final ComparableVersion recipeAVersion = new ComparableVersion(recipeVersion);
+        final ComparableVersion currentAVersion = new ComparableVersion(currentVersion);
+        final ComparableVersion targetAVersion = new ComparableVersion(targetVersion);
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
     }
 
@@ -276,9 +276,9 @@ public final class QuarkusUpdatesRepository {
 
         @Override
         public int compare(Path recipePath1, Path recipePath2) {
-            DefaultArtifactVersion recipeVersion1 = new DefaultArtifactVersion(
+            ComparableVersion recipeVersion1 = new ComparableVersion(
                     VERSION_EXTRACTION_PATTERN.matcher(recipePath1.getFileName().toString()).replaceFirst(""));
-            DefaultArtifactVersion recipeVersion2 = new DefaultArtifactVersion(
+            ComparableVersion recipeVersion2 = new ComparableVersion(
                     VERSION_EXTRACTION_PATTERN.matcher(recipePath2.getFileName().toString()).replaceFirst(""));
 
             return recipeVersion1.compareTo(recipeVersion2);

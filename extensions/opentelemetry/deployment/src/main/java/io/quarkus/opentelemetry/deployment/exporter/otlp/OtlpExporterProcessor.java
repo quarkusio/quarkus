@@ -32,7 +32,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRunt
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps

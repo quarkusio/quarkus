@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
-import io.quarkus.tls.runtime.keystores.TrustAllOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
@@ -74,9 +73,7 @@ public interface TlsConfiguration {
      *
      * @return {@code true} if the trust store is configured to trust all certificates, {@code false} otherwise.
      */
-    default boolean isTrustAll() {
-        return getTrustStoreOptions() == TrustAllOptions.INSTANCE;
-    }
+    boolean isTrustAll();
 
     /**
      * Returns the hostname verification algorithm for this configuration.

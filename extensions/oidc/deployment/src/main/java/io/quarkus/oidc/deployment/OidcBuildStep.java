@@ -91,7 +91,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.security.runtime.SecurityConfig;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;

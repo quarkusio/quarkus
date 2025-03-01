@@ -57,7 +57,7 @@ import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.vertx.ext.mail.MailClient;
 
 public class MailerProcessor {

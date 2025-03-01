@@ -1,11 +1,13 @@
-package io.quarkus.tls;
+package io.quarkus.tls.deployment.spi;
 
 import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.tls.TlsConfiguration;
 
 /**
  * A build item to register a TLS certificate.
+ * An extension can produce an instance of this build item to add a custom certificate into the registry.
  */
 public final class TlsCertificateBuildItem extends MultiBuildItem {
 

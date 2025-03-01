@@ -25,7 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.admin.resteasy.client.runtime.KeycloakAdminResteasyClientRecorder;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 
 public class KeycloakAdminResteasyClientProcessor {
 

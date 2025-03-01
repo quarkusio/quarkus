@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.streams.Topology;
@@ -16,11 +17,16 @@ import io.vertx.core.json.JsonObject;
 
 public class KafkaStreamsJsonRPCService {
     @Inject
-    Topology topology;
+    Instance<Topology> topologyProvider;
 
     @NonBlocking
     public JsonObject getTopology() {
-        return parseTopologyDescription(topology.describe() != null ? topology.describe().toString() : "");
+        var topologyDescription = "";
+        if (topologyProvider.isResolvable()) {
+            final var describe = topologyProvider.get().describe();
+            topologyDescription = describe != null ? describe.toString() : "";
+        }
+        return parseTopologyDescription(topologyDescription);
     }
 
     JsonObject parseTopologyDescription(String topologyDescription) {

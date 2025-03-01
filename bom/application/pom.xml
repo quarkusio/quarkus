@@ -103,7 +103,7 @@
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
-        <jboss-logging-annotations.version>3.0.3.Final</jboss-logging-annotations.version>
+        <jboss-logging-annotations.version>3.0.4.Final</jboss-logging-annotations.version>
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>

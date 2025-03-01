@@ -7,7 +7,7 @@ import javax.management.ObjectName;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(JMX.class)
+@TargetClass(value = JMX.class, onlyWith = RemoteJmxHelper.JmxServerNotIncluded.class)
 final class Target_javax_management_JMX {
 
     @Substitute
@@ -18,5 +18,4 @@ final class Target_javax_management_JMX {
             boolean isMXBean) {
         throw new IllegalStateException("Not Implemented in native mode");
     }
-
 }

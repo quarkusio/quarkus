@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Scm;
 import org.apache.maven.plugin.AbstractMojo;
@@ -502,8 +501,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (version == null) {
             return null;
         }
-        DefaultArtifactVersion dav = new DefaultArtifactVersion(version);
-        return "[" + dav.getMajorVersion() + "." + dav.getMinorVersion() + ",)";
+
+        // we don't use DefaultArtifactVersion here as it doesn't support 4 dotted number parts
+        // we might get rid of this version scheme but let's make sure we support it just in case
+        String[] versionItems = version.split("-");
+        versionItems = versionItems[0].split("\\.");
+
+        return "[" + versionItems[0] + "." + (versionItems.length > 1 ? versionItems[1] : "0") + ",)";
     }
 
     private void ensureArtifactCoords(ObjectNode extObject) {

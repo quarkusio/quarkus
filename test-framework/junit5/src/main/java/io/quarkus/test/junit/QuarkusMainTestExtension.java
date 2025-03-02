@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.junit.AppMakerHelper.getGradleAppModelForIDE;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 

@@ -71,8 +71,7 @@ public class AppMakerHelper {
         }
     }
 
-    // TODO Re-used from AbstractJvmQuarkusTestExtension
-    protected ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
+    public static ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
         return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
                 ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
                 : null;
@@ -237,7 +236,7 @@ public class AppMakerHelper {
                 .setMode(QuarkusBootstrap.Mode.TEST)
                 .setTest(true)
                 .setAuxiliaryApplication(isContinuousTesting)
-
+                .setTestClassLocation(testClassLocation)
                 .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation))
                 .setProjectRoot(projectRoot)
                 .setApplicationRoot(rootBuilder.build())

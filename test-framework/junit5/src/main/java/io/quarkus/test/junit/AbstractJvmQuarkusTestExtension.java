@@ -23,16 +23,13 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
-import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
@@ -138,12 +135,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
         }
         return profileInstance;
-    }
-
-    ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
-        return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
-                ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
-                : null;
     }
 
     // TODO is it nicer to pass in the test class, or invoke the getter twice?

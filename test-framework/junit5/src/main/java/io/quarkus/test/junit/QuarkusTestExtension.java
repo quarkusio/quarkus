@@ -1,7 +1,5 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 
 import java.io.Closeable;
@@ -201,25 +199,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Map<String, String> additional = new HashMap<>();
             QuarkusTestProfile profileInstance = getQuarkusTestProfile(profile, shutdownTasks, additional);
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
-            System.out.println(
-                    "HOLLY startup action " + startupAction + " from " + getClassLoaderFromTestClass(requiredTestClass));
 
-            System.out.println("HOLLY made initial app");
             // TODO this might be a good idea, but if so, we'd need to undo it
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
 
-            System.out.println("HOLLY class has come in as " + requiredTestClass.getClassLoader());
-            System.out.println("HOLLY will now get a locextsion for "
-                    + requiredTestClass.getClassLoader().getResource(fromClassNameToResourceName(requiredTestClass.getName())));
-            // TODO could store this in the startup action?
-            Path testClassLocation = getTestClassesLocation(requiredTestClass);
-
-            // TODO this is a bit sloppy, but the quarkus classloader uses a quarkus: scheme for its in memory resources and then we get a failure that it's not installed
-            //            Path projectRoot = Paths.get("")
-            //                    .normalize()
-            //                    .toAbsolutePath();
-            //            Path applicationRoot = getTestClassLocationForRootLocation(projectRoot.toString());
-            //            Path testClassLocation = applicationRoot;
+            Path testClassLocation = startupAction.getClassLoader().getCuratedApplication().getQuarkusBootstrap()
+                    .getTestClassesLocation();
 
             // Do we need the augmentation classloader as the TCCL?
             //must be done after the TCCL has been set

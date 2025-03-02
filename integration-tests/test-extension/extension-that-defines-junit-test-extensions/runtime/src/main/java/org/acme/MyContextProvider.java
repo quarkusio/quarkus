@@ -17,7 +17,6 @@ public class MyContextProvider implements TestTemplateInvocationContextProvider 
 
     @Override
     public boolean supportsTestTemplate(ExtensionContext extensionContext) {
-        System.out.println("HOLLY checking test template");
         // TODO In an ideal world, this template context would also see the updated class. At the moment it doesn't,
         // which can be confirmed by uncommenting the following assertion. This class is loaded with an augmentation
         // classloader, and the test class gets a deployment classloader

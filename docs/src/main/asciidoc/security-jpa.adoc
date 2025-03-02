@@ -80,7 +80,7 @@ public class User extends PanacheEntity {
 
 The `quarkus-security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
 
-<1> In most databases, `user` is a restricted keyword, so define the table name as something else to avoid conflicts
+<1> Table name. Do not define it as `user`, which is a restricted keyword in most databases.
 <2> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <3> Indicates the field used for the username.
 <4> Indicates the field used for the password.

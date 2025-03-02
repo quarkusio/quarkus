@@ -51,14 +51,14 @@ import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
 
 @Entity
-@Table(name = "test_user")
-@UserDefinition <1>
+@Table(name = "test_user") <1>
+@UserDefinition <2>
 public class User extends PanacheEntity {
-    @Username <2>
+    @Username <3>
     public String username;
-    @Password <3>
+    @Password <4>
     public String password;
-    @Roles <4>
+    @Roles <5>
     public String role;
 
     /**
@@ -67,7 +67,7 @@ public class User extends PanacheEntity {
      * @param password the unencrypted password (it is encrypted with bcrypt)
      * @param role the comma-separated roles
      */
-    public static void add(String username, String password, String role) { <5>
+    public static void add(String username, String password, String role) { <6>
         User user = new User();
         user.username = username;
         user.password = BcryptUtil.bcryptHash(password);
@@ -80,12 +80,13 @@ public class User extends PanacheEntity {
 
 The `quarkus-security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
 
-<1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
-<2> Indicates the field used for the username.
-<3> Indicates the field used for the password.
+<1> Table name. Do not define it as `user`, which is a restricted keyword in most databases.
+<2> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
+<3> Indicates the field used for the username.
+<4> Indicates the field used for the password.
 By default, `quarkus-security-jpa` uses bcrypt-hashed passwords, or you can configure plain text or custom passwords instead.
-<4> This indicates the comma-separated list of roles added to the target principal representation attributes.
-<5> This method lets you add users while hashing passwords with the proper `bcrypt` hash.
+<5> This indicates the comma-separated list of roles added to the target principal representation attributes.
+<6> This method lets you add users while hashing passwords with the proper `bcrypt` hash.
 
 
 == Jakarta Persistence entity as storage of roles

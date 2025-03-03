@@ -13,7 +13,7 @@ public class AuthData {
     public final boolean anonymous;
     public final String name;
     public final Set<Permission> permissions;
-    final boolean applyAugmentors;
+    public final boolean applyAugmentors;
 
     public AuthData(Set<String> roles, boolean anonymous, String name) {
         this.roles = roles;

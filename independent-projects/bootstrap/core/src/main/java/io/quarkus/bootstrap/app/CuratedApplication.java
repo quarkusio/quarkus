@@ -258,6 +258,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     quarkusBootstrap.getBaseClassLoader(), false)
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
+            builder.setCuratedApplication(this);
 
             if (configuredClassLoading.isFlatTestClassPath()) {
                 //in test mode we have everything in the base class loader

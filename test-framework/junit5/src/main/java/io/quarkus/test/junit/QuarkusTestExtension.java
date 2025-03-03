@@ -849,7 +849,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private void initTestState(ExtensionContext extensionContext, QuarkusTestExtensionState state) {
-        System.out.println("HOLLY initTestState");
         try {
             actualTestClass = extensionContext.getRequiredTestClass();
             if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {

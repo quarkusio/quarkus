@@ -61,10 +61,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         originalCl = Thread.currentThread().getContextClassLoader();
         final Class<?> requiredTestClass = context.getRequiredTestClass();
 
-        System.out.println(
-                "HOLLY about to cast " + requiredTestClass.getName() + " which has cl " + requiredTestClass.getClassLoader());
         CuratedApplication curatedApplication = getCuratedApplication(requiredTestClass, context, shutdownTasks);
-        System.out.println("HOLLY " + requiredTestClass.getClassLoader() + " gives " + curatedApplication);
 
         // TODO need to handle the gradle case - can we put it in that method?
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
@@ -112,7 +109,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (profile != null) {
             profileInstance = profile.getConstructor().newInstance();
             // TODO the stuff below here is unique to this class - TODO what does this comment even mean?
-            System.out.println("HOLLY extension stuff to additional " + additional);
             additional.putAll(profileInstance.getConfigOverrides());
             if (!profileInstance.getEnabledAlternatives().isEmpty()) {
                 additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
@@ -225,15 +221,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // How do we know how to stop the current application - compare the classloader and see if it changed
         // We could also look at the running application attached to the junit test and see if it's started
 
-        // TODO
-        System.out.println(
-                "HOLLY checking is new for " + currentJUnitTestClass + " with running app " + runningQuarkusApplication);
-        System.out.println("HOLLY abstract cl for is new check " + this.getClass().getClassLoader());
-        if (runningQuarkusApplication != null) {
-            System.out.println(
-                    "HOLLY checking is new " + runningQuarkusApplication.getClassLoader()
-                            + currentJUnitTestClass.getClassLoader());
-        }
         return (runningQuarkusApplication == null
                 || runningQuarkusApplication.getClassLoader() != currentJUnitTestClass.getClassLoader());
 

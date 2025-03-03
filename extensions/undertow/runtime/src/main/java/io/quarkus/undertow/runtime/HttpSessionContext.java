@@ -38,6 +38,7 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
             + ".contextualInstances";
 
     private static final ThreadLocal<HttpSession> DESTRUCT_SESSION = new ThreadLocal<>();
+    private static final ThreadLocal<HttpSession> CREATED_SESSION = new ThreadLocal<>();
 
     private static final Logger LOG = Logger.getLogger(HttpSessionContext.class);
 
@@ -160,7 +161,10 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
     }
 
     private HttpSession session(boolean create) {
-        HttpSession session = null;
+        HttpSession session = CREATED_SESSION.get();
+        if (session != null) {
+            return session;
+        }
         try {
             session = ((HttpServletRequest) ServletRequestContext.requireCurrent().getServletRequest()).getSession(create);
         } catch (IllegalStateException ignored) {
@@ -213,6 +217,7 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
         event.select(HttpSession.class, BeforeDestroyed.Literal.SESSION).fire(session);
         try {
             DESTRUCT_SESSION.set(session);
+            CREATED_SESSION.remove();
             destroy(session);
             event.select(HttpSession.class, Destroyed.Literal.SESSION).fire(session);
         } finally {
@@ -222,7 +227,9 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
-        Arc.container().beanManager().getEvent().select(HttpSession.class, Initialized.Literal.SESSION).fire(se.getSession());
+        HttpSession createdSession = se.getSession();
+        CREATED_SESSION.set(createdSession);
+        Arc.container().beanManager().getEvent().select(HttpSession.class, Initialized.Literal.SESSION).fire(createdSession);
     }
 
 }

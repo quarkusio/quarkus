@@ -3,14 +3,18 @@ package io.quarkus.deployment.dev;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.objectweb.asm.ClassReader;
 
 import io.quarkus.paths.PathCollection;
 
@@ -28,7 +32,18 @@ public interface CompilationProvider extends Closeable {
 
     void compile(Set<File> files, Context context);
 
-    Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath);
+    default Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
+        Path sourceFilePath;
+        final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
+        try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
+            final ClassReader reader = new ClassReader(inputStream);
+            reader.accept(visitor, 0);
+            sourceFilePath = visitor.getSourceFileForClass(classFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return sourceFilePath;
+    }
 
     @Override
     default void close() throws IOException {
@@ -159,5 +174,7 @@ public interface CompilationProvider extends Closeable {
         public File getGeneratedSourcesDirectory() {
             return generatedSourcesDirectory;
         }
+
     }
+
 }

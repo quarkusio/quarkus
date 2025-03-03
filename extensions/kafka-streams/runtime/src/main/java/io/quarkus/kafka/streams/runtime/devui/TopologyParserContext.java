@@ -18,47 +18,52 @@ final class TopologyParserContext {
     final Mermaid mermaid = new Mermaid();
 
     void addSubTopology(String subTopology) {
-        subTopologies.add(subTopology);
-        graphviz.addSubTopology(subTopology);
-        mermaid.addSubTopology(subTopology);
+        final var sanitizedSubTopology = sanitize(subTopology);
+        subTopologies.add(sanitizedSubTopology);
+        graphviz.addSubTopology(sanitizedSubTopology);
+        mermaid.addSubTopology(sanitizedSubTopology);
     }
 
     void addSink(String sink, String topic) {
-        sinks.add(topic);
-        currentNode = sink;
-        graphviz.addSink(sink, topic);
-        mermaid.addSink(sink, topic);
+        final var sanitizedTopic = sanitize(topic);
+        sinks.add(sanitizedTopic);
+        final var sanitizedSink = sanitize(sink);
+        currentNode = sanitize(sanitizedSink);
+        graphviz.addSink(sanitizedSink, sanitizedTopic);
+        mermaid.addSink(sanitizedSink, sanitizedTopic);
     }
 
     void addSources(String source, String[] topics) {
-        currentNode = source;
+        currentNode = sanitize(source);
         Arrays.stream(topics)
                 .map(String::trim).filter(topic -> !topic.isEmpty())
                 .forEachOrdered(topic -> {
-                    sources.add(topic);
-                    graphviz.addSource(source, topic);
-                    mermaid.addSource(source, topic);
+                    final var sanitizedTopic = sanitize(topic);
+                    sources.add(sanitizedTopic);
+                    graphviz.addSource(currentNode, sanitizedTopic);
+                    mermaid.addSource(currentNode, sanitizedTopic);
                 });
     }
 
     void addRegexSource(String source, String regex) {
-        currentNode = source;
-        final var cleanRegex = regex.trim();
-        if (!cleanRegex.isEmpty()) {
-            sources.add(cleanRegex);
-            graphviz.addRegexSource(source, cleanRegex);
-            mermaid.addRegexSource(source, cleanRegex);
+        currentNode = sanitize(source);
+        final var sanitizedRegex = sanitize(regex);
+        if (!sanitizedRegex.isEmpty()) {
+            sources.add(sanitizedRegex);
+            graphviz.addRegexSource(currentNode, sanitizedRegex);
+            mermaid.addRegexSource(currentNode, sanitizedRegex);
         }
     }
 
     void addStores(String[] stores, String processor, boolean join) {
-        currentNode = processor;
+        currentNode = sanitize(processor);
         Arrays.stream(stores)
                 .map(String::trim).filter(store -> !store.isEmpty())
                 .forEachOrdered(store -> {
-                    this.stores.add(store);
-                    graphviz.addStore(store, currentNode, join);
-                    mermaid.addStore(store, currentNode, join);
+                    final var sanitizedStore = sanitize(store);
+                    this.stores.add(sanitizedStore);
+                    graphviz.addStore(sanitizedStore, currentNode, join);
+                    mermaid.addStore(sanitizedStore, currentNode, join);
                 });
     }
 
@@ -66,9 +71,14 @@ final class TopologyParserContext {
         Arrays.stream(targets)
                 .map(String::trim).filter(target -> !("none".equals(target) || target.isEmpty()))
                 .forEachOrdered(target -> {
-                    graphviz.addTarget(target, currentNode);
-                    mermaid.addTarget(target, currentNode);
+                    final var sanitizedTarget = sanitize(target);
+                    graphviz.addTarget(sanitizedTarget, currentNode);
+                    mermaid.addTarget(sanitizedTarget, currentNode);
                 });
+    }
+
+    private static String sanitize(String name) {
+        return name != null ? name.trim().replaceAll("\"", "") : null;
     }
 
     static final class Graphviz {
@@ -138,7 +148,7 @@ final class TopologyParserContext {
         }
 
         private static String toId(String name) {
-            return name.replaceAll("-", "_");
+            return '\"' + name + '\"';
         }
 
         private static String toLabel(String name) {

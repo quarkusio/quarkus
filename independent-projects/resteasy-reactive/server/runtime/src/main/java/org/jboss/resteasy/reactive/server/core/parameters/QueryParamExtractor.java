@@ -12,16 +12,15 @@ public class QueryParamExtractor implements ParameterExtractor {
     private final Type paramType;
 
     public enum Type {
-        List,
         Map,
         MultiMap,
         Other
     }
 
-    public QueryParamExtractor(String name, boolean single, Type paramType, boolean encoded, String separator) {
+    public QueryParamExtractor(String name, Type paramType, boolean single, boolean encoded, String separator) {
         this.name = name;
-        this.single = single;
         this.paramType = paramType;
+        this.single = single;
         this.encoded = encoded;
         this.separator = separator;
     }

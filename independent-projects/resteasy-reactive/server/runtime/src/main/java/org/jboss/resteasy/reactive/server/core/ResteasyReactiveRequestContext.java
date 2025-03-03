@@ -880,35 +880,27 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
-        if (name != null && !name.isBlank()) {
-            // empty collections must not be turned to null
-            List<String> strings = serverRequest().getAllQueryParams(name).stream()
-                    .filter(p -> !p.isEmpty())
-                    .toList();
-            if (encoded) {
-                List<String> newStrings = new ArrayList<>();
-                for (String i : strings) {
-                    newStrings.add(Encode.encodeQueryParam(i));
-                }
-                strings = newStrings;
+        // empty collections must not be turned to null
+        List<String> strings = serverRequest().getAllQueryParams(name).stream()
+                .filter(p -> !p.isEmpty())
+                .toList();
+        if (encoded) {
+            List<String> newStrings = new ArrayList<>();
+            for (String i : strings) {
+                newStrings.add(Encode.encodeQueryParam(i));
             }
+            strings = newStrings;
+        }
 
-            if (separator != null) {
-                List<String> result = new ArrayList<>(strings.size());
-                for (int i = 0; i < strings.size(); i++) {
-                    String[] parts = strings.get(i).split(separator);
-                    result.addAll(Arrays.asList(parts));
-                }
-                return result;
-            } else {
-                return strings;
+        if (separator != null) {
+            List<String> result = new ArrayList<>(strings.size());
+            for (int i = 0; i < strings.size(); i++) {
+                String[] parts = strings.get(i).split(separator);
+                result.addAll(Arrays.asList(parts));
             }
+            return result;
         } else {
-            List<String> paramNames = (List<String>) serverRequest().queryParamNames();
-            if (paramNames.size() == 1) {
-                return serverRequest().getQueryParam(paramNames.get(0));
-            }
-            return Collections.emptyList();
+            return strings;
         }
     }
 

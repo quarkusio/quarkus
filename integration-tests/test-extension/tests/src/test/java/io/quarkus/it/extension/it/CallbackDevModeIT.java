@@ -14,13 +14,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import io.quarkus.maven.it.RunAndCheckMojoTestBase;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 
-/**
- * Be aware! This test will not run if the name does not start with 'Test'.
- * <p>
- * NOTE to anyone diagnosing failures in this test, to run a single method use:
- * <p>
- * mvn install -Dit.test=TestTemplateDevModeIT#methodName
- */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 @Disabled // Tracked by #22611
 public class CallbackDevModeIT extends RunAndCheckMojoTestBase {

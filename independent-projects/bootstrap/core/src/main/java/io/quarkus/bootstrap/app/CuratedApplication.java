@@ -196,7 +196,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
         if (augmentClassLoader == null) {
-            System.out.println("HOLLY making augment classloader ");
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Augmentation Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
@@ -250,8 +249,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      *
      */
     public synchronized QuarkusClassLoader getOrCreateBaseRuntimeClassLoader() {
-        System.out.println("HOLLY will get or create base runtime " + baseRuntimeClassLoader);
-        System.out.println("HOLLY root is " + quarkusBootstrap.getApplicationRoot());
         if (baseRuntimeClassLoader == null) {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),

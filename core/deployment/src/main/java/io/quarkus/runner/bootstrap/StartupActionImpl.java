@@ -283,7 +283,6 @@ public class StartupActionImpl implements StartupAction {
 
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        System.out.println("HOLLY running about to trigger SC " + runtimeClassLoader);
         try {
             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
             final String className = applicationClassName;

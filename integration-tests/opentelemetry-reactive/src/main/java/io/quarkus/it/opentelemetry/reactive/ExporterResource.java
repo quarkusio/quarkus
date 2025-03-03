@@ -27,7 +27,6 @@ public class ExporterResource {
     @GET
     @Path("/reset")
     public Response reset() {
-        System.out.println("HOLLY OTEL reset " + inMemorySpanExporter);
         inMemorySpanExporter.reset();
         return Response.ok().build();
     }
@@ -36,7 +35,6 @@ public class ExporterResource {
     @Path("/export")
     public List<SpanData> export() {
         inMemorySpanExporter.flush();
-        System.out.println("HOLLY OTEL export " + inMemorySpanExporter);
         return inMemorySpanExporter.getFinishedSpanItems()
                 .stream()
                 .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))

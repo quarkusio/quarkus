@@ -53,6 +53,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.dev.assistant.AIBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -443,6 +444,7 @@ public class BuildTimeContentProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            Optional<AIBuildItem> aiBuildItem,
             DevUIConfig devUIConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
@@ -450,7 +452,8 @@ public class BuildTimeContentProcessor {
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
-        addVersionInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
+        addApplicationInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem,
+                aiBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
@@ -555,9 +558,10 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS);
     }
 
-    private void addVersionInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+    private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Optional<AIBuildItem> aIBuildItem) {
 
         Map<String, String> applicationInfo = new HashMap<>();
 
@@ -575,6 +579,9 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+        if (aIBuildItem.isPresent()) {
+            applicationInfo.put("aiAssistantAvailable", "true");
+        }
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
 

@@ -616,6 +616,27 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void testVersionRevisionPropertyEffectiveModel() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setEffectiveModelBuilder(true)
+                .setCurrentProject(projectDir.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+        var project = ws.getProject("org.acme", "root-module1");
+        assertNotNull(project);
+        assertEquals("1.2.3", project.getVersion());
+
+        project = ws.getProject("org.acme", "root");
+        assertNotNull(project);
+        assertEquals("1.2.3", project.getVersion());
+    }
+
+    @Test
     public void testVersionRevisionProperty() throws Exception {
         testMavenCiFriendlyVersion("${revision}", "workspace-revision", "1.2.3", true);
     }

@@ -16,6 +16,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 public class ParameterDevModeIT extends RunAndCheckMojoTestBase {
 
+    @Override
     protected int getPort() {
         return 8098;
     }

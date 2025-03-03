@@ -22,6 +22,7 @@ public class QuarkusTestAccessingBeanInCallback {
 
     @Callback
     public void callback() {
+        callbackHappened = true;
         // Callbacks invoked by test frameworks should be able to see injected beans
         assertNotNull(bean, "A method invoked by a test interceptor should have access to CDI beans");
 

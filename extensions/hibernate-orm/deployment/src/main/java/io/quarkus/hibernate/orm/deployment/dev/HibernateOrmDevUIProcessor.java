@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -22,7 +23,7 @@ import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
 public class HibernateOrmDevUIProcessor {
 
     @BuildStep
-    public CardPageBuildItem create() {
+    public CardPageBuildItem create(HibernateOrmConfig config) {
         CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()
                 .title("Persistence Units")
@@ -39,7 +40,11 @@ public class HibernateOrmDevUIProcessor {
                 .componentLink("hibernate-orm-named-queries.js")
                 .icon("font-awesome-solid:circle-question")
                 .dynamicLabelJsonRPCMethodName("getNumberOfNamedQueries"));
-
+        card.addPage(Page.webComponentPageBuilder()
+                .title("HQL Console")
+                .componentLink("hibernate-orm-hql-console.js")
+                .icon("font-awesome-solid:play")
+                .metadata("allowHql", String.valueOf(config.devui().allowHql())));
         return card;
     }
 

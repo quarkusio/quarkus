@@ -3,11 +3,7 @@ package io.quarkus.devui.runtime.comms;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow;
@@ -233,12 +229,17 @@ public class JsonRpcRouter {
         uni.subscribe()
                 .with(item -> {
                     if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
-                        JsonRpcMessage jsonRpcMessage = (JsonRpcMessage) item;
-                        codec.writeResponse(s, jsonRpcRequest.getId(), jsonRpcMessage.getResponse(),
-                                jsonRpcMessage.getMessageType());
+                        JsonRpcMessage<?> jsonRpcMessage = (JsonRpcMessage<?>) item;
+                        Object response = jsonRpcMessage.getResponse();
+                        if (jsonRpcMessage.isAlreadySerialized()) {
+                            // The message response was already serialized, write text directly to socket
+                            s.writeTextMessage("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
+                                    + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
+                        } else {
+                            codec.writeResponse(s, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
+                        }
                     } else {
-                        codec.writeResponse(s, jsonRpcRequest.getId(), item,
-                                MessageType.Response);
+                        codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.Response);
                     }
                 }, failure -> {
                     Throwable actualFailure;
@@ -345,6 +346,10 @@ public class JsonRpcRouter {
             return (Map<String, String>) jsonRpcRequest.getParams();
         }
         return Map.of();
+    }
+
+    public JsonMapper getJsonMapper() {
+        return codec.getJsonMapper();
     }
 
     private static final String DOT = ".";

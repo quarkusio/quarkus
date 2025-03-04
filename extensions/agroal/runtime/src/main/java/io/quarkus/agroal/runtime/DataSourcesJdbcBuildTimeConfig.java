@@ -65,7 +65,8 @@ public interface DataSourcesJdbcBuildTimeConfig {
         public Optional<String> appendToDefaultSelect();
 
         /**
-         * Allowed database host. By default only localhost is allowed. Any provided host here will also be allowed
+         * Allowed database host. By default, only localhost is allowed. Any provided host here will also be allowed.
+         * You can use the special value {@code *} to allow any DB host.
          */
         public Optional<String> allowedDBHost();
     }

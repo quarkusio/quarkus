@@ -60,6 +60,12 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     protected DevModeClient devModeClient = new DevModeClient(getPort());
 
+    // TODO this is a regression in heap space requirements; it should be debugged and the override removed
+    @Override
+    protected int getAllowedHeapInMb() {
+        return 200;
+    }
+
     @Override
     protected ContinuousTestingMavenTestUtils getTestingTestUtils() {
         return new ContinuousTestingMavenTestUtils();

@@ -74,6 +74,13 @@ public class UpdateProject {
         return this;
     }
 
+    /**
+     * This method is not used since currently the version passed in here might not be the final target platform version
+     * but the latest recommended w/o taking into account extensions found in the current project.
+     *
+     * @param targetPlatformVersion latest recommended Quarkus platform version
+     * @return this instance
+     */
     public UpdateProject targetPlatformVersion(String targetPlatformVersion) {
         invocation.setValue(TARGET_PLATFORM_VERSION, targetPlatformVersion);
         return this;

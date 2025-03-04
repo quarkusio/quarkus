@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
@@ -144,8 +145,14 @@ public final class PathTestHelper {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
+        } else if (resource.getProtocol().equals("quarkus")) {
+            // This is loaded with a quarkus classloader, so we can ask it directly
+            QuarkusClassLoader qcl = (QuarkusClassLoader) testClass.getClassLoader();
+            return qcl.getCuratedApplication().getQuarkusBootstrap().getTestClassesLocation();
+
         }
         Path path = toPath(resource);
+
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
 
         if (!isInTestDir(resource) && !path.getParent().getFileName().toString().equals(TARGET)) {
@@ -168,16 +175,17 @@ public final class PathTestHelper {
      * @return directory or JAR containing the application being tested by the test class
      */
     public static Path getAppClassLocation(Class<?> testClass) {
-        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass).toString());
+        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass));
     }
 
     /**
      * Resolves the directory or the JAR file containing the application being tested by a test from the given location.
      *
-     * @param testClassLocation the test class location
+     * @param testClassLocationPath the test class location
      * @return directory or JAR containing the application being tested by a test from the given location
      */
-    public static Path getAppClassLocationForTestLocation(String testClassLocation) {
+    public static Path getAppClassLocationForTestLocation(Path testClassLocationPath) {
+        String testClassLocation = testClassLocationPath.toString();
         if (testClassLocation.endsWith(".jar")) {
             if (testClassLocation.endsWith("-tests.jar")) {
                 return Paths.get(new StringBuilder()
@@ -300,4 +308,5 @@ public final class PathTestHelper {
         }
         return projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
     }
+
 }

@@ -2,6 +2,8 @@ package io.quarkus.websockets.next.deployment;
 
 import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem.collectInterceptedClasses;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -92,16 +94,18 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.metrics.MetricsFactory;
-import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -117,6 +121,7 @@ import io.quarkus.websockets.next.runtime.ClientConnectionManager;
 import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ContextSupport;
+import io.quarkus.websockets.next.runtime.HttpUpgradeSecurityInterceptor;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
 import io.quarkus.websockets.next.runtime.SecurityHttpUpgradeCheck;
 import io.quarkus.websockets.next.runtime.SecuritySupport;
@@ -130,6 +135,7 @@ import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketHeaderPropagationHandler;
 import io.quarkus.websockets.next.runtime.WebSocketHttpServerOptionsCustomizer;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
 import io.quarkus.websockets.next.runtime.kotlin.CoroutineInvoker;
 import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
@@ -464,7 +470,8 @@ public class WebSocketProcessor {
             List<GeneratedEndpointBuildItem> generatedEndpoints, WebSocketsServerBuildConfig config,
             ValidationPhaseBuildItem validationPhase, BuildProducer<RouteBuildItem> routes,
             Optional<PermissionsAllowedMetaAnnotationBuildItem> metaPermissionsAllowed,
-            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities) {
+            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities,
+            WebSocketsServerRuntimeConfig runtimeConfig) {
         boolean securityEnabled = capabilities.isPresent(Capability.SECURITY);
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
@@ -481,7 +488,7 @@ public class WebSocketProcessor {
                                     new ScopeInfo(DotName.createSimple(SessionScoped.class), true), endpoint.endpointId,
                                     endpoints, validationPhase.getBeanResolver(), metaPermissionsAllowed, securityEnabled,
                                     httpUpgradeSecured),
-                            endpoint.path));
+                            endpoint.path, runtimeConfig));
             routes.produce(builder.build());
         }
     }
@@ -646,9 +653,30 @@ public class WebSocketProcessor {
 
     @BuildStep
     void createSecurityChecksForHttpUpgradeCheck(Capabilities capabilities,
-            BuildProducer<ClassSecurityCheckAnnotationBuildItem> producer) {
+            BuildProducer<ClassSecurityAnnotationBuildItem> producer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            producer.produce(new ClassSecurityCheckAnnotationBuildItem(WebSocketDotNames.WEB_SOCKET));
+            producer.produce(new ClassSecurityAnnotationBuildItem(WebSocketDotNames.WEB_SOCKET));
+        }
+    }
+
+    @Record(STATIC_INIT)
+    @BuildStep
+    void createHttpUpgradeSecurityInterceptor(WebSocketServerRecorder recorder, BuildProducer<SyntheticBeanBuildItem> producer,
+            List<WebSocketEndpointBuildItem> endpoints,
+            List<EagerSecurityInterceptorClassesBuildItem> eagerSecurityInterceptorClassesBuildItems) {
+        if (!eagerSecurityInterceptorClassesBuildItems.isEmpty()) {
+            Set<String> classesWithSecurityInterceptors = collectInterceptedClasses(eagerSecurityInterceptorClassesBuildItems);
+            Map<String, String> classNameToEndpointId = endpoints.stream()
+                    .filter(i -> classesWithSecurityInterceptors.contains(i.beanClassName().toString()))
+                    .collect(Collectors.toMap(i -> i.beanClassName().toString(), i -> i.id));
+            producer.produce(SyntheticBeanBuildItem
+                    .configure(HttpUpgradeSecurityInterceptor.class)
+                    .types(HttpUpgradeCheck.class)
+                    .scope(BuiltinScope.SINGLETON.getInfo())
+                    .priority(HttpUpgradeSecurityInterceptor.BEAN_PRIORITY)
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(EagerSecurityInterceptorStorage.class)))
+                    .createWith(recorder.createHttpUpgradeSecurityInterceptor(classNameToEndpointId))
+                    .done());
         }
     }
 
@@ -676,20 +704,22 @@ public class WebSocketProcessor {
         return new EndpointSecurityChecksBuildItem(endpointIdToSecurityCheck);
     }
 
-    @Record(RUNTIME_INIT)
+    @Record(RUNTIME_INIT) // needs runtime config
     @BuildStep
     void createSecurityHttpUpgradeCheck(BuildProducer<SyntheticBeanBuildItem> producer,
             EndpointSecurityChecksBuildItem endpointSecurityChecks, WebSocketServerRecorder recorder) {
         var endpointIdToSecurityCheck = endpointSecurityChecks.endpointIdToSecurityCheck;
         if (!endpointIdToSecurityCheck.isEmpty()) {
             producer.produce(SyntheticBeanBuildItem
-                    .configure(HttpUpgradeCheck.class)
+                    .configure(SecurityHttpUpgradeCheck.class)
+                    .types(HttpUpgradeCheck.class)
                     .scope(BuiltinScope.SINGLETON.getInfo())
                     .priority(SecurityHttpUpgradeCheck.BEAN_PRIORITY)
                     .setRuntimeInit()
                     .addInjectionPoint(ClassType.create(DotNames.BEAN_MANAGER))
                     .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationFailureEvent.class)))
                     .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationSuccessEvent.class)))
+                    .addInjectionPoint(ClassType.create(WebSocketsServerRuntimeConfig.class))
                     .createWith(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
                     .done());
         }

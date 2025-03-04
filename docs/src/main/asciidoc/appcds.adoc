@@ -105,7 +105,7 @@ If you are building an application that will target JDK 24+ you can take advanta
 -Dquarkus.package.jar.appcds.use-aot=true
 ----
 
-The result of this flag (plus the `-Dquarkus.package.jar.appcds.use-aot=true` original one) is the creation of an AOT cache file
+The result of this flag (plus the `-Dquarkus.package.jar.appcds.enabled=true` original one) is the creation of an AOT cache file
 named `app.aot`.
 
 You can use this AOT cache when launching the application like so:

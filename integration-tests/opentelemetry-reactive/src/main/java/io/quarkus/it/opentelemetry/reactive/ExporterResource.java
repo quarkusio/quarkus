@@ -34,7 +34,6 @@ public class ExporterResource {
     @GET
     @Path("/export")
     public List<SpanData> export() {
-        inMemorySpanExporter.flush();
         return inMemorySpanExporter.getFinishedSpanItems()
                 .stream()
                 .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))

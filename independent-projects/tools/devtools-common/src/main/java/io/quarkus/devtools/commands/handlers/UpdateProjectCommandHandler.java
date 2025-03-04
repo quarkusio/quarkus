@@ -61,25 +61,30 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         }
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
-        final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
         final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
+
         final ProjectState currentState = resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
-        final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
-        if (projectQuarkusPlatformBom == null) {
-            String error = "The project does not import any Quarkus platform BOM";
-
-            invocation.log().error(error);
-            return QuarkusCommandOutcome.failure(error);
+        final ArtifactCoords currentQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
+        var failure = ensureQuarkusBomVersionIsNotNull(currentQuarkusPlatformBom, invocation.log());
+        if (failure != null) {
+            return failure;
         }
-        if (Objects.equals(projectQuarkusPlatformBom.getVersion(), targetPlatformVersion)) {
+
+        final ProjectState recommendedState = resolveRecommendedState(currentState, targetCatalog,
+                invocation.log());
+        final ArtifactCoords recommendedQuarkusPlatformBom = getProjectQuarkusPlatformBOM(recommendedState);
+        failure = ensureQuarkusBomVersionIsNotNull(recommendedQuarkusPlatformBom, invocation.log());
+        if (failure != null) {
+            return failure;
+        }
+
+        if (Objects.equals(currentQuarkusPlatformBom, recommendedQuarkusPlatformBom)) {
             ProjectInfoCommandHandler.logState(currentState, perModule, true, invocation.getQuarkusProject().log());
         } else {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
-                    projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+                    currentQuarkusPlatformBom, recommendedQuarkusPlatformBom);
             final QuarkusProject quarkusProject = invocation.getQuarkusProject();
-            final ProjectState recommendedState = resolveRecommendedState(currentState, targetCatalog,
-                    invocation.log());
             final ProjectPlatformUpdateInfo platformUpdateInfo = resolvePlatformUpdateInfo(currentState,
                     recommendedState);
             final ProjectExtensionsUpdateInfo extensionsUpdateInfo = ProjectUpdateInfos.resolveExtensionsUpdateInfo(
@@ -89,7 +94,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo,
                     extensionsUpdateInfo,
                     false, perModule,
-                    quarkusProject.log());
+                    invocation.log());
             final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
 
             if (!noRewrite) {
@@ -106,8 +111,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 }
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                         buildTool,
-                        projectQuarkusPlatformBom.getVersion(),
-                        targetPlatformVersion,
+                        currentQuarkusPlatformBom.getVersion(),
+                        recommendedQuarkusPlatformBom.getVersion(),
                         kotlinVersion,
                         updateJavaVersion,
                         extensionsUpdateInfo);
@@ -151,6 +156,15 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     || c.getArtifactId().equals(ToolsConstants.UNIVERSE_PLATFORM_BOM_ARTIFACT_ID)) {
                 return c;
             }
+        }
+        return null;
+    }
+
+    private static QuarkusCommandOutcome ensureQuarkusBomVersionIsNotNull(ArtifactCoords bomCoords, MessageWriter log) {
+        if (bomCoords == null) {
+            String error = "The project state is missing the Quarkus platform BOM";
+            log.error(error);
+            return QuarkusCommandOutcome.failure(error);
         }
         return null;
     }

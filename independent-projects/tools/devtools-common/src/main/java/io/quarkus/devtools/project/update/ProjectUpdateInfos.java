@@ -215,18 +215,16 @@ public final class ProjectUpdateInfos {
     private static void addOrigins(final List<ExtensionOrigins> extOrigins, Extension e) {
         ExtensionOrigins.Builder eoBuilder = null;
         for (ExtensionOrigin o : e.getOrigins()) {
-            if (!(o instanceof ExtensionCatalog)) {
-                continue;
+            if (o instanceof ExtensionCatalog c) {
+                final OriginPreference op = (OriginPreference) c.getMetadata().get("origin-preference");
+                if (op == null) {
+                    continue;
+                }
+                if (eoBuilder == null) {
+                    eoBuilder = ExtensionOrigins.builder(e.getArtifact().getKey());
+                }
+                eoBuilder.addOrigin(c, op);
             }
-            final ExtensionCatalog c = (ExtensionCatalog) o;
-            final OriginPreference op = (OriginPreference) c.getMetadata().get("origin-preference");
-            if (op == null) {
-                continue;
-            }
-            if (eoBuilder == null) {
-                eoBuilder = ExtensionOrigins.builder(e.getArtifact().getKey());
-            }
-            eoBuilder.addOrigin(c, op);
         }
         if (eoBuilder != null) {
             extOrigins.add(eoBuilder.build());

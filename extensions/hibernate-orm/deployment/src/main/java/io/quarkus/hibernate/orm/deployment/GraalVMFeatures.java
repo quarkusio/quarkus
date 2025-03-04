@@ -39,13 +39,12 @@ public class GraalVMFeatures {
                 .build();
     }
 
-    // Workaround for https://hibernate.atlassian.net/browse/HHH-18875
-    // See https://hibernate.zulipchat.com/#narrow/channel/132094-hibernate-orm-dev/topic/StandardStack.20and.20reflection
+    // Workaround for https://hibernate.atlassian.net/browse/HHH-18975
     @BuildStep
-    ReflectiveClassBuildItem registerStandardStackElementTypesForReflection() {
+    ReflectiveClassBuildItem registerNamingStrategiesForReflections() {
         return ReflectiveClassBuildItem
-                .builder(ClassNames.STANDARD_STACK_ELEMENT_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
-                .reason("Workaround for https://hibernate.atlassian.net/browse/HHH-18875")
+                .builder(ClassNames.NAMING_STRATEGIES.stream().map(DotName::toString).toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
                 .build();
     }
 

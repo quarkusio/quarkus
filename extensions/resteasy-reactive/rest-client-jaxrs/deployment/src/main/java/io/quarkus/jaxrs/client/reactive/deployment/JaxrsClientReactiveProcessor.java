@@ -407,6 +407,7 @@ public class JaxrsClientReactiveProcessor {
             }
         }
 
+        Map<GeneratedSubResourceKey, String> generatedSubResources = new HashMap<>();
         for (Map.Entry<DotName, String> i : result.getClientInterfaces().entrySet()) {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
@@ -420,7 +421,8 @@ public class JaxrsClientReactiveProcessor {
                     RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>> proxyProvider = generateClientInvoker(
                             recorderContext, clientProxy,
                             enricherBuildItems, generatedClassBuildItemBuildProducer, clazz, index, defaultConsumesType,
-                            result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded, multipartResponseTypes);
+                            result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded, multipartResponseTypes,
+                            generatedSubResources);
                     if (proxyProvider != null) {
                         clientImplementations.put(clientProxy.getClassName(), proxyProvider);
                     }
@@ -846,7 +848,8 @@ public class JaxrsClientReactiveProcessor {
             RestClientInterface restClientInterface, List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass,
             IndexView index, String defaultMediaType, Map<DotName, String> httpAnnotationToMethod,
-            boolean observabilityIntegrationNeeded, Set<ClassInfo> multipartResponseTypes) {
+            boolean observabilityIntegrationNeeded, Set<ClassInfo> multipartResponseTypes,
+            Map<GeneratedSubResourceKey, String> generatedSubResources) {
 
         String creatorName = restClientInterface.getClassName() + "$$QuarkusRestClientInterfaceCreator";
         String name = restClientInterface.getClassName() + "$$QuarkusRestClientInterface";
@@ -926,7 +929,8 @@ public class JaxrsClientReactiveProcessor {
                 if (method.getHttpMethod() == null) {
                     handleSubResourceMethod(enrichers, generatedClasses, interfaceClass, index, defaultMediaType,
                             httpAnnotationToMethod, name, classContext, baseTarget, methodIndex, method,
-                            javaMethodParameters, jandexMethod, multipartResponseTypes, Collections.emptyList());
+                            javaMethodParameters, jandexMethod, multipartResponseTypes, Collections.emptyList(),
+                            generatedSubResources);
                 } else {
                     FieldDescriptor methodField = classContext.createJavaMethodField(interfaceClass, jandexMethod,
                             methodIndex);
@@ -1394,7 +1398,8 @@ public class JaxrsClientReactiveProcessor {
             String defaultMediaType, Map<DotName, String> httpAnnotationToMethod, String name,
             ClassRestClientContext ownerContext, ResultHandle ownerTarget, int methodIndex,
             ResourceMethod method, String[] javaMethodParameters, MethodInfo jandexMethod,
-            Set<ClassInfo> multipartResponseTypes, List<SubResourceParameter> ownerSubResourceParameters) {
+            Set<ClassInfo> multipartResponseTypes, List<SubResourceParameter> ownerSubResourceParameters,
+            Map<GeneratedSubResourceKey, String> generatedSubResources) {
         Type returnType = jandexMethod.returnType();
         if (returnType.kind() != CLASS) {
             // sort of sub-resource method that returns a thing that isn't a class
@@ -1412,12 +1417,34 @@ public class JaxrsClientReactiveProcessor {
 
         ownerContext.createJavaMethodField(interfaceClass, jandexMethod, methodIndex);
 
-        // generate implementation for a method that returns the sub-client:
-        MethodCreator ownerMethod = ownerContext.classCreator.getMethodCreator(method.getName(), method.getSimpleReturnType(),
-                javaMethodParameters);
+        List<SubResourceMethodParameterKeyPart> ownerSubResourceMethodParameters = new ArrayList<>();
+        for (SubResourceParameter ownerSubResourceParameter : ownerSubResourceParameters) {
+            ownerSubResourceMethodParameters.add(SubResourceMethodParameterKeyPart.of(ownerSubResourceParameter));
+        }
 
-        String subName = subInterface.name().toString() + HashUtil.sha1(name) + methodIndex;
+        // method parameters (except path parameters) are rewritten to sub client fields (directly, public fields):
+        List<SubResourceMethodParameterKeyPart> subResourceMethodParameters = new ArrayList<>();
+        MethodParameter[] parameters = method.getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            MethodParameter parameter = parameters[i];
+            if (parameter.parameterType != ParameterType.PATH) {
+                subResourceMethodParameters.add(new SubResourceMethodParameterKeyPart(parameter, i));
+            }
+        }
+
+        GeneratedSubResourceKey key = new GeneratedSubResourceKey(returnType, ownerSubResourceMethodParameters,
+                subResourceMethodParameters);
+
+        // generate implementation for a method that returns the sub-client:
+        String subName = generatedSubResources.get(key);
+        if (subName != null) {
+            generateSubResourceLocatorOwnerMethod(name, ownerContext, ownerTarget, methodIndex, method, javaMethodParameters,
+                    ownerSubResourceParameters, subInterface, subName);
+            return;
+        }
+        subName = subInterface.name().toString() + HashUtil.sha1(name) + methodIndex;
         MethodDescriptor subConstructorDescriptor = MethodDescriptor.ofConstructor(subName, WebTargetImpl.class.getName());
+
         try (ClassRestClientContext subContext = new ClassRestClientContext(subName, subConstructorDescriptor,
                 generatedClasses, Object.class, subInterface.name().toString())) {
 
@@ -1428,60 +1455,18 @@ public class JaxrsClientReactiveProcessor {
                     method);
 
             boolean encodingEnabled = true;
-
-            FieldDescriptor forMethodTargetDesc = ownerContext.classCreator
-                    .getFieldCreator("targetInOwner" + methodIndex, WebTargetImpl.class).getFieldDescriptor();
             if (subInterface.hasDeclaredAnnotation(ENCODED)) {
                 ownerContext.constructor.assign(constructorTarget,
                         disableEncodingForWebTarget(ownerContext.constructor, constructorTarget));
                 encodingEnabled = false;
             }
 
-            ownerContext.constructor.writeInstanceField(forMethodTargetDesc, ownerContext.constructor.getThis(),
-                    constructorTarget);
-
             Supplier<FieldDescriptor> methodParamAnnotationsField = ownerContext.getLazyJavaMethodParamAnnotationsField(
                     methodIndex);
             Supplier<FieldDescriptor> methodGenericParametersField = ownerContext.getLazyJavaMethodGenericParametersField(
                     methodIndex);
 
-            AssignableResultHandle client = createRestClientField(name, ownerContext.classCreator, ownerMethod);
-            AssignableResultHandle webTarget = ownerMethod.createVariable(WebTarget.class);
-            ownerMethod.assign(webTarget, ownerMethod.readInstanceField(forMethodTargetDesc, ownerMethod.getThis()));
-
-            if (encodingEnabled && method.isEncoded()) {
-                ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
-            }
-
-            // Setup Path param from current method
-            boolean lastEncodingEnabledByParam = true;
-            for (int i = 0; i < method.getParameters().length; i++) {
-                MethodParameter param = method.getParameters()[i];
-                if (encodingEnabled && !method.isEncoded()) {
-                    boolean needsDisabling = isParamAlreadyEncoded(param);
-                    if (lastEncodingEnabledByParam && needsDisabling) {
-                        ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
-                        lastEncodingEnabledByParam = false;
-                    } else if (!lastEncodingEnabledByParam && !needsDisabling) {
-                        ownerMethod.assign(webTarget, enableEncodingForWebTarget(ownerMethod, webTarget));
-                        lastEncodingEnabledByParam = true;
-                    }
-                }
-
-                if (param.parameterType == ParameterType.PATH) {
-                    ResultHandle paramValue = ownerMethod.getMethodParam(i);
-                    // methodTarget = methodTarget.resolveTemplate(paramname, paramvalue);
-                    addPathParam(ownerMethod, webTarget, param.name, paramValue,
-                            param.type,
-                            client,
-                            getGenericTypeFromArray(ownerMethod, methodGenericParametersField, i),
-                            getAnnotationsFromArray(ownerMethod, methodParamAnnotationsField, i));
-                }
-            }
-
             // Continue creating the subresource instance with the web target updated
-            ResultHandle subInstance = ownerMethod.newInstance(subConstructorDescriptor, webTarget);
-
             List<SubResourceParameter> subParamFields = new ArrayList<>();
 
             for (SubResourceParameter ownerParameter : ownerSubResourceParameters) {
@@ -1489,8 +1474,6 @@ public class JaxrsClientReactiveProcessor {
                         ownerParameter.typeName)
                         .setModifiers(Modifier.PUBLIC)
                         .getFieldDescriptor();
-                ownerMethod.writeInstanceField(paramField, subInstance,
-                        ownerMethod.readInstanceField(ownerParameter.field, ownerMethod.getThis()));
                 subParamFields.add(new SubResourceParameter(ownerParameter.methodParameter, ownerParameter.typeName,
                         ownerParameter.type, paramField, ownerParameter.paramAnnotationsField,
                         ownerParameter.genericsParametersField,
@@ -1500,7 +1483,6 @@ public class JaxrsClientReactiveProcessor {
             FieldDescriptor clientField = subContext.classCreator.getFieldCreator("client", RestClientBase.class)
                     .setModifiers(Modifier.PUBLIC)
                     .getFieldDescriptor();
-            ownerMethod.writeInstanceField(clientField, subInstance, client);
             // method parameters (except path parameters) are rewritten to sub client fields (directly, public fields):
             for (int i = 0; i < method.getParameters().length; i++) {
                 MethodParameter param = method.getParameters()[i];
@@ -1508,13 +1490,11 @@ public class JaxrsClientReactiveProcessor {
                     FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.type)
                             .setModifiers(Modifier.PUBLIC)
                             .getFieldDescriptor();
-                    ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
                     subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.type,
                             jandexMethod.parameterType(i), paramField, methodParamAnnotationsField,
                             methodGenericParametersField,
                             i));
                 }
-
             }
 
             int subMethodIndex = 0;
@@ -1623,7 +1603,8 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator,
+                                    handleBeanParamMethod,
                                     invocationBuilderRef, subContext, beanParam.getItems(),
                                     paramValue, methodTarget, index,
                                     interfaceClass.name().toString(),
@@ -1750,7 +1731,8 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator,
+                                    handleBeanParamMethod,
                                     invocationBuilderRef, subContext, beanParam.getItems(),
                                     subMethodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     interfaceClass.name().toString(),
@@ -1790,7 +1772,8 @@ public class JaxrsClientReactiveProcessor {
                                     getGenericTypeFromArray(handleHeaderMethod, subMethodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleHeaderMethod, subMethodParamAnnotationsField, paramIdx));
                             handleHeaderMethod.returnValue(invocationBuilderRef);
-                            invocationBuilderEnrichers.put(handleHeaderDescriptor, subMethodCreator.getMethodParam(paramIdx));
+                            invocationBuilderEnrichers.put(handleHeaderDescriptor,
+                                    subMethodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.COOKIE) {
                             // cookies are added at the invocation builder level
                             MethodDescriptor handleCookieDescriptor = MethodDescriptor.ofMethod(subName,
@@ -1810,7 +1793,8 @@ public class JaxrsClientReactiveProcessor {
                                     getGenericTypeFromArray(handleCookieMethod, subMethodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleCookieMethod, subMethodParamAnnotationsField, paramIdx));
                             handleCookieMethod.returnValue(invocationBuilderRef);
-                            invocationBuilderEnrichers.put(handleCookieDescriptor, subMethodCreator.getMethodParam(paramIdx));
+                            invocationBuilderEnrichers.put(handleCookieDescriptor,
+                                    subMethodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createFormDataIfAbsent(subMethodCreator, formParams, multipart);
                             // FIXME: this is weird, it doesn't go via converter nor multipart, looks like a bug
@@ -1883,16 +1867,103 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, subInterface, index,
                             defaultMediaType, httpAnnotationToMethod, subName, subContext, subMethodTarget,
                             subMethodIndex, subMethod, subJavaMethodParameters, jandexSubMethod,
-                            multipartResponseTypes, subParamFields);
+                            multipartResponseTypes, subParamFields, generatedSubResources);
                 }
 
             }
 
             subContext.constructor.returnValue(null);
             subContext.clinit.returnValue(null);
-
-            ownerMethod.returnValue(subInstance);
         }
+
+        generatedSubResources.put(key, subName);
+        generateSubResourceLocatorOwnerMethod(name, ownerContext, ownerTarget, methodIndex, method, javaMethodParameters,
+                ownerSubResourceParameters, subInterface, subName);
+    }
+
+    private void generateSubResourceLocatorOwnerMethod(String name, ClassRestClientContext ownerContext,
+            ResultHandle ownerTarget, int methodIndex, ResourceMethod method, String[] javaMethodParameters,
+            List<SubResourceParameter> ownerSubResourceParameters, ClassInfo subInterface, String subName) {
+        MethodCreator ownerMethod = ownerContext.classCreator.getMethodCreator(method.getName(),
+                method.getSimpleReturnType(),
+                javaMethodParameters);
+
+        AssignableResultHandle constructorTarget = createWebTargetForMethod(ownerContext.constructor, ownerTarget,
+                method);
+        boolean encodingEnabled = true;
+        if (subInterface.hasDeclaredAnnotation(ENCODED)) {
+            ownerContext.constructor.assign(constructorTarget,
+                    disableEncodingForWebTarget(ownerContext.constructor, constructorTarget));
+            encodingEnabled = false;
+        }
+        FieldDescriptor forMethodTargetDesc = ownerContext.classCreator
+                .getFieldCreator("targetInOwner" + methodIndex, WebTargetImpl.class).getFieldDescriptor();
+        ownerContext.constructor.writeInstanceField(forMethodTargetDesc, ownerContext.constructor.getThis(),
+                constructorTarget);
+
+        Supplier<FieldDescriptor> methodParamAnnotationsField = ownerContext.getLazyJavaMethodParamAnnotationsField(
+                methodIndex);
+        Supplier<FieldDescriptor> methodGenericParametersField = ownerContext.getLazyJavaMethodGenericParametersField(
+                methodIndex);
+
+        AssignableResultHandle client = createRestClientField(name, ownerContext.classCreator, ownerMethod);
+        AssignableResultHandle webTarget = ownerMethod.createVariable(WebTarget.class);
+        ownerMethod.assign(webTarget, ownerMethod.readInstanceField(forMethodTargetDesc, ownerMethod.getThis()));
+
+        if (encodingEnabled && method.isEncoded()) {
+            ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
+        }
+
+        // Setup Path param from current method
+        boolean lastEncodingEnabledByParam = true;
+        for (int i = 0; i < method.getParameters().length; i++) {
+            MethodParameter param = method.getParameters()[i];
+            if (encodingEnabled && !method.isEncoded()) {
+                boolean needsDisabling = isParamAlreadyEncoded(param);
+                if (lastEncodingEnabledByParam && needsDisabling) {
+                    ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
+                    lastEncodingEnabledByParam = false;
+                } else if (!lastEncodingEnabledByParam && !needsDisabling) {
+                    ownerMethod.assign(webTarget, enableEncodingForWebTarget(ownerMethod, webTarget));
+                    lastEncodingEnabledByParam = true;
+                }
+            }
+
+            if (param.parameterType == ParameterType.PATH) {
+                ResultHandle paramValue = ownerMethod.getMethodParam(i);
+                // methodTarget = methodTarget.resolveTemplate(paramname, paramvalue);
+                addPathParam(ownerMethod, webTarget, param.name, paramValue,
+                        param.type,
+                        client,
+                        getGenericTypeFromArray(ownerMethod, methodGenericParametersField, i),
+                        getAnnotationsFromArray(ownerMethod, methodParamAnnotationsField, i));
+            }
+        }
+
+        // Continue creating the subresource instance with the web target updated
+        MethodDescriptor subConstructorDescriptor = MethodDescriptor.ofConstructor(subName, WebTargetImpl.class.getName());
+        ResultHandle subInstance = ownerMethod.newInstance(subConstructorDescriptor, webTarget);
+
+        for (SubResourceParameter ownerParameter : ownerSubResourceParameters) {
+            FieldDescriptor paramField = FieldDescriptor.of(subName, ownerParameter.field.getName() + "$_",
+                    ownerParameter.typeName);
+            ownerMethod.writeInstanceField(paramField, subInstance,
+                    ownerMethod.readInstanceField(ownerParameter.field, ownerMethod.getThis()));
+        }
+
+        ownerMethod.writeInstanceField(FieldDescriptor.of(subName, "client", RestClientBase.class), subInstance, client);
+
+        // method parameters (except path parameters) are rewritten to sub client fields (directly, public fields):
+        for (int i = 0; i < method.getParameters().length; i++) {
+            MethodParameter param = method.getParameters()[i];
+            if (param.parameterType != ParameterType.PATH) {
+                FieldDescriptor paramField = FieldDescriptor.of(subName, "param" + i, param.type);
+                ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
+            }
+
+        }
+
+        ownerMethod.returnValue(subInstance);
     }
 
     private AssignableResultHandle createWebTargetForMethod(MethodCreator mc, ResultHandle baseTarget,
@@ -3230,4 +3301,14 @@ public class JaxrsClientReactiveProcessor {
         }
     }
 
+    private record GeneratedSubResourceKey(Type returnType,
+            List<SubResourceMethodParameterKeyPart> ownerSubResourceMethodParameters,
+            List<SubResourceMethodParameterKeyPart> subResourceMethodParameters) {
+    }
+
+    private record SubResourceMethodParameterKeyPart(MethodParameter methodParameter, int paramIndex) {
+        static SubResourceMethodParameterKeyPart of(SubResourceParameter subResourceParameter) {
+            return new SubResourceMethodParameterKeyPart(subResourceParameter.methodParameter, subResourceParameter.paramIndex);
+        }
+    }
 }

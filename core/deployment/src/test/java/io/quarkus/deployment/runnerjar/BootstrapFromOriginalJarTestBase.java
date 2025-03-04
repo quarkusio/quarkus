@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -95,11 +94,11 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                         : appPom.getDependencyManagement().getDependencies()).stream()
                         .filter(d -> "import".equals(d.getScope())
                                 && d.getGroupId().equals(appPom.getGroupId()))
-                        .collect(Collectors.toList());
+                        .toList();
                 depModules = appPom.getDependencies().stream()
                         .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
                                 (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
-                        .collect(Collectors.toList());
+                        .toList();
             }
 
             final Path appModule;

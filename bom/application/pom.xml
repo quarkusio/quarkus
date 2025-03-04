@@ -52,7 +52,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.6.0</smallrye-common.version>
+        <smallrye-common.version>2.6.1</smallrye-common.version>
         <smallrye-config.version>3.9.1</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
@@ -115,7 +115,7 @@
         <wildfly-elytron.version>2.5.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.1.Final</jboss-marshalling.version>
         <jboss-threads.version>3.6.1.Final</jboss-threads.version>
-        <vertx.version>4.5.11</vertx.version>
+        <vertx.version>4.5.13</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>

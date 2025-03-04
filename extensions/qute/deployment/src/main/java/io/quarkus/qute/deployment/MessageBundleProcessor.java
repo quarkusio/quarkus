@@ -864,16 +864,20 @@ public class MessageBundleProcessor {
      * @param key
      * @param bundleInterface
      * @return {@code true} if the given key represents an enum constant message key, such as {@code myEnum_CONSTANT1}
-     * @see #toEnumConstantKey(String, String)
      */
     boolean isEnumConstantMessageKey(String key, IndexView index, ClassInfo bundleInterface) {
         if (key.isBlank()) {
             return false;
         }
-        int lastIdx = key.lastIndexOf("_");
+        return isEnumConstantMessageKey("_$", key, index, bundleInterface)
+                || isEnumConstantMessageKey("_", key, index, bundleInterface);
+    }
+
+    private boolean isEnumConstantMessageKey(String separator, String key, IndexView index, ClassInfo bundleInterface) {
+        int lastIdx = key.lastIndexOf(separator);
         if (lastIdx != -1 && lastIdx != key.length()) {
             String methodName = key.substring(0, lastIdx);
-            String constant = key.substring(lastIdx + 1, key.length());
+            String constant = key.substring(lastIdx + separator.length(), key.length());
             MethodInfo method = messageBundleMethod(bundleInterface, methodName);
             if (method != null && method.parametersCount() == 1) {
                 Type paramType = method.parameterType(0);
@@ -1020,11 +1024,12 @@ public class MessageBundleProcessor {
             // We need some special handling for enum message bundle methods
             // A message bundle method that accepts an enum and has no message template receives a generated template:
             // {#when enumParamName}
-            //   {#is CONSTANT1}{msg:org_acme_MyEnum_CONSTANT1}
-            //   {#is CONSTANT2}{msg:org_acme_MyEnum_CONSTANT2}
+            //   {#is CONSTANT_1}{msg:myEnum_$CONSTANT_1}
+            //   {#is CONSTANT_2}{msg:myEnum_$CONSTANT_2}
             //   ...
             // {/when}
             // Furthermore, a special message method is generated for each enum constant
+            // These methods are used to handle the {msg:myEnum$CONSTANT_1} and {msg:myEnum$CONSTANT_2}
             if (messageTemplate == null && method.parametersCount() == 1) {
                 Type paramType = method.parameterType(0);
                 if (paramType.kind() == org.jboss.jandex.Type.Kind.CLASS) {
@@ -1035,9 +1040,12 @@ public class MessageBundleProcessor {
                                 .append("}");
                         Set<String> enumConstants = maybeEnum.fields().stream().filter(FieldInfo::isEnumConstant)
                                 .map(FieldInfo::name).collect(Collectors.toSet());
+                        String separator = enumConstantSeparator(enumConstants);
                         for (String enumConstant : enumConstants) {
-                            // org_acme_MyEnum_CONSTANT1
-                            String enumConstantKey = toEnumConstantKey(method.name(), enumConstant);
+                            // myEnum_CONSTANT
+                            // myEnum_$CONSTANT_1
+                            // myEnum_$CONSTANT$NEXT
+                            String enumConstantKey = toEnumConstantKey(method.name(), separator, enumConstant);
                             String enumConstantTemplate = messageTemplates.get(enumConstantKey);
                             if (enumConstantTemplate == null) {
                                 throw new TemplateException(
@@ -1051,6 +1059,10 @@ public class MessageBundleProcessor {
                                     .append(":")
                                     .append(enumConstantKey)
                                     .append("}");
+                            // For each constant we generate a method:
+                            // myEnum_CONSTANT(MyEnum val)
+                            // myEnum_$CONSTANT_1(MyEnum val)
+                            // myEnum_$CONSTANT$NEXT(MyEnum val)
                             generateEnumConstantMessageMethod(bundleCreator, bundleName, locale, bundleInterface,
                                     defaultBundleInterface, enumConstantKey, keyMap, enumConstantTemplate,
                                     messageTemplateMethods);
@@ -1131,8 +1143,21 @@ public class MessageBundleProcessor {
         return generatedName.replace('/', '.');
     }
 
-    private String toEnumConstantKey(String methodName, String enumConstant) {
-        return methodName + "_" + enumConstant;
+    private String enumConstantSeparator(Set<String> enumConstants) {
+        for (String constant : enumConstants) {
+            if (constant.contains("_$")) {
+                throw new MessageBundleException("A constant of a localized enum may not contain '_$': " + constant);
+            }
+            if (constant.contains("$") || constant.contains("_")) {
+                // If any of the constants contains "_" or "$" then "_$" is used
+                return "_$";
+            }
+        }
+        return "_";
+    }
+
+    private String toEnumConstantKey(String methodName, String separator, String enumConstant) {
+        return methodName + separator + enumConstant;
     }
 
     private void generateEnumConstantMessageMethod(ClassCreator bundleCreator, String bundleName, String locale,
@@ -1164,7 +1189,7 @@ public class MessageBundleProcessor {
             // No expression/tag - no need to use qute
             enumConstantMethod.returnValue(enumConstantMethod.load(messageTemplate));
         } else {
-            // Obtain the template, e.g. msg_org_acme_MyEnum_CONSTANT1
+            // Obtain the template, e.g. msg_myEnum$CONSTANT_1
             ResultHandle template = enumConstantMethod.invokeStaticMethod(
                     io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
                     enumConstantMethod.load(templateId));

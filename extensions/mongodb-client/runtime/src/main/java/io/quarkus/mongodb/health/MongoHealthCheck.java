@@ -42,7 +42,7 @@ public class MongoHealthCheck implements HealthCheck {
 
     private static final Document COMMAND = new Document("ping", 1);
 
-    public void configure(MongodbConfig config) {
+    public MongoHealthCheck(MongodbConfig config) {
         Iterable<InstanceHandle<MongoClient>> handle = Arc.container().select(MongoClient.class, Any.Literal.INSTANCE)
                 .handles();
         Iterable<InstanceHandle<ReactiveMongoClient>> reactiveHandlers = Arc.container()
@@ -61,7 +61,7 @@ public class MongoHealthCheck implements HealthCheck {
             }
         }
 
-        config.mongoClientConfigs.forEach(new BiConsumer<String, MongoClientConfig>() {
+        config.mongoClientConfigs.forEach(new BiConsumer<>() {
             @Override
             public void accept(String name, MongoClientConfig cfg) {
                 MongoClient client = getClient(handle, name);
@@ -76,7 +76,6 @@ public class MongoHealthCheck implements HealthCheck {
                 }
             }
         });
-
     }
 
     private MongoClient getClient(Iterable<InstanceHandle<MongoClient>> handle, String name) {

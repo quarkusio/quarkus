@@ -267,6 +267,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         private final NonApplicationRootPathBuildItem buildItem;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private RouteBuildItem.RouteType routerType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+        private String name;
         private String path;
 
         Builder(NonApplicationRootPathBuildItem buildItem) {
@@ -327,7 +328,13 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 this.path = route;
                 this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
-            super.orderedRoute(this.path, order, routeFunction);
+
+            // we normalize the route name to remove trailing *, this is to be consistent with the path
+            // see RouteImpl#setPath()
+            String routeName = route.charAt(route.length() - 1) == '*' ? route.substring(0, route.length() - 1) : route;
+
+            // we pass a route name for proper identification in the metrics
+            super.orderedRoute(routeName, this.path, order, routeFunction);
             return this;
         }
 

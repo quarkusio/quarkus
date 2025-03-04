@@ -69,14 +69,14 @@
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.12</jacoco.version>
-        <kubernetes-client.version>6.13.4</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.13.5</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.0</rest-assured.version>
-        <hibernate-orm.version>6.6.3.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>6.6.7.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>2.4.2.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
+        <hibernate-reactive.version>2.4.4.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
         <hibernate-search.version>7.2.1.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->

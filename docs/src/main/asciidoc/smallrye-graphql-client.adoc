@@ -222,7 +222,7 @@ specify that within the `@GraphQLClientApi` annotation (by setting the `endpoint
 or move this over to the configuration file, `application.properties`:
 
 ----
-quarkus.smallrye-graphql-client.star-wars-typesafe.url=https://swapi-graphql.netlify.app/.netlify/functions/index
+quarkus.smallrye-graphql-client.star-wars-typesafe.url=https://swapi-graphql.netlify.app/graphql
 ----
 
 NOTE: During *tests only*, the URL is an optional property, and if it's not specified, Quarkus will assume
@@ -278,7 +278,7 @@ representations of the GraphQL types and documents. The client API interface is 
 
 We still need to configure the URL for the client, so let's put this into `application.properties`:
 ----
-quarkus.smallrye-graphql-client.star-wars-dynamic.url=https://swapi-graphql.netlify.app/.netlify/functions/index
+quarkus.smallrye-graphql-client.star-wars-dynamic.url=https://swapi-graphql.netlify.app/graphql
 ----
 
 We decided to name the client `star-wars-dynamic`. We will use this name when injecting a dynamic client

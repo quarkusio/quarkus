@@ -58,12 +58,9 @@ import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mongodb.MongoClientName;
-import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 
@@ -110,17 +107,6 @@ public class MongoClients {
             //force class init to prevent possible deadlock when done by mongo threads
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException ignored) {
-        }
-
-        try {
-            Class.forName("org.eclipse.microprofile.health.HealthCheck");
-            InstanceHandle<MongoHealthCheck> instance = Arc.container()
-                    .instance(MongoHealthCheck.class, Any.Literal.INSTANCE);
-            if (instance.isAvailable()) {
-                instance.get().configure(mongodbConfig);
-            }
-        } catch (ClassNotFoundException e) {
-            // Ignored - no health check
         }
     }
 

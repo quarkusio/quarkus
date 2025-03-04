@@ -329,7 +329,6 @@ public class AppMakerHelper {
         AugmentAction augmentAction = result.augmentAction;
 
         try {
-            System.out.println("HOLLY about to make app for " + testClass);
             StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
 
             // To check changes here run integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
@@ -339,7 +338,6 @@ public class AppMakerHelper {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers
             // TODO how best to handle?
-            System.out.println("HOLLY IT ALL WENT WRONG + + e" + e);
             e.printStackTrace();
             throw e;
 

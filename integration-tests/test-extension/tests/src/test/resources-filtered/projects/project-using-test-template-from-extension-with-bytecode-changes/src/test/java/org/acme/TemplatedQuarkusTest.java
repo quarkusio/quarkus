@@ -39,7 +39,6 @@ public class TemplatedQuarkusTest {
     @TestTemplate
     @ExtendWith(MyContextProvider.class)
     void contextAnnotationCheckingTestTemplate(ExtensionContext context) {
-        System.out.println("HOLLY cl is " + context.getRequiredTestClass().getClassLoader());
         Annotation[] contextAnnotations = context.getRequiredTestClass().getAnnotations();
         Assertions.assertTrue(Arrays.toString(contextAnnotations).contains("AnnotationAddedByExtension"),
                 "The JUnit extension context does not see the annotation, only sees " + Arrays.toString(contextAnnotations));

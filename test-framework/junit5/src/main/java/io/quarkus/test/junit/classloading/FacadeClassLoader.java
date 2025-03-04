@@ -163,7 +163,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // TODO can we get rid of this now that we have the guard?
         ClassLoader annotationLoader;
         if (isolatedClassloader) {
-            System.out.println("HOLLY doing isolated classloader path " + classesPath);
             // If the classloader is isolated, putting the parent into the peeking classloader will just load all classes with the parent, which isn't what's wanted (and causes @WithFunction tests to fail)
             peekingClassLoader = new URLClassLoader(urls, null);
             annotationLoader = parent;
@@ -218,7 +217,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        System.out.println("HOLLY facade classloader loading " + name);
+        Log.debug("Facade classloader loading " + name);
         boolean isQuarkusTest = false;
         boolean isIntegrationTest = false;
         Class<?> inspectionClass = null;
@@ -293,9 +292,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 preloadTestResourceClasses(inspectionClass);
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
-                System.out.println("HOLLY made classloader " + runtimeClassLoader);
                 Class<?> clazz = runtimeClassLoader.loadClass(name);
-                System.out.println("HOLLY did load " + clazz + " using CL " + clazz.getClassLoader());
 
                 return clazz;
             } else {
@@ -304,13 +301,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
         } catch (NoSuchMethodException e) {
             // TODO better handling of these
-            System.out.println("Could get method " + e);
+            System.err.println("Could not get method " + e);
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
-            System.out.println("Could not invoke " + e);
+            System.err.println("Could not invoke " + e);
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
-            System.out.println("Could not access " + e);
+            System.err.println("Could not access " + e);
             throw new RuntimeException(e);
         }
 
@@ -441,8 +438,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             }
 
-            System.out.println("HOLLY With resources, key is " + key);
-
             // If we didn't have a classloader and didn't get a resource key
             runtimeClassLoaders.put(key, startupAction);
 
@@ -527,7 +522,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .setContextClassLoader(original);
         }
 
-        System.out.println("HOLLY at end of classload TCCL is " + Thread.currentThread().getContextClassLoader());
         return startupAction;
 
     }

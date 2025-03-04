@@ -93,7 +93,6 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
     }
 
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
-        System.out.println("HOLLY setting state " + state.getClass() + " cl:" + state.getClass().getClassLoader());
         ExtensionContext.Store store = getStoreFromContext(context);
         store.put(QuarkusTestExtensionState.class.getName(), state);
         store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());

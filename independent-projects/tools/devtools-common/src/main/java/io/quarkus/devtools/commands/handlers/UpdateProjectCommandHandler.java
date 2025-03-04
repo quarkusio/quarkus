@@ -71,19 +71,21 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         }
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
-        final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
         final ProjectState currentState = resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
-        final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
-        if (projectQuarkusPlatformBom == null) {
-            String error = "The project does not import any Quarkus platform BOM";
-
-            invocation.log().error(error);
-            return QuarkusCommandOutcome.failure(error);
+        final ArtifactCoords currentQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
+        var failure = ensureQuarkusBomVersionIsNotNull(currentQuarkusPlatformBom, invocation.log());
+        if (failure != null) {
+            return failure;
         }
-        final QuarkusProject quarkusProject = invocation.getQuarkusProject();
         final ProjectState recommendedState = resolveRecommendedState(currentState, targetCatalog,
                 invocation.log());
+        final ArtifactCoords recommendedQuarkusPlatformBom = getProjectQuarkusPlatformBOM(recommendedState);
+        failure = ensureQuarkusBomVersionIsNotNull(recommendedQuarkusPlatformBom, invocation.log());
+        if (failure != null) {
+            return failure;
+        }
+
         final ProjectPlatformUpdateInfo platformUpdateInfo = resolvePlatformUpdateInfo(currentState,
                 recommendedState);
         final ProjectExtensionsUpdateInfo extensionsUpdateInfo = ProjectUpdateInfos.resolveExtensionsUpdateInfo(
@@ -91,17 +93,19 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 recommendedState);
         boolean shouldUpdate = logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo,
                 extensionsUpdateInfo,
-                quarkusProject.log());
+                invocation.log());
         Boolean rewrite = invocation.getValue(UpdateProject.REWRITE, null);
         boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
         if (shouldUpdate) {
+            final QuarkusProject quarkusProject = invocation.getQuarkusProject();
             final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
+            // TODO targetCatalog shouldn't be used here, since it might not be the recommended one according to the calculated recommended state
             String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
             final Optional<Integer> updateJavaVersion = resolveUpdateJavaVersion(extensionsUpdateInfo, projectJavaVersion);
             QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                     buildTool,
-                    projectQuarkusPlatformBom.getVersion(),
-                    targetPlatformVersion,
+                    currentQuarkusPlatformBom.getVersion(),
+                    recommendedQuarkusPlatformBom.getVersion(),
                     kotlinVersion,
                     updateJavaVersion,
                     extensionsUpdateInfo);
@@ -235,6 +239,15 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     || c.getArtifactId().equals(ToolsConstants.UNIVERSE_PLATFORM_BOM_ARTIFACT_ID)) {
                 return c;
             }
+        }
+        return null;
+    }
+
+    private static QuarkusCommandOutcome<Void> ensureQuarkusBomVersionIsNotNull(ArtifactCoords bomCoords, MessageWriter log) {
+        if (bomCoords == null) {
+            String error = "The project state is missing the Quarkus platform BOM";
+            log.error(error);
+            return QuarkusCommandOutcome.failure(error);
         }
         return null;
     }

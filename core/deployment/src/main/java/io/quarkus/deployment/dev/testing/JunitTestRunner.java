@@ -726,9 +726,7 @@ public class JunitTestRunner {
                 // While we're doing that, we may as well share the classloading logic
                 itClasses.add(classLoaderForLoadingTests.loadClass(i));
             } catch (Exception e) {
-                // TODO how handle this?
-                e.printStackTrace();
-                System.out.println("HOLLY BAD BAD" + e);
+                Log.debug(e);
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);

@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
@@ -144,6 +145,11 @@ public final class PathTestHelper {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
+        } else if (resource.getProtocol().equals("quarkus")) {
+            // This is loaded with a quarkus classloader, so we can ask it directly
+            QuarkusClassLoader qcl = (QuarkusClassLoader) testClass.getClassLoader();
+            return qcl.getCuratedApplication().getQuarkusBootstrap().getTestClassesLocation();
+
         }
         Path path = toPath(resource);
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));

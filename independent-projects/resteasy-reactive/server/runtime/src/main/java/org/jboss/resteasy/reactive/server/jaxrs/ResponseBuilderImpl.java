@@ -29,7 +29,7 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
                     String host = req.getRequestHost();
                     int port = -1;
                     int index = host.lastIndexOf(":");
-                    if (index > -1) {
+                    if (index > -1 && (host.charAt(0) != '[' || index > host.lastIndexOf("]"))) {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }
@@ -70,7 +70,7 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
                     String host = req.getRequestHost();
                     int port = -1;
                     int index = host.lastIndexOf(":");
-                    if (index > -1) {
+                    if (index > -1 && (host.charAt(0) != '[' || index > host.lastIndexOf("]"))) {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }

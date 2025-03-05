@@ -57,20 +57,20 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     public static final String KEY_PREFIX = "QuarkusTest-";
     public static final String DISPLAY_NAME_PREFIX = "JUnit";
     // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
-    // TODO and if we don't, how do we get a re-usable deployment classloader?
 
-    // TODO does this need to be a thread safe maps?
+    // JUnit discovery is single threaded, so no need for concurrency on this map
     private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
 
     /*
+     * A 'disposable' loader for holding temporary instances of the classes to allow us to inspect them.
+     *
      * It seems kind of wasteful to load every class twice; that's true, but it's been the case (by a different mechanism)
      * ever since Quarkus 1.2 and the move to isolated classloaders, because the test extension would reload classes into the
      * runtime classloader.
-     * In the future, https://openjdk.org/jeps/466 would allow us to avoid inspecting the classes to avoid a double load in the
-     * delegating
-     * classloader
+     * In the future, https://openjdk.org/jeps/466 might allow us to avoid loading the classes to avoid a double load in the
+     * delegating classloader. Whether that's actually better than using a disposable classloader + reflection, I don't know.
      * The solution referenced by
      * https://github.com/junit-team/junit5/discussions/4203,https://github.com/marcphilipp/gradle-sandbox/blob/
      * baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/
@@ -123,11 +123,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     public FacadeClassLoader(ClassLoader parent) {
-        // TODO update this commentWe need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
-        // It seems something in that path is using a method other than loadClass(), and so the inherited method can't do the right thing without a parent
-        // TODO if this is launched with a launcher, java.class.path may not be correct - see https://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
-        // TODO paths with spaces in them break this - and at the moment, no test catches that
-
+        // TODO paths with spaces in them may break this - and at the moment, no test catches that
         this(parent, false, null, null, System.getProperty("java.class.path"));
     }
 
@@ -155,16 +151,17 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 })
                 .toArray(URL[]::new);
 
-        // TODO this special casing is pretty fragile and pretty ugly; without it, @WithFunction tests do not pass, such as google cloud functions
+        // If this is launched with a launcher, java.class.path may be very minimal - see https://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
         // Tests using an isolated classloader do not work correctly with continuous testing, but this issue predates the facade classloader - see https://github.com/quarkusio/quarkus/issues/46478
         // What kind of tests use an isolated classloader? Maven will create one (and also a normal classloader) for tests with `@WithFunction`
-        boolean isolatedClassloader = !(classesPath.contains(File.pathSeparator));
+        // TODO this special casing is pretty fragile and pretty ugly; without it, @WithFunction tests do not pass, such as google cloud functions
+        boolean launcherClassloader = !(classesPath.contains(File.pathSeparator));
 
-        // TODO can we get rid of this now that we have the guard?
         ClassLoader annotationLoader;
-        if (isolatedClassloader) {
+        if (launcherClassloader) {
             // If the classloader is isolated, putting the parent into the peeking classloader will just load all classes with the parent, which isn't what's wanted (and causes @WithFunction tests to fail)
             peekingClassLoader = new URLClassLoader(urls, null);
+            // ... but we need some way to load annotations, because they won't be visible on the classpath property
             annotationLoader = parent;
         } else {
             peekingClassLoader = new ParentLastURLClassLoader(urls, parent);

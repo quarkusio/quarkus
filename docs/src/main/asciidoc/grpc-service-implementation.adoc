@@ -381,12 +381,27 @@ Having it, you can run the dev mode with: `mvn quarkus:dev -Pdevelopment`.
 
 If you use Gradle, you can simply add a dependency for the `quarkusDev` task:
 
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy]
 ----
 dependencies {
     quarkusDev 'io.quarkus:quarkus-vertx-http'
 }
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+dependencies {
+    quarkusDev("io.quarkus:quarkus-vertx-http")
+}
+----
+****
 
 == gRPC Server metrics
 

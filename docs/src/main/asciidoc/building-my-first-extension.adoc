@@ -404,9 +404,14 @@ As mentioned before, an extension is composed of two modules:
 * `runtime`
 * `deployment`
 
-We are going to create a Gradle multi-module project with those two modules. Here is a simple `settings.gradle` example file:
+We are going to create a Gradle multi-module project with those two modules.
 
-[source, groovy]
+Here is a simple `settings.gradle` example file:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy,subs=attributes+]
 ----
 pluginManagement {
     repositories {
@@ -414,7 +419,7 @@ pluginManagement {
         gradlePluginPortal()
     }
     plugins {
-        id 'io.quarkus.extension' version "${quarkus.version}" <1>
+        id 'io.quarkus.extension' version "{quarkus-version}" <1>
     }
 }
 
@@ -422,13 +427,43 @@ include 'runtime', 'deployment' <2>
 
 rootProject.name = 'greeting-extension'
 ----
-
 <1> Configure the quarkus extension plugin version
 <2> Include both `runtime` and `deployment` modules
+****
+
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin,subs=attributes+]
+----
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id("io.quarkus.extension") version "{quarkus-version}" <1>
+    }
+}
+
+include("runtime", "deployment") <2>
+
+rootProject.name = "greeting-extension"
+----
+<1> Configure the quarkus extension plugin version
+<2> Include both `runtime` and `deployment` modules
+****
+
+
+NOTE: For kotlin add the `.kts` extension the build files, for example: `settings.gradle.kts`
 
 Here is a sample of a root `build.gradle` file:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
 ----
 subprojects {
     apply plugin: 'java-library' <1>
@@ -438,10 +473,30 @@ subprojects {
     version '1.0-SNAPSHOT'
 }
 ----
-
 <1> Apply the `java-library` plugin for all sub-modules
 <2> Apply the `maven-publish` plugin used to publish our artifacts
 <3> Globally set the group id used for publication
+****
+
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+subprojects {
+    apply(plugin = "java-library") // <1>
+    apply(plugin = "maven-publish") // <2>
+
+    group = "org.acme" <3>
+    version = "1.0-SNAPSHOT"
+}
+----
+<1> Apply the `java-library` plugin for all sub-modules
+<2> Apply the `maven-publish` plugin used to publish our artifacts
+<3> Globally set the group id used for publication
+****
+
 
 The `io.quarkus.extension` plugin will be used in order to help us building the extension.
 The plugin will *only* be applied to the `runtime` module.
@@ -449,23 +504,43 @@ The plugin will *only* be applied to the `runtime` module.
 ==== The deployment module
 
 The deployment module does not require any specific plugin.
-Here is an example of a minimal `build.gradle` file for the `deployment` module:
+Here is an example of a minimal Gradle build file for the `deployment` module:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy,subs=attributes+]
 ----
 name = 'greeting-extension-deployment' <1>
 
 dependencies {
     implementation project(':runtime') <2>
-
-    implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
-
+    implementation 'io.quarkus:quarkus-arc-deployment'
+    implementation platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}")
     testImplementation 'io.quarkus:quarkus-junit5-internal'
 }
 ----
-
 <1> By convention, the deployment module has the `-deployment` suffix (`greeting-extension-deployment`).
 <2> The deployment module *must* depend on the `runtime` module.
+****
+
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin,subs=attributes+]
+----
+
+dependencies {
+    implementation(project(":runtime")) <1>
+    implementation("io.quarkus:quarkus-arc-deployment")
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}"))
+    testImplementation("io.quarkus:quarkus-junit5-internal")
+}
+----
+<1> The deployment module *must* depend on the `runtime` module.
+****
+
 
 ==== The runtime module
 
@@ -476,7 +551,10 @@ The runtime module applies the `io.quarkus.extension` plugin. This will:
 
 Here is an example of `build.gradle` file for the `runtime` module:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy,subs=attributes+]
 ----
 plugins {
     id 'io.quarkus.extension' <1>
@@ -486,12 +564,32 @@ name = 'greeting-extension' <2>
 description = 'Greeting extension'
 
 dependencies {
-    implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
+    implementation platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}")
 }
 ----
+****
 
 <1> Apply the `io.quarkus.extension` plugin.
 <2> By convention, the runtime module doesn't have a suffix (and thus is named `greeting-extension`) as it is the artifact exposed to the end user.
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin,subs=attributes+]
+----
+plugins {
+    id("io.quarkus.extension") // <1>
+}
+
+description = "Greeting extension"
+
+dependencies {
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}"))
+}
+----
+****
+
+<1> Apply the `io.quarkus.extension` plugin.
 
 == Basic version of the Sample Greeting extension
 
@@ -515,10 +613,23 @@ All we need to do is add `quarkus-undertow` as dependency to our `./greeting-ext
 
 For Gradle, add the dependency in `./greeting-extension/runtime/build.gradle` file:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
 ----
     implementation 'io.quarkus:quarkus-undertow'
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+    implementation("io.quarkus:quarkus-undertow")
+----
+****
 
 NOTE: The dependency on `quarkus-arc` generated by the `create-extension` mojo can now be removed since
 `quarkus-undertow` already depends on it.
@@ -620,10 +731,23 @@ NOTE: The dependency on `quarkus-arc-deployment` generated by the `create-extens
 
 For Gradle, add the dependency in `./greeting-extension/deployment/build.gradle` file:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
 ----
     implementation 'io.quarkus:quarkus-undertow-deployment'
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+    implementation("io.quarkus:quarkus-undertow-deployment")
+----
+****
 
 We can now update `org.acme.greeting.extension.deployment.GreetingExtensionProcessor`:
 
@@ -683,11 +807,25 @@ Let's add the `rest-assured` dependency into the  `./greeting-extension/deployme
 
 For Gradle, add the dependency in `./greeting-extension/deployment/build.gradle` file:
 
-[source, groovy]
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
 ----
     ...
     testImplementation 'io.rest-assured:rest-assured'
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+    ...
+    testImplementation("io.rest-assured:rest-assured")
+----
+****
 
 
 The `create-extension` Maven Mojo can create the test and integration-test structure (drop the `-DwithoutTests`). Here, we'll create it ourselves:

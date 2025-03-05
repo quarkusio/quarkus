@@ -17,6 +17,7 @@ import io.quarkus.restclient.config.key.SharedOneConfigKeyRestClient;
 import io.quarkus.restclient.config.key.SharedThreeConfigKeyRestClient;
 import io.quarkus.restclient.config.key.SharedTwoConfigKeyRestClient;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -371,5 +372,9 @@ class RestClientConfigTest {
         assertThat(config.connectionPoolSize().getAsInt()).isEqualTo(10);
         assertTrue(config.maxChunkSize().isPresent());
         assertThat(config.maxChunkSize().get().asBigInteger()).isEqualTo(BigInteger.valueOf(1024));
+        assertThat(config.multipart().fileThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("5M").asBigInteger());
+        assertThat(config.multipart().memoryThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("10M").asBigInteger());
     }
 }

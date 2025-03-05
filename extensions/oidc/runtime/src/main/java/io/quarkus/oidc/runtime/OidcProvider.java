@@ -661,7 +661,7 @@ public class OidcProvider implements Closeable {
                 var claimValue = claims.getStringClaimValue(claimName);
                 var targetValue = targetClaim.getValue();
                 if (!claimValue.equals(targetValue)) {
-                    return "claim " + claimName + "does not match expected value of " + targetValue;
+                    return "claim " + claimName + " does not match expected value of " + targetValue;
                 }
             }
             return null;

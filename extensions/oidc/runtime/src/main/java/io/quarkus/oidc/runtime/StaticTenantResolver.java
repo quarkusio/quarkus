@@ -19,6 +19,7 @@ import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 final class StaticTenantResolver {
@@ -226,15 +227,32 @@ final class StaticTenantResolver {
 
                     final String iss = tokenJson.getString(Claims.iss.name());
                     if (tenantContext.getOidcMetadata().getIssuer().equals(iss)) {
-                        OidcUtils.storeExtractedBearerToken(context, token);
 
                         final String tenantId = tenantContext.oidcConfig().tenantId().get();
+
+                        if (!requiredClaimsMatch(tenantContext.oidcConfig().token().requiredClaims(), tokenJson)) {
+                            LOG.debugf(
+                                    "OIDC tenant '%s' issuer matches the token issuer '%s' but does not match the token required claims",
+                                    tenantId, iss);
+                            return null;
+                        }
+
+                        OidcUtils.storeExtractedBearerToken(context, token);
                         LOG.debugf("Resolved the '%s' OIDC tenant based on the matching issuer '%s'", tenantId, iss);
                         return tenantId;
                     }
                 }
             }
             return null;
+        }
+
+        private static boolean requiredClaimsMatch(Map<String, String> requiredClaims, JsonObject tokenJson) {
+            for (Map.Entry<String, String> entry : requiredClaims.entrySet()) {
+                if (!entry.getValue().equals(tokenJson.getString(entry.getKey()))) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static boolean isTenantWithoutIssuer(TenantConfigContext tenantContext) {

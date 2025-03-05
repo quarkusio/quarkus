@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.TransactionRequiredException;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -13,6 +14,7 @@ import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -177,6 +179,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
+    @Override
+    public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createQuery(typedQueryReference);
+        }
+    }
+
     @Deprecated
     @Override
     public Query createNamedQuery(String name) {
@@ -290,6 +300,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public void insertMultiple(List<?> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.insertMultiple(entities);
+        }
+    }
+
+    @Override
     public boolean isOpen() {
         return true;
     }
@@ -325,6 +343,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
+    @Override
+    public void updateMultiple(List<?> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.updateMultiple(entities);
+        }
+    }
+
     @Deprecated
     @Override
     public void delete(Object object) {
@@ -340,6 +366,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.statelessSession.delete(entityName, object);
+        }
+    }
+
+    @Override
+    public void deleteMultiple(List<?> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.deleteMultiple(entities);
         }
     }
 
@@ -413,6 +447,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.get(entityName, id, lockMode);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMultiple(entityClass, ids);
         }
     }
 
@@ -756,6 +798,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public void upsertMultiple(List<?> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsertMultiple(entities);
+        }
+    }
+
+    @Override
     public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -768,6 +818,22 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.get(graph, graphSemantic, id, lockMode);
+        }
+    }
+
+    @Override
+    public CacheMode getCacheMode() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getCacheMode();
+        }
+    }
+
+    @Override
+    public void setCacheMode(CacheMode cacheMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.setCacheMode(cacheMode);
         }
     }
 }

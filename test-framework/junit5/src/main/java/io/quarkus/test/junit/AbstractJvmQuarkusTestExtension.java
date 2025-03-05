@@ -134,7 +134,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             }
 
             testClassLocation = getTestClassesLocation(requiredTestClass);
-            appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+            appClassLocation = getAppClassLocationForTestLocation(testClassLocation);
             if (!appClassLocation.equals(testClassLocation)) {
                 addToBuilderIfConditionMet.accept(testClassLocation);
                 // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)

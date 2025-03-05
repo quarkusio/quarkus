@@ -79,10 +79,12 @@ public class StartupActionImpl implements StartupAction {
         } else {
             baseClassLoader.reset(extractGeneratedResources(buildResult, false),
                     transformedClasses);
+            // TODO Need to do recreations in JUnitTestRunner for dev mode case
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
                     resources, transformedClasses);
         }
         this.runtimeClassLoader = runtimeClassLoader;
+        runtimeClassLoader.setStartupAction(this);
     }
 
     /**
@@ -184,6 +186,7 @@ public class StartupActionImpl implements StartupAction {
     }
 
     private void doClose() {
+        curatedApplication.tidy();
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException

@@ -41,17 +41,27 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
 
     @Override
     public <T> Optional<T> getConfigValue(String key, Class<T> type) {
-        //the config is in an isolated CL
-        //we need to extract it via reflection
-        //this is pretty yuck, but I don't really see a solution
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
+
+        ClassLoader old = Thread.currentThread()
+                .getContextClassLoader();
         try {
-            Class<?> configProviderClass = classLoader.loadClass(ConfigProvider.class.getName());
-            Method getConfig = configProviderClass.getMethod("getConfig", ClassLoader.class);
-            Thread.currentThread().setContextClassLoader(classLoader);
-            Object config = getConfig.invoke(null, classLoader);
-            return (Optional<T>) getConfig.getReturnType().getMethod("getOptionalValue", String.class, Class.class)
-                    .invoke(config, key, type);
+            // we are assuming here that the the classloader has been initialised with some kind of different provider that does not infinite loop.
+            Thread.currentThread()
+                    .setContextClassLoader(classLoader);
+            if (classLoader == ConfigProvider.class.getClassLoader()) {
+                return ConfigProvider.getConfig(classLoader)
+                        .getOptionalValue(key, type);
+            } else {
+                //the config is in an isolated CL
+                //we need to extract it via reflection
+                //this is pretty yuck, but I don't really see a solution
+                Class<?> configProviderClass = classLoader.loadClass(ConfigProvider.class.getName());
+                Method getConfig = configProviderClass.getMethod("getConfig", ClassLoader.class);
+                Object config = getConfig.invoke(null, classLoader);
+                return (Optional<T>) getConfig.getReturnType()
+                        .getMethod("getOptionalValue", String.class, Class.class)
+                        .invoke(config, key, type);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -79,8 +89,14 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
     @Override
     public Object instance(Class<?> clazz, Annotation... qualifiers) {
         try {
-            Class<?> actualClass = Class.forName(clazz.getName(), true,
-                    classLoader);
+            // TODO can we drop the class forname entirely?
+            Class<?> actualClass;
+            if (classLoader == clazz.getClassLoader()) {
+                actualClass = clazz;
+            } else {
+                actualClass = Class.forName(clazz.getName(), true, classLoader);
+            }
+
             Class<?> cdi = classLoader.loadClass("jakarta.enterprise.inject.spi.CDI");
             Object instance = cdi.getMethod("current").invoke(null);
             Method selectMethod = cdi.getMethod("select", Class.class, Annotation[].class);

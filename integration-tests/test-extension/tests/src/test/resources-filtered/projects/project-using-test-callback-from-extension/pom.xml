@@ -12,7 +12,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <surefire-plugin.version>3.5.0</surefire-plugin.version>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
     <quarkus.version>@project.version@</quarkus.version>
   </properties>
   <dependencyManagement>

@@ -1,6 +1,6 @@
 package io.quarkus.test.junit5.virtual.internal;
 
-import static io.quarkus.test.junit5.virtual.internal.EventStreamFacade.CARRIER_PINNED_EVENT_NAME;
+import static io.quarkus.test.junit5.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;

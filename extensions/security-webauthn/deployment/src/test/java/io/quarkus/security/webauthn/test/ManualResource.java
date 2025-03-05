@@ -29,7 +29,7 @@ public class ManualResource {
         return security.register(username, register, ctx).map(authenticator -> {
             // need to attach the authenticator to the user
             userProvider.reallyStore(authenticator);
-            security.rememberUser(authenticator.getUserName(), ctx);
+            security.rememberUser(authenticator.getUsername(), ctx);
             return "OK";
         });
     }
@@ -40,7 +40,7 @@ public class ManualResource {
         return security.login(login, ctx).map(authenticator -> {
             // need to update the user's authenticator
             userProvider.reallyUpdate(authenticator.getCredentialID(), authenticator.getCounter());
-            security.rememberUser(authenticator.getUserName(), ctx);
+            security.rememberUser(authenticator.getUsername(), ctx);
             return "OK";
         });
     }

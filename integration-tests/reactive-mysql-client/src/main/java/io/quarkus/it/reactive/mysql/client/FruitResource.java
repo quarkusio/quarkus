@@ -9,14 +9,14 @@ import jakarta.ws.rs.Path;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 
 @Path("/fruits")
 public class FruitResource {
 
     @Inject
-    MySQLPool client;
+    Pool client;
 
     @PostConstruct
     void setupDb() {

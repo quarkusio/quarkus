@@ -3,25 +3,26 @@ package io.quarkus.liquibase.mongodb.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * The liquibase configuration
  */
-@ConfigRoot(name = "liquibase-mongodb", phase = ConfigPhase.BUILD_TIME)
-public class LiquibaseMongodbBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigMapping(prefix = "quarkus.liquibase-mongodb")
+public interface LiquibaseMongodbBuildTimeConfig {
 
     /**
      * The change log file
      */
-    @ConfigItem(defaultValue = "db/changeLog.xml")
-    public String changeLog;
+    @WithDefault("db/changeLog.xml")
+    String changeLog();
 
     /**
      * The search path for DirectoryResourceAccessor
      */
-    @ConfigItem
-    public Optional<List<String>> searchPath;
+    Optional<List<String>> searchPath();
 }

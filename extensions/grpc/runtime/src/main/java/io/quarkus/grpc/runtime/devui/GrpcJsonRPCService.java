@@ -28,7 +28,7 @@ import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.vertx.http.runtime.CertificateConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -49,7 +49,7 @@ public class GrpcJsonRPCService {
     private Map<String, StreamObserver<Message>> callsInProgress;
 
     @Inject
-    HttpConfiguration httpConfiguration;
+    VertxHttpConfig httpConfig;
 
     @Inject
     GrpcConfiguration grpcConfiguration;
@@ -63,24 +63,24 @@ public class GrpcJsonRPCService {
 
     @PostConstruct
     public void init() {
-        GrpcServerConfiguration serverConfig = grpcConfiguration.server;
-        if (serverConfig.useSeparateServer) {
-            this.host = serverConfig.host;
-            this.port = serverConfig.port;
-            this.ssl = serverConfig.ssl.certificate.isPresent() || serverConfig.ssl.keyStore.isPresent();
+        GrpcServerConfiguration serverConfig = grpcConfiguration.server();
+        if (serverConfig.useSeparateServer()) {
+            this.host = serverConfig.host();
+            this.port = serverConfig.port();
+            this.ssl = serverConfig.ssl().certificate().isPresent() || serverConfig.ssl().keyStore().isPresent();
         } else {
-            this.host = httpConfiguration.host;
-            this.port = httpConfiguration.port;
-            this.ssl = isTLSConfigured(httpConfiguration.ssl.certificate);
+            this.host = httpConfig.host();
+            this.port = httpConfig.port();
+            this.ssl = isTLSConfigured(httpConfig.ssl().certificate());
         }
         this.grpcServiceClassInfos = getGrpcServiceClassInfos();
         this.callsInProgress = new HashMap<>();
     }
 
     private boolean isTLSConfigured(CertificateConfig certificate) {
-        return certificate.files.isPresent()
-                || certificate.keyFiles.isPresent()
-                || certificate.keyStoreFile.isPresent();
+        return certificate.files().isPresent()
+                || certificate.keyFiles().isPresent()
+                || certificate.keyStoreFile().isPresent();
     }
 
     public JsonArray getServices() {

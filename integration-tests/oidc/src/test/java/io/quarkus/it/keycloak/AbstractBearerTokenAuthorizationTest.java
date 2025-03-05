@@ -16,7 +16,9 @@ import io.restassured.RestAssured;
 
 public abstract class AbstractBearerTokenAuthorizationTest {
 
-    KeycloakTestClient client = new KeycloakTestClient(new Tls());
+    KeycloakTestClient client = new KeycloakTestClient(
+            new Tls("target/certificates/oidc-client-keystore.p12",
+                    "target/certificates/oidc-client-truststore.p12"));
 
     @Test
     public void testSecureAccessSuccessWithCors() {

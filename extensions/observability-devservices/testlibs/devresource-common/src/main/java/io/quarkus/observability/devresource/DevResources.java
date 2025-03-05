@@ -18,7 +18,8 @@ public class DevResources {
     private static final Logger log = Logger.getLogger(DevResources.class);
 
     private static List<DevResourceLifecycleManager> resources;
-    private static Map<String, String> map;
+    private static Map<String, String> map = Map.of();
+    private static volatile boolean started = false;
 
     /**
      * @return list of found dev resources.
@@ -45,7 +46,8 @@ public class DevResources {
      * @return a map of config properties to be returned by {@link DevResourcesConfigSource}
      */
     static synchronized Map<String, String> ensureStarted() {
-        if (map == null) {
+        if (!started) {
+            started = true;
             try {
                 for (var res : resources()) {
                     res.initDev();

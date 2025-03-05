@@ -3,27 +3,26 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "rabbitmq", phase = ConfigPhase.BUILD_TIME)
-public class RabbitMQBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.rabbitmq")
+public interface RabbitMQBuildTimeConfig {
 
     /**
      * Dev Services.
      * <p>
      * DevServices allows Quarkus to start a RabbitMQ broker in dev and test mode automatically.
      */
-    @ConfigItem
     @ConfigDocSection(generated = true)
-    public RabbitMQDevServicesBuildTimeConfig devservices;
+    RabbitMQDevServicesBuildTimeConfig devservices();
 
     /**
      * The credentials provider name.
      */
-    @ConfigItem
-    public Optional<String> credentialsProvider = Optional.empty();
+    Optional<String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -34,6 +33,5 @@ public class RabbitMQBuildTimeConfig {
      * <p>
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    public Optional<String> credentialsProviderName = Optional.empty();
+    Optional<String> credentialsProviderName();
 }

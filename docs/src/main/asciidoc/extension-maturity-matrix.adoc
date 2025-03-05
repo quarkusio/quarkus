@@ -27,7 +27,7 @@ It's completely OK to publish a first version of an extension that doesn't handl
 Also note that this list only includes the technical features of your extension.
 You might also want to think about how you share your extension, and how it presents itself to the world.
 The link:https://hub.quarkiverse.io/checklistfornewprojects/[new extension checklist] on the Quarkiverse Hub has a useful list of ways extensions can participate in the ecosystem.
-It's also a good idea to spend some time on the metadata in the xref:extension-metadata#quarkus-extension-yaml[`quarkus-extension.yaml` file], which is used by Quarkus tooling.
+It's also a good idea to spend some time on the metadata in the xref:extension-metadata.adoc#quarkus-extension-yaml[`quarkus-extension.yaml` file], which is used by Quarkus tooling.
 
 Here are some pointers on how to achieve those capabilities.
 
@@ -66,7 +66,7 @@ The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#h
 === CDI Beans
 
 Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[expose components via CDI], so that they can be consumed in a frictionless way by user applications.
-Having everything injectable as CDI beans also helps testing, especially xref:getting-started-testing#mock-support[mocking].
+Having everything injectable as CDI beans also helps testing, especially xref:getting-started-testing.adoc#mock-support[mocking].
 
 === Dev Service
 
@@ -95,7 +95,7 @@ A good starting point is usually to use
 Although providing new, joyful, ways to do things is good,
 it's important to not break the normal patterns that users may be familiar with.
 
-For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
+For some inspiration in this area, have a look at xref:logging.adoc#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
 
 === Codestart application template
 
@@ -124,7 +124,7 @@ For a case study of how to eliminate reflection and what the performance benefit
 === Virtual thread support
 
 Not every library is suitable for using with virtual threads, out of the box.
-xref:virtual-threads#why-not["Why not virtual threads everywhere?"] explains why.
+xref:virtual-threads.adoc#why-not["Why not virtual threads everywhere?"] explains why.
 
 To get your library working properly with virtual threads, you should make sure the library is not pinning the carrier thread.
  Quarkus has xref:virtual-threads.adoc#testing-virtual-thread-applications[test helpers to do these checks in an automated way].
@@ -150,14 +150,14 @@ Many of these characteristics come by default with the Quarkus framework or http
 
 === Logging
 
-Quarkus uses JBoss Logging as its logging engine, and xref:logging[supports several logging APIs]. (This is normal Java logging, not OpenTelemetry logging.)
+Quarkus uses JBoss Logging as its logging engine, and xref:logging.adoc[supports several logging APIs]. (This is normal Java logging, not OpenTelemetry logging.)
 
 Avoid using errors and warnings for conditions that will not affect normal operation. These outputs can cause false alarms in user monitoring systems.
 
 
 === Define health endpoints
 
-Extensions may wish to xref:writing-extensions#extension-defined-endpoints[define library-specific endpoints] for health criteria which are specific to that extension. To add a new endpoint, extensions should produce a `NonApplicationRootPathBuildItem`.
+Extensions may wish to xref:writing-extensions.adoc#extension-defined-endpoints[define library-specific endpoints] for health criteria which are specific to that extension. To add a new endpoint, extensions should produce a `NonApplicationRootPathBuildItem`.
 
 === Tracing context
 

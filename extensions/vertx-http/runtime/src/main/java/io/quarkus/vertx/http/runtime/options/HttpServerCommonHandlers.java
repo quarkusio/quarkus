@@ -34,8 +34,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class HttpServerCommonHandlers {
     public static void enforceMaxBodySize(ServerLimitsConfig limits, Router httpRouteRouter) {
-        if (limits.maxBodySize.isPresent()) {
-            long limit = limits.maxBodySize.get().asLongValue();
+        if (limits.maxBodySize().isPresent()) {
+            long limit = limits.maxBodySize().get().asLongValue();
             Long limitObj = limit;
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_UPLOAD_LIMIT).handler(new Handler<RoutingContext>() {
                 @Override
@@ -65,7 +65,8 @@ public class HttpServerCommonHandlers {
         }
     }
 
-    public static Handler<HttpServerRequest> enforceDuplicatedContext(Handler<HttpServerRequest> delegate) {
+    public static Handler<HttpServerRequest> enforceDuplicatedContext(Handler<HttpServerRequest> delegate,
+            boolean mustResumeRequest) {
         return new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
@@ -78,12 +79,12 @@ public class HttpServerCommonHandlers {
                         @Override
                         public void handle(Void x) {
                             setCurrentContextSafe(true);
-                            delegate.handle(new ResumingRequestWrapper(event));
+                            delegate.handle(new ResumingRequestWrapper(event, mustResumeRequest));
                         }
                     });
                 } else {
                     setCurrentContextSafe(true);
-                    delegate.handle(new ResumingRequestWrapper(event));
+                    delegate.handle(new ResumingRequestWrapper(event, mustResumeRequest));
                 }
             }
         };
@@ -91,7 +92,7 @@ public class HttpServerCommonHandlers {
 
     public static Handler<HttpServerRequest> applyProxy(ProxyConfig proxyConfig, Handler<HttpServerRequest> root,
             Supplier<Vertx> vertx) {
-        if (proxyConfig.proxyAddressForwarding) {
+        if (proxyConfig.proxyAddressForwarding()) {
             final ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(proxyConfig);
             final TrustedProxyCheck.TrustedProxyCheckBuilder proxyCheckBuilder = forwardingProxyOptions.trustedProxyCheckBuilder;
             if (proxyCheckBuilder == null) {
@@ -115,10 +116,10 @@ public class HttpServerCommonHandlers {
         if (!filtersInConfig.isEmpty()) {
             for (var entry : filtersInConfig.entrySet()) {
                 var filterConfig = entry.getValue();
-                var matches = filterConfig.matches;
-                var order = filterConfig.order.orElse(Integer.MIN_VALUE);
-                var methods = filterConfig.methods;
-                var headers = filterConfig.header;
+                var matches = filterConfig.matches();
+                var order = filterConfig.order().orElse(Integer.MIN_VALUE);
+                var methods = filterConfig.methods();
+                var headers = filterConfig.header();
                 if (methods.isEmpty()) {
                     httpRouteRouter.routeWithRegex(matches)
                             .order(order)
@@ -174,24 +175,24 @@ public class HttpServerCommonHandlers {
             for (Map.Entry<String, HeaderConfig> entry : headers.entrySet()) {
                 var name = entry.getKey();
                 var config = entry.getValue();
-                if (config.methods.isEmpty()) {
-                    httpRouteRouter.route(config.path)
+                if (config.methods().isEmpty()) {
+                    httpRouteRouter.route(config.path())
                             .order(RouteConstants.ROUTE_ORDER_HEADERS)
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
-                                    event.response().headers().set(name, config.value);
+                                    event.response().headers().set(name, config.value());
                                     event.next();
                                 }
                             });
                 } else {
-                    for (String method : config.methods.get()) {
-                        httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path)
+                    for (String method : config.methods().get()) {
+                        httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path())
                                 .order(RouteConstants.ROUTE_ORDER_HEADERS)
                                 .handler(new Handler<RoutingContext>() {
                                     @Override
                                     public void handle(RoutingContext event) {
-                                        event.response().headers().add(name, config.value);
+                                        event.response().headers().add(name, config.value());
                                         event.next();
                                     }
                                 });

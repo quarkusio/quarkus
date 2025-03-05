@@ -28,7 +28,7 @@ public final class ConfigMappingBuildItem extends MultiBuildItem {
     }
 
     public ConfigClass toConfigClass() {
-        return new ConfigClass(configClass, prefix);
+        return ConfigClass.configClass(configClass, prefix);
     }
 
     @Override

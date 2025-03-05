@@ -109,10 +109,10 @@ public class FlywayRecorder {
 
     public void doStartActions(String dataSourceName) {
         FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
-                .getConfigForDataSourceName(dataSourceName);
+                .datasources().get(dataSourceName);
 
-        if (flywayDataSourceRuntimeConfig.active.isPresent()
-                && !flywayDataSourceRuntimeConfig.active.get()) {
+        if (flywayDataSourceRuntimeConfig.active().isPresent()
+                && !flywayDataSourceRuntimeConfig.active().get()) {
             return;
         }
 
@@ -129,7 +129,15 @@ public class FlywayRecorder {
             flywayContainer.getFlyway().clean();
         }
         if (flywayContainer.isValidateAtStart()) {
-            flywayContainer.getFlyway().validate();
+            if (flywayContainer.isCleanOnValidationError()) {
+                var result = flywayContainer.getFlyway().validateWithResult();
+
+                if (!result.validationSuccessful) {
+                    flywayContainer.getFlyway().clean();
+                }
+            } else {
+                flywayContainer.getFlyway().validate();
+            }
         }
         if (flywayContainer.isBaselineAtStart()) {
             new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())

@@ -12,6 +12,7 @@ import java.util.OptionalInt;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Binding;
 
 /**
  * Builder for the {@link OidcTenantConfig.Token}.
@@ -25,7 +26,7 @@ public final class TokenConfigBuilder {
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
             Optional<String> decryptionKeyLocation, boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
             boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
-            Optional<Boolean> verifyAccessTokenWithUserInfo) implements OidcTenantConfig.Token {
+            Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding) implements OidcTenantConfig.Token {
     }
 
     private final OidcTenantConfigBuilder builder;
@@ -50,6 +51,7 @@ public final class TokenConfigBuilder {
     private boolean allowOpaqueTokenIntrospection;
     private Optional<String> customizerName;
     private Optional<Boolean> verifyAccessTokenWithUserInfo;
+    private Binding binding;
 
     public TokenConfigBuilder() {
         this(new OidcTenantConfigBuilder());
@@ -83,6 +85,7 @@ public final class TokenConfigBuilder {
         this.allowOpaqueTokenIntrospection = token.allowOpaqueTokenIntrospection();
         this.customizerName = token.customizerName();
         this.verifyAccessTokenWithUserInfo = token.verifyAccessTokenWithUserInfo();
+        this.binding = token.binding();
     }
 
     /**
@@ -372,6 +375,31 @@ public final class TokenConfigBuilder {
     }
 
     /**
+     * binding {@link OidcTenantConfig.Token#binding()}
+     *
+     * @return BindingConfigBuilder
+     */
+    public BindingConfigBuilder binding() {
+        return new BindingConfigBuilder(this);
+    }
+
+    /**
+     * @param binding {@link OidcTenantConfig#)}
+     * @return this builder
+     */
+    public TokenConfigBuilder binding(Binding binding) {
+        this.binding = Objects.requireNonNull(binding);
+        return this;
+    }
+
+    /**
+     * @return current {@link Binding} instance
+     */
+    public Binding getBinding() {
+        return binding;
+    }
+
+    /**
      * @return built {@link OidcTenantConfig.Token}
      */
     public OidcTenantConfig.Token build() {
@@ -381,7 +409,62 @@ public final class TokenConfigBuilder {
                 lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
                 allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection, customizerName,
-                verifyAccessTokenWithUserInfo);
+                verifyAccessTokenWithUserInfo, binding);
+    }
+
+    /**
+     * Builder for the {@link OidcTenantConfig.Token}.
+     */
+    public static final class BindingConfigBuilder {
+
+        private record BindingImpl(boolean certificate) implements OidcTenantConfig.Binding {
+        }
+
+        private final TokenConfigBuilder builder;
+        private boolean certificate;
+
+        public BindingConfigBuilder() {
+            this(new TokenConfigBuilder());
+        }
+
+        public BindingConfigBuilder(TokenConfigBuilder builder) {
+            this.builder = Objects.requireNonNull(builder);
+            var binding = builder.getBinding();
+            this.certificate = binding.certificate();
+        }
+
+        /**
+         * @return TokenConfigBuilder builder
+         */
+        public TokenConfigBuilder end() {
+            return builder.binding(build());
+        }
+
+        /**
+         * Sets {@link OidcTenantConfig.Binding#certificate()} to true.
+         *
+         * @return this builder
+         */
+        public BindingConfigBuilder certificate() {
+            return certificate(true);
+        }
+
+        /**
+         * @param certificate {@link OidcTenantConfig.Binding#certificate()}
+         * @return this builder
+         */
+        public BindingConfigBuilder certificate(boolean certificate) {
+            this.certificate = certificate;
+            return this;
+        }
+
+        /**
+         * @return built {@link OidcTenantConfig.Token}
+         */
+        public OidcTenantConfig.Binding build() {
+            return new BindingImpl(certificate);
+        }
+
     }
 
 }

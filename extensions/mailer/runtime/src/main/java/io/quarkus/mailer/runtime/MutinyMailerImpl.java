@@ -3,6 +3,7 @@ package io.quarkus.mailer.runtime;
 import static java.util.Arrays.stream;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,10 +14,13 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.event.Event;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.SentMail;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -51,10 +55,11 @@ public class MutinyMailerImpl implements ReactiveMailer {
     private final boolean logRejectedRecipients;
 
     private final boolean logInvalidRecipients;
+    private final Event<SentMail> sentEmailEvent;
 
     MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox,
             String from, String bounceAddress, boolean mock, List<Pattern> approvedRecipients,
-            boolean logRejectedRecipients, boolean logInvalidRecipients) {
+            boolean logRejectedRecipients, boolean logInvalidRecipients, Event<SentMail> sentEmailEvent) {
         this.vertx = vertx;
         this.client = client;
         this.mockMailbox = mockMailbox;
@@ -64,6 +69,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         this.approvedRecipients = approvedRecipients;
         this.logRejectedRecipients = logRejectedRecipients;
         this.logInvalidRecipients = logInvalidRecipients;
+        this.sentEmailEvent = sentEmailEvent;
     }
 
     @Override
@@ -128,10 +134,38 @@ public class MutinyMailerImpl implements ReactiveMailer {
                     message.getCc(), message.getBcc(),
                     message.getText() == null ? "<empty>" : message.getText(),
                     message.getHtml() == null ? "<empty>" : message.getHtml());
-            return mockMailbox.send(mail, message);
+            return mockMailbox.send(mail, message)
+                    .invoke(() -> fire(mail, message));
         } else {
             return client.sendMail(message)
+                    .invoke(() -> fire(mail, message))
                     .replaceWithVoid();
+        }
+    }
+
+    private Map<String, List<String>> copy(MultiMap headers) {
+        return headers.entries().stream()
+                .collect(
+                        Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+    }
+
+    private List<SentMail.SentAttachment> copy(List<Attachment> attachments) {
+        return attachments.stream()
+                .map(attachment -> new SentMail.SentAttachment(attachment.getName(), attachment.getFile(),
+                        attachment.getDescription(), attachment.getDisposition(), attachment.getData(),
+                        attachment.getContentType(), attachment.getContentId()))
+                .collect(Collectors.toList());
+    }
+
+    private void fire(Mail mail, MailMessage message) {
+        if (sentEmailEvent != null) {
+            SentMail sentMail = new SentMail(message.getFrom(),
+                    Collections.unmodifiableList(message.getTo()), Collections.unmodifiableList(message.getCc()),
+                    Collections.unmodifiableList(message.getBcc()),
+                    mail.getReplyTo(), message.getBounceAddress(),
+                    message.getSubject(), message.getText(), message.getHtml(),
+                    copy(message.getHeaders()), copy(mail.getAttachments()));
+            sentEmailEvent.fire(sentMail);
         }
     }
 

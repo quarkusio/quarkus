@@ -17,7 +17,7 @@ import picocli.CommandLine;
 
 public class CliProjectJBangTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/CliProjectJBangTest");
+            .resolve("target/test-classes/test-project/CliProjectJBangTest");
 
     Path project;
 

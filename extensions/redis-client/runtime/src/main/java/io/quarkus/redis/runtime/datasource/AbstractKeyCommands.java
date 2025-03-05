@@ -145,7 +145,7 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
     Uni<Response> _keys(String pattern) {
         nonNull(pattern, "pattern");
         if (pattern.isBlank()) {
-            throw new IllegalArgumentException("`pattern` must not be blank");
+            return Uni.createFrom().failure(new IllegalArgumentException("`pattern` must not be blank"));
         }
 
         return execute(RedisCommand.of(Command.KEYS).put(pattern));

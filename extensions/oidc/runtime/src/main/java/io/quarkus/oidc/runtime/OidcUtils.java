@@ -1,15 +1,17 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.base64UrlDecode;
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,6 +40,7 @@ import org.jose4j.lang.JoseException;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
@@ -94,6 +97,15 @@ public final class OidcUtils {
     public static final String SESSION_AT_COOKIE_NAME = SESSION_COOKIE_NAME + ACCESS_TOKEN_COOKIE_SUFFIX;
     public static final String SESSION_RT_COOKIE_NAME = SESSION_COOKIE_NAME + REFRESH_TOKEN_COOKIE_SUFFIX;
     public static final String STATE_COOKIE_NAME = "q_auth";
+    public static final String JWT_THUMBPRINT = "jwt_thumbprint";
+    public static final String INTROSPECTION_THUMBPRINT = "introspection_thumbprint";
+    public static final String DPOP_JWT_THUMBPRINT = "dpop_jwt_thumbprint";
+    public static final String DPOP_INTROSPECTION_THUMBPRINT = "dpop_introspection_thumbprint";
+    public static final String DPOP_PROOF = "dpop_proof";
+    public static final String DPOP_PROOF_JWT_HEADERS = "dpop_proof_jwt_headers";
+    public static final String DPOP_PROOF_JWT_CLAIMS = "dpop_proof_jwt_claims";
+
+    private static final String APPLICATION_JWT = "application/jwt";
 
     // Browsers enforce that the total Set-Cookie expression such as
     // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096
@@ -120,6 +132,14 @@ public final class OidcUtils {
 
     private OidcUtils() {
 
+    }
+
+    public static JsonObject decodeJwtContent(String jwt) {
+        return OidcCommonUtils.decodeJwtContent(jwt);
+    }
+
+    public static String getJwtContentPart(String jwt) {
+        return OidcCommonUtils.getJwtContentPart(jwt);
     }
 
     public static String getSessionCookie(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
@@ -201,62 +221,13 @@ public final class OidcUtils {
         return new StringTokenizer(token, ".").countTokens() != 3;
     }
 
-    public static JsonObject decodeJwtContent(String jwt) {
-        String encodedContent = getJwtContentPart(jwt);
-        if (encodedContent == null) {
-            return null;
-        }
-        return decodeAsJsonObject(encodedContent);
-    }
-
     public static String decodeJwtContentAsString(String jwt) {
-        StringTokenizer tokens = new StringTokenizer(jwt, ".");
-        // part 1: skip the token headers
-        tokens.nextToken();
-        if (!tokens.hasMoreTokens()) {
-            return null;
-        }
-        // part 2: token content
-        String encodedContent = tokens.nextToken();
-
-        // let's check only 1 more signature part is available
-        if (tokens.countTokens() != 1) {
-            return null;
-        }
+        String encodedContent = OidcCommonUtils.getJwtContentPart(jwt);
         try {
             return base64UrlDecode(encodedContent);
         } catch (IllegalArgumentException ex) {
             return null;
         }
-    }
-
-    public static String getJwtContentPart(String jwt) {
-        StringTokenizer tokens = new StringTokenizer(jwt, ".");
-        // part 1: skip the token headers
-        tokens.nextToken();
-        if (!tokens.hasMoreTokens()) {
-            return null;
-        }
-        // part 2: token content
-        String encodedContent = tokens.nextToken();
-
-        // let's check only 1 more signature part is available
-        if (tokens.countTokens() != 1) {
-            return null;
-        }
-        return encodedContent;
-    }
-
-    private static JsonObject decodeAsJsonObject(String encodedContent) {
-        try {
-            return new JsonObject(base64UrlDecode(encodedContent));
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
-    public static String base64UrlDecode(String encodedContent) {
-        return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 
     public static JsonObject decodeJwtHeaders(String jwt) {
@@ -371,6 +342,7 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
+        OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityPermissions(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
@@ -417,6 +389,11 @@ public final class OidcUtils {
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
         builder.addAttribute(RoutingContext.class.getName(), routingContext);
+    }
+
+    public static void setOidcProviderClientAttribute(QuarkusSecurityIdentity.Builder builder,
+            OidcProviderClient oidcProviderClient) {
+        builder.addAttribute(OidcProviderClient.class.getName(), oidcProviderClient);
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, UserInfo userInfo) {
@@ -599,6 +576,14 @@ public final class OidcUtils {
             return oidcTenantConfig;
         }
 
+    }
+
+    public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {
+        return getSha256Digest(value, StandardCharsets.UTF_8);
+    }
+
+    public static byte[] getSha256Digest(String value, Charset charset) throws NoSuchAlgorithmException {
+        return getSha256Digest(value.getBytes(charset));
     }
 
     public static byte[] getSha256Digest(byte[] value) throws NoSuchAlgorithmException {
@@ -819,7 +804,7 @@ public final class OidcUtils {
 
     public static boolean isJwtTokenExpired(String token) {
         if (!isOpaqueToken(token)) {
-            JsonObject claims = decodeJwtContent(token);
+            JsonObject claims = OidcCommonUtils.decodeJwtContent(token);
             Long expiresAt = getJwtExpiresAtClaim(claims);
             if (expiresAt == null) {
                 return false;
@@ -830,7 +815,7 @@ public final class OidcUtils {
         return false;
     }
 
-    private static Long getJwtExpiresAtClaim(JsonObject claims) {
+    static Long getJwtExpiresAtClaim(JsonObject claims) {
         if (claims == null || !claims.containsKey(Claims.exp.name())) {
             return null;
         }
@@ -840,5 +825,20 @@ public final class OidcUtils {
             LOG.debug("Refresh JWT expiry claim can not be converted to Long");
             return null;
         }
+    }
+
+    public static boolean isApplicationJwtContentType(String ct) {
+        if (ct == null) {
+            return false;
+        }
+        ct = ct.trim();
+        if (!ct.startsWith(APPLICATION_JWT)) {
+            return false;
+        }
+        if (ct.length() == APPLICATION_JWT.length()) {
+            return true;
+        }
+        String remainder = ct.substring(APPLICATION_JWT.length()).trim();
+        return remainder.indexOf(';') == 0;
     }
 }

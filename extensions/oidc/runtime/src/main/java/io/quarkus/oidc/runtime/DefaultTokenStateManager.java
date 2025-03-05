@@ -22,24 +22,63 @@ public class DefaultTokenStateManager implements TokenStateManager {
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
 
-        boolean encryptAll = !oidcConfig.tokenStateManager().splitTokens();
+        if (!oidcConfig.tokenStateManager().splitTokens()) {
+            // ID, access and refresh tokens are all represented by a single cookie.
+            // In this case they are all encrypted once all tokens have been added to the buffer.
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(encryptAll ? tokens.getIdToken() : encryptToken(tokens.getIdToken(), routingContext, oidcConfig));
-        if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
-            if (!oidcConfig.tokenStateManager().splitTokens()) {
+            StringBuilder sb = new StringBuilder();
+
+            // Add ID token
+            sb.append(tokens.getIdToken());
+
+            // By default, all three tokens are retained
+            if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
+                // Add access and refresh tokens
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptAll ? tokens.getAccessToken()
-                                : encryptToken(tokens.getAccessToken(), routingContext, oidcConfig))
+                        .append(tokens.getAccessToken())
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptAll ? tokens.getRefreshToken()
-                                : encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
-            } else {
+                        .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getRefreshToken());
+            } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
+                // But sometimes the access token is not required.
+                // For example, when the Quarkus endpoint does not need to use it to access another service.
+                // Skip access token and access token expiry, add refresh token
+                sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append("")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append("")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getRefreshToken());
+            }
+
+            // Now all three tokens are encrypted
+            String encryptedTokens = encryptToken(sb.toString(), routingContext, oidcConfig);
+            return Uni.createFrom().item(encryptedTokens);
+        } else {
+            // ID, access and refresh tokens are represented as individual cookies
+
+            // Encrypt ID token
+            String encryptedIdToken = encryptToken(tokens.getIdToken(), routingContext, oidcConfig);
+
+            // By default, all three tokens are retained
+            if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
+
+                StringBuilder sb = new StringBuilder();
+
+                // Add access token and its expires_in property
+                sb.append(tokens.getAccessToken())
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "");
+
+                // Encrypt access token and create a `q_session_at` cookie.
                 CodeAuthenticationMechanism.createCookie(routingContext,
                         oidcConfig,
                         getAccessTokenCookieName(oidcConfig),
-                        encryptToken(tokens.getAccessToken(), routingContext, oidcConfig),
+                        encryptToken(sb.toString(), routingContext, oidcConfig),
                         routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM), true);
+
+                // Encrypt refresh token and create a `q_session_rt` cookie.
                 if (tokens.getRefreshToken() != null) {
                     CodeAuthenticationMechanism.createCookie(routingContext,
                             oidcConfig,
@@ -47,71 +86,85 @@ public class DefaultTokenStateManager implements TokenStateManager {
                             encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig),
                             routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM), true);
                 }
+            } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS
+                    && tokens.getRefreshToken() != null) {
+                // Encrypt refresh token and create a `q_session_rt` cookie.
+                CodeAuthenticationMechanism.createCookie(routingContext,
+                        oidcConfig,
+                        getRefreshTokenCookieName(oidcConfig),
+                        encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig),
+                        routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
             }
-        } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
-            if (!oidcConfig.tokenStateManager().splitTokens()) {
-                sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append("")
-                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(encryptAll ? tokens.getRefreshToken()
-                                : encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
-            } else {
-                if (tokens.getRefreshToken() != null) {
-                    CodeAuthenticationMechanism.createCookie(routingContext,
-                            oidcConfig,
-                            getRefreshTokenCookieName(oidcConfig),
-                            encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig),
-                            routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
-                }
-            }
+
+            // q_session cookie
+            return Uni.createFrom().item(encryptedIdToken);
         }
-        String state = encryptAll ? encryptToken(sb.toString(), routingContext, oidcConfig) : sb.toString();
-        return Uni.createFrom().item(state);
+
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
-        boolean decryptAll = !oidcConfig.tokenStateManager().splitTokens();
 
-        tokenState = decryptAll ? decryptToken(tokenState, routingContext, oidcConfig) : tokenState;
-
-        String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
-
-        String idToken = decryptAll ? tokens[0] : decryptToken(tokens[0], routingContext, oidcConfig);
-
+        String idToken = null;
         String accessToken = null;
+        Long accessTokenExpiresIn = null;
         String refreshToken = null;
-        try {
+
+        if (!oidcConfig.tokenStateManager().splitTokens()) {
+            // ID, access and refresh tokens are all be represented by a single cookie.
+
+            String decryptedTokenState = decryptToken(tokenState, routingContext, oidcConfig);
+
+            String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(decryptedTokenState);
+
+            try {
+                idToken = tokens[0];
+                accessToken = null;
+                refreshToken = null;
+
+                if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
+                    accessToken = tokens[1];
+                    accessTokenExpiresIn = tokens[2].isEmpty() ? null : Long.valueOf(tokens[2]);
+                    refreshToken = tokens[3];
+                } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
+                    refreshToken = tokens[3];
+                }
+            } catch (ArrayIndexOutOfBoundsException ex) {
+                return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
+            }
+        } else {
+            // Decrypt ID token from the q_session cookie
+            idToken = decryptToken(tokenState, routingContext, oidcConfig);
+            accessToken = null;
+            refreshToken = null;
+
             if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
-                if (!oidcConfig.tokenStateManager().splitTokens()) {
-                    accessToken = decryptAll ? tokens[1] : decryptToken(tokens[1], routingContext, oidcConfig);
-                    refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
-                } else {
-                    Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
-                    if (atCookie != null) {
-                        accessToken = decryptToken(atCookie.getValue(), routingContext, oidcConfig);
+                Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
+                if (atCookie != null) {
+                    // Decrypt access token from the q_session_at cookie
+                    String accessTokenState = decryptToken(atCookie.getValue(), routingContext, oidcConfig);
+                    String[] accessTokenData = CodeAuthenticationMechanism.COOKIE_PATTERN.split(accessTokenState);
+                    accessToken = accessTokenData[0];
+                    try {
+                        accessTokenExpiresIn = accessTokenData[1].isEmpty() ? null : Long.valueOf(accessTokenData[1]);
+                    } catch (ArrayIndexOutOfBoundsException ex) {
+                        return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
                     }
-                    Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
-                    if (rtCookie != null) {
-                        refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
-                    }
+                }
+                Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
+                if (rtCookie != null) {
+                    // Decrypt refresh token from the q_session_rt cookie
+                    refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
                 }
             } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
-                if (!oidcConfig.tokenStateManager().splitTokens()) {
-                    refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
-                } else {
-                    Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
-                    if (rtCookie != null) {
-                        refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
-                    }
+                Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
+                if (rtCookie != null) {
+                    refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
         }
-
-        return Uni.createFrom().item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken));
+        return Uni.createFrom().item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn));
     }
 
     @Override

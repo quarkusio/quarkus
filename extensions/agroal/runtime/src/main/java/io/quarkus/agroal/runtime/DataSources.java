@@ -1,12 +1,9 @@
 package io.quarkus.agroal.runtime;
 
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.Statement;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -141,7 +138,7 @@ public class DataSources {
     }
 
     @SuppressWarnings("resource")
-    public AgroalDataSource createDataSource(String dataSourceName) {
+    public AgroalDataSource createDataSource(String dataSourceName, boolean otelEnabled) {
         if (!agroalDataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
@@ -156,9 +153,6 @@ public class DataSources {
             throw new IllegalArgumentException(
                     "Datasource " + dataSourceName + " does not have a JDBC URL and should not be created");
         }
-
-        // we first make sure that all available JDBC drivers are loaded in the current TCCL
-        loadDriversInTCCL();
 
         AgroalDataSourceSupport.Entry matchingSupportEntry = agroalDataSourceSupport.entries.get(dataSourceName);
         String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
@@ -227,7 +221,9 @@ public class DataSources {
             dataSource.setPoolInterceptors(interceptorList);
         }
 
-        if (dataSourceJdbcBuildTimeConfig.telemetry() && dataSourceJdbcRuntimeConfig.telemetry().orElse(true)) {
+        if (dataSourceJdbcBuildTimeConfig.telemetry() &&
+                dataSourceJdbcRuntimeConfig.telemetry().orElse(true) &&
+                otelEnabled) {
             // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
             // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
             dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
@@ -256,11 +252,11 @@ public class DataSources {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,
                     dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                            && transactionRuntimeConfig.enableRecovery
+                            && transactionRuntimeConfig.enableRecovery()
                                     ? xaResourceRecoveryRegistry
                                     : null);
             if (dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                    && !transactionRuntimeConfig.enableRecovery) {
+                    && !transactionRuntimeConfig.enableRecovery()) {
                 log.warnv(
                         "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
                         dataSourceName);
@@ -354,21 +350,4 @@ public class DataSources {
         poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose());
     }
 
-    /**
-     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
-     * of the current {@link Thread#getContextClassLoader() TCCL}
-     */
-    private static void loadDriversInTCCL() {
-        // load JDBC drivers in the current TCCL
-        final ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
-        final Iterator<Driver> iterator = drivers.iterator();
-        while (iterator.hasNext()) {
-            try {
-                // load the driver
-                iterator.next();
-            } catch (Throwable t) {
-                // ignore
-            }
-        }
-    }
 }

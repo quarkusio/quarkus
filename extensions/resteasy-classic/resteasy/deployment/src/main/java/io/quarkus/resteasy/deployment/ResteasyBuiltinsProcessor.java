@@ -23,7 +23,6 @@ import io.quarkus.resteasy.runtime.CompositeExceptionMapper;
 import io.quarkus.resteasy.runtime.EagerSecurityFilter;
 import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsPermissionChecker;
-import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
 import io.quarkus.resteasy.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
@@ -41,11 +40,11 @@ public class ResteasyBuiltinsProcessor {
     @BuildStep
     void setUpDenyAllJaxRs(JaxRsSecurityConfig securityConfig,
             BuildProducer<DefaultSecurityCheckBuildItem> defaultSecurityCheckProducer) {
-        if (securityConfig.denyJaxRs) {
+        if (securityConfig.denyUnannotatedEndpoints()) {
             defaultSecurityCheckProducer.produce(DefaultSecurityCheckBuildItem.denyAll());
-        } else if (securityConfig.defaultRolesAllowed.isPresent()) {
+        } else if (securityConfig.defaultRolesAllowed().isPresent()) {
             defaultSecurityCheckProducer
-                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed.get()));
+                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed().get()));
         }
     }
 

@@ -65,8 +65,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
@@ -91,56 +89,18 @@ import io.smallrye.metrics.interceptors.TimedInterceptor;
 public class SmallRyeMetricsProcessor {
     static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
 
-    @ConfigRoot(name = "smallrye-metrics")
-    static final class SmallRyeMetricsConfig {
-
-        /**
-         * The path to the metrics handler.
-         * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
-         * If the management interface is enabled, the value will be resolved as a path relative to
-         * `${quarkus.management.root-path}`.
-         */
-        @ConfigItem(defaultValue = "metrics")
-        String path;
-
-        /**
-         * Whether metrics published by Quarkus extensions should be enabled.
-         */
-        @ConfigItem(name = "extensions.enabled", defaultValue = "true")
-        public boolean extensionsEnabled;
-
-        /**
-         * Apply Micrometer compatibility mode, where instead of regular 'base' and 'vendor' metrics,
-         * Quarkus exposes the same 'jvm' metrics that Micrometer does. Application metrics are unaffected by this mode.
-         * The use case is to facilitate migration from Micrometer-based metrics, because original dashboards for JVM metrics
-         * will continue working without having to rewrite them.
-         */
-        @ConfigItem(name = "micrometer.compatibility")
-        public boolean micrometerCompatibility;
-
-        /**
-         * Whether detailed JAX-RS metrics should be enabled.
-         * <p>
-         * See <a href=
-         * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
-         * Metrics: Optional REST metrics</a>.
-         */
-        @ConfigItem(name = "jaxrs.enabled", defaultValue = "false")
-        public boolean jaxrsEnabled;
-    }
-
     SmallRyeMetricsConfig metrics;
 
     @BuildStep
     MetricsConfigurationBuildItem metricsConfigurationBuildItem() {
-        return new MetricsConfigurationBuildItem(metrics.path);
+        return new MetricsConfigurationBuildItem(metrics.path());
     }
 
     @BuildStep
     MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
-        if (metrics.extensionsEnabled) {
+        if (metrics.extensionsEnabled()) {
             return new MetricsCapabilityBuildItem(MetricsFactory.MP_METRICS::equals,
-                    nonApplicationRootPathBuildItem.resolvePath(metrics.path));
+                    nonApplicationRootPathBuildItem.resolvePath(metrics.path()));
         }
         return null;
     }
@@ -156,19 +116,19 @@ public class SmallRyeMetricsProcessor {
 
         // add metrics endpoint for not found display in dev or test mode
         if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path()));
         }
         routes.produce(frameworkRoot.routeBuilder()
                 .management()
-                .route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"))
-                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
+                .route(metrics.path() + (metrics.path().endsWith("/") ? "*" : "/*"))
+                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path())))
                 .blockingRoute()
                 .build());
         routes.produce(frameworkRoot.routeBuilder()
                 .management()
-                .route(metrics.path)
+                .route(metrics.path())
                 .routeConfigKey("quarkus.smallrye-metrics.path")
-                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
+                .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path())))
                 .displayOnNotFoundPage("Metrics")
                 .blockingRoute()
                 .build());
@@ -324,7 +284,7 @@ public class SmallRyeMetricsProcessor {
     void registerBaseAndVendorMetrics(SmallRyeMetricsRecorder metrics,
             ShutdownContextBuildItem shutdown,
             SmallRyeMetricsConfig config) {
-        if (config.micrometerCompatibility) {
+        if (config.micrometerCompatibility()) {
             metrics.registerMicrometerJvmMetrics(shutdown);
         } else {
             metrics.registerBaseMetrics();
@@ -551,7 +511,7 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     void extensionMetrics(SmallRyeMetricsRecorder recorder,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems) {
-        if (metrics.extensionsEnabled) {
+        if (metrics.extensionsEnabled()) {
             for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
                 if (item.executionTime() == STATIC_INIT) {
                     recorder.registerMetrics(item.getConsumer());

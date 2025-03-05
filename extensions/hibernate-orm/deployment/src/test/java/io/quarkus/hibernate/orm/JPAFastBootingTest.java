@@ -5,11 +5,11 @@ import jakarta.inject.Inject;
 import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.wildfly.common.Assert;
 
 import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.hibernate.orm.enhancer.Address;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Let's run some checks to verify that the optimisations we have

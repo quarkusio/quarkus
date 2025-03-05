@@ -25,7 +25,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -175,9 +174,7 @@ public class BootstrapAppModelFactory {
             final Properties modelProps = project.getModelBuildingResult() == null
                     ? project.getRawModel().getProperties()
                     : project.getModelBuildingResult().getEffectiveModel().getProperties();
-            appModelResolver.setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(modelProps)
-                    || devMode
-                            && !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(modelProps, "false"));
+            appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(modelProps));
         }
         return appModelResolver;
     }
@@ -367,11 +364,11 @@ public class BootstrapAppModelFactory {
     }
 
     private Path resolveCachedCpPath(LocalProject project) {
-        if (devMode) {
-            return BootstrapUtils.resolveSerializedAppModelPath(project.getOutputDir());
-        }
         if (test) {
             return BootstrapUtils.getSerializedTestAppModelPath(project.getOutputDir());
+        }
+        if (devMode) {
+            return BootstrapUtils.resolveSerializedAppModelPath(project.getOutputDir());
         }
         return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(APP_MODEL_DAT);
     }

@@ -104,7 +104,7 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
-        
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -139,6 +139,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.grpc</provides>
+                    </capabilities>
+                </configuration>
                 <executions>
                     <execution>
                         <id>generate-extension-descriptor</id>
@@ -165,9 +170,6 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
-                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

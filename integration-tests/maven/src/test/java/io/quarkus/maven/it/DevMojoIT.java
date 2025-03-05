@@ -590,6 +590,42 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    void testTestProfilesAreHandled()
+            throws MavenInvocationException, IOException {
+        testDir = initProject("projects/test-test-profile");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both class files ran
+        Assertions.assertEquals(0, results.getTestsFailed());
+        Assertions.assertEquals(2, results.getTestsPassed());
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now
+        Assertions.assertEquals(0, results.getTestsPassed());
+        Assertions.assertEquals(2, results.getTestsFailed());
+    }
+
+    @Test
     public void testThatJUnitTestTemplatesWork() throws MavenInvocationException, IOException {
         //we also check continuous testing
         testDir = initProject("projects/test-template", "projects/test-template-processed");
@@ -1629,5 +1665,13 @@ public class DevMojoIT extends LaunchMojoTestBase {
         testDir = initProject("projects/multimodule-filtered-classifier");
         run(true);
         assertThat(devModeClient.getHttpResponse("/")).isEqualTo("Big");
+    }
+
+    @Test
+    public void testNonParentAggregator() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/non-parent-aggregator");
+        run(true, "-f", "aggregator");
+        assertThat(devModeClient.getHttpResponse("/model")).isEqualTo("Hello model");
+        assertThat(devModeClient.getHttpResponse("/service")).isEqualTo("Hello service");
     }
 }

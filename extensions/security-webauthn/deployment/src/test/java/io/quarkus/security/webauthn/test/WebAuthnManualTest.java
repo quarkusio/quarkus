@@ -56,7 +56,7 @@ public class WebAuthnManualTest {
                 .given().redirects().follow(false)
                 .get("/cheese").then().statusCode(302);
 
-        Assertions.assertTrue(userProvider.findByUserName("stef").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
         String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stef", cookieFilter);
         WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
@@ -78,9 +78,9 @@ public class WebAuthnManualTest {
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
-        List<WebAuthnCredentialRecord> users = userProvider.findByUserName("stef").await().indefinitely();
+        List<WebAuthnCredentialRecord> users = userProvider.findByUsername("stef").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stef"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stef"));
         Assertions.assertEquals(1, users.get(0).getCounter());
 
         // make sure our login cookie works
@@ -107,9 +107,9 @@ public class WebAuthnManualTest {
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we bumped the user
-        users = userProvider.findByUserName("stef").await().indefinitely();
+        users = userProvider.findByUsername("stef").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stef"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stef"));
         Assertions.assertEquals(2, users.get(0).getCounter());
 
         // make sure our login cookie still works
@@ -127,15 +127,15 @@ public class WebAuthnManualTest {
                 () -> WebAuthnEndpointHelper.invokeLogin(defaultLogin, finalCookieFilter));
 
         // make sure we did not bump the user
-        users = userProvider.findByUserName("stef").await().indefinitely();
+        users = userProvider.findByUsername("stef").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stef"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stef"));
         Assertions.assertEquals(2, users.get(0).getCounter());
     }
 
     @Test
     public void checkDefaultRegistrationDisabled() {
-        Assertions.assertTrue(userProvider.findByUserName("stef").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
         WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
         String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stef", cookieFilter);
@@ -146,7 +146,7 @@ public class WebAuthnManualTest {
                 () -> WebAuthnEndpointHelper.invokeRegistration("stef", registration, cookieFilter));
 
         // make sure we did not create any user
-        Assertions.assertTrue(userProvider.findByUserName("stef").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
     }
 
     private void checkLoggedIn(CookieFilter cookieFilter) {

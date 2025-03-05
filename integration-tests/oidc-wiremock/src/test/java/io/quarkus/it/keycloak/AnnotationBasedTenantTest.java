@@ -1,18 +1,35 @@
 package io.quarkus.it.keycloak;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.inject.Inject;
+
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -20,6 +37,12 @@ import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.UpgradeRejectedException;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketConnectOptions;
 
 @QuarkusTest
 @TestProfile(AnnotationBasedTenantTest.NoProactiveAuthTestProfile.class)
@@ -83,6 +106,18 @@ public class AnnotationBasedTenantTest {
             return "jax-rs-http-perms-test";
         }
     }
+
+    @Inject
+    Vertx vertx;
+
+    @TestHTTPResource("/ws/tenant-annotation/permissions-allowed")
+    URI websocketPermissionsAllowedTenantAnnotation;
+
+    @TestHTTPResource("/ws/tenant-annotation/hr-tenant")
+    URI websocketHrTenantAnnotation;
+
+    @TestHTTPResource("/ws/tenant-annotation/no-annotation")
+    URI websocketNoTenantAnnotation;
 
     @Test
     public void testClassLevelAnnotation() {
@@ -391,6 +426,118 @@ public class AnnotationBasedTenantTest {
                             .equalTo("tenant-id=hr, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
         } finally {
             server.stop();
+        }
+    }
+
+    @Test
+    public void testWebSocketsHttpUpgradeTenantAnnotation() throws InterruptedException, ExecutionException, TimeoutException {
+        // Server is starting now
+        WiremockTestResource server = new WiremockTestResource();
+        server.start();
+        try {
+            // @Authenticated and @Tenant("hr")
+            // correct HR tenant -> pass
+            String correctToken = Jwt.preferredUserName("alice")
+                    .audience("http://hr.service")
+                    .jws()
+                    .keyId("1")
+                    .sign("privateKey.jwk");
+            callWebSocketEndpoint(websocketHrTenantAnnotation, "hr-tenant", correctToken, false);
+            // no token -> fail
+            RuntimeException ce = assertThrows(RuntimeException.class,
+                    () -> callWebSocketEndpoint(websocketHrTenantAnnotation, "hr-tenant", null, true));
+            Throwable root = ExceptionUtil.getRootCause(ce);
+            assertInstanceOf(UpgradeRejectedException.class, root);
+            assertTrue(root.getMessage().contains("401"), root.getMessage());
+            // wrong audience -> fail
+            String tokenWithWrongAudience = OidcWiremockTestResource.getAccessToken("alice",
+                    new HashSet<>(Arrays.asList("user", "admin")));
+            ce = assertThrows(RuntimeException.class,
+                    () -> callWebSocketEndpoint(websocketHrTenantAnnotation, "hr-tenant", tokenWithWrongAudience, true));
+            root = ExceptionUtil.getRootCause(ce);
+            assertInstanceOf(UpgradeRejectedException.class, root);
+            assertTrue(root.getMessage().contains("401"), root.getMessage());
+            // now use same token with wrong audience to connect with @Authenticated endpoint without @Tenant("hr")
+            callWebSocketEndpoint(websocketNoTenantAnnotation, "no-annotation", correctToken, false);
+
+            // @PermissionsAllowed("bob") @Tenant("hr")
+            // bob -> pass
+            String bobToken = Jwt.preferredUserName("bob")
+                    .audience("http://hr.service")
+                    .jws()
+                    .keyId("1")
+                    .sign("privateKey.jwk");
+            callWebSocketEndpoint(websocketPermissionsAllowedTenantAnnotation, "permissions-allowed", bobToken, false);
+            // alice -> authorization failure
+            String aliceToken = Jwt.preferredUserName("alice")
+                    .audience("http://hr.service")
+                    .jws()
+                    .keyId("1")
+                    .sign("privateKey.jwk");
+            ce = assertThrows(RuntimeException.class,
+                    () -> callWebSocketEndpoint(websocketPermissionsAllowedTenantAnnotation, "permissions-allowed", aliceToken,
+                            true));
+            root = ExceptionUtil.getRootCause(ce);
+            assertInstanceOf(UpgradeRejectedException.class, root);
+            assertTrue(root.getMessage().contains("403"), root.getMessage());
+            String aliceWithWrongAudience = OidcWiremockTestResource.getAccessToken("alice",
+                    new HashSet<>(Arrays.asList("user", "admin")));
+            ce = assertThrows(RuntimeException.class,
+                    () -> callWebSocketEndpoint(websocketPermissionsAllowedTenantAnnotation, "permissions-allowed",
+                            aliceWithWrongAudience, true));
+            root = ExceptionUtil.getRootCause(ce);
+            assertInstanceOf(UpgradeRejectedException.class, root);
+            assertTrue(root.getMessage().contains("401"), root.getMessage());
+        } finally {
+            server.stop();
+        }
+    }
+
+    private void callWebSocketEndpoint(URI uri, String expectedResponsePrefix, String token, boolean expectFailure)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        CountDownLatch connectedLatch = new CountDownLatch(1);
+        CountDownLatch messagesLatch = new CountDownLatch(2);
+        List<String> messages = new CopyOnWriteArrayList<>();
+        AtomicReference<WebSocket> ws1 = new AtomicReference<>();
+        WebSocketClient client = vertx.createWebSocketClient();
+        WebSocketConnectOptions options = new WebSocketConnectOptions();
+        options.setHost(uri.getHost());
+        options.setPort(uri.getPort());
+        options.setURI(uri.getPath());
+        if (token != null) {
+            options.addHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token);
+        }
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        try {
+            client
+                    .connect(options)
+                    .onComplete(r -> {
+                        if (r.succeeded()) {
+                            WebSocket ws = r.result();
+                            ws.textMessageHandler(msg -> {
+                                messages.add(msg);
+                                messagesLatch.countDown();
+                            });
+                            // We will use this socket to write a message later on
+                            ws1.set(ws);
+                            connectedLatch.countDown();
+                        } else {
+                            throwable.set(r.cause());
+                        }
+                    });
+            if (expectFailure) {
+                Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> throwable.get() != null);
+                throw new RuntimeException(throwable.get());
+            } else {
+                Assertions.assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));
+                ws1.get().writeTextMessage("hello");
+                Assertions.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS), "Messages: " + messages);
+                Assertions.assertEquals(2, messages.size(), "Messages: " + messages);
+                Assertions.assertEquals("ready", messages.get(0));
+                Assertions.assertEquals(expectedResponsePrefix + " echo: " + "hello", messages.get(1));
+            }
+        } finally {
+            client.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
         }
     }
 

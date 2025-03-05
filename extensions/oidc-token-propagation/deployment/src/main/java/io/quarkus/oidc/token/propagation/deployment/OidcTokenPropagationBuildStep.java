@@ -1,7 +1,7 @@
 package io.quarkus.oidc.token.propagation.deployment;
 
-import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
-import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
+import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
+import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -18,11 +18,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.oidc.client.deployment.AccessTokenInstanceBuildItem;
-import io.quarkus.oidc.client.deployment.AccessTokenRequestFilterGenerator;
 import io.quarkus.oidc.token.propagation.AccessTokenRequestFilter;
 import io.quarkus.oidc.token.propagation.JsonWebToken;
 import io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter;
+import io.quarkus.oidc.token.propagation.common.deployment.AccessTokenInstanceBuildItem;
+import io.quarkus.oidc.token.propagation.common.deployment.AccessTokenRequestFilterGenerator;
 import io.quarkus.oidc.token.propagation.runtime.OidcTokenPropagationBuildTimeConfig;
 import io.quarkus.oidc.token.propagation.runtime.OidcTokenPropagationConfig;
 import io.quarkus.restclient.deployment.RestClientAnnotationProviderBuildItem;

@@ -15,6 +15,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.server.Cancellable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,17 +45,35 @@ public class CancelableUniTest {
 
     @Test
     public void testNormal() {
-        when().get("test")
+        doTestNormal("1");
+    }
+
+    @Test
+    public void testDefaultCancellable() {
+        doTestCancel("1", Resource.COUNT, 1);
+    }
+
+    @Test
+    public void testUnCancellable() {
+        doTestCancel("2", Resource.COUNT, 2);
+    }
+
+    @Test
+    public void testCancellable() {
+        doTestCancel("3", Resource.COUNT, 1);
+    }
+
+    private void doTestNormal(String path) {
+        when().get("test/" + path)
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello, world"));
     }
 
-    @Test
-    public void testCancel() {
+    private void doTestCancel(String path, AtomicInteger count, int expected) {
         WebClient client = WebClient.create(vertx);
 
-        client.get(url.getPort(), url.getHost(), "/test").send();
+        client.get(url.getPort(), url.getHost(), "/test/" + path).send();
 
         try {
             // make sure we did make the proper request
@@ -67,7 +86,7 @@ public class CancelableUniTest {
             Thread.sleep(7_000);
 
             // if the count did not increase, it means that Uni was cancelled
-            assertEquals(1, Resource.COUNT.get());
+            assertEquals(expected, count.get());
         } catch (InterruptedException ignored) {
 
         } finally {
@@ -77,7 +96,6 @@ public class CancelableUniTest {
 
             }
         }
-
     }
 
     @Path("test")
@@ -87,7 +105,28 @@ public class CancelableUniTest {
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
-        public Uni<String> hello() {
+        @Path("1")
+        public Uni<String> defaultCancelableHello() {
+            COUNT.incrementAndGet();
+            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
+                    COUNT::incrementAndGet);
+        }
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Cancellable(false)
+        @Path("2")
+        public Uni<String> uncancellableHello() {
+            COUNT.incrementAndGet();
+            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
+                    COUNT::incrementAndGet);
+        }
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Cancellable
+        @Path("3")
+        public Uni<String> cancellableHello() {
             COUNT.incrementAndGet();
             return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
                     COUNT::incrementAndGet);

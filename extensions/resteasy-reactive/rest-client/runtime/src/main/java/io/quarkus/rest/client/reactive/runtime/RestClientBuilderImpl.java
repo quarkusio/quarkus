@@ -71,7 +71,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final List<ParamConverterProvider> paramConverterProviders = new ArrayList<>();
 
     private URI uri;
-    private boolean followRedirects;
+    private Boolean followRedirects;
     private QueryParamStyle queryParamStyle;
     private MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
 
@@ -89,6 +89,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private Boolean trustAll;
     private String userAgent;
     private Boolean disableDefaultMapper;
+    private Boolean enableCompression;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -266,6 +267,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    public RestClientBuilderImpl enableCompression(boolean enableCompression) {
+        this.enableCompression = enableCompression;
+        return this;
+    }
+
     @Override
     public RestClientBuilderImpl executorService(ExecutorService executor) {
         throw new IllegalArgumentException("Specifying executor service is not supported. " +
@@ -438,19 +444,27 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
         redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
-        clientBuilder.followRedirects(followRedirects);
+        clientBuilder.followRedirects(followRedirects != null ? followRedirects : restClients.followRedirects().orElse(false));
 
-        RestClientsConfig.RestClientLoggingConfig logging = restClients.logging();
+        RestClientsConfig.RestClientLoggingConfig configRootLogging = restClients.logging();
 
-        LoggingScope effectiveLoggingScope = loggingScope; // if a scope was specified programmatically, it takes precedence
-        if (effectiveLoggingScope == null) {
-            effectiveLoggingScope = logging != null ? logging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE)
-                    : LoggingScope.NONE;
+        Integer defaultLoggingBodyLimit = 100;
+        LoggingScope effectiveLoggingScope = LoggingScope.NONE;
+        Integer effectiveLoggingBodyLimit = defaultLoggingBodyLimit;
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_SCOPE)) {
+            effectiveLoggingScope = (LoggingScope) getConfiguration().getProperty(QuarkusRestClientProperties.LOGGING_SCOPE);
+        } else if (loggingScope != null) { //scope, specified programmatically, takes precedence over global configuration
+            effectiveLoggingScope = loggingScope;
+        } else if (configRootLogging != null) {
+            effectiveLoggingScope = configRootLogging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE);
         }
-
-        Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
-        if (effectiveLoggingBodyLimit == null) {
-            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit() : 100;
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT)) {
+            effectiveLoggingBodyLimit = (Integer) getConfiguration()
+                    .getProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT);
+        } else if (loggingBodyLimit != null) { //bodyLimit, specified programmatically, takes precedence over global configuration
+            effectiveLoggingBodyLimit = loggingBodyLimit;
+        } else if (configRootLogging != null) {
+            effectiveLoggingBodyLimit = configRootLogging.bodyLimit();
         }
         clientBuilder.loggingScope(effectiveLoggingScope);
         clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
@@ -508,7 +522,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         } else if (restClients.maxChunkSize().isPresent()) {
             clientBuilder.maxChunkSize((int) restClients.maxChunkSize().get().asLongValue());
         } else if (restClients.multipart().maxChunkSize().isPresent()) {
-            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().get());
+            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }
@@ -525,10 +539,20 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.alpn(restClients.alpn().get());
         }
 
-        Boolean enableCompression = ConfigProvider.getConfig()
-                .getOptionalValue(ENABLE_COMPRESSION, Boolean.class).orElse(false);
-        if (enableCompression) {
-            clientBuilder.enableCompression();
+        Boolean effectiveEnableCompression = enableCompression;
+        if (effectiveEnableCompression == null) {
+            if (restClients.enableCompression().isPresent()) {
+                effectiveEnableCompression = restClients.enableCompression().get();
+            }
+        }
+        if (effectiveEnableCompression == null) {
+            var maybeGlobalEnableCompression = ConfigProvider.getConfig().getOptionalValue(ENABLE_COMPRESSION, Boolean.class);
+            if (maybeGlobalEnableCompression.isPresent()) {
+                effectiveEnableCompression = maybeGlobalEnableCompression.get();
+            }
+        }
+        if (effectiveEnableCompression != null) {
+            clientBuilder.enableCompression(effectiveEnableCompression);
         }
 
         if (proxyHost != null) {

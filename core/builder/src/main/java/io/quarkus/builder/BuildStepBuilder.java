@@ -6,9 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
@@ -236,7 +235,7 @@ public final class BuildStepBuilder {
 
     Set<ItemId> getRealConsumes() {
         final HashMap<ItemId, Consume> map = new HashMap<>(consumes);
-        map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
+        map.entrySet().removeIf(e -> e.getValue().constraint() == Constraint.ORDER_ONLY);
         return map.keySet();
     }
 

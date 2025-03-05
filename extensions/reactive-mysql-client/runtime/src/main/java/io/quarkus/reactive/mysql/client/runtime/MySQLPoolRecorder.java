@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -43,6 +44,7 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.mysqlclient.SslMode;
+import io.vertx.mysqlclient.spi.MySQLDriver;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
@@ -122,7 +124,7 @@ public class MySQLPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
             SyntheticCreationalContext<MySQLPool> context) {
-        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
         List<MySQLConnectOptions> mySQLConnectOptions = toMySQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
@@ -148,7 +150,6 @@ public class MySQLPoolRecorder {
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions;
@@ -291,9 +292,9 @@ public class MySQLPoolRecorder {
                 qualifier(dataSourceName));
         if (instance.isResolvable()) {
             MySQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mySQLConnectOptionsList);
-            return instance.get().create(input);
+            return (MySQLPool) instance.get().create(input);
         }
-        return MySQLPool.pool(vertx, databases, poolOptions);
+        return (MySQLPool) MySQLDriver.INSTANCE.createPool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements MySQLPoolCreator.Input {
@@ -321,5 +322,9 @@ public class MySQLPoolRecorder {
         public List<MySQLConnectOptions> mySQLConnectOptionsList() {
             return mySQLConnectOptionsList;
         }
+    }
+
+    public RuntimeValue<MySQLPoolSupport> createMySQLPoolSupport(Set<String> mySQLPoolNames) {
+        return new RuntimeValue<>(new MySQLPoolSupport(mySQLPoolNames));
     }
 }

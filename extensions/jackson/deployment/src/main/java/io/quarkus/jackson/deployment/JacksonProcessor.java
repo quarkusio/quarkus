@@ -513,10 +513,10 @@ public class JacksonProcessor {
     }
 
     private Optional<String> determinePropertyNamingStrategyClassName(JacksonBuildTimeConfig jacksonBuildTimeConfig) {
-        if (jacksonBuildTimeConfig.propertyNamingStrategy.isEmpty()) {
+        if (jacksonBuildTimeConfig.propertyNamingStrategy().isEmpty()) {
             return Optional.empty();
         }
-        var propertyNamingStrategy = jacksonBuildTimeConfig.propertyNamingStrategy.get();
+        var propertyNamingStrategy = jacksonBuildTimeConfig.propertyNamingStrategy().get();
         Field field;
 
         try {

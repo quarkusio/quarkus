@@ -37,6 +37,11 @@ projects:
 triage:
   discussions:
     monitoredCategories: [33575230]
+  guardedBranches:
+    - ref: 3.15
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+    - ref: 3.8
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
   rules:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
@@ -121,7 +126,7 @@ triage:
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
-      notify: [gsmet, yrodiere]
+      notify: [gsmet]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -135,7 +140,7 @@ triage:
     - id: hibernate-search
       labels: [area/hibernate-search]
       title: "hibernate.search"
-      notify: [gsmet, marko-bekhta, yrodiere]
+      notify: [gsmet, marko-bekhta]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -144,7 +149,7 @@ triage:
     - id: elasticsearch
       labels: [area/elasticsearch]
       title: "(elasticsearch|opensearch)"
-      notify: [gsmet, marko-bekhta, yrodiere, loicmathieu]
+      notify: [gsmet, marko-bekhta, loicmathieu]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -153,7 +158,7 @@ triage:
     - id: hibernate-validator
       labels: [area/hibernate-validator]
       title: "hibernate.validator"
-      notify: [gsmet, marko-bekhta, yrodiere]
+      notify: [gsmet, marko-bekhta]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator
@@ -405,14 +410,11 @@ triage:
       directories:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
-    - id: mandrel
-      labels: [area/native-image]
-      titleBody: "mandrel"
-      notify: [galderz, zakkak, Karm]
     - id: native-image
       labels: [area/native-image]
-      title: "\\bnative\\b"
-      notify: [zakkak]
+      body: "Mandrel or GraalVM version"
+      notify: [zakkak, Karm, galderz]
+      notifyInPullRequest: true
     - id: awt
       labels: [area/graphics]
       expression: |
@@ -473,7 +475,7 @@ triage:
       notify: [radcortez]
     - id: core
       labels: [area/core]
-      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne]
       directories:
         - core/
     - id: dependencies
@@ -627,7 +629,7 @@ triage:
     - id: rest
       labels: [area/rest]
       title: resteasy.reactive
-      notify: [geoand, FroMage, stuartwdouglas]
+      notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
     - id: scala
@@ -716,21 +718,21 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro, yrodiere]
+      notify: [barreiro]
       directories:
         - extensions/agroal/
     - id: continuous-testing
       labels: [area/continuous-testing]
       title: "continuous.testing"
-      notify: [stuartwdouglas]
+      notify: [holly-cummins, geoand]
     - id: devservices
       labels: [area/devservices]
       title: "dev.?services?"
-      notify: [stuartwdouglas, geoand]
+      notify: [geoand]
     - id: jdbc
       labels: [area/jdbc]
       title: "jdbc"
-      notify: [barreiro,yrodiere]
+      notify: [barreiro]
       directories:
         - extensions/jdbc/
     - id: reactive-sql-clients

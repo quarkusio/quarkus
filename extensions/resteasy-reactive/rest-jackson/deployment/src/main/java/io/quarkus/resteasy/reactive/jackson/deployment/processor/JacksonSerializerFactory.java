@@ -223,6 +223,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         for (FieldInfo fieldInfo : classFields(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, fieldInfo);
             if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
+                if (fieldSpecs.isIgnoredField()) {
+                    continue;
+                }
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }
@@ -237,6 +240,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         for (MethodInfo methodInfo : classMethods(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo);
             if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
+                if (fieldSpecs.isIgnoredField()) {
+                    continue;
+                }
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }

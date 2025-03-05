@@ -7,7 +7,7 @@ import jakarta.ws.rs.Path;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mssqlclient.MSSQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -21,7 +21,7 @@ public class HibernateReactiveMSSQLTestEndpoint {
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
     @Inject
-    MSSQLPool mssqlPool;
+    Pool mssqlPool;
 
     @GET
     @Path("/reactiveFindMutiny")
@@ -87,7 +87,7 @@ public class HibernateReactiveMSSQLTestEndpoint {
     }
 
     private Uni<String> selectNameFromId(Integer id) {
-        return mssqlPool.preparedQuery("SELECT name FROM Pig WHERE id = ?").execute(Tuple.of(id)).map(rowSet -> {
+        return mssqlPool.preparedQuery("SELECT name FROM Pig WHERE id = @p1").execute(Tuple.of(id)).map(rowSet -> {
             if (rowSet.size() == 1) {
                 return rowSet.iterator().next().getString(0);
             } else if (rowSet.size() > 1) {

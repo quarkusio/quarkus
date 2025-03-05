@@ -20,6 +20,10 @@ public enum LaunchMode {
         return this != NORMAL;
     }
 
+    public static boolean isDev() {
+        return current() == DEVELOPMENT;
+    }
+
     /**
      * Returns true if the current launch is the server side of remote dev.
      */

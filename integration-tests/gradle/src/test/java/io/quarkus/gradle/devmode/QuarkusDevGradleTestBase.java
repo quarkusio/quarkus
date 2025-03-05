@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
+import org.wildfly.common.Assert;
 
 import io.quarkus.gradle.BuildResult;
 import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
@@ -180,6 +181,12 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         }
     }
 
+    protected void delete(String srcFile) {
+        final File source = new File(getProjectDir(), srcFile);
+        assertThat(source).exists();
+        Assert.assertTrue(source.delete());
+    }
+
     protected void assertUpdatedResponseContains(String path, String value) {
         assertUpdatedResponseContains(path, value, devModeTimeoutSeconds(), TimeUnit.SECONDS);
     }
@@ -197,5 +204,12 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(waitAtMost, timeUnit).until(() -> getHttpResponse(path, waitAtMost, timeUnit).contains(value));
+    }
+
+    protected void assertStatusCode(String path, int code) {
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(devModeTimeoutSeconds(), TimeUnit.SECONDS)
+                .until(() -> Assert.assertTrue(devModeClient.getStrictHttpResponse(path, code)));
     }
 }

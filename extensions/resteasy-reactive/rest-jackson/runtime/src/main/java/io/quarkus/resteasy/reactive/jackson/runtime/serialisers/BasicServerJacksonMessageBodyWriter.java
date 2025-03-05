@@ -11,7 +11,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -24,22 +26,33 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 
 public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
-    private final ObjectWriter defaultWriter;
+    private final LazyValue<ObjectWriter> defaultWriter;
     private final Map<JavaType, ObjectWriter> genericWriters = new ConcurrentHashMap<>();
 
+    // used by Arc
+    public BasicServerJacksonMessageBodyWriter() {
+        defaultWriter = null;
+    }
+
     @Inject
-    public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper) {
-        this.defaultWriter = createDefaultWriter(mapper);
+    public BasicServerJacksonMessageBodyWriter(Instance<ObjectMapper> mapper) {
+        this.defaultWriter = new LazyValue<>(new Supplier<>() {
+            @Override
+            public ObjectWriter get() {
+                return createDefaultWriter(mapper.get());
+            }
+        });
     }
 
     private ObjectWriter getWriter(Type genericType, Object value) {
         // make sure we properly handle polymorphism in generic collections
         if (value != null && genericType != null) {
-            JavaType rootType = JacksonMapperUtil.getGenericRootType(genericType, defaultWriter);
+            JavaType rootType = JacksonMapperUtil.getGenericRootType(genericType, defaultWriter.get());
             // Check that the determined root type is really assignable from the given entity.
             // A mismatch can happen, if a ServerResponseFilter replaces the response entity with another object
             // that does not match the original signature of the method (see HalServerResponseFilter for an example)
@@ -50,7 +63,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
                     writer = genericWriters.computeIfAbsent(rootType, new Function<>() {
                         @Override
                         public ObjectWriter apply(JavaType type) {
-                            return defaultWriter.forType(type);
+                            return defaultWriter.get().forType(type);
                         }
                     });
                 }
@@ -59,7 +72,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
         }
 
         // no generic type given, or the generic type is just a class. Use the default writer.
-        return this.defaultWriter;
+        return this.defaultWriter.get();
     }
 
     @Override

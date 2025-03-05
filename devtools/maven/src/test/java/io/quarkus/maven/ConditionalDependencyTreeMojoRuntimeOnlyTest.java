@@ -10,11 +10,6 @@ public class ConditionalDependencyTreeMojoRuntimeOnlyTest extends DependencyTree
     }
 
     @Override
-    protected boolean isIncubatingModelResolver() {
-        return true;
-    }
-
-    @Override
     protected boolean isRuntimeOnly() {
         return true;
     }

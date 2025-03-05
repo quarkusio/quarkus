@@ -37,6 +37,9 @@ public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
+    private static final String MAX_PREPARED_TRANSACTIONS = "max_prepared_transactions";
+    private static final String DEFAULT_MAX_PREPARED_TRANSACTIONS = "--" + MAX_PREPARED_TRANSACTIONS + "=100";
+
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
         return new ConsoleCommandBuildItem(new PostgresCommand(devServices));
@@ -75,8 +78,17 @@ public class PostgresqlDevServicesProcessor {
                 container.withEnv(containerConfig.getContainerEnv());
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                containerConfig.getCommand().ifPresent(container::setCommand);
-                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
+                String augmentedCommand;
+                if (containerConfig.getCommand().isPresent()) {
+                    String originalCommand = containerConfig.getCommand().get();
+                    augmentedCommand = originalCommand.contains(MAX_PREPARED_TRANSACTIONS) ? originalCommand
+                            : originalCommand + " " + DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                } else {
+                    augmentedCommand = DEFAULT_MAX_PREPARED_TRANSACTIONS;
+                }
+                container.setCommand(augmentedCommand);
+
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
                 if (containerConfig.isShowLogs()) {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }

@@ -272,7 +272,7 @@ public interface JsonCommands<K> extends RedisCommands {
      *
      * @param key the key, must not be {@code null}
      * @param path the path, {@code null} means {@code $}
-     * @return a list of integer containing for each path, the array's length, or @{code null} if the
+     * @return a list of integer containing for each path, the array's length, or {@code null} if the
      *         matching JSON value is not an array.
      **/
     List<Integer> jsonArrLen(K key, String path);

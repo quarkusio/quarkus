@@ -30,7 +30,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
-import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.logging.DefaultClientLogger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -82,7 +81,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
-    private boolean enableCompression;
+    private Boolean enableCompression;
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -202,8 +201,8 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
-    public ClientBuilder enableCompression() {
-        this.enableCompression = true;
+    public ClientBuilder enableCompression(boolean enableCompression) {
+        this.enableCompression = enableCompression;
         return this;
     }
 
@@ -278,15 +277,15 @@ public class ClientBuilderImpl extends ClientBuilder {
             }
         }
 
-        if (enableCompression) {
-            configuration.register(ClientGZIPDecodingInterceptor.class);
+        if (Boolean.TRUE.equals(enableCompression)) {
+            options.setDecompressionSupported(true);
         }
 
         clientLogger.setBodySize(loggingBodySize);
 
         options.setMaxChunkSize(maxChunkSize);
         return new ClientImpl(options,
-                configuration,
+                new ConfigurationImpl(configuration),
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
                 null,
                 null,

@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -26,37 +25,30 @@ public class BackChannelLogoutHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
     private static final String SLASH = "/";
 
-    @Inject
-    DefaultTenantConfigResolver resolver;
-
-    private final OidcConfig oidcConfig;
-
-    public BackChannelLogoutHandler(OidcConfig oidcConfig) {
-        this.oidcConfig = oidcConfig;
-    }
-
-    void setup(@Observes Router router) {
-        addRoute(router, OidcConfig.getDefaultTenant(oidcConfig));
-        for (var nameToOidcTenantConfig : oidcConfig.namedTenants().entrySet()) {
-            if (OidcConfig.DEFAULT_TENANT_KEY.equals(nameToOidcTenantConfig.getKey())) {
-                continue;
+    void setup(@Observes Router router, DefaultTenantConfigResolver resolver) {
+        final TenantConfigBean tenantConfigBean = resolver.getTenantConfigBean();
+        addRoute(router, tenantConfigBean.getDefaultTenant().oidcConfig(), resolver);
+        for (var nameToOidcTenantConfig : tenantConfigBean.getStaticTenantsConfig().values()) {
+            if (nameToOidcTenantConfig.oidcConfig() != null) {
+                addRoute(router, nameToOidcTenantConfig.oidcConfig(), resolver);
             }
-            addRoute(router, nameToOidcTenantConfig.getValue());
         }
     }
 
-    private void addRoute(Router router, OidcTenantConfig oidcTenantConfig) {
+    private static void addRoute(Router router, OidcTenantConfig oidcTenantConfig, DefaultTenantConfigResolver resolver) {
         if (oidcTenantConfig.tenantEnabled() && oidcTenantConfig.logout().backchannel().path().isPresent()) {
             router.route(oidcTenantConfig.logout().backchannel().path().get())
-                    .handler(new RouteHandler(oidcTenantConfig));
+                    .handler(new RouteHandler(oidcTenantConfig, resolver));
         }
     }
 
-    class RouteHandler implements Handler<RoutingContext> {
+    private static class RouteHandler implements Handler<RoutingContext> {
         private final OidcTenantConfig oidcTenantConfig;
+        private final DefaultTenantConfigResolver resolver;
 
-        RouteHandler(OidcTenantConfig oidcTenantConfig) {
+        RouteHandler(OidcTenantConfig oidcTenantConfig, DefaultTenantConfigResolver resolver) {
             this.oidcTenantConfig = oidcTenantConfig;
+            this.resolver = resolver;
         }
 
         @Override
@@ -168,16 +160,16 @@ public class BackChannelLogoutHandler {
                     && tenant.oidcConfig().tenantId().get().equals(oidcTenantConfig.tenantId().get())
                     && requestPath.equals(getRootPath() + tenant.oidcConfig().logout().backchannel().path().orElse(null));
         }
-    }
 
-    private String getRootPath() {
-        // Prepend '/' if it is not present
-        String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
-        // Strip trailing '/' if the length is > 1
-        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
-            rootPath = rootPath.substring(rootPath.length() - 1);
+        private String getRootPath() {
+            // Prepend '/' if it is not present
+            String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
+            // Strip trailing '/' if the length is > 1
+            if (rootPath.length() > 1 && rootPath.endsWith("/")) {
+                rootPath = rootPath.substring(rootPath.length() - 1);
+            }
+            // if it is only '/' then return an empty value
+            return SLASH.equals(rootPath) ? "" : rootPath;
         }
-        // if it is only '/' then return an empty value
-        return SLASH.equals(rootPath) ? "" : rootPath;
     }
 }

@@ -17,8 +17,8 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
     @WithTransaction
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
-        return WebAuthnCredential.findByUserName(userName)
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String username) {
+        return WebAuthnCredential.findByUsername(username)
                 .map(list -> list.stream().map(WebAuthnCredential::toWebAuthnCredentialRecord).toList());
     }
 
@@ -34,11 +34,11 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     @Override
     public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
         // this user is handled in the LoginResource endpoint manually
-        if (credentialRecord.getUserName().equals("scooby")) {
+        if (credentialRecord.getUsername().equals("scooby")) {
             return Uni.createFrom().voidItem();
         }
         User newUser = new User();
-        newUser.userName = credentialRecord.getUserName();
+        newUser.username = credentialRecord.getUsername();
         WebAuthnCredential credential = new WebAuthnCredential(credentialRecord, newUser);
         return credential.persist()
                 .flatMap(c -> newUser.persist())
@@ -51,7 +51,7 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
         return WebAuthnCredential.findByCredentialId(credentialId)
                 .invoke(credential -> {
                     // this user is handled in the LoginResource endpoint manually
-                    if (!credential.user.userName.equals("scooby")) {
+                    if (!credential.user.username.equals("scooby")) {
                         credential.counter = counter;
                     }
                 })
@@ -59,8 +59,8 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     }
 
     @Override
-    public Set<String> getRoles(String userId) {
-        if (userId.equals("admin")) {
+    public Set<String> getRoles(String username) {
+        if (username.equals("admin")) {
             Set<String> ret = new HashSet<>();
             ret.add("user");
             ret.add("admin");

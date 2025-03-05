@@ -50,14 +50,8 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
+            <artifactId>keycloak-client-common-synced</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>jakarta.activation</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.eclipse.angus</groupId>

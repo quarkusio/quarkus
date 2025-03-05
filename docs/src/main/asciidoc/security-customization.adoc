@@ -242,6 +242,8 @@ You can enforce the order by implementing a default `SecurityIdentityAugmentor#p
 By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
 that mandates a request context, you will have a `jakarta.enterprise.context.ContextNotActiveException`.
 
+IMPORTANT: Please also review the xref:security-proactive-authentication.adoc#cdi-request-context-activation[Activating the CDI request context] section of the "Proactive authentication" guide.
+
 The solution is to activate the request context, the following example shows how to get the roles from an Hibernate with Panache `UserRoleEntity`.
 
 [source,java]

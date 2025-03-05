@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Singleton;
 
 import org.keycloak.adapters.authorization.PolicyEnforcer;
 
@@ -19,14 +19,14 @@ import io.quarkus.keycloak.pep.TenantPolicyConfigResolver;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.runtime.BlockingTaskRunner;
-import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
-@Singleton
+@ApplicationScoped
 public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
 
     private final TenantPolicyConfigResolver dynamicConfigResolver;
@@ -36,11 +36,11 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     private final long readTimeout;
     private final OidcTlsSupport tlsSupport;
 
-    DefaultPolicyEnforcerResolver(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
-            HttpConfiguration httpConfiguration, BlockingSecurityExecutor blockingSecurityExecutor,
+    DefaultPolicyEnforcerResolver(TenantConfigBean tenantConfigBean, KeycloakPolicyEnforcerConfig config,
+            VertxHttpConfig httpConfig, BlockingSecurityExecutor blockingSecurityExecutor,
             Instance<TenantPolicyConfigResolver> configResolver,
             InjectableInstance<TlsConfigurationRegistry> tlsConfigRegistryInstance) {
-        this.readTimeout = httpConfiguration.readTimeout.toMillis();
+        this.readTimeout = httpConfig.readTimeout().toMillis();
 
         if (tlsConfigRegistryInstance.isResolvable()) {
             this.tlsSupport = OidcTlsSupport.of(tlsConfigRegistryInstance.get());
@@ -48,11 +48,11 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
             this.tlsSupport = OidcTlsSupport.empty();
         }
 
-        var defaultTenantConfig = OidcConfig.getDefaultTenant(oidcConfig);
+        var defaultTenantConfig = tenantConfigBean.getDefaultTenant().oidcConfig();
         var defaultTenantTlsSupport = tlsSupport.forConfig(defaultTenantConfig.tls());
         this.defaultPolicyEnforcer = createPolicyEnforcer(defaultTenantConfig, config.defaultTenant(),
                 defaultTenantTlsSupport);
-        this.namedPolicyEnforcers = createNamedPolicyEnforcers(oidcConfig, config, tlsSupport);
+        this.namedPolicyEnforcers = createNamedPolicyEnforcers(tenantConfigBean, config, tlsSupport);
         if (configResolver.isResolvable()) {
             this.dynamicConfigResolver = configResolver.get();
             this.requestContext = new BlockingTaskRunner<>(blockingSecurityExecutor);
@@ -105,7 +105,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
                 });
     }
 
-    private static Map<String, PolicyEnforcer> createNamedPolicyEnforcers(OidcConfig oidcConfig,
+    private static Map<String, PolicyEnforcer> createNamedPolicyEnforcers(TenantConfigBean tenantConfigBean,
             KeycloakPolicyEnforcerConfig config, OidcTlsSupport tlsSupport) {
         if (config.namedTenants().isEmpty()) {
             return Map.of();
@@ -113,7 +113,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
 
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants().entrySet()) {
-            var oidcTenantConfig = getOidcTenantConfig(oidcConfig, tenant.getKey());
+            var oidcTenantConfig = getOidcTenantConfig(tenantConfigBean, tenant.getKey());
             policyEnforcerTenants.put(tenant.getKey(),
                     createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsSupport.forConfig(oidcTenantConfig.tls())));
         }

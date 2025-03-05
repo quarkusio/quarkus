@@ -58,7 +58,7 @@ class NettyProcessor {
     @BuildStep
     public SystemPropertyBuildItem limitArenaSize(NettyBuildTimeConfig config,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
-        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, true);
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
 
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
@@ -77,6 +77,11 @@ class NettyProcessor {
         new Random().nextBytes(machineIdBytes);
         final String nettyMachineId = io.netty.util.internal.MacAddressUtil.formatAddress(machineIdBytes);
         return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem disableFinalizers() {
+        return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
     }
 
     @BuildStep
@@ -109,7 +114,7 @@ class NettyProcessor {
                 .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
-        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)

@@ -139,6 +139,31 @@ For the allocation case, you obtain a JFR file, you can convert it to your typic
 java -cp ${PATH_TO_ASYNC_PROFILER}/lib/converter.jar jfr2flame startup-alloc-profile.jfr --alloc --total startup-alloc-profile.html
 ```
 
+> [!TIP]  
+> You can avoid needing to stop the application manually by writing a custom main that stops the application once it boots up
+> 
+> ```java
+> import io.quarkus.runtime.Quarkus;
+> import io.quarkus.runtime.QuarkusApplication;
+> import io.quarkus.runtime.annotations.QuarkusMain;
+>
+> @QuarkusMain
+> public class Main {
+>
+>     public static void main(String... args) {
+>         Quarkus.run(MyApp.class, args);
+>     }
+> 
+>     public static class MyApp implements QuarkusApplication {
+> 
+>         @Override
+>         public int run(String... args) throws Exception {
+>             return 0;
+>         }
+>     }
+> }
+> ```
+
 Note that short options are not supported inside the agent, you need to use their long versions.
 
 By default, Async Profiler sample events every 10ms.

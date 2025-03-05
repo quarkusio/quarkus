@@ -34,6 +34,10 @@ public class FrontendResource {
     JwtBearerAuthenticationOidcClient jwtBearerAuthenticationOidcClient;
 
     @Inject
+    @RestClient
+    JwtBearerFileAuthenticationOidcClient jwtBearerFileAuthenticationOidcClient;
+
+    @Inject
     @NamedOidcClient("non-standard-response")
     Tokens tokens;
 
@@ -74,6 +78,12 @@ public class FrontendResource {
     @Path("echoTokenJwtBearerAuthentication")
     public String echoTokenJwtBearerAuthentication() {
         return jwtBearerAuthenticationOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenJwtBearerAuthenticationFromFile")
+    public String echoTokenJwtBearerAuthenticationFromFile() {
+        return jwtBearerFileAuthenticationOidcClient.echoToken();
     }
 
     @GET

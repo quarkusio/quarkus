@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -84,6 +85,7 @@ class ObservabilityDevServiceProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> properties,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<ObservabilityDevServicesConfigBuildItem> configBuildProducer) {
@@ -118,6 +120,8 @@ class ObservabilityDevServiceProcessor {
             ContainerConfig currentDevServicesConfiguration = dev.config(
                     configuration,
                     new ExtensionsCatalog(
+                            QuarkusClassLoader::isResourcePresentAtRuntime,
+                            QuarkusClassLoader::isClassPresentAtRuntime,
                             capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
                             hasMicrometerOtlp(metricsConfiguration)));
 
@@ -139,6 +143,13 @@ class ObservabilityDevServiceProcessor {
 
             devServices.remove(devId); // clean-up
             capturedDevServicesConfigurations.put(devId, currentDevServicesConfiguration);
+
+            // override some OTel, etc defaults - rates, intervals, delays, ...
+            Map<String, Object> propertiesToOverride = ContainerConfigUtil
+                    .propertiesToOverride(currentDevServicesConfiguration);
+            propertiesToOverride
+                    .forEach((k, v) -> properties.produce(new RunTimeConfigurationDefaultBuildItem(k, v.toString())));
+            log.infof("Dev Service %s properties override: %s", devId, propertiesToOverride);
 
             StartupLogCompressor compressor = new StartupLogCompressor(
                     (launchMode.isTest() ? "(test) " : "") + devId + " Dev Services Starting:",

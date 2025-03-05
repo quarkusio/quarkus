@@ -119,7 +119,16 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     @Override
     protected String[] getGraalVMVersionCommand(List<String> args) {
-        return buildCommand("run", Collections.singletonList("--rm"), args);
+        List<String> containerRuntimeArgs;
+        if (nativeConfig.containerRuntimeOptions().isPresent()) {
+            List<String> runtimeOptions = nativeConfig.containerRuntimeOptions().get();
+            containerRuntimeArgs = new ArrayList<>(runtimeOptions.size() + 1);
+            containerRuntimeArgs.addAll(runtimeOptions);
+            containerRuntimeArgs.add("--rm");
+        } else {
+            containerRuntimeArgs = Collections.singletonList("--rm");
+        }
+        return buildCommand("run", containerRuntimeArgs, args);
     }
 
     @Override

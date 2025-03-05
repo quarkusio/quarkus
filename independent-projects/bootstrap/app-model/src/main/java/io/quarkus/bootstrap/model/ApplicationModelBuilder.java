@@ -298,15 +298,6 @@ public class ApplicationModelBuilder {
         return new GACT(artifact.split(":"));
     }
 
-    private static boolean matches(ArtifactCoordsPattern[] patterns, ArtifactCoords coords) {
-        for (int i = 0; i < patterns.length; ++i) {
-            if (patterns[i].matches(coords)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     List<ResolvedDependency> buildDependencies() {
         for (ArtifactKey key : parentFirstArtifacts) {
             final ResolvedDependencyBuilder d = dependencies.get(key);
@@ -330,8 +321,42 @@ public class ApplicationModelBuilder {
         final List<ResolvedDependency> result = new ArrayList<>(dependencies.size());
         final ArtifactCoordsPattern[] excludePatterns = excludedArtifacts.toArray(new ArtifactCoordsPattern[0]);
         for (ResolvedDependencyBuilder db : this.dependencies.values()) {
-            if (!matches(excludePatterns, db.getArtifactCoords())) {
+            if (!matches(db.getArtifactCoords(), excludePatterns)) {
+                db.setDependencies(ensureNoMatches(db.getDependencies(), excludePatterns));
                 result.add(db.build());
+            }
+        }
+        return result;
+    }
+
+    private static boolean matches(ArtifactCoords coords, ArtifactCoordsPattern[] patterns) {
+        for (int i = 0; i < patterns.length; ++i) {
+            if (patterns[i].matches(coords)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Collection<ArtifactCoords> ensureNoMatches(Collection<ArtifactCoords> artifacts,
+            ArtifactCoordsPattern[] patterns) {
+        if (artifacts.isEmpty() || patterns.length == 0) {
+            return artifacts;
+        }
+        for (var dep : artifacts) {
+            if (matches(dep, patterns)) {
+                return excludeMatches(artifacts, patterns);
+            }
+        }
+        return artifacts;
+    }
+
+    private static Collection<ArtifactCoords> excludeMatches(Collection<ArtifactCoords> artifacts,
+            ArtifactCoordsPattern[] patterns) {
+        final List<ArtifactCoords> result = new ArrayList<>(artifacts.size() - 1);
+        for (var artifact : artifacts) {
+            if (!matches(artifact, patterns)) {
+                result.add(artifact);
             }
         }
         return result;

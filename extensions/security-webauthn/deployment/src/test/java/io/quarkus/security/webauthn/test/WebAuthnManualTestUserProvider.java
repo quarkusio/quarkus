@@ -25,9 +25,9 @@ public class WebAuthnManualTestUserProvider extends WebAuthnTestUserProvider {
     }
 
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String userId) {
         assertRequestContext();
-        return super.findByUserName(userId);
+        return super.findByUsername(userId);
     }
 
     private void assertRequestContext() {

@@ -20,7 +20,7 @@ jobs:
         run: sudo systemctl stop mysql
 
       - name: Pull docker image
-        run: docker pull quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3-java${{ matrix.java }}
+        run: docker pull quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image:22.3-java${{ matrix.java }}
 
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v2
@@ -55,7 +55,7 @@ jobs:
         run: ./mvnw -B install -DskipTests -DskipITs -Dformat.skip
 
       - name: Run integration tests in native
-        run: ./mvnw -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Dtest-containers -Dstart-containers -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3-java${{ matrix.java }} -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
+        run: ./mvnw -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Dtest-containers -Dstart-containers -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image:22.3-java${{ matrix.java }} -pl '!io.quarkus:quarkus-integration-test-google-cloud-functions-http,!io.quarkus:quarkus-integration-test-google-cloud-functions,!io.quarkus:quarkus-integration-test-funqy-google-cloud-functions'
 
       - name: Report
         if: always()

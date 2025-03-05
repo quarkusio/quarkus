@@ -58,15 +58,11 @@ public class MediaTypeMapper implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        String contentType = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
-        // if there's no Content-Type it's */*
-        MediaType contentMediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.WILDCARD_TYPE;
         // find the best matching consumes type. Note that the arguments are reversed from their definition
         // of desired/provided, but we do want the result to be a media type we consume, since that's how we key
         // our methods, rather than the single media type we get from the client. This way we ensure we get the
         // best match.
-        MediaType consumes = MediaTypeHelper.getBestMatch(Collections.singletonList(contentMediaType),
-                consumesTypes);
+        MediaType consumes = MediaTypeHelper.getBestMatch(contentTypeFromRequest(requestContext), consumesTypes);
         Holder selectedHolder = resourcesByConsumes.get(consumes);
         // if we haven't found anything, try selecting the wildcard type, if any
         if (selectedHolder == null) {
@@ -79,7 +75,13 @@ public class MediaTypeMapper implements ServerRestHandler {
         if (selectedHolder.mtWithoutParamsToResource.size() == 1) {
             selectedResource = selectedHolder.mtWithoutParamsToResource.values().iterator().next();
         } else {
-            MediaType produces = selectMediaType(requestContext, selectedHolder);
+            MediaType produces;
+            try {
+                produces = selectMediaType(requestContext, selectedHolder);
+            } catch (Exception e) {
+                // there is TCK testing this, but some of the legacy RESTEasy tests do expect the result to be 400
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+            }
             requestContext.setResponseContentType(produces);
             MediaType key = produces;
             if (!key.getParameters().isEmpty()) {
@@ -92,9 +94,21 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
 
         if (selectedResource == null) {
-            throw new WebApplicationException(Response.status(416).build());
+            throw new WebApplicationException(Response.status(Response.Status.NOT_ACCEPTABLE).build());
         }
         requestContext.restart(selectedResource);
+    }
+
+    private List<MediaType> contentTypeFromRequest(ResteasyReactiveRequestContext requestContext) {
+        List<String> contentTypeList = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.CONTENT_TYPE);
+        if (contentTypeList.isEmpty()) {
+            return Collections.singletonList(MediaType.WILDCARD_TYPE);
+        }
+        List<MediaType> result = new ArrayList<>(contentTypeList.size());
+        for (String s : contentTypeList) {
+            result.add(MediaTypeHelper.valueOf(s));
+        }
+        return result;
     }
 
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {

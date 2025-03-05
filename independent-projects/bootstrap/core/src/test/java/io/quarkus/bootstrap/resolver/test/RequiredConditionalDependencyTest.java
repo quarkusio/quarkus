@@ -1,19 +1,10 @@
 package io.quarkus.bootstrap.resolver.test;
 
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.maven.dependency.DependencyFlags;
 
 public class RequiredConditionalDependencyTest extends CollectDependenciesBase {
-
-    @Override
-    protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
-        var resolver = super.newAppModelResolver(currentProject);
-        //resolver.setIncubatingModelResolver(false);
-        return resolver;
-    }
 
     @Override
     protected void setupDependencies() {

@@ -2,8 +2,6 @@ package io.quarkus.builder.location;
 
 import java.util.Objects;
 
-/**
- */
 public abstract class Location {
     private final Location parent;
 

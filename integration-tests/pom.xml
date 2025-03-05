@@ -213,8 +213,10 @@
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mariadb</module>
+                <module>hibernate-reactive-mssql</module>
                 <module>hibernate-reactive-mysql</module>
                 <module>hibernate-reactive-mysql-agroal-flyway</module>
+                <module>hibernate-reactive-oracle</module>
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
@@ -252,12 +254,15 @@
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
                 <module>observability-lgtm</module>
+                <module>observability-lgtm-prometheus</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
+                <module>oidc-dpop</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -358,6 +363,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>micrometer-security</module>
+                <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>

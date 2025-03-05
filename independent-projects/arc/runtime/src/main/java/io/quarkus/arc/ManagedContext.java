@@ -10,6 +10,8 @@ public interface ManagedContext extends InjectableContext {
 
     /**
      * Activate the context with no initial state.
+     * <p>
+     * If needed, activating a context will fire {@code @Initialized} event for the given context.
      *
      * @return the context state
      */
@@ -39,7 +41,7 @@ public interface ManagedContext extends InjectableContext {
     }
 
     /**
-     * Deactivate the context - do not destoy existing contextual instances.
+     * Deactivate the context - do not destroy existing contextual instances.
      */
     void deactivate();
 
@@ -50,4 +52,13 @@ public interface ManagedContext extends InjectableContext {
         destroy();
         deactivate();
     }
+
+    /**
+     * Creates a new {@link io.quarkus.arc.InjectableContext.ContextState}.
+     * <p>
+     * Creating a context state does not fire {@code @Initialized} event for given context.
+     *
+     * @return a new initialized context state
+     */
+    ContextState initializeState();
 }

@@ -116,7 +116,7 @@ public class HeaderUtil {
     public static MediaType getMediaType(MultivaluedMap<String, ? extends Object> headers) {
         Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
         if (first instanceof String contentType) {
-            return MediaType.valueOf(contentType);
+            return MediaTypeHelper.valueOf(contentType);
         } else {
             return (MediaType) first;
         }
@@ -281,10 +281,10 @@ public class HeaderUtil {
                 StringTokenizer tokenizer = new StringTokenizer(accept, ",");
                 while (tokenizer.hasMoreElements()) {
                     String item = tokenizer.nextToken().trim();
-                    list.add(MediaType.valueOf(item));
+                    list.add(MediaTypeHelper.valueOf(item));
                 }
             } else {
-                list.add(MediaType.valueOf(accept.trim()));
+                list.add(MediaTypeHelper.valueOf(accept.trim()));
             }
         }
         MediaTypeHelper.sortByWeight(list);

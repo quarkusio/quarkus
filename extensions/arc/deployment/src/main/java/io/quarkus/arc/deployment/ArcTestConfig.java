@@ -1,16 +1,16 @@
 package io.quarkus.arc.deployment;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class ArcTestConfig {
+public interface ArcTestConfig {
 
     /**
      * If set to true then disable {@code StartupEvent} and {@code ShutdownEvent} observers declared on application bean classes
      * during the tests.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean disableApplicationLifecycleObservers;
+    @WithDefault("false")
+    boolean disableApplicationLifecycleObservers();
 
 }

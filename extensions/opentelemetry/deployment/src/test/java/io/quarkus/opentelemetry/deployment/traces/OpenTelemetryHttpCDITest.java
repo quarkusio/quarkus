@@ -89,6 +89,7 @@ public class OpenTelemetryHttpCDITest {
 
         final SpanData withSpan = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("withSpan", withSpan.getName());
+        assertEquals(2, withSpan.getAttributes().size());
 
         final SpanData bean = getSpanByKindAndParentId(spans, INTERNAL, withSpan.getSpanId());
         assertEquals("HelloBean.hello", bean.getName());

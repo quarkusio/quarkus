@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashMap;
@@ -14,8 +15,6 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
-/**
- */
 public class ConfigExpanderTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
@@ -55,21 +54,13 @@ public class ConfigExpanderTestCase {
 
     @Test
     public void testExpanderMissing() {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("foo.two", "${foo.one}empty"),
-                singletonMap("foo.three", "+${foo.two}+")));
-        try {
-            config.getValue("foo.two", String.class);
-            fail("Expected exception");
-        } catch (NoSuchElementException expected) {
-            // OK
-        }
-        try {
-            config.getValue("foo.three", String.class);
-            fail("Expected exception");
-        } catch (NoSuchElementException expected) {
-            // OK
-        }
+        final SmallRyeConfig config = buildConfig(
+                maps(singletonMap("foo.two", "${foo.one}empty"),
+                        singletonMap("foo.three", "+${foo.two}+")));
+
+        assertThrows(NoSuchElementException.class, () -> config.getValue("foo.two", String.class));
+
+        assertThrows(NoSuchElementException.class, () -> config.getValue("foo.three", String.class));
     }
 
     @Test

@@ -6,11 +6,12 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.binder.MeterBinder;
-import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
 import io.netty.buffer.ByteBufAllocatorMetricProvider;
 
 @Singleton
 public class ReactiveNettyMetricsProvider {
+
+    public static final String MULTIPART_ALLOCATOR_NAME = "quarkus-multipart-form-upload";
 
     @Produces
     @Singleton
@@ -20,7 +21,7 @@ public class ReactiveNettyMetricsProvider {
         Field af = clazz.getDeclaredField("ALLOC");
         af.setAccessible(true);
         ByteBufAllocatorMetricProvider provider = (ByteBufAllocatorMetricProvider) af.get(null);
-        return new NettyAllocatorMetrics(provider);
+        return new NettyAllocatorMetrics(MULTIPART_ALLOCATOR_NAME, provider);
     }
 
 }

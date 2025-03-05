@@ -4,6 +4,8 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
 import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
 import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_GRPC_STATUS_CODE;
@@ -132,6 +134,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
         assertNotNull(server.getAttributes().get(SERVER_PORT));
         assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
+        assertNotNull(server.getAttributes().get(NETWORK_PEER_PORT));
+        assertNotNull(server.getAttributes().get(NETWORK_PEER_ADDRESS));
 
         final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("span.internal", internal.getName());

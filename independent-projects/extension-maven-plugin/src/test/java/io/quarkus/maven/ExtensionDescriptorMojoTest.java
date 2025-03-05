@@ -247,6 +247,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         // add localRepo - framework doesn't do this on its own
         ArtifactRepository localRepo = createLocalArtifactRepository();
         session.getRequest().setLocalRepository(localRepo);
+        session.getRequest().setBaseDirectory(basedir);
 
         final MavenArtifactResolver mvn = new MavenArtifactResolver(
                 new BootstrapMavenContext(BootstrapMavenContext.config()
@@ -298,18 +299,20 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         return repo;
     }
 
-    private void mavenExecPom(String dir) throws MavenInvocationException {
+    private void mavenExecPom(String dirName) throws MavenInvocationException {
+        File basedir = getTestFile(TEST_RESOURCES + dirName);
+        File pom = new File(basedir, "pom.xml");
+
         InvocationRequest request = new DefaultInvocationRequest();
-        File projectPath = getTestFile(TEST_RESOURCES, dir + "/pom.xml");
-
-        request.setPomFile(projectPath);
-
+        request.setPomFile(pom);
         request.setGoals(Collections.singletonList("install"));
-        Invoker invoker = new DefaultInvoker();
+        request.setDebug(false);
+        request.setShowErrors(true);
+        request.setBatchMode(true);
 
-        // This is a bit ugly, but bake in knowledge about where we are in the hierarchy to find maven
-        invoker.setMavenHome(new File("../../").getAbsoluteFile());
-        invoker.setMavenExecutable(new File("../../mvnw").getAbsoluteFile());
+        Invoker invoker = new DefaultInvoker();
+        invoker.setMavenHome(new File(basedir, "../"));
+        invoker.setMavenExecutable(new File(basedir, "../mvnw").getAbsoluteFile());
 
         invoker.execute(request);
     }
@@ -328,5 +331,4 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                     Files.exists(pathToBeDeleted));
         }
     }
-
 }

@@ -60,6 +60,14 @@ public interface WebSocketEndpoint {
         throw new UnsupportedOperationException();
     }
 
+    // @OnPingMessage
+
+    Future<Void> onPingMessage(Buffer message);
+
+    default ExecutionModel onPingMessageExecutionModel() {
+        return ExecutionModel.NONE;
+    }
+
     // @OnPongMessage
 
     Future<Void> onPongMessage(Buffer message);

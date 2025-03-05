@@ -7,14 +7,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: You need clustering support for your scheduled tasks? This guide explains how to use the Quartz extension for that.
-:extension-status: preview
 :topics: scheduling,cronjob,quartz
 :extensions: io.quarkus:quarkus-quartz
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic clustered tasks using the http://www.quartz-scheduler.org/[Quartz] extension.
-
-include::{includes}/extension-status.adoc[]
 
 TIP: If you only need to run in-memory scheduler use the xref:scheduler.adoc[Scheduler] extension.
 

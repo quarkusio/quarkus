@@ -13,7 +13,6 @@ import jakarta.enterprise.event.Observes;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -29,7 +28,6 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.ext.web.Router;
 
@@ -64,7 +62,6 @@ public class Http2RSTFloodProtectionConfigTest {
 
     @Test
     void testRstFloodProtectionWithTlsEnabled() throws Exception {
-        Assumptions.assumeTrue(JdkSSLEngineOptions.isAlpnAvailable()); //don't run on JDK8
         HttpClientOptions options = new HttpClientOptions()
                 .setUseAlpn(true)
                 .setProtocolVersion(HttpVersion.HTTP_2)

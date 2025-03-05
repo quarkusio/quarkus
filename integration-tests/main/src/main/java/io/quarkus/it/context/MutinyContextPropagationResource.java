@@ -11,9 +11,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.arc.Arc;
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 

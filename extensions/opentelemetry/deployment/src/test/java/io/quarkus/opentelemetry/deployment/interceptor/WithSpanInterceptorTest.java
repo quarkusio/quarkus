@@ -4,6 +4,8 @@ import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,6 +19,7 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
@@ -32,8 +35,8 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.internal.data.ExceptionEventData;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
@@ -86,17 +89,21 @@ public class WithSpanInterceptorTest {
     void spanKind() {
         spanBean.spanKind();
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
-        assertEquals("SpanBean.spanKind", spanItems.get(0).getName());
-        assertEquals(SERVER, spanItems.get(0).getKind());
+        SpanData span = spanItems.get(0);
+        assertEquals("SpanBean.spanKind", span.getName());
+        assertEquals(SERVER, span.getKind());
+        assertClassMethodNames(span, SpanBean.class, "spanKind");
     }
 
     @Test
     void spanArgs() {
         spanBean.spanArgs("argument");
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
-        assertEquals("SpanBean.spanArgs", spanItems.get(0).getName());
-        assertEquals(INTERNAL, spanItems.get(0).getKind());
-        assertEquals("argument", spanItems.get(0).getAttributes().get(AttributeKey.stringKey("arg")));
+        SpanData span = spanItems.get(0);
+        assertEquals("SpanBean.spanArgs", span.getName());
+        assertEquals(INTERNAL, span.getKind());
+        assertEquals("argument", span.getAttributes().get(AttributeKey.stringKey("arg")));
+        assertClassMethodNames(span, SpanBean.class, "spanArgs");
     }
 
     @Test
@@ -106,9 +113,12 @@ public class WithSpanInterceptorTest {
 
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         assertEquals("SpanBean.spanChild", parent.getName());
+        assertClassMethodNames(parent, SpanBean.class, "spanChild");
 
         final SpanData child = getSpanByKindAndParentId(spans, INTERNAL, parent.getSpanId());
         assertEquals("SpanChildBean.spanChild", child.getName());
+        assertClassMethodNames(child, SpanChildBean.class, "spanChild");
+
     }
 
     @Test
@@ -119,7 +129,7 @@ public class WithSpanInterceptorTest {
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         final SpanData child = getSpanByKindAndParentId(spans, INTERNAL, parent.getSpanId());
         final SpanData client = getSpanByKindAndParentId(spans, CLIENT, child.getSpanId());
-        final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
+        getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
     }
 
     @Test
@@ -133,12 +143,14 @@ public class WithSpanInterceptorTest {
             });
         }
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
-        assertEquals("SpanBean.spanWithException", spanItems.get(0).getName());
-        assertEquals(INTERNAL, spanItems.get(0).getKind());
-        assertEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
-        assertEquals(1, spanItems.get(0).getEvents().size());
+        SpanData span = spanItems.get(0);
+        assertEquals("SpanBean.spanWithException", span.getName());
+        assertEquals(INTERNAL, span.getKind());
+        assertEquals(ERROR, span.getStatus().getStatusCode());
+        assertEquals(1, span.getEvents().size());
         assertEquals("spanWithException for tests",
-                ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+                ((ExceptionEventData) span.getEvents().get(0)).getException().getMessage());
+        assertClassMethodNames(span, SpanBean.class, "spanWithException");
     }
 
     @Test
@@ -149,6 +161,7 @@ public class WithSpanInterceptorTest {
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         assertEquals("withSpanAndUni", parent.getName());
         assertEquals(StatusCode.UNSET, parent.getStatus().getStatusCode());
+        assertClassMethodNames(parent, SpanBean.class, "spanUni");
     }
 
     @Test
@@ -162,12 +175,14 @@ public class WithSpanInterceptorTest {
             });
         }
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
-        assertEquals("withSpanAndUni", spanItems.get(0).getName());
-        assertEquals(INTERNAL, spanItems.get(0).getKind());
-        assertEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
-        assertEquals(1, spanItems.get(0).getEvents().size());
+        SpanData span = spanItems.get(0);
+        assertEquals("withSpanAndUni", span.getName());
+        assertEquals(INTERNAL, span.getKind());
+        assertEquals(ERROR, span.getStatus().getStatusCode());
+        assertEquals(1, span.getEvents().size());
         assertEquals("hello Uni",
-                ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+                ((ExceptionEventData) span.getEvents().get(0)).getException().getMessage());
+        assertClassMethodNames(span, SpanBean.class, "spanUniWithException");
     }
 
     @Test
@@ -178,6 +193,7 @@ public class WithSpanInterceptorTest {
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         assertEquals("withSpanAndMulti", parent.getName());
         assertEquals(StatusCode.UNSET, parent.getStatus().getStatusCode());
+        assertClassMethodNames(parent, SpanBean.class, "spanMulti");
     }
 
     @Test
@@ -197,6 +213,12 @@ public class WithSpanInterceptorTest {
         assertEquals(1, spanItems.get(0).getEvents().size());
         assertEquals("hello Multi",
                 ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+        assertClassMethodNames(spanItems.get(0), SpanBean.class, "spanMultiWithException");
+    }
+
+    private void assertClassMethodNames(SpanData span, Class<?> clazz, String method) {
+        assertEquals(method, span.getAttributes().get((CODE_FUNCTION)));
+        assertEquals(clazz.getName(), span.getAttributes().get((CODE_NAMESPACE)));
     }
 
     @ApplicationScoped
@@ -278,10 +300,13 @@ public class WithSpanInterceptorTest {
 
         @WithSpan
         public void spanRestClient() {
-            WebTarget target = ClientBuilder.newClient()
-                    .target(UriBuilder.fromUri(config.getRawValue("test.url")).path("hello"));
-            Response response = target.request().get();
-            assertEquals(HTTP_OK, response.getStatus());
+            try (Client client = ClientBuilder.newClient()) {
+                WebTarget target = client.target(UriBuilder
+                        .fromUri(config.getRawValue("test.url"))
+                        .path("hello"));
+                Response response = target.request().get();
+                assertEquals(HTTP_OK, response.getStatus());
+            }
         }
     }
 

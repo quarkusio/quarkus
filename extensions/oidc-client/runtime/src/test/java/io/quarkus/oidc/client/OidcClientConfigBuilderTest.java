@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(jwt.signatureAlgorithm().isEmpty());
         assertEquals(10, jwt.lifespan());
         assertFalse(jwt.assertion());
+        assertFalse(jwt.tokenPath().isPresent());
 
         // OidcCommonConfig methods
         assertTrue(config.authServerUrl().isEmpty());
@@ -154,6 +156,7 @@ public class OidcClientConfigBuilderTest {
                 .end()
                 .jwt()
                 .source(Source.BEARER)
+                .tokenPath(Path.of("janitor"))
                 .secretProvider()
                 .keyringName("jwt-keyring-name-yep")
                 .key("jwt-key-yep")
@@ -249,6 +252,7 @@ public class OidcClientConfigBuilderTest {
         assertNotNull(jwt);
         assertEquals(Source.BEARER, jwt.source());
         assertEquals("jwt-secret-yep", jwt.secret().orElse(null));
+        assertEquals("janitor", jwt.tokenPath().map(Path::toString).orElse(null));
         provider = jwt.secretProvider();
         assertNotNull(provider);
         assertEquals("jwt-keyring-name-yep", provider.keyringName().orElse(null));
@@ -460,6 +464,7 @@ public class OidcClientConfigBuilderTest {
                 .end()
                 .jwt()
                 .source(Source.BEARER)
+                .tokenPath(Path.of("robot"))
                 .secretProvider()
                 .keyringName("jwt-keyring-name-yep")
                 .key("jwt-key-yep")
@@ -507,6 +512,7 @@ public class OidcClientConfigBuilderTest {
         assertNotNull(jwt);
         assertEquals(Source.BEARER, jwt.source());
         assertEquals("jwt-secret-yep", jwt.secret().orElse(null));
+        assertEquals("robot", jwt.tokenPath().map(Path::toString).orElse(null));
         provider = jwt.secretProvider();
         assertNotNull(provider);
         assertEquals("jwt-keyring-name-yep", provider.keyringName().orElse(null));

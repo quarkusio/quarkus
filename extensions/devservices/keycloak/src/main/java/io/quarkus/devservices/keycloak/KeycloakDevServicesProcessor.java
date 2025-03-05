@@ -109,8 +109,8 @@ public class KeycloakDevServicesProcessor {
 
     // Properties recognized by Quarkus-powered Keycloak
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
-    private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
-    private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
+    private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KC_BOOTSTRAP_ADMIN_USERNAME";
+    private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KC_BOOTSTRAP_ADMIN_PASSWORD";
     private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false "
             + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
@@ -144,8 +144,14 @@ public class KeycloakDevServicesProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
 
+        if (!devServicesConfig.enabled() || !config.enabled()) {
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
+            return null;
+        }
+
         if (devSvcRequiredMarkerItems.isEmpty()
-                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
+                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)
+                || oidcDevServicesEnabled()) {
             if (devService != null) {
                 closeDevService();
             }
@@ -248,6 +254,10 @@ public class KeycloakDevServicesProcessor {
         return devService.toBuildItem();
     }
 
+    private static boolean oidcDevServicesEnabled() {
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc.devservices.enabled", boolean.class).orElse(false);
+    }
+
     private static boolean linuxContainersNotAvailable(DockerStatusBuildItem dockerStatusBuildItem,
             List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems) {
         if (dockerStatusBuildItem.isContainerRuntimeAvailable()) {
@@ -303,7 +313,7 @@ public class KeycloakDevServicesProcessor {
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
             String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
             KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
-        final String realmName = realmReps != null && !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
+        final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
@@ -320,29 +330,32 @@ public class KeycloakDevServicesProcessor {
 
         List<String> realmNames = new LinkedList<>();
 
-        // this needs to be only if we actually start the dev-service as it adds a shutdown hook
-        // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
-        if (vertxInstance == null) {
-            vertxInstance = Vertx.vertx();
-        }
+        if (createDefaultRealm || !realmReps.isEmpty()) {
 
-        WebClient client = createWebClient(vertxInstance);
-        try {
-            String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
-            if (createDefaultRealm) {
-                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret, errors,
-                        devServicesConfigurator);
-                realmNames.add(realmName);
-            } else {
-                if (realmReps != null) {
+            // this needs to be only if we actually start the dev-service as it adds a shutdown hook
+            // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
+            if (vertxInstance == null) {
+                vertxInstance = Vertx.vertx();
+            }
+
+            WebClient client = createWebClient(vertxInstance);
+            try {
+                String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
+                if (createDefaultRealm) {
+                    createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret,
+                            errors,
+                            devServicesConfigurator);
+                    realmNames.add(realmName);
+                } else if (realmReps != null) {
                     for (RealmRepresentation realmRep : realmReps) {
                         createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
                         realmNames.add(realmRep.getRealm());
                     }
                 }
+
+            } finally {
+                client.close();
             }
-        } finally {
-            client.close();
         }
 
         Map<String, String> configProperties = new HashMap<>();
@@ -398,6 +411,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.shared(),
                     capturedDevServicesConfiguration.javaOpts(),
                     capturedDevServicesConfiguration.startCommand(),
+                    capturedDevServicesConfiguration.features(),
                     capturedDevServicesConfiguration.showLogs(),
                     capturedDevServicesConfiguration.containerMemoryLimit(),
                     errors);
@@ -427,7 +441,7 @@ public class KeycloakDevServicesProcessor {
                     // TODO: this probably needs to be addressed
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
                     Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, sharedContainerUrl,
-                            sharedContainerUrl, null, errors, devServicesConfigurator, sharedContainerUrl);
+                            sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);
@@ -472,14 +486,15 @@ public class KeycloakDevServicesProcessor {
         private final boolean keycloakX;
         private final List<RealmRepresentation> realmReps = new LinkedList<>();
         private final Optional<String> startCommand;
+        private final Optional<Set<String>> features;
         private final boolean showLogs;
         private final MemorySize containerMemoryLimit;
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
-                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
-                MemorySize containerMemoryLimit, List<String> errors) {
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand,
+                Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit, List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -499,6 +514,7 @@ public class KeycloakDevServicesProcessor {
 
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
+            this.features = features;
             this.showLogs = showLogs;
             this.containerMemoryLimit = containerMemoryLimit;
             this.errors = errors;
@@ -513,7 +529,7 @@ public class KeycloakDevServicesProcessor {
             if (useSharedNetwork) {
                 hostName = ConfigureUtil.configureSharedNetwork(this, "keycloak");
                 if (keycloakX) {
-                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "localhost");
+                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "http://" + hostName);
                 } else {
                     addEnv(KEYCLOAK_WILDFLY_FRONTEND_URL, "http://localhost:" + fixedExposedPort.getAsInt());
                 }
@@ -541,8 +557,12 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
-                        + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
+                String finalStartCommand = startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
+                        + (useSharedNetwork ? " --hostname-backchannel-dynamic true" : "");
+                if (features.isPresent()) {
+                    finalStartCommand += (" --features=" + features.get().stream().collect(Collectors.joining(",")));
+                }
+                withCommand(finalStartCommand);
                 addUpConfigResource();
                 if (isHttps()) {
                     addExposedPort(KEYCLOAK_HTTPS_PORT);
@@ -728,7 +748,7 @@ public class KeycloakDevServicesProcessor {
                     .await().atMost(capturedDevServicesConfiguration.webClientTimeout());
         } catch (TimeoutException e) {
             LOG.error("Admin token can not be acquired due to a client connection timeout. " +
-                    "You may try increasing the `quarkus.oidc.devui.web-client-timeout` property.");
+                    "You may try increasing the `quarkus.keycloak.devservices.web-client-timeout` property.");
         } catch (Throwable t) {
             LOG.error("Admin token can not be acquired", t);
         }
@@ -861,7 +881,7 @@ public class KeycloakDevServicesProcessor {
         client.setImplicitFlowEnabled(true);
         client.setEnabled(true);
         client.setRedirectUris(List.of("*"));
-        client.setDefaultClientScopes(List.of("microprofile-jwt"));
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }

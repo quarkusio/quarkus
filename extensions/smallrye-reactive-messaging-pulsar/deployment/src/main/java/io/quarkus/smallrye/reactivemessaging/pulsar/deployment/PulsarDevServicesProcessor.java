@@ -238,7 +238,7 @@ public class PulsarDevServicesProcessor {
     }
 
     private PulsarDevServiceCfg getConfiguration(PulsarBuildTimeConfig cfg) {
-        PulsarDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        PulsarDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new PulsarDevServiceCfg(devServicesConfig);
     }
 
@@ -251,12 +251,12 @@ public class PulsarDevServicesProcessor {
         private final Map<String, String> brokerConfig;
 
         public PulsarDevServiceCfg(PulsarDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.brokerConfig = devServicesConfig.brokerConfig;
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.brokerConfig = devServicesConfig.brokerConfig();
         }
 
         @Override

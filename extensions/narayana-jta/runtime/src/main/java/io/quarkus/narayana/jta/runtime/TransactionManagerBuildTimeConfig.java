@@ -2,12 +2,14 @@ package io.quarkus.narayana.jta.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public final class TransactionManagerBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.transaction-manager")
+public interface TransactionManagerBuildTimeConfig {
     /**
      * Define the behavior when using multiple XA unaware resources in the same transactional demarcation.
      * <p>
@@ -31,8 +33,8 @@ public final class TransactionManagerBuildTimeConfig {
      * @deprecated This property is planned for removal in a future version.
      */
     @Deprecated(forRemoval = true)
-    @ConfigItem(defaultValueDocumentation = "fail")
-    public Optional<UnsafeMultipleLastResourcesMode> unsafeMultipleLastResources;
+    @ConfigDocDefault("fail")
+    public Optional<UnsafeMultipleLastResourcesMode> unsafeMultipleLastResources();
 
     public enum UnsafeMultipleLastResourcesMode {
         /**

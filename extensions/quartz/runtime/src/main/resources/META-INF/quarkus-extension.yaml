@@ -10,6 +10,6 @@ metadata:
   guide: "https://quarkus.io/guides/quartz"
   categories:
   - "miscellaneous"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.quartz."

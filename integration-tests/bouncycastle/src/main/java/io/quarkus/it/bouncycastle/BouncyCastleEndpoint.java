@@ -20,6 +20,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateKey;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
+import io.netty.handler.ssl.SslContextBuilder;
+
 @Path("/jca")
 public class BouncyCastleEndpoint {
 
@@ -101,6 +103,17 @@ public class BouncyCastleEndpoint {
             BCRSAPrivateKey ecPrivateKey = (BCRSAPrivateKey) factory.generatePrivate(privKeySpec);
 
             return ecPrivateKey.getPrivateExponent() != null ? "success" : "failure";
+        }
+    }
+
+    @GET
+    @Path("loadNettySslContext")
+    public String loadNettySslContext() throws Exception {
+        var classLoader = Thread.currentThread().getContextClassLoader();
+        try (var privateKey = classLoader.getResourceAsStream("pkcs1-key.pem");
+                var certificate = classLoader.getResourceAsStream("certificate.pem")) {
+            var sslcontext = SslContextBuilder.forClient().keyManager(certificate, privateKey).build();
+            return Arrays.toString(sslcontext.cipherSuites().toArray());
         }
     }
 }

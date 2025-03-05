@@ -1,9 +1,14 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.isOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.markIfOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.removeMarkAsOtherAuthenticationFailure;
 
 import java.io.Closeable;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,7 +25,6 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -66,9 +70,10 @@ import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
@@ -81,16 +86,17 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
-    static final Logger logger = Logger.getLogger("io.quarkus");
+    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<>() {
         @Override
         public Executor get() {
             return ExecutorRecorder.getCurrent();
         }
     };
 
-    public static final Supplier<Executor> VTHREAD_EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+    public static final Supplier<Executor> VTHREAD_EXECUTOR_SUPPLIER = new Supplier<>() {
         @Override
         public Executor get() {
             return VirtualThreadsRecorder.getCurrent();
@@ -105,7 +111,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
     public RuntimeValue<Deployment> createDeployment(String applicationPath, DeploymentInfo info,
             BeanContainer beanContainer,
-            ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
+            ShutdownContext shutdownContext,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
             LaunchMode launchMode,
@@ -123,7 +130,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             }
         });
 
-        Consumer<Closeable> closeTaskHandler = new Consumer<Closeable>() {
+        Consumer<Closeable> closeTaskHandler = new Consumer<>() {
             @Override
             public void accept(Closeable closeable) {
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
@@ -150,7 +157,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
                 VTHREAD_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
-                vertxConfig.rootPath);
+                httpBuildTimeConfig.rootPath());
         Deployment deployment = runtimeDeploymentManager.deploy();
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
@@ -194,7 +201,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             boolean proactive) {
         final RestInitialHandler restInitialHandler = restInitialHandlerRuntimeValue.getValue();
         // process auth failures with abort handlers
-        return new Handler<RoutingContext>() {
+        return new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
 
@@ -231,14 +238,25 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     }
                 }
 
-                if (event.failure() instanceof AuthenticationException
-                        || event.failure() instanceof ForbiddenException) {
-                    restInitialHandler.beginProcessing(event, event.failure());
+                final Throwable failure = event.failure();
+                final boolean isOtherAuthFailure = isOtherAuthenticationFailure(event)
+                        && isFailureHandledByExceptionMappers(failure);
+                if (isOtherAuthFailure) {
+                    removeMarkAsOtherAuthenticationFailure(event);
+                    restInitialHandler.beginProcessing(event, failure);
+                } else if (failure instanceof AuthenticationException
+                        || failure instanceof UnauthorizedException || failure instanceof ForbiddenException) {
+                    restInitialHandler.beginProcessing(event, failure);
                 } else {
                     event.next();
                 }
             }
         };
+    }
+
+    private boolean isFailureHandledByExceptionMappers(Throwable throwable) {
+        return currentDeployment != null
+                && currentDeployment.getExceptionMapper().getExceptionMapper(throwable.getClass(), null, null) != null;
     }
 
     /**
@@ -255,7 +273,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             final boolean singletonClassesEmpty) {
         Supplier<Application> applicationSupplier;
         if (singletonClassesEmpty) {
-            applicationSupplier = new Supplier<Application>() {
+            applicationSupplier = new Supplier<>() {
                 @Override
                 public Application get() {
                     try {
@@ -271,7 +289,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 for (Object i : application.getSingletons()) {
                     SingletonBeanFactory.setInstance(i.getClass().getName(), i);
                 }
-                applicationSupplier = new Supplier<Application>() {
+                applicationSupplier = new Supplier<>() {
 
                     @Override
                     public Application get() {
@@ -297,15 +315,17 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     @Override
-    public Supplier<EndpointInvoker> invoker(String baseName) {
-        return new Supplier<EndpointInvoker>() {
+    public Supplier<EndpointInvoker> invoker(String invokerClassName) {
+        return new Supplier<>() {
             @Override
             public EndpointInvoker get() {
                 try {
-                    return (EndpointInvoker) loadClass(baseName).getDeclaredConstructor().newInstance();
-                } catch (IllegalAccessException | InstantiationException | NoSuchMethodException
-                        | InvocationTargetException e) {
-                    throw new RuntimeException("Unable to generate endpoint invoker", e);
+                    Class<Object> invokerClass = loadClass(invokerClassName);
+                    return (EndpointInvoker) LOOKUP.findConstructor(invokerClass, VOID_TYPE).invoke();
+                } catch (RuntimeException | Error e) {
+                    throw e;
+                } catch (Throwable t) {
+                    throw new UndeclaredThrowableException(t);
                 }
 
             }
@@ -313,7 +333,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {
-        return new Function<Class<?>, BeanFactory<?>>() {
+        return new Function<>() {
             @Override
             public BeanFactory<?> apply(Class<?> aClass) {
                 return new ArcBeanFactory<>(aClass, container);
@@ -420,6 +440,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
         @Override
         public void accept(RoutingContext event, Throwable throwable) {
+            markIfOtherAuthenticationFailure(event, throwable);
             if (!event.failed()) {
                 event.fail(extractRootCause(throwable));
             }

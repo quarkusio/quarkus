@@ -50,10 +50,8 @@ public class OidcTokenPropagationTest {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/frontend/access-token-propagation")
                 .then()
-                //.statusCode(200)
-                //.body(equalTo("alice"));
                 .statusCode(500)
-                .body(containsString("Client not allowed to exchange"));
+                .body(containsString("Unsupported grant_type"));
     }
 
     @Test

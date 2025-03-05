@@ -15,7 +15,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
+            <artifactId>quarkus-tls-registry-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

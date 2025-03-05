@@ -465,4 +465,18 @@ public final class ClassNames {
             "io.quarkus.hibernate.orm.deployment.HibernateUserTypeProcessor");
 
     public static final DotName GRAAL_VM_FEATURES = createConstant("io.quarkus.hibernate.orm.deployment.GraalVMFeatures");
+
+    public static final List<DotName> SERVICE_PROVIDERS = List.of(
+            // Accessed in org.hibernate.query.sqm.internal.SqmCriteriaNodeBuilder.<init>
+            createConstant("org.hibernate.query.criteria.spi.CriteriaBuilderExtension"),
+            // Accessed in io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder.buildSelector
+            createConstant("org.hibernate.boot.registry.selector.StrategyRegistrationProvider"),
+            // Accessed in org.hibernate.internal.FastSessionServices.<init>
+            createConstant("org.hibernate.event.spi.EventManager"),
+            // Accessed in org.hibernate.query.internal.QueryEngineImpl.sortedFunctionContributors
+            createConstant("org.hibernate.boot.model.FunctionContributor"),
+            // Accessed in org.hibernate.event.spi.EventEngine.<init>
+            createConstant("org.hibernate.event.spi.EventEngineContributor"),
+            // Accessed in org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryImpl.buildServiceRegistry
+            createConstant("org.hibernate.service.spi.SessionFactoryServiceContributor"));
 }

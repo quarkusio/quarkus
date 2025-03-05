@@ -62,6 +62,7 @@ public class TestSupport implements TestController {
     volatile List<String> excludeTags = Collections.emptyList();
     volatile Pattern include = null;
     volatile Pattern exclude = null;
+    volatile String specificSelection = null;
     volatile List<String> includeEngines = Collections.emptyList();
     volatile List<String> excludeEngines = Collections.emptyList();
     volatile boolean displayTestOutput;
@@ -603,6 +604,10 @@ public class TestSupport implements TestController {
     public void setPatterns(String include, String exclude) {
         this.include = include == null ? null : Pattern.compile(include);
         this.exclude = exclude == null ? null : Pattern.compile(exclude);
+    }
+
+    public void setSpecificSelection(String specificSelection) {
+        this.specificSelection = specificSelection;
     }
 
     public void setEngines(List<String> includeEngines, List<String> excludeEngines) {

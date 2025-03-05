@@ -1,5 +1,8 @@
 package io.quarkus.it.main;
 
+import java.util.Set;
+
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
@@ -18,6 +21,7 @@ public class BeanManagerInjectionInTestCase {
     @Test
     public void testInjection() {
         Assertions.assertNotNull(beanManager);
-        Assertions.assertFalse(beanManager.getBeans(ExternalService.class).isEmpty());
+        Set<Bean<?>> beans = beanManager.getBeans(ExternalService.class);
+        Assertions.assertFalse(beans.isEmpty(), () -> "Beans is " + beans);
     }
 }

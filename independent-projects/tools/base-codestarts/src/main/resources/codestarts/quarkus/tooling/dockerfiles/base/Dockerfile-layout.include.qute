@@ -26,7 +26,8 @@
 # This scripts computes the command line to execute your Java application, and
 # includes memory/GC tuning.
 # You can configure the behavior using the following environment properties:
-# - JAVA_OPTS: JVM options passed to the `java` command (example: "-verbose:class")
+# - JAVA_OPTS: JVM options passed to the `java` command (example: "-verbose:class") - Be aware that this will override
+# the default JVM options, use `JAVA_OPTS_APPEND` to append options
 # - JAVA_OPTS_APPEND: User specified Java options to be appended to generated options
 #   in JAVA_OPTS (example: "-Dsome.property=foo")
 # - JAVA_MAX_MEM_RATIO: Is used when no `-Xmx` option is given in JAVA_OPTS. This is
@@ -77,10 +78,12 @@
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
 ###
-{#if dockerfile.jvm.from}
+{#if dockerfile.jvm.from-template}
+FROM {#eval dockerfile.jvm.from-template /}
+{#else if dockerfile.jvm.from}
 FROM {dockerfile.jvm.from}
 {#else}
-FROM registry.access.redhat.com/ubi8/openjdk-{java.version}:1.20
+FROM registry.access.redhat.com/ubi8/openjdk-{java.version}:1.21
 {/if}
 
 ENV LANGUAGE='en_US:en'

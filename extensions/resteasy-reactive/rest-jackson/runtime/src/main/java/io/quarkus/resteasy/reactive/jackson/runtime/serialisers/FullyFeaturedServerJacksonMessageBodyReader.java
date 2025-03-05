@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -22,7 +23,6 @@ import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
-import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -36,18 +36,24 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 
-public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader
+public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJacksonMessageBodyReader
         implements ServerMessageBodyReader<Object> {
 
-    private final ObjectMapper originalMapper;
+    private final Instance<ObjectMapper> originalMapper;
     private final Providers providers;
     private final ConcurrentMap<String, ObjectReader> perMethodReader = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ObjectReader> perTypeReader = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectReader> objectReaderMap = new ConcurrentHashMap<>();
 
+    // used by Arc
+    public FullyFeaturedServerJacksonMessageBodyReader() {
+        originalMapper = null;
+        providers = null;
+    }
+
     @Inject
-    public FullyFeaturedServerJacksonMessageBodyReader(ObjectMapper mapper, Providers providers) {
+    public FullyFeaturedServerJacksonMessageBodyReader(Instance<ObjectMapper> mapper, Providers providers) {
         super(mapper);
         this.originalMapper = mapper;
         this.providers = providers;
@@ -152,7 +158,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
 
     private ObjectReader getEffectiveReader(Class<Object> type, Type genericType, MediaType responseMediaType) {
         ObjectMapper effectiveMapper = getEffectiveMapper(type, responseMediaType);
-        ObjectReader effectiveReader = defaultReader;
+        ObjectReader effectiveReader = defaultReader.get();
         if (effectiveMapper != originalMapper) {
             // Effective reader based on the context
             effectiveReader = objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {
@@ -192,7 +198,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
 
     private ObjectMapper getEffectiveMapper(Class<Object> type, MediaType responseMediaType) {
         if (providers == null) {
-            return originalMapper;
+            return originalMapper.get();
         }
 
         ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
@@ -214,7 +220,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
             }
         }
 
-        return originalMapper;
+        return originalMapper.get();
     }
 
     private static class MethodObjectReaderFunction implements Function<String, ObjectReader> {

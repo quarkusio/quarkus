@@ -1,21 +1,20 @@
 package io.quarkus.bootstrap.resolver.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Collection;
+
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ConditionalDependenciesDevModelTestCase extends CollectDependenciesBase {
-
-    @Override
-    protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
-        var resolver = super.newAppModelResolver(currentProject);
-        //resolver.setIncubatingModelResolver(true);
-        return resolver;
-    }
 
     @Override
     protected QuarkusBootstrap.Mode getBootstrapMode() {
@@ -25,7 +24,11 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
     @Override
     protected void setupDependencies() {
 
+        final TsArtifact excludedLib = TsArtifact.jar("excluded-lib");
+        install(excludedLib, false);
+
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
+        extA.getRuntime().addDependency(excludedLib);
         install(extA, false);
         addCollectedDeploymentDep(extA.getDeployment());
 
@@ -35,6 +38,7 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
                         | DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
 
         final TsQuarkusExt extB = new TsQuarkusExt("ext-b");
+        extB.setDescriptorProp(ApplicationModelBuilder.EXCLUDED_ARTIFACTS, TsArtifact.DEFAULT_GROUP_ID + ":excluded-lib");
         install(extB, false);
         addCollectedDep(extB.getRuntime(), DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(extB.getDeployment());
@@ -96,5 +100,71 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
                         | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT
                         | DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(extG.getDeployment());
+    }
+
+    @Override
+    protected void assertBuildDependencies(Collection<ResolvedDependency> buildDeps) {
+        if (BootstrapAppModelResolver.isLegacyModelResolver(null)) {
+            return;
+        }
+        for (var d : buildDeps) {
+            switch (d.getArtifactId()) {
+                case "ext-a":
+                case "ext-b":
+                case "ext-c":
+                case "ext-d":
+                case "ext-h":
+                case "lib-e":
+                case "lib-e-build-time":
+                    assertThat(d.getDependencies()).isEmpty();
+                    break;
+                case "ext-a-deployment":
+                case "ext-b-deployment":
+                case "ext-c-deployment":
+                case "ext-d-deployment":
+                case "ext-h-deployment":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID,
+                                    d.getArtifactId().substring(0, d.getArtifactId().length() - "-deployment".length()),
+                                    TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-e":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "lib-e", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-e-deployment":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "lib-e-build-time", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-f":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-f-deployment":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-f", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e-deployment", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-g":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "dev-only-lib", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "ext-g-deployment":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-g", TsArtifact.DEFAULT_VERSION),
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION));
+                    break;
+                case "dev-only-lib":
+                    assertThat(d.getDependencies()).containsExactlyInAnyOrder(
+                            ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-h", TsArtifact.DEFAULT_VERSION));
+                    break;
+                default:
+                    throw new RuntimeException("unexpected dependency " + d.toCompactCoords());
+            }
+        }
     }
 }

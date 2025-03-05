@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -201,20 +202,20 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     @Override
     protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
-        if (!classInfo.hasNoArgsConstructor()) {
-            return false;
-        }
-
         MethodCreator deserialize = classCreator
                 .getMethodCreator("deserialize", Object.class, JsonParser.class, DeserializationContext.class)
                 .setModifiers(ACC_PUBLIC)
                 .addException(IOException.class)
                 .addException(JacksonException.class);
 
-        ResultHandle deserializedHandle = deserialize
-                .newInstance(MethodDescriptor.ofConstructor(classInfo.name().toString()));
+        DeserializationData deserData = new DeserializationData(classInfo, classCreator, deserialize,
+                getJsonNode(deserialize), parseTypeParameters(classInfo, classCreator), new HashSet<>());
+        ResultHandle deserializedHandle = createDeserializedObject(deserData);
+        if (deserializedHandle == null) {
+            return false;
+        }
 
-        boolean valid = deserializeObject(classInfo, deserializedHandle, classCreator, deserialize);
+        boolean valid = deserializeObjectFields(deserData, deserializedHandle);
         deserialize.returnValue(deserializedHandle);
         return valid;
     }
@@ -229,13 +230,36 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return deserialize.checkCast(treeNode, JsonNode.class);
     }
 
-    private boolean deserializeObject(ClassInfo classInfo, ResultHandle objHandle, ClassCreator classCreator,
-            MethodCreator deserialize) {
-        ResultHandle jsonNode = getJsonNode(deserialize);
+    private ResultHandle createDeserializedObject(DeserializationData deserData) {
+        if (deserData.classInfo.hasNoArgsConstructor() && !deserData.classInfo.isRecord()) {
+            return deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()));
+        }
 
-        ResultHandle fieldsIterator = deserialize
-                .invokeVirtualMethod(ofMethod(JsonNode.class, "fields", Iterator.class), jsonNode);
-        BytecodeCreator loopCreator = deserialize.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
+        var ctorOpt = deserData.classInfo.isRecord() ? Optional.of(deserData.classInfo.canonicalRecordConstructor())
+                : deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
+        if (!ctorOpt.isPresent()) {
+            return null;
+        }
+        MethodInfo ctor = ctorOpt.get();
+        ResultHandle[] params = new ResultHandle[ctor.parameters().size()];
+        int i = 0;
+        for (MethodParameterInfo paramInfo : ctor.parameters()) {
+            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo);
+            deserData.constructorFields.add(fieldSpecs.jsonName);
+            ResultHandle fieldValue = deserData.methodCreator.invokeVirtualMethod(
+                    ofMethod(JsonNode.class, "get", JsonNode.class, String.class), deserData.jsonNode,
+                    deserData.methodCreator.load(fieldSpecs.jsonName));
+            params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
+                    deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
+        }
+        return deserData.methodCreator.newInstance(ctor, params);
+    }
+
+    private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
+
+        ResultHandle fieldsIterator = deserData.methodCreator
+                .invokeVirtualMethod(ofMethod(JsonNode.class, "fields", Iterator.class), deserData.jsonNode);
+        BytecodeCreator loopCreator = deserData.methodCreator.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
         ResultHandle nextField = loopCreator
                 .invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class), fieldsIterator);
         ResultHandle mapEntry = loopCreator.checkCast(nextField, Map.Entry.class);
@@ -250,8 +274,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
         Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
 
-        return deserializeFields(classCreator, classInfo, deserialize.getMethodParam(1), objHandle, fieldValue, new HashSet<>(),
-                strSwitch, parseTypeParameters(classInfo, classCreator));
+        return deserializeFields(deserData, deserData.methodCreator.getMethodParam(1), objHandle, fieldValue,
+                deserData.constructorFields, strSwitch);
     }
 
     private BranchResult iteratorHasNext(BytecodeCreator creator, ResultHandle iterator) {
@@ -294,50 +318,53 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         createContextual.returnValue(deserializer);
     }
 
-    private boolean deserializeFields(ClassCreator classCreator, ClassInfo classInfo, ResultHandle deserializationContext,
-            ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch,
-            Map<String, Integer> typeParametersIndex) {
+    private boolean deserializeFields(DeserializationData deserData, ResultHandle deserializationContext,
+            ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch) {
 
         AtomicBoolean valid = new AtomicBoolean(true);
 
-        for (FieldInfo fieldInfo : classFields(classInfo)) {
-            if (!deserializeFieldSpecs(classCreator, classInfo, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, typeParametersIndex, fieldSpecsFromField(classInfo, fieldInfo), valid))
+        for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
+            if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
+                    deserializedFields, strSwitch, fieldSpecsFromField(deserData.classInfo, fieldInfo), valid))
                 return false;
         }
 
-        for (MethodInfo methodInfo : classMethods(classInfo)) {
-            if (!deserializeFieldSpecs(classCreator, classInfo, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, typeParametersIndex, fieldSpecsFromMethod(methodInfo), valid))
+        for (MethodInfo methodInfo : classMethods(deserData.classInfo)) {
+            if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
+                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo), valid))
                 return false;
         }
 
         return valid.get();
     }
 
-    private boolean deserializeFieldSpecs(ClassCreator classCreator, ClassInfo classInfo, ResultHandle deserializationContext,
+    private boolean deserializeFieldSpecs(DeserializationData deserData, ResultHandle deserializationContext,
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch,
-            Map<String, Integer> typeParametersIndex, FieldSpecs fieldSpecs, AtomicBoolean valid) {
-        if (fieldSpecs != null && deserializedFields.add(fieldSpecs.fieldName)) {
+            FieldSpecs fieldSpecs, AtomicBoolean valid) {
+        if (fieldSpecs != null && deserializedFields.add(fieldSpecs.jsonName)) {
+            if (fieldSpecs.isIgnoredField()) {
+                return true;
+            }
             if (fieldSpecs.hasUnknownAnnotation()) {
                 return false;
             }
             strSwitch.caseOf(fieldSpecs.jsonName,
-                    bytecode -> valid.compareAndSet(true, deserializeField(classCreator, classInfo, bytecode, objHandle,
-                            fieldValue, typeParametersIndex, fieldSpecs, deserializationContext)));
+                    bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
+                            fieldValue, fieldSpecs, deserializationContext)));
         }
         return true;
     }
 
-    private boolean deserializeField(ClassCreator classCreator, ClassInfo classInfo, BytecodeCreator bytecode,
-            ResultHandle objHandle, ResultHandle fieldValue, Map<String, Integer> typeParametersIndex, FieldSpecs fieldSpecs,
+    private boolean deserializeField(DeserializationData deserData, BytecodeCreator bytecode,
+            ResultHandle objHandle, ResultHandle fieldValue, FieldSpecs fieldSpecs,
             ResultHandle deserializationContext) {
-        ResultHandle valueHandle = readValueFromJson(classCreator, bytecode, deserializationContext, fieldSpecs,
-                typeParametersIndex, fieldValue);
+        ResultHandle valueHandle = readValueFromJson(deserData.classCreator, bytecode, deserializationContext, fieldSpecs,
+                deserData.typeParametersIndex, fieldValue);
         if (valueHandle == null) {
             return false;
         }
-        writeValueToObject(classInfo, objHandle, fieldSpecs, bytecode, fieldSpecs.toValueWriterHandle(bytecode, valueHandle));
+        writeValueToObject(deserData.classInfo, objHandle, fieldSpecs, bytecode,
+                fieldSpecs.toValueWriterHandle(bytecode, valueHandle));
         return true;
     }
 
@@ -444,5 +471,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     @Override
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
         return super.shouldGenerateCodeFor(classInfo) && classInfo.hasNoArgsConstructor();
+    }
+
+    private record DeserializationData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator methodCreator,
+            ResultHandle jsonNode, Map<String, Integer> typeParametersIndex, Set<String> constructorFields) {
     }
 }

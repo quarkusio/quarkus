@@ -410,15 +410,19 @@ public class ConfigBuildStep {
             if (configClass != null) {
                 AnnotationTarget target = injectionPoint.getAnnotationTarget();
                 AnnotationInstance mapping = null;
-                if (target.kind().equals(FIELD)) {
-                    mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
-                } else if (target.kind().equals(METHOD_PARAMETER)) {
-                    MethodParameterInfo methodParameterInfo = target.asMethodParameter();
-                    if (methodParameterInfo.type().name().equals(type.name())) {
-                        Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
-                                validationPhase.getBeanProcessor().getBeanDeployment(),
-                                target.asMethodParameter().method(), methodParameterInfo.position());
-                        mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
+
+                // target can be null for synthetic injection point
+                if (target != null) {
+                    if (target.kind().equals(FIELD)) {
+                        mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
+                    } else if (target.kind().equals(METHOD_PARAMETER)) {
+                        MethodParameterInfo methodParameterInfo = target.asMethodParameter();
+                        if (methodParameterInfo.type().name().equals(type.name())) {
+                            Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
+                                    validationPhase.getBeanProcessor().getBeanDeployment(),
+                                    target.asMethodParameter().method(), methodParameterInfo.position());
+                            mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
+                        }
                     }
                 }
 
@@ -498,7 +502,7 @@ public class ConfigBuildStep {
         // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
                 ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
-                configClass -> Stream.of(configClass.getKlass(), configClass.getPrefix())
+                configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
                         .collect(toList()));
 
         recorder.registerConfigProperties(

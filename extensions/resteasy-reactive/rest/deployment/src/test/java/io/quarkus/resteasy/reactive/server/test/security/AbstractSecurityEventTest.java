@@ -31,7 +31,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.RoutingContext;
 
@@ -48,7 +48,7 @@ public abstract class AbstractSecurityEventTest {
     EventObserver observer;
 
     @Inject
-    HttpBuildTimeConfig httpBuildTimeConfig;
+    VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
     @BeforeEach
     public void clean() {
@@ -65,7 +65,7 @@ public abstract class AbstractSecurityEventTest {
     }
 
     private boolean isProactiveAuth() {
-        return httpBuildTimeConfig.auth.proactive;
+        return httpBuildTimeConfig.auth().proactive();
     }
 
     @Test

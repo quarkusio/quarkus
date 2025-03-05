@@ -1,36 +1,37 @@
 package io.quarkus.scheduler.runtime;
 
 import java.time.Duration;
-import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.scheduler.Scheduler;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class SchedulerRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.scheduler")
+public interface SchedulerRuntimeConfig {
 
     /**
      * If schedulers are enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Scheduled task will be flagged as overdue if next execution time is exceeded by this period.
      */
-    @ConfigItem(defaultValue = "1")
-    public Duration overdueGracePeriod;
+    @WithDefault("1")
+    Duration overdueGracePeriod();
 
     /**
      * Scheduler can be started in different modes. By default, the scheduler is not started unless a
      * {@link io.quarkus.scheduler.Scheduled} business method is found.
      */
-    @ConfigItem
-    public Optional<StartMode> startMode;
+    @WithDefault("normal")
+    StartMode startMode();
 
-    public enum StartMode {
+    enum StartMode {
 
         /**
          * The scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method is found.

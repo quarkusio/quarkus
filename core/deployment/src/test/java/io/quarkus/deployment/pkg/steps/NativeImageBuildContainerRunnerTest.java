@@ -29,7 +29,7 @@ class NativeImageBuildContainerRunnerTest {
                 Collections.emptyList());
         found = false;
         for (String part : command) {
-            if (part.contains("ubi-quarkus-graalvmce-builder-image")) {
+            if (part.contains("ubi9-quarkus-graalvmce-builder-image")) {
                 found = true;
                 break;
             }
@@ -42,7 +42,7 @@ class NativeImageBuildContainerRunnerTest {
                 Collections.emptyList());
         found = false;
         for (String part : command) {
-            if (part.contains("ubi-quarkus-mandrel-builder-image")) {
+            if (part.contains("ubi9-quarkus-mandrel-builder-image")) {
                 found = true;
                 break;
             }

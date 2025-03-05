@@ -36,7 +36,12 @@ public class MetricProcessor {
     private static final DotName METRIC_PROCESSOR = DotName.createSimple(MetricProcessor.class.getName());
 
     @BuildStep
-    void addNativeMonitoring(BuildProducer<NativeMonitoringBuildItem> nativeMonitoring) {
+    void startJvmMetrics(BuildProducer<NativeMonitoringBuildItem> nativeMonitoring,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .setUnremovable()
+                .addBeanClass(JvmMetricsService.class)
+                .build());
         nativeMonitoring.produce(new NativeMonitoringBuildItem(NativeConfig.MonitoringOption.JFR));
     }
 
@@ -48,7 +53,6 @@ public class MetricProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClass(MetricsProducer.class)
-                .addBeanClass(JvmMetricsService.class)
                 .build());
 
         IndexView index = indexBuildItem.getIndex();

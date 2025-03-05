@@ -120,7 +120,7 @@ public class ResteasyCommonProcessor {
 
     @BuildStep
     ResteasyConfigBuildItem resteasyConfig(ResteasyJsonConfig resteasyJsonConfig, Capabilities capabilities) {
-        return new ResteasyConfigBuildItem(resteasyJsonConfig.jsonDefault &&
+        return new ResteasyConfigBuildItem(resteasyJsonConfig.jsonDefault() &&
         // RESTEASY_JACKSON or RESTEASY_JACKSON_CLIENT
                 (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)
                         // RESTEASY_JSONB or RESTEASY_JSONB_CLIENT
@@ -306,7 +306,7 @@ public class ResteasyCommonProcessor {
         if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)) {
             registerJsonContextResolver(OBJECT_MAPPER, QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
                     jaxrsProvider, additionalBean, unremovable);
-            if (resteasyJsonConfig.jsonDefault) {
+            if (resteasyJsonConfig.jsonDefault()) {
                 jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JACKSON_SERIALIZER.toString()));
             }
         }
@@ -314,7 +314,7 @@ public class ResteasyCommonProcessor {
         if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JSONB)) {
             registerJsonContextResolver(JSONB, QUARKUS_JSONB_CONTEXT_RESOLVER, combinedIndexBuildItem, jaxrsProvider,
                     additionalBean, unremovable);
-            if (resteasyJsonConfig.jsonDefault) {
+            if (resteasyJsonConfig.jsonDefault()) {
                 jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JSONB_SERIALIZER.toString()));
             }
         }

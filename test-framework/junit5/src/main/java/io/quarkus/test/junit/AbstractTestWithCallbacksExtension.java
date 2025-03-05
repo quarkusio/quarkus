@@ -170,4 +170,24 @@ public abstract class AbstractTestWithCallbacksExtension {
             throw e;
         }
     }
+
+    protected Class getTestingType() {
+
+        // In general, the testing type should be the test extension class, but ...
+        Class type = this.getClass();
+
+        // We don't want to pick up the class of anonymous classes, since they're clearly supposed to 'be' the superclass.
+        // We want something like
+        //        @RegisterExtension
+        //        static QuarkusTestExtension TEST = new QuarkusTestExtension() {
+        //        @Override
+        //        // Whatever
+        //  };
+        // to count as a QuarkusTestExtension class
+        if (type.isAnonymousClass()) {
+            return type.getSuperclass();
+        } else {
+            return type;
+        }
+    }
 }

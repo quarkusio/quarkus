@@ -2,6 +2,7 @@ package io.quarkus.tls.cli;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Path;
 import java.security.KeyStore;
 
 import org.junit.jupiter.api.AfterAll;
@@ -25,7 +26,7 @@ public class SelfSignedGenerationTest {
         command.name = "test";
         command.renew = true;
         command.selfSigned = true;
-        command.directory = "target";
+        command.directory = Path.of("target");
         command.password = "password";
         command.call();
 

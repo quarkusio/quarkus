@@ -46,15 +46,15 @@ public class InfinispanHealthCheck implements HealthCheck {
                 .select(RemoteCacheManager.class, Any.Literal.INSTANCE)
                 .handles();
 
-        if (config.defaultInfinispanClient != null) {
+        if (config.defaultInfinispanClient() != null) {
             RemoteCacheManager client = getClient(handle, null);
             if (client != null) {
                 checks.add(new InfinispanClientCheck(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME, client,
-                        config.defaultInfinispanClient));
+                        config.defaultInfinispanClient()));
             }
         }
 
-        config.namedInfinispanClients.entrySet().forEach(new Consumer<Map.Entry<String, InfinispanClientRuntimeConfig>>() {
+        config.namedInfinispanClients().entrySet().forEach(new Consumer<Map.Entry<String, InfinispanClientRuntimeConfig>>() {
             @Override
             public void accept(Map.Entry<String, InfinispanClientRuntimeConfig> namedInfinispanClientConfig) {
                 RemoteCacheManager client = getClient(handle, namedInfinispanClientConfig.getKey());

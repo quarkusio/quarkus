@@ -94,6 +94,46 @@ class OtlpExporterProviderTest {
                         null)));
     }
 
+    @Test
+    public void resolveLogsEndpoint_newWins() {
+        assertEquals("http://localhost:2222/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        "http://localhost:1111/",
+                        "http://localhost:2222/")));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_globalWins() {
+        assertEquals("http://localhost:1111/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        "http://localhost:1111/",
+                        DEFAULT_GRPC_BASE_URI)));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_legacyTraceWins() {
+        assertEquals("http://localhost:2222/",
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        DEFAULT_GRPC_BASE_URI,
+                        "http://localhost:2222/")));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_legacyGlobalWins() {
+        assertEquals(DEFAULT_GRPC_BASE_URI,
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        DEFAULT_GRPC_BASE_URI,
+                        null)));
+    }
+
+    @Test
+    public void resolveLogsEndpoint_testIsSet() {
+        assertEquals(DEFAULT_GRPC_BASE_URI,
+                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
+                        null,
+                        null)));
+    }
+
     private OtlpExporterRuntimeConfig createOtlpExporterRuntimeConfig(String exporterGlobal, String newTrace) {
         return new OtlpExporterRuntimeConfig() {
             @Override

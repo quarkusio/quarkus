@@ -342,8 +342,8 @@ public class JaxbProcessor {
                 .forEach(builder::classNames);
 
         // remove classes that have been excluded by users
-        if (config.excludeClasses.isPresent()) {
-            builder.classNameExcludes(config.excludeClasses.get());
+        if (config.excludeClasses().isPresent()) {
+            builder.classNameExcludes(config.excludeClasses().get());
         }
         return builder.build();
     }
@@ -362,7 +362,7 @@ public class JaxbProcessor {
                 .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
         if (!beans.isEmpty()) {
             jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
-            if (config.validateJaxbContext) {
+            if (config.validateJaxbContext()) {
                 validateJaxbContext(filteredClassesToBeBound, beanResolver, beans);
             }
         }

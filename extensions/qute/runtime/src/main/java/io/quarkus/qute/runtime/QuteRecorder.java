@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class QuteRecorder {
 
     public Supplier<Object> createContext(List<String> templatePaths, List<String> tags, Map<String, List<String>> variants,
-            Set<String> templateRoots, Map<String, String> templateContents) {
+            Set<String> templateRoots, Map<String, String> templateContents, List<String> excludePatterns) {
         return new Supplier<Object>() {
 
             @Override
@@ -64,6 +64,11 @@ public class QuteRecorder {
                     }
 
                     @Override
+                    public List<String> getExcludePatterns() {
+                        return excludePatterns;
+                    }
+
+                    @Override
                     public void setGeneratedClasses(List<String> resolverClasses, List<String> templateGlobalProviderClasses) {
                         this.resolverClasses = resolverClasses;
                         this.templateGlobalProviderClasses = templateGlobalProviderClasses;
@@ -98,6 +103,8 @@ public class QuteRecorder {
         Set<String> getTemplateRoots();
 
         Map<String, String> getTemplateContents();
+
+        List<String> getExcludePatterns();
 
         /**
          * The generated classes must be initialized after the template expressions are validated (later during the STATIC_INIT

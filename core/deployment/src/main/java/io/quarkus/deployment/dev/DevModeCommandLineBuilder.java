@@ -38,7 +38,6 @@ import io.quarkus.bootstrap.model.JvmOptionsBuilder;
 import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.logging.JBossVersion;
-import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class DevModeCommandLineBuilder {
@@ -135,19 +134,6 @@ public class DevModeCommandLineBuilder {
         final String javaTool = java == null ? JavaBinFinder.findBin() : java;
         log.debugf("Using javaTool: %s", javaTool);
         args.add(javaTool);
-    }
-
-    public DevModeCommandLineBuilder preventnoverify(boolean preventnoverify) {
-        if (!preventnoverify) {
-            // in Java 13 and up, preventing verification is deprecated - see https://bugs.openjdk.java.net/browse/JDK-8218003
-            // this test isn't absolutely correct in the sense that depending on the user setup, the actual Java binary
-            // that is used might be different that the one running Maven, but given how small of an impact this has
-            // it's probably better than running an extra command on 'javaTool' just to figure out the version
-            if (!JavaVersionUtil.isJava13OrHigher()) {
-                args.add("-Xverify:none");
-            }
-        }
-        return this;
     }
 
     public DevModeCommandLineBuilder forceC2(Boolean force) {
@@ -412,7 +398,6 @@ public class DevModeCommandLineBuilder {
 
         // if the --enable-preview flag was set, then we need to enable it when launching dev mode as well
         if (devModeContext.isEnablePreview()) {
-            System.out.println("ADDING enable-preview");
             jvmOptionsBuilder.add("enable-preview");
         }
 
@@ -516,7 +501,7 @@ public class DevModeCommandLineBuilder {
             extensionsEnableC2Warning(lockingExtensions);
             return false;
         }
-        return !JavaVersionUtil.isGraalvmJdk();
+        return true;
     }
 
     private void configureDebugging() throws Exception {

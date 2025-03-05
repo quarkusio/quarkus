@@ -16,6 +16,8 @@ Observability for interactive web applications.
 
 On these page we show the signal independent features of the extension.
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
 - The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide], the new xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] and the xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide].
@@ -142,6 +144,21 @@ If false will disable the default OTLP exporter at *build* time.
 |`quarkus.otel.metrics.exporter`
 |cdi
 |List of exporters to be used for metrics, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable metrics data output.
+
+| Logs
+|`quarkus.otel.logs.enabled`
+|false
+|Logs are disabled by default at *build* time because they are experimental.
+
+| Logs output
+|`quarkus.otel.logs.exporter`
+|cdi
+|List of exporters to be used for logs, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable logs data output.
+
+| Logs output
+|`quarkus.otel.logs.handler.enabled`
+|true
+|If false, disable the OpenTelemetry logs handler at *runtime*. This removes the bridge between the Quarkus logging system (JBoss LogManager) and OpenTelemetry logs.
 |===
 
 If you need to enable or disable the exporter at runtime, you can use the xref:opentelemetry-tracing.adoc#sampler[sampler] because it has the ability to filter out all the spans if needed.

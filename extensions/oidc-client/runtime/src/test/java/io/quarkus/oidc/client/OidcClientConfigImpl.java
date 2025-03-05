@@ -49,6 +49,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         SCOPES,
         REFRESH_TOKEN_TIME_SKEW,
         ACCESS_TOKEN_EXPIRES_IN,
+        ACCESS_TOKEN_EXPIRY_SKEW,
         ABSOLUTE_EXPIRES_IN,
         GRANT,
         GRANT_TYPE,
@@ -89,7 +90,8 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_LIFESPAN,
         CREDENTIALS_JWT_ASSERTION,
         CREDENTIALS_JWT_AUDIENCE,
-        CREDENTIALS_JWT_TOKEN_ID
+        CREDENTIALS_JWT_TOKEN_ID,
+        JWT_BEARER_TOKEN_PATH
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -180,6 +182,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                     public Source source() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SOURCE, true);
                         return Source.BEARER;
+                    }
+
+                    @Override
+                    public Optional<Path> tokenPath() {
+                        invocationsRecorder.put(ConfigMappingMethods.JWT_BEARER_TOKEN_PATH, true);
+                        return Optional.empty();
                     }
 
                     @Override
@@ -328,6 +336,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     @Override
     public Optional<Duration> accessTokenExpiresIn() {
         invocationsRecorder.put(ConfigMappingMethods.ACCESS_TOKEN_EXPIRES_IN, true);
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Duration> accessTokenExpirySkew() {
+        invocationsRecorder.put(ConfigMappingMethods.ACCESS_TOKEN_EXPIRY_SKEW, true);
         return Optional.empty();
     }
 

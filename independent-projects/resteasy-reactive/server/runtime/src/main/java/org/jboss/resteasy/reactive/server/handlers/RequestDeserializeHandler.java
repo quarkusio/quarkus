@@ -52,7 +52,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         Object requestType = requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
         if (requestType != null) {
             try {
-                effectiveRequestType = MediaType.valueOf((String) requestType);
+                effectiveRequestType = MediaTypeHelper.valueOf((String) requestType);
             } catch (Exception e) {
                 log.debugv("Incorrect media type", e);
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());

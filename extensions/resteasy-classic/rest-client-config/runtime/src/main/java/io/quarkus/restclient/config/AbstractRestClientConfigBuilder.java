@@ -2,11 +2,14 @@ package io.quarkus.restclient.config;
 
 import static io.smallrye.config.ConfigValue.CONFIG_SOURCE_COMPARATOR;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -17,7 +20,6 @@ import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
-import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -70,49 +72,74 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
 
         Map<String, String> quarkusFallbacks = new HashMap<>();
         Map<String, String> microProfileFallbacks = new HashMap<>();
-        // relocates [All Combinations] -> quarkus.rest-client."FQN".*
-        Map<String, String> relocates = new HashMap<>();
+        Map<String, List<String>> relocates = new HashMap<>();
+
         for (RegisteredRestClient restClient : restClients) {
             if (runtime) {
                 RestClientsConfig.RestClientKeysProvider.KEYS.add(restClient.getFullName());
             }
 
-            // FQN -> Simple Name
             String quotedFullName = "\"" + restClient.getFullName() + "\"";
-            quarkusFallbacks.put(quotedFullName, restClient.getSimpleName());
-            relocates.put(restClient.getSimpleName(), quotedFullName);
-            // Simple Name -> Quoted Simple Name
             String quotedSimpleName = "\"" + restClient.getSimpleName() + "\"";
-            quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
-            relocates.put(quotedSimpleName, quotedFullName);
-
             String configKey = restClient.getConfigKey();
+
+            // relocates [All Combinations] -> quarkus.rest-client."FQN".*
+            List<String> fullNameRelocates = new ArrayList<>();
+            relocates.put(quotedFullName, fullNameRelocates);
+
             if (configKey != null && !restClient.isConfigKeyEqualsNames()) {
                 String quotedConfigKey = "\"" + configKey + "\"";
                 if (!quotedConfigKey.equals(quotedFullName) && !quotedConfigKey.equals(quotedSimpleName)) {
                     if (restClient.isConfigKeyComposed()) {
-                        // Quoted Simple Name -> Quoted Config Key
-                        quarkusFallbacks.put(quotedSimpleName, quotedConfigKey);
-                        relocates.put(quotedConfigKey, quotedFullName);
+                        // FQN -> Quoted Config Key -> Quoted Simple Name -> Simple Name
+                        quarkusFallbacks.put(quotedFullName, quotedConfigKey);
+                        quarkusFallbacks.put(quotedConfigKey, restClient.getSimpleName());
+                        if (!quotedSimpleName.equals(quotedFullName)) {
+                            quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        }
+                        fullNameRelocates.add(quotedConfigKey);
+                        fullNameRelocates.add(restClient.getSimpleName());
+                        fullNameRelocates.add(quotedSimpleName);
                     } else {
-                        // Quoted Simple Name -> Config Key
-                        quarkusFallbacks.put(quotedSimpleName, configKey);
-                        relocates.put(configKey, quotedFullName);
-                        // Config Key -> Quoted Config Key
+                        // FQN -> Config Key -> Quoted Config Key -> Quoted Simple Name -> Simple Name
+                        quarkusFallbacks.put(quotedFullName, configKey);
                         quarkusFallbacks.put(configKey, quotedConfigKey);
-                        relocates.put(quotedConfigKey, quotedFullName);
+                        quarkusFallbacks.put(quotedConfigKey, restClient.getSimpleName());
+                        if (!quotedSimpleName.equals(quotedFullName)) {
+                            quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        }
+                        fullNameRelocates.add(configKey);
+                        fullNameRelocates.add(quotedConfigKey);
+                        fullNameRelocates.add(restClient.getSimpleName());
+                        fullNameRelocates.add(quotedSimpleName);
                     }
+                } else {
+                    // FQN -> Quoted Simple Name -> Simple Name
+                    quarkusFallbacks.put(quotedFullName, restClient.getSimpleName());
+                    if (!quotedSimpleName.equals(quotedFullName)) {
+                        quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                    }
+                    fullNameRelocates.add(restClient.getSimpleName());
+                    fullNameRelocates.add(quotedSimpleName);
                 }
+            } else {
+                // FQN -> Quoted Simple Name -> Simple Name
+                quarkusFallbacks.put(quotedFullName, restClient.getSimpleName());
+                if (!quotedSimpleName.equals(quotedFullName)) {
+                    quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                }
+                fullNameRelocates.add(restClient.getSimpleName());
+                fullNameRelocates.add(quotedSimpleName);
             }
 
             // FQN -> FQN/mp-rest
             String mpRestFullName = restClient.getFullName() + "/mp-rest/";
             microProfileFallbacks.put(quotedFullName, mpRestFullName);
-            relocates.put(mpRestFullName, quotedFullName);
+            fullNameRelocates.add(mpRestFullName);
             if (configKey != null && !configKey.equals(restClient.getFullName())) {
                 String mpConfigKey = configKey + "/mp-rest/";
                 microProfileFallbacks.put(mpRestFullName, mpConfigKey);
-                relocates.put(mpConfigKey, quotedFullName);
+                fullNameRelocates.add(mpConfigKey);
             }
         }
 
@@ -145,12 +172,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return new RelocateConfigSourceInterceptor(new Relocates(relocates)) {
-                    @Override
-                    public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
-                        return context.proceed(name);
-                    }
-                };
+                return new Relocates(relocates);
             }
         });
         return builder;
@@ -298,35 +320,105 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
 
     /**
      * Relocates every possible name (Quarkus and MP) to
-     * <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>
+     * <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>. The same <code>configKey</code> can relocate
+     * to many <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>.
      */
-    private record Relocates(Map<String, String> names) implements Function<String, String> {
+    private static class Relocates implements ConfigSourceInterceptor {
+        private final Map<String, List<String>> relocates;
+
+        Relocates(final Map<String, List<String>> relocates) {
+            this.relocates = new HashMap<>();
+            // Inverts the Map to make it easier to search
+            for (Map.Entry<String, List<String>> entry : relocates.entrySet()) {
+                for (String from : entry.getValue()) {
+                    this.relocates.putIfAbsent(from, new ArrayList<>());
+                    this.relocates.get(from).add(entry.getKey());
+                }
+            }
+        }
+
         @Override
-        public String apply(final String name) {
-            int indexOfRestClient = indexOfRestClient(name);
-            if (indexOfRestClient != -1) {
-                for (Map.Entry<String, String> entry : names.entrySet()) {
-                    String original = entry.getKey();
-                    String target = entry.getValue();
-                    int endOfConfigKey = indexOfRestClient + original.length();
-                    if (name.regionMatches(indexOfRestClient, original, 0, original.length())) {
-                        if (name.length() > endOfConfigKey && name.charAt(endOfConfigKey) == '.') {
-                            return REST_CLIENT_PREFIX + target + name.substring(endOfConfigKey);
+        public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
+            return context.proceed(name);
+        }
+
+        @Override
+        public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
+            List<String> relocatedNames = new ArrayList<>(relocates.size());
+            List<Supplier<Iterator<String>>> iterators = new ArrayList<>();
+            iterators.add(new Supplier<Iterator<String>>() {
+                @Override
+                public Iterator<String> get() {
+                    Iterator<String> names = context.iterateNames();
+
+                    return new Iterator<>() {
+                        @Override
+                        public boolean hasNext() {
+                            return names.hasNext();
                         }
+
+                        @Override
+                        public String next() {
+                            String name = names.next();
+                            int indexOfRestClient = indexOfRestClient(name);
+                            if (indexOfRestClient != -1) {
+                                for (Map.Entry<String, List<String>> entry : relocates.entrySet()) {
+                                    String original = entry.getKey();
+                                    int endOfConfigKey = indexOfRestClient + original.length();
+                                    if (name.regionMatches(indexOfRestClient, original, 0, original.length())) {
+                                        if (name.length() > endOfConfigKey && name.charAt(endOfConfigKey) == '.') {
+                                            for (String relocatedName : entry.getValue()) {
+                                                relocatedNames.add(
+                                                        REST_CLIENT_PREFIX + relocatedName + name.substring(endOfConfigKey));
+                                            }
+                                            return name;
+                                        }
+                                    }
+                                }
+                            }
+                            int slash = name.indexOf("/");
+                            if (slash != -1) {
+                                if (name.regionMatches(slash + 1, "mp-rest/", 0, 8)) {
+                                    String property = name.substring(slash + 9);
+                                    if (MICROPROFILE_NAMES.containsKey(property)) {
+                                        relocatedNames.add(REST_CLIENT_PREFIX + "\"" + name.substring(0, slash) + "\"."
+                                                + MICROPROFILE_NAMES.getOrDefault(property, property));
+                                    }
+                                    return name;
+                                }
+                            }
+                            return name;
+                        }
+                    };
+                }
+            });
+            iterators.add(new Supplier<Iterator<String>>() {
+                @Override
+                public Iterator<String> get() {
+                    return relocatedNames.iterator();
+                }
+            });
+            Iterator<Supplier<Iterator<String>>> iterator = iterators.iterator();
+            return new Iterator<>() {
+                Iterator<String> names = iterator.next().get();
+
+                @Override
+                public boolean hasNext() {
+                    if (names.hasNext()) {
+                        return true;
+                    } else {
+                        if (iterator.hasNext()) {
+                            names = iterator.next().get();
+                        }
+                        return names.hasNext();
                     }
                 }
-            }
-            int slash = name.indexOf("/");
-            if (slash != -1) {
-                if (name.regionMatches(slash + 1, "mp-rest/", 0, 8)) {
-                    String property = name.substring(slash + 9);
-                    if (MICROPROFILE_NAMES.containsKey(property)) {
-                        return REST_CLIENT_PREFIX + "\"" + name.substring(0, slash) + "\"."
-                                + MICROPROFILE_NAMES.getOrDefault(property, property);
-                    }
+
+                @Override
+                public String next() {
+                    return names.next();
                 }
-            }
-            return name;
+            };
         }
     }
 

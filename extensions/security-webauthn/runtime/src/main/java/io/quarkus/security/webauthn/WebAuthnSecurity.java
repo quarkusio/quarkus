@@ -312,30 +312,30 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Obtains a registration challenge for the given required userName and displayName. This will also
+     * Obtains a registration challenge for the given required username and displayName. This will also
      * create and save a challenge in a session cookie.
      *
-     * @param userName the userName for the registration
+     * @param username the username for the registration
      * @param displayName the displayName for the registration
      * @param ctx the Vert.x context
      * @return the registration challenge.
      */
     @SuppressWarnings("unused")
-    public Uni<PublicKeyCredentialCreationOptions> getRegisterChallenge(String userName, String displayName,
+    public Uni<PublicKeyCredentialCreationOptions> getRegisterChallenge(String username, String displayName,
             RoutingContext ctx) {
-        if (userName == null || userName.isEmpty()) {
+        if (username == null || username.isEmpty()) {
             return Uni.createFrom().failure(new IllegalArgumentException("Username is required"));
         }
-        // default displayName to userName, but it's required really
+        // default displayName to username, but it's required really
         if (displayName == null || displayName.isEmpty()) {
-            displayName = userName;
+            displayName = username;
         }
         String finalDisplayName = displayName;
         String challenge = getOrCreateChallenge(ctx);
         Origin origin = Origin.create(!this.origins.isEmpty() ? this.origins.get(0) : ctx.request().absoluteURI());
         String rpId = this.rpId != null ? this.rpId : origin.getHost();
 
-        return storage.findByUserName(userName)
+        return storage.findByUsername(username)
                 .map(credentials -> {
                     List<PublicKeyCredentialDescriptor> excluded;
                     // See https://github.com/quarkusio/quarkus/issues/44292 for why this is currently disabled
@@ -355,7 +355,7 @@ public class WebAuthnSecurity {
                                     rpName),
                             new PublicKeyCredentialUserEntity(
                                     uUIDBytes(UUID.randomUUID()),
-                                    userName,
+                                    username,
                                     finalDisplayName),
                             new DefaultChallenge(challenge),
                             pubKeyCredParams,
@@ -379,30 +379,30 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Obtains a login challenge for the given optional userName. This will also
+     * Obtains a login challenge for the given optional username. This will also
      * create and save a challenge in a session cookie.
      *
-     * @param userName the optional userName for the login
+     * @param username the optional username for the login
      * @param ctx the Vert.x context
      * @return the login challenge.
      */
     @SuppressWarnings("unused")
-    public Uni<PublicKeyCredentialRequestOptions> getLoginChallenge(String userName, RoutingContext ctx) {
+    public Uni<PublicKeyCredentialRequestOptions> getLoginChallenge(String username, RoutingContext ctx) {
         // Username is not required with passkeys
-        if (userName == null) {
-            userName = "";
+        if (username == null) {
+            username = "";
         }
-        String finalUserName = userName;
+        String finalUsername = username;
         String challenge = getOrCreateChallenge(ctx);
         Origin origin = Origin.create(!this.origins.isEmpty() ? this.origins.get(0) : ctx.request().absoluteURI());
         String rpId = this.rpId != null ? this.rpId : origin.getHost();
 
         // do not attempt to look users up if there's no user name
         Uni<List<WebAuthnCredentialRecord>> credentialsUni;
-        if (userName.isEmpty()) {
+        if (username.isEmpty()) {
             credentialsUni = Uni.createFrom().item(Collections.emptyList());
         } else {
-            credentialsUni = storage.findByUserName(userName);
+            credentialsUni = storage.findByUsername(username);
         }
         return credentialsUni
                 .map(credentials -> {
@@ -411,7 +411,7 @@ public class WebAuthnSecurity {
                     if (false) {
 
                         if (credentials.isEmpty()) {
-                            throw new RuntimeException("No credentials found for " + finalUserName);
+                            throw new RuntimeException("No credentials found for " + finalUsername);
                         }
                         allowedCredentials = new ArrayList<>(credentials.size());
                         for (WebAuthnCredentialRecord credential : credentials) {

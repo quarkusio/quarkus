@@ -5,10 +5,13 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.h2.tools.Server;
+import org.jboss.logging.Logger;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManager {
+
+    private static final Logger log = Logger.getLogger(H2DatabaseTestResource.class);
 
     private Server tcpServer;
 
@@ -18,7 +21,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
         try {
             tcpServer = Server.createTcpServer("-ifNotExists");
             tcpServer.start();
-            System.out.println("[INFO] H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
+            log.infof("H2 database started in TCP server mode; server status: %s", tcpServer.getStatus());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -29,7 +32,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
     public synchronized void stop() {
         if (tcpServer != null) {
             tcpServer.stop();
-            System.out.println("[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
+            log.infof("H2 database was shut down; server status: %s", tcpServer.getStatus());
             tcpServer = null;
         }
     }

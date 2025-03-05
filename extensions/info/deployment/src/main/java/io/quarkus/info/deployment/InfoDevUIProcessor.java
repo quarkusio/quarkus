@@ -20,11 +20,11 @@ public class InfoDevUIProcessor {
     void create(BuildProducer<CardPageBuildItem> cardPageProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             InfoBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem) {
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                managementBuildTimeConfig, launchModeBuildItem);
 
         WebComponentPageBuilder infoPage = Page.webComponentPageBuilder()
                 .title("Information")

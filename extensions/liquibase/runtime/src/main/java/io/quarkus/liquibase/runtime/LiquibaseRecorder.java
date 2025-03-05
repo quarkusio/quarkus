@@ -68,12 +68,12 @@ public class LiquibaseRecorder {
     }
 
     public void doStartActions(String dataSourceName) {
-        if (!config.getValue().enabled) {
+        if (!config.getValue().enabled()) {
             return;
         }
 
-        var dataSourceConfig = config.getValue().getConfigForDataSourceName(dataSourceName);
-        if (!dataSourceConfig.cleanAtStart && !dataSourceConfig.migrateAtStart) {
+        var dataSourceConfig = config.getValue().datasources().get(dataSourceName);
+        if (!dataSourceConfig.cleanAtStart() && !dataSourceConfig.migrateAtStart()) {
             return;
         }
 
@@ -88,15 +88,15 @@ public class LiquibaseRecorder {
         try (Liquibase liquibase = liquibaseFactory.createLiquibase();
                 ResettableSystemProperties resettableSystemProperties = liquibaseFactory
                         .createResettableSystemProperties()) {
-            if (dataSourceConfig.cleanAtStart) {
+            if (dataSourceConfig.cleanAtStart()) {
                 liquibase.dropAll();
             }
-            if (dataSourceConfig.migrateAtStart) {
+            if (dataSourceConfig.migrateAtStart()) {
                 var lockService = LockServiceFactory.getInstance()
                         .getLockService(liquibase.getDatabase());
                 lockService.waitForLock();
                 try {
-                    if (dataSourceConfig.validateOnMigrate) {
+                    if (dataSourceConfig.validateOnMigrate()) {
                         liquibase.validate();
                     }
                     liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());

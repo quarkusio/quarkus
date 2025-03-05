@@ -708,7 +708,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 
 @RegisterRestClient
 @AccessToken <1>
@@ -928,7 +928,7 @@ Press `r` and notice this test failing with `403` which is expected because the 
 
 image::auth0-test-failure-403.png[Auth0 test failure 403]
 
-Before fixing the test, let's review the options available for testing Quarkus endpoints secured by OIDC. These options might vary, depending on which flow your application supports and how you prefer to test. Endpoints which use OIDC authorization code flow can be tested using xref:security-oidc-code-flow-authentication#code-flow-integration-testing[one of these options] and endpoints which use Bearer token authentication can be tested using xref:security-oidc-bearer-token-authentication#bearer-token-integration-testing[one of these options].
+Before fixing the test, let's review the options available for testing Quarkus endpoints secured by OIDC. These options might vary, depending on which flow your application supports and how you prefer to test. Endpoints which use OIDC authorization code flow can be tested using xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing[one of these options] and endpoints which use Bearer token authentication can be tested using xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[one of these options].
 
 As you can see, testing of the endpoints secured with Auth0 can be done with the help of `Wiremock`, or `@TestSecurity` annotation. Experiment with writing such tests on your own and reach out if you encounter any problems.
 
@@ -956,7 +956,7 @@ image::auth0-password-grant.png[Auth0 password grant]
 It is important to clarify that we do not recommend using the deprecated OAuth2 `password` token grant in production. However using it can help testing the endpoint with tokens acquired from the live dev Auth0 tenant.
 ====
 
-`OidcTestClient` should be used to test applications accepting bearer tokens which will work for the endpoint developed in this tutorial as it supports both authorization code flow and bearer token authentication. You would need to use OIDC WireMock or `HtmlUnit` directly against the Auth0 dev tenant if only the authorization code flow was supported - in the latter case `HtmlUnit` test code would have to be aligned with how Auth0 challenges users to enter their credentials. If you like, you can copy the xref:security-oidc-code-flow-authentication#code-flow-integration-testing-wiremock[HtmlUnit test fragment] from the documentation and experiment with it.
+`OidcTestClient` should be used to test applications accepting bearer tokens which will work for the endpoint developed in this tutorial as it supports both authorization code flow and bearer token authentication. You would need to use OIDC WireMock or `HtmlUnit` directly against the Auth0 dev tenant if only the authorization code flow was supported - in the latter case `HtmlUnit` test code would have to be aligned with how Auth0 challenges users to enter their credentials. If you like, you can copy the xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-wiremock[HtmlUnit test fragment] from the documentation and experiment with it.
 
 In meantime we will now proceed with fixing the currently failing test using `OidcTestClient`.
 

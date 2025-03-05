@@ -19,19 +19,19 @@ public class InfinispanCacheInfoBuilder {
                 InfinispanCacheInfo cacheInfo = new InfinispanCacheInfo();
                 cacheInfo.name = cacheName;
 
-                InfinispanCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
-                InfinispanCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
+                InfinispanCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig();
+                InfinispanCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig().get(cacheInfo.name);
 
-                if (namedRuntimeConfig != null && namedRuntimeConfig.lifespan.isPresent()) {
-                    cacheInfo.lifespan = namedRuntimeConfig.lifespan;
-                } else if (defaultRuntimeConfig.lifespan.isPresent()) {
-                    cacheInfo.lifespan = defaultRuntimeConfig.lifespan;
+                if (namedRuntimeConfig != null && namedRuntimeConfig.lifespan().isPresent()) {
+                    cacheInfo.lifespan = namedRuntimeConfig.lifespan();
+                } else if (defaultRuntimeConfig.lifespan().isPresent()) {
+                    cacheInfo.lifespan = defaultRuntimeConfig.lifespan();
                 }
 
-                if (namedRuntimeConfig != null && namedRuntimeConfig.maxIdle.isPresent()) {
-                    cacheInfo.maxIdle = namedRuntimeConfig.maxIdle;
-                } else if (defaultRuntimeConfig.maxIdle.isPresent()) {
-                    cacheInfo.maxIdle = defaultRuntimeConfig.maxIdle;
+                if (namedRuntimeConfig != null && namedRuntimeConfig.maxIdle().isPresent()) {
+                    cacheInfo.maxIdle = namedRuntimeConfig.maxIdle();
+                } else if (defaultRuntimeConfig.maxIdle().isPresent()) {
+                    cacheInfo.maxIdle = defaultRuntimeConfig.maxIdle();
                 }
 
                 result.add(cacheInfo);

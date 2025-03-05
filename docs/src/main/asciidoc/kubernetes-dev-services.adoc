@@ -10,9 +10,10 @@ include::_attributes.adoc[]
 :topics: dev-services,kubernetes,testing,dev-mode
 :extensions: io.quarkus:quarkus-kubernetes-client
 
-Dev Services for Kubernetes automatically starts a Kubernetes API server in dev mode and when running tests.
-So you don't have to start a Kubernetes cluster manually.
+Dev Services for Kubernetes automatically starts a Kubernetes API server (plus the required etcd) in dev mode and when running tests. So you don't have to start it manually.
 The application is configured automatically.
+
+The following https://github.com/dajudge/kindcontainer?tab=readme-ov-file#container-flavors[testcontainers] are supported: https://kind.sigs.k8s.io/[kind], https://k3s.io/[k3s] or api only(default)
 
 == Enabling / Disabling Dev Services for Kubernetes
 
@@ -23,9 +24,9 @@ Dev Services for Kubernetes is automatically enabled unless:
 - a valid Kube config file is found and `quarkus.kubernetes-client.devservices.override-kubeconfig` is not set to `true`
 - you include the `quarkus-test-kubernetes-client` dependency
 
-Dev Services for Kubernetes relies on Docker to start the API server.
-If your environment does not support Docker, you will need to start the Kubernetes cluster manually, or connect to an already running Kubernetes cluster.
-You can configure the Kubernetes cluster access using either a Kube config file or the various properties available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
+NOTE: Dev Services for Kubernetes relies on a container engine: Docker or Podman to start the server.
+If your environment does not support such a container engine, you will have to start a Kubernetes cluster running in a VM, in the cloud, etc.
+In this case, you can configure the Kubernetes cluster access using either a Kube config file or the various properties available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
 
 == Shared cluster
 
@@ -41,6 +42,51 @@ The default service name is `kubernetes`.
 Sharing is enabled by default in dev mode, but disabled in test mode.
 You can disable the sharing with `quarkus.kubernetes-client.devservices.shared=false`.
 
+== What else for the developers
+
+If you would like to develop test cases running top of the kubernetes cluster (launched as test container by the Dev Service), then add the following dependencies to your pom file
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client</artifactId>
+</dependency>
+----
+
+and set the Quarkus properties to select the flavor, or kube version.
+
+Then you will be able to create a Fabric8 Kubernetes Client object able to perform many kube tasks as detailed part of this https://github.com/fabric8io/kubernetes-client/blob/main/doc/CHEATSHEET.md[cheat sheet].
+
+.Simple Bean Example
+[source,java]
+----
+package org.acme;
+
+import org.junit.jupiter.api.Test;
+
+import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class ArgocdExtensionDevModeTest {
+
+    @Inject
+    private KubernetesClient client;
+
+    @Test
+    public void testCreatePod() {
+        client.resource(new PodBuilder()
+           .withMetadata(<METADATA_OBJECT>)
+           .withSpec(<SPEC_OBJECT>)
+           .build())
+           .inNamespace(<USER_NAMESPACE>)
+           .create();
+    }
+----
+
 == Configuring the cluster
 
 Dev Services for Kubernetes provides three different flavors of Kubernetes cluster. Each flavor supports different Kubernetes API versions.
@@ -52,6 +98,10 @@ quarkus.kubernetes-client.devservices.flavor=api-only # k3s or kind
 quarkus.kubernetes-client.devservices.api-version=1.22
 ----
 
-`api-only` only starts a Kubernetes API Server. If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. Note that they both requires to run in Docker privileged mode.
+`api-only` only starts a Kubernetes API Server (plus the required etcd). If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. `k3s` requires to start the container with `privileged mode`. The `kind` test container supports now to use podman rootless or rootfull.
 
 If `api-version` is not set, the latest version for the given flavor will be used. Otherwise, the version must match a https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json[version supported by the given flavor].
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-kubernetes-client_quarkus.kubernetes-client.devservices.adoc[opts=optional, leveloffset=+1]

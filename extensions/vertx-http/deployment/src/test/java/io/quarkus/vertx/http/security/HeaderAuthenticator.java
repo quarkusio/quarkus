@@ -38,7 +38,7 @@ public class HeaderAuthenticator implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return null;
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().nullItem();
     }
 }

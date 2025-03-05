@@ -21,7 +21,7 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
         <kotlin.version>2.0.21</kotlin.version>
-        <dokka.version>1.9.20</dokka.version>
+        <dokka.version>2.0.0</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
@@ -29,17 +29,17 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.2.3</jandex.version>
+        <jandex.version>3.2.7</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.7.0</htmlunit.version>
-        <javaparser-core.version>3.26.2</javaparser-core.version>
+        <htmlunit.version>4.10.0</htmlunit.version>
+        <javaparser-core.version>3.26.3</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
-        <freemarker.version>2.3.33</freemarker.version>
+        <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.24.0</commonmark.version>
 
         <!-- Arquillian BOM -->
@@ -61,7 +61,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.9</proposed-maven-version>
         <maven-wrapper.version>3.3.2</maven-wrapper.version>
-        <gradle-wrapper.version>8.9</gradle-wrapper.version>
+        <gradle-wrapper.version>8.13</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -85,7 +85,7 @@
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:17</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:11.5.9.0</db2.image>
+        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.4</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -95,28 +95,27 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>25.0.6</keycloak.version>
+        <keycloak.server.version>26.0.7</keycloak.server.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
-        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
         <unboundid-ldap.version>7.0.2</unboundid-ldap.version>
 
-        <assertj.version>3.26.3</assertj.version>
+        <assertj.version>3.27.3</assertj.version>
 
-        <wiremock.version>3.10.0</wiremock.version>
+        <wiremock.version>3.12.1</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.38.0</artemis.version>
+        <artemis.version>2.39.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.45.1</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.8.1</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
@@ -598,7 +597,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.24</version>
+                            <version>4.0.26</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -659,6 +658,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>io.smallrye.certs</groupId>
+                    <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                    <version>${smallrye-certificate-generator.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

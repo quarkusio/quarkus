@@ -65,7 +65,7 @@ public class ArcDevModeApiProcessor {
 
         // Build dependency graphs
         Map<String, List<String>> beanDependenciesMap = new HashMap<>();
-        if (config.devMode.generateDependencyGraphs) {
+        if (config.devMode().generateDependencyGraphs()) {
             BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
             Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
             Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();
@@ -124,10 +124,12 @@ public class ArcDevModeApiProcessor {
             for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
                 BeanInfo resolved = injectionPoint.getResolvedBean();
                 if (resolved != null && !resolved.equals(bean)) {
-                    links.add(Link.dependency(bean.getIdentifier(), resolved.getIdentifier(), level));
+                    Link link = Link.dependency(bean.getIdentifier(), resolved.getIdentifier(), level);
+                    links.add(link);
                     // add transient dependencies
                     addNodesDependencies(level + 1, root, nodes, links, injectionPoint.getResolvedBean(), devBeanInfos);
                 }
+                // TODO built-in beans are skipped for now
             }
         }
     }
@@ -162,7 +164,7 @@ public class ArcDevModeApiProcessor {
             if (ip.getResolvedBean() == null) {
                 link = Link.lookup(dependent.getIdentifier(), bean.getIdentifier(), level);
             } else {
-                link = Link.dependent(dependent.getIdentifier(), bean.getIdentifier(), level);
+                link = Link.dependency(dependent.getIdentifier(), bean.getIdentifier(), level);
             }
             links.add(link);
             if (nodes.add(devBeanInfos.getBean(dependent.getIdentifier()))) {

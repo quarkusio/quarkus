@@ -1,91 +1,89 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * The liquibase configuration
  */
-@ConfigRoot(name = "liquibase-mongodb", phase = ConfigPhase.RUN_TIME)
-public class LiquibaseMongodbConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.liquibase-mongodb")
+public interface LiquibaseMongodbConfig {
 
     /**
      * Flag to enable / disable Liquibase.
      *
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
+     * Mongodb client name to use to connect to database, defaults to the default mongodb client.
+     */
+    Optional<String> mongoClientName();
 
     /**
      * The migrate at start flag
      */
-    @ConfigItem
-    public boolean migrateAtStart;
+    @WithDefault("false")
+    boolean migrateAtStart();
 
     /**
      * The validate on update flag
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean validateOnMigrate;
+    @WithDefault("true")
+    boolean validateOnMigrate();
 
     /**
      * The clean at start flag
      */
-    @ConfigItem
-    public boolean cleanAtStart;
+    @WithDefault("false")
+    boolean cleanAtStart();
 
     /**
      * The parameters to be passed to the changelog.
      * Defined as key value pairs.
      */
-    @ConfigItem
-    public Map<String, String> changeLogParameters = new HashMap<>();;
+    Map<String, String> changeLogParameters();
 
     /**
      * The list of contexts
      */
-    @ConfigItem
-    public Optional<List<String>> contexts = Optional.empty();
+    Optional<List<String>> contexts();
 
     /**
      * The list of labels
      */
-    @ConfigItem
-    public Optional<List<String>> labels = Optional.empty();
+    Optional<List<String>> labels();
 
     /**
      * The default catalog name
      */
-    @ConfigItem
-    public Optional<String> defaultCatalogName = Optional.empty();
+    Optional<String> defaultCatalogName();
 
     /**
      * The default schema name
      */
-    @ConfigItem
-    public Optional<String> defaultSchemaName = Optional.empty();
+    Optional<String> defaultSchemaName();
 
     /**
      * The liquibase tables catalog name
      */
-    @ConfigItem
-    public Optional<String> liquibaseCatalogName = Optional.empty();
+    Optional<String> liquibaseCatalogName();
 
     /**
      * The liquibase tables schema name
      */
-    @ConfigItem
-    public Optional<String> liquibaseSchemaName = Optional.empty();
+    Optional<String> liquibaseSchemaName();
 
     /**
      * The liquibase tables tablespace name
      */
-    @ConfigItem
-    public Optional<String> liquibaseTablespaceName = Optional.empty();
+    Optional<String> liquibaseTablespaceName();
 }

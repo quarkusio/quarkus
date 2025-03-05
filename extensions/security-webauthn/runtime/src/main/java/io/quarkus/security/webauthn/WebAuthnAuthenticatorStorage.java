@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
 /**
- * WebAuthn authenticator storage which delegates to @{link WebAuthnUserProvider}.
+ * WebAuthn authenticator storage which delegates to {@link WebAuthnUserProvider}.
  */
 @ApplicationScoped
 public class WebAuthnAuthenticatorStorage {
@@ -26,8 +26,8 @@ public class WebAuthnAuthenticatorStorage {
     @Inject
     Vertx vertx;
 
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
-        return runPotentiallyBlocking(() -> userProvider.findByUserName(userName));
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String username) {
+        return runPotentiallyBlocking(() -> userProvider.findByUsername(username));
     }
 
     public Uni<WebAuthnCredentialRecord> findByCredID(String credID) {

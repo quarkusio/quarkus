@@ -39,8 +39,11 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.FragmentNamespaceResolver;
 import io.quarkus.qute.HtmlEscaper;
+import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
+import io.quarkus.qute.NamedArgument;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
@@ -48,6 +51,7 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.StrEvalNamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
@@ -82,7 +86,7 @@ public class EngineProducer {
     private final List<String> suffixes;
     private final Set<String> templateRoots;
     private final Map<String, String> templateContents;
-    private final Pattern templatePathExclude;
+    private final List<Pattern> templatePathExcludes;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
     private final ArcContainer container;
@@ -93,14 +97,20 @@ public class EngineProducer {
             @All List<SectionHelperFactory<?>> sectionHelperFactories, @All List<ValueResolver> valueResolvers,
             @All List<NamespaceResolver> namespaceResolvers, @All List<ParserHook> parserHooks) {
         this.contentTypes = contentTypes;
-        this.suffixes = config.suffixes;
+        this.suffixes = config.suffixes();
         this.templateRoots = context.getTemplateRoots();
         this.templateContents = Map.copyOf(context.getTemplateContents());
         this.tags = context.getTags();
-        this.templatePathExclude = config.templatePathExclude;
         this.defaultLocale = locales.defaultLocale().orElse(Locale.getDefault());
-        this.defaultCharset = config.defaultCharset;
+        this.defaultCharset = config.defaultCharset();
         this.container = Arc.container();
+
+        ImmutableList.Builder<Pattern> excludesBuilder = ImmutableList.<Pattern> builder()
+                .add(config.templatePathExclude());
+        for (String p : context.getExcludePatterns()) {
+            excludesBuilder.add(Pattern.compile(p));
+        }
+        this.templatePathExcludes = excludesBuilder.build();
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
@@ -121,19 +131,21 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.orEmpty());
         // Note that arrays are handled specifically during validation
         builder.addValueResolver(ValueResolvers.arrayResolver());
+        // Named arguments for fragment namespace resolver
+        builder.addValueResolver(new NamedArgument.SetValueResolver());
         // Additional value resolvers
         for (ValueResolver valueResolver : valueResolvers) {
             builder.addValueResolver(valueResolver);
         }
 
         // Enable/disable strict rendering
-        if (runtimeConfig.strictRendering) {
+        if (runtimeConfig.strictRendering()) {
             builder.strictRendering(true);
         } else {
             builder.strictRendering(false);
             // If needed, use a specific result mapper for the selected strategy
-            if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
-                switch (runtimeConfig.propertyNotFoundStrategy.get()) {
+            if (runtimeConfig.propertyNotFoundStrategy().isPresent()) {
+                switch (runtimeConfig.propertyNotFoundStrategy().get()) {
                     case THROW_EXCEPTION:
                         builder.addResultMapper(new PropertyNotFoundThrowException());
                         break;
@@ -156,7 +168,7 @@ public class EngineProducer {
         }
 
         // Escape some characters for HTML/XML templates
-        builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes)));
+        builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes())));
 
         // Escape some characters for JSON templates
         builder.addResultMapper(new JsonEscaper());
@@ -165,10 +177,10 @@ public class EngineProducer {
         builder.addValueResolver(new ReflectionValueResolver());
 
         // Remove standalone lines if desired
-        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
+        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines());
 
         // Iteration metadata prefix
-        builder.iterationMetadataPrefix(config.iterationMetadataPrefix);
+        builder.iterationMetadataPrefix(config.iterationMetadataPrefix());
 
         // Default section helpers
         builder.addDefaultSectionHelpers();
@@ -187,6 +199,14 @@ public class EngineProducer {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             builder.addNamespaceResolver(namespaceResolver);
         }
+        // str:eval
+        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+        // Fragment namespace resolvers
+        builder.addNamespaceResolver(new NamedArgument.ParamNamespaceResolver());
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRAGMENT));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRG));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAPTURE));
+        builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAP));
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -257,8 +277,8 @@ public class EngineProducer {
             }
         });
 
-        builder.timeout(runtimeConfig.timeout);
-        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout);
+        builder.timeout(runtimeConfig.timeout());
+        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
 
@@ -267,7 +287,7 @@ public class EngineProducer {
         for (String path : context.getTemplatePaths()) {
             Template template = engine.getTemplate(path);
             if (template != null) {
-                for (String suffix : config.suffixes) {
+                for (String suffix : config.suffixes()) {
                     if (path.endsWith(suffix)) {
                         String pathNoSuffix = path.substring(0, path.length() - (suffix.length() + 1));
                         List<Template> templates = discovered.get(pathNoSuffix);
@@ -342,8 +362,17 @@ public class EngineProducer {
         }
     }
 
+    private boolean isExcluded(String path) {
+        for (Pattern p : templatePathExcludes) {
+            if (p.matcher(path).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Optional<TemplateLocation> locate(String path) {
-        if (templatePathExclude.matcher(path).matches()) {
+        if (isExcluded(path)) {
             return Optional.empty();
         }
         // First try to locate file-based templates
@@ -356,7 +385,7 @@ public class EngineProducer {
                 // Try path with suffixes
                 for (String suffix : suffixes) {
                     String pathWithSuffix = path + "." + suffix;
-                    if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                    if (isExcluded(pathWithSuffix)) {
                         continue;
                     }
                     templatePath = templateRoot + pathWithSuffix;
@@ -377,7 +406,7 @@ public class EngineProducer {
             // Try path with suffixes
             for (String suffix : suffixes) {
                 String pathWithSuffix = path + "." + suffix;
-                if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                if (isExcluded(pathWithSuffix)) {
                     continue;
                 }
                 content = templateContents.get(pathWithSuffix);
@@ -456,7 +485,7 @@ public class EngineProducer {
         if (engine.isTemplateLoaded(path)) {
             return;
         }
-        for (String suffix : config.suffixes) {
+        for (String suffix : config.suffixes()) {
             for (Template template : templates) {
                 if (template.getId().endsWith(suffix)) {
                     engine.putTemplate(path, template);

@@ -21,4 +21,15 @@ class HttpFunctionTestCase {
                 .statusCode(200)
                 .body(is("Hello World!"));
     }
+
+    // we do twice the test to be sure we can call multiple time the same function
+    @Test
+    public void test2() {
+        // test the function using RestAssured
+        when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body(is("Hello World!"));
+    }
 }

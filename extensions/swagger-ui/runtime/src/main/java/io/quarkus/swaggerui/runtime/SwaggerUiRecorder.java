@@ -17,7 +17,7 @@ public class SwaggerUiRecorder {
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             SwaggerUiRuntimeConfig runtimeConfig, ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.enable) {
+        if (runtimeConfig.enable()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(swaggerUiFinalDestination, swaggerUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

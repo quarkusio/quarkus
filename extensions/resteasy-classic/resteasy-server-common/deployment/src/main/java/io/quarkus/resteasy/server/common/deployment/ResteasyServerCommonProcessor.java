@@ -84,10 +84,12 @@ import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Processor that builds the RESTEasy server configuration.
@@ -125,7 +127,8 @@ public class ResteasyServerCommonProcessor {
     ResteasyCommonConfig commonConfig;
 
     @ConfigRoot(phase = BUILD_TIME)
-    static final class ResteasyConfig {
+    @ConfigMapping(prefix = "quarkus.resteasy")
+    interface ResteasyConfig {
         /**
          * If this is true then JAX-RS will use only a single instance of a resource
          * class to service all requests.
@@ -142,8 +145,8 @@ public class ResteasyServerCommonProcessor {
          * a stereotype which has a different default scope the deployment fails with
          * IllegalStateException.
          */
-        @ConfigItem(defaultValue = "true")
-        boolean singletonResources;
+        @WithDefault("true")
+        boolean singletonResources();
 
         /**
          * Set this to override the default path for JAX-RS resources if there are no
@@ -156,9 +159,9 @@ public class ResteasyServerCommonProcessor {
          * be {@literal /foo/bar}</li>
          * </ul>
          */
-        @ConfigItem(defaultValue = "/")
-        @ConvertWith(NormalizeRootHttpPathConverter.class)
-        String path;
+        @WithDefault("/")
+        @WithConverter(NormalizeRootHttpPathConverter.class)
+        String path();
 
         /**
          * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics
@@ -171,22 +174,22 @@ public class ResteasyServerCommonProcessor {
          * @deprecated Use {@code quarkus.smallrye-metrics.jaxrs.enabled} instead.
          */
         @Deprecated(forRemoval = true)
-        @ConfigItem(name = "metrics.enabled")
-        public Optional<Boolean> metricsEnabled;
+        @WithName("metrics.enabled")
+        Optional<Boolean> metricsEnabled();
 
         /**
          * Ignore all explicit JAX-RS {@link Application} classes.
          * As multiple JAX-RS applications are not supported, this can be used to effectively merge all JAX-RS applications.
          */
-        @ConfigItem(defaultValue = "false")
-        boolean ignoreApplicationClasses;
+        @WithDefault("false")
+        boolean ignoreApplicationClasses();
 
         /**
          * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
          * into account when used on JAX-RS classes.
          */
-        @ConfigItem(defaultValue = "true")
-        boolean buildTimeConditionAware;
+        @WithDefault("true")
+        boolean buildTimeConditionAware();
     }
 
     @BuildStep
@@ -224,14 +227,14 @@ public class ResteasyServerCommonProcessor {
 
         final AnnotationInstance applicationPath;
         final Set<String> excludedClasses;
-        if (resteasyConfig.buildTimeConditionAware) {
+        if (resteasyConfig.buildTimeConditionAware()) {
             excludedClasses = getExcludedClasses(buildTimeConditions);
         } else {
             excludedClasses = Collections.emptySet();
         }
         final Set<String> allowedClasses;
         final String appClass;
-        if (resteasyConfig.ignoreApplicationClasses) {
+        if (resteasyConfig.ignoreApplicationClasses()) {
             applicationPath = null;
             allowedClasses = Collections.emptySet();
             appClass = null;
@@ -297,8 +300,8 @@ public class ResteasyServerCommonProcessor {
                 }
                 path = rootPath;
             } else {
-                rootPath = resteasyConfig.path;
-                path = resteasyConfig.path;
+                rootPath = resteasyConfig.path();
+                path = resteasyConfig.path();
             }
         }
 
@@ -514,7 +517,7 @@ public class ResteasyServerCommonProcessor {
                 } else if (subresources.contains(clazz.name())) {
                     // Transform a class annotated with a request method designator
                     Transformation transformation = context.transform()
-                            .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
+                            .add(resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName()
                                     : BuiltinScope.DEPENDENT.getName());
                     if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MySubresource.class)
@@ -620,7 +623,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         if (!additionalClassWithPath.isEmpty()) {
             AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
-                    .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
+                    .setDefaultScope(resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null)
                     .setUnremovable();
             for (Map.Entry<DotName, ClassInfo> classWithPath : additionalClassWithPath.entrySet()) {
                 if (scopes.isScopeDeclaredOn(classWithPath.getValue())) {
@@ -641,7 +644,7 @@ public class ResteasyServerCommonProcessor {
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PATH,
-                        resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null));
+                        resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null));
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));

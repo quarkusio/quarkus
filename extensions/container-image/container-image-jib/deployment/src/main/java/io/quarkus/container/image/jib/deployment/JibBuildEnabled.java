@@ -15,6 +15,6 @@ public class JibBuildEnabled implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return containerImageConfig.builder.map(b -> b.equals(JibProcessor.JIB)).orElse(true);
+        return containerImageConfig.builder().map(b -> b.equals(JibProcessor.JIB)).orElse(true);
     }
 }

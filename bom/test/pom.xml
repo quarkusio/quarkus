@@ -20,9 +20,9 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
 
         <rxjava1.version>1.3.8</rxjava1.version>
-        <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
 
-        <opentelemetry-proto.version>1.0.0-alpha</opentelemetry-proto.version>
+        <opentelemetry-proto.version>1.3.2-alpha</opentelemetry-proto.version>
     </properties>
 
     <dependencyManagement>
@@ -66,6 +66,10 @@
                     <exclusion>
                         <groupId>com.github.docker-java</groupId>
                         <artifactId>docker-java-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

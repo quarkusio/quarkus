@@ -36,18 +36,16 @@ abstract class AbstractHttpAuthorizer {
 
     private static final Logger log = Logger.getLogger(AbstractHttpAuthorizer.class);
 
-    private final HttpAuthenticator httpAuthenticator;
     private final IdentityProviderManager identityProviderManager;
     private final AuthorizationController controller;
     private final List<HttpSecurityPolicy> policies;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final HttpSecurityPolicy.AuthorizationRequestContext context;
 
-    AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
+    AbstractHttpAuthorizer(IdentityProviderManager identityProviderManager,
             AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
             Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled) {
-        this.httpAuthenticator = httpAuthenticator;
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
         this.policies = policies;
@@ -135,6 +133,7 @@ abstract class AbstractHttpAuthorizer {
     private void doDeny(SecurityIdentity identity, RoutingContext routingContext, HttpSecurityPolicy policy) {
         //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
         if (identity.isAnonymous()) {
+            HttpAuthenticator httpAuthenticator = routingContext.get(HttpAuthenticator.class.getName());
             httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
                 @Override
                 public void onSubscribe(UniSubscription subscription) {

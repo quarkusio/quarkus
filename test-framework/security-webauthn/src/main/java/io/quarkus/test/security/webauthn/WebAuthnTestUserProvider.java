@@ -21,10 +21,10 @@ public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
     private List<WebAuthnCredentialRecord> auths = new ArrayList<>();
 
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String userId) {
         List<WebAuthnCredentialRecord> ret = new ArrayList<>();
         for (WebAuthnCredentialRecord authenticator : auths) {
-            if (authenticator.getUserName().equals(userId)) {
+            if (authenticator.getUsername().equals(userId)) {
                 ret.add(authenticator);
             }
         }
@@ -55,7 +55,7 @@ public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
     }
 
     @Override
-    public Set<String> getRoles(String userId) {
+    public Set<String> getRoles(String username) {
         return Collections.singleton("admin");
     }
 

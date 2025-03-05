@@ -25,7 +25,6 @@ public class OpenShiftConfigFallbackTest {
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
             .setApplicationName("config")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .overrideConfigKey("quarkus.kubernetes.replicas", "10")
             .overrideConfigKey("quarkus.openshift.version", "999-SNAPSHOT")
             .overrideConfigKey("quarkus.openshift.labels.app", "openshift")
             .overrideConfigKey("quarkus.openshift.route.expose", "true")
@@ -50,10 +49,6 @@ public class OpenShiftConfigFallbackTest {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         YamlConfigSource kubernetes = new YamlConfigSource(kubernetesDir.resolve("kubernetes.yml").toUri().toURL());
         YamlConfigSource openshift = new YamlConfigSource(kubernetesDir.resolve("openshift.yml").toUri().toURL());
-
-        // spec.replicas is only for Kubernetes and Openshift, no fallback
-        assertEquals("10", kubernetes.getValue("spec.replicas"));
-        assertEquals("1", openshift.getValue("spec.replicas"));
 
         // In both, each should retain the value
         assertEquals("0.1-SNAPSHOT", kubernetes.getValue("spec.template.metadata.labels.\"app.kubernetes.io/version\""));

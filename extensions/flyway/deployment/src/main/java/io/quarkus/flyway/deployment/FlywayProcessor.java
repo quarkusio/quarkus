@@ -61,7 +61,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
@@ -122,10 +121,10 @@ class FlywayProcessor {
         Map<String, Collection<String>> applicationMigrationsToDs = new HashMap<>();
         for (var dataSourceName : dataSourceNames) {
             FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
-                    .getConfigForDataSourceName(dataSourceName);
+                    .datasources().get(dataSourceName);
 
             Collection<String> migrationLocations = discoverApplicationMigrations(
-                    flywayDataSourceBuildTimeConfig.locations);
+                    flywayDataSourceBuildTimeConfig.locations());
             applicationMigrationsToDs.put(dataSourceName, migrationLocations);
         }
         Set<String> datasourcesWithMigrations = new HashSet<>();
@@ -184,7 +183,6 @@ class FlywayProcessor {
 
     @BuildStep
     @Produce(SyntheticBeansRuntimeInitBuildItem.class)
-    @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(FlywayRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,

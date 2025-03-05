@@ -588,13 +588,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         return state;
     }
 
-    private boolean isNested(Class<?> testClass, Class<?> currentTestClass) {
-        if (testClass == null || currentTestClass.getEnclosingClass() == null) {
+    private boolean isNested(Class<?> outerClass, Class<?> innerClass) {
+        if (outerClass == null || innerClass == null || innerClass.getEnclosingClass() == null) {
             return false;
         }
 
-        Class<?> enclosingTestClass = currentTestClass.getEnclosingClass();
-        return Objects.equals(testClass, enclosingTestClass) || isNested(testClass, enclosingTestClass);
+        Class<?> enclosingTestClass = innerClass.getEnclosingClass();
+        return Objects.equals(outerClass, enclosingTestClass) || isNested(outerClass, enclosingTestClass);
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {
@@ -686,18 +686,28 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public <T> T interceptTestClassConstructor(Invocation<T> invocation,
             ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        if (isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
+        if (isNativeOrIntegrationTest(requiredTestClass)) {
             return invocation.proceed();
         }
+
+        // don't create outer test instances as they are created by the actual test to be run
+        boolean isOuterClassOfNestedTest = false;
+        if (currentTestClassStack.size() > 1
+                && currentTestClassStack.contains(requiredTestClass)
+                && !currentTestClassStack.peek().equals(requiredTestClass)) {
+            isOuterClassOfNestedTest = true;
+        }
+
         resetHangTimeout();
-        QuarkusTestExtensionState state = ensureStarted(extensionContext);
+        QuarkusTestExtensionState state = isOuterClassOfNestedTest ? getState(extensionContext)
+                : ensureStarted(extensionContext);
         if (failedBoot) {
             throwBootFailureException();
             return null;
         }
         T result;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
 
         try {
             Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());

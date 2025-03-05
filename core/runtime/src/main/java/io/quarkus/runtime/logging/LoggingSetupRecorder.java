@@ -1,9 +1,9 @@
 package io.quarkus.runtime.logging;
 
+import static io.smallrye.common.net.HostName.getQualifiedHostName;
+import static io.smallrye.common.os.Process.getProcessName;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.wildfly.common.net.HostName.getQualifiedHostName;
-import static org.wildfly.common.os.Process.getProcessName;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -261,7 +261,8 @@ public class LoggingSetupRecorder {
 
             namedHandlers.putAll(additionalNamedHandlersMap);
 
-            setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers);
+            setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers,
+                    true);
         }
 
         for (RuntimeValue<Optional<Handler>> additionalHandler : additionalHandlers) {
@@ -344,7 +345,7 @@ public class LoggingSetupRecorder {
                 emptyList(), emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
                 emptyMap(), launchMode, dummy, false);
 
-        setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers);
+        setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers, false);
 
         addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
@@ -482,7 +483,8 @@ public class LoggingSetupRecorder {
     private static void addNamedHandlersToCategory(
             CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
             Logger categoryLogger,
-            ErrorManager errorManager) {
+            ErrorManager errorManager,
+            boolean checkHandlerLinks) {
         for (String categoryNamedHandler : categoryConfig.handlers().get()) {
             Handler handler = namedHandlers.get(categoryNamedHandler);
             if (handler != null) {
@@ -493,7 +495,7 @@ public class LoggingSetupRecorder {
                         categoryLogger.removeHandler(handler);
                     }
                 });
-            } else {
+            } else if (checkHandlerLinks) {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
@@ -506,7 +508,8 @@ public class LoggingSetupRecorder {
             final Map<String, CategoryConfig> categories,
             final LogContext logContext,
             final ErrorManager errorManager,
-            final Map<String, Handler> namedHandlers) {
+            final Map<String, Handler> namedHandlers,
+            final boolean checkHandlerLinks) {
 
         for (Entry<String, CategoryConfig> entry : categories.entrySet()) {
             String categoryName = entry.getKey();
@@ -532,7 +535,7 @@ public class LoggingSetupRecorder {
             }
             categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers());
             if (categoryConfig.handlers().isPresent()) {
-                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager, checkHandlerLinks);
             }
         }
     }

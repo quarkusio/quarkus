@@ -17,19 +17,6 @@ public interface OidcSession {
     String getTenantId();
 
     /**
-     * Return an {@linkplain:Instant} indicating how long will it take for the current session to expire.
-     *
-     * @deprecated This method shouldn't be used as it provides an instant corresponding to 1970-01-01T0:0:0Z plus the duration
-     *             of the validity of the token, which is impractical. Please use either {@link #expiresAt()} or
-     *             {@link #validFor()} depending on your requirements. This method will be removed in a later version of
-     *             Quarkus.
-     *
-     * @return Instant
-     */
-    @Deprecated(forRemoval = true, since = "2.12.0")
-    Instant expiresIn();
-
-    /**
      * Return an {@linkplain Instant} representing the current session's expiration time.
      *
      * @return Instant

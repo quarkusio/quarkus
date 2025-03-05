@@ -23,7 +23,7 @@ public class SmallRyeFaultToleranceRecorder {
         Map<QuarkusFaultToleranceOperationProvider.CacheKey, FaultToleranceOperation> operationCache = new HashMap<>(
                 ftMethods.size());
         for (FaultToleranceMethod ftMethod : ftMethods) {
-            FaultToleranceOperation operation = FaultToleranceOperation.create(ftMethod);
+            FaultToleranceOperation operation = new FaultToleranceOperation(ftMethod);
             try {
                 operation.validate();
 

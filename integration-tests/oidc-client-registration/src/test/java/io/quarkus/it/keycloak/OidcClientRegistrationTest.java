@@ -40,7 +40,7 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client:Default Client Updated:alice", textPage.getContent());
         }
@@ -59,7 +59,7 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client-tenant:Tenant Client:alice", textPage.getContent());
         }
@@ -77,7 +77,7 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client-dynamically:Dynamic Client:alice", textPage.getContent());
         }
@@ -95,7 +95,7 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client-dynamic-tenant:Dynamic Tenant Client:alice", textPage.getContent());
         }
@@ -113,7 +113,7 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client-multi1:Multi1 Client:alice", textPage.getContent());
         }
@@ -131,9 +131,27 @@ public class OidcClientRegistrationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("registered-client-multi2:Multi2 Client:alice", textPage.getContent());
+        }
+    }
+
+    @Test
+    public void testRegisteredClientJwtBearerTokenFromFile() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/protected/jwt-bearer-token-file");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            TextPage textPage = loginForm.getButtonByName("login").click();
+
+            assertEquals("registered-client-jwt-bearer-token-file:signed-jwt-test:alice", textPage.getContent());
         }
     }
 

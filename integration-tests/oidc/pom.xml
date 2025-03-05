@@ -32,6 +32,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-client-common-synced</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
         </dependency>
@@ -40,7 +45,7 @@
             <artifactId>quarkus-test-security-oidc</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -132,6 +137,33 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <certificates>
+                        <certificate>
+                            <name>oidc</name> <!-- the name of the certificate -->
+                            <formats>  <!-- List of formats to generate, are supported PEM, JKS and PKCS12 -->
+                                <format>PEM</format>
+                                <format>PKCS12</format>
+                            </formats>
+                            <password>password</password> <!-- Password for the key store if supported -->
+                            <cn>backend-service</cn> <!-- Common Name -->
+                            <duration>2</duration> <!-- in days -->
+                            <client>true</client> <!-- Generate a client certificate -->
+                        </certificate>
+                    </certificates>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -150,7 +182,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
+                                <keycloak.version>${keycloak.server.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -159,7 +191,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
+                                <keycloak.version>${keycloak.server.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

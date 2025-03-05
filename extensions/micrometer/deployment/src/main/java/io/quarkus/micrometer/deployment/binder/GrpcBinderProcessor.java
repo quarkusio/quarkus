@@ -27,7 +27,7 @@ public class GrpcBinderProcessor {
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(CLIENT_INTERCEPTOR)
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.grpcClient);
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcClient());
         }
     }
 
@@ -36,7 +36,7 @@ public class GrpcBinderProcessor {
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(SERVER_INTERCEPTOR)
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.grpcServer);
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcServer());
         }
     }
 

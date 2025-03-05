@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-smallrye-jwt
 
 This guide explains how to integrate link:https://github.com/smallrye/smallrye-jwt/[SmallRye JWT] into your Quarkus application to implement link:https://tools.ietf.org/html/rfc7519[JSON Web Token (JWT)] security in compliance with the MicroProfile JWT specification.
-You’ll learn how to verify JWTs, represent them as MicroProfile JWT org.eclipse.microprofile.jwt.JsonWebToken, and secure Quarkus HTTP endpoints using bearer token authorization and link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
+You’ll learn how to verify JWTs, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`, and secure Quarkus HTTP endpoints using bearer token authorization and link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
 [NOTE]
 ====
@@ -144,9 +144,10 @@ public class TokenSecuredResource {
 <6> Retrieves the name of the `Principal`.
 <7> Builds a response containing the caller's name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
-=== Run the application
+[[run-application]]
+=== Run the application in dev mode
 
-Now you are ready to run our application. Use:
+Now, you are ready to run the application in dev mode by using one of the following commands:
 
 include::{includes}/devtools/dev.adoc[]
 
@@ -173,6 +174,12 @@ Now that the REST endpoint is running, you can access it by using a command line
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
+----
+
+This command returns the following response:
+
+[source,shell]
+----
 hello anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
@@ -254,9 +261,6 @@ public class TokenSecuredResource {
 <3> The `@RolesAllowed` annotation restricts access to users with either the "User" or "Admin" role.
 <4> The response is constructed similarly to the `hello` method, with the addition of the `birthdate` claim retrieved directly from the injected `JsonWebToken`.
 
-
-
-
 After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint.
 
 Your output should be as follows:
@@ -265,6 +269,12 @@ Your output should be as follows:
 [source,shell]
 ----
 $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
+----
+
+This command returns the following response:
+
+[source,shell]
+----
 *   Trying 127.0.0.1...
 * TCP_NODELAY set
 * Connected to 127.0.0.1 (127.0.0.1) port 8080 (#0)
@@ -283,10 +293,13 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 ----
 
 Excellent.
-You have not provided any JWT in the request, so you should not be able to access the endpoint, and you were not able to.
+You did not provide a JWT in the request, so access to the endpoint was correctly denied.
 Instead, you received an HTTP 401 Unauthorized error.
-You need to obtain and pass in a valid JWT to access that endpoint.
-There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
+
+To access the endpoint, you must obtain and include a valid JWT in your request. This involves two steps:
+
+. Configuring the {extension-name} extension with the necessary information to validate a JWT.
+. Generating a JWT with the appropriate claims to match the configuration.
 
 === Configuring the {extension-name} extension security information
 
@@ -346,31 +359,35 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import org.eclipse.microprofile.jwt.Claims;
-
 import io.smallrye.jwt.build.Jwt;
 
+/**
+ * A utility class to generate and print a JWT token string to stdout.
+ */
 public class GenerateToken {
+
     /**
-     * Generate JWT token
+     * Generates and prints a JWT token.
      */
     public static void main(String[] args) {
-        String token =
-           Jwt.issuer("https://example.com/issuer") // <1>
-             .upn("jdoe@quarkus.io") // <2>
-             .groups(new HashSet<>(Arrays.asList("User", "Admin"))) // <3>
-             .claim(Claims.birthdate.name(), "2001-07-13") // <4>
-           .sign();
+        String token = Jwt.issuer("https://example.com/issuer") // <1>
+                .upn("jdoe@quarkus.io") // <2>
+                .groups(new HashSet<>(Arrays.asList("User", "Admin"))) // <3>
+                .claim(Claims.birthdate.name(), "2001-07-13") // <4>
+                .sign();
+
         System.out.println(token);
+        System.exit(0);
     }
 }
 ----
 
-<1> The `iss` claim is the issuer of the JWT.
-This must match the server side `mp.jwt.verify.issuer` for the token to be accepted as valid.
-<2> The `upn` claim is defined by the {mp-jwt} spec as the preferred claim to use for the `Principal` seen by the container security APIs.
-<3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim.
-It can be considered a sensitive claim, so consider encrypting the claims, as described in xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
+<1> Sets the `iss` (issuer) claim in the JWT.
+    This value must match the server-side `mp.jwt.verify.issuer` configuration for the token to be considered valid.
+<2> Specifies the `upn` (User Principal Name) claim, which the {mp-jwt} specification defines as the preferred claim for identifying the `Principal` in container security APIs.
+<3> Defines the `groups` claim, which provides the group memberships and top-level roles assigned to the JWT bearer.
+<4> Adds a `birthdate` claim.
+    Because this can be considered sensitive information, consider encrypting claims as described in xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Note that for this code to work, you need the content of the RSA private key corresponding to the public key you have in the `TokenSecuredResource` application.
 Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
@@ -433,8 +450,9 @@ openssl pkcs8 -topk8 -nocrypt -inform pem -in rsaPrivateKey.pem -outform pem -ou
 You can use the generated key pair instead of those used in this quickstart.
 ====
 
-Now, you can generate a JWT to use with the `TokenSecuredResource` endpoint.
-To do this, run the following command:
+Ensure the <<run-application, application is running>> before generating the JSON Web Token (JWT) for the `TokenSecuredResource` endpoint.
+
+Next, use the following command to generate the JWT:
 
 .Command to generate JWT
 
@@ -442,27 +460,32 @@ To do this, run the following command:
 [source,shell]
 ----
 $ mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test -Dsmallrye.jwt.sign.key.location=privateKey.pem
-
-eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5Njc2LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1OTk3NiwiaWF0IjoxNTUxNjU5Njc2LCJqdGkiOiJhLTEyMyJ9.O9tx_wNNS4qdpFhxeD1e7v4aBNWz1FCq0UV8qmXd7dW9xM4hA5TO-ZREk3ApMrL7_rnX8z81qGPIo_R8IfHDyNaI1SLD56gVX-NaOLS2OjfcbO3zOWJPKR_BoZkYACtMoqlWgIwIRC-wJKUJU025dHZiNL0FWO4PjwuCz8hpZYXIuRscfFhXKrDX1fh3jDhTsOEFfu67ACd85f3BdX9pe-ayKSVLh_RSbTbBPeyoYPE59FW7H5-i8IE-Gqu838Hz0i38ksEJFI25eR-AJ6_PSUD0_-TV3NjXhF3bFIeT4VSaIZcpibekoJg0cQm-4ApPEcPLdgTejYHA-mupb8hSwg
 ----
 
-The JWT string is a Base64 URL encoded string with three parts separated by '.' characters.
-First part - JWT headers, second part - JWT claims, third part - JWT signature.
+The JWT string is a Base64 URL-encoded string consisting of three parts, separated by `.` characters:
+
+. The header, which contains metadata about the token, such as the signing algorithm.
+. The payload, also called "claims", which includes the token's claims or data.
+. The signature, which verifies the token's integrity.
 
 === Finally, secured access to `/secured/roles-allowed`
 
 Now, let's use this to make a secured request to the `/secured/roles-allowed` endpoint.
 Make sure you have the Quarkus server still running in dev mode, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
-[source,bash]
-----
-curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed; echo
-----
 
 .`curl` command for `/secured/roles-allowed` with JWT
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
+----
+
+Make sure to use the generated token as the HTTP Authorization Bearer scheme value.
+
+This command returns the following response:
+
+[source,shell]
+----
 hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
@@ -567,65 +590,64 @@ public class TokenSecuredResource {
 
 Now generate the token again and run:
 
-[source,bash]
-----
-curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-----
-
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
+----
+
+Make sure to use the generated token as the HTTP Authorization Bearer scheme value.
+
+This command returns the following response:
+
+[source,shell]
+----
 hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
-=== Package and run the application
+=== Run the application in JVM mode
 
-As usual, the application can be packaged by using:
+You can run the application as a standard Java application.
 
+. Compile the application:
++
+====
 include::{includes}/devtools/build.adoc[]
-
-And executed by using `java -jar target/quarkus-app/quarkus-run.jar`:
-
-.Runner jar example
-[source,shell,subs=attributes+]
+====
+. Run the application:
++
+====
+[source,bash]
 ----
-$ java -jar target/quarkus-app/quarkus-run.jar
-2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+====
 
-You can also generate the native executable with:
+=== Run the application in native mode
+
+You can compile this same demo into native mode without any modifications.
+This implies that you no longer need to install a JVM on your production environment.
+The runtime technology is included in the produced binary and optimized to run with minimal resources required.
+
+Compilation takes a bit longer, so this step is disabled by default.
+
+. Build your application again by enabling the `native` profile:
++
+====
 
 include::{includes}/devtools/build-native.adoc[]
-
-.Native executable example
-[source,shell]
+====
+. Run the following binary directly:
++
+====
+[source,bash]
 ----
-[INFO] Scanning for projects...
-...
-[security-jwt-quickstart-runner:25602]     universe:     493.17 ms
-[security-jwt-quickstart-runner:25602]      (parse):     660.41 ms
-[security-jwt-quickstart-runner:25602]     (inline):   1,431.10 ms
-[security-jwt-quickstart-runner:25602]    (compile):   7,301.78 ms
-[security-jwt-quickstart-runner:25602]      compile:  10,542.16 ms
-[security-jwt-quickstart-runner:25602]        image:   2,797.62 ms
-[security-jwt-quickstart-runner:25602]        write:     988.24 ms
-[security-jwt-quickstart-runner:25602]      [total]:  43,778.16 ms
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  51.500 s
-[INFO] Finished at: 2019-03-28T14:30:56-07:00
-[INFO] ------------------------------------------------------------------------
-
-$ ./target/security-jwt-quickstart-runner
-2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+./target/security-jwt-quickstart-1.0.0-SNAPSHOT-runner
 ----
+====
 
 === Explore the solution
 
-The `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory] repository contains all the versions covered in this quickstart guide, along with additional endpoints that demonstrate subresources using injected `JsonWebToken`s and their claims via CDI APIs.
+The `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory] repository contains all the versions covered in this quickstart guide, along with additional endpoints that demonstrate subresources using injected `JsonWebToken` tokens and their claims via CDI APIs.
 
 We encourage you to explore the `security-jwt-quickstart` directory and review the quickstart solutions to learn more about the features of the {extension-name} extension.
 
@@ -1093,7 +1115,7 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 |`smallrye.jwt.token.kid`|none|Key identifier. The verification JWK key and every JWT token must have a matching `kid` header if it is set.
 |`smallrye.jwt.time-to-live`|none|The maximum number of seconds a JWT can be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value. Setting this property to a non-positive value relaxes the requirement for the token to have a valid 'iat' (issued at) claim.
 |`smallrye.jwt.require.named-principal`|`true`|If an application relies on `java.security.Principal` returning a name, then a token must have a `upn` or `preferred_username` or `sub` claim set. Setting this property results in SmallRye JWT throwing an exception if none of these claims is available for the application code to deal with a non-null `Principal` name reliably.
-|`smallrye.jwt.path.sub`|none|Path to the claim containing the subject name. It starts from the top-level JSON object and can contain multiple segments where each segment only represents a JSON object name, for example, ' realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace-qualified claims.
+|`smallrye.jwt.path.sub`|none|Path to the claim containing the subject name. It starts from the top-level JSON object and can contain multiple segments where each segment only represents a JSON object name, for example, `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace-qualified claims.
 |`smallrye.jwt.claims.sub`|none| This property can set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively, this property can be used to customize the `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
 |`smallrye.jwt.path.groups`|none|Path to the claim containing the groups. It starts from the top-level JSON object and can contain multiple segments where each segment represents a JSON object name only, for example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim. Use double quotes with the namespace-qualified claims.
 |`smallrye.jwt.groups-separator`|space|Separator for splitting a string which might contain multiple group values. It is only used if the `smallrye.jwt.path.groups` property points to a custom claim with a string value. The default value is a single space because a standard OAuth2 `scope` claim might contain a space-separated sequence.
@@ -1112,7 +1134,7 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 |`smallrye.jwt.client.tls.hosts`|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.client.tls.trust-all` is set to `false` then this property can be used to configure the trusted hostnames.
 |`smallrye.jwt.http.proxy.host`|none|HTTP proxy host.
 |`smallrye.jwt.http.proxy.port`|80|HTTP proxy port.
-|`smallrye.jwt.keystore.type`|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set, the file name is checked to determine the keystore type before defaulting to `JKS`.
+|`smallrye.jwt.keystore.type`|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set, the file name is checked to determine the keystore type before defaulting to `JKS`.
 |`smallrye.jwt.keystore.provider`||This property can be used to customize a `KeyStore` provider if `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
 |`smallrye.jwt.keystore.password`||Keystore password. If `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location`, this property must be set.
 |`smallrye.jwt.keystore.verify.key.alias`||This property has to be set to identify a public verification key which is extracted from `KeyStore` from a matching certificate if `mp.jwt.verify.publickey.location` points to a `KeyStore` file.

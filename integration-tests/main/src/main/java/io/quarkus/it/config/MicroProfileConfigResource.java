@@ -6,7 +6,8 @@ import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.wildfly.common.net.CidrAddress;
+
+import io.smallrye.common.net.CidrAddress;
 
 /**
  * Test some MicroProfile config primitives.

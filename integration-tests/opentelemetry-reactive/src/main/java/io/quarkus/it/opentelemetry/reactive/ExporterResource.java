@@ -16,8 +16,8 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestQuery;
 
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.internal.data.ExceptionEventData;
 
 @Path("")
 public class ExporterResource {

@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class AmqpDevServicesBuildTimeConfig {
+public interface AmqpDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for AMQP has been explicitly enabled or disabled. Dev Services are generally enabled
@@ -16,16 +16,14 @@ public class AmqpDevServicesBuildTimeConfig {
      * {@code amqp-host} or {@code amqp-port} are set or if all the Reactive Messaging AMQP channel are configured with
      * {@code host} or {@code port}.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled = Optional.empty();
+    Optional<Boolean> enabled();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public Optional<Integer> port;
+    Optional<Integer> port();
 
     /**
      * The image to use.
@@ -36,16 +34,16 @@ public class AmqpDevServicesBuildTimeConfig {
      * page</a>
      * to find the available versions.
      */
-    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.25")
-    public String imageName;
+    @WithDefault("quay.io/artemiscloud/activemq-artemis-broker:1.0.25")
+    String imageName();
 
     /**
      * The value of the {@code AMQ_EXTRA_ARGS} environment variable to pass to the container.
      * For ActiveMQ Artemis Broker <= 1.0.21, set this property to
      * {@code --no-autotune --mapped --no-fsync --relax-jolokia --http-host 0.0.0.0}
      */
-    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync --relax-jolokia")
-    public String extraArgs;
+    @WithDefault("--no-autotune --mapped --no-fsync --relax-jolokia")
+    String extraArgs();
 
     /**
      * Indicates if the AMQP broker managed by Quarkus Dev Services is shared.
@@ -58,8 +56,8 @@ public class AmqpDevServicesBuildTimeConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-aqmp} label attached to the started container.
@@ -71,14 +69,13 @@ public class AmqpDevServicesBuildTimeConfig {
      * <p>
      * This property is used when you need multiple shared AMQP brokers.
      */
-    @ConfigItem(defaultValue = "amqp")
-    public String serviceName;
+    @WithDefault("amqp")
+    String serviceName();
 
     /**
      * Environment variables that are passed to the container.
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> containerEnv;
+    Map<String, String> containerEnv();
 
 }

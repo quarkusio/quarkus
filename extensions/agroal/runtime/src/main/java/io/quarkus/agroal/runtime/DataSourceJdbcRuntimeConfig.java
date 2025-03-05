@@ -21,8 +21,7 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * The datasource URL
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<String> url();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> url();
 
     /**
      * The initial size of the pool. Usually you will want to set the initial size to match at least the

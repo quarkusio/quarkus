@@ -85,7 +85,7 @@ public class InfoProcessor {
             Map<String, Object> commit = new LinkedHashMap<>();
             String latestCommitId = latestCommit.getName();
             commit.put("id", latestCommitId);
-            String latestCommitTime = formatDate(Instant.ofEpochMilli(latestCommit.getCommitTime()), ZoneId.systemDefault());
+            String latestCommitTime = formatDate(Instant.ofEpochSecond(latestCommit.getCommitTime()), ZoneId.systemDefault());
             commit.put("time", latestCommitTime);
 
             if (addFullInfo) {
@@ -112,7 +112,8 @@ public class InfoProcessor {
 
                 commit.put("id", id);
 
-                data.put("remote", git.getRepository().getConfig().getString("remote", "origin", "url"));
+                data.put("remote",
+                        GitUtil.sanitizeRemoteUrl(git.getRepository().getConfig().getString("remote", "origin", "url")));
                 data.put("tags", getTags(git, latestCommit));
             }
 
@@ -298,6 +299,7 @@ public class InfoProcessor {
         return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
                 .withRoutePathConfigKey("quarkus.info.path")
                 .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
+                .displayOnNotFoundPage("Info")
                 .build();
     }
 }

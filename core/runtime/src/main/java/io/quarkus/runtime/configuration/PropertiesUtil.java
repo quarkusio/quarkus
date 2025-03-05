@@ -2,9 +2,17 @@ package io.quarkus.runtime.configuration;
 
 import java.util.Set;
 
+import io.smallrye.config.PropertyName;
+
 public class PropertiesUtil {
     private PropertiesUtil() {
         throw new IllegalStateException("Utility class");
+    }
+
+    public static boolean isMapped(final NameIterator name, final String mapped) {
+        int offset = name.getPosition() == -1 ? 0 : name.getPosition() + 1;
+        int len = name.getNextEnd() == 0 ? name.getName().length() : name.getNextEnd() - offset;
+        return PropertyName.equals(name.getName(), offset, len, mapped, 0, mapped.length());
     }
 
     public static boolean isPropertyInRoots(final String property, final Set<String> roots) {

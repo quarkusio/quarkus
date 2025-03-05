@@ -80,6 +80,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR_MONTH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -88,6 +89,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -156,7 +158,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             RESOURCE_INFO);
 
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
-            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR);
+            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR, YEAR_MONTH);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
@@ -239,7 +241,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private final List<Predicate<ClassInfo>> validateEndpoint;
     private final boolean skipNotRestParameters;
+    protected final Set<DotName> alreadyHandledRequestScopedResources;
 
     private SerializerScanningResult serializerScanningResult;
 
@@ -267,6 +271,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
         this.skipNotRestParameters = builder.skipNotRestParameters;
+        this.validateEndpoint = builder.defaultPredicate;
+        this.alreadyHandledRequestScopedResources = builder.alreadyHandledRequestScopedResources;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -315,6 +321,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             if (injectableBean.isInjectionRequired()) {
+                if (path != null) { // we don't want to verify subresources
+                    verifyClassThatRequiresFieldInjection(classInfo);
+                }
                 clazz.setPerRequestResource(true);
             }
 
@@ -324,14 +333,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
-            if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
-                //kinda bogus, but we just ignore failed interfaces for now
-                //they can have methods that are not valid until they are actually extended by a concrete type
-                log.debug("Ignoring interface " + classInfo.name(), e);
-                return Optional.empty();
+            if (e instanceof DeploymentException) {
+                throw (DeploymentException) e;
             }
-            throw new RuntimeException(e);
+            for (Predicate<ClassInfo> predicate : validateEndpoint) {
+                if (predicate.test(classInfo)) {
+                    //kinda bogus, but we just ignore failed interfaces for now
+                    //they can have methods that are not valid until they are actually extended by a concrete type
+                    log.debug("Ignoring interface " + classInfo.name(), e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
+            return Optional.empty();
         }
+
+    }
+
+    protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {
+
     }
 
     private String sanitizePath(String path) {
@@ -577,12 +597,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Set<String> fileFormNames = new HashSet<>();
             Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
+            String errorLocation = "method %s on class %s";
+            Object[] errorLocationParameters = new Object[] { currentMethodInfo, currentMethodInfo.declaringClass() };
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 PARAM parameterResult = null;
                 boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameterType(i);
-                String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
                 if (skipParameter(anns) || skipNotRestParameters(skipNotRestParameters).apply(anns)) {
                     parameterResult = createIndexedParam()
@@ -592,7 +613,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             .setAdditionalReaders(additionalReaders)
                             .setAnns(anns)
                             .setParamType(paramType)
-                            .setErrorLocation(errorLocation)
+                            .setErrorLocation(errorLocation, errorLocationParameters)
                             .setField(false)
                             .setHasRuntimeConverters(hasRuntimeConverters)
                             .setPathParameters(pathParameters)
@@ -601,7 +622,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else {
                     parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
                             existingConverters, additionalReaders,
-                            anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
+                            anns, paramType, errorLocation, errorLocationParameters, false, hasRuntimeConverters,
+                            pathParameters,
                             currentMethodInfo.parameterName(i),
                             consumes,
                             methodContext);
@@ -614,9 +636,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
                     if (bodyParamType != null)
-                        throw new RuntimeException(
-                                "Resource method " + currentMethodInfo + " can only have a single body parameter: "
-                                        + currentMethodInfo.parameterName(i));
+                        throw new RuntimeException(String.format(
+                                "Resource method '%s#%s' can only have a single body parameter: '%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo,
+                                currentMethodInfo.parameterName(i)));
                     bodyParamType = paramType;
                     if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
                         warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
@@ -644,9 +667,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (bodyParamType != null
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
-                    throw new RuntimeException(
-                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    throw new RuntimeException(String.format(
+                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is "
+                                    + "'%s#%s'",
+                            currentMethodInfo.declaringClass().name(), currentMethodInfo));
                 }
                 boolean validConsumes = false;
                 if (consumes != null && consumes.length > 0) {
@@ -659,9 +683,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     }
                     // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
                     if (!validConsumes) {
-                        throw new RuntimeException(
-                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is '"
-                                        + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        throw new RuntimeException(String.format(
+                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is "
+                                        + "'%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
                 }
             }
@@ -671,9 +696,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     : currentMethodInfo.returnType();
             if (REST_RESPONSE.equals(methodContextReturnTypeOrReturnType.name())
                     && (methodContextReturnTypeOrReturnType.kind() == Kind.CLASS)) {
-                log.warn("Method '" + currentMethodInfo.name() + " of Resource class '"
-                        + currentMethodInfo.declaringClass().name()
-                        + "' returns RestResponse but does not declare a generic type. It is strongly advised to define the generic type otherwise the behavior could be unpredictable");
+                log.warnf("Method '%s' of Resource class '%s' returns RestResponse but does not declare a generic type. "
+                        + "It is strongly advised to define the generic type otherwise the behavior could be unpredictable",
+                        currentMethodInfo, currentMethodInfo.declaringClass().name());
             }
             Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
@@ -707,10 +732,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (RESPONSE.equals(nonAsyncReturnType.name())) {
                         throw new DeploymentException(
                                 String.format(
-                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s#%s'",
                                         RESPONSE,
                                         REST_RESPONSE,
-                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                                        currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
 
                     // Handle multipart form data responses
@@ -721,7 +746,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
-            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, defaultBlocking);
+            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
@@ -732,15 +757,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //would be reached for a default
                     blocking = isBlocking(actualMethodInfo,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
-                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo,
+                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo, blocking,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
             }
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
-                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        String.format(
+                                "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
             }
 
             methodContext.put(METHOD_PRODUCES, produces);
@@ -780,14 +806,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             return method;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo.name() + "'", e);
+            throw new RuntimeException(String.format("Failed to process method '%s#%s'",
+                    currentMethodInfo.declaringClass().name(), currentMethodInfo), e);
         }
     }
 
     protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
-        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
-                + methodInfo.declaringClass().name() + "#" + methodInfo + "'");
+        log.warnf("Using a body parameter with %s is strongly discouraged. Offending method is "
+                + "'%s#%s'", httpMethod, methodInfo.declaringClass().name(), methodInfo);
     }
 
     private Function<Map<DotName, AnnotationInstance>, Boolean> skipNotRestParameters(boolean skipAllNotMethodParameter) {
@@ -834,8 +860,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return value;
     }
 
-    private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
-        boolean isRunOnVirtualThread = false;
+    private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
 
@@ -849,28 +874,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
                         + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
             }
-            isRunOnVirtualThread = true;
-        }
-
-        //BlockingDefault.BLOCKING should mean "block a platform thread" ? here it does
-        if (defaultValue == BlockingDefault.BLOCKING) {
-            return false;
+            if (!blocking) {
+                throw new DeploymentException(
+                        "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                                " methods considered blocking");
+            } else {
+                return true;
+            }
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            isRunOnVirtualThread = true;
-        } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
+            return true;
+        } else {
             return false;
         }
-
-        if (isRunOnVirtualThread && !isBlocking(info, defaultValue)) {
-            throw new DeploymentException(
-                    "Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                            + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
-                            " methods considered blocking");
-        } else if (isRunOnVirtualThread) {
-            return true;
-        }
-
-        return false;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
@@ -1200,8 +1216,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             MethodInfo currentMethodInfo, Map<String, String> existingConverters, AdditionalReaders additionalReaders,
-            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
+            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, Object[] errorLocationParameters,
+            boolean field, boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
             String[] declaredConsumes,
             Map<String, Object> methodContext) {
         PARAM builder = createIndexedParam()
@@ -1211,7 +1227,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setAdditionalReaders(additionalReaders)
                 .setAnns(anns)
                 .setParamType(paramType)
-                .setErrorLocation(errorLocation)
+                .setErrorLocation(errorLocation, errorLocationParameters)
                 .setField(field)
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
@@ -1330,8 +1346,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
-                builder.setErrorLocation(builder.getErrorLocation()
-                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
+                builder.setErrorLocation(builder.getRawErrorLocation()
+                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)",
+                        builder.getErrorLocationParameters());
                 convertible = true;
             } else if (!field && paramType.name().equals(MULTI_PART_DATA_INPUT)) {
                 builder.setType(ParameterType.MULTI_PART_DATA_INPUT);
@@ -1694,6 +1711,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
         private Collection<AnnotationTransformation> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
+        private Set<DotName> alreadyHandledRequestScopedResources = new HashSet<>();
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
         private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
@@ -1708,6 +1726,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
+        private List<Predicate<ClassInfo>> defaultPredicate = Arrays.asList(new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return Modifier.isInterface(classInfo.flags())
+                        || Modifier.isAbstract(classInfo.flags());
+            }
+        });
 
         private boolean skipNotRestParameters = false;
 
@@ -1844,8 +1869,21 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
+        public B setValidateEndpoint(List<Predicate<ClassInfo>> validateEndpoint) {
+            List<Predicate<ClassInfo>> predicates = new ArrayList<>(validateEndpoint.size() + 1);
+            predicates.addAll(validateEndpoint);
+            predicates.addAll(this.defaultPredicate);
+            this.defaultPredicate = predicates;
+            return (B) this;
+        }
+
         public B skipNotRestParameters(boolean skipNotRestParameters) {
             this.skipNotRestParameters = skipNotRestParameters;
+            return (B) this;
+        }
+
+        public B alreadyHandledRequestScopedResources(Set<DotName> alreadyHandledRequestScopedResources) {
+            this.alreadyHandledRequestScopedResources = alreadyHandledRequestScopedResources;
             return (B) this;
         }
 

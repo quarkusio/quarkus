@@ -2956,9 +2956,7 @@ NOTE: If you use Hibernate Reactive, look at <<writing-entities-managed-by-hiber
 
 Because we write to a database, we must run this method in a transaction.
 Yet, sending the entity to Kafka happens asynchronously.
-The operation returns a `CompletionStage` (or a `Uni` if you use a `MutinyEmitter`) reporting when the operation completes.
-We must be sure that the transaction is still running until the object is written.
-Otherwise, you may access the object outside the transaction, which is not allowed.
+We can achieve this by using `.sendAndAwait()` or `.sendAndForget()` on the `MutinyEmitter`, or `.send().toCompletableFuture().join()` on the `Emitter`.
 
 To implement this process, you need the following approach:
 
@@ -2973,26 +2971,29 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Path("/")
 public class ResourceSendingToKafka {
 
-    @Channel("kafka") Emitter<Fruit> emitter;
+    @Channel("kafka") MutinyEmitter<Fruit> emitter;
 
     @POST
     @Path("/fruits")
-    @Transactional                                                      // <1>
-    public CompletionStage<Void> storeAndSendToKafka(Fruit fruit) {     // <2>
+    @Transactional                                               // <1>
+    public void storeAndSendToKafka(Fruit fruit) {               // <2>
         fruit.persist();
-        return emitter.send(new FruitDto(fruit));                       // <3>
+        emitter.sendAndAwait(new FruitDto(fruit));               // <3>
     }
 }
 ----
 <1> As we are writing to the database, make sure we run inside a transaction
-<2> The method receives the fruit instance to persist. It returns a `CompletionStage` which is used for the transaction demarcation. The transaction is committed when the return `CompletionStage` completes. In our case, it's when the message is written to Kafka.
+<2> The method receives the fruit instance to persist.
 <3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
 This makes sure that managed entity is not impacted by the Kafka serialization.
+Then await the completion of the operation before returning.
+
+NOTE: You should not return a `CompletionStage` or `Uni` when using `@Transactional`, as all transaction commits will happen on a single thread, which impacts performance.
 
 [[writing-entities-managed-by-hibernate-reactive-to-kafka]]
 === Writing entities managed by Hibernate Reactive to Kafka
@@ -3191,23 +3192,104 @@ public class FruitProducer {
     @Consumes(MediaType.APPLICATION_JSON)
     @Bulkhead(1)
     public Uni<Void> post(Fruit fruit) {
-        Context context = Vertx.currentContext(); // <2>
-        return sf.withTransaction(session -> // <3>
-                kafkaTx.withTransaction(emitter -> // <4>
-                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <5>
-                ).emitOn(context::runOnContext) // <6>
-        );
+        return sf.withTransaction(session -> // <2>
+                kafkaTx.withTransaction(emitter -> // <3>
+                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <4>
+                ));
     }
 }
 ----
 
 <1> Inject the Hibernate Reactive `SessionFactory`.
-<2> Capture the caller Vert.x context.
-<3> Begin a Hibernate Reactive transaction.
-<4> Begin a Kafka transaction.
-<5> Persist the payload and send the entity to Kafka.
-<6> The Kafka transaction terminates on the Kafka producer sender thread.
-We need to switch to the Vert.x context previously captured in order to terminate the Hibernate Reactive transaction on the same context we started it.
+<2> Begin a Hibernate Reactive transaction.
+<3> Begin a Kafka transaction.
+<4> Persist the payload and send the entity to Kafka.
+
+Alternatively, you can use the `@WithTransaction` annotation to start a transaction and commit it when the method returns:
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx;
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    @WithTransaction // <1>
+    public Uni<Void> post(Fruit fruit) {
+        return kafkaTx.withTransaction(emitter -> // <2>
+            fruit.persist().invoke(() -> emitter.send(fruit)) // <3>
+        );
+    }
+}
+----
+
+<1> Start a Hibernate Reactive transaction and commit it when the method returns.
+<2> Begin a Kafka transaction.
+<3> Persist the payload and send the entity to Kafka.
+
+[[chaining-kafka-transactions-with-hibernate-orm-transactions]]
+=== Chaining Kafka Transactions with Hibernate ORM transactions
+
+While `KafkaTransactions` provide a reactive API on top of Mutiny to manage Kafka transactions,
+you can still chain Kafka transactions with blocking Hibernate ORM transactions.
+
+[source, java]
+----
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.logging.Log;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Pet> emitter;
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    @Transactional // <1>
+    public void post(Fruit fruit) {
+        emitter.withTransaction(e -> { // <2>
+            // if id is attributed by the database, will need to flush to get it
+            // fruit.persistAndFlush();
+            fruit.persist(); // <3>
+            Log.infov("Persisted fruit {0}", p);
+            e.send(p); // <4>
+            return Uni.createFrom().voidItem();
+        }).await().indefinitely(); // <5>
+    }
+}
+----
+
+<1> Start a Hibernate ORM transaction. The transaction is committed when the method returns.
+<2> Begin a Kafka transaction.
+<3> Persist the payload.
+<4> Send the entity to Kafka inside the Kafka transaction.
+<5> Wait on the returned `Uni` for the Kafka transaction to complete.
 
 == Logging
 

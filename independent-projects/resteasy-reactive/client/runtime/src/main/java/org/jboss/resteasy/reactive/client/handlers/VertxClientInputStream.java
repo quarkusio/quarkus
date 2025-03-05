@@ -6,7 +6,6 @@ import java.io.InterruptedIOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 
 import io.netty.buffer.ByteBuf;
@@ -18,25 +17,14 @@ import io.vertx.core.http.HttpHeaders;
 
 class VertxClientInputStream extends InputStream {
 
-    public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
     private final VertxBlockingInput exchange;
 
     private boolean closed;
     private boolean finished;
     private ByteBuf pooled;
-    private final RestClientRequestContext vertxResteasyReactiveRequestContext;
 
-    public VertxClientInputStream(HttpClientResponse response, long timeout,
-            RestClientRequestContext vertxResteasyReactiveRequestContext) {
-        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
+    public VertxClientInputStream(HttpClientResponse response, long timeout) {
         this.exchange = new VertxBlockingInput(response, timeout);
-    }
-
-    public VertxClientInputStream(HttpClientResponse request, long timeout, ByteBuf existing,
-            RestClientRequestContext vertxResteasyReactiveRequestContext) {
-        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
-        this.exchange = new VertxBlockingInput(request, timeout);
-        this.pooled = existing;
     }
 
     @Override

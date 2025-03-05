@@ -43,7 +43,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_MADD)
@@ -60,7 +60,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_MEXISTS)
@@ -91,7 +91,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(args, "args");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_INSERT)

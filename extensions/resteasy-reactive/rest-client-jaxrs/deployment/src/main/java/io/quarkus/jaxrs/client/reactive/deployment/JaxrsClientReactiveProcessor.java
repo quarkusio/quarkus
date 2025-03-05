@@ -17,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
@@ -50,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -177,6 +179,7 @@ import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDot
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
+import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -289,7 +292,8 @@ public class JaxrsClientReactiveProcessor {
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
             List<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlashProduces,
-            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+            List<ParameterContainersBuildItem> parameterContainersBuildItems,
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
 
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
@@ -343,6 +347,8 @@ public class JaxrsClientReactiveProcessor {
                         return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
                     }
                 })
+                .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
+                        .collect(Collectors.toUnmodifiableList()))
                 .setResourceMethodCallback(new Consumer<>() {
                     @Override
                     public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {
@@ -955,8 +961,7 @@ public class JaxrsClientReactiveProcessor {
                                     classContext.constructor.getThis(),
                                     baseTarget));
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
-                                .replaceAll("/");
+                        String templatePath = templatePath(restClientInterface, method);
                         classContext.constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),
@@ -1012,11 +1017,25 @@ public class JaxrsClientReactiveProcessor {
                                     + jandexMethod.name());
                         }
 
-                        ResultHandle newInputTarget = methodParamNotNull.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
-                                        java.net.URI.class),
-                                methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
-                                newUri);
+                        ResultHandle newInputTarget;
+                        if (observabilityIntegrationNeeded) {
+                            // we need to apply the ClientObservabilityHandler to the inputTarget field without altering it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class, ClientRestHandler.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri,
+                                    methodParamNotNull.newInstance(
+                                            MethodDescriptor.ofConstructor(ClientObservabilityHandler.class, String.class),
+                                            methodParamNotNull.load(templatePath(restClientInterface, method))));
+                        } else {
+                            // just read the inputTarget field and call withNewUri on it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri);
+                        }
                         ResultHandle newBaseTarget = methodParamNotNull.invokeVirtualMethod(
                                 baseTargetProducer.getMethodDescriptor(),
                                 methodParamNotNull.getThis(), newInputTarget);
@@ -1245,6 +1264,11 @@ public class JaxrsClientReactiveProcessor {
 
         return recorderContext.newInstance(creatorName);
 
+    }
+
+    private String templatePath(RestClientInterface restClientInterface, ResourceMethod method) {
+        return MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                .replaceAll("/");
     }
 
     /**
@@ -2823,8 +2847,59 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramArray;
             String componentType = null;
             if (type.kind() == Type.Kind.ARRAY) {
-                componentType = type.asArrayType().constituent().name().toString();
-                paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
+                Type constituentType = type.asArrayType().constituent();
+                if (constituentType.kind() == PRIMITIVE) {
+                    PrimitiveType primitiveType = constituentType.asPrimitiveType();
+                    if (primitiveType == PrimitiveType.BYTE) {
+                        componentType = DotNames.BYTE.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Byte[].class, byte[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.CHAR) {
+                        componentType = DotNames.CHARACTER.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Character[].class,
+                                        char[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.DOUBLE) {
+                        componentType = DotNames.DOUBLE.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Double[].class,
+                                        double[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.FLOAT) {
+                        componentType = DotNames.FLOAT.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Float[].class, float[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.INT) {
+                        componentType = DotNames.INTEGER.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Integer[].class, int[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.LONG) {
+                        componentType = DotNames.LONG.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Long[].class, long[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.SHORT) {
+                        componentType = DotNames.SHORT.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Short[].class, short[].class),
+                                queryParamHandle);
+                    } else if (primitiveType == PrimitiveType.BOOLEAN) {
+                        componentType = DotNames.BOOLEAN.toString();
+                        paramArray = notNullParam.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Boolean[].class,
+                                        boolean[].class),
+                                queryParamHandle);
+                    } else {
+                        throw new IllegalArgumentException("not supported yet");
+                    }
+                } else {
+                    componentType = constituentType.name().toString();
+                    paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
+                }
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
@@ -2837,6 +2912,19 @@ public class JaxrsClientReactiveProcessor {
                 }
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                        queryParamHandle);
+            } else if (isOptional(type, index)) {
+                if (type.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = type.asParameterizedType().arguments().get(0);
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                        componentType = paramType.name().toString();
+                    }
+                }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                paramArray = notNullParam.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "optional", Object[].class, Optional.class),
                         queryParamHandle);
             } else {
                 componentType = type.name().toString();
@@ -2905,6 +2993,10 @@ public class JaxrsClientReactiveProcessor {
 
     private boolean isMap(Type type, IndexView index) {
         return isAssignableFrom(MAP, type.name(), index);
+    }
+
+    private boolean isOptional(Type type, IndexView index) {
+        return isAssignableFrom(OPTIONAL, type.name(), index);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

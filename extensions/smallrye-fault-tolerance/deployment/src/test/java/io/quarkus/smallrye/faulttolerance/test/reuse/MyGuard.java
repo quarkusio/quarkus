@@ -12,10 +12,11 @@ import io.smallrye.faulttolerance.api.Guard;
 public class MyGuard {
     static final int THRESHOLD = 5;
     static final int DELAY = 500;
+    static final String NAME = "hello";
 
     @Produces
     @Identifier("my-guard")
     public static final Guard GUARD = Guard.create()
-            .withCircuitBreaker().requestVolumeThreshold(THRESHOLD).delay(DELAY, ChronoUnit.MILLIS).name("hello").done()
+            .withCircuitBreaker().requestVolumeThreshold(THRESHOLD).delay(DELAY, ChronoUnit.MILLIS).name(NAME).done()
             .build();
 }

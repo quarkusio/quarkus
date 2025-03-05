@@ -31,7 +31,7 @@ public class ContentTypes {
         int dotIdx = fileName.lastIndexOf('.');
         if (dotIdx != -1) {
             String suffix = fileName.substring(dotIdx + 1, fileName.length());
-            String additionalContentType = config.contentTypes.get(suffix);
+            String additionalContentType = config.contentTypes().get(suffix);
             if (additionalContentType != null) {
                 return additionalContentType;
             }

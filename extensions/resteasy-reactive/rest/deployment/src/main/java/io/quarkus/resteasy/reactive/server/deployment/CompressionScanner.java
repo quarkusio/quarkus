@@ -17,24 +17,24 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveCompressionHandler;
 import io.quarkus.vertx.http.Compressed;
 import io.quarkus.vertx.http.Uncompressed;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 
 public class CompressionScanner implements MethodScanner {
 
     static final DotName COMPRESSED = DotName.createSimple(Compressed.class.getName());
     static final DotName UNCOMPRESSED = DotName.createSimple(Uncompressed.class.getName());
 
-    private final HttpBuildTimeConfig httpBuildTimeConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public CompressionScanner(HttpBuildTimeConfig httpBuildTimeConfig) {
+    public CompressionScanner(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
-        if (!httpBuildTimeConfig.enableCompression) {
+        if (!httpBuildTimeConfig.enableCompression()) {
             return Collections.emptyList();
         }
 
@@ -58,7 +58,7 @@ public class CompressionScanner implements MethodScanner {
             return Collections.emptyList();
         }
         ResteasyReactiveCompressionHandler handler = new ResteasyReactiveCompressionHandler(
-                Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(Collections.emptyList())));
+                Set.copyOf(httpBuildTimeConfig.compressMediaTypes().orElse(Collections.emptyList())));
         handler.setCompression(compression);
         String[] produces = (String[]) methodContext.get(EndpointIndexer.METHOD_PRODUCES);
         if ((produces != null) && (produces.length > 0)) {

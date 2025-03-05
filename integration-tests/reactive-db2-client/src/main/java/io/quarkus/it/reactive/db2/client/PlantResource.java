@@ -10,18 +10,18 @@ import jakarta.ws.rs.Path;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.db2client.DB2Pool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 
 @Path("/plants")
 public class PlantResource {
 
     @Inject
-    DB2Pool client;
+    Pool client;
 
     @Inject
     @ReactiveDataSource("additional")
-    DB2Pool additionalClient;
+    Pool additionalClient;
 
     @PostConstruct
     void setupDb() {

@@ -4,12 +4,14 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
+import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -52,7 +54,13 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
     private static final class VertxCurrentContext<T extends ContextState> implements CurrentContext<T> {
 
         private final String key;
-        private final FastThreadLocal<T> fallback = new FastThreadLocal<>();
+        private final LazyValue<FastThreadLocal<T>> fallback = new LazyValue<>(
+                new Supplier<>() {
+                    @Override
+                    public FastThreadLocal<T> get() {
+                        return new FastThreadLocal<>();
+                    }
+                });
 
         private VertxCurrentContext(String key) {
             this.key = key;
@@ -64,7 +72,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
             if (context != null && VertxContext.isDuplicatedContext(context)) {
                 return context.getLocal(key);
             }
-            return fallback.get();
+            return fallback.get().get();
         }
 
         @Override
@@ -80,7 +88,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
                 }
 
             } else {
-                fallback.set(state);
+                fallback.get().set(state);
             }
         }
 
@@ -91,7 +99,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
                 // NOOP - the DC should not be shared.
                 // context.removeLocal(key);
             } else {
-                fallback.remove();
+                fallback.get().remove();
             }
         }
 

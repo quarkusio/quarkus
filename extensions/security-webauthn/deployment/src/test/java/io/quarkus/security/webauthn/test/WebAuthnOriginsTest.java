@@ -9,7 +9,6 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.vertx.core.json.JsonObject;
 
 public class WebAuthnOriginsTest {
 
@@ -24,10 +23,9 @@ public class WebAuthnOriginsTest {
     public void testLoginRpFromFirstOrigin() {
         RestAssured
                 .given()
-                .body(new JsonObject()
-                        .put("name", "foo").encode())
-                .contentType(ContentType.JSON)
-                .post("/q/webauthn/register-options-challenge")
+                .contentType(ContentType.URLENC)
+                .queryParam("username", "foo")
+                .get("/q/webauthn/register-options-challenge")
                 .then()
                 .log().all()
                 .statusCode(200)

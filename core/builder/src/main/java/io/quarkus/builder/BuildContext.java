@@ -1,6 +1,6 @@
 package io.quarkus.builder;
 
-import static io.quarkus.builder.Execution.*;
+import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -12,13 +12,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The context passed to a deployer's operation.

@@ -22,7 +22,9 @@ public class KeycloakXTestResourceLifecycleManager
     private static final String KEYCLOAK_REALM = "quarkus";
     private static final String KEYCLOAK_SERVICE_CLIENT = "quarkus-app";
 
-    final KeycloakTestClient client = new KeycloakTestClient(new Tls());
+    final KeycloakTestClient client = new KeycloakTestClient(
+            new Tls("target/certificates/oidc-client-keystore.p12",
+                    "target/certificates/oidc-client-truststore.p12"));
 
     @Override
     public Map<String, String> start() {

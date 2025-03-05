@@ -23,9 +23,9 @@ public class WebAuthnVirtualThreadTestUserProvider extends WebAuthnTestUserProvi
     }
 
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String username) {
         assertVirtualThread();
-        return super.findByUserName(userId);
+        return super.findByUsername(username);
     }
 
     @Override

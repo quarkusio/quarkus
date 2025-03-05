@@ -24,7 +24,7 @@ class LiteralSupport {
             return value;
         }
         if (isStringLiteral(literal)) {
-            value = literal.substring(1, literal.length() - 1);
+            value = extractStringValue(literal);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
         } else if (literal.equals("false")) {
@@ -83,6 +83,10 @@ class LiteralSupport {
 
     static boolean isStringLiteralSeparatorDouble(char character) {
         return character == '"';
+    }
+
+    static String extractStringValue(String strLiteral) {
+        return strLiteral.substring(1, strLiteral.length() - 1);
     }
 
     static boolean isStringLiteral(String value) {

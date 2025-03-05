@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
@@ -30,6 +31,7 @@ import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -48,10 +50,10 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
@@ -112,13 +114,6 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, REFLECTIVE_CONSTRUCTORS_NEEDED));
-    }
-
-    @BuildStep
-    void services(BuildProducer<ServiceProviderBuildItem> producer) {
-        producer.produce(
-                new ServiceProviderBuildItem(org.hibernate.service.spi.SessionFactoryServiceContributor.class.getName(),
-                        org.hibernate.reactive.service.internal.ReactiveSessionFactoryServiceContributor.class.getName()));
     }
 
     @BuildStep
@@ -229,6 +224,11 @@ public final class HibernateReactiveProcessor {
         recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
                 HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
+    }
+
+    @BuildStep
+    void silenceLogging(BuildProducer<LogCategoryBuildItem> logCategories) {
+        logCategories.produce(new LogCategoryBuildItem(ReactiveIntegrator.class.getName(), Level.WARNING));
     }
 
     /**
@@ -401,6 +401,7 @@ public final class HibernateReactiveProcessor {
         } else {
             //Disable implicit loading of the default import script (import.sql)
             desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
+            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
 
         // Caching

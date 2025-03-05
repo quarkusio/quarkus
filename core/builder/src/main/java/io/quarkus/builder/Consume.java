@@ -1,44 +1,20 @@
 package io.quarkus.builder;
 
-/**
- */
-final class Consume {
-    private final BuildStepBuilder buildStepBuilder;
-    private final ItemId itemId;
-    private final Constraint constraint;
-    private final ConsumeFlags flags;
+import static io.quarkus.builder.Constraint.ORDER_ONLY;
+import static io.quarkus.builder.Constraint.REAL;
+import static io.quarkus.builder.ConsumeFlag.OPTIONAL;
 
-    Consume(final BuildStepBuilder buildStepBuilder, final ItemId itemId, final Constraint constraint,
-            final ConsumeFlags flags) {
-        this.buildStepBuilder = buildStepBuilder;
-        this.itemId = itemId;
-        this.constraint = constraint;
-        this.flags = flags;
-    }
-
-    BuildStepBuilder getBuildStepBuilder() {
-        return buildStepBuilder;
-    }
-
-    ItemId getItemId() {
-        return itemId;
-    }
-
-    ConsumeFlags getFlags() {
-        return flags;
-    }
+record Consume(BuildStepBuilder buildStepBuilder, ItemId itemId, Constraint constraint, ConsumeFlags flags) {
 
     Consume combine(final Constraint constraint, final ConsumeFlags flags) {
-        final Constraint outputConstraint = constraint == Constraint.REAL || this.constraint == Constraint.REAL
-                ? Constraint.REAL
-                : Constraint.ORDER_ONLY;
-        final ConsumeFlags outputFlags = !flags.contains(ConsumeFlag.OPTIONAL) || !this.flags.contains(ConsumeFlag.OPTIONAL)
-                ? flags.with(this.flags).without(ConsumeFlag.OPTIONAL)
-                : flags.with(this.flags);
-        return new Consume(buildStepBuilder, itemId, outputConstraint, outputFlags);
-    }
-
-    Constraint getConstraint() {
-        return constraint;
+        return new Consume(
+                buildStepBuilder,
+                itemId,
+                constraint == REAL || this.constraint == REAL
+                        ? REAL
+                        : ORDER_ONLY,
+                !flags.contains(OPTIONAL) || !this.flags.contains(OPTIONAL)
+                        ? flags.with(this.flags).without(OPTIONAL)
+                        : flags.with(this.flags));
     }
 }

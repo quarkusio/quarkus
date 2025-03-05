@@ -153,6 +153,9 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         if (config.maxMessageSize().isPresent()) {
             clientOptions.setMaxMessageSize(config.maxMessageSize().getAsInt());
         }
+        if (config.maxFrameSize().isPresent()) {
+            clientOptions.setMaxFrameSize(config.maxFrameSize().getAsInt());
+        }
 
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 config.tlsConfigurationName());

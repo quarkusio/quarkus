@@ -188,6 +188,7 @@ public class QuarkusComponentTestExtension
     private static final String KEY_CONFIG = "config";
     private static final String KEY_TEST_CLASS_CONFIG = "testClassConfig";
     private static final String KEY_CONFIG_MAPPINGS = "configMappings";
+    private static final String KEY_CONTAINER_STATE = "containerState";
 
     private static final String QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY = "quarkus.test.component.output-directory";
 
@@ -225,7 +226,6 @@ public class QuarkusComponentTestExtension
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
-        // Stop the container if Lifecycle.PER_CLASS is used
         stopContainer(context, Lifecycle.PER_CLASS);
         cleanup(context);
         LOG.debugf("afterAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
@@ -366,17 +366,25 @@ public class QuarkusComponentTestExtension
     }
 
     private void buildContainer(ExtensionContext context) {
+        if (getContainerState(context) != ContainerState.UNINITIALIZED) {
+            return;
+        }
         QuarkusComponentTestConfiguration testClassConfiguration = baseConfiguration
                 .update(context.getRequiredTestClass());
         store(context).put(KEY_TEST_CLASS_CONFIG, testClassConfiguration);
         ClassLoader oldTccl = initArcContainer(context, testClassConfiguration);
         store(context).put(KEY_OLD_TCCL, oldTccl);
+        setContainerState(context, ContainerState.INITIALIZED);
     }
 
     @SuppressWarnings("unchecked")
     private void cleanup(ExtensionContext context) {
+        if (getContainerState(context) != ContainerState.STOPPED) {
+            return;
+        }
         ClassLoader oldTccl = store(context).get(KEY_OLD_TCCL, ClassLoader.class);
         Thread.currentThread().setContextClassLoader(oldTccl);
+        store(context).remove(KEY_OLD_TCCL);
         store(context).remove(KEY_CONFIG_MAPPINGS);
         Set<Path> generatedResources = store(context).get(KEY_GENERATED_RESOURCES, Set.class);
         for (Path path : generatedResources) {
@@ -387,14 +395,19 @@ public class QuarkusComponentTestExtension
                 LOG.errorf("Unable to delete the generated resource %s: ", path, e.getMessage());
             }
         }
+        store(context).remove(KEY_GENERATED_RESOURCES);
+        setContainerState(context, ContainerState.UNINITIALIZED);
     }
 
     @SuppressWarnings("unchecked")
     private void stopContainer(ExtensionContext context, Lifecycle testInstanceLifecycle) throws Exception {
         if (testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))) {
+            if (getContainerState(context) != ContainerState.STARTED) {
+                return;
+            }
             for (FieldInjector fieldInjector : (List<FieldInjector>) store(context)
                     .get(KEY_INJECTED_FIELDS, List.class)) {
-                fieldInjector.unset(context.getRequiredTestInstance());
+                fieldInjector.unset();
             }
             try {
                 Arc.shutdown();
@@ -404,64 +417,93 @@ public class QuarkusComponentTestExtension
             MockBeanCreator.clear();
             ConfigBeanCreator.clear();
             InterceptorMethodCreator.clear();
+            store(context).remove(KEY_CONTAINER_STATE);
 
             SmallRyeConfig config = store(context).get(KEY_CONFIG, SmallRyeConfig.class);
             ConfigProviderResolver.instance().releaseConfig(config);
-            ConfigProviderResolver
-                    .setInstance(store(context).get(KEY_OLD_CONFIG_PROVIDER_RESOLVER,
-                            ConfigProviderResolver.class));
+            ConfigProviderResolver oldConfigProviderResolver = store(context).get(KEY_OLD_CONFIG_PROVIDER_RESOLVER,
+                    ConfigProviderResolver.class);
+            ConfigProviderResolver.setInstance(oldConfigProviderResolver);
+            setContainerState(context, ContainerState.STOPPED);
         }
     }
 
+    enum ContainerState {
+        UNINITIALIZED,
+        INITIALIZED,
+        STARTED,
+        STOPPED
+    }
+
+    private ContainerState getContainerState(ExtensionContext context) {
+        ContainerState state = store(context).get(KEY_CONTAINER_STATE, ContainerState.class);
+        return state != null ? state : ContainerState.UNINITIALIZED;
+    }
+
+    private void setContainerState(ExtensionContext context, ContainerState state) {
+        store(context).put(KEY_CONTAINER_STATE, state);
+    }
+
     private void startContainer(ExtensionContext context, Lifecycle testInstanceLifecycle) throws Exception {
-        if (testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))) {
-            // Init ArC
-            Arc.initialize();
-
-            QuarkusComponentTestConfiguration configuration = store(context).get(KEY_TEST_CLASS_CONFIG,
-                    QuarkusComponentTestConfiguration.class);
-            Optional<Method> testMethod = context.getTestMethod();
-            if (testMethod.isPresent()) {
-                configuration = configuration.update(testMethod.get());
-            }
-
-            ConfigProviderResolver oldConfigProviderResolver = ConfigProviderResolver.instance();
-            store(context).put(KEY_OLD_CONFIG_PROVIDER_RESOLVER, oldConfigProviderResolver);
-
-            SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = new SmallRyeConfigProviderResolver();
-            ConfigProviderResolver.setInstance(smallRyeConfigProviderResolver);
-
-            // TCCL is now the QuarkusComponentTestClassLoader set during initialization
-            ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-            SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
-                    .addDefaultInterceptors()
-                    .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
-                    .addDefaultSources()
-                    .withSources(
-                            new QuarkusComponentTestConfigSource(configuration.configProperties,
-                                    configuration.configSourceOrdinal));
-            @SuppressWarnings("unchecked")
-            Set<ConfigClass> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
-            if (configMappings != null) {
-                // Register the mappings found during bean discovery
-                for (ConfigClass mapping : configMappings) {
-                    configBuilder.withMapping(mapping);
-                }
-            }
-            if (configuration.configBuilderCustomizer != null) {
-                configuration.configBuilderCustomizer.accept(configBuilder);
-            }
-            SmallRyeConfig config = configBuilder.build();
-            smallRyeConfigProviderResolver.registerConfig(config, tccl);
-            store(context).put(KEY_CONFIG, config);
-            ConfigBeanCreator.setClassLoader(tccl);
-
-            // Inject fields declated on the test class
-            Object testInstance = context.getRequiredTestInstance();
-            store(context).put(KEY_INJECTED_FIELDS, injectFields(context.getRequiredTestClass(), testInstance));
-            // Injected test method parameters
-            store(context).put(KEY_INJECTED_PARAMS, new CopyOnWriteArrayList<>());
+        if (!testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))) {
+            return;
         }
+        ContainerState state = getContainerState(context);
+        if (state == ContainerState.UNINITIALIZED) {
+            throw new IllegalStateException("Container not initialized");
+        } else if (state == ContainerState.STARTED) {
+            return;
+        }
+        // Init ArC
+        Arc.initialize();
+
+        QuarkusComponentTestConfiguration configuration = store(context).get(KEY_TEST_CLASS_CONFIG,
+                QuarkusComponentTestConfiguration.class);
+        Optional<Method> testMethod = context.getTestMethod();
+        if (testMethod.isPresent()) {
+            configuration = configuration.update(testMethod.get());
+        }
+
+        ConfigProviderResolver oldConfigProviderResolver = ConfigProviderResolver.instance();
+        store(context).put(KEY_OLD_CONFIG_PROVIDER_RESOLVER, oldConfigProviderResolver);
+
+        SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = new SmallRyeConfigProviderResolver();
+        ConfigProviderResolver.setInstance(smallRyeConfigProviderResolver);
+
+        // TCCL is now the QuarkusComponentTestClassLoader set during initialization
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
+                .addDefaultInterceptors()
+                .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
+                .addDefaultSources()
+                .withSources(
+                        new QuarkusComponentTestConfigSource(configuration.configProperties,
+                                configuration.configSourceOrdinal));
+        @SuppressWarnings("unchecked")
+        Set<ConfigClass> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
+        if (configMappings != null) {
+            // Register the mappings found during bean discovery
+            for (ConfigClass mapping : configMappings) {
+                configBuilder.withMapping(mapping);
+            }
+        }
+        if (configuration.configBuilderCustomizer != null) {
+            configuration.configBuilderCustomizer.accept(configBuilder);
+        }
+        SmallRyeConfig config = configBuilder.build();
+        smallRyeConfigProviderResolver.registerConfig(config, tccl);
+        store(context).put(KEY_CONFIG, config);
+        ConfigBeanCreator.setClassLoader(tccl);
+
+        // Inject fields declared on test classes
+        List<FieldInjector> injectedFields = new ArrayList<>();
+        for (Object testInstance : context.getRequiredTestInstances().getAllInstances()) {
+            injectedFields.addAll(injectFields(testInstance.getClass(), testInstance));
+        }
+        store(context).put(KEY_INJECTED_FIELDS, injectedFields);
+        // Injected test method parameters
+        store(context).put(KEY_INJECTED_PARAMS, new CopyOnWriteArrayList<>());
+        setContainerState(context, ContainerState.STARTED);
     }
 
     private Store store(ExtensionContext context) {
@@ -1094,11 +1136,13 @@ public class QuarkusComponentTestExtension
 
     static class FieldInjector {
 
+        private final Object testInstance;
         private final Field field;
         private final Runnable unsetAction;
 
         public FieldInjector(Field field, Object testInstance) throws Exception {
             this.field = field;
+            this.testInstance = testInstance;
 
             ArcContainer container = Arc.container();
             BeanManager beanManager = container.beanManager();
@@ -1153,7 +1197,7 @@ public class QuarkusComponentTestExtension
             field.set(testInstance, injectedInstance);
         }
 
-        void unset(Object testInstance) throws Exception {
+        void unset() throws Exception {
             if (unsetAction != null) {
                 unsetAction.run();
             }

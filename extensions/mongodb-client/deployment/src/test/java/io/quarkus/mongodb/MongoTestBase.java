@@ -1,23 +1,25 @@
 package io.quarkus.mongodb;
 
-import java.io.IOException;
-
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
 
 import de.flapdoodle.embed.mongo.commands.MongodArguments;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.mongo.transitions.ImmutableMongod;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MongoTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestBase.class);
-    private static TransitionWalker.ReachedState<RunningMongodProcess> MONGO;
+    protected TransitionWalker.ReachedState<RunningMongodProcess> mongo;
 
     protected static String getConfiguredConnectionString() {
         return getProperty("connection_string");
@@ -36,35 +38,46 @@ public class MongoTestBase {
     }
 
     @BeforeAll
-    public static void startMongoDatabase() throws IOException {
+    public void startMongoDatabase() {
         forceExtendedSocketOptionsClassInit();
 
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            Version.Main version = Version.Main.V4_4;
+            Version.Main version = Version.Main.V7_0;
             int port = 27018;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
-            MONGO = Mongod.instance()
+            ImmutableMongod config = Mongod.instance()
                     .withNet(Start.to(Net.class).initializedWith(Net.builder()
                             .from(Net.defaults())
                             .port(port)
                             .build()))
                     .withMongodArguments(Start.to(MongodArguments.class)
-                            .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
-                    .start(version);
+                            .initializedWith(MongodArguments.defaults()
+                                    .withUseNoJournal(
+                                            false)))
+                    .withProcessConfig(
+                            Start.to(ProcessConfig.class)
+                                    .initializedWith(ProcessConfig.defaults()
+                                            .withStopTimeoutInMillis(15_000)));
+            config = addExtraConfig(config);
+            mongo = config.start(version);
 
         } else {
             LOGGER.infof("Using existing Mongo %s", uri);
         }
     }
 
+    protected ImmutableMongod addExtraConfig(ImmutableMongod mongo) {
+        return mongo;
+    }
+
     @AfterAll
-    public static void stopMongoDatabase() {
-        if (MONGO != null) {
+    public void stopMongoDatabase() {
+        if (mongo != null) {
             try {
-                MONGO.close();
+                mongo.close();
             } catch (Exception e) {
                 LOGGER.error("Unable to stop MongoDB", e);
             }

@@ -7,6 +7,11 @@ buckets:
     delay: PT0S
     timeout: P3D
   maintenance:
+    created:
+      delay: PT0S
+      timeout: P1D
+      expiry: P14D
+      ignoreLabels: ["triage/on-ice"]
     feedback:
       labels: ["triage/needs-reproducer", "triage/needs-feedback"]
       needed:
@@ -18,18 +23,53 @@ buckets:
     stale:
       delay: P60D
       timeout: P14D
+      ignoreLabels: ["triage/on-ice"]
   stewardship:
     delay: P60D
     timeout: P14D
+    ignoreLabels: ["triage/on-ice"]
 participants:
+  - username: "DavideD"
+    timezone: "Europe/Vienna"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/jdbc"]
+      days: ["WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Monday and Tuesday.
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 3
+        provided:
+          maxIssues: 3
+      stale:
+        maxIssues: 1
   - username: "yrodiere"
     timezone: "Europe/Paris"
     triage:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
+      days: ["MONDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Tuesday.
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 3
+        provided:
+          maxIssues: 3
+      stale:
+        maxIssues: 1
+  - username: "marko-bekhta"
+    timezone: "Europe/Warsaw"
+    maintenance:
+      labels: ["area/hibernate-search", "area/elasticsearch", "area/hibernate-validator"]
       days: ["WEDNESDAY"]
+      created:
+        maxIssues: 3
       feedback:
         needed:
           maxIssues: 10
@@ -37,11 +77,13 @@ participants:
           maxIssues: 10
       stale:
         maxIssues: 5
-  - username: "marko-bekhta"
-    timezone: "Europe/Warsaw"
+  - username: "mbladel"
+    timezone: "Europe/Rome"
     maintenance:
-      labels: ["area/hibernate-search", "area/elasticsearch", "area/hibernate-validator"]
-      days: ["WEDNESDAY"]
+      labels: [ "area/hibernate-orm", "area/jdbc" ]
+      days: [ "WEDNESDAY" ]
+      created:
+        maxIssues: 3
       feedback:
         needed:
           maxIssues: 10
@@ -57,6 +99,8 @@ participants:
     maintenance:
       labels: ["area/hibernate-validator", "area/jakarta"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4
@@ -120,6 +164,8 @@ participants:
     maintenance:
       labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/rest", "area/kubernetes"]
       days: ["WEDNESDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4

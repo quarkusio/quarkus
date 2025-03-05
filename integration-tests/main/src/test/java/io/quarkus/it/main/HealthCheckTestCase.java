@@ -3,11 +3,11 @@ package io.quarkus.it.main;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.junit.jupiter.api.Test;
-import org.wildfly.common.Assert;
 
 import io.quarkus.it.health.SimpleHealthCheck;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.common.constraint.Assert;
 
 @QuarkusTest
 @DisabledOnIntegrationTest("This test is not meant to be ran in native mode as Quarkus does not yet support injection " +

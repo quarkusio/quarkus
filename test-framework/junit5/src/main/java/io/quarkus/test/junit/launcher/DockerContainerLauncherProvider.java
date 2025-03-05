@@ -17,12 +17,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
-import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -38,6 +40,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         String containerImage = context.quarkusArtifactProperties().getProperty("metadata.container-image");
         boolean pullRequired = Boolean
                 .parseBoolean(context.quarkusArtifactProperties().getProperty("metadata.pull-required", "false"));
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         if ((containerImage != null) && !containerImage.isEmpty()) {
             DockerContainerArtifactLauncher launcher;
             ServiceLoader<DockerContainerArtifactLauncher> loader = ServiceLoader.load(DockerContainerArtifactLauncher.class);
@@ -47,7 +50,6 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             } else {
                 launcher = new DefaultDockerContainerLauncher();
             }
-            SmallRyeConfig config = (SmallRyeConfig) LauncherUtil.installAndGetSomeConfig();
             launcherInit(context, launcher, config, containerImage, pullRequired, Optional.empty(), volumeMounts(config),
                     Collections.emptyList());
             return launcher;
@@ -59,15 +61,13 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             // adding a volume mapping pointing to the build output directory,
             // and then instructing the java process to run the run jar,
             // along with the native image agent arguments and any other additional parameters.
-            SmallRyeConfig config = (SmallRyeConfig) LauncherUtil.installAndGetSomeConfig();
-            String testProfile = TestConfigUtil.integrationTestProfile(config);
-
-            if ("test-with-native-agent".equals(testProfile)) {
+            TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+            if ("test-with-native-agent".equals(testConfig.integrationTestProfile())) {
                 DockerContainerArtifactLauncher launcher = new DefaultDockerContainerLauncher();
                 Optional<String> entryPoint = Optional.of("java");
                 Map<String, String> volumeMounts = new HashMap<>(volumeMounts(config));
                 volumeMounts.put(context.buildOutputDirectory().toString(), "/project");
-                containerImage = ContainerImages.MANDREL_BUILDER;
+                containerImage = ContainerImages.UBI9_MANDREL_BUILDER;
 
                 List<String> programArgs = new ArrayList<>();
                 addNativeAgentProgramArgs(programArgs, context);
@@ -83,13 +83,14 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
     private void launcherInit(CreateContext context, DockerContainerArtifactLauncher launcher, SmallRyeConfig config,
             String containerImage, boolean pullRequired, Optional<String> entryPoint, Map<String, String> volumeMounts,
             List<String> programArgs) {
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
         launcher.init(new DefaultDockerInitContext(
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                TestConfigUtil.waitTimeValue(config),
-                TestConfigUtil.integrationTestProfile(config),
-                TestConfigUtil.argLineValue(config),
-                TestConfigUtil.env(config),
+                testConfig.waitTime(),
+                testConfig.integrationTestProfile(),
+                TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
+                testConfig.env(),
                 context.devServicesLaunchResult(),
                 containerImage,
                 pullRequired,

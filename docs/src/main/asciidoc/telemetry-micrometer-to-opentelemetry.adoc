@@ -1,0 +1,239 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id=telemetry-micrometer-opentelemetry]
+= Micrometer and OpenTelemetry extension
+include::_attributes.adoc[]
+:extension-status: preview
+:diataxis-type: reference
+:categories: observability
+:summary: Guide to send Micrometer data to OpenTelemetry.
+:topics: observability,opentelemetry,metrics,micrometer,tracing,logs
+:extensions: io.quarkus:quarkus-micrometer-opentelemetry
+
+This extension provides support for both Micrometer and OpenTelemetry in Quarkus applications. It streamlines integration by incorporating both extensions along with a bridge that enables sending Micrometer metrics via OpenTelemetry.
+
+include::{includes}/extension-status.adoc[]
+
+include::{includes}/observability-include.adoc[]
+
+[NOTE]
+====
+- This extension is available since Quarkus version 3.19.
+- The xref:telemetry-micrometer.adoc[Micrometer Guide] is available for detailed information about the Micrometer extension.
+- The xref:opentelemetry.adoc[OpenTelemetry Guide] provides information about the OpenTelemetry extension.
+====
+
+The extension allows the normal use of the Micrometer API, but have the metrics handled by the OpenTelemetry extension.
+
+As an example, the `@Timed` annotation from Micrometer is used to measure the execution time of a method:
+[source,java]
+----
+import io.micrometer.core.annotation.Timed;
+//...
+@Timed(name = "timer_metric")
+public String timer() {
+    return "OK";
+}
+----
+The output telemetry data is handled by the OpenTelemetry SDK and sent by the `quarkus-opentelemetry` extension exporter using the OTLP protocol.
+
+This reduces the overhead of having an independent Micrometer registry plus the OpenTelemetry SDK in memory for the same application when both `quarkus-micrometer` and `quarkus-opentelemetry` extensions are used independently.
+
+*The OpenTelemetry SDK will handle all metrics.* Either Micrometer metrics (manual or automatic) and OpenTelemetry Metrics can be used. All are available with this single extension.
+
+All the configurations from the OpenTelemetry and Micrometer extensions are available with `quarkus-micrometer-opentelemetry`.
+
+The bridge is more than the simple OTLP registry found in Quarkiverse. In this extension, the OpenTelemetry SDK provides a Micrometer registry implementation based on the https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/micrometer/micrometer-1.5/library[`micrometer/micrometer-1.5`] OpenTelemetry instrumentation library.
+
+== Usage
+
+If you already have your Quarkus project configured, you can add the `quarkus-micrometer-opentelemetry` extension to your project by running the following command in your project base directory:
+
+:add-extension-extensions: micrometer-opentelemetry
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer-opentelemetry</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-micrometer-opentelemetry")
+----
+
+== Configuration
+
+When the extension is present, Micrometer is enabled by default as are OpenTelemetry tracing, metrics and logs.
+
+OpenTelemetry metrics auto-instrumentation for HTTP server and JVM metrics are disabled by default because those metrics can be  collected by Micrometer.
+
+Specific automatic Micrometer metrics are all disabled by default and can be enabled by setting, for example in the case of JVM metrics:
+[source,properties]
+----
+quarkus.micrometer.binder.jvm=true
+----
+in the `application.properties` file.
+
+For this and other properties you can use with the extension, Please refer to:
+
+* xref:telemetry-micrometer.adoc#configuration-reference[Micrometer metrics configuration properties]
+* xref:opentelemetry.adoc#configuration-reference[OpenTelemetry configuration properties]
+
+== Metric differences between Micrometer and OpenTelemetry
+
+=== API differences
+The metrics produced with each framework follow different APIs and the mapping is not 1:1.
+
+One fundamental API difference is that Micrometer uses a https://docs.micrometer.io/micrometer/reference/concepts/timers.html[Timer] and OpenTelemetry uses a https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram[Histogram] to record latency (execution time) metrics and the frequency of the events.
+
+When using the `@Timed` annotation with Micrometer, 2 different metrics are https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/324fdbdd452ddffaf2da2c5bf004d8bb3fdfa1dd/instrumentation/micrometer/micrometer-1.5/library/src/main/java/io/opentelemetry/instrumentation/micrometer/v1_5/OpenTelemetryTimer.java#L31[created on the OpenTelemetry side], one `Gauge` for the `max` value and one `Histogram`.
+
+The `DistributionSummary` from Micrometer is transformed into a `Histogram` and a `DoubleGauge` for the `max` value. If service level objectives (slo) are set to `true` when creating a `DistributionSummary`, an additional histogram is created for them.
+
+This table shows the differences between the two frameworks:
+
+|===
+|Micrometer |OpenTelemetry
+
+|DistributionSummary
+|`<Metric name>` (Histogram), `<Metric name>.max` (DoubleGauge)
+
+|DistributionSummary with SLOs
+|`<Metric name>` (Histogram), `<Metric name>.max` (DoubleGauge), `<Metric name>.histogram` (DoubleGauge)
+
+|LongTaskTimer
+|`<Metric name>.active` (ObservableLongUpDownCounter), `<Metric name>.duration` (ObservableDoubleUpDownCounter)
+
+|Timer
+|`<Metric name>` (Histogram), `<Metric name>.max` (ObservableDoubleGauge)
+|===
+
+
+=== Semantic convention differences
+
+The 2 frameworks follow different semantic conventions. The OpenTelemetry Metrics are based on the https://opentelemetry.io/docs/concepts/semantic-conventions/[OpenTelemetry Semantic Conventions] and are still under active development (early 2025). Micrometer metrics convention format is around for a long time and has not changed much.
+
+When these 2 configurations are set in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.micrometer.binder.jvm=true
+quarkus.micrometer.binder.http-server.enabled=true
+----
+
+The JVM and HTTP server metrics are collected by Micrometer.
+
+Next, are examples of the metrics collected by Micrometer and a comparison of what would be the `quarkus-micrometer-registry-prometheus` output vs the one on this bridge. A link to the equivalent OpenTelemetry Semantic Convention is also provided for reference and is not currently used in the bridge.
+
+|===
+|Micrometer Meter |Quarkus Micrometer Prometheus output | This bridge OpenTelemetry output name | Related OpenTelemetry Semantic Convention (not applied)
+
+|Using the @Timed interceptor.
+|
+|method.timed (Histogram), method.timed.max (DoubleGauge)
+|NA
+
+|Using the @Counted interceptor.
+|
+|method.counted (DoubleSum)
+|NA
+
+|`http.server.active.requests` (Gauge)
+|`http_server_active_requests` (Gauge)
+|`http.server.active.requests` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserveractive_requests[`http.server.active_requests`] (UpDownCounter)
+
+|`http.server.requests` (Timer)
+|`http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, `http_server_requests_seconds_max` (Gauge)
+|`http.server.requests` (Histogram), `http.server.requests.max` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestduration[`http.server.request.duration`] (Histogram)
+
+|`http.server.bytes.read` (DistributionSummary)
+|`http_server_bytes_read_count`, `http_server_bytes_read_sum` , `http_server_bytes_read_max` (Gauge)
+|`http.server.bytes.read` (Histogram), `http.server.bytes.read.max` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestbodysize[`http.server.request.body.size`] (Histogram)
+
+|`http.server.bytes.write` (DistributionSummary)
+|`http_server_bytes_write_count`, `http_server_bytes_write_sum` , `http_server_bytes_write_max` (Gauge)
+|`http.server.bytes.write` (Histogram), `http.server.bytes.write.max` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverresponsebodysize[`http.server.response.body.size`] (Histogram)
+
+|`http.server.connections` (LongTaskTimer)
+|`http_server_connections_seconds_active_count`, `http_server_connections_seconds_duration_sum` `http_server_connections_seconds_max` (Gauge)
+|`http.server.connections.active` (LongSum), `http.server.connections.duration` (DoubleGauge)
+| N/A
+
+|`jvm.threads.live` (Gauge)
+|`jvm_threads_live_threads` (Gauge)
+|`jvm.threads.live` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+
+|`jvm.threads.started` (FunctionCounter)
+|`jvm_threads_started_threads_total` (Counter)
+|`jvm.threads.started` (DoubleSum)
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+
+|`jvm.threads.daemon` (Gauge)
+|`jvm_threads_daemon_threads` (Gauge)
+|`jvm.threads.daemon` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+
+|`jvm.threads.peak` (Gauge)
+|`jvm_threads_peak_threads` (Gauge)
+|`jvm.threads.peak` (DoubleGauge)
+|N/A
+
+|`jvm.threads.states` (Gauge per state)
+|`jvm_threads_states_threads` (Gauge)
+|`jvm.threads.states` (DoubleGauge)
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+|===
+
+
+[NOTE]
+====
+Some metrics might be missing from the output if they contain no data.
+====
+
+== See the output
+
+=== Grafana-OTel-LGTM Dev Service
+You can use the xref:observability-devservices-lgtm.adoc[Grafana-OTel-LGTM] Dev Service.
+
+This Dev Service includes Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics.
+It also provides an OTel collector to receive the data
+
+=== Logging exporter
+
+You can output all metrics to the console by setting the exporter to `logging` in the `application.properties` file:
+[source, properties]
+----
+quarkus.otel.metrics.exporter=logging <1>
+quarkus.otel.metric.export.interval=10000ms <2>
+----
+
+<1> Set the exporter to `logging`.
+Normally you don't need to set this.
+The default is `cdi`.
+<2> Set the interval to export the metrics.
+The default is `1m`, which is too long for debugging.
+
+Also add this dependency to your project:
+[source,xml]
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-logging</artifactId>
+</dependency>
+----

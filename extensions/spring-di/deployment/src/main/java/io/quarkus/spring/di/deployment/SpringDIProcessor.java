@@ -526,7 +526,7 @@ public class SpringDIProcessor {
         }
         if (beanName == null || beanName.isEmpty()) {
             final AnnotationValue beanValueAnnotationValue = annotationInstance.value();
-            if (beanNameAnnotationValue != null) {
+            if (beanValueAnnotationValue != null) {
                 beanName = determineName(beanValueAnnotationValue);
             }
         }

@@ -2,13 +2,15 @@ package io.quarkus.undertow.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = "servlet")
-public class ServletRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.servlet")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface ServletRuntimeConfig {
 
     /**
      * The buffer size to use for Servlet. If this is not specified the default will depend on the amount
@@ -16,21 +18,19 @@ public class ServletRuntimeConfig {
      * 1k direct buffer and otherwise 16k direct buffers.
      *
      */
-    @ConfigItem
-    Optional<MemorySize> bufferSize;
+    Optional<MemorySize> bufferSize();
 
     /**
      * If Servlet should use direct buffers, this gives maximum performance but can be problematic
      * in memory constrained environments
      */
-    @ConfigItem
-    Optional<Boolean> directBuffers;
+    Optional<Boolean> directBuffers();
 
     /**
      * The maximum number of HTTP request parameters permitted for Servlet requests.
      *
      * If a client sends more than this number of parameters in a request, the connection is closed.
      */
-    @ConfigItem(defaultValue = "1000")
-    int maxParameters;
+    @WithDefault("1000")
+    int maxParameters();
 }

@@ -61,9 +61,56 @@ public class FragmentTest {
     public void testInvisibleFragment() {
         Engine engine = Engine.builder().addDefaults().build();
         Template foo = engine.parse(
-                "PREFIX::{#fragment foo rendered=false}FOO{/fragment}::{#include $foo /}::{#include $foo /}", null, "foo");
+                "PREFIX::{#fragment foo _hidden}FOO{/fragment}::{#include $foo /}::{#include $foo /}", null, "foo");
         assertEquals("PREFIX::::FOO::FOO", foo.render());
         assertEquals("FOO", foo.getFragment("foo").render());
+    }
+
+    @Test
+    public void testFrgNamespace() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new FragmentNamespaceResolver())
+                .addValueResolver(new ReflectionValueResolver())
+                .build();
+        Template foo = engine.parse(
+                "PREFIX::{#fragment foo rendered=false}FOO{/fragment}::{frg:foo.toLowerCase}::{#include $foo /}", null, "foo");
+        assertEquals("PREFIX::::foo::FOO", foo.render());
+        // Fragment from another template
+        engine.putTemplate("bar", engine.parse("""
+                {#fragment barbar _hidden}
+                Barbar is here!
+                {/}
+                """));
+        assertEquals("Barbar is here!", engine.parse("{frg:bar$barbar}").render().strip());
+        assertThrows(TemplateException.class, () -> engine.parse("{frg:nonexistent$barbar}").render());
+    }
+
+    @Test
+    public void testCapture() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAP))
+                .addValueResolver(new ReflectionValueResolver())
+                .build();
+        Template foo = engine.parse(
+                "PREFIX::{#capture foo}FOO{/capture}::{cap:foo.toLowerCase}::{#include $foo /}", null, "foo");
+        assertEquals("PREFIX::::foo::FOO", foo.render());
+    }
+
+    @Test
+    public void testCaptureArgs() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.CAPTURE))
+                .addNamespaceResolver(new NamedArgument.ParamNamespaceResolver())
+                .addValueResolver(new NamedArgument.SetValueResolver())
+                .addValueResolver(new ReflectionValueResolver())
+                .build();
+        Template foo = engine.parse(
+                "PREFIX::{#capture foo}{name} {surname}{/capture}::{capture:foo(param:name = 'Ondik',param:surname.set(mySurname)).toLowerCase}",
+                null, "foo");
+        assertEquals("PREFIX::::ondik kouba", foo.data("mySurname", "Kouba").render());
     }
 
     @Test

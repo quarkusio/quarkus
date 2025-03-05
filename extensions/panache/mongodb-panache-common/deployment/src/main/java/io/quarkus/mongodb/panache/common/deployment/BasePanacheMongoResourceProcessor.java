@@ -365,7 +365,11 @@ public abstract class BasePanacheMongoResourceProcessor {
 
         for (Type parameterType : daoTypeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(parameterType).build());
+            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(parameterType)
+                    .source(BasePanacheMongoResourceProcessor.class.getName())
+                    .ignoreFieldPredicate(f -> f.hasAnnotation(BSON_IGNORE))
+                    .ignoreMethodPredicate(m -> m.hasAnnotation(BSON_IGNORE))
+                    .build());
 
             // Register for building the property mapping cache
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));

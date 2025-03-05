@@ -32,7 +32,7 @@ This property can be used in `application.properties`, in xref:security-openid-c
 [[apple]]
 === Apple
 
-In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers:
+In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99$/year program, but you cannot test your application on `localhost` like most other OIDC providers:
 you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
@@ -84,7 +84,7 @@ Enable `Sign in with Apple` and press `Configure`:
 
 image::oidc-apple-12.png[role="thumb"]
 
-Add your domain and return URL (set to `<host>/_renarde/security/oidc-success`) and press `Next`:
+Add your domain and return URL (set to `<host>/apple`) and press `Next`:
 
 image::oidc-apple-13.png[role="thumb"]
 
@@ -631,7 +631,7 @@ package org.acme.calendar;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -771,7 +771,7 @@ It may not be a problem when Quarkus fetches public verification keys from OIDC-
 
 Therefore, UserInfo is embedded in an internally generated ID token and is encrypted in the session cookie. You can disable it with `quarkus.oidc.cache-user-info-in-idtoken=false`.
 
-Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
+Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 == References
 

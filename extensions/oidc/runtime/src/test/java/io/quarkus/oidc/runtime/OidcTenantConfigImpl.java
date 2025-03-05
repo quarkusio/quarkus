@@ -142,6 +142,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHENTICATION_COOKIE_SAME_SITE,
         AUTHENTICATION_ALLOW_MULTIPLE_CODE_FLOWS,
         AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM,
+        AUTHENTICATION_FAIL_ON_UNRESOLVED_KID,
         AUTHENTICATION_USER_INFO_REQUIRED,
         AUTHENTICATION_SESSION_AGE_EXTENSION,
         AUTHENTICATION_STATE_COOKIE_AGE,
@@ -189,13 +190,16 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         TOKEN_ALLOW_OPAQUE_TOKEN_INTROSPECTION,
         TOKEN_CUSTOMIZER_NAME,
         TOKEN_VERIFY_ACCESS_TOKEN_WITH_USER_INFO,
+        TOKEN_BINDING,
+        TOKEN_BINDING_CERTIFICATE,
         ROLES_ROLE_CLAIM_PATH,
         ROLES_ROLE_CLAIM_SEPARATOR,
         ROLES_SOURCE,
         INTROSPECTION_CREDENTIALS_NAME,
         INTROSPECTION_CREDENTIALS_SECRET,
         INTROSPECTION_CREDENTIALS_INCLUDE_CLIENT_ID,
-        TENANT_ID
+        TENANT_ID,
+        JWT_BEARER_TOKEN_PATH
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -437,6 +441,18 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_VERIFY_ACCESS_TOKEN_WITH_USER_INFO, true);
                 return Optional.empty();
             }
+
+            @Override
+            public Binding binding() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_BINDING, true);
+                return new Binding() {
+                    @Override
+                    public boolean certificate() {
+                        invocationsRecorder.put(ConfigMappingMethods.TOKEN_BINDING_CERTIFICATE, true);
+                        return false;
+                    }
+                };
+            }
         };
     }
 
@@ -638,7 +654,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Optional<@WithConverter(TrimmedStringConverter.class) List<String>> forwardParams() {
+            public Optional<List<@WithConverter(TrimmedStringConverter.class) String>> forwardParams() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FORWARD_PARAMS, true);
                 return Optional.empty();
             }
@@ -688,6 +704,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             @Override
             public boolean failOnMissingStateParam() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM, true);
+                return false;
+            }
+
+            @Override
+            public boolean failOnUnresolvedKid() {
+                invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FAIL_ON_UNRESOLVED_KID, true);
                 return false;
             }
 
@@ -947,6 +969,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                     public Source source() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SOURCE, true);
                         return Source.BEARER;
+                    }
+
+                    @Override
+                    public Optional<Path> tokenPath() {
+                        invocationsRecorder.put(ConfigMappingMethods.JWT_BEARER_TOKEN_PATH, true);
+                        return Optional.empty();
                     }
 
                     @Override

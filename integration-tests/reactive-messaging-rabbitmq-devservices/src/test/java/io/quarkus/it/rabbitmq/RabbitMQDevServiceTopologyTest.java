@@ -1,12 +1,11 @@
 package io.quarkus.it.rabbitmq;
 
-import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -14,20 +13,25 @@ import io.restassured.http.ContentType;
 @QuarkusTest
 public class RabbitMQDevServiceTopologyTest {
 
-    @ConfigProperty(name = "rabbitmq-username")
-    String username;
+    DevServicesContext context;
 
-    @ConfigProperty(name = "rabbitmq-password")
-    String password;
+    public String getUsername() {
+        return context.devServicesProperties().get("rabbitmq-username");
+    }
 
-    @ConfigProperty(name = "rabbitmq-http-port")
-    int rabbitMqHttpPort;
+    public String getPassword() {
+        return context.devServicesProperties().get("rabbitmq-password");
+    }
+
+    public int getRabbitMqHttpPort() {
+        return Integer.parseInt(context.devServicesProperties().get("rabbitmq-http-port"));
+    }
 
     @Test
     public void testVhosts() {
         RestAssured.given()
-                .port(rabbitMqHttpPort)
-                .auth().preemptive().basic(username, password)
+                .port(getRabbitMqHttpPort())
+                .auth().preemptive().basic(getUsername(), getPassword())
                 .when().get("/api/vhosts")
                 .then()
                 .statusCode(200)
@@ -38,8 +42,8 @@ public class RabbitMQDevServiceTopologyTest {
     @Test
     public void testExchanges() {
         RestAssured.given()
-                .port(rabbitMqHttpPort)
-                .auth().preemptive().basic(username, password)
+                .port(getRabbitMqHttpPort())
+                .auth().preemptive().basic(getUsername(), getPassword())
                 .when().get("/api/exchanges/my-vhost-1/my-exchange-1")
                 .then()
                 .statusCode(200)
@@ -50,8 +54,8 @@ public class RabbitMQDevServiceTopologyTest {
     @Test
     public void testQueues() {
         RestAssured.given()
-                .port(rabbitMqHttpPort)
-                .auth().preemptive().basic(username, password)
+                .port(getRabbitMqHttpPort())
+                .auth().preemptive().basic(getUsername(), getPassword())
                 .when().get("/api/queues/my-vhost-1/my-queue-1")
                 .then()
                 .statusCode(200)
@@ -62,8 +66,8 @@ public class RabbitMQDevServiceTopologyTest {
     @Test
     public void testBindings() {
         RestAssured.given()
-                .port(rabbitMqHttpPort)
-                .auth().preemptive().basic(username, password)
+                .port(getRabbitMqHttpPort())
+                .auth().preemptive().basic(getUsername(), getPassword())
                 .when().get("/api/bindings/my-vhost-1/e/my-exchange-1/q/my-queue-1")
                 .then()
                 .statusCode(200)

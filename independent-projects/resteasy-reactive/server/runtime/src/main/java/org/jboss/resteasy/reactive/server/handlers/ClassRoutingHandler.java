@@ -114,7 +114,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 try {
                     if (MediaTypeHelper.getFirstMatch(
                             target.value.getConsumes(),
-                            Collections.singletonList(MediaType.valueOf(contentType))) == null) {
+                            Collections.singletonList(MediaTypeHelper.valueOf(contentType))) == null) {
                         throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
                     }
                 } catch (IllegalArgumentException e) {

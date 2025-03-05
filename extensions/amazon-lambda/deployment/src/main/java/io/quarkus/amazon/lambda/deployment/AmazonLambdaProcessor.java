@@ -333,7 +333,7 @@ public final class AmazonLambdaProcessor {
     void recordExpectedExceptions(LambdaBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> registerForReflection,
             AmazonLambdaStaticRecorder recorder) {
-        Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
+        Set<Class<?>> classes = config.expectedExceptions().map(Set::copyOf).orElseGet(Set::of);
         classes.stream()
                 .map(clazz -> ReflectiveClassBuildItem.builder(clazz).constructors(false)
                         .reason(getClass().getName() + " expectedExceptions")

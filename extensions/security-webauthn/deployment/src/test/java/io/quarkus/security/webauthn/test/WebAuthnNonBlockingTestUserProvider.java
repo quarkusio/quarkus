@@ -22,9 +22,9 @@ public class WebAuthnNonBlockingTestUserProvider extends WebAuthnTestUserProvide
     }
 
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String userId) {
         assertBlockingNotAllowed();
-        return super.findByUserName(userId);
+        return super.findByUsername(userId);
     }
 
     @Override

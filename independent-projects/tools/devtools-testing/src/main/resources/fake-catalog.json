@@ -428,6 +428,12 @@
   "metadata": {
     "project": {
       "default-codestart": "resteasy-reactive",
+      "codestart-data": {
+        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.21",
+        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+      },
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "4.3.2",
@@ -447,7 +453,7 @@
         "recommended-java-version": "17",
         "proposed-maven-version": "3.9.9",
         "maven-wrapper-version": "3.3.2",
-        "gradle-wrapper-version": "8.9"
+        "gradle-wrapper-version": "8.13"
       }
     },
     "codestarts-artifacts": [

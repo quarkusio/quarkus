@@ -22,7 +22,7 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable,
+     * @return {@code true} if {@code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable,
      *         {@code false} otherwise
      *
      * @throws RuntimeException if there was an error while communicating with the Kubernetes API server
@@ -38,7 +38,7 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
+     * @return {@code true} if {@code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
      *         {@code false} otherwise or if there was an error while communicating with the Kubernetes API server
      */
     public boolean checkSilently(KubernetesClientBuildItem clientBuilder) {

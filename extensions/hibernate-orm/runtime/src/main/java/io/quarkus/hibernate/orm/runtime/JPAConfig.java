@@ -26,6 +26,7 @@ public class JPAConfig {
 
     private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
+    private final boolean requestScopedSessionEnabled;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
@@ -40,6 +41,7 @@ public class JPAConfig {
                 persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
             }
         }
+        this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
     }
 
     void startAll() {
@@ -118,6 +120,13 @@ public class JPAConfig {
      */
     public Set<String> getDeactivatedPersistenceUnitNames() {
         return deactivatedPersistenceUnitNames;
+    }
+
+    /**
+     * Returns boolean value for enabling request scoped sessions
+     */
+    public boolean getRequestScopedSessionEnabled() {
+        return this.requestScopedSessionEnabled;
     }
 
     public static class Destroyer implements BeanDestroyer<JPAConfig> {

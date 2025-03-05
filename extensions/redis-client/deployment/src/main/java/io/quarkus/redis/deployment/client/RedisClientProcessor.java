@@ -53,7 +53,7 @@ import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.redis.client.impl.types.BulkType;
 

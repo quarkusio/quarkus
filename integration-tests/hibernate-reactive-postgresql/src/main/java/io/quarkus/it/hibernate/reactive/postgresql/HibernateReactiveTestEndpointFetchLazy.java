@@ -13,7 +13,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import io.quarkus.it.hibernate.reactive.postgresql.lazy.Author;
 import io.quarkus.it.hibernate.reactive.postgresql.lazy.Book;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Path("/hr-fetch")
@@ -25,7 +25,7 @@ public class HibernateReactiveTestEndpointFetchLazy {
     // Injecting a Vert.x Pool is not required, It's used to
     // independently validate the contents of the database for the test
     @Inject
-    PgPool pgPool;
+    Pool pgPool;
 
     @GET
     @Path("/findBooksWithMutiny/{authorId}")

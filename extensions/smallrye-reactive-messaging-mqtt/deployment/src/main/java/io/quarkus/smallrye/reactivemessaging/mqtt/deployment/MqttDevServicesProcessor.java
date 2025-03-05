@@ -218,7 +218,7 @@ public class MqttDevServicesProcessor {
     }
 
     private MqttDevServiceCfg getConfiguration(MqttBuildTimeConfig cfg) {
-        MqttDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        MqttDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new MqttDevServiceCfg(devServicesConfig);
     }
 
@@ -232,12 +232,12 @@ public class MqttDevServicesProcessor {
         private final Map<String, String> containerEnv;
 
         public MqttDevServiceCfg(MqttDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.containerEnv = devServicesConfig.containerEnv;
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.containerEnv = devServicesConfig.containerEnv();
         }
 
         @Override

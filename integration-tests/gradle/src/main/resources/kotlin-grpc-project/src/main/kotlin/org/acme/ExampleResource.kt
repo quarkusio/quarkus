@@ -6,11 +6,12 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 
 import io.quarkus.example.HelloMsg
+import io.quarkus.example.helloMsg
 
 @Path("/hello")
 class ExampleResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    fun hello() = "hello" + HelloMsg.Status.TEST_ONE.getNumber()
+    fun hello() = "hello" + helloMsg { status = HelloMsg.Status.TEST_ONE }.statusValue
 }

@@ -40,12 +40,12 @@ public class VirtualThreadCollector {
 
     @Inject
     public VirtualThreadCollector(MicrometerConfig mc) {
-        var config = mc.binder.virtualThreads;
-        this.enabled = JavaVersionUtil.isJava21OrHigher() && config.enabled.orElse(true);
+        var config = mc.binder().virtualThreads();
+        this.enabled = JavaVersionUtil.isJava21OrHigher() && config.enabled().orElse(true);
         MeterBinder instantiated = null;
         if (enabled) {
-            if (config.tags.isPresent()) {
-                List<String> list = config.tags.get();
+            if (config.tags().isPresent()) {
+                List<String> list = config.tags().get();
                 this.tags = list.stream().map(this::createTagFromEntry).collect(Collectors.toList());
             } else {
                 this.tags = List.of();

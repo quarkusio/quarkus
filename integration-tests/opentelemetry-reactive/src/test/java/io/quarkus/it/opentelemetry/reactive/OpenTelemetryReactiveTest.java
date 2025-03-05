@@ -12,7 +12,6 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanEventAttrs;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;

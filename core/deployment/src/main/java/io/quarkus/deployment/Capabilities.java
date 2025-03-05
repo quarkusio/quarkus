@@ -35,12 +35,6 @@ public final class Capabilities extends SimpleBuildItem {
         return capabilities;
     }
 
-    // @deprecated in 1.14.0.Final
-    @Deprecated
-    public boolean isCapabilityPresent(String capability) {
-        return isPresent(capability);
-    }
-
     /**
      * Checks whether a given capability is present during the build.
      *

@@ -119,6 +119,11 @@ class TemplateImpl implements Template {
         return root.findNodes(predicate);
     }
 
+    @Override
+    public SectionNode getRootNode() {
+        return root;
+    }
+
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
         if (section.name.equals(Parser.ROOT_HELPER_NAME)) {
             // Initialize the lazy map for root sections only
@@ -266,7 +271,7 @@ class TemplateImpl implements Template {
         private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
             CompletableFuture<Void> result = new CompletableFuture<>();
             ResolutionContext rootContext = new ResolutionContextImpl(data,
-                    engine.getEvaluator(), null, this::getAttribute);
+                    engine.getEvaluator(), null, this);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
             // Async resolution
             root.resolve(rootContext).whenComplete((r, t) -> {

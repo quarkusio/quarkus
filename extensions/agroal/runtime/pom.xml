@@ -90,6 +90,19 @@
                         <provides>io.quarkus.agroal</provides>
                     </capabilities>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal> 
+                        </goals>
+                        <configuration>
+                            <conditionalDevDependencies> 
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact> 
+                            </conditionalDevDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

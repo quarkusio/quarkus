@@ -1,6 +1,9 @@
 package io.quarkus.it.hibernate.reactive.mysql;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -10,7 +13,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.agroal.api.AgroalDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -24,7 +27,7 @@ public class HibernateReactiveMySQLTestEndpoint {
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
     @Inject
-    MySQLPool mysqlPool;
+    Pool mysqlPool;
 
     @Inject
     AgroalDataSource jdbcDataSource;

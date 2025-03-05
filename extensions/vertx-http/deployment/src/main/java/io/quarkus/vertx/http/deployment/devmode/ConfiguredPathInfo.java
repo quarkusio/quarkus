@@ -31,14 +31,15 @@ public class ConfiguredPathInfo {
         }
     }
 
-    public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot, ManagementInterfaceBuildTimeConfig mibt,
+    public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode) {
-        if (management && mibt.enabled) {
-            var prefix = NonApplicationRootPathBuildItem.getManagementUrlPrefix(mode);
-            return prefix + endpointPath;
-        }
         if (absolutePath) {
             return endpointPath;
+        }
+        if (management && managementBuildTimeConfig.enabled()) {
+            var prefix = NonApplicationRootPathBuildItem.getManagementUrlPrefix(mode);
+            return prefix + endpointPath;
         } else {
             return TemplateHtmlBuilder.adjustRoot(nonAppRoot.getNormalizedHttpRootPath(), endpointPath);
         }

@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientCustomizer;
@@ -116,12 +117,27 @@ public class MongoClientProcessor {
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeMongoCommandListener(MongoClientBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.tracingEnabled) {
+        if (buildTimeConfig.tracingEnabled()) {
             return new AdditionalIndexedClassesBuildItem(
                     MongoTracingCommandListener.class.getName(),
                     MongoReactiveContextProvider.class.getName());
         }
         return new AdditionalIndexedClassesBuildItem();
+    }
+
+    @BuildStep
+    void includeMongoCommandMetricListener(
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
+            MongoClientBuildTimeConfig buildTimeConfig,
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        if (!buildTimeConfig.metricsEnabled()) {
+            return;
+        }
+        boolean withMicrometer = metricsCapability.map(cap -> cap.metricsSupported(MetricsFactory.MICROMETER))
+                .orElse(false);
+        if (withMicrometer) {
+            additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(MicrometerCommandListener.class.getName()));
+        }
     }
 
     @BuildStep
@@ -243,7 +259,7 @@ public class MongoClientProcessor {
 
         // Construction of MongoClient isn't compatible with the MetricsFactoryConsumer pattern.
         // Use a supplier to defer construction of the pool listener for the supported metrics system
-        if (buildTimeConfig.metricsEnabled && metricsCapability.isPresent()) {
+        if (buildTimeConfig.metricsEnabled() && metricsCapability.isPresent()) {
             if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
                 return new MongoConnectionPoolListenerBuildItem(recorder.createMicrometerConnectionPoolListener());
             } else {
@@ -331,7 +347,7 @@ public class MongoClientProcessor {
 
         boolean createDefaultBlockingMongoClient = false;
         boolean createDefaultReactiveMongoClient = false;
-        if (makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients) {
+        if (makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients()) {
             // all clients are expected to exist in this case
             createDefaultBlockingMongoClient = true;
             createDefaultReactiveMongoClient = true;
@@ -353,12 +369,12 @@ public class MongoClientProcessor {
 
         if (createDefaultBlockingMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
+                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
         if (createDefaultReactiveMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
+                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
 
@@ -455,7 +471,7 @@ public class MongoClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(MongoClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     @BuildStep

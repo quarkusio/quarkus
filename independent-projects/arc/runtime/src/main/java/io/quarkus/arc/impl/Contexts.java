@@ -12,6 +12,7 @@ import java.util.Set;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.InjectableContext;
@@ -26,6 +27,7 @@ class Contexts {
 
     // Built-in contexts
     final ManagedContext requestContext;
+    final ManagedContext sessionContext;
     final InjectableContext applicationContext;
     final InjectableContext singletonContext;
     final InjectableContext dependentContext;
@@ -35,6 +37,7 @@ class Contexts {
     private final List<InjectableContext> singletonContextSingleton;
     private final List<InjectableContext> dependentContextSingleton;
     private final List<InjectableContext> requestContextSingleton;
+    private final List<InjectableContext> sessionContextSingleton;
 
     // Lazily computed list of contexts for a scope
     private final ClassValue<List<InjectableContext>> unoptimizedContexts;
@@ -42,18 +45,22 @@ class Contexts {
     // Precomputed values
     final Set<Class<? extends Annotation>> scopes;
 
-    Contexts(ManagedContext requestContext, InjectableContext applicationContext, InjectableContext singletonContext,
+    Contexts(ManagedContext requestContext, ManagedContext sessionContext, InjectableContext applicationContext,
+            InjectableContext singletonContext,
             InjectableContext dependentContext, Map<Class<? extends Annotation>, List<InjectableContext>> contexts) {
         this.requestContext = requestContext;
+        this.sessionContext = sessionContext;
         this.applicationContext = applicationContext;
         this.singletonContext = singletonContext;
         this.dependentContext = dependentContext;
 
-        this.applicationContextSingleton = Collections.singletonList(applicationContext);
-        this.singletonContextSingleton = Collections.singletonList(singletonContext);
-        this.dependentContextSingleton = Collections.singletonList(dependentContext);
+        this.applicationContextSingleton = List.of(applicationContext);
+        this.singletonContextSingleton = List.of(singletonContext);
+        this.dependentContextSingleton = List.of(dependentContext);
         List<InjectableContext> requestContexts = contexts.get(RequestScoped.class);
-        this.requestContextSingleton = requestContexts != null ? requestContexts : Collections.singletonList(requestContext);
+        this.requestContextSingleton = requestContexts != null ? requestContexts : List.of(requestContext);
+        List<InjectableContext> sessionContexts = contexts.get(SessionScoped.class);
+        this.sessionContextSingleton = sessionContexts != null ? sessionContexts : List.of(sessionContext);
 
         if (!contexts.isEmpty()) {
             // At least one custom context is registered
@@ -84,11 +91,13 @@ class Contexts {
             all.add(Singleton.class);
             all.add(Dependent.class);
             all.add(RequestScoped.class);
+            all.add(SessionScoped.class);
             this.scopes = Set.copyOf(all);
         } else {
             // No custom context is registered
             this.unoptimizedContexts = null;
-            this.scopes = Set.of(ApplicationScoped.class, Singleton.class, Dependent.class, RequestScoped.class);
+            this.scopes = Set.of(ApplicationScoped.class, Singleton.class, Dependent.class, RequestScoped.class,
+                    SessionScoped.class);
         }
     }
 
@@ -125,6 +134,8 @@ class Contexts {
             return singletonContextSingleton;
         } else if (Dependent.class.equals(scopeType)) {
             return dependentContextSingleton;
+        } else if (SessionScoped.class.equals(scopeType)) {
+            return sessionContextSingleton;
         }
         return unoptimizedContexts != null ? unoptimizedContexts.get(scopeType) : Collections.emptyList();
     }
@@ -132,14 +143,16 @@ class Contexts {
     static class Builder {
 
         private final ManagedContext requestContext;
+        private final ManagedContext sessionContext;
         private final InjectableContext applicationContext;
         private final InjectableContext singletonContext;
         private final InjectableContext dependentContext;
         private final Map<Class<? extends Annotation>, List<InjectableContext>> contexts = new HashMap<>();
 
-        public Builder(ManagedContext requestContext, InjectableContext applicationContext,
+        public Builder(ManagedContext requestContext, ManagedContext sessionContext, InjectableContext applicationContext,
                 InjectableContext singletonContext, InjectableContext dependentContext) {
             this.requestContext = requestContext;
+            this.sessionContext = sessionContext;
             this.applicationContext = applicationContext;
             this.singletonContext = singletonContext;
             this.dependentContext = dependentContext;
@@ -163,7 +176,12 @@ class Contexts {
                 // If a custom request context is registered then add the built-in context as well
                 putContext(requestContext);
             }
-            return new Contexts(requestContext, applicationContext, singletonContext, dependentContext, contexts);
+            if (contexts.containsKey(SessionScoped.class)) {
+                // If a custom session context is registered then add the built-in context as well
+                putContext(sessionContext);
+            }
+            return new Contexts(requestContext, sessionContext, applicationContext, singletonContext, dependentContext,
+                    contexts);
         }
 
     }

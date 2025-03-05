@@ -138,6 +138,7 @@ class NarayanaJtaProcessor {
                 JTANodeNameXAResourceOrphanFilter.class,
                 JTAActionStatusServiceXAResourceOrphanFilter.class,
                 ExpiredTransactionStatusManagerScanner.class)
+                .publicConstructors()
                 .reason(getClass().getName())
                 .build());
 
@@ -150,7 +151,7 @@ class NarayanaJtaProcessor {
         builder.addBeanClass(TransactionalInterceptorNotSupported.class);
         additionalBeans.produce(builder.build());
 
-        transactionManagerBuildTimeConfig.unsafeMultipleLastResources.ifPresent(mode -> {
+        transactionManagerBuildTimeConfig.unsafeMultipleLastResources().ifPresent(mode -> {
             if (!mode.equals(UnsafeMultipleLastResourcesMode.FAIL)) {
                 recorder.logUnsafeMultipleLastResourcesOnStartup(mode);
             }
@@ -177,7 +178,7 @@ class NarayanaJtaProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void nativeImageFeature(TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources
+        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources()
                 .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
             case ALLOW, WARN_FIRST, WARN_EACH -> {
                 nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
@@ -263,7 +264,7 @@ class NarayanaJtaProcessor {
             TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             Capabilities capabilities, BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources
+        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources()
                 .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
             case ALLOW -> {
                 recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);

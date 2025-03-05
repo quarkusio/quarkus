@@ -55,7 +55,7 @@ public class WebAuthnAndBasicAuthnTest {
     @Test
     public void test() throws Exception {
 
-        Assertions.assertTrue(userProvider.findByUserName("stev").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stev").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
         String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stev", cookieFilter);
         WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
@@ -79,9 +79,9 @@ public class WebAuthnAndBasicAuthnTest {
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
-        List<WebAuthnCredentialRecord> users = userProvider.findByUserName("stev").await().indefinitely();
+        List<WebAuthnCredentialRecord> users = userProvider.findByUsername("stev").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stev"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stev"));
         Assertions.assertEquals(1, users.get(0).getCounter());
 
         // make sure our login cookie works

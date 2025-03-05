@@ -18,6 +18,7 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -84,6 +85,11 @@ public class BuildTimeRegistrationTest {
                     @Override
                     public KeyStore getTrustStore() {
                         return ts;
+                    }
+
+                    @Override
+                    public boolean isTrustAll() {
+                        return false;
                     }
                 };
             } catch (Exception e) {

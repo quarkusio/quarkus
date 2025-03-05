@@ -1,21 +1,34 @@
 package io.quarkus.websockets.next.runtime;
 
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.util.TypeLiteral;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
@@ -39,12 +52,6 @@ public class WebSocketServerRecorder {
 
     private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
 
-    private final WebSocketsServerRuntimeConfig config;
-
-    public WebSocketServerRecorder(WebSocketsServerRuntimeConfig config) {
-        this.config = config;
-    }
-
     public Supplier<Object> connectionSupplier() {
         return new Supplier<Object>() {
 
@@ -63,7 +70,8 @@ public class WebSocketServerRecorder {
     }
 
     public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId,
-            boolean activateRequestContext, boolean activateSessionContext, String endpointPath) {
+            boolean activateRequestContext, boolean activateSessionContext, String endpointPath,
+            WebSocketsServerRuntimeConfig config) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
@@ -140,7 +148,7 @@ public class WebSocketServerRecorder {
                 } else {
                     identity = Uni.createFrom().item(user.getSecurityIdentity());
                 }
-                return checkHttpUpgrade(new HttpUpgradeContext(ctx.request(), identity, endpointId), httpUpgradeChecks, 0);
+                return checkHttpUpgrade(new HttpUpgradeContextImpl(ctx, identity, endpointId), httpUpgradeChecks, 0);
             }
 
             private static Uni<CheckResult> checkHttpUpgrade(HttpUpgradeContext ctx,
@@ -189,11 +197,36 @@ public class WebSocketServerRecorder {
         return SecuritySupport.NOOP;
     }
 
-    public Supplier<HttpUpgradeCheck> createSecurityHttpUpgradeCheck(Map<String, SecurityCheck> endpointToCheck) {
-        return new Supplier<HttpUpgradeCheck>() {
+    public Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck> createSecurityHttpUpgradeCheck(
+            Map<String, SecurityCheck> endpointToCheck) {
+        return new Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck>() {
             @Override
-            public HttpUpgradeCheck get() {
-                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck);
+            public SecurityHttpUpgradeCheck apply(SyntheticCreationalContext<SecurityHttpUpgradeCheck> ctx) {
+                boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+                        Boolean.class);
+                var securityEventHelper = new SecurityEventHelper<>(ctx.getInjectedReference(new TypeLiteral<>() {
+                }), ctx.getInjectedReference(new TypeLiteral<>() {
+                }), AUTHORIZATION_SUCCESS,
+                        AUTHORIZATION_FAILURE, ctx.getInjectedReference(BeanManager.class), securityEventsEnabled);
+                WebSocketsServerRuntimeConfig config = ctx.getInjectedReference(WebSocketsServerRuntimeConfig.class);
+                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck,
+                        securityEventHelper);
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<HttpUpgradeSecurityInterceptor>, HttpUpgradeSecurityInterceptor> createHttpUpgradeSecurityInterceptor(
+            Map<String, String> classNameToEndpointId) {
+        return new Function<SyntheticCreationalContext<HttpUpgradeSecurityInterceptor>, HttpUpgradeSecurityInterceptor>() {
+            @Override
+            public HttpUpgradeSecurityInterceptor apply(SyntheticCreationalContext<HttpUpgradeSecurityInterceptor> ctx) {
+                EagerSecurityInterceptorStorage storage = ctx.getInjectedReference(EagerSecurityInterceptorStorage.class);
+                Map<String, Consumer<RoutingContext>> endpointIdToInterceptor = new HashMap<>();
+                classNameToEndpointId.forEach((className, endpointId) -> {
+                    Consumer<RoutingContext> interceptor = Objects.requireNonNull(storage.getClassInterceptor(className));
+                    endpointIdToInterceptor.put(endpointId, interceptor);
+                });
+                return new HttpUpgradeSecurityInterceptor(endpointIdToInterceptor);
             }
         };
     }

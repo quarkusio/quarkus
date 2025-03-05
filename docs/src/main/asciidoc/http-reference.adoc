@@ -40,8 +40,7 @@ Look at the xref:web-dependency-locator.adoc[Web dependency locator] guide for d
 
 Static resources can be served from a local directory by installing an additional route in the Vert.x router.
 
-For instance, to serve resources from the `static/` directory relative to the current path at http://localhost:8080/static/,
-you can install the following route:
+For instance, to serve resources from the `static/` directory relative to the current path at http://localhost:8080/static/, you can install the following route:
 
 [source,java]
 ----
@@ -247,6 +246,10 @@ quarkus.http.ssl.certificate.reload-period=1h
 The files are reloaded from the same location as they were initially loaded from.
 If there is no content change, the reloading is a no-op.
 It the reloading fails, the server will continue to use the previous certificates.
+
+=== Preventing client renegotiation
+
+See xref:./tls-registry-reference.adoc#client-renegotiation[Preventing client renegotiation] for more information.
 
 == Additional HTTP Headers
 
@@ -554,7 +557,7 @@ quarkus.http.proxy.trusted-proxies=127.0.0.1 <1>
 ----
 <1> Configure trusted proxy with the IP address `127.0.0.1`. Request headers from any other address are going to be ignored.
 
-Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `X-Forwarded` or `X-Forwarded-*` headers from the client.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client.
 
 Supported forwarding address headers are:
 

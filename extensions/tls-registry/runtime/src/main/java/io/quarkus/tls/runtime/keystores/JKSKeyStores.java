@@ -43,7 +43,13 @@ public class JKSKeyStores {
         JksOptions options = toOptions(jksConfig, config.credentialsProvider(), name);
         KeyStore ks = loadKeyStore(vertx, name, options, "trust");
         verifyTrustStoreAlias(options, name, ks);
-        return new TrustStoreAndTrustOptions(ks, options);
+        if (config.certificateExpirationPolicy() == TrustStoreConfig.CertificateExpiryPolicy.IGNORE) {
+            return new TrustStoreAndTrustOptions(ks, options);
+        } else {
+            var wrapped = new ExpiryTrustOptions(options, config.certificateExpirationPolicy());
+            return new TrustStoreAndTrustOptions(ks, wrapped);
+        }
+
     }
 
     private static JksOptions toOptions(JKSKeyStoreConfig config,

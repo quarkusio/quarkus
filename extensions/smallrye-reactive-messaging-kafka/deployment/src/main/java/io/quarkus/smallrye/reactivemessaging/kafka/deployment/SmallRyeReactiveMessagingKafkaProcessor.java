@@ -46,7 +46,6 @@ import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
-import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
@@ -181,7 +180,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     public void defaultChannelConfiguration(
             LaunchModeBuildItem launchMode,
             ReactiveMessagingKafkaBuildTimeConfig buildTimeConfig,
-            ReactiveMessagingKafkaConfig runtimeConfig,
             CombinedIndexBuildItem combinedIndex,
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
@@ -189,13 +187,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflection) {
 
         DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
-        if (buildTimeConfig.serializerAutodetectionEnabled) {
+        if (buildTimeConfig.serializerAutodetectionEnabled()) {
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.serializerGenerationEnabled ? generatedClass : null, reflection);
+                    buildTimeConfig.serializerGenerationEnabled() ? generatedClass : null, reflection);
         }
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
-            if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
+            if (!buildTimeConfig.enableGracefulShutdownInDevAndTestMode()) {
                 List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
                 List<AnnotationInstance> outgoings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING);
                 List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);

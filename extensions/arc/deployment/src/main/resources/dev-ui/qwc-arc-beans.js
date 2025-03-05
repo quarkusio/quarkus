@@ -4,6 +4,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { beans } from 'build-time-data';
 import { beanIdsWithDependencyGraphs } from 'build-time-data';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-ide-link';
@@ -17,6 +18,12 @@ export class QwcArcBeans extends LitElement {
     jsonRpc = new JsonRpc(this);
 
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    
         .arctable {
           height: 100%;
           padding-bottom: 10px;
@@ -45,10 +52,15 @@ export class QwcArcBeans extends LitElement {
             overflow: hidden;
             height: 100%;
         }
+        .filterBar {
+            width: 99%;
+            margin-left: 5px;
+        }
         `;
 
     static properties = {
         _beans: {state: true},
+        _filteredBeans: {state: true},
         _beanIdsWithDependencyGraphs: {state: true},
         _selectedBean: {state: true}
     };
@@ -56,6 +68,7 @@ export class QwcArcBeans extends LitElement {
     constructor() {
         super();
         this._beans = beans;
+        this._filteredBeans = this._beans;
         this._beanIdsWithDependencyGraphs = beanIdsWithDependencyGraphs;
         this._selectedBean = null;
     }
@@ -73,11 +86,12 @@ export class QwcArcBeans extends LitElement {
                 newBeans.push(bean);
             }
             this._beans = newBeans;
+            this._filteredBeans = this._beans;
         });
     }
 
     render() {
-        if (this._beans) {
+        if (this._filteredBeans) {
             if (this._selectedBean) {
                 return this._renderBeanGraph();
             } else {
@@ -88,19 +102,46 @@ export class QwcArcBeans extends LitElement {
         }
     }
 
+    _renderFilterBar(){
+        return html`<vaadin-text-field
+                        placeholder="Search"
+                        class="filterBar"
+                        @value-changed="${(e) => {
+                            const searchTerm = (e.detail.value || '').trim();
+                            const matchesTerm = (value) => {
+                                if(value){
+                                    return value.toLowerCase().includes(searchTerm.toLowerCase());
+                                }
+                            }
+                            if(searchTerm?.trim()){
+                                this._filteredBeans = this._beans.filter(
+                                    ({ providerType, kind }) => {
+                                        return !searchTerm ||
+                                            matchesTerm(providerType?.name) ||
+                                            matchesTerm(kind)
+                                });
+                            }else{
+                                this._filteredBeans = this._beans;
+                            }
+                        }}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                    </vaadin-text-field>`;
+    }
+
     _renderBeanList(){
-        return html`<vaadin-grid .items="${this._beans}" class="arctable" theme="no-border">
-                    <vaadin-grid-column auto-width
+        return html`${this._renderFilterBar()}
+                <vaadin-grid .items="${this._filteredBeans}" class="arctable" theme="no-border">
+                    <vaadin-grid-sort-column path="providerType.name" auto-width
                         header="Bean"
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="kind" auto-width
                         header="Kind"
                         ${columnBodyRenderer(this._kindRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
                     <vaadin-grid-column auto-width
                         header="Associated Interceptors"
@@ -172,7 +213,7 @@ export class QwcArcBeans extends LitElement {
             return html``;
         }
     }
-
+    
     _interceptorsRenderer(bean) {
         if (bean.interceptors && bean.interceptors.length > 0) {
             return html`<vaadin-vertical-layout>

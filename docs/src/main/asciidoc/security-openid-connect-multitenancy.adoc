@@ -343,10 +343,10 @@ To start a Keycloak server, you can use Docker and run the following command:
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
+docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` is set to `25.0.6` or higher.
+where `keycloak.version` is set to `26.0.7` or higher.
 
 Access your Keycloak server at http://localhost:8180[localhost:8180].
 
@@ -501,9 +501,9 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("tenant"));
+            assertTrue(page.asNormalizedText().contains("tenant"));
         }
     }
 
@@ -519,9 +519,9 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("alice@tenant-a.org"));
+            assertTrue(page.asNormalizedText().contains("alice@tenant-a.org"));
         }
     }
 
@@ -662,6 +662,13 @@ quarkus.http.auth.permission.authenticated.policy=authenticated
 quarkus.http.auth.permission.authenticated.applies-to=JAXRS <1>
 ----
 <1> Tell Quarkus to run the HTTP permission check after the tenant has been selected with the `@Tenant` annotation.
+====
+
+[NOTE]
+====
+The `io.quarkus.oidc.Tenant` annotation can be used to select tenant for a WebSockets Next server endpoint.
+The annotation must be placed on the endpoint class, because the `SecurityIdentity` is created before the HTTP connection is upgraded to a WebSocket connection.
+For more information about the HTTP upgrade security, see the xref:websockets-next-reference.adoc#secure-http-upgrade[Secure HTTP upgrade] section of the Quarkus "WebSockets Next reference" guide.
 ====
 
 [[tenant-config-resolver]]
@@ -1109,6 +1116,40 @@ The default tenant configuration is automatically disabled when `quarkus.oidc.au
 ====
 
 Be aware that tenant-specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
+
+[[programmatic-startup]]
+== Programmatic OIDC start-up for multiple tenants
+
+Static OIDC tenants can be created programmatically like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import io.quarkus.oidc.OidcTenantConfig;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void observe(@Observes Oidc oidc) { <1>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-one").tenantId("tenant-one").build()); <2>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-two").tenantId("tenant-two").build()); <3>
+    }
+
+}
+----
+<1> Observe OIDC event.
+<2> Create OIDC tenant 'tenant-one'.
+<3> Create OIDC tenant 'tenant-two'.
+
+The code above is a programmatic equivalent to the following configuration in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.oidc.tenant-one.auth-server-url=http://localhost:8180/realms/tenant-one
+quarkus.oidc.tenant-two.auth-server-url=http://localhost:8180/realms/tenant-two
+----
 
 == References
 

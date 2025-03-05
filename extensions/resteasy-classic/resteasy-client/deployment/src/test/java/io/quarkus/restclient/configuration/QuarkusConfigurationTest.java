@@ -78,9 +78,9 @@ public class QuarkusConfigurationTest {
 
         if (verifyNonStandardProperties) {
             assertTrue(clientConfig.connectionTTL().isPresent());
-            assertThat(clientConfig.connectionTTL().get()).isEqualTo(30000);
+            assertThat(clientConfig.connectionTTL().getAsInt()).isEqualTo(30000);
             assertTrue(clientConfig.connectionPoolSize().isPresent());
-            assertThat(clientConfig.connectionPoolSize().get()).isEqualTo(10);
+            assertThat(clientConfig.connectionPoolSize().getAsInt()).isEqualTo(10);
         }
     }
 }

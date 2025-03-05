@@ -3,8 +3,10 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ConversationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -16,7 +18,9 @@ public enum BuiltinScope {
     DEPENDENT(Dependent.class, false),
     SINGLETON(Singleton.class, false),
     APPLICATION(ApplicationScoped.class, true),
-    REQUEST(RequestScoped.class, true);
+    REQUEST(RequestScoped.class, true),
+    SESSION(SessionScoped.class, true),
+    CONVERSATION(ConversationScoped.class, true);
 
     private ScopeInfo info;
 
@@ -56,6 +60,10 @@ public enum BuiltinScope {
 
     public boolean is(ScopeInfo scope) {
         return getInfo().equals(scope);
+    }
+
+    public boolean isDeclaredBy(BeanInfo bean) {
+        return is(bean.getScope());
     }
 
     public static boolean isIn(Iterable<AnnotationInstance> annotations) {

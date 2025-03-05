@@ -8,13 +8,15 @@ import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 
+@ConfigMapping(prefix = "quarkus.servlet")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class ServletConfig {
+public interface ServletConfig {
 
     /**
      * The context path for Servlet content. This will determine the path used to
@@ -30,15 +32,13 @@ public class ServletConfig {
      * {@literal /foo/bar}</li>
      * </ul>
      */
-    @ConfigItem
-    @ConvertWith(ContextPathConverter.class)
-    Optional<String> contextPath;
+    Optional<@WithConverter(ContextPathConverter.class) String> contextPath();
 
     /**
      * The default charset to use for reading and writing requests
      */
-    @ConfigItem(defaultValue = "UTF-8")
-    public String defaultCharset;
+    @WithDefault("UTF-8")
+    String defaultCharset();
 
     /**
      * This converter adds a '/' at the beginning of the context path but does not add one at the end, given we want to support
@@ -47,7 +47,7 @@ public class ServletConfig {
      * See ContextPathTestCase for an example.
      */
     @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-    public static class ContextPathConverter implements Converter<String> {
+    class ContextPathConverter implements Converter<String> {
 
         private static final String SLASH = "/";
 

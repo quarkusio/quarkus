@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-getting-started-tutorial"]
-= Getting started with Security by using Basic authentication and Jakarta Persistence
+= Getting started with security by using Basic authentication and Jakarta Persistence
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,getting-started
@@ -158,6 +158,7 @@ endif::no-quarkus-security-jpa-reactive[]
 Add a regular Jakarta REST resource to your Java source code, as shown in the following code snippet:
 +
 ====
+.`src/main/java/org/acme/security/jpa/PublicResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -185,6 +186,7 @@ The source code for the `/api/admin` endpoint is similar, but instead, you use a
 Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
 +
 ====
+.`src/main/java/org/acme/security/jpa/AdminResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -211,12 +213,12 @@ public class AdminResource {
 Use `SecurityContext` to get access to the currently authenticated `Principal` user and to return their username, all of which is retrieved from the database.
 +
 ====
+.`src/main/java/org/acme/security/jpa/UserResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
@@ -238,8 +240,9 @@ public class UserResource {
 [[define-the-user-entity]]
 == Define the user entity
 
-* You can now describe how you want security information to be stored in the model by adding annotations to the `user` entity, as outlined in the following code snippet:
+Specify how security information is stored in the model by adding the following annotations to the `user` entity:
 
+.`src/main/java/org/acme/security/jpa/User.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -316,21 +319,25 @@ When secure access is required, and no other authentication mechanisms are enabl
 Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
 ====
 +
-. Configure at least one data source in the `application.properties` file so the `quarkus-security-jpa` extension can access your database.
+. Configure at least one data source in the `src/main/resources/application.properties` file so the `quarkus-security-jpa` extension can access your database.
 For example:
 +
 ====
+.src/main/resources/application.properties
 [source,properties]
 ----
 quarkus.http.auth.basic=true
 
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=quarkus
-quarkus.datasource.password=quarkus
-quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
+%prod.quarkus.datasource.db-kind=postgresql
+%prod.quarkus.datasource.username=quarkus
+%prod.quarkus.datasource.password=quarkus
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
+
+By adding the `%prod.` profile prefix, you ensure that the data source properties are only observed by an application running in production mode.
+
 ====
 +
 . To initialize the database with users and roles, implement the `Startup` class, as outlined in the following code snippet:
@@ -341,6 +348,7 @@ ifndef::no-quarkus-security-jpa-reactive[]
 * The URLs of Reactive datasources that are used by the `quarkus-security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
 configuration property and not the `quarkus.datasource.jdbc.url` configuration property typically used by JDBC datasources.
 +
+.src/main/resources/application.properties
 [source,properties]
 ----
 %prod.quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:5431/security_jpa
@@ -353,6 +361,7 @@ Therefore, adjustments are needed in a production environment.
 ====
 endif::no-quarkus-security-jpa-reactive[]
 
+.`src/main/java/org/acme/security/jpa/Startup.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -384,7 +393,7 @@ In a production environment, do not store plain text passwords.
 As a result, the `quarkus-security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
-== Test your application by using Dev Services for PostgreSQL
+== Test your application in dev mode by using Dev Services for PostgreSQL
 
 Complete the integration testing of your application in JVM and native modes by using xref:dev-services.adoc#databases[Dev Services for PostgreSQL] before you run your application in production mode.
 
@@ -411,23 +420,12 @@ To run your application in dev mode:
 include::{includes}/devtools/dev.adoc[]
 
 
-The following properties configuration demonstrates how to enable PostgreSQL testing to run only in production (`prod`) mode.
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
-
-[source,properties]
-----
-%prod.quarkus.datasource.db-kind=postgresql
-%prod.quarkus.datasource.username=quarkus
-%prod.quarkus.datasource.password=quarkus
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus
-
-quarkus.hibernate-orm.database.generation=drop-and-create
-----
-
-If you add the `%prod.` profile prefix, data source properties are not visible to `Dev Services for PostgreSQL` and are only observed by an application running in production mode.
+Make sure that either `Podman` or `Docker` is installed on your computer.
 
 To write the integration test, use the following code sample:
 
+.`src/test/java/org/acme/security/jpa/JpaSecurityRealmTest.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -496,6 +494,8 @@ public class JpaSecurityRealmTest {
 
 As you can see in this code sample, you do not need to start the test container from the test code.
 
+To run these tests, choose `Press [r] to resume testing` option which is shown in the console after you started your application in dev mode.
+
 [NOTE]
 ====
 When you start your application in dev mode, Dev Services for PostgreSQL launches a PostgreSQL dev mode container so that you can start developing your application.
@@ -503,9 +503,17 @@ While developing your application, you can add and run tests individually by usi
 Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
 
-== Test your application using Curl or browser
+Alternatively, you can run these tests using Maven:
 
-To test your application using Curl or the browser, you must first start a PostgreSQL server, then compile and run your application either in JVM or native mode.
+[source,bash,subs=attributes+]
+----
+./mvnw test
+----
+
+== Test your application in production mode by using Curl or browser
+
+To test your application using Curl or a browser start a PostgreSQL server first.
+Then, compile and run your application in either JVM or native mode.
 
 === Start the PostgreSQL server
 
@@ -513,7 +521,7 @@ To test your application using Curl or the browser, you must first start a Postg
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
-           -p 5432:5432 postgres:14.1
+           -p 5432:5432 postgres:17
 ----
 
 === Compile and run the application
@@ -576,11 +584,7 @@ public
 $ curl -i -X GET http://localhost:8080/api/admin
 
 HTTP/1.1 401 Unauthorized
-Content-Length: 14
-Content-Type: text/html;charset=UTF-8
 WWW-Authenticate: Basic
-
-Not authorized
 ----
 ====
 * Connect to a protected endpoint as an authorized user:
@@ -616,10 +620,6 @@ If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
 
 HTTP/1.1 403 Forbidden
-Content-Length: 34
-Content-Type: text/html;charset=UTF-8
-
-Forbidden
 ----
 
 Finally, the user named `user` is authorized, and the security context contains the principal details, for example, the username.

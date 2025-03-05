@@ -74,6 +74,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.util.GlobUtil;
 
 /**
  * This class is responsible for running a single run of JUnit tests.
@@ -105,6 +106,7 @@ public class JunitTestRunner {
     private final Set<String> excludeTags;
     private final Pattern include;
     private final Pattern exclude;
+    private final String specificSelection;
     private final List<String> includeEngines;
     private final List<String> excludeEngines;
     private final boolean failingTestsOnly;
@@ -126,6 +128,7 @@ public class JunitTestRunner {
         this.excludeTags = new HashSet<>(builder.excludeTags);
         this.include = builder.include;
         this.exclude = builder.exclude;
+        this.specificSelection = builder.specificSelection;
         this.includeEngines = builder.includeEngines;
         this.excludeEngines = builder.excludeEngines;
         this.failingTestsOnly = builder.failingTestsOnly;
@@ -167,7 +170,15 @@ public class JunitTestRunner {
             } else if (!excludeTags.isEmpty()) {
                 launchBuilder.filters(TagFilter.excludeTags(new ArrayList<>(excludeTags)));
             }
-            if (include != null) {
+            if (specificSelection != null) {
+                if (specificSelection.startsWith("maven:")) {
+                    launchBuilder.filters(new MavenSpecificSelectionFilter(specificSelection.substring("maven:".length())));
+                } else if (specificSelection.startsWith("gradle:")) {
+                    launchBuilder.filters(new GradleSpecificSelectionFilter(specificSelection.substring("gradle:".length())));
+                } else {
+                    log.error("Unknown specific selection, ignoring: " + specificSelection);
+                }
+            } else if (include != null) {
                 launchBuilder.filters(new RegexFilter(false, include));
             } else if (exclude != null) {
                 launchBuilder.filters(new RegexFilter(true, exclude));
@@ -436,10 +447,10 @@ public class JunitTestRunner {
     private Class<?> getTestClassFromSource(Optional<TestSource> optionalTestSource) {
         if (optionalTestSource.isPresent()) {
             var testSource = optionalTestSource.get();
-            if (testSource instanceof ClassSource) {
-                return ((ClassSource) testSource).getJavaClass();
-            } else if (testSource instanceof MethodSource) {
-                return ((MethodSource) testSource).getJavaClass();
+            if (testSource instanceof ClassSource classSource) {
+                return classSource.getJavaClass();
+            } else if (testSource instanceof MethodSource methodSource) {
+                return methodSource.getJavaClass();
             } else if (testSource.getClass().getName().equals(ARCHUNIT_FIELDSOURCE_FQCN)) {
                 try {
                     return (Class<?>) testSource.getClass().getMethod("getJavaClass").invoke(testSource);
@@ -775,6 +786,7 @@ public class JunitTestRunner {
         private List<String> excludeTags = Collections.emptyList();
         private Pattern include;
         private Pattern exclude;
+        private String specificSelection;
         private List<String> includeEngines = Collections.emptyList();
         private List<String> excludeEngines = Collections.emptyList();
         private boolean failingTestsOnly;
@@ -844,6 +856,11 @@ public class JunitTestRunner {
             return this;
         }
 
+        public Builder setSpecificSelection(String specificSelection) {
+            this.specificSelection = specificSelection;
+            return this;
+        }
+
         public Builder setIncludeEngines(List<String> includeEngines) {
             this.includeEngines = includeEngines;
             return this;
@@ -880,14 +897,239 @@ public class JunitTestRunner {
         @Override
         public FilterResult apply(TestDescriptor testDescriptor) {
             if (testDescriptor.getSource().isPresent()) {
-                if (testDescriptor.getSource().get() instanceof MethodSource) {
-                    MethodSource methodSource = (MethodSource) testDescriptor.getSource().get();
-                    String name = methodSource.getJavaClass().getName();
+                if (testDescriptor.getSource().get() instanceof MethodSource methodSource) {
+                    String name = methodSource.getClassName();
                     if (pattern.matcher(name).matches()) {
                         return FilterResult.includedIf(!exclude);
                     }
                     return FilterResult.includedIf(exclude);
                 }
+            }
+            return FilterResult.included("not a method");
+        }
+    }
+
+    // https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#test
+    // org.apache.maven.surefire.api.testset.TestListResolver
+    // org.apache.maven.surefire.api.testset.ResolvedTest
+    private static class MavenSpecificSelectionFilter implements PostDiscoveryFilter {
+        private final Matcher[] excludes;
+        private final Matcher[] includes;
+
+        MavenSpecificSelectionFilter(String selection) {
+            List<Matcher> excludes = new ArrayList<>();
+            List<Matcher> includes = new ArrayList<>();
+
+            if (selection != null) {
+                for (String item : selection.split(",")) {
+                    item = item.trim();
+                    if (item.isEmpty() || "!".equals(item) || "#".equals(item)) {
+                        continue;
+                    }
+                    List<Matcher> list;
+                    if (item.startsWith("!")) {
+                        list = excludes;
+                        item = item.substring(1);
+                    } else {
+                        list = includes;
+                    }
+
+                    int hashIndex = item.indexOf('#');
+                    if (hashIndex == 0) {
+                        List<Pattern> methods = extractMethodPatterns(item.substring(hashIndex + 1));
+                        list.add(new MethodMatcher(methods.toArray(new Pattern[0])));
+                    } else if (hashIndex > 0) {
+                        String classPattern = adjustClassGlob(item.substring(0, hashIndex));
+                        if (hashIndex == item.length() - 1) {
+                            list.add(new ClassMatcher(globToPattern(classPattern)));
+                        } else {
+                            List<Pattern> methods = extractMethodPatterns(item.substring(hashIndex + 1));
+                            list.add(new ClassAndMethodMatcher(globToPattern(classPattern), methods.toArray(new Pattern[0])));
+                        }
+                    } else {
+                        String classPattern = adjustClassGlob(item);
+                        list.add(new ClassMatcher(globToPattern(classPattern)));
+                    }
+                }
+            }
+
+            this.excludes = excludes.toArray(new Matcher[0]);
+            this.includes = includes.toArray(new Matcher[0]);
+        }
+
+        private static List<Pattern> extractMethodPatterns(String methodGlobs) {
+            List<Pattern> result = new ArrayList<>();
+            for (String methodGlob : methodGlobs.split("\\+")) {
+                methodGlob = methodGlob.trim();
+                if (!methodGlob.isEmpty()) {
+                    result.add(globToPattern(methodGlob));
+                }
+            }
+            return result;
+        }
+
+        private static String adjustClassGlob(String classGlob) {
+            if (classGlob.startsWith("**/")) {
+                classGlob = classGlob.substring("**/".length());
+            }
+            if (classGlob.endsWith(".java")) {
+                classGlob = classGlob.substring(0, classGlob.length() - ".java".length());
+            } else if (classGlob.endsWith(".class")) {
+                classGlob = classGlob.substring(0, classGlob.length() - ".class".length());
+            } else if (classGlob.endsWith(".*")) {
+                classGlob = classGlob.substring(0, classGlob.length() - ".*".length());
+            }
+            return "**/" + classGlob.replace('.', '/');
+        }
+
+        private static Pattern globToPattern(String glob) {
+            return Pattern.compile(GlobUtil.toRegexPattern(glob));
+        }
+
+        @Override
+        public FilterResult apply(TestDescriptor testDescriptor) {
+            if (testDescriptor.getSource().isPresent()
+                    && testDescriptor.getSource().get() instanceof MethodSource methodSource) {
+                String className = methodSource.getClassName().replace('.', '/');
+                String methodName = methodSource.getMethodName();
+                for (Matcher exclude : excludes) {
+                    if (exclude.matches(className, methodName)) {
+                        return FilterResult.excluded(null);
+                    }
+                }
+                for (Matcher include : includes) {
+                    if (include.matches(className, methodName)) {
+                        return FilterResult.included(null);
+                    }
+                }
+                return FilterResult.excluded(null);
+            }
+            return FilterResult.included("not a method");
+        }
+
+        private interface Matcher {
+            boolean matches(String className, String methodName);
+        }
+
+        private record ClassMatcher(Pattern classPattern) implements Matcher {
+            @Override
+            public boolean matches(String className, String methodName) {
+                return classPattern.matcher(className).matches();
+            }
+        }
+
+        private record MethodMatcher(Pattern[] methodPatterns) implements Matcher {
+            @Override
+            public boolean matches(String className, String methodName) {
+                for (Pattern methodPattern : methodPatterns) {
+                    if (methodPattern.matcher(methodName).matches()) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        private record ClassAndMethodMatcher(Pattern classPattern, Pattern[] methodPatterns) implements Matcher {
+            @Override
+            public boolean matches(String className, String methodName) {
+                if (classPattern.matcher(className).matches()) {
+                    for (Pattern methodPattern : methodPatterns) {
+                        if (methodPattern.matcher(methodName).matches()) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+    }
+
+    // https://docs.gradle.org/current/userguide/java_testing.html#test_filtering
+    // org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher
+    // org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher.TestPattern
+    private static class GradleSpecificSelectionFilter implements PostDiscoveryFilter {
+        // these 2 arrays always have the same length
+        private final Pattern[] includes;
+        private final boolean[] simpleNames;
+
+        GradleSpecificSelectionFilter(String selection) {
+            List<Pattern> includes = new ArrayList<>();
+            List<Boolean> simpleNames = new ArrayList<>();
+
+            if (selection != null) {
+                for (String item : selection.split(",")) {
+                    item = item.trim();
+                    if (item.isEmpty()) {
+                        continue;
+                    }
+
+                    includes.add(parsePattern(item));
+                    simpleNames.add(Character.isUpperCase(item.charAt(0)));
+                }
+            }
+
+            this.includes = includes.toArray(new Pattern[0]);
+            this.simpleNames = new boolean[simpleNames.size()];
+            for (int i = 0; i < simpleNames.size(); i++) {
+                this.simpleNames[i] = simpleNames.get(i);
+            }
+        }
+
+        private static Pattern parsePattern(String item) {
+            StringBuilder result = new StringBuilder();
+            int start = 0;
+            int current = 0;
+            while (current < item.length()) {
+                if (item.charAt(current) == '*') {
+                    if (current > start) {
+                        String part = item.substring(start, current);
+                        result.append(Pattern.quote(part));
+                    }
+                    result.append(".*");
+                    start = current + 1;
+                }
+                current++;
+            }
+            if (current > start) {
+                String part = item.substring(start, current);
+                result.append(Pattern.quote(part));
+            }
+            return Pattern.compile(result.toString());
+        }
+
+        @Override
+        public FilterResult apply(TestDescriptor testDescriptor) {
+            if (testDescriptor.getSource().isPresent()
+                    && testDescriptor.getSource().get() instanceof MethodSource methodSource) {
+                String className = methodSource.getClassName();
+                String methodName = methodSource.getMethodName();
+                String classAndMethodName = className + "." + methodName;
+
+                String simpleClassName = className;
+                String simpleClassAndMethodName = classAndMethodName;
+
+                // using simple names is common, so let's just precompute that unconditionally
+                int lastDot = className.lastIndexOf('.');
+                if (lastDot >= 0 && lastDot < className.length() - 1) {
+                    simpleClassName = className.substring(lastDot + 1);
+                    simpleClassAndMethodName = simpleClassName + "." + methodName;
+                }
+
+                for (int i = 0; i < includes.length; i++) {
+                    String testedClassName = className;
+                    String testedClassAndMethodName = classAndMethodName;
+                    if (simpleNames[i]) {
+                        testedClassName = simpleClassName;
+                        testedClassAndMethodName = simpleClassAndMethodName;
+                    }
+
+                    Pattern include = includes[i];
+                    if (include.matcher(testedClassAndMethodName).matches() || include.matcher(testedClassName).matches()) {
+                        return FilterResult.included(null);
+                    }
+                }
+                return FilterResult.excluded(null);
             }
             return FilterResult.included("not a method");
         }
@@ -904,10 +1146,8 @@ public class JunitTestRunner {
         @Override
         public FilterResult apply(TestDescriptor testDescriptor) {
             if (testDescriptor.getSource().isPresent()) {
-                if (testDescriptor.getSource().get() instanceof MethodSource) {
-                    MethodSource methodSource = (MethodSource) testDescriptor.getSource().get();
-
-                    String name = methodSource.getJavaClass().getName();
+                if (testDescriptor.getSource().get() instanceof MethodSource methodSource) {
+                    String name = methodSource.getClassName();
                     Map<UniqueId, TestResult> results = testState.getCurrentResults().get(name);
                     if (results == null) {
                         return FilterResult.included("new test");

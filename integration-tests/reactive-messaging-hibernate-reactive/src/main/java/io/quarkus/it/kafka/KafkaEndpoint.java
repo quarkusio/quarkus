@@ -38,6 +38,20 @@ public class KafkaEndpoint {
     }
 
     @GET
+    @Path("/pets")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<List<Pet>> getPets() {
+        return receivers.getPets();
+    }
+
+    @GET
+    @Path("/pets-consumed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Pet> getConsumedPets() {
+        return receivers.getConsumedPets();
+    }
+
+    @GET
     @Path("/people-state/{consumerGroupId}/{topic}/{partition}")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<PeopleState> getPeopleState(

@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -34,11 +36,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -77,7 +82,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("Welcome to Test App", page.getTitleText());
 
@@ -100,6 +105,39 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
             assertEquals("lax", sessionCookie.getSameSite());
+
+            // try again with the valid session cookie but with RestAssured
+            RestAssured.given().redirects().follow(false)
+                    .header("Cookie", sessionCookie.getName() + "=" + sessionCookie.getValue()).when()
+                    .get("/web-app/configMetadataScopes")
+                    .then().statusCode(200);
+
+            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+
+            // Generate an already expired token with some random key id
+            String expiredTokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now().minusSeconds(100))
+                    .expiresAt(Instant.now().minusSeconds(50))
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "||"
+                    + expiredTokenWithRandomKid;
+            // Redirect to re-authenticate is expected
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_Default_test=" + sessionCookie2)
+                    .when()
+                    .get("/web-app/configMetadataScopes")
+                    .then().statusCode(302);
+
+            // Generate a valid token with some random key id
+            String tokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now())
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie3 = tokenWithRandomKid + "|" + tokenWithRandomKid + "||" + tokenWithRandomKid;
+            // 401 is expected
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_Default_test=" + sessionCookie3)
+                    .when()
+                    .get("http://localhost:8081/web-app/configMetadataScopes")
+                    .then().statusCode(401);
 
             webClient.getCookieManager().clearCookies();
         }
@@ -190,7 +228,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -259,7 +297,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint containing the state and code
@@ -320,7 +358,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -351,9 +389,15 @@ public class CodeFlowTest {
                     "AES");
             String decryptedSessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
-            String encodedIdToken = decryptedSessionCookieValue.split("\\|")[0];
+            String decrypedSessionCookieValues[] = decryptedSessionCookieValue.split("\\|");
+            assertEquals(4, decrypedSessionCookieValues.length);
 
-            JsonObject idToken = OidcUtils.decodeJwtContent(encodedIdToken);
+            // ID token
+            String encodedIdToken = decrypedSessionCookieValues[0];
+
+            JsonObject idToken = OidcCommonUtils.decodeJwtContent(encodedIdToken);
+            assertEquals("ID", idToken.getString("typ"));
+
             String expiresAt = idToken.getInteger("exp").toString();
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             String response = page.getBody().asNormalizedText();
@@ -361,6 +405,13 @@ public class CodeFlowTest {
                     response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
             assertTrue(duration > 1 && duration < 5);
+
+            // Access token and its expires_in
+            assertEquals("Bearer", OidcCommonUtils.decodeJwtContent(decrypedSessionCookieValues[1]).getString("typ"));
+            long atExpiresIn = Long.valueOf(decrypedSessionCookieValues[2]);
+            assertTrue(atExpiresIn >= 2 && atExpiresIn <= 4);
+            // Refresh token
+            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(decrypedSessionCookieValues[3]).getString("typ"));
 
             assertNull(getSessionCookie(webClient, "tenant-https"));
 
@@ -397,7 +448,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -433,6 +484,28 @@ public class CodeFlowTest {
             assertNotNull(sessionCookie);
             assertEquals("q_session_tenant-nonce", sessionCookie.getName());
 
+            // try again with the valid session cookie but with RestAssured
+            RestAssured.given().redirects().follow(false)
+                    .header("Cookie", sessionCookie.getName() + "=" + sessionCookie.getValue()).when()
+                    .get("/tenant-nonce")
+                    .then().statusCode(200);
+
+            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+
+            // Generate an already expired token with some random key id
+            String expiredTokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now().minusSeconds(100))
+                    .expiresAt(Instant.now().minusSeconds(50))
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "||"
+                    + expiredTokenWithRandomKid;
+            // 401 is expected because the redirect to re-authenticate is not allowed by default when the key id can not be resolved
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_tenant-nonce=" + sessionCookie2)
+                    .when()
+                    .get("/tenant-nonce")
+                    .then().statusCode(401);
+
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
 
@@ -465,7 +538,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -514,7 +587,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -601,7 +674,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("Welcome to Test App", page.getTitleText());
             assertNull(getStateCookie(webClient, null));
@@ -645,7 +718,7 @@ public class CodeFlowTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("Tenant Logout, refreshed: false", page.asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
 
@@ -660,7 +733,7 @@ public class CodeFlowTest {
             loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("Tenant Logout, refreshed: false", page.asNormalizedText());
 
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
@@ -683,7 +756,7 @@ public class CodeFlowTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("Tenant Refresh, refreshed: false", page.asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-refresh");
@@ -769,7 +842,7 @@ public class CodeFlowTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("Tenant AutoRefresh, refreshed: false", page.asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
@@ -802,7 +875,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("Welcome to Test App", page.getTitleText());
 
@@ -860,7 +933,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("callback:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
@@ -886,7 +959,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -924,7 +997,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
             // This is a redirect from the OIDC server to the endpoint
@@ -954,7 +1027,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             try {
-                loginForm.getInputByName("login").click();
+                loginForm.getButtonByName("login").click();
                 fail("401 status error is expected");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
@@ -978,7 +1051,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("web-app2:alice", page.getBody().asNormalizedText());
 
@@ -1023,7 +1096,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             try {
-                loginForm.getInputByName("login").click();
+                loginForm.getButtonByName("login").click();
                 fail("401 status error is expected");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
@@ -1047,7 +1120,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             try {
-                page = loginForm.getInputByName("login").click();
+                page = loginForm.getButtonByName("login").click();
                 fail("401 status error is expected: " + page.getBody().asNormalizedText());
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
@@ -1071,13 +1144,13 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("Welcome to Test App", page.getTitleText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access");
 
-            assertEquals("AT injected", page.getBody().asNormalizedText());
+            assertEquals("AT injected, active: true", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1096,7 +1169,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             try {
-                page = loginForm.getInputByName("login").click();
+                page = loginForm.getButtonByName("login").click();
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(404, ex.getStatusCode());
             }
@@ -1118,7 +1191,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("Welcome to Test App", page.getTitleText());
 
@@ -1142,7 +1215,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("RT injected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
@@ -1162,7 +1235,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-idtoken-only:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-idtoken-only");
@@ -1193,7 +1266,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-id-refresh-token:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-id-refresh-token");
@@ -1210,10 +1283,13 @@ public class CodeFlowTest {
             String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
             String[] parts = sessionCookieValue.split("\\|");
-            assertEquals(3, parts.length);
-            assertEquals("ID", OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
+            assertEquals(4, parts.length);
+            assertEquals("ID", OidcCommonUtils.decodeJwtContent(parts[0]).getString("typ"));
+            // No access token
             assertEquals("", parts[1]);
-            assertEquals("Refresh", OidcUtils.decodeJwtContent(parts[2]).getString("typ"));
+            // No access token expires_in
+            assertEquals("", parts[2]);
+            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(parts[3]).getString("typ"));
 
             assertNull(getSessionAtCookie(webClient, "tenant-id-refresh-token"));
             assertNull(getSessionRtCookie(webClient, "tenant-id-refresh-token"));
@@ -1235,12 +1311,12 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-split-tokens:alice, id token has 5 parts, access token has 5 parts, refresh token has 5 parts",
                     page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-tokens");
-            assertEquals("tenant-split-tokens:AT injected", page.getBody().asNormalizedText());
+            assertEquals("tenant-split-tokens:AT injected, active: true", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-tokens");
             assertEquals("tenant-split-tokens:RT injected", page.getBody().asNormalizedText());
 
@@ -1295,7 +1371,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-split-id-refresh-token:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-id-refresh-token");
@@ -1347,14 +1423,27 @@ public class CodeFlowTest {
                 SecretKey key = new SecretKeySpec(OidcUtils
                         .getSha256Digest(decryptSecret.getBytes(StandardCharsets.UTF_8)),
                         "AES");
-                token = OidcUtils.decryptString(token, key);
+                String decryptedString = OidcUtils.decryptString(token, key);
+                String[] decryptedStringParts = decryptedString.split("\\|");
+
+                // If it is an access token then an expiry date should follow the actual token
+                if ("Bearer".equals(type)) {
+                    assertEquals(2, decryptedStringParts.length);
+                    // Test access token has 3 seconds lifetime
+                    long atExpiresIn = Long.valueOf(decryptedStringParts[1]);
+                    assertTrue(atExpiresIn >= 2 && atExpiresIn <= 4);
+                } else {
+                    // For ID and referh tokens it is only a token
+                    assertEquals(1, decryptedStringParts.length);
+                }
+                token = decryptedStringParts[0];
                 tokenParts = token.split("\\.");
             } catch (Exception ex) {
                 fail("Token decryption has failed");
             }
         }
         assertEquals(3, tokenParts.length);
-        JsonObject json = OidcUtils.decodeJwtContent(token);
+        JsonObject json = OidcCommonUtils.decodeJwtContent(token);
         assertEquals(type, json.getString("typ"));
     }
 
@@ -1377,7 +1466,7 @@ public class CodeFlowTest {
         loginForm.getInputByName("username").setValueAttribute("alice");
         loginForm.getInputByName("password").setValueAttribute("alice");
 
-        page = loginForm.getInputByName("login").click();
+        page = loginForm.getButtonByName("login").click();
 
         assertEquals("RT injected(event:OIDC_LOGIN,tenantId:tenant-listener,blockingApi:true)",
                 page.getBody().asNormalizedText());
@@ -1398,7 +1487,7 @@ public class CodeFlowTest {
             doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(webClient);
 
             try {
-                page = loginForm.getInputByName("login").click();
+                page = loginForm.getButtonByName("login").click();
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(400, ex.getStatusCode());
                 assertTrue(ex.getResponse().getContentAsString().contains("You are already logged in"));
@@ -1420,7 +1509,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             // Query parameters are decoded by the time they reach the JAX-RS endpoint
             assertEquals("RT injected:aValue%", page.getBody().asNormalizedText());
@@ -1504,7 +1593,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
         }
@@ -1526,7 +1615,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             webClient.getOptions().setRedirectEnabled(false);
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
         } catch (FailingHttpStatusCodeException e) {
@@ -1548,7 +1637,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("codeFlowAuthMech", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
@@ -1595,7 +1684,7 @@ public class CodeFlowTest {
     }
 
     private String getSavedPathFromJson(String value) {
-        JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(value));
+        JsonObject json = new JsonObject(OidcCommonUtils.base64UrlDecode(value));
         return json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH);
     }
 

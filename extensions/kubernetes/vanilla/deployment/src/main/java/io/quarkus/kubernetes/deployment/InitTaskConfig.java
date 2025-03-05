@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
+import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.smallrye.config.WithDefault;
 
 public interface InitTaskConfig {
@@ -12,11 +13,11 @@ public interface InitTaskConfig {
     boolean enabled();
 
     /**
-     * The init task image to use by the init-container.
+     * The init task image to use by the init container.
      *
      * @deprecated use waitForContainer.image instead.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.5")
     Optional<String> image();
 
     /**
@@ -26,9 +27,15 @@ public interface InitTaskConfig {
 
     interface InitTaskContainerConfig {
         /**
-         * The init task image to use by the init-container.
+         * The init task image to use by the init container.
          */
         @WithDefault("groundnuty/k8s-wait-for:no-root-v1.7")
         String image();
+
+        /**
+         * Image pull policy.
+         */
+        @WithDefault("always")
+        ImagePullPolicy imagePullPolicy();
     }
 }

@@ -112,8 +112,15 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @POST
     @Path("/record-echo")
     @Consumes(MediaType.APPLICATION_JSON)
-    public StateRecord echoDog(StateRecord stateRecord) {
+    public StateRecord echoRecord(StateRecord stateRecord) {
         return stateRecord;
+    }
+
+    @POST
+    @Path("/empty-ctor-record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public DogRecord emptyCtorEchoRecord(DogRecord dogRecord) {
+        return dogRecord;
     }
 
     @POST
@@ -458,6 +465,26 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/interface")
     public ContainerDTO interfaceTest() {
         return new ContainerDTO(NestedInterface.INSTANCE);
+    }
+
+    @GET
+    @Path("/item")
+    public Item getItem() {
+        Item item = new Item();
+        item.setName("Name");
+        item.setEmail("E-mail");
+        return item;
+    }
+
+    @GET
+    @Path("/item-extended")
+    public ItemExtended getItemExtended() {
+        ItemExtended item = new ItemExtended();
+        item.setName("Name");
+        item.setEmail("E-mail");
+        item.setNameExtended("Name-Extended");
+        item.setEmailExtended("E-mail-Extended");
+        return item;
     }
 
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {

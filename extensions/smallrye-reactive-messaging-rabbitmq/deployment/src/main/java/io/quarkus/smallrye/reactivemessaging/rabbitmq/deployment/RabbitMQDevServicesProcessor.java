@@ -245,7 +245,7 @@ public class RabbitMQDevServicesProcessor {
     }
 
     private RabbitMQDevServiceCfg getConfiguration(RabbitMQBuildTimeConfig cfg) {
-        RabbitMQDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        RabbitMQDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new RabbitMQDevServiceCfg(devServicesConfig);
     }
 
@@ -265,12 +265,12 @@ public class RabbitMQDevServicesProcessor {
 
             Exchange(String name, RabbitMQDevServicesBuildTimeConfig.Exchange source) {
                 this.name = name;
-                this.type = source.type;
-                this.autoDelete = source.autoDelete;
-                this.durable = source.durable;
-                this.vhost = source.vhost;
-                this.arguments = source.arguments != null
-                        ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
+                this.type = source.type();
+                this.autoDelete = source.autoDelete();
+                this.durable = source.durable();
+                this.vhost = source.vhost();
+                this.arguments = source.arguments() != null
+                        ? source.arguments().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
             }
         }
@@ -288,11 +288,11 @@ public class RabbitMQDevServicesProcessor {
 
             Queue(String name, RabbitMQDevServicesBuildTimeConfig.Queue source) {
                 this.name = name;
-                this.autoDelete = source.autoDelete;
-                this.durable = source.durable;
-                this.vhost = source.vhost;
-                this.arguments = source.arguments != null
-                        ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
+                this.autoDelete = source.autoDelete();
+                this.durable = source.durable();
+                this.vhost = source.vhost();
+                this.arguments = source.arguments() != null
+                        ? source.arguments().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
             }
         }
@@ -310,13 +310,13 @@ public class RabbitMQDevServicesProcessor {
             }
 
             Binding(String name, RabbitMQDevServicesBuildTimeConfig.Binding source) {
-                this.source = source.source.orElse(name);
-                this.routingKey = source.routingKey;
-                this.destination = source.destination.orElse(name);
-                this.destinationType = source.destinationType;
-                this.vhost = source.vhost;
-                this.arguments = source.arguments != null
-                        ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
+                this.source = source.source().orElse(name);
+                this.routingKey = source.routingKey();
+                this.destination = source.destination().orElse(name);
+                this.destinationType = source.destinationType();
+                this.vhost = source.vhost();
+                this.arguments = source.arguments() != null
+                        ? source.arguments().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
             }
         }
@@ -334,23 +334,23 @@ public class RabbitMQDevServicesProcessor {
         private final Map<String, String> containerEnv;
 
         public RabbitMQDevServiceCfg(RabbitMQDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.fixedExposedHttpPort = devServicesConfig.httpPort.orElse(0);
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.exchanges = devServicesConfig.exchanges != null
-                    ? devServicesConfig.exchanges.entrySet().stream().map(Exchange::new).collect(Collectors.toList())
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.fixedExposedHttpPort = devServicesConfig.httpPort().orElse(0);
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.exchanges = devServicesConfig.exchanges() != null
+                    ? devServicesConfig.exchanges().entrySet().stream().map(Exchange::new).collect(Collectors.toList())
                     : Collections.emptyList();
-            this.queues = devServicesConfig.queues != null
-                    ? devServicesConfig.queues.entrySet().stream().map(Queue::new).collect(Collectors.toList())
+            this.queues = devServicesConfig.queues() != null
+                    ? devServicesConfig.queues().entrySet().stream().map(Queue::new).collect(Collectors.toList())
                     : Collections.emptyList();
-            this.bindings = devServicesConfig.bindings != null
-                    ? devServicesConfig.bindings.entrySet().stream().map(Binding::new).collect(Collectors.toList())
+            this.bindings = devServicesConfig.bindings() != null
+                    ? devServicesConfig.bindings().entrySet().stream().map(Binding::new).collect(Collectors.toList())
                     : Collections.emptyList();
-            this.vhosts = devServicesConfig.vhosts.orElse(Collections.emptyList());
-            this.containerEnv = devServicesConfig.containerEnv;
+            this.vhosts = devServicesConfig.vhosts().orElse(Collections.emptyList());
+            this.containerEnv = devServicesConfig.containerEnv();
         }
 
         @Override

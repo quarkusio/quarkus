@@ -58,7 +58,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             // First call after a redirect, tenant-id is initially calculated from the state `q_auth` cookie.
             // 'reauthenticated' flag is set is because, in fact, it is actually a 2nd call due to
             // quarkus-oidc doing a final redirect after completing a code flow to drop the redirect OIDC parameters
@@ -129,7 +129,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals(expectedResult, page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -143,7 +143,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
                     page.getBody().asNormalizedText());
@@ -213,7 +213,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -238,7 +238,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -274,7 +274,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-no-discovery/api/user/webapp-no-discovery");
@@ -293,7 +293,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             // tenant-web-app2
@@ -303,7 +303,7 @@ public class BearerTokenAuthorizationTest {
             loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "tenant-web-app"));
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-web-app2");
@@ -651,7 +651,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("tenant-web-app-dynamic:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -842,7 +842,7 @@ public class BearerTokenAuthorizationTest {
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
             assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -865,7 +865,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             webClient.getOptions().setRedirectEnabled(false);
-            loginForm.getInputByName("login").click();
+            loginForm.getButtonByName("login").click();
         } catch (FailingHttpStatusCodeException e) {
             codeFlowAuthFailed = true;
         }

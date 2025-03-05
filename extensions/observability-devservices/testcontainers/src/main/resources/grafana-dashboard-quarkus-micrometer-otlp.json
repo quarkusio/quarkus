@@ -24,18 +24,13 @@
   "description": "Dashboard for Micrometer instrumented applications in Quarkus using the OTLP registry",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "gnetId": 14370,
   "graphTooltip": 1,
-  "id": 4,
+  "id": 2,
   "links": [],
   "liveNow": true,
   "panels": [
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -44,15 +39,6 @@
       },
       "id": 125,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "Quick Facts",
       "type": "row"
     },
@@ -128,7 +114,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.0.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -213,7 +199,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.0.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -302,7 +288,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.0.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -398,7 +384,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.0.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -418,10 +404,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -430,15 +412,6 @@
       },
       "id": 163,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "HTTP Edpoints",
       "type": "row"
     },
@@ -459,6 +432,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -504,7 +478,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 6
       },
@@ -522,6 +496,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -529,7 +504,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_count{}[2m]) * 100",
+          "exemplar": false,
+          "expr": "rate(http_server_requests_milliseconds_count[2m])*120",
+          "instant": false,
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -556,103 +533,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
-      },
-      "id": 155,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_sum{ }[4m]) / rate(http_server_requests_milliseconds_count{ }[4m]) /1000",
-          "interval": "",
-          "legendFormat": "{{method}} - {{uri}} - {{status}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Average inbound request duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -702,7 +583,7 @@
         "x": 0,
         "y": 14
       },
-      "id": 153,
+      "id": 155,
       "options": {
         "legend": {
           "calcs": [],
@@ -716,19 +597,22 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "http_server_requests_seconds_max{ }",
+          "editorMode": "code",
+          "expr": "rate(http_server_requests_milliseconds_sum{ }[4m]) / rate(http_server_requests_milliseconds_count{ }[4m]) /1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Maximum inbound request duration",
+      "title": "Average inbound request duration",
       "type": "timeseries"
     },
     {
@@ -748,6 +632,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -811,15 +696,18 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(http_server_requests_seconds_sum{ }[2m])",
+          "editorMode": "code",
+          "expr": "rate(http_server_requests_milliseconds_sum{ }[2m])/1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -828,10 +716,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -840,15 +724,6 @@
       },
       "id": 127,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "JVM Memory",
       "type": "row"
     },
@@ -869,6 +744,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -936,6 +812,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -995,6 +872,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1062,6 +940,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1121,6 +1000,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1188,6 +1068,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1233,10 +1114,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1245,15 +1122,6 @@
       },
       "id": 128,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "JVM Misc",
       "type": "row"
     },
@@ -1274,6 +1142,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1343,6 +1212,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1403,6 +1273,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1471,6 +1342,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1517,6 +1389,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1674,6 +1547,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1710,6 +1584,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1778,6 +1653,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1844,6 +1720,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1913,6 +1790,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1981,6 +1859,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2046,6 +1925,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -2118,6 +1998,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2180,6 +2061,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -2220,10 +2102,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2233,15 +2111,6 @@
       "id": 129,
       "panels": [],
       "repeat": "persistence_counts",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "JVM Memory Pools (Heap)",
       "type": "row"
     },
@@ -2262,6 +2131,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2293,7 +2163,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2307,7 +2178,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 55
       },
@@ -2328,22 +2199,30 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "repeat": "jvm_memory_pool_heap",
+      "repeatDirection": "h",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_used_bytes{  id=~\"$jvm_memory_pool_heap\"}",
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "jvm_memory_used_bytes{area=~\"heap\"}",
           "format": "time_series",
+          "fullMetaSearch": false,
           "hide": false,
+          "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "used",
           "metric": "",
+          "range": true,
           "refId": "A",
-          "step": 1800
+          "step": 1800,
+          "useBackend": false
         },
         {
           "datasource": {
@@ -2380,32 +2259,6 @@
       "type": "timeseries"
     },
     {
-      "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 62
-      },
-      "id": 130,
-      "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "JVM Memory Pools (Non-Heap)",
-      "type": "row"
-    },
-    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -2422,6 +2275,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2453,7 +2307,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2467,9 +2322,9 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 63
+        "w": 12,
+        "x": 12,
+        "y": 55
       },
       "id": 78,
       "options": {
@@ -2488,7 +2343,9 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "repeat": "jvm_memory_pool_nonheap",
+      "repeatDirection": "h",
       "targets": [
         {
           "datasource": {
@@ -2541,27 +2398,27 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 62
+      },
+      "id": 130,
+      "panels": [],
+      "title": "JVM Memory Pools (Non-Heap)",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 63
       },
       "id": 131,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "Garbage Collection",
       "type": "row"
     },
@@ -2582,6 +2439,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2613,7 +2471,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2629,7 +2488,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 71
+        "y": 64
       },
       "id": 98,
       "options": {
@@ -2645,6 +2504,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -2682,7 +2542,8 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "drawStyle": "line",
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
@@ -2713,7 +2574,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2729,7 +2591,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 71
+        "y": 64
       },
       "id": 101,
       "options": {
@@ -2745,13 +2607,15 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(jvm_gc_pause_seconds_sum{ }[1m])/rate(jvm_gc_pause_seconds_count{ }[1m])",
+          "editorMode": "code",
+          "expr": "(rate(jvm_gc_pause_milliseconds_sum{ }[2m])/rate(jvm_gc_pause_milliseconds_count{ }[2m]))/1000",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2764,7 +2628,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_gc_pause_seconds_max{ }",
+          "editorMode": "code",
+          "expr": "jvm_gc_pause_milliseconds_max{ }",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2793,6 +2658,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2824,7 +2690,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2840,7 +2707,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 71
+        "y": 64
       },
       "id": 99,
       "options": {
@@ -2856,6 +2723,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -2887,27 +2755,14 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 71
       },
       "id": 132,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "Classloading",
       "type": "row"
     },
@@ -2928,6 +2783,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2959,7 +2815,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2975,7 +2832,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 72
       },
       "id": 37,
       "options": {
@@ -2991,6 +2848,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3028,6 +2886,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -3058,7 +2917,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3074,7 +2934,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 72
       },
       "id": 38,
       "options": {
@@ -3090,6 +2950,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3114,27 +2975,14 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 79
       },
       "id": 133,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "Buffer Pools",
       "type": "row"
     },
@@ -3155,6 +3003,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -3186,7 +3035,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3202,7 +3052,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 87
+        "y": 80
       },
       "id": 33,
       "options": {
@@ -3218,6 +3068,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3266,6 +3117,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -3298,7 +3150,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3314,7 +3167,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 87
+        "y": 80
       },
       "id": 83,
       "options": {
@@ -3330,6 +3183,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3365,6 +3219,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -3396,7 +3251,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3412,7 +3268,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 87
+        "y": 80
       },
       "id": 85,
       "options": {
@@ -3428,6 +3284,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3476,6 +3333,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -3508,7 +3366,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3524,7 +3383,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 87
+        "y": 80
       },
       "id": 84,
       "options": {
@@ -3540,6 +3399,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -3560,15 +3420,11 @@
     },
     {
       "collapsed": true,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 87
       },
       "id": 173,
       "panels": [
@@ -3950,28 +3806,24 @@
           "type": "timeseries"
         }
       ],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "GraphQL requests",
       "type": "row"
     }
   ],
+  "preload": false,
   "refresh": "auto",
-  "schemaVersion": 39,
-  "tags": [],
+  "schemaVersion": 40,
+  "tags": [
+    "Quarkus",
+    "Micrometer",
+    "OTLP",
+    "metrics"
+  ],
   "templating": {
     "list": [
       {
         "current": {
           "isNone": true,
-          "selected": false,
           "text": "None",
           "value": ""
         },
@@ -3980,26 +3832,17 @@
           "uid": "prometheus"
         },
         "definition": "",
-        "hide": 0,
         "includeAll": false,
         "label": "Application",
-        "multi": false,
         "name": "application",
         "options": [],
         "query": "label_values(application)",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "query"
       },
       {
-        "allFormat": "glob",
         "current": {
-          "selected": false,
           "text": "host.docker.internal:8080",
           "value": "host.docker.internal:8080"
         },
@@ -4008,27 +3851,17 @@
           "uid": "prometheus"
         },
         "definition": "",
-        "hide": 0,
         "includeAll": false,
         "label": "Instance",
-        "multi": false,
-        "multiFormat": "glob",
         "name": "instance",
         "options": [],
         "query": "label_values(jvm_memory_used_bytes{)",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "query"
       },
       {
-        "allFormat": "glob",
         "current": {
-          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -4036,28 +3869,23 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "",
-        "hide": 0,
+        "definition": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
         "includeAll": true,
         "label": "JVM Memory Pools Heap",
-        "multi": false,
-        "multiFormat": "glob",
         "name": "jvm_memory_pool_heap",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{  area=\"heap\"},id)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "query"
       },
       {
-        "allFormat": "glob",
         "current": {
-          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -4066,59 +3894,26 @@
           "uid": "prometheus"
         },
         "definition": "",
-        "hide": 0,
         "includeAll": true,
         "label": "JVM Memory Pools Non-Heap",
-        "multi": false,
-        "multiFormat": "glob",
         "name": "jvm_memory_pool_nonheap",
         "options": [],
         "query": "label_values(jvm_memory_used_bytes{  area=\"nonheap\"},id)",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 2,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-5m",
     "to": "now"
   },
-  "timeRangeUpdatedDuringEditOrView": false,
-  "timepicker": {
-    "now": true,
-    "refresh_intervals": [
-      "5s",
-      "10s",
-      "30s",
-      "1m",
-      "5m",
-      "15m",
-      "30m",
-      "1h",
-      "2h",
-      "1d"
-    ],
-    "time_options": [
-      "5m",
-      "15m",
-      "1h",
-      "6h",
-      "12h",
-      "24h",
-      "2d",
-      "7d",
-      "30d"
-    ]
-  },
+  "timepicker": {},
   "timezone": "browser",
-  "title": "Quarkus Micrometer Metrics - OTLP",
+  "title": "Quarkus Micrometer OTLP registry",
   "uid": "edy6473ay1vk0c",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

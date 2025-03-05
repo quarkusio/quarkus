@@ -576,7 +576,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.3/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -608,7 +608,7 @@ quarkus.fault-tolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.0/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.7.3/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
 You can use the `Guard`, `TypedGuard` and `@ApplyGuard` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.
@@ -626,6 +626,9 @@ The `"<identifier>"` below is:
 * `"<classname>/<methodname>"` for per method configuration
 * `"<classname>"` for per class configuration
 * `global` for global configuration
+* It may also be an `@Identifier` value for configuring a programmatically constructed `Guard` or `TypedGuard` that is used declaratively through `@ApplyGuard`.
+Note that in this case, the `Guard`/`TypedGuard` should *NEVER* be used programmatically, because configuration is applied on creation, which happens lazily, on the first use.
+This first use must be through `@ApplyGuard`, otherwise configuration would be ignored.
 
 include::{generated-dir}/config/quarkus-smallrye-fault-tolerance.adoc[opts=optional, leveloffset=+1]
 

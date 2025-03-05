@@ -3,6 +3,7 @@ package io.quarkus.cache.redis.runtime;
 import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class RedisCacheInfo {
 
@@ -43,4 +44,11 @@ public class RedisCacheInfo {
      * Locking</a> for details.
      */
     public boolean useOptimisticLocking = false;
+
+    /**
+     * If set, the {@code SCAN} command (used to implement invalidation) will have
+     * the {@code COUNT} argument with given value. If not set (default),
+     * no {@code COUNT} argument is present.
+     */
+    public OptionalInt invalidationScanSize = OptionalInt.empty();
 }

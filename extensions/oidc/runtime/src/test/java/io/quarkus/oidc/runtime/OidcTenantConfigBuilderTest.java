@@ -222,6 +222,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(jwt.signatureAlgorithm().isEmpty());
         assertEquals(10, jwt.lifespan());
         assertFalse(jwt.assertion());
+        assertTrue(jwt.tokenPath().isEmpty());
 
         // OidcCommonConfig methods
         assertTrue(config.authServerUrl().isEmpty());
@@ -352,6 +353,7 @@ public class OidcTenantConfigBuilderTest {
                 .end()
                 .jwt()
                 .source(Source.BEARER)
+                .tokenPath(Path.of("my-super-bearer-path"))
                 .secretProvider()
                 .keyringName("jwt-keyring-name-yep")
                 .key("jwt-key-yep")
@@ -618,6 +620,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("jwt-token-key-id-yep", jwt.tokenKeyId().orElse(null));
         assertEquals("jwt-issuer", jwt.issuer().orElse(null));
         assertEquals("jwt-subject", jwt.subject().orElse(null));
+        assertEquals("my-super-bearer-path", jwt.tokenPath().orElseThrow().toString());
         var claims = jwt.claims();
         assertNotNull(claims);
         assertEquals(2, claims.size());
@@ -761,6 +764,7 @@ public class OidcTenantConfigBuilderTest {
                 .end()
                 .jwt()
                 .source(Source.BEARER)
+                .tokenPath(Path.of("jwt-bearer-token-path-test-1"))
                 .secretProvider()
                 .keyringName("jwt-keyring-name-yep")
                 .key("jwt-key-yep")
@@ -895,6 +899,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("jwt-token-key-id-yep", jwt.tokenKeyId().orElse(null));
         assertEquals("jwt-issuer-CHANGED", jwt.issuer().orElse(null));
         assertEquals("jwt-subject", jwt.subject().orElse(null));
+        assertEquals("jwt-bearer-token-path-test-1", jwt.tokenPath().orElseThrow().toString());
         claims = jwt.claims();
         assertNotNull(claims);
         assertEquals(3, claims.size());
@@ -1084,7 +1089,7 @@ public class OidcTenantConfigBuilderTest {
                 .requiredClaims(Map.of("III", "IV"))
                 .audience("extra");
         var config2 = second.end()
-                .token(false, "prince")
+                .token().verifyAccessTokenWithUserInfo(false).principalClaim("prince").end()
                 .build();
         var builtSecond = config2.token();
         assertFalse(builtSecond.verifyAccessTokenWithUserInfo().orElseThrow());
@@ -1102,7 +1107,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(builtSecond.audience().orElseThrow().contains("extra"));
         assertEquals("prince", builtSecond.principalClaim().orElse(null));
 
-        var config3 = OidcTenantConfig.builder(config2).token(true).build();
+        var config3 = OidcTenantConfig.builder(config2).token().verifyAccessTokenWithUserInfo().end().build();
         assertTrue(config3.token().verifyAccessTokenWithUserInfo().orElseThrow());
 
         assertEquals("haha", config3.tenantId().orElse(null));

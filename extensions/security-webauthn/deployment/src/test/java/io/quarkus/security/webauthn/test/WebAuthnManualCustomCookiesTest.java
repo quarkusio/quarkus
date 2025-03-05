@@ -57,7 +57,7 @@ public class WebAuthnManualCustomCookiesTest {
                 .given().redirects().follow(false)
                 .get("/cheese").then().statusCode(302);
 
-        Assertions.assertTrue(userProvider.findByUserName("stef").await().indefinitely().isEmpty());
+        Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
         String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stef", cookieFilter);
         WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
@@ -77,9 +77,9 @@ public class WebAuthnManualCustomCookiesTest {
                 .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we stored the user
-        List<WebAuthnCredentialRecord> users = userProvider.findByUserName("stef").await().indefinitely();
+        List<WebAuthnCredentialRecord> users = userProvider.findByUsername("stef").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stef"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stef"));
         Assertions.assertEquals(1, users.get(0).getCounter());
 
         // make sure our login cookie works
@@ -104,9 +104,9 @@ public class WebAuthnManualCustomCookiesTest {
                 .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we bumped the user
-        users = userProvider.findByUserName("stef").await().indefinitely();
+        users = userProvider.findByUsername("stef").await().indefinitely();
         Assertions.assertEquals(1, users.size());
-        Assertions.assertTrue(users.get(0).getUserName().equals("stef"));
+        Assertions.assertTrue(users.get(0).getUsername().equals("stef"));
         Assertions.assertEquals(2, users.get(0).getCounter());
 
         // make sure our login cookie still works

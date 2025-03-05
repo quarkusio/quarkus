@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime.health;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -79,5 +80,9 @@ public class DataSourceHealthCheck implements HealthCheck {
             }
         }
         return builder.build();
+    }
+
+    protected Map<String, DataSource> getCheckedDataSources() {
+        return Collections.unmodifiableMap(checkedDataSources);
     }
 }

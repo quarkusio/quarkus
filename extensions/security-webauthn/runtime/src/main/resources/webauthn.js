@@ -120,13 +120,12 @@
     if (!self.registerOptionsChallengePath) {
       return Promise.reject('Register challenge path missing form the initial configuration!');
     }
-    return self.fetchWithCsrf(self.registerOptionsChallengePath, {
-      method: 'POST',
+    return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({username: user.username, displayName: user.displayName}).toString(), {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user || {})
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {
@@ -164,12 +163,12 @@
 	if (!self.registerPath) {
 	  throw new Error('Register path is missing!');
 	}
-	if (!user || !user.name) {
-		return Promise.reject('User name (user.name) required');
+	if (!user || !user.username) {
+		return Promise.reject('User name (user.username) required');
 	}
     return self.registerClientSteps(user)
       .then(body => {
-        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({username: user.name}).toString(), {
+        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({username: user.username}).toString(), {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -215,13 +214,16 @@
     if (!self.loginOptionsChallengePath) {
       return Promise.reject('Login challenge path missing from the initial configuration!');
     }
-    return self.fetchWithCsrf(self.loginOptionsChallengePath, {
-      method: 'POST',
+    let path = self.loginOptionsChallengePath
+    if (user != null && user.username != null) {
+      path = path + "?" + new URLSearchParams({username: user.username}).toString()
+    }
+    return self.fetchWithCsrf(path, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user || {})
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {

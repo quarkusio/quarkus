@@ -28,6 +28,9 @@ public class KafkaConnectorTest {
     protected static final TypeRef<List<Person>> PERSON_TYPE_REF = new TypeRef<List<Person>>() {
     };
 
+    protected static final TypeRef<List<Pet>> PET_TYPE_REF = new TypeRef<List<Pet>>() {
+    };
+
     protected static final TypeRef<PeopleState> PEOPLE_STATE_TYPE_REF = new TypeRef<PeopleState>() {
     };
 
@@ -63,4 +66,25 @@ public class KafkaConnectorTest {
         });
     }
 
+    @Test
+    public void testPet() {
+        await().untilAsserted(() -> Assertions.assertEquals(0, get("/kafka/pets").as(PET_TYPE_REF).size()));
+        given().body("cat").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("dog").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("bad").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+        given().body("mouse").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("rabbit").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("fish").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("hamster").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+
+        await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets").as(PET_TYPE_REF).size()));
+        await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets-consumed").as(PET_TYPE_REF).size()));
+    }
 }

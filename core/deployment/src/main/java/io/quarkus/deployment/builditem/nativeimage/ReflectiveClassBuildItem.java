@@ -20,6 +20,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean fields;
     private final boolean classes;
     private final boolean constructors;
+    private final boolean publicConstructors;
     private final boolean queryConstructors;
     private final boolean weak;
     private final boolean serialization;
@@ -46,7 +47,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
             Class<?>... classes) {
-        this(constructors, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
+        this(constructors, false, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
                 unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
@@ -118,11 +119,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean weak, boolean serialization,
             boolean unsafeAllocated, String... className) {
-        this(constructors, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
+        this(constructors, false, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
                 null, className);
     }
 
-    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
+            boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, String... className) {
         for (String i : className) {
@@ -143,6 +145,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
         this.classes = classes;
         this.constructors = constructors;
+        this.publicConstructors = publicConstructors;
         if (constructors && queryConstructors) {
             Log.warnf(
                     "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
@@ -181,13 +184,17 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return constructors;
     }
 
+    public boolean isPublicConstructors() {
+        return publicConstructors;
+    }
+
     public boolean isQueryConstructors() {
         return queryConstructors;
     }
 
     /**
      * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This will
-     *             be removed in a future verion of Quarkus.
+     *             be removed in a future version of Quarkus.
      */
     @Deprecated
     public boolean areFinalFieldsWritable() {
@@ -213,6 +220,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     public static class Builder {
         private String[] className;
         private boolean constructors = true;
+        private boolean publicConstructors = false;
         private boolean queryConstructors;
         private boolean methods;
         private boolean queryMethods;
@@ -242,6 +250,19 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
         public Builder constructors() {
             return constructors(true);
+        }
+
+        /**
+         * Configures whether public constructors should be registered for reflection.
+         * Setting this enables getting all public constructors for the class as well as invoking them reflectively.
+         */
+        public Builder publicConstructors(boolean publicConstructors) {
+            this.publicConstructors = publicConstructors;
+            return this;
+        }
+
+        public Builder publicConstructors() {
+            return publicConstructors(true);
         }
 
         /**
@@ -358,7 +379,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, queryConstructors, methods, queryMethods, fields, classes, weak,
+            return new ReflectiveClassBuildItem(constructors, publicConstructors, queryConstructors, methods, queryMethods,
+                    fields, classes, weak,
                     serialization, unsafeAllocated, reason, className);
         }
     }

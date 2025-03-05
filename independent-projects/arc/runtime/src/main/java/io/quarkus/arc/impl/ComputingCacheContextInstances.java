@@ -37,7 +37,7 @@ public class ComputingCacheContextInstances implements ContextInstances {
     @Override
     public void removeEach(Consumer<? super ContextInstanceHandle<?>> action) {
         if (action != null) {
-            instances.getPresentValues().forEach(action);
+            instances.forEachExistingValue(action);
         }
         instances.clear();
     }

@@ -10,17 +10,20 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.BeanManagerProvider;
 import io.quarkus.arc.impl.BeanMetadataProvider;
 import io.quarkus.arc.impl.EventProvider;
@@ -35,6 +38,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -189,30 +193,46 @@ public enum BuiltinBean {
 
     private static void generateInstanceBytecode(GeneratorContext ctx) {
         ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
+                ctx.beanDeployment, ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
-        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
-                ctx.reflectionRegistration);
+
+        // Note that we only collect the injection point metadata if needed, i.e. if any of the resolved beans is dependent,
+        // and requires InjectionPoint metadata
+        Set<BeanInfo> beans = ctx.beanDeployment.beanResolver.resolveBeans(ctx.injectionPoint.getRequiredType(),
+                ctx.injectionPoint.getRequiredQualifiers());
+        boolean collectMetadata = beans.stream()
+                .anyMatch(b -> BuiltinScope.DEPENDENT.isDeclaredBy(b) && b.requiresInjectionPointMetadata());
+
+        ResultHandle annotationsHandle;
+        ResultHandle javaMemberHandle;
         ResultHandle beanHandle;
-        switch (ctx.targetInfo.kind()) {
-            case OBSERVER:
-                // For observers the first argument is always the declaring bean
-                beanHandle = ctx.constructor.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
-                break;
-            case BEAN:
-                beanHandle = ctx.constructor.getThis();
-                break;
-            case INVOKER:
-                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        if (collectMetadata) {
+            annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
+                    ctx.beanDeployment, ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals,
+                    ctx.injectionPointAnnotationsPredicate);
+            javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                    ctx.reflectionRegistration);
+            switch (ctx.targetInfo.kind()) {
+                case OBSERVER:
+                    // For observers the first argument is always the declaring bean
+                    beanHandle = ctx.constructor.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                    break;
+                case BEAN:
+                    beanHandle = ctx.constructor.getThis();
+                    break;
+                case INVOKER:
+                    beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+            }
+        } else {
+            annotationsHandle = collectWithCaching(ctx.beanDeployment, ctx.constructor, ctx.injectionPoint);
+            javaMemberHandle = ctx.constructor.loadNull();
+            beanHandle = ctx.constructor.loadNull();
         }
+
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
                         InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
@@ -388,31 +408,49 @@ public enum BuiltinBean {
             requiredType = Types.getTypeHandle(mc, type);
             usesInstanceHandle = mc.load(false);
         }
-
         ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
-        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
-                ctx.reflectionRegistration);
+
+        // Note that we only collect the injection point metadata if needed, i.e. if any of the resolved beans is dependent,
+        // and requires InjectionPoint metadata
+        Set<BeanInfo> beans = ctx.beanDeployment.beanResolver.resolveBeans(
+                type.name().equals(DotNames.INSTANCE_HANDLE) ? type.asParameterizedType().arguments().get(0) : type,
+                ctx.injectionPoint.getRequiredQualifiers().stream().filter(a -> !a.name().equals(DotNames.ALL))
+                        .collect(Collectors.toSet()));
+        boolean collectMetadata = beans.stream()
+                .anyMatch(b -> BuiltinScope.DEPENDENT.isDeclaredBy(b) && b.requiresInjectionPointMetadata());
+
+        ResultHandle annotationsHandle;
+        ResultHandle javaMemberHandle;
         ResultHandle beanHandle;
-        switch (ctx.targetInfo.kind()) {
-            case OBSERVER:
-                // For observers the first argument is always the declaring bean
-                beanHandle = ctx.constructor.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
-                break;
-            case BEAN:
-                beanHandle = ctx.constructor.getThis();
-                break;
-            case INVOKER:
-                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        if (collectMetadata) {
+            annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
+                    ctx.beanDeployment,
+                    ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
+            javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                    ctx.reflectionRegistration);
+            switch (ctx.targetInfo.kind()) {
+                case OBSERVER:
+                    // For observers the first argument is always the declaring bean
+                    beanHandle = ctx.constructor.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                    break;
+                case BEAN:
+                    beanHandle = ctx.constructor.getThis();
+                    break;
+                case INVOKER:
+                    beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+            }
+        } else {
+            annotationsHandle = ctx.constructor.loadNull();
+            javaMemberHandle = ctx.constructor.loadNull();
+            beanHandle = ctx.constructor.loadNull();
         }
+
         ResultHandle listProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(ListProvider.class, java.lang.reflect.Type.class, java.lang.reflect.Type.class,
                         Set.class,
@@ -566,4 +604,19 @@ public enum BuiltinBean {
         }
     }
 
+    private static ResultHandle collectWithCaching(BeanDeployment beanDeployment, MethodCreator bytecode,
+            InjectionPointInfo injectionPoint) {
+        ResultHandle annotationsHandle;
+        AnnotationTarget annotationTarget = injectionPoint.isParam()
+                ? injectionPoint.getAnnotationTarget().asMethodParameter().method()
+                : injectionPoint.getAnnotationTarget();
+        if (!injectionPoint.isSynthetic() && Annotations
+                .contains(beanDeployment.getAnnotations(annotationTarget), DotNames.WITH_CACHING)) {
+            annotationsHandle = Gizmo.setOperations(bytecode).of(bytecode
+                    .readStaticField(FieldDescriptor.of(WithCaching.Literal.class, "INSTANCE", WithCaching.Literal.class)));
+        } else {
+            annotationsHandle = Gizmo.setOperations(bytecode).of();
+        }
+        return annotationsHandle;
+    }
 }

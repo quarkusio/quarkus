@@ -12,33 +12,33 @@ import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 @Recorder
 public class ResteasyReactiveRuntimeRecorder {
 
-    final HttpConfiguration httpConf;
+    final VertxHttpConfig httpConfig;
 
-    public ResteasyReactiveRuntimeRecorder(HttpConfiguration httpConf) {
-        this.httpConf = httpConf;
+    public ResteasyReactiveRuntimeRecorder(VertxHttpConfig httpConfig) {
+        this.httpConfig = httpConfig;
     }
 
     public Supplier<RuntimeConfiguration> runtimeConfiguration(RuntimeValue<Deployment> deployment,
             ResteasyReactiveServerRuntimeConfig runtimeConf) {
         Optional<Long> maxBodySize;
 
-        if (httpConf.limits.maxBodySize.isPresent()) {
-            maxBodySize = Optional.of(httpConf.limits.maxBodySize.get().asLongValue());
+        if (httpConfig.limits().maxBodySize().isPresent()) {
+            maxBodySize = Optional.of(httpConfig.limits().maxBodySize().get().asLongValue());
         } else {
             maxBodySize = Optional.empty();
         }
 
-        RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConf.readTimeout,
-                httpConf.body.deleteUploadedFilesOnEnd, httpConf.body.uploadsDirectory,
-                httpConf.body.multipart.fileContentTypes.orElse(null),
+        RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConfig.readTimeout(),
+                httpConfig.body().deleteUploadedFilesOnEnd(), httpConfig.body().uploadsDirectory(),
+                httpConfig.body().multipart().fileContentTypes().orElse(null),
                 runtimeConf.multipart().inputPart().defaultCharset(), maxBodySize,
-                httpConf.limits.maxFormAttributeSize.asLongValue(),
-                httpConf.limits.maxParameters);
+                httpConfig.limits().maxFormAttributeSize().asLongValue(),
+                httpConfig.limits().maxParameters());
 
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
 

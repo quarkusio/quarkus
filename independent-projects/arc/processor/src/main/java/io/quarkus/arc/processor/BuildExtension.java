@@ -35,7 +35,7 @@ public interface BuildExtension {
      * Initialize self.
      *
      * @param buildContext
-     * @return {@code true} if the extension should be put into service, @{code false} otherwise
+     * @return {@code true} if the extension should be put into service, {@code false} otherwise
      */
     default boolean initialize(BuildContext buildContext) {
         return true;

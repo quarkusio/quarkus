@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -120,6 +121,14 @@ public class OidcCommonUtils {
                     String.format(
                             "Use only '%1$scredentials.secret' or '%1$scredentials.client-secret' or '%1$scredentials.jwt.secret' property",
                             configPrefix));
+        }
+        Credentials.Jwt jwt = creds.jwt();
+        if (jwt.source() == Credentials.Jwt.Source.BEARER) {
+            if (isServerConfig && jwt.tokenPath().isEmpty()) {
+                throw new ConfigurationException("Bearer token path must be set when the JWT source is a bearer token");
+            }
+        } else if (jwt.tokenPath().isPresent()) {
+            throw new ConfigurationException("Bearer token path can only be set when the JWT source is a bearer token");
         }
     }
 
@@ -741,6 +750,47 @@ public class OidcCommonUtils {
             });
         } else {
             return request.send();
+        }
+    }
+
+    public static JsonObject decodeJwtContent(String jwt) {
+        String encodedContent = getJwtContentPart(jwt);
+        if (encodedContent == null) {
+            return null;
+        }
+        return decodeAsJsonObject(encodedContent);
+    }
+
+    public static String getJwtContentPart(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        // part 1: skip the token headers
+        tokens.nextToken();
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
+        // part 2: token content
+        String encodedContent = tokens.nextToken();
+
+        // let's check only 1 more signature part is available
+        if (tokens.countTokens() != 1) {
+            return null;
+        }
+        return encodedContent;
+    }
+
+    public static String base64UrlDecode(String encodedContent) {
+        return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
+    }
+
+    public static String base64UrlEncode(byte[] bytes) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    public static JsonObject decodeAsJsonObject(String encodedContent) {
+        try {
+            return new JsonObject(base64UrlDecode(encodedContent));
+        } catch (IllegalArgumentException ex) {
+            return null;
         }
     }
 }

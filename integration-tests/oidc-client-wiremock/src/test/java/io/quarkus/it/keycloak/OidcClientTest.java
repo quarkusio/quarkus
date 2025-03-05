@@ -39,8 +39,16 @@ public class OidcClientTest {
     WireMockServer server;
 
     @Test
-    public void testEchoTokensJwtBearerAuthentication() {
+    public void testEchoTokensJwtBearerAuthenticationFromAdditionalAttrs() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerAuthentication")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationFromFile() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationFromFile")
                 .then()
                 .statusCode(200)
                 .body(equalTo("access_token_jwt_bearer"));
@@ -55,7 +63,7 @@ public class OidcClientTest {
         assertEquals("access_token_without_expires_in", data[0]);
 
         long now = System.currentTimeMillis() / 1000;
-        long expectedExpiresAt = now + 5;
+        long expectedExpiresAt = now + 7;
         long accessTokenExpiresAt = Long.valueOf(data[1]);
         assertTrue(accessTokenExpiresAt >= expectedExpiresAt
                 && accessTokenExpiresAt <= expectedExpiresAt + 4);

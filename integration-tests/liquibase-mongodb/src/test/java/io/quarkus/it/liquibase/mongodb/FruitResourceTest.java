@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -19,22 +20,24 @@ import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
+@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = "port", value = "27018"))
 @DisabledOnOs(OS.WINDOWS)
 class FruitResourceTest {
 
     @Inject
+    @Named("fruit-client")
     MongoClient mongoClient;
 
     @Test
     public void testTheEndpoint() {
         // assert that a fruit exist as one has been created in the changelog
-        List<Fruit> list = get("/fruits").as(new TypeRef<List<Fruit>>() {
+        List<Fruit> list = get("/fruits").as(new TypeRef<>() {
         });
         Assertions.assertEquals(1, list.size());
     }

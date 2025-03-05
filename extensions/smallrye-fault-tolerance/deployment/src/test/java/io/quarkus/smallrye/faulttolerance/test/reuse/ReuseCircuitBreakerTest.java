@@ -45,12 +45,12 @@ public class ReuseCircuitBreakerTest {
 
         CircuitBreakerMaintenance cbm = CircuitBreakerMaintenance.get();
 
-        assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
+        assertThat(cb.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.CLOSED);
+        assertThat(cbm.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.CLOSED);
 
         AtomicInteger helloStateChanges = new AtomicInteger();
 
-        cbm.onStateChange("hello", ignored -> {
+        cbm.onStateChange(MyGuard.NAME, ignored -> {
             helloStateChanges.incrementAndGet();
         });
 
@@ -60,8 +60,8 @@ public class ReuseCircuitBreakerTest {
             }).isExactlyInstanceOf(IOException.class);
         }
 
-        assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.OPEN);
-        assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.OPEN);
+        assertThat(cb.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.OPEN);
+        assertThat(cbm.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.OPEN);
 
         // 1. closed -> open
         assertThat(helloStateChanges).hasValue(1);
@@ -72,8 +72,8 @@ public class ReuseCircuitBreakerTest {
                     assertThat(helloService.hello(null)).isEqualTo(HelloService.OK);
                 });
 
-        assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
+        assertThat(cb.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.CLOSED);
+        assertThat(cbm.currentState(MyGuard.NAME)).isEqualTo(CircuitBreakerState.CLOSED);
 
         // 2. open -> half-open
         // 3. half-open -> closed

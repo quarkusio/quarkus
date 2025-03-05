@@ -115,7 +115,7 @@ public class MicrometerRecorder {
         List<AutoCloseable> autoCloseables = new ArrayList<>();
 
         // Base JVM Metrics
-        if (config.checkBinderEnabledWithDefault(() -> config.binder.jvm)) {
+        if (config.checkBinderEnabledWithDefault(() -> config.binder().jvm())) {
             new ClassLoaderMetrics().bindTo(Metrics.globalRegistry);
             JvmHeapPressureMetrics jvmHeapPressureMetrics = new JvmHeapPressureMetrics();
             jvmHeapPressureMetrics.bindTo(Metrics.globalRegistry);
@@ -131,7 +131,7 @@ public class MicrometerRecorder {
         }
 
         // System metrics
-        if (config.checkBinderEnabledWithDefault(() -> config.binder.system)) {
+        if (config.checkBinderEnabledWithDefault(() -> config.binder().system())) {
             new UptimeMetrics().bindTo(Metrics.globalRegistry);
             new ProcessorMetrics().bindTo(Metrics.globalRegistry);
             new FileDescriptorMetrics().bindTo(Metrics.globalRegistry);

@@ -1,0 +1,25 @@
+## A basic GitHub Actions workflow for your Quarkus application.
+
+name: CI build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Build
+        run: ./mvnw verify -B

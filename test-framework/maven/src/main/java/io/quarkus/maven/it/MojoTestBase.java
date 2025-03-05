@@ -74,6 +74,8 @@ public class MojoTestBase {
         }
         boolean mkdirs = tc.mkdirs();
 
+        initDotMvn();
+
         Logger.getLogger(MojoTestBase.class.getName())
                 .log(Level.FINE, "test-classes created? %s", mkdirs);
         return tc;
@@ -91,6 +93,9 @@ public class MojoTestBase {
         if (!in.isDirectory()) {
             throw new RuntimeException("Cannot find directory: " + in.getAbsolutePath());
         }
+
+        initDotMvn();
+
         return in;
     }
 
@@ -118,6 +123,9 @@ public class MojoTestBase {
         boolean mkdirs = out.mkdirs();
         Logger.getLogger(MojoTestBase.class.getName())
                 .log(Level.FINE, out.getAbsolutePath() + " created? " + mkdirs);
+
+        initDotMvn();
+
         try {
             org.codehaus.plexus.util.FileUtils.copyDirectoryStructure(in, out);
         } catch (IOException e) {
@@ -125,6 +133,16 @@ public class MojoTestBase {
         }
 
         return out;
+    }
+
+    /**
+     * Initialize an empty .mvn to make sure we don't inherit from .mvn/maven.config from the root
+     * <p>
+     * .mvn/maven.config is used to pass args that might be too long for the Windows command line.
+     */
+    private static void initDotMvn() {
+        File dotMvn = new File("target/.mvn");
+        dotMvn.mkdirs();
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {

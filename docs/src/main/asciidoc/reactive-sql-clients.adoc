@@ -44,7 +44,7 @@ package org.acme.reactive.crud;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -179,7 +179,7 @@ quarkus.datasource.password=quarkus_test
 quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
 ----
 
-With that you can create your `FruitResource` skeleton and inject a `io.vertx.mutiny.pgclient.PgPool` instance:
+With that you can create your `FruitResource` skeleton and inject a `io.vertx.mutiny.sqlclient.Pool` instance:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
@@ -199,14 +199,14 @@ import jakarta.ws.rs.core.Response.Status;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("fruits")
 public class FruitResource {
 
-    private final PgPool client;
+    private final Pool client;
 
-    public FruitResource(PgPool client) {
+    public FruitResource(Pool client) {
         this.client = client;
     }
 }
@@ -226,7 +226,7 @@ But for development we can simply drop and create the tables on startup, and the
 package org.acme.reactive.crud;
 
 import io.quarkus.runtime.StartupEvent;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -235,10 +235,10 @@ import jakarta.enterprise.event.Observes;
 @ApplicationScoped
 public class DBInit {
 
-    private final PgPool client;
+    private final Pool client;
     private final boolean schemaCreate;
 
-    public DBInit(PgPool client, @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") boolean schemaCreate) {
+    public DBInit(Pool client, @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") boolean schemaCreate) {
         this.client = client;
         this.schemaCreate = schemaCreate;
     }
@@ -293,7 +293,7 @@ To retrieve all the data, we will use the `query` method again:
 [source,java]
 ./src/main/java/org/acme/reactive/crud/Fruit.java
 ----
-    public static Multi<Fruit> findAll(PgPool client) {
+    public static Multi<Fruit> findAll(Pool client) {
         return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
                 .onItem().transformToMulti(set -> Multi.createFrom().iterable(set)) // <1>
                 .onItem().transform(Fruit::from); // <2>
@@ -350,7 +350,7 @@ Equipped with this tooling, we are able to safely use an `id` provided by the us
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public static Uni<Fruit> findById(PgPool client, Long id) {
+public static Uni<Fruit> findById(Pool client, Long id) {
     return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.of(id)) // <1>
             .onItem().transform(RowSet::iterator) // <2>
             .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
@@ -381,7 +381,7 @@ The same logic applies when saving a `Fruit`:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public Uni<Long> save(PgPool client) {
+public Uni<Long> save(Pool client) {
     return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id").execute(Tuple.of(name))
             .onItem().transform(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
@@ -412,7 +412,7 @@ Let's use this to support removal of fruits in the database:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public static Uni<Boolean> delete(PgPool client, Long id) {
+public static Uni<Boolean> delete(Pool client, Long id) {
     return client.preparedQuery("DELETE FROM fruits WHERE id = $1").execute(Tuple.of(id))
             .onItem().transform(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
 }
@@ -524,33 +524,28 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 [[reactive-sql-clients-details]]
 == Database Clients details
 
-[cols="10,40,40,10"]
+[cols="15,70,15"]
 |===
-|Database |Extension name |Pool class name |Placeholders
+|Database |Extension name |Placeholders
 
 |IBM Db2
 |`quarkus-reactive-db2-client`
-|`io.vertx.mutiny.db2client.DB2Pool`
 |`?`
 
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
-|`io.vertx.mutiny.mysqlclient.MySQLPool`
 |`?`
 
 |Microsoft SQL Server
 |`quarkus-reactive-mssql-client`
-|`io.vertx.mutiny.mssqlclient.MSSQLPool`
 |`@p1`, `@p2`, etc.
 
 |Oracle
 |`quarkus-reactive-oracle-client`
-|`io.vertx.mutiny.oracleclient.OraclePool`
 |`?`
 
 |PostgreSQL
 |`quarkus-reactive-pg-client`
-|`io.vertx.mutiny.pgclient.PgPool`
 |`$1`, `$2`, etc.
 |===
 
@@ -570,7 +565,7 @@ The following snippet shows how to run 2 insertions in the same transaction:
 
 [source, java]
 ----
-public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
+public static Uni<Void> insertTwoFruits(Pool client, Fruit fruit1, Fruit fruit2) {
     return client.withTransaction(conn -> {
         Uni<RowSet<Row>> insertOne = conn.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit1.name));
@@ -691,11 +686,11 @@ You can then inject the clients as follows:
 [source,java]
 ----
 @Inject <1>
-PgPool defaultClient;
+Pool defaultClient;
 
 @Inject
 @ReactiveDataSource("additional1") <2>
-PgPool additional1Client;
+Pool additional1Client;
 
 @Inject
 @ReactiveDataSource("additional2")
@@ -830,18 +825,18 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 
 @Singleton
 public class CustomPgPoolCreator implements PgPoolCreator {
 
     @Override
-    public PgPool create(Input input) {
+    public Pool create(Input input) {
         PgConnectOptions connectOptions = input.pgConnectOptions();
         PoolOptions poolOptions = input.poolOptions();
         // Customize connectOptions, poolOptions or both, as required
-        return PgPool.pool(input.vertx(), connectOptions, poolOptions);
+        return Pool.pool(input.vertx(), connectOptions, poolOptions);
     }
 }
 ----
@@ -860,12 +855,12 @@ Here's an example for PostgreSQL:
 import jakarta.inject.Inject;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 public class PipeliningExample {
 
     @Inject
-    PgPool client;
+    Pool client;
 
     public Uni<String> favoriteFruitAndVegetable() {
         // Explicitly acquire a connection

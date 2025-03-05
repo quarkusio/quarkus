@@ -2179,10 +2179,13 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementGetPriority(BeanInfo bean, ClassCreator beanCreator) {
         if (bean.getPriority() != null) {
+            MethodCreator hasPriority = beanCreator.getMethodCreator("hasPriority", boolean.class)
+                    .setModifiers(ACC_PUBLIC);
+            hasPriority.returnBoolean(true);
+
             MethodCreator getPriority = beanCreator.getMethodCreator("getPriority", int.class)
                     .setModifiers(ACC_PUBLIC);
-            getPriority
-                    .returnValue(getPriority.load(bean.getPriority()));
+            getPriority.returnInt(bean.getPriority());
         }
     }
 
@@ -2386,7 +2389,6 @@ public class BeanGenerator extends AbstractGenerator {
         if (injectionPoint.isSynthetic()) {
             return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
         }
-        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
@@ -2396,6 +2398,10 @@ public class BeanGenerator extends AbstractGenerator {
             annotations = Annotations.getParameterAnnotations(beanDeployment,
                     method, injectionPoint.getPosition());
         }
+        if (annotations.isEmpty()) {
+            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+        }
+        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (AnnotationInstance annotation : annotations) {
             if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
                 continue;

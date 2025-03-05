@@ -7,6 +7,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.vertx.oracleclient.OraclePool;
 
+@Deprecated(since = "3.21", forRemoval = true)
 public final class OraclePoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;

@@ -7,6 +7,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.vertx.pgclient.PgPool;
 
+@Deprecated(since = "3.21", forRemoval = true)
 public final class PgPoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;

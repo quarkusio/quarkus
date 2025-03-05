@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.restassured.RestAssured;
@@ -48,7 +48,7 @@ public class NamedOidcClientInjectionTestCase {
     }
 
     private String preferredUserOf(String token) {
-        return OidcUtils.decodeJwtContent(token).getString("preferred_username");
+        return OidcCommonUtils.decodeJwtContent(token).getString("preferred_username");
     }
 
     private String doTestGetTokenByNamedClient(String clientId) {

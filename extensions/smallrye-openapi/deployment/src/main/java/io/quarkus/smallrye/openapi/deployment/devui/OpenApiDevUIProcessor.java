@@ -14,16 +14,16 @@ public class OpenApiDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
-        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 

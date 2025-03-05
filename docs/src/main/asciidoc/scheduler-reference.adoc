@@ -156,7 +156,7 @@ Property Expressions.
 .Time Zone Configuration Property Example
 [source,java]
 ----
-@Scheduled(cron = "0 15 10 * * ?", timeZone = "{myMethod.timeZone}")
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "${myMethod.timeZone}")
 void myMethod() { }
 ----
 
@@ -382,11 +382,11 @@ class Jobs {
 
 In some cases, it might be useful to choose a scheduler implementation used to execute a scheduled method.
 However, only one `Scheduler` implementation is used for all scheduled methods by default.
-For example, the `quarkus-quartz` extension provides an implementation that supports clustering but it also removes the simple in-memory implementation from the game.
+For example, the `quarkus-quartz` extension provides an implementation that supports clustering, but it also removes the simple in-memory implementation from the game.
 Now, if clustering is enabled then it's not possible to define a scheduled method that would be executed locally on a single node.
 Nevertheless, if you set the `quarkus.scheduler.use-composite-scheduler` config property to `true` then a composite `Scheduler` is used instead.
 This means that multiple scheduler implementations are kept running side by side.
-Furthermore, it's possible to chose a specific implementation used to execute a scheduled method using `@Scheduled#executeWith()`.
+Furthermore, it's possible to choose a specific implementation used to execute a scheduled method using `@Scheduled#executeWith()`.
 
 [source,java]
 ----
@@ -441,6 +441,57 @@ class MyService {
 <7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
 
 NOTE: A CDI event is fired synchronously and asynchronously when the scheduler or a scheduled job is paused/resumed. The payload is `io.quarkus.scheduler.SchedulerPaused`, `io.quarkus.scheduler.SchedulerResumed`, `io.quarkus.scheduler.ScheduledJobPaused` and `io.quarkus.scheduler.ScheduledJobResumed` respectively.
+
+[[scheduling_long_running_tasks]]
+== Scheduling Long-Running Tasks
+
+Executing a long-running task might yield a warning message similar to the following:
+
+[source,java]
+----
+WARN  [io.ver.cor.imp.BlockedThreadChecker] (vertx-blocked-thread-checker) Thread Thread[vert.x-worker-thread-1,5,main] has been blocked for 81879 ms, time limit is 60000 ms: io.vertx.core.VertxException: Thread blocked
+----
+
+This is happening because the default worker thread pool is coming from Vert.x which guards against threads being blocked for far too long.
+
+NOTE: The amount of time for which a Vert.x worker thread can be blocked is also https://quarkus.io/guides/all-config#quarkus-vertx_quarkus-vertx-max-worker-execute-time[configurable].
+
+Therefore, a proper way to execute long tasks is to offload them from the scheduled method to a custom executor service.
+Here's an example of such setup for a long-running task that we do not expect to execute often:
+
+[source,java]
+----
+@ApplicationScoped
+public class LongRunner implements Runnable {
+    
+    private ExecutorService executorService;
+    
+    @PostConstruct
+    void init() {
+        executorService = Executors.newThreadPerTaskExecutor(Executors.defaultThreadFactory()); <1>
+    }
+    
+    @PreDestroy
+    void destroy() {
+        executorService.shutdown(); <2>
+    }
+    
+    
+    @Scheduled(cron = "{my.schedule}")
+    public void update() {
+        executorService.execute(this); <3>
+    }
+    
+    @Override
+    public void run() { <4>
+        // perform the actual task here
+    }
+}
+----
+<1> Create a fitting executor. In this case, a new thread is created per scheduled task and stopped once the task finishes.
+<2> `@PreDestroy` callback is used to shut down the executor service.
+<3> Scheduled method only delegates the job to the custom executor - this prevent Vert.x thread from being blocked.
+<4> The bean implements `Runnable`, a format we can directly pass to the executor service as a parameter.
 
 [[programmatic_scheduling]]
 == Programmatic Scheduling

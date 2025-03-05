@@ -21,7 +21,7 @@ import io.quarkus.vertx.http.security.PathHandler;
 public class CORSWildcardStarSecurityTestCase {
 
     private static final String APP_PROPS = "" +
-            "quarkus.http.cors=true\n" +
+            "quarkus.http.cors.enabled=true\n" +
             "quarkus.http.cors.methods=*\n" +
             "quarkus.http.cors.origins=*\n" +
             "quarkus.http.cors.headers=*\n" +

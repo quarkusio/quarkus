@@ -23,6 +23,7 @@ import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
+import org.jose4j.lang.UnresolvableKeyException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.logging.Log;
@@ -375,14 +376,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                String error = logAuthenticationError(context, t);
+
+                                                Throwable failure = null;
+
+                                                boolean unresolvedKey = t.getCause() instanceof InvalidJwtException
+                                                        && (t.getCause().getCause() instanceof UnresolvableKeyException);
+                                                if (unresolvedKey
+                                                        && !configContext.oidcConfig().authentication().failOnUnresolvedKid()
+                                                        && OidcUtils.isJwtTokenExpired(currentIdToken)) {
+                                                    // It can happen in multi-tab applications where a user login causes a JWK set refresh
+                                                    // due to the key rotation, discarding old keys, and the old tab still keeps the session
+                                                    // whose signature can only be verified with the now discarded key.
+                                                    LOG.debugf(
+                                                            "Session can not be verified due to an unresolved key exception, reauthentication is required");
+                                                    // Redirect the user to the OIDC provider to re-authenticate
+                                                    failure = new AuthenticationFailedException();
+                                                } else {
+                                                    // Failures such as the signature verification failures require 401 status
+                                                    String error = logAuthenticationError(context, t);
+                                                    failure = t.getCause() instanceof AuthenticationCompletionException
+                                                            ? t.getCause()
+                                                            : new AuthenticationCompletionException(error, t.getCause());
+                                                }
+
                                                 return removeSessionCookie(context, configContext.oidcConfig())
-                                                        .replaceWith(Uni.createFrom()
-                                                                .failure(t
-                                                                        .getCause() instanceof AuthenticationCompletionException
-                                                                                ? t.getCause()
-                                                                                : new AuthenticationCompletionException(
-                                                                                        error, t.getCause())));
+                                                        .replaceWith(Uni.createFrom().failure(failure));
                                             }
                                             // Token has expired, try to refresh
                                             if (isRpInitiatedLogout(context, configContext)) {
@@ -513,7 +531,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                 .get(configContext.oidcConfig().tenantId().get());
         if (tokens != null) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String logoutTokenKeyValue = idTokenJson
                     .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
@@ -530,7 +548,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                 .get(configContext.oidcConfig().tenantId().get());
         if (tokens != null) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String logoutTokenKeyValue = idTokenJson
                     .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
@@ -572,7 +590,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private boolean isFrontChannelLogoutValid(RoutingContext context, TenantConfigContext configContext,
             SecurityIdentity identity) {
         if (isEqualToRequestPath(configContext.oidcConfig().logout().frontchannel().path(), context, configContext)) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
             List<String> frontChannelIss = context.queryParam(Claims.iss.name());
@@ -975,7 +993,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
             boolean pkceRequired = authentication.pkceRequired().orElse(false);
             if (!pkceRequired && !authentication.nonceRequired()) {
-                JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(parsedStateCookieValue[1]));
+                JsonObject json = new JsonObject(OidcCommonUtils.base64UrlDecode(parsedStateCookieValue[1]));
                 bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
                 return bean;
             }
@@ -1048,7 +1066,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                     @Override
                     public Uni<? extends Void> apply(Void t) {
-                        JsonObject idTokenJson = OidcUtils.decodeJwtContent(idToken);
+                        JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(idToken);
 
                         if (!idTokenJson.containsKey("exp") || !idTokenJson.containsKey("iat")) {
                             final String error = "ID Token is required to contain 'exp' and 'iat' claims";

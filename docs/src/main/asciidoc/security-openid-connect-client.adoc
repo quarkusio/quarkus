@@ -238,7 +238,7 @@ import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 
 import io.smallrye.mutiny.Uni;
 
@@ -275,9 +275,9 @@ import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig;
-import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -502,10 +502,10 @@ To start a Keycloak Server, you can use Docker and just run the following comman
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
+docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-Set `{keycloak.version}` to `25.0.6` or later.
+Set `{keycloak.version}` to `26.0.7` or later.
 
 You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 
@@ -532,11 +532,11 @@ Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/d
 
 When asked, log in to a `Single Page Application` provided by the OpenID Connect Dev UI:
 
- * Log in as `alice`, with the password, `alice`.
+ * Log in as `admin`, with the password, `admin`.
 This user has both `admin` and `user` roles.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `200`.
- * Log out and back in as `bob` with the password, `bob`.
+ * Log out and back in as `alice` with the password, `alice`.
 This user has a `user` role.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `403`.

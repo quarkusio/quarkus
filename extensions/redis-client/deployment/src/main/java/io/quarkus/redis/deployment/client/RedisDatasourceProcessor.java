@@ -31,7 +31,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
-import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class RedisDatasourceProcessor {

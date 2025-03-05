@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -31,14 +34,16 @@ public class QuarkusEntryPoint {
 
         try {
             doRun(args);
-        } catch (Exception e) {
+        } catch (RuntimeException | Error e) {
             InitialConfigurator.DELAYED_HANDLER.close();
             throw e;
+        } catch (Throwable t) {
+            InitialConfigurator.DELAYED_HANDLER.close();
+            throw new UndeclaredThrowableException(t);
         }
     }
 
-    private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
-            InvocationTargetException, NoSuchMethodException {
+    private static void doRun(String... args) throws Throwable {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
@@ -59,7 +64,8 @@ public class QuarkusEntryPoint {
                 Thread.currentThread().setContextClassLoader(appRunnerClassLoader);
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(appRunnerClassLoader);
                 Class<?> mainClass = appRunnerClassLoader.loadClass(app.getMainClass());
-                mainClass.getMethod("main", String[].class).invoke(null, args);
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                lookup.findStatic(mainClass, "main", MethodType.methodType(void.class, String[].class)).invokeExact(args);
             } finally {
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(null);
                 appRunnerClassLoader.close();

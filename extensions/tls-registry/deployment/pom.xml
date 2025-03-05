@@ -30,6 +30,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment-spi</artifactId>
+        </dependency>
 
         <!-- To register the let's encrypt routes -->
         <dependency>

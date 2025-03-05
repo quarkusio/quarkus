@@ -3,6 +3,9 @@ package io.quarkus.oidc.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.List;
 
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -166,7 +169,26 @@ public class CodeTenantReauthenticateTestCase {
         return webClient;
     }
 
-    private static Cookie getSessionCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
+    private static List<Cookie> getSessionCookie(WebClient webClient, String tenantId) {
+        Cookie sessionCookieChunk1 = null;
+        Cookie sessionCookieChunk2 = null;
+
+        String sessionCookieSuffix = "q_session" + (tenantId == null ? "" : "_" + tenantId);
+        String sessionCookieChunk1Name = sessionCookieSuffix + "_chunk_1";
+        String sessionCookieChunk2Name = sessionCookieSuffix + "_chunk_2";
+        for (Cookie c : webClient.getCookieManager().getCookies()) {
+            if (c.getName().startsWith(sessionCookieSuffix)) {
+                if (c.getName().equals(sessionCookieChunk1Name)) {
+                    sessionCookieChunk1 = c;
+                } else if (c.getName().equals(sessionCookieChunk2Name)) {
+                    sessionCookieChunk2 = c;
+                } else {
+                    fail("Unexpected session cookie chunk: " + c.getName());
+                }
+            }
+        }
+        return sessionCookieChunk1 != null && sessionCookieChunk2 != null
+                ? List.of(sessionCookieChunk1, sessionCookieChunk2)
+                : null;
     }
 }

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
@@ -45,7 +45,7 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
     static class BeanUsingDefaultDataSource {
 
         @Inject
-        MySQLPool mySQLClient;
+        Pool mySQLClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -65,7 +65,7 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
         @Inject
         @ReactiveDataSource("hibernate")
-        MySQLPool mySQLClient;
+        Pool mySQLClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -84,9 +84,9 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
     public static class DefaultMySQLPoolCreator implements MySQLPoolCreator {
 
         @Override
-        public MySQLPool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(12345, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
+            return Pool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }
     }
@@ -96,9 +96,9 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
     public static class HibernateMySQLPoolCreator implements MySQLPoolCreator {
 
         @Override
-        public MySQLPool create(Input input) {
+        public Pool create(Input input) {
             assertEquals(55555, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
-            return MySQLPool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
+            return Pool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }
     }

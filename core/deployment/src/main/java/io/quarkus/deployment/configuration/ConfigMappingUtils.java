@@ -122,9 +122,7 @@ public class ConfigMappingUtils {
                     .reason(ConfigMappingUtils.class.getName())
                     .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getDefaults", new String[0]));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getNames", new String[0]));
+                    mappingMetadata.getClassName(), "getProperties", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 
@@ -195,7 +193,8 @@ public class ConfigMappingUtils {
 
     public static Object newInstance(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ConfigMapping.class)) {
-            return ReflectUtil.newInstance(ConfigMappingLoader.getImplementationClass(configClass));
+            // TODO - radcortez - mapping classes cannot be initialized like this.
+            return ReflectUtil.newInstance(ConfigMappingLoader.ensureLoaded(configClass).implementation());
         } else {
             return ReflectUtil.newInstance(configClass);
         }

@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.keystores.ExpiryTrustOptions;
 import io.smallrye.reactive.messaging.ClientCustomizer;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyCertOptions;
@@ -45,6 +46,10 @@ public class PulsarClientConfigCustomizer implements ClientCustomizer<ClientBuil
 
                 KeyCertOptions keyStoreOptions = configuration.getKeyStoreOptions();
                 TrustOptions trustStoreOptions = configuration.getTrustStoreOptions();
+
+                if (trustStoreOptions instanceof ExpiryTrustOptions) {
+                    trustStoreOptions = ((ExpiryTrustOptions) trustStoreOptions).unwrap();
+                }
 
                 if (keyStoreOptions instanceof PemKeyCertOptions keyCertOptions
                         && trustStoreOptions instanceof PemTrustOptions trustCertOptions) {

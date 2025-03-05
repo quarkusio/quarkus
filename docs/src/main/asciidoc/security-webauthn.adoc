@@ -274,13 +274,13 @@ public class WebAuthnCredential extends PanacheEntityBase {
     public WebAuthnCredentialRecord toWebAuthnCredentialRecord() {
         return WebAuthnCredentialRecord
                 .fromRequiredPersistedData(
-                        new RequiredPersistedData(user.userName, credentialId, 
+                        new RequiredPersistedData(user.username, credentialId,
                                                   aaguid, publicKey, 
                                                   publicKeyAlgorithm, counter));
     }
 
-    public static List<WebAuthnCredential> findByUserName(String userName) {
-        return list("user.userName", userName);
+    public static List<WebAuthnCredential> findByUsername(String username) {
+        return list("user.username", username);
     }
     
     public static WebAuthnCredential findByCredentialId(String credentialId) {
@@ -306,14 +306,14 @@ import jakarta.persistence.Table;
 public class User extends PanacheEntity {
 
     @Column(unique = true)
-    public String userName;
+    public String username;
 
     // non-owning side, so we can add more credentials later
     @OneToOne(mappedBy = "user")
     public WebAuthnCredential webAuthnCredential;
 
-    public static User findByUserName(String userName) {
-        return User.find("userName", userName).firstResult();
+    public static User findByUsername(String username) {
+        return User.find("username", username).firstResult();
     }
 }
 ----
@@ -350,9 +350,9 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
     @Transactional
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String userId) {
         return Uni.createFrom().item(
-            WebAuthnCredential.findByUserName(userId)
+            WebAuthnCredential.findByUsername(userId)
                               .stream()
                               .map(WebAuthnCredential::toWebAuthnCredentialRecord)
                               .toList());
@@ -372,9 +372,9 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     @Override
     public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
         User newUser = new User();
-        // We can only store one credential per userName thanks to the unicity constraint
-        // which will cause this transaction to fail and throw if the userName already exists
-        newUser.userName = credentialRecord.getUserName();
+        // We can only store one credential per username thanks to the unicity constraint
+        // which will cause this transaction to fail and throw if the username already exists
+        newUser.username = credentialRecord.getUsername();
         WebAuthnCredential credential = new WebAuthnCredential(credentialRecord, newUser);
         credential.persist();
         newUser.persist();
@@ -401,10 +401,10 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 ----
 
 Warning: When implementing your own `WebAuthnUserProvider.store` method, make sure that you never allow creating
-new credentials for a `userName` that already exists. Otherwise you risk allowing third-parties to impersonate existing
+new credentials for a `username` that already exists. Otherwise you risk allowing third-parties to impersonate existing
 users by letting them add their own credentials to existing accounts. If you want to allow existing users to register
 more than one WebAuthn credential, you must make sure in `WebAuthnUserProvider.store` that the user is currently logged
-in under the same `userName` to which you want to add new credentials. In every other case, make sure to return a failed
+in under the same `username` to which you want to add new credentials. In every other case, make sure to return a failed
 `Uni` from this method. In this particular example, this is checked using a unicity constraint on the user name, which
 will cause the transaction to fail if the user already exists.
 
@@ -492,7 +492,7 @@ in `src/main/resources/META-INF/resources/index.html`:
      <div class="item">
       <h1>Register</h1>
       <p>
-       <input id="userNameRegister" placeholder="User name"/><br/>
+       <input id="usernameRegister" placeholder="User name"/><br/>
        <input id="firstName" placeholder="First name"/><br/>
        <input id="lastName" placeholder="Last name"/><br/>
        <button id="register">Register</button>
@@ -506,7 +506,7 @@ in `src/main/resources/META-INF/resources/index.html`:
 
       fetch('/api/public/me')
         .then(response => response.text())
-        .then(name => result.append("User: "+name));
+        .then(username => result.append("User: "+username));
 
       const loginButton = document.getElementById('login');
 
@@ -515,8 +515,8 @@ in `src/main/resources/META-INF/resources/index.html`:
         webAuthn.login()
           .then(x => fetch('/api/public/me'))
           .then(response => response.text())
-          .then(userName => {
-            result.append("User: "+userName);
+          .then(username => {
+            result.append("User: "+username);
           })
           .catch(err => {
             result.append("Login failed: "+err);
@@ -527,13 +527,13 @@ in `src/main/resources/META-INF/resources/index.html`:
       const registerButton = document.getElementById('register');
 
       registerButton.addEventListener("click", (e) => {
-        var userName = document.getElementById('userNameRegister').value;
+        var username = document.getElementById('usernameRegister').value;
         var firstName = document.getElementById('firstName').value;
         var lastName = document.getElementById('lastName').value;
         result.replaceChildren();
-        webAuthn.register({ name: userName, displayName: firstName + " " + lastName })
+        webAuthn.register({ username: username, displayName: firstName + " " + lastName })
           .then(body => {
-            result.append("User: "+userName);
+            result.append("User: "+username);
           })
           .catch(err => {
             result.append("Registration failed: "+err);
@@ -621,21 +621,14 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Obtain a registration challenge
 
-`POST /q/webauthn/register-options-challenge`: Set up and obtain a registration challenge
+`GET /q/webauthn/register-options-challenge?username=<username>&displayName=<displayName>`: Set up and obtain a registration challenge
+
+Query parameters:
+
+- `username` is a username. Required.
+- `displayName` is a human-palatable name for the user account. Optional.
 
 This causes a cookie to be set for the challenge, it will be used by the registration step later.
-
-[source,json]
-.Request
-----
-{
- "name": "userName", <1>
- "displayName": "Mr Nice Guy" <2>
-}
-----
-
-<1> Required
-<2> Optional
 
 [source,json]
 .Response
@@ -661,10 +654,11 @@ This causes a cookie to be set for the challenge, it will be used by the registr
     }
   ],
   "authenticatorSelection": {
-   "requireResidentKey": false,
-   "userVerification": "discouraged"
+    "requireResidentKey": true,
+    "residentKey": "required",
+    "userVerification": "required"
   },
-  "timeout": 60000,
+  "timeout": 300000,
   "attestation": "none",
   "extensions": {
    "txAuthSimple": ""
@@ -674,7 +668,11 @@ This causes a cookie to be set for the challenge, it will be used by the registr
 
 === Trigger a registration
 
-`POST /q/webauthn/register`: Trigger a registration
+`POST /q/webauthn/register?username=<username>`: Trigger a registration
+
+Query parameters:
+
+- `username` is a username. Required.
 
 This uses the challenge cookie set by the registration challenge and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to store the new credentials, and sets up
@@ -700,27 +698,21 @@ This returns a 204 with no body.
 
 === Obtain a login challenge
 
-`POST /q/webauthn/login-options-challenge`: Set up and obtain a login challenge
+`GET /q/webauthn/login-options-challenge?username=<username>`: Set up and obtain a login challenge
+
+Query parameters:
+
+- `username` is a username. Optional in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys).
 
 This causes a cookie to be set for the challenge, it will be used by the login step later.
-
-[source,json]
-.Request
-----
-{
- "name": "userName" <1>
-}
-----
-
-<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 [source,json]
 .Response
 ----
 {
  "challenge": "RV4hqKHezkWSxpOICBkpx16yPJFGMZrkPlJP-Wp8w4rVl34VIzCT7AP0Q5Rv-3JCU3jwu-j3VlOgyNMDk2AqDg",
- "timeout": 60000,
- "userVerification": "discouraged",
+ "timeout": 300000,
+ "userVerification": "required",
  "extensions": {
   "txAuthSimple": ""
  },
@@ -855,7 +847,7 @@ for that registration, and returns a https://developer.mozilla.org/en-US/docs/We
 
 [source,javascript]
 ----
-webAuthn.register({ name: userName, displayName: firstName + " " + lastName })
+webAuthn.register({ username: username, displayName: firstName + " " + lastName })
   .then(body => {
     // do something now that the user is registered
   })
@@ -871,7 +863,7 @@ for that login, and returns a https://developer.mozilla.org/en-US/docs/Web/JavaS
 
 [source,javascript]
 ----
-webAuthn.login({ name: userName }) <1>
+webAuthn.login({ username: username }) <1>
   .then(body => {
     // do something now that the user is logged in
   })
@@ -880,7 +872,7 @@ webAuthn.login({ name: userName }) <1>
   });
 ----
 
-<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
+<1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 === Only invoke the registration challenge and authenticator
 
@@ -891,7 +883,7 @@ in hidden form `input` elements, for example, and send it as part of a regular H
 
 [source,javascript]
 ----
-webAuthn.registerClientSteps({ name: userName, displayName: firstName + " " + lastName })
+webAuthn.registerClientSteps({ username: username, displayName: firstName + " " + lastName })
   .then(body => {
     // store the registration JSON in form elements
     document.getElementById('webAuthnId').value = body.id;
@@ -914,7 +906,7 @@ in hidden form `input` elements, for example, and send it as part of a regular H
 
 [source,javascript]
 ----
-webAuthn.loginClientSteps({ name: userName }) <1>
+webAuthn.loginClientSteps({ username: username }) <1>
   .then(body => {
     // store the login JSON in form elements
     document.getElementById('webAuthnId').value = body.id;
@@ -930,7 +922,7 @@ webAuthn.loginClientSteps({ name: userName }) <1>
   });
 ----
 
-<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
+<1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 == Handling login and registration endpoints yourself
 
@@ -986,9 +978,9 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
     @Transactional
     @Override
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String username) {
         return Uni.createFrom().item(
-            WebAuthnCredential.findByUserName(userName)
+            WebAuthnCredential.findByUsername(username)
                               .stream()
                               .map(WebAuthnCredential::toWebAuthnCredentialRecord)
                               .toList());
@@ -1059,7 +1051,7 @@ public class LoginResource {
 
         try {
             WebAuthnCredentialRecord credentialRecord = this.webAuthnSecurity.login(webAuthnResponse, ctx).await().indefinitely();
-            User user = User.findByUserName(credentialRecord.getUserName());
+            User user = User.findByUsername(credentialRecord.getUsername());
             if(user == null) {
                 // Invalid user
                 return Response.status(Status.BAD_REQUEST).build();
@@ -1067,7 +1059,7 @@ public class LoginResource {
             // bump the auth counter
             user.webAuthnCredential.counter = credentialRecord.getCounter();
             // make a login cookie
-            this.webAuthnSecurity.rememberUser(credentialRecord.getUserName(), ctx);
+            this.webAuthnSecurity.rememberUser(credentialRecord.getUsername(), ctx);
             return Response.ok().build();
         } catch (Exception exception) {
             // handle login failure - make a proper error response
@@ -1079,16 +1071,16 @@ public class LoginResource {
     @Path("/register")
     @POST
     @Transactional
-    public Response register(@RestForm String userName,
+    public Response register(@RestForm String username,
                              @BeanParam WebAuthnRegisterResponse webAuthnResponse,
                              RoutingContext ctx) {
         // Input validation
-        if(userName == null || userName.isEmpty()
+        if(username == null || username.isEmpty()
            || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
             return Response.status(Status.BAD_REQUEST).build();
         }
 
-        User user = User.findByUserName(userName);
+        User user = User.findByUsername(username);
         if(user != null) {
             // Duplicate user
             return Response.status(Status.BAD_REQUEST).build();
@@ -1096,15 +1088,15 @@ public class LoginResource {
         try {
             // store the user
             WebAuthnCredentialRecord credentialRecord =
-                webAuthnSecurity.register(userName, webAuthnResponse, ctx).await().indefinitely();
+                webAuthnSecurity.register(username, webAuthnResponse, ctx).await().indefinitely();
             User newUser = new User();
-            newUser.userName = credentialRecord.getUserName();
+            newUser.username = credentialRecord.getUsername();
             WebAuthnCredential credential =
                 new WebAuthnCredential(credentialRecord, newUser);
             credential.persist();
             newUser.persist();
             // make a login cookie
-            this.webAuthnSecurity.rememberUser(newUser.userName, ctx);
+            this.webAuthnSecurity.rememberUser(newUser.username, ctx);
             return Response.ok().build();
         } catch (Exception ignored) {
             // handle login failure
@@ -1187,6 +1179,7 @@ import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
@@ -1214,26 +1207,26 @@ public class WebAuthnResourceTest {
         testWebAuthn("admin", User.ADMIN, Endpoint.DEFAULT);
     }
     
-    private void testWebAuthn(String userName, User user, Endpoint endpoint) {
-        Filter cookieFilter = new RenardeCookieFilter();
+    private void testWebAuthn(String username, User user, Endpoint endpoint) {
+        Filter cookieFilter = new CookieFilter();
         WebAuthnHardware token = new WebAuthnHardware(url);
 
         verifyLoggedOut(cookieFilter);
 
         // two-step registration
-        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge(userName, cookieFilter);
+        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge(username, cookieFilter);
         JsonObject registrationJson = token.makeRegistrationJson(challenge);
         if(endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeRegistration(userName, registrationJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeRegistration(username, registrationJson, cookieFilter);
         else {
             invokeCustomEndpoint("/register", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registrationJson);
-                request.formParam("userName", userName);
+                request.formParam("username", username);
             });
         }
         
         // verify that we can access logged-in endpoints
-        verifyLoggedIn(cookieFilter, userName, user);
+        verifyLoggedIn(cookieFilter, username, user);
         
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
@@ -1252,7 +1245,7 @@ public class WebAuthnResourceTest {
         }
 
         // verify that we can access logged-in endpoints
-        verifyLoggedIn(cookieFilter, userName, user);
+        verifyLoggedIn(cookieFilter, username, user);
 
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
@@ -1276,7 +1269,7 @@ public class WebAuthnResourceTest {
         .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 
-    private void verifyLoggedIn(Filter cookieFilter, String userName, User user) {
+    private void verifyLoggedIn(Filter cookieFilter, String username, User user) {
         // public API still good
         RestAssured.given().filter(cookieFilter)
         .when()
@@ -1290,7 +1283,7 @@ public class WebAuthnResourceTest {
         .get("/api/public/me")
         .then()
         .statusCode(200)
-        .body(Matchers.is(userName));
+        .body(Matchers.is(username));
 
         // user API accessible
         RestAssured.given().filter(cookieFilter)
@@ -1298,7 +1291,7 @@ public class WebAuthnResourceTest {
         .get("/api/users/me")
         .then()
         .statusCode(200)
-        .body(Matchers.is(userName));
+        .body(Matchers.is(username));
         
         // admin API?
         if(user == User.ADMIN) {
@@ -1381,7 +1374,7 @@ public class TestUserProvider extends MyWebAuthnSetup {
     @Override
     public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
         // this user is handled in the LoginResource endpoint manually
-        if (credentialRecord.getUserName().equals("scooby")) {
+        if (credentialRecord.getUsername().equals("scooby")) {
             return Uni.createFrom().voidItem();
         }
         return super.store(credentialRecord);
@@ -1392,7 +1385,7 @@ public class TestUserProvider extends MyWebAuthnSetup {
     public Uni<Void> update(String credentialId, long counter) {
         WebAuthnCredential credential = WebAuthnCredential.findByCredentialId(credentialId);
         // this user is handled in the LoginResource endpoint manually
-        if (credential.user.userName.equals("scooby")) {
+        if (credential.user.username.equals("scooby")) {
         	return Uni.createFrom().voidItem();
         }
         return super.update(credentialId, counter);

@@ -6,9 +6,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.AbstractCancellableServerRestHandler;
 
-public class CompletionStageResponseHandler implements ServerRestHandler {
+public class CompletionStageResponseHandler extends AbstractCancellableServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -45,7 +45,7 @@ public class CompletionStageResponseHandler implements ServerRestHandler {
             requestContext.serverResponse().addCloseHandler(new Runnable() {
                 @Override
                 public void run() {
-                    if (!done.get()) {
+                    if (isCancellable() && !done.get()) {
                         if (result instanceof CompletableFuture<?> cf) {
                             canceled.set(true);
                             cf.cancel(true);

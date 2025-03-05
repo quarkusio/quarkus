@@ -411,14 +411,28 @@ For example, if you work with Keycloak, you can use `keycloak.js` to authenticat
 <head>
     <title>keycloak-spa</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="http://localhost:8180/js/keycloak.js"></script>
-    <script>
-        var keycloak = new Keycloak();
-        keycloak.init({onLoad: 'login-required'}).success(function () {
-            console.log('User is now authenticated.');
-        }).error(function () {
-            window.location.reload();
+    <script type="importmap">
+        {
+            "imports": {
+                "keycloak-js": "https://cdn.jsdelivr.net/npm/keycloak-js@26.0.7/lib/keycloak.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import Keycloak from "keycloak-js";
+
+        const keycloak = new Keycloak({
+            url: 'http://localhost:8180',
+            realm: 'quarkus',
+            clientId: 'quarkus-app'
         });
+
+        await keycloak.init({onLoad: 'login-required'}).then(function () {
+            console.log('User is now authenticated.');
+        }).catch(function () {
+            console.log('User is NOT authenticated.');
+        });
+
         function makeAjaxRequest() {
             axios.get("/api/hello", {
                 headers: {
@@ -436,14 +450,23 @@ For example, if you work with Keycloak, you can use `keycloak.js` to authenticat
                     window.location.reload();
                 });
             });
-    }
+        }
+
+        let button = document.getElementById('ajax-request');
+        button.addEventListener('click', makeAjaxRequest);
     </script>
 </head>
 <body>
-    <button onclick="makeAjaxRequest()">Request</button>
+    <button id="ajax-request">Request</button>
 </body>
 </html>
 ----
+
+[NOTE]
+====
+To enable authentication for this SPA Keycloak example, disable *Client authentication* and set *Web origins* to `http://localhost:8080`. These settings allow Keycloak's CORS policy to communicate with your Quarkus application.
+The code provides an example of building Quarkus single-page applications integrated with Keycloak. For more details about creating single-page applications integrating Keycloak, refer to the official link:https://www.keycloak.org/securing-apps/javascript-adapter[Keycloak JavaScript adapter documentation].
+====
 
 === Cross-origin resource sharing
 
@@ -857,6 +880,48 @@ For a test like this to work, the test `Auth0` application must have the `passwo
 This example code also shows how to pass additional parameters.
 For `Auth0`, these are the `audience` and `scope` parameters.
 
+===== Test OIDC DevService
+
+You can also use `OidcTestClient` to test Quarkus endpoints supported by xref:security-openid-connect-dev-services.adoc#dev-services-for-oidc[Dev Services for OIDC].
+No configuration in the `application.properties` file is needed, Quarkus will configure `OidcTestClient` for you:
+
+[source, java]
+----
+package org.acme;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.client.OidcTestClient;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    static final OidcTestClient oidcTestClient = new OidcTestClient();
+
+    @AfterAll
+    public static void close() {
+        oidcTestClient.close();
+    }
+
+    @Test
+    public void testHelloEndpoint() {
+        String accessToken = oidcTestClient.getAccessToken("alice", "alice");
+        given()
+          .auth().oauth2(accessToken)
+          .when().get("/hello")
+          .then()
+             .statusCode(200)
+             .body(is("Hello, Alice"));
+    }
+
+}
+----
+
 ifndef::no-deprecated-test-resource[]
 [[bearer-token-integration-testing-keycloak]]
 ==== `KeycloakTestResourceLifecycleManager`
@@ -1244,6 +1309,104 @@ If you set `quarkus.oidc.client-id`, but your endpoint does not require remote a
 Quarkus `web-app` applications always require the `quarkus.oidc.client-id` property.
 ====
 
+== Sender-constraining access tokens
+
+=== Demonstrating Proof of Possession (DPoP)
+
+https://datatracker.ietf.org/doc/html/rfc9449[RFC9449] describes a Demonstrating Proof of Possession (DPoP) mechanism for cryprographically binding an access token to the current client, preventing the access token loss and replay.
+
+Single page application (SPA) public clients generate DPoP proof tokens and use them to acquire and submit access tokens which are cryptograhically bound to DPoP proofs. 
+
+Enabling DPoP support in Quarkus requires a single property.
+
+For example:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=${your_oidc_provider_url}
+quarkus.oidc.token.authorization-scheme=dpop <1>
+----
+<1> Require that the access tokens are provided using HTTP `Authorization DPoP` scheme value.
+
+After accepting such tokens, Quarkus will go through the full https://datatracker.ietf.org/doc/html/rfc9449#name-checking-dpop-proofs[DPoP token verification process].
+
+Support for custom DPoP nonce providers may be offered in the future.
+
+=== Mutual TLS token binding
+
+https://datatracker.ietf.org/doc/html/rfc8705[RFC8705] describes a mechanism for binding access tokens to Mutual TLS (mTLS) client authentication certificates.
+It requires that a client certificate's SHA256 thumbprint matches a JWT token or token introspection confirmation `x5t#S256` certificate thumbprint.
+
+For example, see https://datatracker.ietf.org/doc/html/rfc8705#section-3.1[JWT Certificate Thumbprint Confirmation Method] and https://datatracker.ietf.org/doc/html/rfc8705#section-3.2[Confirmation Method for Token Introspection] sections of https://datatracker.ietf.org/doc/html/rfc8705[RFC8705].
+
+MTLS token binding supports a `holder of key` concept, and can be used to confirm that the current access token was issued to the current authenticated client who presents this token.
+
+When you use both mTLS and OIDC bearer authentication mechanisms, you can enforce that the access tokens must be certificate bound with a single property, after configuring your Quarkus endpoint and Quarkus OIDC to require the use of mTLS.
+
+For example:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=${your_oidc_provider_url}
+quarkus.oidc.token.binding.certificate=true <1>
+quarkus.oidc.tls.tls-configuration-name=oidc-client-tls <2>
+
+quarkus.tls.oidc-client-tls.key-store.p12.path=target/certificates/oidc-client-keystore.p12 <2>
+quarkus.tls.oidc-client-tls.key-store.p12.password=password
+quarkus.tls.oidc-client-tls.trust-store.p12.path=target/certificates/oidc-client-truststore.p12
+quarkus.tls.oidc-client-tls.trust-store.p12.password=password
+
+quarkus.http.tls-configuration-name=oidc-server-mtls <3>
+quarkus.tls.oidc-server-mtls.key-store.p12.path=target/certificates/oidc-keystore.p12
+quarkus.tls.oidc-server-mtls.key-store.p12.password=password
+quarkus.tls.oidc-server-mtls.trust-store.p12.path=target/certificates/oidc-server-truststore.p12
+quarkus.tls.oidc-server-mtls.trust-store.p12.password=password
+----
+<1> Require that bearer access tokens must be bound to the client certificates.
+<2> TLS registry configuration for Quarkus OIDC be able to communicate with the OIDC provider over MTLS
+<3> TLS registry configuration requiring external clients to authenticate to the Quarkus endpoint over MTLS
+
+The above configuration is sufficient to require that OIDC bearer tokens are bound to the client certificates.
+
+Next, if you need to access both mTLS and OIDC bearer security identities, consider enabling xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Inclusive authentication] with `quarkus.http.auth.inclusive=true`.
+
+Now you can access both MTLS and OIDC security identities as follows:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.credential.CertificateCredential;
+import io.quarkus.security.identity.SecurityIdentity;
+
+@Path("/service")
+@Authenticated
+public class OidcMtlsEndpoint {
+
+    @Inject
+    SecurityIdentity mtlsIdentity; <1>
+
+    @Inject
+    JsonWebToken oidcAccessToken; <2>
+
+    @GET
+    public String getIdentities() {
+        var cred = identity.getCredential(CertificateCredential.class).getCertificate();
+        return "Identities: " + cred.getSubjectX500Principal().getName().split(",")[0]
+                + ", " + accessToken.getName();
+    }
+}
+----
+<1> `SecurityIdentity` always represents the primary mTLS authentication when mTLS is used and an inclusive authentication is enabled.
+<2> OIDC security identity is also available because enabling an inclusive authentication requires all registered mechanisms to produce the security identity.
+
+
 == Authentication after an HTTP request has completed
 
 Sometimes, `SecurityIdentity` for a given token must be created when there is no active HTTP request context.
@@ -1344,7 +1507,102 @@ Authentication that requires a dynamic tenant will fail.
 == OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, and log requests.
-For more information, see xref:security-oidc-code-flow-authentication#code-flow-oidc-request-filters[OIDC request filters].
+For more information, see xref:security-oidc-code-flow-authentication.adoc#code-flow-oidc-request-filters[OIDC request filters].
+
+[[bearer-token-oidc-response-filters]]
+=== OIDC response filters
+
+You can filter responses from the OIDC providers by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body in order to log them or perform other actions.
+
+You can have a single filter intercepting all the OIDC responses, or use an `@OidcEndpoint` annotation to apply this filter to the specific endpoint responses only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.logging.Log;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcUtils;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.DISCOVERY) <1>
+public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.equals("application/json") {
+            String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
+            String metadata = rc.responseBody().toString(); <4>
+            Log.debugf("Tenant %s OIDC metadata: %s", tenantId, metadata);
+        }
+    }
+}
+
+----
+<1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Use `OidcRequestContextProperties` request properties to get the tenant id.
+<4> Get the response data as String.
+
+== Programmatic OIDC start-up
+
+OIDC tenants can be created programmatically like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void observe(@Observes Oidc oidc) {
+        oidc.createServiceApp("http://localhost:8180/realms/quarkus");
+    }
+
+}
+----
+
+The code above is a programmatic equivalent to the following configuration in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+----
+
+Should you need to configure more OIDC tenant properties, use the `OidcTenantConfig` builder like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import io.quarkus.oidc.OidcTenantConfig;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void createDefaultTenant(@Observes Oidc oidc) {
+        var defaultTenant = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/quarkus")
+                .token().requireJwtIntrospectionOnly().end()
+                .build();
+        oidc.create(defaultTenant);
+    }
+}
+----
+
+For more complex setup involving multiple tenants please see the xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+section of the OpenID Connect Multi-Tenancy guide.
 
 == References
 

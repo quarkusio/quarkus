@@ -205,6 +205,13 @@ public interface ArcContainer {
     ManagedContext requestContext();
 
     /**
+     * This method never throws {@link ContextNotActiveException}.
+     *
+     * @return the built-in context for {@link jakarta.enterprise.context.SessionScoped}
+     */
+    ManagedContext sessionContext();
+
+    /**
      * NOTE: Not all methods are supported!
      *
      * @return the bean manager

@@ -109,7 +109,6 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
-import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.runtime.SecurityIdentityProxy;
@@ -124,15 +123,15 @@ import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
-import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem.ClassStorageBuilder;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -523,26 +522,6 @@ public class SecurityProcessor {
                 .done());
     }
 
-    /**
-     * Transform deprecated {@link AdditionalSecuredClassesBuildItem} to {@link AdditionalSecuredMethodsBuildItem}.
-     */
-    @BuildStep
-    void transformAdditionalSecuredClassesToMethods(List<AdditionalSecuredClassesBuildItem> additionalSecuredClassesBuildItems,
-            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsBuildItemBuildProducer) {
-        for (AdditionalSecuredClassesBuildItem additionalSecuredClassesBuildItem : additionalSecuredClassesBuildItems) {
-            final Collection<MethodInfo> securedMethods = new ArrayList<>();
-            for (ClassInfo additionalSecuredClass : additionalSecuredClassesBuildItem.additionalSecuredClasses) {
-                for (MethodInfo method : additionalSecuredClass.methods()) {
-                    if (isPublicNonStaticNonConstructor(method)) {
-                        securedMethods.add(method);
-                    }
-                }
-            }
-            additionalSecuredMethodsBuildItemBuildProducer.produce(
-                    new AdditionalSecuredMethodsBuildItem(securedMethods, additionalSecuredClassesBuildItem.rolesAllowed));
-        }
-    }
-
     /*
      * The annotation store is not meant to be generally supported for security annotation.
      * It is only used here in order to be able to register the DenyAllInterceptor for
@@ -550,9 +529,8 @@ public class SecurityProcessor {
      */
     @BuildStep
     void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
-            SecurityBuildTimeConfig config) {
-        if (config.denyUnannotated()) {
+            List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods) {
+        if (security.denyUnannotatedMembers()) {
             transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
                     .forClasses()
                     .whenClass(new DenyUnannotatedPredicate())
@@ -598,7 +576,7 @@ public class SecurityProcessor {
     PermissionsAllowedMetaAnnotationBuildItem transformPermissionsAllowedMetaAnnotations(
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            List<ClassSecurityCheckAnnotationBuildItem> classAnnotationItems) {
+            List<ClassSecurityAnnotationBuildItem> classAnnotationItems) {
 
         var index = beanArchiveBuildItem.getIndex();
         var item = movePermFromMetaAnnToMetaTarget(index);
@@ -620,7 +598,7 @@ public class SecurityProcessor {
 
         // extensions WebSockets Next doesn't want CDI interceptors to prevent repeated checks
         var additionalClassAnnotations = classAnnotationItems.stream()
-                .map(ClassSecurityCheckAnnotationBuildItem::getClassAnnotation).collect(Collectors.toSet());
+                .map(ClassSecurityAnnotationBuildItem::getClassAnnotation).collect(Collectors.toSet());
         final Predicate<AnnotationInstance> hasNoAdditionalClassAnnotation;
         if (additionalClassAnnotations.isEmpty()) {
             hasNoAdditionalClassAnnotation = ai -> true;
@@ -747,7 +725,7 @@ public class SecurityProcessor {
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config,
+            List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks,
             PermissionSecurityChecksBuilderBuildItem permissionSecurityChecksBuilderBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
@@ -765,7 +743,7 @@ public class SecurityProcessor {
 
         IndexView index = beanArchiveBuildItem.getIndex();
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
-                additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
+                additionalSecured.values(), security.denyUnannotatedMembers(), recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
                 additionalSecurityAnnotationItems, permissionSecurityChecksBuilderBuildItem.instance,
@@ -774,6 +752,19 @@ public class SecurityProcessor {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
         }
+        Set<String> standardSecurityInterceptors = Set.of(DenyAllInterceptor.class.getName(),
+                PermitAllInterceptor.class.getName(), RolesAllowedInterceptor.class.getName(),
+                AuthenticatedInterceptor.class.getName(), PermissionsAllowedInterceptor.class.getName());
+
+        securityChecks = securityChecks.entrySet()
+                .stream()
+                .filter(e -> {
+                    MethodInfo methodInfo = e.getKey();
+                    // constructors and standard security interceptors does not require security checks
+                    return !("<init>".equals(methodInfo.name())
+                            || standardSecurityInterceptors.contains(methodInfo.declaringClass().name().toString()));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         return new MethodSecurityChecks(securityChecks);
     }
@@ -875,8 +866,8 @@ public class SecurityProcessor {
         if (permissionCheckBuilder.foundPermissionsAllowedInstances()) {
             var additionalClassInstances = registerClassSecurityCheckBuildItems
                     .stream()
-                    .filter(i -> PERMISSIONS_ALLOWED.equals(i.securityAnnotationInstance.name()))
-                    .map(i -> i.securityAnnotationInstance)
+                    .filter(i -> PERMISSIONS_ALLOWED.equals(i.getSecurityAnnotationInstance().name()))
+                    .map(RegisterClassSecurityCheckBuildItem::getSecurityAnnotationInstance)
                     .toList();
             var securityChecks = permissionCheckBuilder
                     .prepareParamConverterGenerator(recorder, generatedClassesProducer, reflectiveClassesProducer)
@@ -971,7 +962,7 @@ public class SecurityProcessor {
         if (!registerClassSecurityCheckBuildItems.isEmpty()) {
             var classStorageBuilder = new ClassStorageBuilder();
             registerClassSecurityCheckBuildItems.forEach(item -> {
-                var securityAnnotationName = item.securityAnnotationInstance.name();
+                var securityAnnotationName = item.getSecurityAnnotationInstance().name();
 
                 final SecurityCheck securityCheck;
                 if (DENY_ALL.equals(securityAnnotationName)) {
@@ -981,16 +972,16 @@ public class SecurityProcessor {
                 } else if (AUTHENTICATED.equals(securityAnnotationName)) {
                     securityCheck = recorder.authenticated();
                 } else if (ROLES_ALLOWED.equals(securityAnnotationName)) {
-                    var allowedRoles = item.securityAnnotationInstance.value().asStringArray();
+                    var allowedRoles = item.getSecurityAnnotationInstance().value().asStringArray();
                     securityCheck = computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex, recorder,
                             allowedRoles);
                 } else if (PERMISSIONS_ALLOWED.equals(securityAnnotationName)) {
-                    securityCheck = Objects.requireNonNull(classNameToPermCheck.get(item.className));
+                    securityCheck = Objects.requireNonNull(classNameToPermCheck.get(item.getClassName()));
                 } else {
                     throw new IllegalStateException("Found unknown security annotation: " + securityAnnotationName);
                 }
 
-                classStorageBuilder.addSecurityCheck(item.className, securityCheck);
+                classStorageBuilder.addSecurityCheck(item.getClassName(), securityCheck);
             });
             classSecurityCheckStorageProducer.produce(classStorageBuilder.build());
         }
@@ -1167,12 +1158,12 @@ public class SecurityProcessor {
     @BuildStep
     void gatherClassSecurityChecks(BuildProducer<RegisterClassSecurityCheckBuildItem> producer,
             BeanArchiveIndexBuildItem indexBuildItem, PermissionsAllowedMetaAnnotationBuildItem permsMetaAnnotationsItem,
-            List<ClassSecurityCheckAnnotationBuildItem> classAnnotationItems) {
+            List<ClassSecurityAnnotationBuildItem> classAnnotationItems) {
         if (!classAnnotationItems.isEmpty()) {
             var index = indexBuildItem.getIndex();
             classAnnotationItems
                     .stream()
-                    .map(ClassSecurityCheckAnnotationBuildItem::getClassAnnotation)
+                    .map(ClassSecurityAnnotationBuildItem::getClassAnnotation)
                     .map(index::getAnnotations)
                     .flatMap(Collection::stream)
                     .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)

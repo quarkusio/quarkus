@@ -76,7 +76,7 @@ class FlywayCallbacksLocator {
      */
     private Collection<Callback> callbacksForDataSource(String dataSourceName)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        final Optional<List<String>> callbackConfig = flywayBuildConfig.getConfigForDataSourceName(dataSourceName).callbacks;
+        final Optional<List<String>> callbackConfig = flywayBuildConfig.datasources().get(dataSourceName).callbacks();
         if (!callbackConfig.isPresent()) {
             return Collections.emptyList();
         }

@@ -2,9 +2,8 @@ package io.quarkus.deployment.builditem;
 
 import java.util.logging.Level;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Establish the default log level of a log category.

@@ -47,7 +47,7 @@ public class TlsCertificateReloader {
      * @throws IllegalArgumentException if any of the configuration is invalid
      */
     public static long initCertReloadingAction(Vertx vertx, HttpServer server,
-            HttpServerOptions options, ServerSslConfig configuration,
+            HttpServerOptions options, ServerSslConfig sslConfig,
             TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {
 
         if (options == null) {
@@ -78,12 +78,12 @@ public class TlsCertificateReloader {
 
         long period;
         // Validation
-        if (configuration.certificate.reloadPeriod.isPresent()) {
-            if (configuration.certificate.reloadPeriod.get().toMillis() < 30_000) {
+        if (sslConfig.certificate().reloadPeriod().isPresent()) {
+            if (sslConfig.certificate().reloadPeriod().get().toMillis() < 30_000) {
                 throw new IllegalArgumentException(
                         "Unable to configure TLS reloading - The reload period cannot be less than 30 seconds");
             }
-            period = configuration.certificate.reloadPeriod.get().toMillis();
+            period = sslConfig.certificate().reloadPeriod().get().toMillis();
         } else {
             return -1;
         }
@@ -106,7 +106,7 @@ public class TlsCertificateReloader {
                                 return null;
                             }
                         } else {
-                            var c = reloadFileContent(nonRegistryOptions, configuration);
+                            var c = reloadFileContent(nonRegistryOptions, sslConfig);
                             if (c.equals(nonRegistryOptions)) { // No change, skip the update
                                 return null;
                             }
@@ -179,14 +179,14 @@ public class TlsCertificateReloader {
         return CompletableFuture.allOf(futures);
     }
 
-    private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig configuration) throws IOException {
+    private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig sslConfig) throws IOException {
         var copy = new SSLOptions(ssl);
 
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();
 
-        configuration.certificate.keyFiles.ifPresent(keys::addAll);
-        configuration.certificate.files.ifPresent(certificates::addAll);
+        sslConfig.certificate().keyFiles().ifPresent(keys::addAll);
+        sslConfig.certificate().files().ifPresent(certificates::addAll);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             List<Buffer> certBuffer = new ArrayList<>();
@@ -205,15 +205,15 @@ public class TlsCertificateReloader {
                     .setCertValues(certBuffer)
                     .setKeyValues(keysBuffer);
             copy.setKeyCertOptions(opts);
-        } else if (configuration.certificate.keyStoreFile.isPresent()) {
+        } else if (sslConfig.certificate().keyStoreFile().isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.keyStoreFile.get())));
+            opts.setValue(Buffer.buffer(getFileContent(sslConfig.certificate().keyStoreFile().get())));
             copy.setKeyCertOptions(opts);
         }
 
-        if (configuration.certificate.trustStoreFile.isPresent()) {
-            var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.trustStoreFile.get())));
+        if (sslConfig.certificate().trustStoreFile().isPresent()) {
+            var opts = ((KeyStoreOptions) copy.getTrustOptions());
+            opts.setValue(Buffer.buffer(getFileContent(sslConfig.certificate().trustStoreFile().get())));
             copy.setTrustOptions(opts);
         }
 

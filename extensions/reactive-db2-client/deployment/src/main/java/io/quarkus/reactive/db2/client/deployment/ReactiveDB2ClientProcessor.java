@@ -2,6 +2,8 @@ package io.quarkus.reactive.db2.client.deployment;
 
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifier;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
+import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,9 +14,10 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
@@ -55,6 +58,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
+import io.quarkus.reactive.db2.client.runtime.DB2PoolSupport;
 import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
 import io.quarkus.reactive.db2.client.runtime.DataSourcesReactiveDB2Config;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -65,12 +69,12 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
 
-    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(
-            DotName.createSimple(Instance.class),
-            new Type[] { ClassType.create(DotName.createSimple(DB2PoolCreator.class.getName())) }, null);
+    private static final Type DB2_POOL_CREATOR = ClassType.create(DotName.createSimple(DB2PoolCreator.class.getName()));
+    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
+            new Type[] { DB2_POOL_CREATOR }, null);
 
     private static final DotName VERTX_DB2_POOL = DotName.createSimple(DB2Pool.class);
-    private static final Type VERTX_DB2_POOL_TYPE = Type.create(VERTX_DB2_POOL, Type.Kind.CLASS);
+    private static final Type VERTX_DB2_POOL_TYPE = ClassType.create(VERTX_DB2_POOL);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -92,11 +96,28 @@ class ReactiveDB2ClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
+        Stream.Builder<String> db2PoolNamesBuilder = Stream.builder();
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, db2Pool, syntheticBeans, dataSourceName,
-                    dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems,
-                    curateOutcomeBuildItem);
+
+            if (!isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
+                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+                continue;
+            }
+
+            createPool(recorder, vertx, eventLoopCount, shutdown, db2Pool, syntheticBeans, dataSourceName,
+                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config);
+
+            db2PoolNamesBuilder.add(dataSourceName);
+        }
+
+        Set<String> db2PoolNames = db2PoolNamesBuilder.build().collect(toSet());
+        if (!db2PoolNames.isEmpty()) {
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(DB2PoolSupport.class)
+                    .scope(Singleton.class)
+                    .unremovable()
+                    .runtimeValue(recorder.createDB2PoolSupport(db2PoolNames))
+                    .setRuntimeInit()
+                    .done());
         }
 
         // Enable SSL support by default
@@ -176,25 +197,16 @@ class ReactiveDB2ClientProcessor {
                         dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
-    private void createPoolIfDefined(DB2PoolRecorder recorder,
+    private void createPool(DB2PoolRecorder recorder,
             VertxBuildItem vertx,
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<DB2PoolBuildItem> db2Pool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        if (!isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
-            return;
-        }
+            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config) {
 
         Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> poolFunction = recorder.configureDB2Pool(vertx.getVertx(),
                 eventLoopCount.getEventLoopCount(),
@@ -282,8 +294,6 @@ class ReactiveDB2ClientProcessor {
     }
 
     private static class DB2PoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {
-        private static final Type DB2_POOL_CREATOR = Type.create(DotName.createSimple(DB2PoolCreator.class.getName()),
-                Type.Kind.CLASS);
 
         @Override
         public boolean test(Set<Type> types) {

@@ -15,9 +15,9 @@ public class SamePoolInstanceTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest();
 
     @Inject
-    io.vertx.mutiny.oracleclient.OraclePool mutinyPool;
+    io.vertx.mutiny.sqlclient.Pool mutinyPool;
     @Inject
-    io.vertx.oracleclient.OraclePool pool;
+    io.vertx.sqlclient.Pool pool;
 
     @Test
     public void test() {

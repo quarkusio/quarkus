@@ -1,6 +1,5 @@
 package io.quarkus.vertx.runtime;
 
-import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
@@ -32,9 +31,7 @@ import io.quarkus.vertx.LocalEventBusCodec;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
-import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -123,35 +120,30 @@ public class VertxEventBusConsumerRecorder {
                         consumer.handler(new Handler<Message<Object>>() {
                             @Override
                             public void handle(Message<Object> m) {
+                                // Will run on the context used for the consumer registration.
+                                // It's a duplicated context, but we need to mark it as safe.
+                                // The safety comes from the fact that it's instantiated by Vert.x for every
+                                // message.
+                                setCurrentContextSafe(true);
                                 if (blocking) {
-                                    // We need to create a duplicated context from the "context"
-                                    Context dup = VertxContext.getOrCreateDuplicatedContext(context);
-                                    setContextSafe(dup, true);
-
                                     if (runOnVirtualThread) {
-                                        // Switch to a Vert.x context to capture it and use it during the invocation.
-                                        dup.runOnContext(new Handler<Void>() {
+                                        VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                                             @Override
-                                            public void handle(Void event) {
-                                                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        try {
-                                                            invoker.invoke(m);
-                                                        } catch (Exception e) {
-                                                            if (m.replyAddress() == null) {
-                                                                // No reply handler
-                                                                throw wrapIfNecessary(e);
-                                                            } else {
-                                                                m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
-                                                            }
-                                                        }
+                                            public void run() {
+                                                try {
+                                                    invoker.invoke(m);
+                                                } catch (Exception e) {
+                                                    if (m.replyAddress() == null) {
+                                                        // No reply handler
+                                                        throw wrapIfNecessary(e);
+                                                    } else {
+                                                        m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                                     }
-                                                });
+                                                }
                                             }
                                         });
                                     } else {
-                                        Future<Void> future = dup.executeBlocking(new Callable<Void>() {
+                                        Future<Void> future = Vertx.currentContext().executeBlocking(new Callable<Void>() {
                                             @Override
                                             public Void call() {
                                                 try {
@@ -170,11 +162,6 @@ public class VertxEventBusConsumerRecorder {
                                         future.onFailure(context::reportException);
                                     }
                                 } else {
-                                    // Will run on the context used for the consumer registration.
-                                    // It's a duplicated context, but we need to mark it as safe.
-                                    // The safety comes from the fact that it's instantiated by Vert.x for every
-                                    // message.
-                                    setCurrentContextSafe(true);
                                     try {
                                         invoker.invoke(m);
                                     } catch (Exception e) {

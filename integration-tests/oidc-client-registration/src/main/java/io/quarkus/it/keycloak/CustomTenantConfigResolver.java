@@ -1,5 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+import static io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +36,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Inject
     OidcClientRegistrations clientRegs;
+
+    @Inject
+    ClientAuthWithSignedJwtCreator clientAuthWithSignedJwtCreator;
 
     @Inject
     @ConfigProperty(name = "quarkus.oidc.auth-server-url")
@@ -122,6 +128,23 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (routingContext.request().path().endsWith("/protected/multi2")) {
             return Uni.createFrom().item(createTenantConfig("registered-client-multi2",
                     regClientsMulti.get("/protected/multi2").metadata()));
+        } else if (routingContext.normalizedPath().endsWith("/jwt-bearer-token-file")) {
+            var clientMetadata = clientAuthWithSignedJwtCreator.getCreatedClientMetadata();
+            var redirectPath = URI.create(clientMetadata.getRedirectUris().get(0)).getPath();
+            var tenantConfig = OidcTenantConfig
+                    .authServerUrl(authServerUrl)
+                    .applicationType(WEB_APP)
+                    .tenantId("registered-client-jwt-bearer-token-file")
+                    .clientName(clientMetadata.getClientName())
+                    .clientId(clientMetadata.getClientId())
+                    .authentication().redirectPath(redirectPath).end()
+                    .credentials()
+                    .jwt()
+                    .source(BEARER)
+                    .tokenPath(clientAuthWithSignedJwtCreator.getSignedJwtTokenPath())
+                    .endCredentials()
+                    .build();
+            return Uni.createFrom().item(tenantConfig);
         }
 
         return null;

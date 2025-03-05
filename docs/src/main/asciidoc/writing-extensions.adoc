@@ -1584,6 +1584,75 @@ If bytecode recording isn't sufficient, link:https://github.com/quarkusio/gizmo/
 Extensions often need a way to determine whether a given class is part of the application's runtime classpath.
 The proper way for an extension to perform this check is to use `io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime`.
 
+[[generating-resources]]
+=== Generating Resources
+
+It is possible to generate resources using extensions, in some scenarios you need to generate a resource into `META-INF` directory, the resource can be a service for SPI or a simple HTML, CSS, Javascript files.
+
+[source,java]
+----
+/**
+ * This build step aggregates all the produced service providers
+ * and outputs them as resources.
+ */
+@BuildStep
+public void produceServiceFiles(
+    BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResourceProducer,
+    BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer
+) throws IOException {
+
+    generatedResourceProducer.produce( // <1>
+        new GeneratedResourceBuildItem(
+            "META-INF/services/io.quarkus.services.GreetingService",
+            """
+            public class HelloService implements GreetingService {
+
+                @Override
+                public void do() {
+                    System.out.println("Hello!");
+                }
+            }
+            """.getBytes(StandardCharsets.UTF_8)));
+
+
+    generatedStaticResourceProducer.produce( // <2>
+        new GeneratedStaticResourceBuildItem(
+            "/index.js",
+            "console.log('Hello World!')".getBytes(StandardCharsets.UTF_8))
+    );
+}
+----
+
+1. Producing a SPI service implementation as a resource in META-INF/services
+2. Producing a static resource (e.g., JavaScript file) served by Vertx
+
+==== Key Points
+
+. **`GeneratedResourceBuildItem`**
+* Generates resources that are persisted in production mode.
+* In development and other non-production modes, the resources are kept in memory and loaded using the `QuarkusClassLoader`.
+
+. **`GeneratedStaticResourceBuildItem`**
+* Generates static resources (e.g., files like JavaScript, HTML, or CSS) served by Vertx.
+* In development mode, Quarkus serves these resources using a Vertx handler backed by a classloader-based filesystem.
+
+==== Differences Between `GeneratedResourceBuildItem` and `GeneratedStaticResourceBuildItem`
+
+While both are used to generate resources, their purposes and behaviors differ:
+
+**`GeneratedResourceBuildItem`:**
+
+* Used for resources required at runtime (e.g., SPI service definitions).
+* Persisted only in production mode; otherwise, stored in memory.
+
+**`GeneratedStaticResourceBuildItem`:**
+
+* Designed for serving static resources via HTTP (e.g., JavaScript or CSS files).
+* In development mode, these resources are served dynamically using Vertx.
+* Generates a `GeneratedResourceBuildItem`.
+* Generates a `AdditionalStaticResourceBuildItem` only on normal mode.
+
+By using these build items appropriately, you can generate and manage resources effectively within your Quarkus extension.
 ////
 TODO: config integration
 ////

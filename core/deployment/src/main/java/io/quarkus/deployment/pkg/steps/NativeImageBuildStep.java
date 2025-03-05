@@ -53,6 +53,7 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
+import io.quarkus.runtime.graal.RemoteJmxHelper;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
@@ -967,6 +968,7 @@ public class NativeImageBuildStep {
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
+                RemoteJmxHelper.setJmxServerNotIncluded(!monitoringOptions.contains(NativeConfig.MonitoringOption.JMXSERVER));
                 if (!monitoringOptions.isEmpty()) {
                     nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
                             .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));

@@ -84,7 +84,7 @@ public class ClientAuthWithSignedJwtCreator {
                 {
                   "redirect_uris" : [ "http://localhost:8081/protected/jwt-bearer-token-file" ],
                   "token_endpoint_auth_method" : "private_key_jwt",
-                  "grant_types" : [ "client_credentials" ],
+                  "grant_types" : [ "client_credentials", "authorization_code" ],
                   "client_name" : "signed-jwt-test",
                   "client_uri" : "%1$s/auth/realms/quarkus/app",
                   "jwks" : {

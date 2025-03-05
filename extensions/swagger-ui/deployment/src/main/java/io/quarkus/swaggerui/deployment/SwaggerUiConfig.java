@@ -327,6 +327,5 @@ public interface SwaggerUiConfig {
     /**
      * If application behind the proxy with custom location path.
      */
-    @ConfigItem
     Optional<String> locationPath();
 }

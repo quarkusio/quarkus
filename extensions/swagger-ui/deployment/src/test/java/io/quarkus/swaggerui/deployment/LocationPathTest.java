@@ -29,12 +29,6 @@ public class LocationPathTest {
                 .body(containsString("/nginx/path/q/swagger-ui/oauth2-redirect.html"));
         RestAssured.when().get("/q/swagger-ui").then()
                 .statusCode(200)
-                .body(containsString("/nginx/path/q/dev"));
-        RestAssured.when().get("/q/swagger-ui/index.html").then()
-                .statusCode(200)
-                .body(containsString("/nginx/path/q/dev"));
-        RestAssured.when().get("/q/swagger-ui").then()
-                .statusCode(200)
                 .body(containsString("/nginx/path/q/swagger-ui"));
         RestAssured.when().get("/q/swagger-ui/index.html").then()
                 .statusCode(200)

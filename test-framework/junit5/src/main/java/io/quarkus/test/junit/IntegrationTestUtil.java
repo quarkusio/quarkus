@@ -176,7 +176,7 @@ public final class IntegrationTestUtil {
             boolean isDockerAppLaunch) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
-        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation);
 
         final PathList.Builder rootBuilder = PathList.builder();
 

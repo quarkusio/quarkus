@@ -6,7 +6,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.ProjectInfoCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
@@ -34,11 +33,6 @@ public class InfoMojo extends QuarkusProjectStateMojoBase {
             outcome = invoker.execute();
         } catch (QuarkusCommandException e) {
             throw new MojoExecutionException("Failed to resolve the available updates", e);
-        }
-
-        if (outcome.getValue(ProjectInfoCommandHandler.RECOMMENDATIONS_AVAILABLE, false)) {
-            getLog().warn(
-                    "Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'");
         }
     }
 }

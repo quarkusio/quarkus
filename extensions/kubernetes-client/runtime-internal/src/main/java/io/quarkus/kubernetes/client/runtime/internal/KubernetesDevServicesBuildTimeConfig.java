@@ -26,10 +26,11 @@ public interface KubernetesDevServicesBuildTimeConfig {
     Optional<String> apiVersion();
 
     /**
-     * The flavor to use (kind, k3s or api-only). Default to api-only.
+     * The flavor to use (kind, k3s or api-only).
+     *
+     * If not set, Dev Services for Kubernetes will set it to: api-only.
      */
-    @WithDefault("api-only")
-    Flavor flavor();
+    Optional<Flavor> flavor();
 
     /**
      * By default, if a kubeconfig is found, Dev Services for Kubernetes will not start.

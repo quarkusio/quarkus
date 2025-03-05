@@ -1,6 +1,9 @@
 package io.quarkus.kubernetes.client.deployment;
 
 import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
+import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.api_only;
+import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.k3s;
+import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.kind;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -43,6 +46,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -62,6 +66,8 @@ import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
+import io.quarkus.kubernetes.client.spi.KubernetesDevServiceInfoBuildItem;
+import io.quarkus.kubernetes.client.spi.KubernetesDevServiceRequestBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class })
@@ -89,7 +95,9 @@ public class DevServicesKubernetesProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesConfig devServicesConfig,
+            BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
+            Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
 
         KubernetesDevServiceCfg configuration = getConfiguration(kubernetesClientBuildTimeConfig);
 
@@ -108,7 +116,9 @@ public class DevServicesKubernetesProcessor {
         try {
             devService = startKubernetes(dockerStatusBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout());
+                    devServicesConfig.timeout(),
+                    devServicesKube,
+                    devServiceKubeRequest);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -161,7 +171,9 @@ public class DevServicesKubernetesProcessor {
 
     @SuppressWarnings("unchecked")
     private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem, KubernetesDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout,
+            BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
+            Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Kubernetes, as it has been disabled in the config.");
@@ -174,7 +186,12 @@ public class DevServicesKubernetesProcessor {
             return null;
         }
 
-        if (!config.overrideKubeconfig) {
+        // Check if we should create a kind test container and launch it
+        // based on the Dev services config or the KubernetesRequest of the producer
+        boolean shouldStart = config.overrideKubeconfig
+                || devServiceKubeRequest.isPresent();
+
+        if (!shouldStart) {
             var autoConfigMasterUrl = Config.autoConfigure(null).getMasterUrl();
             if (!DEFAULT_MASTER_URL_ENDING_WITH_SLASH.equals(autoConfigMasterUrl)) {
                 log.debug(
@@ -197,22 +214,29 @@ public class DevServicesKubernetesProcessor {
 
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
             KubernetesContainer container;
-            switch (config.flavor) {
+
+            Flavor clusterType = config.flavor
+                    .or(() -> devServiceKubeRequest
+                            .map(KubernetesDevServiceRequestBuildItem::getFlavor)
+                            .map(Flavor::valueOf))
+                    .orElse(api_only);
+
+            switch (clusterType) {
                 case api_only:
                     container = new ApiServerContainer(
                             config.apiVersion
-                                    .map(version -> findOrElseThrow(config.flavor, version, ApiServerContainerVersion.class))
+                                    .map(version -> findOrElseThrow(clusterType, version, ApiServerContainerVersion.class))
                                     .orElseGet(() -> latest(ApiServerContainerVersion.class)));
                     break;
                 case k3s:
                     container = new K3sContainer(
-                            config.apiVersion.map(version -> findOrElseThrow(config.flavor, version, K3sContainerVersion.class))
+                            config.apiVersion.map(version -> findOrElseThrow(clusterType, version, K3sContainerVersion.class))
                                     .orElseGet(() -> latest(K3sContainerVersion.class)));
                     break;
                 case kind:
                     container = new KindContainer(
                             config.apiVersion
-                                    .map(version -> findOrElseThrow(config.flavor, version, KindContainerVersion.class))
+                                    .map(version -> findOrElseThrow(clusterType, version, KindContainerVersion.class))
                                     .orElseGet(() -> latest(KindContainerVersion.class)));
                     break;
                 default:
@@ -233,6 +257,9 @@ public class DevServicesKubernetesProcessor {
 
             KubeConfig kubeConfig = KubeConfigUtils.parseKubeConfig(container.getKubeconfig());
 
+            devServicesKube
+                    .produce(new KubernetesDevServiceInfoBuildItem(container.getKubeconfig(), container.getContainerId()));
+
             return new RunningDevService(Feature.KUBERNETES_CLIENT.getName(), container.getContainerId(),
                     new ContainerShutdownCloseable(container, Feature.KUBERNETES_CLIENT.getName()),
                     getKubernetesClientConfigFromKubeConfig(kubeConfig));
@@ -246,7 +273,8 @@ public class DevServicesKubernetesProcessor {
                 .orElseGet(defaultKubernetesClusterSupplier);
     }
 
-    <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version, final Class<T> versions) {
+    <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version,
+            final Class<T> versions) {
         final String versionWithPrefix = !version.startsWith("v") ? "v" + version : version;
         return KubernetesVersionEnum.ascending(versions)
                 .stream()
@@ -289,7 +317,7 @@ public class DevServicesKubernetesProcessor {
     private static final class KubernetesDevServiceCfg {
 
         public boolean devServicesEnabled;
-        public Flavor flavor;
+        public Optional<Flavor> flavor;
         public Optional<String> apiVersion;
         public boolean overrideKubeconfig;
         public boolean shared;

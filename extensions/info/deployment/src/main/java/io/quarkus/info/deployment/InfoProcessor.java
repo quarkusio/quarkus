@@ -299,6 +299,7 @@ public class InfoProcessor {
         return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
                 .withRoutePathConfigKey("quarkus.info.path")
                 .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
+                .displayOnNotFoundPage("Info")
                 .build();
     }
 }

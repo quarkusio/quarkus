@@ -23,7 +23,7 @@ public class DropDependencyVersionOperation implements RewriteOperation {
                 return Map.of("org.openrewrite.maven.RemoveRedundantDependencyVersions",
                         Map.of(
                                 "groupId", groupId,
-                                "artifactId", artifactId));
+                                "artifactId", artifactId, "onlyIfManagedVersionIs", "ANY"));
             default:
                 return Map.of();
         }

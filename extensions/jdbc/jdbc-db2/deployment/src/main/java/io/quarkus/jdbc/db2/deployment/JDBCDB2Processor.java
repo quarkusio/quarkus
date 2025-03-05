@@ -1,5 +1,11 @@
 package io.quarkus.jdbc.db2.deployment;
 
+import java.util.ListResourceBundle;
+import java.util.ResourceBundle;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+
 import com.ibm.db2.jcc.resources.ResourceKeys;
 import com.ibm.db2.jcc.resources.Resources;
 import com.ibm.db2.jcc.resources.SqljResources;
@@ -21,13 +27,17 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.db2.runtime.DB2AgroalConnectionConfigurer;
@@ -36,10 +46,21 @@ import io.quarkus.jdbc.db2.runtime.DB2ServiceBindingConverter;
 public class JDBCDB2Processor {
 
     private static final String DB2_DRIVER_CLASS = "com.ibm.db2.jcc.DB2Driver";
+    private static final DotName RESOURCE_BUNDLE_DOT_NAME = DotName.createSimple(ResourceBundle.class);
+    private static final DotName LIST_RESOURCE_BUNDLE_DOT_NAME = DotName.createSimple(ListResourceBundle.class);
+    private static final String DB2_DRIVER_ROOT_PACKAGE = "com.ibm.db2";
 
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.JDBC_DB2);
+    }
+
+    @BuildStep
+    void indexDriver(BuildProducer<IndexDependencyBuildItem> indexDependencies,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
+        indexDependencies.produce(new IndexDependencyBuildItem("com.ibm.db2", "jcc"));
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(RESOURCE_BUNDLE_DOT_NAME.toString(),
+                LIST_RESOURCE_BUNDLE_DOT_NAME.toString()));
     }
 
     @BuildStep
@@ -67,8 +88,7 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> resource) {
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal,
@@ -92,10 +112,25 @@ public class JDBCDB2Processor {
                 .build());
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.ibm.pdq.cmx.client.DataSourceFactory")
-                .reason(getClass().getName() + " accessed reflectively by DB2 JDBC driver")
+                .reason(getClass().getName() + " accessed reflectively by Db2 JDBC driver")
                 .build());
+    }
 
+    @BuildStep
+    void registerResources(CombinedIndexBuildItem index,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
         resource.produce(new NativeImageResourceBuildItem("pdq.properties"));
+        resource.produce(new NativeImageResourceBuildItem("com/ibm/db2/cmx/runtime/internal/resources/messages.properties"));
+
+        // we need to register for reflection all the classes of the driver that are ResourceBundles
+        for (ClassInfo bundle : index.getIndex().getAllKnownSubclasses(RESOURCE_BUNDLE_DOT_NAME)) {
+            if (!bundle.name().toString().startsWith(DB2_DRIVER_ROOT_PACKAGE)) {
+                continue;
+            }
+
+            resourceBundle.produce(new NativeImageResourceBundleBuildItem(bundle.name().toString()));
+        }
     }
 
     @BuildStep

@@ -209,14 +209,23 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             return;
         }
 
+        final String rawVersion = ModelUtils.getRawVersion(rawModule.model);
+        final String version = ModelUtils.isUnresolvedVersion(rawVersion)
+                ? ModelUtils.resolveVersion(rawVersion, rawModule.model)
+                : rawVersion;
         var added = loadedModules.putIfAbsent(
-                new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(),
-                        ModelUtils.getVersion(rawModule.model)),
+                new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(), version),
                 rawModule.model);
         if (added != null) {
             return;
         }
         newModules.add(rawModule);
+
+        if (!rawVersion.equals(version)) {
+            loadedModules.putIfAbsent(
+                    new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(), rawVersion),
+                    rawModule.model);
+        }
 
         for (var module : rawModule.model.getModules()) {
             queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));

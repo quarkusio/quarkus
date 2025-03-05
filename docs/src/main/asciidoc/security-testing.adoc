@@ -101,8 +101,10 @@ Additionally, you can specify attributes for the identity, perhaps custom items 
 SecurityIdentity identity;
 
 @Test
-@TestSecurity(user = "testUser", "roles = {"admin, "user"}, attributes = {
-            @SecurityAttribute(key = "answer", value = "42", type = AttributeType.LONG) }
+@TestSecurity(
+    user = "testUser",
+    roles = {"admin", "user"},
+    attributes = { @SecurityAttribute(key = "answer", value = "42", type = AttributeType.LONG) })
 void someTestMethod() {
     Long answer = identity.<Long>getAttribute("answer");
 ...

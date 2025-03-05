@@ -420,8 +420,8 @@ This can be achieved using different profiles, as shown in the following configu
 +
 [source, properties]
 ----
-%dev.quarkus.log.console.json=false
-%test.quarkus.log.console.json=false
+%dev.quarkus.log.console.json.enabled=false
+%test.quarkus.log.console.json.enabled=false
 ----
 
 ===== Configuration

@@ -317,12 +317,12 @@ public class SmallRyeOpenApiProcessor {
         if (isManagement(managementBuildTimeConfig, openApiConfig, launch)) {
             Config c = ConfigProvider.getConfig();
 
-            // quarkus.http.cors=true
+            // quarkus.http.cors.enabled=true
             // quarkus.http.cors.origins
-            Optional<Boolean> maybeCors = c.getOptionalValue("quarkus.http.cors", Boolean.class);
+            Optional<Boolean> maybeCors = c.getOptionalValue("quarkus.http.cors.enabled", Boolean.class);
             if (!maybeCors.isPresent() || !maybeCors.get().booleanValue()) {
-                // We need to set quarkus.http.cors=true
-                systemProperties.produce(new SystemPropertyBuildItem("quarkus.http.cors", "true"));
+                // We need to set quarkus.http.cors.enabled=true
+                systemProperties.produce(new SystemPropertyBuildItem("quarkus.http.cors.enabled", "true"));
             }
 
             String managementUrl = getManagementRoot(launch, nonApplicationRootPathBuildItem, openApiConfig,

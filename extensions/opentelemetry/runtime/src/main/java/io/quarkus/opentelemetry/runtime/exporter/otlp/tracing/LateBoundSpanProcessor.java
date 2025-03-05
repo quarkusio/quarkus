@@ -7,6 +7,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.quarkus.opentelemetry.runtime.tracing.InternalAttributes;
 
 /**
  * Class to facilitate a delay in when the worker thread inside {@link SpanProcessor}
@@ -43,6 +44,10 @@ public class LateBoundSpanProcessor implements SpanProcessor {
 
     @Override
     public void onEnd(ReadableSpan span) {
+        if (InternalAttributes.containsTraceless(span.getAttributes())) {
+            // this span was marked as one to be ignored
+            return;
+        }
         if (delegate == null) {
             logDelegateNotFound();
             return;

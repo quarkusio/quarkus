@@ -111,7 +111,11 @@
             <artifactId>qomponent</artifactId>
             <scope>runtime</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.mvnpm.at.qomponent</groupId>
+            <artifactId>qui-directory-tree</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Markdown it -->
         <dependency>

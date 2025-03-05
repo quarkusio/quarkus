@@ -343,7 +343,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     /*
      * What's this for?
-     * It's a bit like detecting the location in an privacy test or detecting the lab environment in an emissions test and then
+     * It's a bit like detecting the location in a privacy test or detecting the lab environment in an emissions test and then
      * deciding how to behave.
      * We're special-casing behaviour for a hard-coded selection of test packages. Yuck!
      * TODO Hopefully, once https://github.com/quarkusio/quarkus/issues/45785 is done, it will not be needed.

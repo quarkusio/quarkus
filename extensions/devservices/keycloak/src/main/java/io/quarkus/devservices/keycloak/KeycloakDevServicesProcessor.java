@@ -8,9 +8,9 @@ import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswo
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -814,7 +814,7 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static Predicate<? super Throwable> realmEndpointNotAvailable() {
-        return t -> (t instanceof ConnectException
+        return t -> (t instanceof SocketException
                 || (t instanceof RealmEndpointAccessException && ((RealmEndpointAccessException) t).getErrorStatus() == 404));
     }
 

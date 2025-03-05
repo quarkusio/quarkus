@@ -3,8 +3,8 @@ package io.quarkus.oidc.common.runtime;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
@@ -514,7 +514,7 @@ public class OidcCommonUtils {
     }
 
     public static Predicate<? super Throwable> oidcEndpointNotAvailable() {
-        return t -> (t instanceof ConnectException
+        return t -> (t instanceof SocketException
                 || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
     }
 

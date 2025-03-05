@@ -3,7 +3,7 @@ package io.quarkus.oidc.client.registration.runtime;
 import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
 
 import java.io.IOException;
-import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -163,7 +163,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = Buffer.buffer(clientRegJson);
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer).sendBuffer(buffer)
-                .onFailure(ConnectException.class)
+                .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {

@@ -109,8 +109,8 @@ public class SwaggerUiProcessor {
             }
 
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
-            if (swaggerUiConfig.locationPath.isPresent()) {
-                openApiPath = swaggerUiConfig.locationPath.get() + openApiPath;
+            if (swaggerUiConfig.locationPath().isPresent()) {
+                openApiPath = swaggerUiConfig.locationPath().get() + openApiPath;
             }
 
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
@@ -383,8 +383,8 @@ public class SwaggerUiProcessor {
         if (swaggerUiConfig.queryConfigEnabled()) {
             options.put(Option.queryConfigEnabled, "true");
         }
-        if (swaggerUiConfig.locationPath.isPresent()) {
-            var locationPath = swaggerUiConfig.locationPath.get();
+        if (swaggerUiConfig.locationPath().isPresent()) {
+            var locationPath = swaggerUiConfig.locationPath().get();
             addLocationPath(locationPath, Option.selfHref, options);
             addLocationPath(locationPath, Option.backHref, options);
             addLocationPath(locationPath, Option.oauth2RedirectUrl, options);

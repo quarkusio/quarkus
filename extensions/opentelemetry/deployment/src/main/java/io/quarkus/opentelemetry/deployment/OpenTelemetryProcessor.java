@@ -108,6 +108,7 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void openTelemetryBean(OpenTelemetryRecorder recorder,
             OTelRuntimeConfig oTelRuntimeConfig,
+            OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
         syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
@@ -126,8 +127,21 @@ public class OpenTelemetryProcessor {
                 .destroyer(OpenTelemetryDestroyer.class)
                 .done());
 
-        openTelemetrySdkBuildItemBuildProducer.produce(
-                new OpenTelemetrySdkBuildItem(recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
+        // same as `TracerEnabled`
+        boolean tracingEnabled = oTelBuildConfig.traces().enabled()
+                .map(it -> it && oTelBuildConfig.enabled())
+                .orElseGet(oTelBuildConfig::enabled);
+        // same as `MetricProcessor.MetricEnabled`
+        boolean metricsEnabled = oTelBuildConfig.metrics().enabled()
+                .map(it -> it && oTelBuildConfig.enabled())
+                .orElseGet(oTelBuildConfig::enabled);
+        // same as `LogHandlerProcessor.LogsEnabled`
+        boolean loggingEnabled = oTelBuildConfig.logs().enabled()
+                .map(it -> it && oTelBuildConfig.enabled())
+                .orElseGet(oTelBuildConfig::enabled);
+
+        openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
+                tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
     }
 
     @BuildStep

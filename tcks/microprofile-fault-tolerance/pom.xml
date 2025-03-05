@@ -26,6 +26,7 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye.faulttolerance.mp-compatibility>true</smallrye.faulttolerance.mp-compatibility>
+                        <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -35,16 +36,6 @@
                     </dependenciesToScan>
                     <reuseForks>false</reuseForks>
                     <excludes>
-                        <!-- Quarkus doesn't implement OpenTelemetry Metrics yet -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.AllAnnotationTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.BulkheadTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.CircuitBreakerTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.ClashingNameTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.ClassLevelTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.FallbackTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.FaultToleranceDisabledTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.RetryTelemetryTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.TimeoutTelemetryTest</exclude>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
                     </excludes>
@@ -64,6 +55,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-metrics</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.fault-tolerance</groupId>
@@ -88,6 +83,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

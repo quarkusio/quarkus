@@ -1103,13 +1103,17 @@ These system properties above could be added to, e.g., a `surefire` and/or `fail
 ==== Top-level vs Multi-module project directory
 
 In Maven there appears to be a notion of the top-level project (that is exposed as a project property `${session.topLevelProject.basedir.absolutePath}`)
-and the multi-module project directory (that is available as property `${maven.multiModuleProjectDirectory}`). These directories might not always match!
+and the multi-module project directory (that is available as property `${session.rootDirectory}`). These directories might not always match!
 
-IMPORTANT: `maven.multiModuleProjectDirectory` is meant to be consulted by the Maven code itself and not something to be relied upon by user code. So, if you find it useful, use it at your own risk!
+The `${session.rootDirectory}` is defined as:
 
-The `${maven.multiModuleProjectDirectory}` will be resolved to the first directory that contains `.mvn` directory as its child going up the workspace file system tree
-starting from the current directory (or the one specified with the `-f` argument) from which the `mvn` command was launched. If the `.mvn` directory was not found, however,
-the `${maven.multiModuleProjectDirectory}` will be pointing to the directory from which the `mvn` command was launched (or the one targeted with the `-f` argument).
+[quote]
+____
+The project's directory or parent directory containing a `.mvn` subdirectory or a `pom.xml` flagged with the `root="true"` attribute.
+____
+
+The resolution starts from the current directory (or the one specified with the `-f` argument) from which the `mvn` command was launched.
+In multi-module projects, it is the vetted way to reference the root of your multi-module project.
 
 The `${session.topLevelProject.basedir.absolutePath}` will be pointing either to the directory from which the `mvn` command was launched or to the directory targeted with
 the `-f` argument, if it was specified.

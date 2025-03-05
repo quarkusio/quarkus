@@ -491,7 +491,7 @@
                                     <outputDirectory>${project.build.directory}/classes/META-INF</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${maven.multiModuleProjectDirectory}</directory>
+                                            <directory>${session.rootDirectory}</directory>
                                             <filtering>false</filtering>
                                             <includes>
                                                 <include>LICENSE</include>

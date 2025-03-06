@@ -341,7 +341,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                             <div slot="content">
                                 <vaadin-list-box selected="0" @selected-changed="${this._onTableChanged}">
                                     ${this._tables.map((table) =>
-                                        html`<vaadin-item>${table.tableName}</vaadin-item>`
+                                        html`<vaadin-item title="${table.tableSchema}">${table.tableName}</vaadin-item>`
                                     )}
                                 </vaadin-list-box>
                             </div>
@@ -631,9 +631,9 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     _clearSqlInput(){
         if(this._selectedTable){
             if(this._appendSql){
-                this._executeSQL("select * from " + this._selectedTable.tableName + " " + this._appendSql);
+                this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName + " " + this._appendSql);
             }else{
-                this._executeSQL("select * from " + this._selectedTable.tableName);
+                this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName);
             }
         }
     }

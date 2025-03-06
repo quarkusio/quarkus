@@ -9,7 +9,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native
-:summary: This guide describes how to deploy a Quarkus application compiled to native executables.
+:summary: This guide describes how to deploy a Quarkus application to {openshift} compiled to native executables.
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift
 
@@ -26,7 +26,7 @@ Additionally, set the path to your Dockerfile by using the `quarkus.openshift.na
 
 * You have a Linux AMD64 system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
 * You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
-* You are working in the correct {openshift} project namespace.
+* You are working in the correct OpenShift project namespace.
 
 == Procedure
 
@@ -111,4 +111,8 @@ oc get svc <3>
 ----
 oc logs -f __<pod_name>__
 ----
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploying {project-name} applications to {openshift}]
 

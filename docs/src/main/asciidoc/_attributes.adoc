@@ -29,6 +29,7 @@
 // overridden to the full version, at least when building locally.
 :hibernate-orm-version-major-minor: ${hibernate-orm.majorVersion}.${hibernate-orm.minorVersion}
 :hibernate-search-version-major-minor: ${hibernate-search.majorVersion}.${hibernate-search.minorVersion}
+:hibernate-validator-version-major-minor: ${hibernate-validator.majorVersion}.${hibernate-validator.minorVersion}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
@@ -54,6 +55,7 @@
 :hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/userguide/html_single/Hibernate_User_Guide.html
 :hibernate-orm-dialect-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
 :hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
+:hibernate-validator-docs-url: https://docs.jboss.org/hibernate/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
 // .
 :amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html

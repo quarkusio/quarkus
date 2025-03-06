@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-S2I-howto"]
-= Using S2I to deploy {project-name} applications to OpenShift
+= Using S2I to deploy {project-name} applications to {openshift}
 
 include::_attributes.adoc[]
 :diataxis-type: howto
@@ -17,11 +17,13 @@ You can deploy your {project-name} applications to {openshift-long} by using the
 With S2I, you must provide the source code to the build container through a Git repository or by uploading the source code at build time.
 
 
+ifdef::no-S2I-support[]
 [IMPORTANT]
 ====
 S2I is not supported for native deployments.
 To deploy {project-name} applications compiled to native executables, use the Docker build strategy.
 ====
+endif::no-S2I-support[]
 
 The deployment procedure differs based on the Java version your {project-name} application uses.
 
@@ -34,7 +36,7 @@ You can deploy {project-name} applications that run Java {jdk-version-other} to 
 
 * You have a Quarkus application built with Java {jdk-ver-other}.
 * Optional: You have a Quarkus project that includes the `quarkus-openshift` extension.
-* You are working in the correct {openshift} project namespace.
+* You are working in the correct OpenShift project namespace.
 * Your project is hosted in a Git repository.
 
 === Procedure
@@ -231,3 +233,7 @@ oc get pods
 ----
 oc logs -f <pod_name>
 ----
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploying {project-name} applications to {openshift}]

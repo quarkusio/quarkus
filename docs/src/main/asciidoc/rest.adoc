@@ -1407,7 +1407,7 @@ Instead of importing `io.quarkus:quarkus-rest`, you can import either of the fol
 |https://github.com/FasterXML/jackson[Jackson support]
 
 |`io.quarkus:quarkus-rest-jsonb`
-|https://eclipse-ee4j.github.io/jsonb-api/[JSON-B support]
+|https://github.com/jakartaee/jsonb-api/[JSON-B support]
 
 |===
 

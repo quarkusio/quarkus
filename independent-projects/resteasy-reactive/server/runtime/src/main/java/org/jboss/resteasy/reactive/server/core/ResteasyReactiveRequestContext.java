@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
@@ -859,6 +860,15 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     @Override
+    public Object getMapQueryParameter() {
+        Map<String, List<String>> queryParams = serverRequest().getParametersMap();
+        if (queryParams != null && !queryParams.isEmpty()) {
+            return queryParams;
+        }
+        return Collections.emptyMap();
+    }
+
+    @Override
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
@@ -870,7 +880,6 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
-
         // empty collections must not be turned to null
         List<String> strings = serverRequest().getAllQueryParams(name).stream()
                 .filter(p -> !p.isEmpty())

@@ -166,8 +166,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 if (rewrite) {
                     String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
                             fetchResult.getRewritePluginVersion());
-                    quarkusProject.log().info("Running recipe%s with OpenRewrite %s...", rewriteDryRun ? " in dry mode" : "",
-                            rewritePluginVersion);
                     quarkusProject.log().info("");
                     Path logFile = recipe.getParent().resolve("rewrite.log");
 

@@ -1,5 +1,8 @@
 recipeFileName,currentVersion,targetVersion,expectedResult
 3alpha.yaml,2.0.0.Final,3.0.0.Alpha4,true
+3alpha.yaml,2.0.0,3.0.0.1,true
+3alpha.yaml,2.0,3.0.0.0,true
+3.0.yaml,2.0,3.0.0.0,true
 3.0.yaml,2.0.0.Final,3.0.0.Final,true
 2.9.yaml,2.0.0.Final,3.0.0.Final,true
 2.7.yaml,2.0.0.Final,3.0.0.Final,true

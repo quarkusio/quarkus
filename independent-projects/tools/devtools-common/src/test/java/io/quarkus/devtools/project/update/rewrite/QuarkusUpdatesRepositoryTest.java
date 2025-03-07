@@ -102,4 +102,5 @@ class QuarkusUpdatesRepositoryTest {
         versions = resolveVersionsForRecipesDir("dir", "org.apache.camel.quarkus:camel", recipeDirectoryNames);
         assertEquals(4, versions.get().versions().size());
     }
+
 }

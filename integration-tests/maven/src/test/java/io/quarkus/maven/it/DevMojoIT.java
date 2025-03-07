@@ -1374,6 +1374,21 @@ public class DevMojoIT extends LaunchMojoTestBase {
         assertThat(devModeClient.getHttpResponse("/app/hello/applicationName")).isEqualTo("myapp");
     }
 
+    @Disabled("See https://github.com/quarkusio/quarkus/issues/38987")
+    @Test
+    public void testMockitoForNonPublicInnerClass() throws MavenInvocationException, IOException {
+        // Scenario discussed in https://github.com/quarkusio/quarkus/issues/38987
+        testDir = initProject("projects/mockito-non-public-inner-class", "projects/mockito-non-public-inner-class-out");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests ran green
+        Assertions.assertEquals(0, results.getTestsFailed());
+        Assertions.assertEquals(1, results.getTestsPassed());
+    }
+
     @Test
     public void testMultiJarModuleDevModeMocks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multijar-module", "projects/multijar-module-devmode-mocks");

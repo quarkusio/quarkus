@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: core
-:summary: Optionally, use `application.yaml` instead of `application.properties` to configure your application.
+:summary: Optionally, use application.yaml instead of application.properties to configure your application.
 :topics: configuration
 :extensions: io.quarkus:quarkus-config-yaml
 

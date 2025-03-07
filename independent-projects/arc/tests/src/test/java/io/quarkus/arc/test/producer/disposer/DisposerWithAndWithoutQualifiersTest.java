@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.util.AnnotationLiteral;
@@ -27,32 +27,49 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class DisposerWithQualifiersTest {
+public class DisposerWithAndWithoutQualifiersTest {
     @RegisterExtension
-    ArcTestContainer container = new ArcTestContainer(Producer.class, Dependency.class, Foo.class, Bar.class);
+    ArcTestContainer container = new ArcTestContainer(Producer.class, Foo.class, Bar.class);
 
     @Test
     public void testDisposers() {
-        InstanceHandle<String> handle = Arc.container().instance(String.class, new Foo.Literal());
-        assertEquals("produced", handle.get());
+        InstanceHandle<String> handle = Arc.container().instance(String.class);
+        assertEquals("default", handle.get());
         assertEquals(0, Producer.destroyed.size());
         handle.destroy();
         assertEquals(1, Producer.destroyed.size());
-        assertEquals("produced", Producer.destroyed.get(0));
+        assertEquals("default", Producer.destroyed.get(0));
+
+        handle = Arc.container().instance(String.class, new Foo.Literal());
+        assertEquals("foo", handle.get());
+        assertEquals(1, Producer.destroyed.size());
+        handle.destroy();
+        assertEquals(2, Producer.destroyed.size());
+        assertEquals("foo", Producer.destroyed.get(1));
     }
 
     @Singleton
     static class Producer {
         static final List<String> destroyed = new ArrayList<>();
 
-        @Singleton
         @Produces
-        @Foo
-        String produce(@Bar Dependency ignored) {
-            return "produced";
+        @Dependent
+        String produce() {
+            return "default";
         }
 
-        void disposeFoo(@Disposes @Any String str) {
+        @Produces
+        @Dependent
+        @Foo
+        String produceFoo() {
+            return "foo";
+        }
+
+        void dispose(@Disposes String str) {
+            destroyed.add(str);
+        }
+
+        void disposeFoo(@Disposes @Foo String str) {
             destroyed.add(str);
         }
 
@@ -60,16 +77,6 @@ public class DisposerWithQualifiersTest {
         void disposeBar(@Disposes @Bar String str) {
             destroyed.add(str);
         }
-
-        // this one should be ignored too
-        void disposeDefault(@Disposes String str) {
-            destroyed.add(str);
-        }
-    }
-
-    @Singleton
-    @Bar
-    static class Dependency {
     }
 
     @Qualifier

@@ -64,7 +64,7 @@ class SmallRyeJwtProcessor {
 
     private static final Logger log = Logger.getLogger(SmallRyeJwtProcessor.class.getName());
 
-    private static final String MP_JWT_VERIFY_KEY_LOCATION = "mp.jwt.verify.publickey.location";
+    static final String MP_JWT_VERIFY_KEY_LOCATION = "mp.jwt.verify.publickey.location";
     private static final String MP_JWT_DECRYPT_KEY_LOCATION = "mp.jwt.decrypt.key.location";
 
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());

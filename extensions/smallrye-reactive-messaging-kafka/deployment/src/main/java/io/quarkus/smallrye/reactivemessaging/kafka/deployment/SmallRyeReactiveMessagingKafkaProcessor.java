@@ -538,7 +538,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return null;
         }
 
-        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)
+        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType) || isContextualEmitter(injectionPointType)
                 || isKafkaTransactionsEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
@@ -691,6 +691,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private static boolean isMutinyEmitter(Type type) {
         // raw type MutinyEmitter is wrong, must be MutinyEmitter<Something>
         return DotNames.MUTINY_EMITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isContextualEmitter(Type type) {
+        // raw type ContextualEmitter is wrong, must be ContextualEmitter<Something>
+        return DotNames.CONTEXTUAL_EMITTER.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
     }

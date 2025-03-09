@@ -109,6 +109,9 @@ public class SwaggerUiProcessor {
             }
 
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+            if (swaggerUiConfig.locationPath().isPresent()) {
+                openApiPath = swaggerUiConfig.locationPath().get() + openApiPath;
+            }
 
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
@@ -380,6 +383,12 @@ public class SwaggerUiProcessor {
         if (swaggerUiConfig.queryConfigEnabled()) {
             options.put(Option.queryConfigEnabled, "true");
         }
+        if (swaggerUiConfig.locationPath().isPresent()) {
+            var locationPath = swaggerUiConfig.locationPath().get();
+            addLocationPath(locationPath, Option.selfHref, options);
+            addLocationPath(locationPath, Option.backHref, options);
+            addLocationPath(locationPath, Option.oauth2RedirectUrl, options);
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> oauthAdditionalQueryStringParamMap = new HashMap<>();
@@ -437,6 +446,13 @@ public class SwaggerUiProcessor {
         }
 
         return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName().orElse(null), options);
+    }
+
+    private void addLocationPath(String locationPath, Option key, Map<Option, String> options) {
+        var value = options.get(key);
+        if (value != null) {
+            options.put(key, locationPath + value);
+        }
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {

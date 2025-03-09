@@ -448,7 +448,6 @@ public abstract class QuarkusDev extends QuarkusTask {
         if (getModules().isPresent() && !getModules().get().isEmpty()) {
             builder.addModules(getModules().get());
         }
-
         for (Map.Entry<String, ?> e : project.getProperties().entrySet()) {
             if (e.getValue() instanceof String) {
                 builder.buildSystemProperty(e.getKey(), e.getValue().toString());
@@ -465,11 +464,14 @@ public abstract class QuarkusDev extends QuarkusTask {
         builder.extensionDevModeConfig(appModel.getExtensionDevModeConfig())
                 .extensionDevModeJvmOptionFilter(extensionJvmOptions);
 
+        builder.jvmArgs("-Dgradle.project.path="
+                + getProject().getLayout().getProjectDirectory().getAsFile().getAbsolutePath());
+
         analyticsService.sendAnalytics(
                 DEV_MODE,
                 appModel,
                 Map.of(GRADLE_VERSION, getProject().getGradle().getGradleVersion()),
-                getProject().getBuildDir().getAbsoluteFile());
+                getProject().getLayout().getBuildDirectory().getAsFile().get());
 
         final Set<ArtifactKey> projectDependencies = new HashSet<>();
         for (ResolvedDependency localDep : DependenciesFilter.getReloadableModules(appModel)) {

@@ -86,7 +86,8 @@ export class QwcExtensions extends observeState(LitElement) {
         _favourites: {state: true},
         _addDialogOpened: {state: true},
         _installedExtensions: {state: true, type: Array},
-        _selectedFilters: {state: true, type: Array}
+        _selectedFilters: {state: true, type: Array},
+        _addExtensionsEnabled: {state: true, type: Boolean},
     }
 
     constructor() {
@@ -96,12 +97,20 @@ export class QwcExtensions extends observeState(LitElement) {
         this._installedExtensions = [];
         this._filteritems = ["Favorites","Active","Inactive"];
         this._selectedFilters = this._getStoredFilters();
+        this._addExtensionsEnabled = true;
     }
 
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
             this._installedExtensions = jsonRpcResponse.result;
+        }).catch(e => {
+            if (e?.error?.message?.includes("java.lang.IllegalStateException")){
+                console.log("Installed namespaces not available with gradle");
+                this._addExtensionsEnabled = false
+            } else {
+                notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
+            }
         });
     }
 
@@ -382,7 +391,7 @@ export class QwcExtensions extends observeState(LitElement) {
     }
     
     _renderAddExtensionButton(){
-        if(connectionState.current.isConnected){
+        if(connectionState.current.isConnected && this._addExtensionsEnabled){
             return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="Add Extension" @click="${this._openAddDialog}">
                         <vaadin-icon class="addExtensionIcon" icon="font-awesome-solid:plus"></vaadin-icon>
                     </vaadin-button>`;

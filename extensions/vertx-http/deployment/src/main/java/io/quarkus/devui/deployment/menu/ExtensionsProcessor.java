@@ -63,7 +63,6 @@ public class ExtensionsProcessor {
                 && launchModeBuildItem.getDevModeType().get().equals(DevModeType.LOCAL)) {
 
             BuildTimeActionBuildItem buildTimeActions = new BuildTimeActionBuildItem(NAMESPACE);
-
             getCategories(buildTimeActions);
             getInstallableExtensions(buildTimeActions);
             getInstalledNamespaces(buildTimeActions);
@@ -198,7 +197,13 @@ public class ExtensionsProcessor {
     }
 
     private QuarkusProject getQuarkusProject() {
-        Path projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        Path projectRoot;
+        String gradlePath = System.getProperty("gradle.project.path");
+        if (gradlePath != null) {
+            projectRoot = Path.of(gradlePath);
+        } else {
+            projectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        }
         return QuarkusProjectHelper.getCachedProject(projectRoot);
     }
 

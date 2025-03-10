@@ -60,9 +60,16 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
 
         activeRequests = new LongAdder();
-        Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
-                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
-                .register(registry);
+        Gauge.Builder<LongAdder> activeRequestsBuilder = Gauge
+                .builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
+                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http");
+        // we add a port tag (the one the application should actually bind to on the network host,
+        // not the public one which we can't know easily) only if it's not random
+        if (httpServerOptions.getPort() > 0) {
+            activeRequestsBuilder
+                    .tag("server.port", "" + httpServerOptions.getPort());
+        }
+        activeRequestsBuilder.register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
 

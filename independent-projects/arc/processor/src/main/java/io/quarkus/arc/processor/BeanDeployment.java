@@ -1473,7 +1473,12 @@ public class BeanDeployment {
             }
         }
         if (found.size() > 1) {
-            throw new DefinitionException("Multiple disposer methods found for " + producer);
+            StringBuilder error = new StringBuilder("Multiple disposer methods found for producer '")
+                    .append(producer).append("' declared on ").append(declaringBean).append(":\n");
+            for (DisposerInfo disposer : found) {
+                error.append("\t- ").append(disposer.getDisposerMethod()).append("\n");
+            }
+            throw new DefinitionException(error.toString());
         }
         return found.isEmpty() ? null : found.get(0);
     }

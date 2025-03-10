@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -75,8 +76,13 @@ public class DisposerInfo implements InjectionTargetInfo {
 
     Collection<AnnotationInstance> getDisposedParameterQualifiers() {
         Set<AnnotationInstance> resultingQualifiers = new HashSet<>();
-        Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod, disposedParameter.position())
-                .stream().forEach(a -> resultingQualifiers.addAll(declaringBean.getDeployment().extractQualifiers(a)));
+        for (AnnotationInstance ann : Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod,
+                disposedParameter.position())) {
+            resultingQualifiers.addAll(declaringBean.getDeployment().extractQualifiers(ann));
+        }
+        if (resultingQualifiers.isEmpty()) {
+            resultingQualifiers.add(AnnotationInstance.builder(Default.class).build());
+        }
         return resultingQualifiers;
     }
 

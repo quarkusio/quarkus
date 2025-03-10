@@ -1,7 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.io.Closeable;
-import java.net.ConnectException;
+import java.net.SocketException;
 import java.security.Key;
 import java.util.HashMap;
 import java.util.List;
@@ -346,7 +346,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
         OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer).sendBuffer(buffer)
-                .onFailure(ConnectException.class)
+                .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount()).onFailure().transform(Throwable::getCause);
         return response.onItem();

@@ -424,7 +424,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.register(INTEGRATION_TEST_TASK_NAME, Test.class, intTestTask -> {
                         intTestTask.setGroup("verification");
                         intTestTask.setDescription("Runs Quarkus integration tests");
-                        intTestTask.dependsOn(quarkusBuild, testTask);
+                        intTestTask.dependsOn(quarkusBuild);
                         intTestTask.setClasspath(intTestClasspath);
                         intTestTask.setTestClassesDirs(intTestSourceOutputClasses);
                     });

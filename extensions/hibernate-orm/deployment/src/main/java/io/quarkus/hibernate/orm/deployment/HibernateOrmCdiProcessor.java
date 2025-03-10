@@ -1,10 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -214,6 +210,7 @@ public class HibernateOrmCdiProcessor {
             return;
         }
 
+        Set<String> createdSessionFactory = new HashSet<>();
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
             // Hibernate Reactive does not use the same name for its default persistence unit,
@@ -222,14 +219,30 @@ public class HibernateOrmCdiProcessor {
             String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
             boolean isNamedPU = !isDefaultPU;
+            boolean isReactive = persistenceUnitDescriptor.isReactive();
 
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPU, isNamedPU,
-                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
-                            .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
-                            .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                            .done());
+            ExtendedBeanConfigurator persistenceUnitBean = createSyntheticBean(persistenceUnitName,
+                    isDefaultPU,
+                    isNamedPU,
+                    SessionFactory.class,
+                    SESSION_FACTORY_EXPOSED_TYPES,
+                    true);
+
+            // A few cases here:
+            // - We only have a PersistenceUnitDescriptorBuildItem, and it's blocking, we create the SessionFactory
+            // - We only have a PersistenceUnitDescriptorBuildItem, and it's reactive, we create the Blocking SessionFactory anyway, as it might be used
+            //   to gather metadata such as the configuration from it see io/quarkus/hibernate/reactive/compatbility/CompatibilityUnitTestBase.testBlockingDisabled
+            //   The Mutiny.SessionFactory API doesn't expose every method the Hibernate SessionFactory does, hence this hack
+            // - We have multiple PersistenceUnitDescriptorBuildItem, (Reactive + Hibernate scenario), we want to make sure this is created only once
+            //   with the correct info from the blocking PersistenceUnitDescriptorBuildItem
+            if (!createdSessionFactory.contains(persistenceUnitName)
+                    && (!isReactive || persistenceUnitDescriptors.size() == 1)) {
+                syntheticBeanBuildItemBuildProducer
+                        .produce(persistenceUnitBean
+                                .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                                .done());
+            }
 
             if (capabilities.isPresent(Capability.TRANSACTIONS)
                     && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {

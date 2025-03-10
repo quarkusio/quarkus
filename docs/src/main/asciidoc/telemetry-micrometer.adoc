@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :categories: observability
 :summary: Use Micrometer to collect metrics produced by Quarkus, its extensions, and your application.
 :base-units: https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/BaseUnits.java
-:concepts: https://micrometer.io/docs/concepts
+:concepts: https://docs.micrometer.io/micrometer/reference/concepts
 :topics: observability,micrometer
 :extensions: io.quarkus:quarkus-micrometer
 
@@ -186,7 +186,7 @@ For hierarchical systems that only support a flat metric name, Micrometer will f
 
 Tags can be specified when a meter is registered with a `MeterRegistry` or using a <<meter-filter,Meter Filter>>.
 
-See the Micrometer documentation for additional advice on link:{concepts}#_tag_naming[tag naming].
+See the Micrometer documentation for additional advice on link:{concepts}/naming[tag naming].
 
 IMPORTANT: Each unique combination of metric name and dimension produces a unique time series.
 Using an unbounded set of dimensional data can lead to a "cardinality explosion", an exponential increase in the creation of new time series.
@@ -277,7 +277,7 @@ Gauge.builder("jvm.threads.peak", threadBean, ThreadMXBean::getPeakThreadCount) 
 <4> Associate <<define-tags,tags>> with the gauge
 <5> Register the Gauge with the MeterRegistry
 
-See link:{concepts}#_gauges[Gauges] in the Micrometer documentation for more information and examples.
+See link:{concepts}/gauges[Gauges] in the Micrometer documentation for more information and examples.
 Of note are two special cases: `TimeGauge` for measuring time, and a `MultiGauge` for reporting several criteria together.
 
 NOTE: Micrometer does not create strong references to the objects it observes by default.
@@ -334,7 +334,7 @@ void countThisMethod(){
 <1> A CDI interceptor will create and register a counter called `counted.method`
 <2> The interceptor-created counter will have the "extra" dimension tag with value "annotated"
 
-See link:{concepts}#_counters[Counters] in the Micrometer documentation for more information and examples, including the less common `FunctionCounter` that can be used to measure the result returned by an always increasing function.
+See link:{concepts}/counters[Counters] in the Micrometer documentation for more information and examples, including the less common `FunctionCounter` that can be used to measure the result returned by an always increasing function.
 
 When should you use a counter?
 Use a counter if you are doing something that can not be either timed or summarized.
@@ -476,7 +476,7 @@ sample.stop(registry.timer("my.timer", "response", response.status())); // <3>
 ==== Histograms and percentiles
 
 Both timers and distribution summaries can be configured to emit additional statistics, like histogram data, precomputed percentiles, or service level objective (SLO) boundaries.
-See link:{concepts}#_timers[Timers] and link:{concepts}#_distribution_summaries[Distribution Summaries] in the Micrometer documentation for more information and examples, including memory footprint estimation for both types.
+See link:{concepts}/timers[Timers] and link:{concepts}/distribution-summaries[Distribution Summaries] in the Micrometer documentation for more information and examples, including memory footprint estimation for both types.
 
 [IMPORTANT]
 ====

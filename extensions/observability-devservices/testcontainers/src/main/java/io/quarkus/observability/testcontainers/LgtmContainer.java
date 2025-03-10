@@ -131,7 +131,8 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 .withStartupTimeout(config.timeout())
                 .withStrategy(super.waitStrategy())
                 .withStrategy(
-                        Wait.forLogMessage(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*", 1)
+                        Wait.forLogMessage(".*(The OpenTelemetry collector and the Grafana LGTM stack are up and running|" +
+                                "All components are up and running).*", 1)
                                 .withStartupTimeout(config.timeout()));
     }
 

@@ -178,9 +178,10 @@ public final class PathTestHelper {
      * @return directory or JAR containing the application being tested by a test from the given location
      */
     public static Path getAppClassLocationForTestLocation(Path testClassLocationPath) {
-        if (testClassLocationPath.endsWith(".jar")) {
-            if (testClassLocationPath.endsWith("-tests.jar")) {
-                String testClassLocation = testClassLocationPath.toString();
+        String testClassLocation = testClassLocationPath.toString();
+
+        if (testClassLocation.endsWith(".jar")) {
+            if (testClassLocation.endsWith("-tests.jar")) {
                 return Paths.get(new StringBuilder()
                         .append(testClassLocation, 0, testClassLocation.length() - "-tests.jar".length())
                         .append(".jar")
@@ -188,7 +189,6 @@ public final class PathTestHelper {
             }
             return testClassLocationPath;
         }
-        String testClassLocation = testClassLocationPath.toString();
         Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
                 .filter(e -> testClassLocation.contains(e.getKey()))
                 .map(e -> {
@@ -211,7 +211,7 @@ public final class PathTestHelper {
         }
         // could be a custom test classes dir under the 'target' dir with the main
         // classes still under 'target/classes'
-        p = Path.of(testClassLocation).getParent();
+        p = testClassLocationPath.getParent();
         if (p != null && p.getFileName().toString().equals(TARGET)) {
             p = p.resolve("classes");
             if (Files.exists(p)) {

@@ -62,6 +62,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         activeRequests = new LongAdder();
         Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
                 .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
+                .tag("server.port", "" + httpServerOptions.getPort())
                 .register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();

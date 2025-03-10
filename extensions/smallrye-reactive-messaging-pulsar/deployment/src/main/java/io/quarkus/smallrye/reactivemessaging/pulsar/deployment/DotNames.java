@@ -15,6 +15,7 @@ final class DotNames {
 
     static final DotName EMITTER = DotName.createSimple(org.eclipse.microprofile.reactive.messaging.Emitter.class.getName());
     static final DotName MUTINY_EMITTER = DotName.createSimple(io.smallrye.reactive.messaging.MutinyEmitter.class.getName());
+    static final DotName CONTEXTUAL_EMITTER = DotName.createSimple(io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter.class.getName());
     static final DotName PULSAR_EMITTER = DotName.createSimple(io.smallrye.reactive.messaging.pulsar.transactions.PulsarTransactions.class.getName());
 
     static final DotName TARGETED = DotName.createSimple(io.smallrye.reactive.messaging.Targeted.class.getName());

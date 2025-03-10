@@ -12,6 +12,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - '.all-contributorsrc'
+      - '.github/project.yml'
   pull_request:
     paths-ignore:
       - '.gitignore'

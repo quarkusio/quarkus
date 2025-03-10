@@ -1370,8 +1370,13 @@ and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtensio
 will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`.
 Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
 
-Beware the created `ConnectionProvider` should handle connexion pools and transactions.
-Here is an implementation example using standard Quarkus technologies – Agroal for pooling and Narayana for transactions:
+[CAUTION]
+====
+<<automatic-integration,Automatic integrations>> will **not** work with programmatically-created `ConnectionProvider`.
+This implies all these integrations, including those from other Quarkus modules (e.g. xref:smallrye-health.adoc[SmallRye Health]) must be done manually.
+====
+
+Here is an implementation example of a `TenantConnectionResolver` implementation using standard Quarkus technologies – Agroal for pooling and Narayana for transactions:
 
 [source,java]
 ----

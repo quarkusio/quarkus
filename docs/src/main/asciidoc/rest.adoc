@@ -1624,7 +1624,7 @@ public User userPrivate() {
 }
 ----
 
-When the result the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
+When the result of the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
 
 ===== Reflection-free Jackson serialization and deserialization

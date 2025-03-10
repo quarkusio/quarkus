@@ -27,9 +27,6 @@ public class QueryParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        if (paramType.equals(Type.Map)) {
-            return context.getMapQueryParameter();
-        }
         return context.getQueryParameter(name, single, encoded, separator);
     }
 }

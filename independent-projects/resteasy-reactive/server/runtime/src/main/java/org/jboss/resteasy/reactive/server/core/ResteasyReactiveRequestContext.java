@@ -880,6 +880,7 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
+
         // empty collections must not be turned to null
         List<String> strings = serverRequest().getAllQueryParams(name).stream()
                 .filter(p -> !p.isEmpty())

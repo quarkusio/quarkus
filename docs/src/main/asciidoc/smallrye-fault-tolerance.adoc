@@ -573,7 +573,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.3.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.4.2/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -605,7 +605,7 @@ smallrye.faulttolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.3.0/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.4.2/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
 You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.

@@ -22,17 +22,19 @@ public class StaticTenantIssuerResolverTest {
         server.start();
         try {
             // 500 because default tenant has unavailable OIDC server (otherwise it assumes our issuer)
-            requestAdminRoles("https://wrong-issuer.edu").statusCode(500);
+            requestAdminRoles("https://wrong-issuer.edu", "a").statusCode(500);
 
-            requestAdminRoles("https://correct-issuer.edu").statusCode(200)
-                    .body(Matchers.is("static.tenant.id=bearer-issuer-resolver"));
+            requestAdminRoles("https://correct-issuer.edu", "a").statusCode(200)
+                    .body(Matchers.is("static.tenant.id=bearer-issuer-resolver-a"));
+            requestAdminRoles("https://correct-issuer.edu", "b").statusCode(200)
+                    .body(Matchers.is("static.tenant.id=bearer-issuer-resolver-b"));
         } finally {
             server.stop();
         }
     }
 
-    private static ValidatableResponse requestAdminRoles(String issuer) {
-        return RestAssured.given().auth().oauth2(getAdminTokenWithRole(issuer))
+    private static ValidatableResponse requestAdminRoles(String issuer, String clientName) {
+        return RestAssured.given().auth().oauth2(getAdminTokenWithRole(issuer, clientName))
                 .when().get("/api/admin/bearer-issuer-resolver/issuer").then();
     }
 
@@ -43,11 +45,12 @@ public class StaticTenantIssuerResolverTest {
         }
     }
 
-    private static String getAdminTokenWithRole(String issuer) {
+    private static String getAdminTokenWithRole(String issuer, String clientName) {
         return Jwt.preferredUserName("alice")
                 .groups(Set.of("admin"))
                 .issuer(issuer)
                 .audience(issuer)
+                .claim("client-name", clientName)
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");

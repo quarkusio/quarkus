@@ -295,7 +295,7 @@ A user may choose to disable all the Java options provided by extensions by conf
                 <version>${quarkus.platform.version}</version>
                 <configuration>
                     <extensionJvmOptions>
-                        <disableAll>false</disableAll>
+                        <disableAll>true</disableAll>
                     </extensionJvmOptions>
                 </configuration>
             </plugin>

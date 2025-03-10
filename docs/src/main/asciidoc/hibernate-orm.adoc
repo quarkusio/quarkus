@@ -1265,6 +1265,9 @@ With this approach, all datasources used by the same persistence unit
 are assumed to point to a database of the same vendor (same `db-kind`) and version.
 
 Mismatches will not be detected, and may result in unpredictable behavior.
+
+Tenant **list** is **fixed as build time** event if most values can be modified as runtime.
+In case of dynamic tenant list, you must use <<database-approach,database approach>>.
 ====
 
 [source,properties]
@@ -1366,6 +1369,55 @@ Creating an application-scoped bean that implements this interface
 and annotating it with `@PersistenceUnitExtension` (or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
 will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`.
 Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.
+
+Beware the created `ConnectionProvider` should handle connexion pools and transactions.
+Here is an implementation example using standard Quarkus technologies – Agroal for pooling and Narayana for transactions:
+
+[source,java]
+----
+@ApplicationScoped
+@PersistenceUnitExtension
+public class ExampleTenantConnexionResolver implements TenantConnectionResolver {
+
+    private final jakarta.transaction.TransactionManager transactionManager;
+    private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
+
+    public ExampleTenantConnexionResolver(
+            TransactionManager transactionManager,
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry) {
+        this.transactionManager = transactionManager;
+        this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
+    }
+
+    @Override
+    public ConnectionProvider resolve(String tenantId) {
+        return new QuarkusConnectionProvider(createDatasource(tenantId));
+    }
+
+    private AgroalDataSource createDatasource(String tenantId) {
+        try {
+            final var txIntegration = new NarayanaTransactionIntegration(
+                    transactionManager, transactionSynchronizationRegistry, null, false, null);
+            final var dataSourceConfig = new AgroalDataSourceConfigurationSupplier()
+                    .connectionPoolConfiguration(pc -> pc.initialSize(2)
+                            .maxSize(10)
+                            .minSize(2)
+                            .maxLifetime(Duration.of(5, ChronoUnit.MINUTES))
+                            .acquisitionTimeout(Duration.of(30, ChronoUnit.SECONDS))
+                            .transactionIntegration(txIntegration)
+                            .connectionFactoryConfiguration(
+                                    // Fetch JDBC URL, username and password from a per-tenant dynamic source
+                                    cf -> cf.jdbcUrl("jdbc:postgresql://postgres:5432/" + tenantId)
+                                            .credential(new NamePrincipal(username))
+                                            .credential(new SimplePassword(password))));
+            return AgroalDataSource.from(dataSourceConfig.get());
+        } catch (SQLException ex) {
+            throw new IllegalStateException(
+                    "Failed to create a new data source based on the existing datasource configuration", ex);
+        }
+    }
+}
+----
 
 [[interceptors]]
 == Interceptors

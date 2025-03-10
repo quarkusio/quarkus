@@ -3,6 +3,7 @@ package io.quarkus.swaggerui.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.quarkus.deployment.util.UriNormalizationUtil;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,9 +110,17 @@ public class SwaggerUiProcessor {
 
             }
 
-            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
-            if (swaggerUiConfig.locationPath().isPresent()) {
-                openApiPath = swaggerUiConfig.locationPath().get() + openApiPath;
+            String openApiPath;
+            if (swaggerUiConfig.rootPath().isPresent()) {
+                URI root = UriNormalizationUtil.toURI("/", true);
+                openApiPath = UriNormalizationUtil.normalizeWithBase(
+                        root,
+                        swaggerUiConfig.rootPath().get()
+                                + nonApplicationRootPathBuildItem.resolvePath(openapi.path()),
+                        false
+                ).getPath();
+            } else {
+                openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
             }
 
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
@@ -383,11 +393,11 @@ public class SwaggerUiProcessor {
         if (swaggerUiConfig.queryConfigEnabled()) {
             options.put(Option.queryConfigEnabled, "true");
         }
-        if (swaggerUiConfig.locationPath().isPresent()) {
-            var locationPath = swaggerUiConfig.locationPath().get();
-            addLocationPath(locationPath, Option.selfHref, options);
-            addLocationPath(locationPath, Option.backHref, options);
-            addLocationPath(locationPath, Option.oauth2RedirectUrl, options);
+        if (swaggerUiConfig.rootPath().isPresent()) {
+            var rootPath = swaggerUiConfig.rootPath().get();
+            addRootPath(rootPath, Option.selfHref, options);
+            addRootPath(rootPath, Option.backHref, options);
+            addRootPath(rootPath, Option.oauth2RedirectUrl, options);
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -448,10 +458,13 @@ public class SwaggerUiProcessor {
         return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName().orElse(null), options);
     }
 
-    private void addLocationPath(String locationPath, Option key, Map<Option, String> options) {
+    private void addRootPath(String rootPath, Option key, Map<Option, String> options) {
         var value = options.get(key);
         if (value != null) {
-            options.put(key, locationPath + value);
+            URI root = UriNormalizationUtil.toURI("/", true);
+            var behindRootPath = UriNormalizationUtil.normalizeWithBase(root, rootPath + value, false)
+                    .getPath();
+            options.put(key, behindRootPath);
         }
     }
 

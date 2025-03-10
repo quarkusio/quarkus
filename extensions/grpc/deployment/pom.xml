@@ -55,6 +55,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-virtual-threads-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-kotlin-deployment</artifactId>
+            <optional>true</optional> <!-- conditional dependency -->
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

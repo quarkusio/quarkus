@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -67,11 +68,11 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private static final String USE_ARG_FILE = "quarkus.generate-code.grpc.use-arg-file";
 
-    private static final String GENERATE_KOTLIN = "quarkus.generate-code.grpc.kotlin.generate";
+    private final Iterable<AdditionalOutputHandler> additionalOutputHandlers = ServiceLoader
+            .load(AdditionalOutputHandler.class);
 
     private Executables executables;
     private String input;
-    private boolean hasQuarkusKotlinDependency;
 
     @Override
     public String providerId() {
@@ -99,7 +100,6 @@ public class GrpcCodeGen implements CodeGenProvider {
     @Override
     public void init(ApplicationModel model, Map<String, String> properties) {
         this.input = properties.get("quarkus.grpc.codegen.proto-directory");
-        this.hasQuarkusKotlinDependency = containsQuarkusKotlin(model.getDependencies());
     }
 
     @Override
@@ -167,8 +167,22 @@ public class GrpcCodeGen implements CodeGenProvider {
                         "--grpc_out=" + outDir,
                         "--java_out=" + outDir));
 
-                if (shouldGenerateKotlin(context.config())) {
-                    command.add("--kotlin_out=" + outDir);
+                for (AdditionalOutputHandler handler : additionalOutputHandlers) {
+                    if (handler.supports(new AdditionalOutputHandler.SupportsInput() {
+                        @Override
+                        public Config config() {
+                            return context.config();
+                        }
+                    })) {
+                        AdditionalOutputHandler.HandleOutput output = handler.handle(new AdditionalOutputHandler.HandleInput() {
+                            @Override
+                            public Path outDir() {
+                                return outDir;
+                            }
+                        });
+                        command.addAll(output.additionalOptions());
+                    }
+
                 }
 
                 if (shouldGenerateDescriptorSet(context.config())) {
@@ -303,11 +317,6 @@ public class GrpcCodeGen implements CodeGenProvider {
     private boolean isGeneratingFromAppDependenciesEnabled(Config config) {
         return config.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
                 .filter(value -> !"none".equals(value)).isPresent();
-    }
-
-    private boolean shouldGenerateKotlin(Config config) {
-        return config.getOptionalValue(GENERATE_KOTLIN, Boolean.class).orElse(
-                hasQuarkusKotlinDependency);
     }
 
     private boolean shouldGenerateDescriptorSet(Config config) {

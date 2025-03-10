@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-grpc-kotlin-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>quarkus-grpc-kotlin</artifactId>
+    <name>Quarkus - gRPC - Kotlin - Runtime</name>
+    <description>Provides Kotlin support for Quarkus gRPC</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-kotlin</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <dependencyCondition>
+                        <artifact>io.quarkus:quarkus-kotlin</artifact>
+                    </dependencyCondition>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

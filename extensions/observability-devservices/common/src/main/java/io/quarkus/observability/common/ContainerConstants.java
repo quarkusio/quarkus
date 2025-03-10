@@ -4,7 +4,7 @@ public final class ContainerConstants {
 
     // Images
 
-    public static final String LGTM = "docker.io/grafana/otel-lgtm:0.8.2";
+    public static final String LGTM = "docker.io/grafana/otel-lgtm:0.9.0";
 
     // Ports
 

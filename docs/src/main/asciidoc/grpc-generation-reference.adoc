@@ -199,20 +199,26 @@ To do this, define the following properties in the `<properties>` section:
 
 These properties configure the gRPC version and the `protoc` version.
 
-Then, add the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration to the `build` section:
+Then, add the `eu.maveniverse.maven.nisse:plugin3` and the `protobuf-maven-plugin` configuration to the `build` section:
 
 [source,xml]
 ----
 <build>
-    <extensions>
-        <extension>
-            <groupId>kr.motd.maven</groupId>
-            <artifactId>os-maven-plugin</artifactId>
-            <version>${os-maven-plugin-version}</version>
-        </extension>
-    </extensions>
-
     <plugins>
+        <plugin>
+            <groupId>eu.maveniverse.maven.nisse</groupId>
+            <artifactId>plugin3</artifactId>
+            <version>0.4.0</version>
+            <executions>
+                <execution>
+                    <id>inject-properties</id>
+                    <goals>
+                        <goal>inject-properties</goal>
+                    </goals>
+                    <phase>validate</phase>
+                </execution>
+            </executions>
+        </plugin>
         <plugin>
             <groupId>org.xolstice.maven.plugins</groupId>
             <artifactId>protobuf-maven-plugin</artifactId>   <!--1-->
@@ -255,11 +261,19 @@ Then, add the `os-maven-plugin` extension and the `protobuf-maven-plugin` config
 ----
 
 <1> The `protobuf-maven-plugin` generates stub classes from your gRPC service definition (`proto` files).
-<2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the `os-maven-plugin` to target the executable compatible with the operating system.
+<2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the Nisse Maven plugin to target the executable compatible with the operating system.
 
 Note: This configuration instructs the `protobuf-maven-plugin` to generate default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
 
 IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plugin`, you need to re-generate classes (using `mvn compile`) every time you update the `proto` files.
+
+In order for the Nisse Maven plugin to generate the correct properties, we need to make sure the `nisse.compat.osDetector` system
+property is set. This can be done by adding the following `.mvn/maven.config` file:
+
+[source]
+----
+-Dnisse.compat.osDetector=true
+----
 
 == Using generated gRPC classes from dependencies
 

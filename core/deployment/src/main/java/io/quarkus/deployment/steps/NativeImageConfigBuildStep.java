@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
@@ -34,7 +35,8 @@ class NativeImageConfigBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void build(SslContextConfigurationRecorder sslContextConfigurationRecorder,
+    void build(NativeConfig nativeConfig,
+            SslContextConfigurationRecorder sslContextConfigurationRecorder,
             List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
@@ -80,6 +82,12 @@ class NativeImageConfigBuildStep {
 
         if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
+        }
+
+        if (nativeConfig.monitoring().isPresent()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring",
+                    nativeConfig.monitoring().get().stream().map(x -> x.toString().toLowerCase())
+                            .collect(Collectors.joining(","))));
         }
 
         for (JniBuildItem jniBuildItem : jniBuildItems) {

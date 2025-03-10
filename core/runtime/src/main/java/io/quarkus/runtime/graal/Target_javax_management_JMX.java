@@ -25,7 +25,11 @@ final class Target_javax_management_JMX {
 
         @Override
         public boolean getAsBoolean() {
-            return !Boolean.getBoolean("quarkus.native.jmxserver.included");
+            String monitoringProperty = System.getProperty("quarkus.native.monitoring");
+            if (monitoringProperty != null) {
+                return !monitoringProperty.contains("jmxserver");
+            }
+            return true;
         }
     }
 }

@@ -110,7 +110,10 @@ public class ResteasyReactiveCDIProcessor {
                                             } else {
                                                 // nothing to do as @RequestScoped was already present
                                             }
-                                        } else {
+                                        } else if (!resourceScanningResultBuildItem.get().getResult().getPossibleSubResources()
+                                                .containsKey(clazz.name())) {
+                                            // no @RequestScoped for Sub Resources, since they might have a constructor
+                                            // not compatible with CDI. User must explicitly mark as RequestScoped
                                             context.add(RequestScoped.class);
                                         }
                                     }

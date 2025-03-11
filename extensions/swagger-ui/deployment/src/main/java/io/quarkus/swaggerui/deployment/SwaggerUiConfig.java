@@ -325,7 +325,7 @@ public interface SwaggerUiConfig {
     boolean tryItOutEnabled();
 
     /**
-     * If application behind the proxy with custom root path.
+     * Custom root path. Useful when the application is behind a proxy with a custom root path.
      */
     Optional<String> rootPath();
 }

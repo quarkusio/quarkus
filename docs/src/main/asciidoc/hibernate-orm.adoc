@@ -1008,6 +1008,7 @@ as it will also clone some enhancement-specific fields that are specific to the 
 This limitation might be removed in the future.
 ====
 
+[[automatic-integration]]
 === Automatic integration
 
 Transaction Manager integration::
@@ -1266,8 +1267,8 @@ are assumed to point to a database of the same vendor (same `db-kind`) and versi
 
 Mismatches will not be detected, and may result in unpredictable behavior.
 
-Tenant **list** is **fixed as build time** event if most values can be modified as runtime.
-In case of dynamic tenant list, you must <<programmatically-resolving-tenants-connections,resolve the tenant connections programmatically>>.
+The list of datasources is defined at build time, so with this approach the **list** of tenants is **fixed at build time**.
+If the list of tenants needs to change at runtime, you must <<programmatically-resolving-tenants-connections,resolve the tenant connections programmatically>>.
 ====
 
 [source,properties]
@@ -1382,12 +1383,12 @@ Here is an implementation example of a `TenantConnectionResolver` implementation
 ----
 @ApplicationScoped
 @PersistenceUnitExtension
-public class ExampleTenantConnexionResolver implements TenantConnectionResolver {
+public class ExampleTenantConnectionResolver implements TenantConnectionResolver {
 
     private final jakarta.transaction.TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
-    public ExampleTenantConnexionResolver(
+    public ExampleTenantConnectionResolver(
             TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry) {
         this.transactionManager = transactionManager;

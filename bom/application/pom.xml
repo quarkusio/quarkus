@@ -170,10 +170,10 @@
         <javaparser.version>3.26.3</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.18.1</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>6.1.SP4</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>6.2.SP1</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
+        <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
         <mockito.version>5.15.2</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.2.0</quarkus-security.version>

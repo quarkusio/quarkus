@@ -1397,7 +1397,8 @@ public class ExampleTenantConnectionResolver implements TenantConnectionResolver
 
     @Override
     public ConnectionProvider resolve(String tenantId) {
-        return new QuarkusConnectionProvider(createDatasource(tenantId));
+        // Use your own ConnectionProvider implementation here
+        return new YourOwnCustomConnectionProviderImpl(createDatasource(tenantId));
     }
 
     private AgroalDataSource createDatasource(String tenantId) {

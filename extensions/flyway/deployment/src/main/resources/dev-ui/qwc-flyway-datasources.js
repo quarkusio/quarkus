@@ -76,6 +76,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     _actionRenderer(ds) {
         return html`${this._renderMigrationButtons(ds)}
+                    ${this._renderUpdateButton(ds)}
                     ${this._renderCreateButton(ds)}`;
     }
 
@@ -90,7 +91,16 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
                 </vaadin-button>`;
         }
     }
-    
+
+    _renderUpdateButton(ds) {
+        if(ds.hasMigrations){
+            return html`
+                <vaadin-button theme="small" @click=${() => this._showCreateDialog(ds)} class="button" title="Create update migration file. Always manually review the created file as it can cause data loss">
+                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> Generate Migration File
+                </vaadin-button>`;
+        }
+    }
+
     _renderCreateButton(ds) {
         if(ds.createPossible){
             return html`

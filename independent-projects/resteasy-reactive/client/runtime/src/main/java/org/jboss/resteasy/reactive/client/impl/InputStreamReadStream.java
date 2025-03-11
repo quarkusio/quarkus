@@ -24,22 +24,23 @@ import io.vertx.core.streams.impl.InboundBuffer;
  */
 public class InputStreamReadStream implements ReadStream<Buffer> {
 
-    private static final int CHUNK_SIZE = 2048;
     private static final int MAX_DEPTH = 8;
 
     private final Buffer endSentinel;
     private final Vertx vertx;
     private final InputStream is;
     private final HttpClientRequest request;
+    private final int chunkSize;
     private InboundBuffer<Buffer> inboundBuffer;
     private Handler<Throwable> exceptionHandler;
     private Handler<Void> endHandler;
     private byte[] bytes;
 
-    public InputStreamReadStream(Vertx vertx, InputStream is, HttpClientRequest request) {
+    public InputStreamReadStream(Vertx vertx, InputStream is, HttpClientRequest request, int chunkSize) {
         this.vertx = vertx;
         this.is = is;
         this.request = request;
+        this.chunkSize = chunkSize;
         endSentinel = Buffer.buffer();
     }
 
@@ -109,7 +110,7 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
             @Override
             public void handle(Promise<Buffer> p) {
                 if (bytes == null) {
-                    bytes = new byte[CHUNK_SIZE];
+                    bytes = new byte[chunkSize];
                 }
                 int amount;
                 try {

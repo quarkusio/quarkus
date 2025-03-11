@@ -1,5 +1,6 @@
 package io.quarkus.restclient.config;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -276,9 +277,15 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
-     * The max HTTP chunk size (8096 bytes by default).
+     * Configures two different things:
+     * <ul>
+     * <li>The max HTTP chunk size</li>
+     * <li>The size of the chunk to be read when an {@link InputStream} is being used as an input</li>
+     * </ul>
      * <p>
      * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigDocDefault("8k")
     Optional<MemorySize> maxChunkSize();
@@ -607,7 +614,11 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
-         * The max HTTP chunk size (8096 bytes by default).
+         * Configures two different things:
+         * <ul>
+         * <li>The max HTTP chunk size</li>
+         * <li>The size of the chunk to be read when an {@link InputStream} is being read and sent to the server</li>
+         * </ul>
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */

@@ -644,7 +644,7 @@ Sample Dockerfile for building with Gradle:
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
 USER root
-RUN microdnf install findutils
+RUN microdnf install findutils -y
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
 COPY --chown=quarkus:quarkus gradle /code/gradle
 COPY --chown=quarkus:quarkus build.gradle /code/
@@ -730,7 +730,7 @@ Sample multistage Dockerfile for building an image from `scratch`:
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 USER root
-RUN microdnf install make gcc
+RUN microdnf install make gcc -y
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/

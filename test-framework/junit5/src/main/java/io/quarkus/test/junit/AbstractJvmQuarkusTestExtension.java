@@ -173,7 +173,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected Class<? extends QuarkusTestProfile> getQuarkusTestProfile(ExtensionContext extensionContext) {
         Class testClass = extensionContext.getRequiredTestClass();
         Class testProfile = getQuarkusTestProfile(testClass, extensionContext);
-        System.out.println("test profile top level " + testProfile);
 
         if (testProfile != null) {
             return testProfile;

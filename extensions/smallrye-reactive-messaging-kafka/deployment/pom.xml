@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-messaging-kafka-parent</artifactId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.4</version>
     </parent>
 
     <artifactId>quarkus-messaging-kafka-deployment</artifactId>

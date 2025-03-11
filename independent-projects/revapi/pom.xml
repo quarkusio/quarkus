@@ -5,13 +5,13 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.4</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>quarkus-revapi-config</artifactId>
     <name>Quarkus - Revapi Configuration</name>
-    <version>3.15.999-SNAPSHOT</version>
+    <version>3.15.4</version>
     <description>Contains the configuration of the Revapi API checker and the list of the API changes
         in the Quarkus APIs.
     </description>

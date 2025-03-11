@@ -86,7 +86,8 @@ export class QwcExtensions extends observeState(LitElement) {
         _favourites: {state: true},
         _addDialogOpened: {state: true},
         _installedExtensions: {state: true, type: Array},
-        _selectedFilters: {state: true, type: Array}
+        _selectedFilters: {state: true, type: Array},
+        _addExtensionsEnabled: {state: true, type: Boolean},
     }
 
     constructor() {
@@ -96,12 +97,18 @@ export class QwcExtensions extends observeState(LitElement) {
         this._installedExtensions = [];
         this._filteritems = ["Favorites","Active","Inactive"];
         this._selectedFilters = this._getStoredFilters();
+        this._addExtensionsEnabled = false;
     }
 
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
-            this._installedExtensions = jsonRpcResponse.result;
+            if (jsonRpcResponse.result) {
+                this._installedExtensions = jsonRpcResponse.result;
+                this._addExtensionsEnabled = true;
+            }
+        }).catch(e => {
+            notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
         });
     }
 
@@ -355,30 +362,32 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     _renderAddDialog(){
-        return html`
-            <vaadin-dialog
-              theme="no-padding"
-              resizable
-              draggable
-              header-title="Add extension"
-              .opened="${this._addDialogOpened}"
-              @opened-changed="${(event) => {
-                this._addDialogOpened = event.detail.value;
-              }}"
-              ${dialogHeaderRenderer(
-                  () => html`
-                    <vaadin-button theme="tertiary" @click="${() => (this._addDialogOpened = false)}">
-                        <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
-                    </vaadin-button>
-                  `,
-                  []
+        if (this._addExtensionsEnabled) {
+            return html`
+                <vaadin-dialog
+                theme="no-padding"
+                resizable
+                draggable
+                header-title="Add extension"
+                .opened="${this._addDialogOpened}"
+                @opened-changed="${(event) => {
+                    this._addDialogOpened = event.detail.value;
+                }}"
+                ${dialogHeaderRenderer(
+                    () => html`
+                        <vaadin-button theme="tertiary" @click="${() => (this._addDialogOpened = false)}">
+                            <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                        </vaadin-button>
+                    `,
+                    []
+                    )}
+                ${dialogRenderer(
+                    () => html`<qwc-extension-add @inprogress="${this._installRequest}"></qwc-extension-add>`
                 )}
-              ${dialogRenderer(
-                () => html`<qwc-extension-add @inprogress="${this._installRequest}"></qwc-extension-add>`
-              )}
-            ></vaadin-dialog>
-            ${this._renderAddExtensionButton()}
-          `;
+                ></vaadin-dialog>
+                ${this._renderAddExtensionButton()}
+            `;
+        }
     }
     
     _renderAddExtensionButton(){

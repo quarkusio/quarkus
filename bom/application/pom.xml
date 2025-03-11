@@ -58,7 +58,7 @@
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.10.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.9.2</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.4.2</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.4.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.5.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>

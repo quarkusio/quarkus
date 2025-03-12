@@ -1,7 +1,5 @@
 package io.quarkus.devtools.project.update.rewrite;
 
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.GREEN;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -106,14 +104,15 @@ public final class QuarkusUpdatesRepository {
                 }
                 if (log.isDebugEnabled()) {
                     log.debug(String.format(
-                            "=> %d specific recipe(s) found (compatible with OpenRewrite %s plugin version: %s)",
+                            "=> %d specific recipe" + (recipes.size() != 1 ? "s" : "")
+                                    + " found (compatible with OpenRewrite %s plugin version: %s)",
                             recipes.size(),
                             buildTool,
                             propRewritePluginVersion));
                 } else {
                     log.info(String.format(
-                            "=> %s specific recipe(s) found",
-                            MessageFormatter.format(GREEN, String.valueOf(recipes.size()))));
+                            "=> %s specific recipe" + (recipes.size() != 1 ? "s" : "") + " found",
+                            MessageFormatter.green(String.valueOf(recipes.size()))));
                 }
 
             } catch (BootstrapMavenException e) {

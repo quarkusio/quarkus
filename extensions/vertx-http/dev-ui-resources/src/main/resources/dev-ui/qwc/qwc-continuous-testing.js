@@ -150,7 +150,9 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _cancelObservers(){
         this._streamStateObserver.cancel();
-        this._streamResultsObserver.cancel();
+        if(this._streamResultsObserver){
+            this._streamResultsObserver.cancel();
+        }
     }
 
     _lastKnownState(){

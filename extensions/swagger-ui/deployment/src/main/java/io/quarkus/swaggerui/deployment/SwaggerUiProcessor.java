@@ -117,8 +117,7 @@ public class SwaggerUiProcessor {
                         root,
                         swaggerUiConfig.rootPath().get()
                                 + nonApplicationRootPathBuildItem.resolvePath(openapi.path()),
-                        false
-                ).getPath();
+                        false).getPath();
             } else {
                 openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
             }

@@ -861,6 +861,12 @@ data class Person (
 ): PanacheMongoEntity()
 ----
 
+[IMPORTANT]
+====
+Unlike the @BsonCreator approach, `val` cannot be used here. Properties must be defined as `var`, otherwise, the system creates an object with 
+`null` values for every property.
+====
+
 [[reactive]]
 == Reactive Entities and Repositories
 

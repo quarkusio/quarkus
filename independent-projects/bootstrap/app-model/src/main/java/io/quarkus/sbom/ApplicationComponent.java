@@ -9,6 +9,9 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ApplicationComponent {
 
+    public static final String SCOPE_RUNTIME = "runtime";
+    public static final String SCOPE_DEVELOPMENT = "development";
+
     public static Builder builder() {
         return new Builder();
     }
@@ -106,7 +109,7 @@ public class ApplicationComponent {
     }
 
     public String getScope() {
-        return scope;
+        return scope == null ? (dep == null || dep.isRuntimeCp() ? SCOPE_RUNTIME : SCOPE_DEVELOPMENT) : scope;
     }
 
     public Collection<ArtifactCoords> getDependencies() {

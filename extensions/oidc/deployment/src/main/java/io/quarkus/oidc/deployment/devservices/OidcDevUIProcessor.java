@@ -13,7 +13,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devservices.oidc.OidcDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -53,7 +52,6 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             BeanContainerBuildItem beanContainer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
-            ConfigurationBuildItem configurationBuildItem,
             OidcDevUiRecorder recorder,
             Optional<OidcDevServicesConfigBuildItem> oidcDevServicesConfigBuildItem) {
         if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesConfigBuildItem.isEmpty())) {
@@ -88,7 +86,6 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
-                    configurationBuildItem,
                     keycloakAdminUrl,
                     null,
                     null,

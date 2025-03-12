@@ -1627,7 +1627,21 @@ public User userPrivate() {
 When the result of the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
 
-===== Reflection-free Jackson serialization
+`@JsonView` is also supported for deserializing the request body. So for example in the following code:
+
+[source,java]
+----
+        @POST
+        @Produces(MediaType.APPLICATION_JSON)
+        @Consumes(MediaType.APPLICATION_JSON)
+        public RestResponse<User> create(@JsonView(Views.Public.class) User user) {
+            return RestResponse.status(CREATED, user);
+        }
+----
+
+inside the `create` method, `user` would only contain the value of `name` while `id` would always be `null` (regardless if the JSON request contained it)
+
+===== Reflection-free Jackson serialization and deserialization
 
 Out-of-the-box Jackson serialization converts objects into their JSON representation by introspecting them through a heavy use of reflection. However, the general Quarkus philosophy is to avoid reflection as much as possible, often replacing it with build time code generation. For this reason it is possible to automatically generate at build time implementations of the Jackson `StdSerializer`, one for each class to be converted in JSON. These generated serializers can be subsequently used by Quarkus at runtime to perform the JSON serialization of the objects returned by a REST endpoint without any use of reflection.
 

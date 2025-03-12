@@ -3,6 +3,7 @@ package io.quarkus.test.junit.classloading;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -11,15 +12,16 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -89,7 +91,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     // Ideally these would be final, but we initialise them in a try-catch block and sometimes they will be caught
 
     // JUnit extensions can be registered by a service loader - see https://junit.org/junit5/docs/current/user-guide/#extensions-registration
-    private final boolean isServiceLoaderMechanism;
+    private boolean isServiceLoaderMechanism;
     private Method osIsCurrent;
     private Class<? extends Annotation> quarkusTestAnnotation;
     private Class<? extends Annotation> disabledAnnotation;
@@ -201,15 +203,22 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
             log.debug("Could not load annotations for FacadeClassLoader: " + e);
         }
-        // We could use getResources and string comparison instead. I'm not sure which is faster, but the service loader caches, so it should be reasonably quick.
+        // We want to see what services are registered, but without going through the service loader, since that results in a huge catastrophe of class not found exceptions
+        // as the servoce loader tries to instantiate things in a nobbled loader. Instead, do it in a crude, safe, way by looking for the resource files and reading them.
         try {
-            isServiceLoaderMechanism = ServiceLoader.load(
-                    peekingClassLoader.loadClass("org.junit.jupiter.api.extension.Extension"), peekingClassLoader).stream()
-                    .anyMatch(provider -> provider.get().getClass()
-                            .getName()
-                            .equals(QuarkusTestExtension.class.getName()));
-
-        } catch (ClassNotFoundException e) {
+            Enumeration<URL> declaredExtensions = annotationLoader
+                    .getResources("META-INF/services/org.junit.jupiter.api.extension.Extension");
+            while (declaredExtensions.hasMoreElements()) {
+                URL url = declaredExtensions.nextElement();
+                try (InputStream in = url.openStream()) {
+                    String contents = new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
+                    if (QuarkusTestExtension.class.getName()
+                            .equals(contents)) {
+                        isServiceLoaderMechanism = true;
+                    }
+                }
+            }
+        } catch (IOException e) {
             log.debug("Could not check service loader registrations: " + e);
             throw new RuntimeException(e);
         }

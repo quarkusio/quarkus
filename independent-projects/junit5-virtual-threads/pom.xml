@@ -38,7 +38,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <compiler.plugin.version>3.13.0</compiler.plugin.version>
+        <compiler.plugin.version>3.14.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
         <jandex.version>3.2.7</jandex.version>

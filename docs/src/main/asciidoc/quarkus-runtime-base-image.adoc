@@ -39,7 +39,7 @@ In this case, you need to use a multi-stage `dockerfile` to copy the required li
 ----
 # First stage - install the dependencies in an intermediate container
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
-RUN microdnf install freetype
+RUN microdnf install freetype -y
 
 # Second stage - copy the dependencies
 FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
@@ -61,7 +61,7 @@ If you need to have access to the full AWT support, you need more than just `lib
 ----
 # First stage - install the dependencies in an intermediate container
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
-RUN microdnf install freetype fontconfig
+RUN microdnf install freetype fontconfig -y
 
 # Second stage - copy the dependencies
 FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0

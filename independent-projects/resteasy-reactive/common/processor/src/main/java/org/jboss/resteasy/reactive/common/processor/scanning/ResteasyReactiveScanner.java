@@ -386,6 +386,9 @@ public class ResteasyReactiveScanner {
                     possibleSubResources.containsKey(classInfo.name())) {
                 continue;
             }
+            if (hasJaxRsFieldInjection(classInfo, index)) {
+                requestScopedResources.add(classInfo.name());
+            }
             possibleSubResources.put(classInfo.name(), classInfo);
             //we need to also look for all subclasses and interfaces
             //they may have type variables that need to be handled

@@ -104,7 +104,7 @@ public class RuntimeDeploymentManager {
                     public BeanFactory.BeanInstance<?> apply(Class<?> aClass) {
                         return info.getFactoryCreator().apply(aClass).createInstance();
                     }
-                });
+                }, info.getClientProxyUnwrapper());
 
         // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
         // end with one

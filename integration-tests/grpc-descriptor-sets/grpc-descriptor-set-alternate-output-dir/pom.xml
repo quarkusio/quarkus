@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-integration-test-grpc-descriptor-sets-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>3.19.3</version>
     </parent>
 
     <artifactId>quarkus-integration-test-grpc-descriptor-sets-alternate-output-dir</artifactId>

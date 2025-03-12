@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Fault Tolerance</name>
 
     <properties>
-        <microprofile-fault-tolerance-tck.version>4.1.1</microprofile-fault-tolerance-tck.version>
+        <microprofile-fault-tolerance-tck.version>4.1.2</microprofile-fault-tolerance-tck.version>
     </properties>
 
     <build>

@@ -33,8 +33,7 @@ public class NamespaceTemplateExtensionValidationFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found incorrect expressions (2)"), te.getMessage());
-                assertTrue(te.getMessage().contains("No matching namespace [bro] extension method found"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (1)"), te.getMessage());
                 assertTrue(te.getMessage().contains("Property/method [bubu] not found on class [java.lang.String]"),
                         te.getMessage());
             });

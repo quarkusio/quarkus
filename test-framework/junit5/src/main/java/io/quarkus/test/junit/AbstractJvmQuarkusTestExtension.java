@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -252,11 +253,10 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         TestConfig testConfig;
         try {
-
             testConfig = ConfigProvider.getConfig()
                     .unwrap(SmallRyeConfig.class)
                     .getConfigMapping(TestConfig.class);
-        } catch (Exception e) {
+        } catch (Exception | ServiceConfigurationError e) {
             // Tracked by https://github.com/quarkusio/quarkus/issues/46048
             Log.error("Could not read configuration while evaluating whether to run " + context.getRequiredTestClass()
                     + ". This usually happens when re-running a test that has already failed, for example if surefire.rerunFailingTestsCount is set. To work around this limitation, either adjust the test so that it passes, or isolate the test into a project whose tests all use the same combination of @TestProfile and resources.");

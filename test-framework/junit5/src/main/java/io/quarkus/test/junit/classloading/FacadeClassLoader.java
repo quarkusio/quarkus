@@ -19,20 +19,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.HierarchyTraversalMode;
 
+import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -63,6 +68,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
 
+    private final AppMakerHelper appMakerHelper = new AppMakerHelper();
+
     /*
      * A 'disposable' loader for holding temporary instances of the classes to allow us to inspect them.
      *
@@ -80,7 +87,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private final URLClassLoader peekingClassLoader;
 
     // Ideally these would be final, but we initialise them in a try-catch block and sometimes they will be caught
-    private Class<?> osClass;
+
+    // JUnit extensions can be registered by a service loader - see https://junit.org/junit5/docs/current/user-guide/#extensions-registration
+    private final boolean isServiceLoaderMechanism;
     private Method osIsCurrent;
     private Class<? extends Annotation> quarkusTestAnnotation;
     private Class<? extends Annotation> disabledAnnotation;
@@ -90,6 +99,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private Class<? extends Annotation> profileAnnotation;
     private Class<? extends Annotation> extendWithAnnotation;
     private Class<? extends Annotation> registerExtensionAnnotation;
+    private Class<? extends Annotation> testAnnotation;
     private final Map<String, Class<?>> profiles;
     private final Set<String> quarkusTestClasses;
     private final boolean isAuxiliaryApplication;
@@ -175,7 +185,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             extendWithAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(ExtendWith.class.getName());
             disabledAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Disabled.class.getName());
             disabledOnOsAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(DisabledOnOs.class.getName());
-            osClass = (Class<?>) annotationLoader.loadClass(OS.class.getName());
+            Class<?> osClass = annotationLoader.loadClass(OS.class.getName());
             osIsCurrent = osClass.getMethod("isCurrentOs");
             disabledOnOsAnnotationValue = disabledOnOsAnnotation.getMethod("value");
             registerExtensionAnnotation = (Class<? extends Annotation>) annotationLoader
@@ -186,9 +196,22 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .loadClass(QuarkusIntegrationTest.class.getName());
             profileAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(TestProfile.class.getName());
+            testAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Test.class.getName());
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
             log.debug("Could not load annotations for FacadeClassLoader: " + e);
+        }
+        // We could use getResources and string comparison instead. I'm not sure which is faster, but the service loader caches, so it should be reasonably quick.
+        try {
+            isServiceLoaderMechanism = ServiceLoader.load(
+                    peekingClassLoader.loadClass("org.junit.jupiter.api.extension.Extension"), peekingClassLoader).stream()
+                    .anyMatch(provider -> provider.get().getClass()
+                            .getName()
+                            .equals(QuarkusTestExtension.class.getName()));
+
+        } catch (ClassNotFoundException e) {
+            log.debug("Could not check service loader registrations: " + e);
+            throw new RuntimeException(e);
         }
 
         if (profileNames != null) {
@@ -214,15 +237,26 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        Log.debug("Facade classloader loading " + name);
+        Log.debugf("Facade classloader loading %s", name);
         boolean isQuarkusTest = false;
         boolean isIntegrationTest = false;
         Class<?> inspectionClass = null;
 
+        // If the service loader mechanism is being used, QuarkusTestExtension gets loaded before any extensions which use it. We need to make sure it's on the right classloader.
+        if (isServiceLoaderMechanism && (name.equals(QuarkusTestExtension.class.getName()))) {
+            try {
+                // We don't have enough information to make a runtime classloader yet, but we can make a curated application and a base classloader
+                QuarkusClassLoader runtimeClassLoader = getOrCreateBaseClassLoader(getProfileKey(null), null);
+                return runtimeClassLoader.loadClass(name);
+            } catch (AppModelResolverException | BootstrapException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         try {
 
             Class<?> profile = null;
-            if (profiles != null) {
+            if (profiles != null && !isServiceLoaderMechanism) {
                 isQuarkusTest = quarkusTestClasses.contains(name);
 
                 profile = profiles.get(name);
@@ -246,7 +280,16 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     }
 
                     if (!inspectionClass.isAnnotation()) {
-                        // Because (until we do https://github.com/quarkusio/quarkus/issues/45785) we start dev services for disabled tests when we load them with the quarkus classloader, and those dev services often fail, put in some bypasses.
+
+                        if (isServiceLoaderMechanism) {
+                            List<Method> anns = AnnotationSupport.findAnnotatedMethods(inspectionClass, testAnnotation,
+                                    HierarchyTraversalMode.BOTTOM_UP);
+                            // If a service loader was used to register QuarkusTestExtension, every JUnit test is a QuarkusTest
+                            isQuarkusTest = !anns.isEmpty();
+                        }
+
+                        // Because (until we do https://github.com/quarkusio/quarkus/issues/45785) we start dev services for disabled tests when we load them with the quarkus classloader, and those dev services often fail, put in some
+                        // bypasses.
                         // These bypasses are also useful for performance.
                         // Ideally we would check for every way of disabling a test, but we don't want to recreate the JUnit logic, so just do common ones that might be guarding classes with classloading or dev-service-starting issues
                         // That does mean our behaviour in this area is slightly inconsistent between annotations; for some we will augment before giving up and for some we won't
@@ -256,10 +299,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         // If a whole test class has an @Disabled annotation, do not bother creating a quarkus app for it
                         // Pragmatically, this fixes a LinkageError in grpc-cli which only reproduces in CI, but it's also probably what users would expect
                         if (!isDisabled) {
-                            // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
+                            // There are several ways a test could be identified as a QuarkusTest:
+                            // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension (or the service loader mechanism could be used)
                             // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
 
-                            isQuarkusTest = AnnotationSupport.isAnnotated(inspectionClass, quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
+                            isQuarkusTest = isQuarkusTest
+                                    || AnnotationSupport.isAnnotated(inspectionClass,
+                                            quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
                                     || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
                                     || registersQuarkusTestExtensionOnField(inspectionClass);
 
@@ -399,8 +445,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     private QuarkusClassLoader getQuarkusClassLoader(Class<?> requiredTestClass, Class<?> profile) {
-        final String profileName = profile != null ? profile.getName() : NO_PROFILE;
-        String profileKey = KEY_PREFIX + profileName;
+        String profileKey = getProfileKey(profile);
 
         try {
             StartupAction startupAction;
@@ -414,23 +459,23 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
-                startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
+                startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
                 keyMakerClassLoader = startupAction.getClassLoader();
 
                 // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
-                final String resourceKey = getResourceKey(requiredTestClass, profile);
+                final String resourceKey = requiredTestClass != null ? getResourceKey(requiredTestClass, profile) : null;
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
             } else {
-                final String resourceKey = getResourceKey(requiredTestClass, profile);
+                final String resourceKey = requiredTestClass != null ? getResourceKey(requiredTestClass, profile) : null;
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
                 startupAction = runtimeClassLoaders.get(key);
                 if (startupAction == null) {
                     // Making a classloader uses the profile key to look up a curated application
-                    startupAction = makeClassLoader(profileKey, requiredTestClass, profile);
+                    startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
                 }
 
             }
@@ -445,6 +490,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getProfileKey(Class<?> profile) {
+        final String profileName = profile != null ? profile.getName() : NO_PROFILE;
+        String profileKey = KEY_PREFIX + profileName;
+        return profileKey;
     }
 
     private String getResourceKey(Class<?> requiredTestClass, Class<?> profile)
@@ -476,10 +527,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         return resourceKey;
     }
 
-    private StartupAction makeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile) throws Exception {
-
-        AppMakerHelper appMakerHelper = new AppMakerHelper();
-
+    private CuratedApplication getOrCreateCuratedApplication(String key, Class<?> requiredTestClass)
+            throws IOException, AppModelResolverException, BootstrapException {
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
@@ -493,6 +542,19 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
         }
 
+        return curatedApplication;
+    }
+
+    private QuarkusClassLoader getOrCreateBaseClassLoader(String key, Class<?> requiredTestClass)
+            throws AppModelResolverException, BootstrapException, IOException {
+        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
+        return curatedApplication.getOrCreateBaseRuntimeClassLoader();
+    }
+
+    private StartupAction getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
+            IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+        CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
         StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 

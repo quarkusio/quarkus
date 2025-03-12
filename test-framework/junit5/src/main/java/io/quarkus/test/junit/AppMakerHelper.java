@@ -5,6 +5,7 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,7 +81,8 @@ public class AppMakerHelper {
     private PrepareResult createAugmentor(final Class<?> requiredTestClass, String displayName, boolean isContinuousTesting,
             CuratedApplication curatedApplication,
             Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
+            Collection<Runnable> shutdownTasks) throws AppModelResolverException, BootstrapException, IOException,
+            NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
 
         if (curatedApplication == null) {
             curatedApplication = makeCuratedApplication(requiredTestClass, displayName, isContinuousTesting, shutdownTasks);
@@ -320,8 +322,8 @@ public class AppMakerHelper {
     // should have been freshly created
     // TODO maybe don't even accept one? is that comment right?
     public StartupAction getStartupAction(Class testClass, CuratedApplication curatedApplication,
-            boolean isContinuousTesting, Class profile)
-            throws Exception {
+            boolean isContinuousTesting, Class profile) throws AppModelResolverException, BootstrapException, IOException,
+            InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 
         Collection<Runnable> shutdownTasks = new HashSet();
         PrepareResult result = createAugmentor(testClass, "(QuarkusTest)", isContinuousTesting, curatedApplication, profile,

@@ -196,7 +196,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 MessageFormatter.bold(
                         "Do you want to apply the generated update recipes with OpenRewrite?")
                 + " ([" + MessageFormatter.green("y") + "]es, [" + MessageFormatter.red("n") + "]o, ["
-                + MessageFormatter.blue("d") + "]ry-run)"
+                + MessageFormatter.blue("d") + "]ry-run + [Enter])"
                 + System.lineSeparator() + System.lineSeparator());
         try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
             @Override

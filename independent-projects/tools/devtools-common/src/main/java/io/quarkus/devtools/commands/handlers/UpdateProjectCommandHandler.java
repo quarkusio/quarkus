@@ -276,18 +276,18 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                                     + "]"));
                 }
             }
-            if (!platformUpdateInfo.getNewImports().isEmpty()) {
-                for (PlatformInfo importInfo : platformUpdateInfo.getNewImports()) {
-                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "+",
-                            "[" + MessageFormatter.green(importInfo.getRecommended().toCompactCoords()) + "] to add"));
-                }
-            }
             if (platformUpdateInfo.isImportsToBeRemoved()) {
                 for (PlatformInfo importInfo : platformUpdateInfo.getPlatformImports().values()) {
                     if (importInfo.getRecommended() == null) {
                         log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "-",
-                                "[" + MessageFormatter.red(importInfo.getImported().toCompactCoords()) + "] to remove"));
+                                "[" + MessageFormatter.red(importInfo.getImported().toCompactCoords()) + "]"));
                     }
+                }
+            }
+            if (!platformUpdateInfo.getNewImports().isEmpty()) {
+                for (PlatformInfo importInfo : platformUpdateInfo.getNewImports()) {
+                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "+",
+                            "[" + MessageFormatter.green(importInfo.getRecommended().toCompactCoords()) + "]"));
                 }
             }
             log.info("");

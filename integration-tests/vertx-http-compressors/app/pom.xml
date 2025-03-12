@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-test-vertx-http-compressors-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.21.0.CR1</version>
     </parent>
     <artifactId>quarkus-integration-test-vertx-http-compressors-app</artifactId>
     <name>Quarkus - Integration Tests - Vertx Http Compressors - App</name>

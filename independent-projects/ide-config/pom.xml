@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.21.0.CR1</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,7 @@
     <artifactId>quarkus-ide-config</artifactId>
     <name>Quarkus - IDE/Tools - Config</name>
     <url>https://github.com/quarkusio/quarkus</url>
-    <version>999-SNAPSHOT</version>
+    <version>3.21.0.CR1</version>
     <packaging>jar</packaging>
 
     <licenses>

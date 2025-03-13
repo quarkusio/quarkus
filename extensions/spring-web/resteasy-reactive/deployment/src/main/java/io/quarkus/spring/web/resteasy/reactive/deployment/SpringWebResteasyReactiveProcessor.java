@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import jakarta.ws.rs.Priorities;
@@ -25,12 +26,14 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.processor.transformation.Transformation;
+import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
@@ -47,6 +50,10 @@ import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseEntityHandler;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseStatusHandler;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMapParamExtractor;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueListParamExtractor;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueMapParamExtractor;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringRequestParamHandler;
 import io.quarkus.spring.web.runtime.common.ResponseStatusExceptionMapper;
 
 public class SpringWebResteasyReactiveProcessor {
@@ -82,8 +89,11 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName HTTP_ENTITY = DotName.createSimple("org.springframework.http.HttpEntity");
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
+    private static final DotName SPRING_MULTIVALUE_MAP = DotName.createSimple("org.springframework.util.MultiValueMap");
 
     private static final String DEFAULT_NONE = "\n\t\t\n\t\t\n\uE000\uE001\uE002\n\t\t\t\t\n"; // from ValueConstants
+    public static final DotName JAVA_UTIL_LIST = DotName.createSimple("java.util.List");
+    public static final DotName JAVA_UTIL_MAP = DotName.createSimple("java.util.Map");
 
     @BuildStep
     public AdditionalJaxRsResourceMethodParamAnnotations additionalJaxRsResourceMethodParamAnnotations() {
@@ -393,6 +403,75 @@ public class SpringWebResteasyReactiveProcessor {
             }
 
         }));
+    }
+
+    @BuildStep
+    MethodScannerBuildItem scanner() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            /**
+             * In Spring, parameters annotated with {@code @RequestParam} are required by default unless explicitly marked as
+             * optional.
+             * This method ensures the same behavior in Quarkus by checking if a parameter is required and enforcing its
+             * presence.
+             *
+             * The method scans for parameters annotated with {@code @RequestParam} and verifies:
+             * <ul>
+             * <li>If the parameter is marked as required (default behavior in Spring).</li>
+             * <li>If it has no default value.</li>
+             * <li>If it is not of type {@code Optional<T>}.</li>
+             * </ul>
+             *
+             * If all these conditions are met, it registers a {@link SpringRequestParamHandler} to enforce the required
+             * constraint.
+             *
+             * @param method The method being scanned.
+             * @param actualEndpointClass The actual class defining the endpoint.
+             * @param methodContext A map containing metadata about the method.
+             * @return A singleton list with {@link SpringRequestParamHandler} if the conditions are met,
+             *         otherwise an empty list.
+             */
+
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                    Map<String, Object> methodContext) {
+                if (methodContext.containsKey("RequestParam")) {
+                    for (MethodParameterInfo parameterInfo : method.parameters()) {
+                        if (parameterInfo.annotation(REQUEST_PARAM) != null) {
+                            AnnotationInstance annotation = parameterInfo.annotation(REQUEST_PARAM);
+                            boolean required = annotation.value("required") == null || annotation.value("required").asBoolean();
+                            String defaultValue = annotation.value("defaultValue") != null
+                                    ? annotation.value("defaultValue").asString()
+                                    : "";
+                            boolean isOptional = parameterInfo.type().name()
+                                    .equals(DotName.createSimple(Optional.class.getName()));
+
+                            if (required && defaultValue.isBlank() && !isOptional) {
+                                return Collections.singletonList(new SpringRequestParamHandler());
+                            }
+                        }
+                    }
+                }
+                return Collections.emptyList();
+            }
+
+            @Override
+            public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
+                    boolean field, Map<String, Object> methodContext) {
+                if (annotations.containsKey(REQUEST_PARAM)) {
+                    methodContext.put("RequestParam", true);
+                    if (paramType.name().equals(SPRING_MULTIVALUE_MAP)) {
+                        return new SpringMultiValueMapParamExtractor();
+                    }
+                    if (paramType.name().equals(JAVA_UTIL_LIST)) {
+                        return new SpringMultiValueListParamExtractor();
+                    }
+                    if (paramType.name().equals(JAVA_UTIL_MAP)) {
+                        return new SpringMapParamExtractor();
+                    }
+                }
+                return null;
+            }
+        });
     }
 
     @BuildStep

@@ -3,10 +3,6 @@ package io.quarkus.devtools.commands.handlers;
 import static io.quarkus.devtools.commands.handlers.UpdateProjectCommandHandler.ITEM_FORMAT;
 import static io.quarkus.devtools.commands.handlers.UpdateProjectCommandHandler.printSeparator;
 import static io.quarkus.devtools.commands.handlers.UpdateProjectCommandHandler.updateInfo;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.format;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.BOLD;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.GREEN;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.RED;
 import static io.quarkus.devtools.messagewriter.MessageIcons.UP_TO_DATE_ICON;
 import static io.quarkus.devtools.project.state.ProjectStates.resolveProjectState;
 
@@ -22,6 +18,7 @@ import io.quarkus.devtools.commands.ProjectInfo;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageFormatter;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.state.ExtensionProvider;
 import io.quarkus.devtools.project.state.ModuleState;
@@ -74,9 +71,9 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
         printSeparator(log);
 
         if (providerInfo.isEmpty()) {
-            log.info(format(RED, "No Quarkus platform BOMs found"));
+            log.info(MessageFormatter.red("No Quarkus platform BOMs found"));
         } else {
-            log.info(format(BOLD, "Quarkus platform BOMs:"));
+            log.info(MessageFormatter.bold("Quarkus platform BOMs:"));
             boolean recommendExtraImports = false;
             for (PlatformInfo platform : providerInfo.values()) {
                 if (!platform.isImported()) {
@@ -87,7 +84,8 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 if (platform.getRecommended() == null) {
                     sb.append(
                             String.format(ITEM_FORMAT, "-",
-                                    "[" + format(RED, platform.getImported().toCompactCoords()) + "] not recommended"));
+                                    "[" + MessageFormatter.red(platform.getImported().toCompactCoords())
+                                            + "] not recommended"));
                     recommendationsAvailable = true;
                 } else if (platform.isVersionUpdateRecommended()) {
                     sb.append(String.format(ITEM_FORMAT, "~",
@@ -103,7 +101,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 for (PlatformInfo platform : providerInfo.values()) {
                     if (platform.getImported() == null) {
                         log.info(String.format(ITEM_FORMAT, "+",
-                                "[ " + format(GREEN, platform.getImported().toCompactCoords()) + "]"));
+                                "[ " + MessageFormatter.green(platform.getImported().toCompactCoords()) + "]"));
                     }
                 }
                 recommendationsAvailable = true;
@@ -141,8 +139,9 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
         }
         if (recommendationsAvailable) {
             log.info(
-                    "Some version alignment recommendation are available and shown by '[" + format(RED, "current") + " -> "
-                            + format(GREEN, "recommended") + "]'.");
+                    "Some version alignment recommendation are available and shown by '[" + MessageFormatter.red("current")
+                            + " -> "
+                            + MessageFormatter.green("recommended") + "]'.");
         }
 
         printSeparator(log);
@@ -154,7 +153,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
         if (provider.getExtensions().isEmpty()) {
             return recommendationsAvailable;
         }
-        log.info(format(BOLD, "Extensions from " + provider.getKey() + ":"));
+        log.info(MessageFormatter.bold("Extensions from " + provider.getKey() + ":"));
         final StringBuilder sb = new StringBuilder();
         for (TopExtensionDependency dep : provider.getExtensions()) {
             sb.setLength(0);
@@ -171,8 +170,9 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
             if (dep.isNonRecommendedVersion()) {
                 recommendationsAvailable = true;
                 sb.append(String.format(ITEM_FORMAT, "-",
-                        dep.getArtifact().getKey().toGacString() + ":[" + format(RED, dep.getArtifact().getVersion()) + " -> "
-                                + format(GREEN, "managed") + "]"));
+                        dep.getArtifact().getKey().toGacString() + ":[" + MessageFormatter.red(dep.getArtifact().getVersion())
+                                + " -> "
+                                + MessageFormatter.green("managed") + "]"));
             } else {
                 sb.append(
                         String.format(ITEM_FORMAT, UP_TO_DATE_ICON.iconOrMessage(), dep.getArtifact().getKey().toGacString()));

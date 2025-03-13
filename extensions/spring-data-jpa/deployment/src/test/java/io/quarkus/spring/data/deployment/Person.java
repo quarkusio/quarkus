@@ -19,6 +19,7 @@ public class Person {
     private Integer age;
     private ZonedDateTime birthDate;
     private Boolean active;
+    private String order;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
@@ -29,11 +30,12 @@ public class Person {
     public Person() {
     }
 
-    public Person(String name, Integer age, ZonedDateTime birthDate, Boolean active) {
+    public Person(String name, Integer age, ZonedDateTime birthDate, Boolean active, String order) {
         this.name = name;
         this.age = age;
         this.birthDate = birthDate;
         this.active = active;
+        this.order = order;
     }
 
     public String getName() {
@@ -66,6 +68,14 @@ public class Person {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getOrder() {
+        return order;
+    }
+
+    public void setOrder(String order) {
+        this.order = order;
     }
 
     public Address getAddress() {

@@ -23,6 +23,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 @Disabled // Tracked by #27821
+// This is not fixed by https://github.com/quarkusio/quarkus/pull/34681, but removing the whole runExtensionMethod method or part of it in QuarkusTestExtension may help, in a follow-on PR
 public class TemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoTestBase {
 
     /*

@@ -1,0 +1,74 @@
+name: Quarkus CI - Populate cache for forks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  configure:
+    name: "Configure jobs"
+    runs-on: ubuntu-latest
+    if: ${{ github.repository != 'quarkusio/quarkus' }}
+    outputs:
+      m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
+      m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
+      quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
+      quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
+    steps:
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+
+  populate-cache:
+    name: "Populate cache"
+    needs: [ configure ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: quarkusio/cache-action@v4
+        with:
+          path: ~/.m2/repository
+          # A new cache will be stored weekly. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
+          # The whole cache is dropped monthly to prevent unlimited growth.
+          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+          runs-on: false
+      - name: Populate the cache
+        run: |
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline

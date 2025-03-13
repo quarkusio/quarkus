@@ -688,7 +688,7 @@ public class ResteasyReactiveJacksonProcessor {
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             return getMethodId(target.asMethod());
         } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-            return getMethodId(target.asMethodParameter().method());
+            return "request-body;" + getMethodId(target.asMethodParameter().method());
         }
 
         throw new UnsupportedOperationException(String.format("The `%s` annotation can only "

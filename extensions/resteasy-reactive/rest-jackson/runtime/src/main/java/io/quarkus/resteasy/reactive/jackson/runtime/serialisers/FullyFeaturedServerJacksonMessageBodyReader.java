@@ -179,16 +179,10 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
                     effectiveReader = readerFromAnnotation;
                 }
 
-                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
+                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder
+                        .jsonViewForMethod("request-body;" + resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
                     return effectiveReader.withView(jsonViewValue);
-                } else {
-                    jsonViewValue = ResteasyReactiveServerJacksonRecorder
-                            .jsonViewForClass(resourceInfo.getResourceClass());
-                    if (jsonViewValue != null) {
-                        return effectiveReader.withView(jsonViewValue);
-                    }
-
                 }
             }
         }

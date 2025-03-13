@@ -1459,7 +1459,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         assertThat(devModeClient.getHttpResponse("/app/hello/applicationName")).isEqualTo("myapp");
     }
 
-    @Disabled("See https://github.com/quarkusio/quarkus/issues/38987")
+    // Candidate to move as part of https://github.com/quarkusio/quarkus/issues/46667
     @Test
     public void testMockitoForNonPublicInnerClass() throws MavenInvocationException, IOException {
         // Scenario discussed in https://github.com/quarkusio/quarkus/issues/38987

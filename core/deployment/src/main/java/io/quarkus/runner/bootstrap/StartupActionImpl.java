@@ -186,7 +186,6 @@ public class StartupActionImpl implements StartupAction {
     }
 
     private void doClose() {
-        curatedApplication.tidy();
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException

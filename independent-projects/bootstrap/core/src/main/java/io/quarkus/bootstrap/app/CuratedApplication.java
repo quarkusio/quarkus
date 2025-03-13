@@ -61,9 +61,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     private volatile QuarkusClassLoader baseRuntimeClassLoader;
 
-    // TODO this probably isn't the right place to store this
-    private volatile QuarkusClassLoader runtimeClassLoader;
-
     private final QuarkusBootstrap quarkusBootstrap;
     private final CurationResult curationResult;
     private final ConfiguredClassLoading configuredClassLoading;
@@ -396,7 +393,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setCuratedApplication(this)
                 .setAggregateParentResources(true);
-
         builder.setTransformedClasses(transformedClasses);
 
         builder.addNormalPriorityElement(new MemoryClassPathElement(resources, true));
@@ -422,9 +418,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
-        QuarkusClassLoader loader = builder.build();
-        runtimeClassLoader = loader;
-        return loader;
+        return builder.build();
     }
 
     public boolean isReloadableArtifact(ArtifactKey key) {
@@ -446,11 +440,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
-    }
-
-    // TODO delete this? the model doesn't really work?
-    public void tidy() {
-        this.runtimeClassLoader = null;
     }
 
     /**

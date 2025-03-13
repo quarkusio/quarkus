@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.common.PathTestHelper.validateTestDir;
 import static io.quarkus.test.junit.AppMakerHelper.getGradleAppModelForIDE;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -141,6 +142,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             };
 
+            // TODO replace this with the getTestClassesDir methid in PathTestHelper
             final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
             // If gradle project running directly with IDE
             if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
@@ -168,21 +170,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                         break;
                     }
                 }
-                if (testClassesDir == null) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("Failed to locate ").append(requiredTestClass.getName()).append(" in ");
-                    for (String classifier : module.getSourceClassifiers()) {
-                        final ArtifactSources sources = module.getSources(classifier);
-                        if (sources.isOutputAvailable()) {
-                            for (SourceDir d : sources.getSourceDirs()) {
-                                if (Files.exists(d.getOutputDir())) {
-                                    sb.append(System.lineSeparator()).append(d.getOutputDir());
-                                }
-                            }
-                        }
-                    }
-                    throw new RuntimeException(sb.toString());
-                }
+                validateTestDir(requiredTestClass, testClassesDir, module);
                 testClassLocation = testClassesDir;
 
             } else {

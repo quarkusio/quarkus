@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.common.PathTestHelper.validateTestDir;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -87,7 +88,7 @@ public class AppMakerHelper {
         if (curatedApplication == null) {
             curatedApplication = makeCuratedApplication(requiredTestClass, displayName, isContinuousTesting, shutdownTasks);
         }
-        Path testClassLocation = getTestClassLocationIncludingPossibilityOfGradleModel(requiredTestClass);
+        Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
         // clear the test.url system property as the value leaks into the run when using different profiles
         System.clearProperty("test.url");
@@ -238,7 +239,6 @@ public class AppMakerHelper {
                 .setMode(QuarkusBootstrap.Mode.TEST)
                 .setTest(true)
                 .setAuxiliaryApplication(isContinuousTesting)
-                .setTestClassLocation(testClassLocation)
                 .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation))
                 .setProjectRoot(projectRoot)
                 .setApplicationRoot(rootBuilder.build())
@@ -262,60 +262,6 @@ public class AppMakerHelper {
         //                                                                           .clearLocalArtifacts();
 
         return curatedApplication;
-    }
-
-    private Path getTestClassLocationIncludingPossibilityOfGradleModel(Class<?> requiredTestClass)
-            throws IOException, AppModelResolverException, BootstrapException {
-
-        final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
-
-        final Path testClassLocation;
-
-        final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
-        // If gradle project running directly with IDE
-        if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
-            final WorkspaceModule module = gradleAppModel.getApplicationModule();
-            final String testClassFileName = ClassLoaderHelper
-                    .fromClassNameToResourceName(requiredTestClass.getName());
-            Path testClassesDir = null;
-            for (String classifier : module.getSourceClassifiers()) {
-                final ArtifactSources sources = module.getSources(classifier);
-                if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
-                    for (SourceDir src : sources.getSourceDirs()) {
-                        if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
-                            testClassesDir = src.getOutputDir();
-                        }
-                    }
-
-                    break;
-                }
-            }
-            validateTestDir(requiredTestClass, testClassesDir, module);
-            testClassLocation = testClassesDir;
-
-        } else {
-            testClassLocation = getTestClassesLocation(requiredTestClass);
-        }
-
-        return testClassLocation;
-    }
-
-    private static void validateTestDir(Class<?> requiredTestClass, Path testClassesDir, WorkspaceModule module) {
-        if (testClassesDir == null) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("Failed to locate ").append(requiredTestClass.getName()).append(" in ");
-            for (String classifier : module.getSourceClassifiers()) {
-                final ArtifactSources sources = module.getSources(classifier);
-                if (sources.isOutputAvailable()) {
-                    for (SourceDir d : sources.getSourceDirs()) {
-                        if (Files.exists(d.getOutputDir())) {
-                            sb.append(System.lineSeparator()).append(d.getOutputDir());
-                        }
-                    }
-                }
-            }
-            throw new RuntimeException(sb.toString());
-        }
     }
 
     // Note that curated application cannot be re-used between restarts, so this application

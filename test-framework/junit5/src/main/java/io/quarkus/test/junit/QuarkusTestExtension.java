@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 
 import java.io.Closeable;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -197,8 +199,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             // TODO this might be a good idea, but if so, we'd need to undo it
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
 
-            Path testClassLocation = startupAction.getClassLoader().getCuratedApplication().getQuarkusBootstrap()
-                    .getTestClassesLocation();
+            CuratedApplication curatedApplication = startupAction.getClassLoader()
+                    .getCuratedApplication();
+            Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
             // Do we need the augmentation classloader as the TCCL?
             //must be done after the TCCL has been set

@@ -15,7 +15,13 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
+import io.quarkus.paths.PathTree;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
@@ -150,10 +156,9 @@ public final class PathTestHelper {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
         } else if (resource.getProtocol().equals("quarkus")) {
-            // This is loaded with a quarkus classloader, so we can ask it directly
+            // This is loaded with a quarkus classloader, so we can (sort of) ask it directly
             QuarkusClassLoader qcl = (QuarkusClassLoader) testClass.getClassLoader();
-            return qcl.getCuratedApplication().getQuarkusBootstrap().getTestClassesLocation();
-
+            return getTestClassesLocation(testClass, qcl.getCuratedApplication());
         }
         Path path = toPath(resource);
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
@@ -171,14 +176,55 @@ public final class PathTestHelper {
         return path;
     }
 
-    /**
-     * Resolves the directory or the JAR file containing the application being tested by the test class.
-     *
-     * @param testClass the test class
-     * @return directory or JAR containing the application being tested by the test class
-     */
-    public static Path getAppClassLocation(Class<?> testClass) {
-        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass));
+    public static Path getTestClassesLocation(Class<?> requiredTestClass, CuratedApplication curatedApplication) {
+        final WorkspaceModule module = curatedApplication.getApplicationModel().getAppArtifact().getWorkspaceModule();
+
+        ArtifactSources testSources = module.getTestSources();
+        final String testClassFileName = ClassLoaderHelper
+                .fromClassNameToResourceName(requiredTestClass.getName());
+        if (testSources != null) {
+            PathTree paths = testSources.getOutputTree();
+            if (paths.contains(testClassFileName)) {
+                for (SourceDir src : testSources.getSourceDirs()) {
+                    if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
+                        return src.getOutputDir();
+                    }
+                }
+            }
+        }
+        // If there were no test sources, this may be a gradle application, with multiple source sets; we need to search them all
+        for (String classifier : module.getSourceClassifiers()) {
+            final ArtifactSources sources = module.getSources(classifier);
+            if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
+                for (SourceDir src : sources.getSourceDirs()) {
+                    if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
+                        return src.getOutputDir();
+                    }
+                }
+            }
+        }
+
+        validateTestDir(requiredTestClass, null, module);
+        // The validation will throw a runtime exception, so this return is never hit
+        return null;
+    }
+
+    public static void validateTestDir(Class<?> requiredTestClass, Path testClassesDir, WorkspaceModule module) {
+        if (testClassesDir == null) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Failed to locate ").append(requiredTestClass.getName()).append(" in ");
+            for (String classifier : module.getSourceClassifiers()) {
+                final ArtifactSources sources = module.getSources(classifier);
+                if (sources.isOutputAvailable()) {
+                    for (SourceDir d : sources.getSourceDirs()) {
+                        if (Files.exists(d.getOutputDir())) {
+                            sb.append(System.lineSeparator()).append(d.getOutputDir());
+                        }
+                    }
+                }
+            }
+            throw new RuntimeException(sb.toString());
+        }
     }
 
     /**
@@ -302,7 +348,6 @@ public final class PathTestHelper {
      *
      * @param projectRoot project dir
      * @param testClassLocation test dir
-     *
      * @return project build dir
      */
     public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {

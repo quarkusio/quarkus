@@ -120,7 +120,13 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));
             }
 
-            beanConsumer.accept(builder.build());
+            BeanInfo bean = builder.build();
+
+            for (Type type : this.types) {
+                Types.checkLegalBeanType(type, bean);
+            }
+
+            beanConsumer.accept(bean);
         }
     }
 

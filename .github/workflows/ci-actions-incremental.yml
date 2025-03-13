@@ -463,9 +463,9 @@ jobs:
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
-      - name: Analyze disk space
-        if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
-        run: .github/ci-disk-usage.sh
+      #- name: Analyze disk space
+      #  if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
+      #  run: .github/ci-disk-usage.sh
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -

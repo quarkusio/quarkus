@@ -17,7 +17,6 @@ import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.metamodel.model.domain.internal.EntityTypeImpl;
-import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
@@ -33,9 +32,10 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
-        JpaOperations.bindParameters(hibernateQuery, params);
-        return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
+        if (sort != null) {
+            findQuery += toOrderBy(sort);
+        }
+        return new CustomCountPanacheQuery(session, entityClass, findQuery, countQuery, params);
     }
 
     public static PanacheQuery<?> find(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
@@ -48,9 +48,10 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
-        JpaOperations.bindParameters(hibernateQuery, params);
-        return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
+        if (sort != null) {
+            findQuery += toOrderBy(sort);
+        }
+        return new CustomCountPanacheQuery(session, entityClass, findQuery, countQuery, params);
     }
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {

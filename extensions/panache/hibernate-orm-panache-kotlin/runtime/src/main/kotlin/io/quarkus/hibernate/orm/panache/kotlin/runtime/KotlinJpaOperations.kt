@@ -6,11 +6,20 @@ import org.hibernate.Session
 class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
         session: Session,
+        entityClass: Class<*>?,
         hqlQuery: String,
         originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?
-    ) = PanacheQueryImpl<Any>(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
+    ) =
+        PanacheQueryImpl<Any>(
+            session,
+            entityClass,
+            hqlQuery,
+            originalQuery,
+            orderBy,
+            paramsArrayOrMap
+        )
 
     override fun list(query: PanacheQueryImpl<*>) = query.list()
 

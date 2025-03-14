@@ -192,9 +192,11 @@ public final class PathTestHelper {
                 }
             }
         }
-        // If there were no test sources, this may be a gradle application, with multiple source sets; we need to search them all
+        // If there were no test sources, this may be an application with multiple source sets; we need to search them all
         for (String classifier : module.getSourceClassifiers()) {
+            System.out.println("HOLLY checking " + classifier);
             final ArtifactSources sources = module.getSources(classifier);
+            System.out.println("HOLLY sources " + sources);
             if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
                 for (SourceDir src : sources.getSourceDirs()) {
                     if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
@@ -204,9 +206,11 @@ public final class PathTestHelper {
             }
         }
 
-        validateTestDir(requiredTestClass, null, module);
-        // The validation will throw a runtime exception, so this return is never hit
-        return null;
+        // If we got to this point, fall back to the filesystem search
+        // This happens for maven source set scenarios
+        // TODO getSourceClassifiers() should return the source sets in the maven case, but currently does not - see BuildIT.testCustomTestSourceSets test
+        return getTestClassesLocation(requiredTestClass);
+
     }
 
     public static void validateTestDir(Class<?> requiredTestClass, Path testClassesDir, WorkspaceModule module) {

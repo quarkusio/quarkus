@@ -2,12 +2,13 @@ package io.quarkus.oidc.runtime;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
-import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
@@ -17,6 +18,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class DefaultTokenStateManager implements TokenStateManager {
+    private static final Logger LOG = Logger.getLogger(DefaultTokenStateManager.class);
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
@@ -125,13 +127,17 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
                 if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
                     accessToken = tokens[1];
-                    accessTokenExpiresIn = tokens[2].isEmpty() ? null : Long.valueOf(tokens[2]);
+                    accessTokenExpiresIn = tokens[2].isEmpty() ? null : parseAccessTokenExpiresIn(tokens[2]);
                     refreshToken = tokens[3];
                 } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
                     refreshToken = tokens[3];
                 }
             } catch (ArrayIndexOutOfBoundsException ex) {
-                return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
+                final String error = "Session cookie is malformed";
+                LOG.debug(ex);
+                return Uni.createFrom().failure(new AuthenticationFailedException(error));
+            } catch (AuthenticationFailedException ex) {
+                return Uni.createFrom().failure(ex);
             }
         } else {
             // Decrypt ID token from the q_session cookie
@@ -147,9 +153,15 @@ public class DefaultTokenStateManager implements TokenStateManager {
                     String[] accessTokenData = CodeAuthenticationMechanism.COOKIE_PATTERN.split(accessTokenState);
                     accessToken = accessTokenData[0];
                     try {
-                        accessTokenExpiresIn = accessTokenData[1].isEmpty() ? null : Long.valueOf(accessTokenData[1]);
+                        accessTokenExpiresIn = accessTokenData[1].isEmpty() ? null
+                                : parseAccessTokenExpiresIn(accessTokenData[1]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
-                        return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
+                        final String error = "Session cookie is malformed";
+                        LOG.debug(ex);
+                        // Make this error message visible in the dev mode
+                        return Uni.createFrom().failure(new AuthenticationFailedException(error));
+                    } catch (AuthenticationFailedException ex) {
+                        return Uni.createFrom().failure(ex);
                     }
                 }
                 Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
@@ -177,6 +189,19 @@ public class DefaultTokenStateManager implements TokenStateManager {
                     oidcConfig);
         }
         return CodeAuthenticationMechanism.VOID_UNI;
+    }
+
+    private static Long parseAccessTokenExpiresIn(String accessTokenExpiresInString) {
+        try {
+            return Long.valueOf(accessTokenExpiresInString);
+        } catch (NumberFormatException ex) {
+            final String error = """
+                    Access token expires_in property in the session cookie must be a number, found %s
+                    """.formatted(accessTokenExpiresInString);
+            LOG.debug(ex);
+            // Make this error message visible in the dev mode
+            throw new AuthenticationFailedException(error);
+        }
     }
 
     private static ServerCookie getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {

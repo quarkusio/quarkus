@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
 import org.hibernate.Session;
-import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 
@@ -9,9 +8,9 @@ import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
-    public CustomCountPanacheQuery(Session session, SelectionQuery hibernateQuery, String customCountQuery,
-            Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(session, CommonPanacheQueryImpl.getQueryString(hibernateQuery),
+    public CustomCountPanacheQuery(Session session, Class<?> entityClass, String query,
+            String customCountQuery, Object paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(session, entityClass, query,
                 null, null, paramsArrayOrMap) {
             {
                 this.customCountQueryForSpring = customCountQuery;

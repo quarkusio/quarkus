@@ -7,6 +7,7 @@ import java.lang.reflect.Parameter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -67,20 +68,24 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Object> hints;
 
     private Map<String, Map<String, Object>> filters;
-    private Class<?> projectionType;
+    private Class<?> expectedResultType;
 
-    public CommonPanacheQueryImpl(Session session, String query, String originalQuery, String orderBy,
-            Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(Session session, Class<?> entityClass,
+            String query, String originalQuery, String orderBy, Object paramsArrayOrMap) {
         this.session = session;
         this.query = query;
         this.originalQuery = originalQuery;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
+        // Backward compatibility after
+        if (query.toLowerCase(Locale.ROOT).startsWith("from")) {
+            this.expectedResultType = entityClass;
+        }
     }
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString,
             String customCountQueryForSpring,
-            Class<?> projectionType) {
+            Class<?> expectedResultType) {
         this.session = previousQuery.session;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
@@ -92,7 +97,7 @@ public class CommonPanacheQueryImpl<Entity> {
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
-        this.projectionType = projectionType;
+        this.expectedResultType = expectedResultType;
     }
 
     // Builder
@@ -379,10 +384,10 @@ public class CommonPanacheQueryImpl<Entity> {
         SelectionQuery hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            hibernateQuery = session.createNamedSelectionQuery(namedQuery, projectionType);
+            hibernateQuery = session.createNamedSelectionQuery(namedQuery, expectedResultType);
         } else {
             try {
-                hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
+                hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query, expectedResultType);
             } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }

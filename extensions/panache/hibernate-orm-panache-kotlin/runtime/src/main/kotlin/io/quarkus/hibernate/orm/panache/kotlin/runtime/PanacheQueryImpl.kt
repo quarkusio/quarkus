@@ -13,13 +13,21 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
 
     internal constructor(
         session: Session?,
+        entityClass: Class<*>?,
         hqlQuery: String?,
         originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?
     ) {
         delegate =
-            CommonPanacheQueryImpl(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
+            CommonPanacheQueryImpl(
+                session,
+                entityClass,
+                hqlQuery,
+                originalQuery,
+                orderBy,
+                paramsArrayOrMap
+            )
     }
 
     private constructor(delegate: CommonPanacheQueryImpl<Entity>) {

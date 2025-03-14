@@ -35,7 +35,7 @@ public class MethodNameParserTest {
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(1);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person LEFT JOIN person.address address WHERE address.zipCode = ?1");
+                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.zipCode = ?1");
     }
 
     @Test
@@ -46,7 +46,7 @@ public class MethodNameParserTest {
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person WHERE name = ?1 AND order = ?2");
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND order = ?2");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class MethodNameParserTest {
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person WHERE name = ?1 OR order = ?2");
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR order = ?2");
     }
 
     @Test
@@ -66,7 +66,7 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person AS person WHERE addressCountry = ?1");
+        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE addressCountry = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -76,7 +76,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person AS person WHERE name = ?1 OR age = ?2 OR active = ?3");
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR age = ?2 OR active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -86,7 +87,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person AS person WHERE name = ?1 AND age = ?2 OR active = ?3");
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 OR active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -96,7 +98,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person AS person WHERE name = ?1 AND age = ?2 AND active = ?3");
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 AND active = ?3");
         assertThat(result.getParamCount()).isEqualTo(3);
     }
 
@@ -107,7 +110,7 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person LEFT JOIN person.address address WHERE address.country = ?1");
+                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -125,7 +128,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
+                .isEqualTo(
+                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -136,7 +140,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getQuery())
-                .isEqualTo("FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
+                .isEqualTo(
+                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -165,7 +170,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), ParentBase.class);
         assertThat(result.getQuery())
-                .isEqualTo("FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
+                .isEqualTo(
+                        "FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 

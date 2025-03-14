@@ -235,10 +235,24 @@ In this example, we are using a single instance running on localhost:
 quarkus.mongodb.connection-string = mongodb://localhost:27017
 ----
 
-If you need more configuration properties, there is a full list at the end of this guide.
+=== Resolving mongo+srv:// URLs
 
-WARNING: By default, Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to Log4Shell.
-Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI, this protection is automatically disabled when using the MongoDB client extension.
+When using `mongo+srv://` URLs, the MongoDB driver resolves DNS SRV records to retrieve the list of hosts to connect to.
+By default, it relies on a DNS client implemented using JNDI.
+
+For security reasons, Quarkus restricts JNDI usage within applications to help mitigate potential vulnerabilities like Log4Shell.
+To support `mongo+srv://`, Quarkus provides an alternative DNS client.
+
+However, in some environments, this alternative DNS client may be unable to resolve `SRV` records.
+If you encounter such issues, you can revert to the MongoDB driver’s default DNS client by setting the following properties:
+
+[source, properties]
+----
+quarkus.naming.enable-jndi=true
+quarkus.class-loading.removed-resources."io.quarkus\:quarkus-mongodb-client"=META-INF/services/com.mongodb.spi.dns.DnsClientProvider
+----
+
+This restores the default JNDI-based resolution mechanism used by the MongoDB driver.
 
 [[dev-services]]
 === Use the MongoDB Dev Services
@@ -776,6 +790,7 @@ public class MyCustomizer implements MongoClientCustomizer {
 ----
 
 IMPORTANT: Client-side field level encryption, and feature relying on https://github.com/mongodb/libmongocrypt[Mongo Crypt] in general, are not supported in native mode.
+
 
 == Configuration Reference
 

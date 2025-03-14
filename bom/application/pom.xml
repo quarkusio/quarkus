@@ -94,7 +94,7 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
-             hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
+             hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.2.1.Final</narayana.version>
         <narayana-lra.version>0.0.9.Final</narayana-lra.version>
         <agroal.version>2.5</agroal.version>
@@ -5411,11 +5411,6 @@
                 <groupId>org.hibernate.models</groupId>
                 <artifactId>hibernate-models</artifactId>
                 <version>${hibernate-models.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.common</groupId>
-                <artifactId>hibernate-commons-annotations</artifactId>
-                <version>${hibernate-commons-annotations.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>

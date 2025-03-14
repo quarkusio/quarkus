@@ -31,6 +31,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -166,6 +168,8 @@ public final class BuildTimeConfigurationReader {
         runTimeMappings = new ArrayList<>();
 
         Map<Class<?>, GroupDefinition> groups = new HashMap<>();
+        Set<String> legacyConfigRoots = new TreeSet<>();
+
         for (Class<?> configRoot : configRoots) {
             boolean isMapping = configRoot.isAnnotationPresent(ConfigMapping.class);
             if (isMapping) {
@@ -222,9 +226,15 @@ public final class BuildTimeConfigurationReader {
             }
 
             if (configRoot.getAnnotation(Deprecated.class) == null) {
-                log.warn(configRoot.getName()
-                        + " is considered legacy and should be moved to use an interface and @ConfigMapping");
+                legacyConfigRoots.add(configRoot.getName());
             }
+        }
+
+        if (!legacyConfigRoots.isEmpty()) {
+            log.warn(
+                    "The following config roots are using the legacy configuration classes infrastructure and should be adjusted to use an interface and @ConfigMapping.\n"
+                            + "See https://quarkus.io/guides/writing-extensions#configuration for more information. Please report this issue to their respective owners.\n\n"
+                            + legacyConfigRoots.stream().collect(Collectors.joining("\n- ", "- ", "")));
         }
 
         // ConfigRoots

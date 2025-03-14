@@ -1,6 +1,6 @@
 = Phasing out legacy config classes
 
-* Status: proposed
+* Status: accepted
 * Date: 2025-02-06
 * Authors: @gsmet @radcortez @cescoffier
 
@@ -64,9 +64,9 @@ It should concern very few extensions. Also, we need to stop this harmful practi
 The Quarkus extension ecosystem is broad and diverse: some extensions are very well maintained and following the progress of Quarkus, some are lagging and adjusted when time permits.
 
 If we phase out the legacy approach, we need the extension ecosystem ready.
-Indeed, each extension that still uses @ConfigRoot config classes must be updated and released, as the legacy mechanism will be sunsetted.
+Indeed, each extension that still uses `@ConfigRoot` config classes must be updated and released, as the legacy mechanism will be sunsetted.
 
-For Quarkiverse extensions, the Quarkus community can be proactive as we can push changes there if needed.
+For Quarkiverse extensions, the work has been done (in some cases, pending a release). The Quarkus community can be proactive as we can push changes there if needed.
 Things become a bit more complex for extensions hosted outside of the Quarkiverse, for which we will need the maintainers to do the work. We plan to contact the known maintainers and add notes in the release notes and migration guides.
 
 It is important to note that users might get confronted to extensions not having been migrated yet, and in this case, their only options are to either get the extension migrated or to drop the extension from their application.
@@ -91,7 +91,7 @@ Here is the approach we recommend:
   - Prepare a guide on how to do it. Make sure we add useful pointers with example pull requests.
   - Make sure we provide points of contact in the community for people having difficulties (or who just don't have the time to do it and want someone else to handle it)
   - Make sure we identify difficulties with potential solutions
-  - Announce specific versions and dates for the tentative phase out so that people can schedule their work
+  - Announce specific versions and dates for the tentative sunset so that people can schedule their work
   - Add a warning in applications using extensions leveraging legacy configuration classes
 - **Step 3** - In version X.Y (with at least two months between previous communication and release), throw an error in the extension annotation processor when legacy `@ConfigRoot` classes are detected
   - It will allow us to detect the overall status in Ecosystem CI (at least for public extensions)
@@ -102,9 +102,9 @@ Here is the approach we recommend:
 
 == Proposed schedule
 
-Given we were able to get everything ready for 3.19 and 3.20 LTS, here is the schedule we would suggest:
+Given we were able to get everything ready for 3.19 and 3.20 LTS, here is the schedule we agreed on:
 
-- Step 1 - For the 3.19 release on February 26th
-- Step 2 - For the 3.19 release - and we should amplify the message when 3.20 LTS gets out
-- Step 3 - For the 3.22 release on April 30th
-- Step 4 - For the 3.24 release on June 25th
+- Step 1 - For the 3.20 release on March 26th
+- Step 2 - For the 3.20 release
+- Step 3 - For the 3.23 release on May 28th
+- Step 4 - For the 3.25 release on July 30th

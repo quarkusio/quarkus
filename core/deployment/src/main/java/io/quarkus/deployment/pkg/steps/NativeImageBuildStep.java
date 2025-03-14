@@ -861,11 +861,12 @@ public class NativeImageBuildStep {
                  * Foreign Function and Memory API in Native Image, JDK's JEP 454
                  * This is needed for JDK 24+ internal native calls due to AWT,
                  * e.g. JDK-8337237 et al.
-                 * Note GraalVM FFI/FFM support per platform:
+                 * Note GraalVM FFI/FFM support per platform prior to JDK 25 and JDK 25+
                  * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
                  * @formatter:on
                  */
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0 && AMD64.active) {
+                if ((graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0) >= 0 && AMD64.active) ||
+                        graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }
 

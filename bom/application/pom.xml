@@ -95,7 +95,7 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
-             hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
+             hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.0.Final</narayana-lra.version>
         <agroal.version>2.7.1</agroal.version>
@@ -5509,11 +5509,6 @@
                 <version>${hibernate-models.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.common</groupId>
-                <artifactId>hibernate-commons-annotations</artifactId>
-                <version>${hibernate-commons-annotations.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-community-dialects</artifactId>
                 <version>${hibernate-orm.version}</version>
@@ -5548,6 +5543,10 @@
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -5571,6 +5570,10 @@
                     <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

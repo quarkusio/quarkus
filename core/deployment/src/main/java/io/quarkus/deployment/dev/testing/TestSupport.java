@@ -213,6 +213,8 @@ public class TestSupport implements TestController {
                         final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
                         bootstrapConfig.setExistingModel(testModel);
 
+                        // TODO I don't think we should have both this and AppMakerHelper, doing apparently the same thing?
+
                         QuarkusClassLoader.Builder clBuilder = null;
                         var currentParentFirst = curatedApplication.getApplicationModel().getParentFirst();
                         for (ResolvedDependency d : testModel.getDependencies()) {
@@ -246,6 +248,7 @@ public class TestSupport implements TestController {
                             bootstrapConfig.addParentFirstArtifact(i.getKey());
                         }
                     }
+                    // TODO often by this point we will have a curated application from the facade classloader,, just use that
                     var testCuratedApplication = bootstrapConfig.build().bootstrap();
                     if (mainModule) {
                         //horrible hack

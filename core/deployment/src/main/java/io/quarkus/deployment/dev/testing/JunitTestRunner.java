@@ -2,8 +2,11 @@ package io.quarkus.deployment.dev.testing;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -74,6 +76,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.logging.Log;
 import io.quarkus.util.GlobUtil;
 
 /**
@@ -114,6 +117,7 @@ public class JunitTestRunner {
 
     private volatile boolean testsRunning = false;
     private volatile boolean aborted;
+    private QuarkusClassLoader deploymentClassLoader;
 
     public JunitTestRunner(Builder builder) {
         this.runId = builder.runId;
@@ -140,12 +144,12 @@ public class JunitTestRunner {
             long start = System.currentTimeMillis();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader();
+            deploymentClassLoader = tcl;
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
-                    TestSupport.instance().get()::isDisplayTestOutput);
+                    TestSupport.instance()
+                            .get()::isDisplayTestOutput);
+            // TODO do we want to do this setting of the TCCL? I think it just makes problems?
             Thread.currentThread().setContextClassLoader(tcl);
-            Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
-                    .getDeclaredConstructor().newInstance();
-            currentTestAppConsumer.accept(testApplication);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
             Set<UniqueId> dynamicIds = new HashSet<>();
@@ -407,7 +411,6 @@ public class JunitTestRunner {
                         }
                     } finally {
                         try {
-                            currentTestAppConsumer.accept(null);
                             TracingHandler.setTracingHandler(null);
                             QuarkusConsole.removeOutputFilter(logHandler);
                             Thread.currentThread().setContextClassLoader(old);
@@ -587,7 +590,10 @@ public class JunitTestRunner {
         Set<String> quarkusTestClasses = new HashSet<>();
         for (var a : Arrays.asList(QUARKUS_TEST, QUARKUS_MAIN_TEST)) {
             for (AnnotationInstance i : index.getAnnotations(a)) {
-                DotName name = i.target().asClass().name();
+
+                DotName name = i.target()
+                        .asClass()
+                        .name();
                 quarkusTestClasses.add(name.toString());
                 for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
                     if (!integrationTestClasses.contains(clazz.name().toString())) {
@@ -595,6 +601,37 @@ public class JunitTestRunner {
                     }
                 }
             }
+        }
+
+        // The FacadeClassLoader approach of loading test classes with the classloader we will use to run them can only work for `@QuarkusTest` and not main or integration tests
+        // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
+
+        Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
+        for (var a : Arrays.asList(QUARKUS_TEST)) {
+            for (AnnotationInstance i : index.getAnnotations(a)) {
+                DotName name = i.target()
+                        .asClass()
+                        .name();
+                quarkusTestClassesForFacadeClassLoader.add(name.toString());
+                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                    if (!integrationTestClasses.contains(clazz.name()
+                            .toString())) {
+                        quarkusTestClassesForFacadeClassLoader.add(clazz.name()
+                                .toString());
+                    }
+                }
+            }
+        }
+
+        Map<String, String> profiles = new HashMap<>();
+
+        for (AnnotationInstance i : index.getAnnotations(TEST_PROFILE)) {
+
+            DotName name = i.target()
+                    .asClass()
+                    .name();
+            // We could do the value as a class, but it wouldn't be in the right classloader
+            profiles.put(name.toString(), i.value().asString());
         }
 
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
@@ -651,13 +688,50 @@ public class JunitTestRunner {
 
         List<Class<?>> itClasses = new ArrayList<>();
         List<Class<?>> utClasses = new ArrayList<>();
+
+        ClassLoader classLoaderForLoadingTests;
+        try {
+            Class fclClazz = Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass("io.quarkus.test.junit.classloading.FacadeClassLoader");
+            Method clearSingleton = fclClazz.getMethod("clearSingleton");
+            Method instance = fclClazz.getMethod("instance", ClassLoader.class, boolean.class, Map.class, Set.class,
+                    String.class);
+
+            clearSingleton.invoke(null);
+
+            // Passing in the test classes is necessary because in dev mode getAnnotations() on the class returns an empty array, for some reason (plus it saves rediscovery effort)
+            String classPath = moduleInfo.getMain()
+                    .getClassesPath() + File.pathSeparator + moduleInfo.getTest().get().getClassesPath();
+            classLoaderForLoadingTests = (ClassLoader) instance.invoke(null, Thread.currentThread()
+                    .getContextClassLoader(), true, profiles, quarkusTestClassesForFacadeClassLoader, classPath);
+
+            Thread.currentThread()
+                    .setContextClassLoader(classLoaderForLoadingTests);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
+            // In that case, fallback to loading classes as we normally would, using a TCCL
+            Log.debug(
+                    "Could not load class for FacadeClassLoader. This might be because quarkus-junit5 is not on the project classpath: "
+                            + e);
+
+            classLoaderForLoadingTests = Thread.currentThread()
+                    .getContextClassLoader();
+        }
+
         for (String i : quarkusTestClasses) {
             try {
-                itClasses.add(Thread.currentThread().getContextClassLoader().loadClass(i));
-            } catch (ClassNotFoundException e) {
+                // We could load these classes directly, since we know the profile and we have a handy interception point;
+                // but we need to signal to the downstream interceptor that it shouldn't interfere with the classloading
+                // While we're doing that, we may as well share the classloading logic
+                itClasses.add(classLoaderForLoadingTests.loadClass(i));
+            } catch (Exception e) {
+                Log.debug(e);
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);
+            } finally {
+                // TODO should we do this?  Thread.currentThread().setContextClassLoader(old);
             }
         }
         itClasses.sort(Comparator.comparing(new Function<Class<?>, String>() {
@@ -676,8 +750,9 @@ public class JunitTestRunner {
             //we need to work the unit test magic
             //this is a lot more complex
             //we need to transform the classes to make the tracing magic work
-            QuarkusClassLoader deploymentClassLoader = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+
             Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getReloadableClassNames());
+            // this won't be the right classloader for some profiles, but that is ok because it's only for vanilla tests
             Map<String, byte[]> transformedClasses = new HashMap<>();
             for (String i : classesToTransform) {
                 try {
@@ -694,6 +769,7 @@ public class JunitTestRunner {
                 }
             }
             cl = testApplication.createDeploymentClassLoader();
+            deploymentClassLoader = cl;
             cl.reset(Collections.emptyMap(), transformedClasses);
             for (String i : unitTestClasses) {
                 try {
@@ -806,6 +882,7 @@ public class JunitTestRunner {
             return this;
         }
 
+        // TODO we now ignore what gets set here and make our own, how to handle that?
         public Builder setTestApplication(CuratedApplication testApplication) {
             this.testApplication = testApplication;
             return this;

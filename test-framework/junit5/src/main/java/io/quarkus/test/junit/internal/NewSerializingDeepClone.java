@@ -20,7 +20,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
  */
 public final class NewSerializingDeepClone implements DeepClone {
     private final ObjectCloner cloner;
-    private static Pattern clonePattern;
+    private static final Pattern clonePattern = Pattern.compile("java\\..*");
     private RunningQuarkusApplication runningQuarkusApplication;
 
     public NewSerializingDeepClone(final ClassLoader sourceLoader, final ClassLoader targetLoader) {
@@ -140,9 +140,6 @@ public final class NewSerializingDeepClone implements DeepClone {
     @Override
     public void setRunningQuarkusApplication(RunningQuarkusApplication runningQuarkusApplication) {
         this.runningQuarkusApplication = runningQuarkusApplication;
-        String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
-                .orElse("java\\..*");
-        clonePattern = Pattern.compile(patternString);
     }
 
 }

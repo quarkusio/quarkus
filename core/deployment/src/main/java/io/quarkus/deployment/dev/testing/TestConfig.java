@@ -222,17 +222,6 @@ public interface TestConfig {
     TestType type();
 
     /**
-     * If a class matches this pattern then it will be cloned into the Quarkus ClassLoader even if it
-     * is in a parent first artifact.
-     * <p>
-     * This is important for collections which can contain objects from the Quarkus ClassLoader, but for
-     * most parent first classes it will just cause problems.
-     */
-    @WithDefault("java\\..*")
-    @Deprecated(forRemoval = true)
-    String classClonePattern();
-
-    /**
      * If this is true then only the tests from the main application module will be run (i.e. the module that is currently
      * running mvn quarkus:dev).
      * <p>

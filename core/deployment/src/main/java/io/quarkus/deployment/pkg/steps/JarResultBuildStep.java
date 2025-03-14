@@ -69,11 +69,11 @@ import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
@@ -198,10 +198,12 @@ public class JarResultBuildStep {
             List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            Optional<JvmStartupOptimizerArchiveRequestedBuildItem> jvmStartupOptimizerArchiveRequested)
+            throws Exception {
 
-        if (appCDS.isPresent()) {
-            handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
+        if (jvmStartupOptimizerArchiveRequested.isPresent()) {
+            handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, jvmStartupOptimizerArchiveRequested.get());
         }
 
         return switch (packageConfig.jar().type()) {
@@ -224,9 +226,11 @@ public class JarResultBuildStep {
     // the idea here is to just dump the class names of the generated and transformed classes into a file
     // that is read at runtime when AppCDS generation is requested
     private void handleAppCDSSupportFileGeneration(TransformedClassesBuildItem transformedClasses,
-            List<GeneratedClassBuildItem> generatedClasses, AppCDSRequestedBuildItem appCDS) throws IOException {
-        Path appCDsDir = appCDS.getAppCDSDir();
-        Path generatedClassesFile = appCDsDir.resolve("generatedAndTransformed.lst");
+            List<GeneratedClassBuildItem> generatedClasses,
+            JvmStartupOptimizerArchiveRequestedBuildItem jvmStartupOptimizerArchiveRequested)
+            throws IOException {
+        Path dir = jvmStartupOptimizerArchiveRequested.getDir();
+        Path generatedClassesFile = dir.resolve("generatedAndTransformed.lst");
         try (BufferedWriter writer = Files.newBufferedWriter(generatedClassesFile, StandardOpenOption.CREATE)) {
             StringBuilder classes = new StringBuilder();
             for (GeneratedClassBuildItem generatedClass : generatedClasses) {

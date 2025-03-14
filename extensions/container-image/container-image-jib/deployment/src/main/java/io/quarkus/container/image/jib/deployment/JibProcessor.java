@@ -70,12 +70,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
@@ -121,15 +121,17 @@ public class JibProcessor {
     // we want the AppCDS generation process to use the same JVM as the base image
     // in order to make the AppCDS usable by the runtime JVM
     @BuildStep(onlyIf = JibBuild.class)
-    public void appCDS(ContainerImageConfig containerImageConfig, CompiledJavaVersionBuildItem compiledJavaVersion,
+    public void jvmStartupOptimizerArchive(ContainerImageConfig containerImageConfig,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             ContainerImageJibConfig jibConfig,
-            BuildProducer<AppCDSContainerImageBuildItem> producer) {
+            BuildProducer<JvmStartupOptimizerArchiveContainerImageBuildItem> producer) {
 
         if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
             return;
         }
 
-        producer.produce(new AppCDSContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
+        producer.produce(
+                new JvmStartupOptimizerArchiveContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
     }
 
     private String determineBaseJvmImage(ContainerImageJibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
@@ -153,7 +155,7 @@ public class JibProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            Optional<AppCDSResultBuildItem> appCDSResult,
+            Optional<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchiveResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
@@ -174,7 +176,7 @@ public class JibProcessor {
                 createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                         jibConfig, containerImageConfig, sourceJar, curateOutcome,
                         containerImageLabels,
-                        appCDSResult, jarType == MUTABLE_JAR);
+                        jvmStartupOptimizerArchiveResult, jarType == MUTABLE_JAR);
         };
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
@@ -415,7 +417,7 @@ public class JibProcessor {
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
-            Optional<AppCDSResultBuildItem> appCDSResult,
+            Optional<JvmStartupOptimizerArchiveResultBuildItem> maybeJvmStartupOptimizerArchiveResult,
             boolean isMutableJar) {
         Path componentsPath = sourceJarBuildItem.getPath().getParent();
         Path appLibDir = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN);
@@ -426,16 +428,18 @@ public class JibProcessor {
         List<String> entrypoint;
         if (jibConfig.jvmEntrypoint().isPresent()) {
             entrypoint = Collections.unmodifiableList(jibConfig.jvmEntrypoint().get());
-        } else if (containsRunJava(baseJvmImage) && appCDSResult.isEmpty()) {
+        } else if (containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
             // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used because it would lead to using different JVM args
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
             envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
             envVars.put("JAVA_OPTS_APPEND",
-                    String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar)));
+                    String.join(" ",
+                            determineEffectiveJvmArguments(jibConfig, maybeJvmStartupOptimizerArchiveResult, isMutableJar)));
         } else {
-            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar);
+            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig,
+                    maybeJvmStartupOptimizerArchiveResult, isMutableJar);
             List<String> argsList = new ArrayList<>(3 + effectiveJvmArguments.size());
             argsList.add("java");
             argsList.addAll(effectiveJvmArguments);
@@ -526,7 +530,7 @@ public class JibProcessor {
                                     .resolve(JarResultBuildStep.BOOT_LIB)
                                     .resolve(lib.getFileName());
                             Instant bootLibModificationTime;
-                            if (appCDSResult.isPresent()) {
+                            if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
                                 // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
                                 bootLibModificationTime = Files.getLastModifiedTime(lib).toInstant();
                             } else {
@@ -556,14 +560,15 @@ public class JibProcessor {
                         isMutableJar, enforceModificationTime, modificationTime);
             }
 
-            if (appCDSResult.isPresent()) {
+            if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
                 jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("app-cds").addEntry(
                         componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                         workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                         Files.getLastModifiedTime(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).toInstant())
                         .build());
                 jibContainerBuilder
-                        .addLayer(Collections.singletonList(appCDSResult.get().getAppCDS()), workDirInContainer);
+                        .addLayer(Collections.singletonList(maybeJvmStartupOptimizerArchiveResult.get().getArchive()),
+                                workDirInContainer);
             } else {
                 jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
                         .setName("fast-jar-run")
@@ -680,12 +685,12 @@ public class JibProcessor {
     }
 
     private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
-            Optional<AppCDSResultBuildItem> maybeAppCDSResult,
+            Optional<JvmStartupOptimizerArchiveResultBuildItem> maybeJvmStartupOptimizerArchiveResult,
             boolean isMutableJar) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments());
         jibConfig.jvmAdditionalArguments().ifPresent(effectiveJvmArguments::addAll);
-        if (maybeAppCDSResult.isPresent()) {
-            AppCDSResultBuildItem appCDSResult = maybeAppCDSResult.get();
+        if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
+            JvmStartupOptimizerArchiveResultBuildItem appCDSResult = maybeJvmStartupOptimizerArchiveResult.get();
             boolean containsAppCDSOptions = false;
             for (String effectiveJvmArgument : effectiveJvmArguments) {
                 if (effectiveJvmArgument.startsWith(appCDSResult.getType().getJvmFlag())) {
@@ -695,7 +700,7 @@ public class JibProcessor {
             }
             if (!containsAppCDSOptions) {
                 effectiveJvmArguments
-                        .add(appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getAppCDS().getFileName().toString());
+                        .add(appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
             }
         }
         if (isMutableJar) {

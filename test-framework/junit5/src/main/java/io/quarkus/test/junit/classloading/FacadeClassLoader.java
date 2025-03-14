@@ -63,10 +63,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     public static final String VALUE = "value";
     public static final String KEY_PREFIX = "QuarkusTest-";
     public static final String DISPLAY_NAME_PREFIX = "JUnit";
-    // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
 
+    private CuratedApplication curatedApplication = null;
     // JUnit discovery is single threaded, so no need for concurrency on this map
-    private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
 
@@ -538,16 +537,15 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private CuratedApplication getOrCreateCuratedApplication(String key, Class<?> requiredTestClass)
             throws IOException, AppModelResolverException, BootstrapException {
-        CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
             Collection<Runnable> shutdownTasks = new HashSet<>();
 
             String displayName = DISPLAY_NAME_PREFIX + key;
+            // TODO it can't make sense to pass in the test class, TestSupport doesn't have to
             curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
                     isAuxiliaryApplication,
                     shutdownTasks);
-            curatedApplications.put(key, curatedApplication);
 
         }
 
@@ -606,7 +604,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // ... but don't use the method, or we get a stackoverflow
         FacadeClassLoader.instance = null;
 
-        for (CuratedApplication curatedApplication : curatedApplications.values()) {
+        if (curatedApplication != null) {
             curatedApplication.close();
         }
         try {

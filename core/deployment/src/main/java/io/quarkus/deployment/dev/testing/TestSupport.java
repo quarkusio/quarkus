@@ -248,6 +248,7 @@ public class TestSupport implements TestController {
                             bootstrapConfig.addParentFirstArtifact(i.getKey());
                         }
                     }
+                    // TODO often by this point we will have a curated application from the facade classloader,, just use that
                     var testCuratedApplication = bootstrapConfig.build().bootstrap();
                     if (mainModule) {
                         //horrible hack

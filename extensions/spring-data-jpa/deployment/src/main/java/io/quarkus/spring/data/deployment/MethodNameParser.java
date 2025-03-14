@@ -87,6 +87,8 @@ public class MethodNameParser {
         String repositoryMethodDescription = "'" + methodName + "' of repository '" + repositoryClassInfo + "'";
         QueryType queryType = getType(methodName);
         String entityAlias = getEntityName().toLowerCase();
+        // The SELECT clause is necessary after https://hibernate.atlassian.net/browse/HHH-18584
+        String selectClause = queryType == QueryType.SELECT ? "SELECT " + entityAlias + " " : "";
         String fromClause = "FROM " + getEntityName() + " AS " + entityAlias;
         String joinClause = "";
         if (queryType == null) {
@@ -362,8 +364,7 @@ public class MethodNameParser {
         }
 
         String whereQuery = where.toString().isEmpty() ? "" : " WHERE " + where.toString();
-        fromClause += joinClause;
-        return new Result(entityClass, fromClause + whereQuery, queryType, paramsCount, sort,
+        return new Result(entityClass, selectClause + fromClause + joinClause + whereQuery, queryType, paramsCount, sort,
                 topCount);
     }
 

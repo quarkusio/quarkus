@@ -64,7 +64,6 @@ public class AppMakerHelper {
 
         public PrepareResult(AugmentAction augmentAction, QuarkusTestProfile profileInstance,
                 CuratedApplication curatedApplication, Path testClassLocation) {
-            System.out.println("PrepareResult" + augmentAction + ": " + profileInstance + " test class " + testClassLocation);
 
             this.augmentAction = augmentAction;
             this.profileInstance = profileInstance;

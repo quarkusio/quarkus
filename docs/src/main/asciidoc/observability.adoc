@@ -22,7 +22,7 @@ Telemetry contains data about the internal state of the system and can be split 
 * *Logging*, classical local or distributed logs
 * *Metrics*, metrics calculated in each Quarkus application instance
 * *Tracing*, distributed tracing across applications
-* *Profiling*, to analize and monitor the application's performance, resource usage, and runtime behavior
+* *Profiling*, to analyze and monitor the application's performance, resource usage, and runtime behavior
 * *Events*, the most generic signal. It's a representation of something significant happening during the execution of a program.
 
 == Guidelines

@@ -94,6 +94,9 @@
             <testResource>
                 <directory>src/test/resources-filtered</directory>
                 <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/target/**</exclude>
+                </excludes>
             </testResource>
         </testResources>
         <plugins>

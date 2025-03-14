@@ -213,7 +213,9 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(), followRedirects,
+        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(),
+                options.getMaxChunkSize(),
+                followRedirects,
                 loggingScope,
                 clientContext.getMultipartResponsesData(), clientLogger);
     }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,10 +25,14 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -260,6 +265,34 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public List<String> getAllQueryParams(String name) {
         return context.queryParam(name);
+    }
+
+    /**
+     * Retrieves the parameters from the current HTTP request as a
+     * {@link Map<String, List<String>>}, where the keys are parameter names
+     * and the values are lists of parameter values. This allows parameters
+     * to be extracted from the URL without knowing their names in advance.
+     *
+     * The method is used by {@link ParameterExtractor}, which works with characteristics
+     * such as parameter name, single/multiple values, and encoding. Since it's
+     * not always possible to distinguish between {@link Map} and {@link MultivaluedMap},
+     * the method returns a unified {@link Map<String, List<String>>} for handling
+     * both cases downstream by {@link ParameterHandler}.
+     *
+     * @return a {@link Map<String, List<String>>} containing the parameters and
+     *         their corresponding values.
+     */
+    @Override
+    public Map<String, List<String>> getQueryParamsMap() {
+        MultiMap entries = context.request().params();
+        final MultivaluedHashMap<String, String> result = new MultivaluedHashMap<>();
+        if (!entries.isEmpty()) {
+            for (Map.Entry<String, String> entry : entries) {
+                result.add(entry.getKey(), entry.getValue());
+            }
+
+        }
+        return new HashMap<>(result);
     }
 
     @Override

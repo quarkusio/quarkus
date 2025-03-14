@@ -177,8 +177,14 @@ public class MethodNameParser {
         boolean containsOr = containsLogicOperator(afterByPart, "Or");
         String[] partsArray = parts.toArray(new String[0]);
         //Spring supports mixing clauses 'And' and 'Or' together in method names
-        if (containsAnd || containsOr) {
+        if (containsAnd && containsOr) {
             List<String> words = splitAndIncludeRegex(afterByPart, "And", "Or");
+            partsArray = words.toArray(new String[0]);
+        } else if (containsAnd) {
+            List<String> words = splitAndIncludeRegex(afterByPart, "And");
+            partsArray = words.toArray(new String[0]);
+        } else if (containsOr) {
+            List<String> words = splitAndIncludeRegex(afterByPart, "Or");
             partsArray = words.toArray(new String[0]);
         }
 
@@ -393,7 +399,9 @@ public class MethodNameParser {
             if (patternBuilder.length() > 0) {
                 patternBuilder.append("|");
             }
-            patternBuilder.append("(").append(regex).append(")");
+            // Add a limit word, \b, but adapted to camelCase (start or after a lowercase letter, end or followed by an uppercase letter)
+            patternBuilder.append("(?<=[a-z])(").append(regex).append(")(?=[A-Z]|$)");
+            patternBuilder.append("|(?<=^|[A-Z])(").append(regex).append(")(?=[A-Z]|$)");
         }
         Pattern pattern = Pattern.compile(patternBuilder.toString());
         Matcher matcher = pattern.matcher(input);
@@ -404,7 +412,6 @@ public class MethodNameParser {
             if (matcher.start() > lastIndex) {
                 result.add(input.substring(lastIndex, matcher.start()));
             }
-
             // Add the regex
             result.add(matcher.group());
             lastIndex = matcher.end();
@@ -580,10 +587,16 @@ public class MethodNameParser {
         if (index == -1) {
             return false;
         }
-        if (str.length() < index + operatorStr.length() + 1) {
-            return false;
-        }
-        return Character.isUpperCase(str.charAt(index + operatorStr.length()));
+
+        // Check if the operator is at the beginning or preceded by capital letter.
+        boolean startsCorrectly = (index == 0) || Character.isLowerCase(str.charAt(index - 1));
+
+        // Check if the operator ends before the end or is followed by a capital letter.
+        boolean endsCorrectly = (index + operatorStr.length() == str.length())
+                || Character.isUpperCase(str.charAt(index + operatorStr.length()));
+
+        return startsCorrectly && endsCorrectly;
+
     }
 
     private void validateFieldWithOperation(String operation, FieldInfo fieldInfo, String fieldPath,

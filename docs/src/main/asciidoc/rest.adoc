@@ -1627,6 +1627,20 @@ public User userPrivate() {
 When the result of the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
 
+`@JsonView` is also supported for deserializing the request body. So for example in the following code:
+
+[source,java]
+----
+        @POST
+        @Produces(MediaType.APPLICATION_JSON)
+        @Consumes(MediaType.APPLICATION_JSON)
+        public RestResponse<User> create(@JsonView(Views.Public.class) User user) {
+            return RestResponse.status(CREATED, user);
+        }
+----
+
+inside the `create` method, `user` would only contain the value of `name` while `id` would always be `null` (regardless if the JSON request contained it)
+
 ===== Reflection-free Jackson serialization and deserialization
 
 By default, Jackson uses reflection to convert objects to and from JSON.

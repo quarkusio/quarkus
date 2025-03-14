@@ -9,6 +9,10 @@ public interface PersonRepository extends Repository<Person, Integer> {
 
     List<Person> findAllByAddressZipCode(String zipCode);
 
+    List<Person> findAllByNameAndOrder(String name, String order);
+
+    List<Person> findAllByNameOrOrder(String name, String order);
+
     List<Person> findAllByAddressCountry(String zipCode);
 
     List<Person> findAllByNameAndAgeAndActive(String name, int age, boolean active);

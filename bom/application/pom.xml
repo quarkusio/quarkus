@@ -40,19 +40,19 @@
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
-        <microprofile-fault-tolerance-api.version>4.1.1</microprofile-fault-tolerance-api.version>
+        <microprofile-fault-tolerance-api.version>4.1.2</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-streams-operators.version>3.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>4.0</microprofile-rest-client.version>
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
-        <microprofile-lra.version>2.0</microprofile-lra.version>
+        <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.10.0</smallrye-common.version>
-        <smallrye-config.version>3.12.2</smallrye-config.version>
+        <smallrye-config.version>3.12.3</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.8</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.1</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.8.0</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -158,7 +158,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.3.4</flyway.version>
+        <flyway.version>11.4.0</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.29.1</liquibase.version>
@@ -170,13 +170,13 @@
         <javaparser.version>3.26.3</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.18.1</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>6.1.SP4</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>6.2.SP1</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
+        <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
         <mockito.version>5.16.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
-        <quarkus-security.version>2.2.0</quarkus-security.version>
+        <quarkus-security.version>2.2.1</quarkus-security.version>
         <keycloak-client.version>26.0.4</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.49.1</checker-qual.version>
@@ -4774,6 +4774,7 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-annotations</artifactId>
                 <version>${jboss-logging-annotations.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>

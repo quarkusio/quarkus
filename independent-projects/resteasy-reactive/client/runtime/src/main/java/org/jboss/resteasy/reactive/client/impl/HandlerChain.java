@@ -36,11 +36,13 @@ class HandlerChain {
 
     private ClientRestHandler preClientSendHandler = null;
 
-    public HandlerChain(boolean captureStacktrace, int maxChunkSize, boolean followRedirects, LoggingScope loggingScope,
+    public HandlerChain(boolean captureStacktrace, int maxChunkSize, int inputStreamChunkSize, boolean followRedirects,
+            LoggingScope loggingScope,
             Map<Class<?>, MultipartResponseData> multipartData, ClientLogger clientLogger) {
         this.clientCaptureCurrentContextRestHandler = new ClientCaptureCurrentContextRestHandler(captureStacktrace);
         this.clientSwitchToRequestContextRestHandler = new ClientSwitchToRequestContextRestHandler();
-        this.clientSendHandler = new ClientSendRequestHandler(maxChunkSize, followRedirects, loggingScope, clientLogger,
+        this.clientSendHandler = new ClientSendRequestHandler(maxChunkSize, inputStreamChunkSize, followRedirects, loggingScope,
+                clientLogger,
                 multipartData);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();

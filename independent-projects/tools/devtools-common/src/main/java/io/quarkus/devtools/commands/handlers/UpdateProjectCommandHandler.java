@@ -1,11 +1,5 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.messagewriter.MessageFormatter.format;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.BLUE;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.BOLD;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.GREEN;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.RED;
-import static io.quarkus.devtools.messagewriter.MessageFormatter.Format.UNDERLINE;
 import static io.quarkus.devtools.messagewriter.MessageIcons.UP_TO_DATE_ICON;
 import static io.quarkus.devtools.project.state.ProjectStates.resolveProjectState;
 import static io.quarkus.devtools.project.update.ProjectUpdateInfos.resolvePlatformUpdateInfo;
@@ -31,6 +25,7 @@ import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageFormatter;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
@@ -129,9 +124,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                         additionalUpdateRecipes, request);
                 quarkusProject.log().info("");
                 quarkusProject.log()
-                        .info("We have generated a recipe file to update your project (versions updates + specific recipes):");
-                quarkusProject.log().info(format(UNDERLINE,
-                        projectDir.relativize(recipe).toString()));
+                        .info("We have generated a recipe file to update your project (version updates + specific recipes):");
+                quarkusProject.log().info(MessageFormatter.underline(projectDir.relativize(recipe).toString()));
                 quarkusProject.log().info("");
 
                 if (rewriteDryRun) {
@@ -181,8 +175,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     final Path patchFile = rewriteDir.resolve("rewrite.patch");
                     if (rewriteDryRun && Files.isRegularFile(patchFile)) {
                         quarkusProject.log().info("Patch file available:");
-                        quarkusProject.log().info(format(UNDERLINE,
-                                projectDir.relativize(patchFile).toString()));
+                        quarkusProject.log().info(MessageFormatter.underline(projectDir.relativize(patchFile).toString()));
                         quarkusProject.log().info("");
                     }
 
@@ -200,9 +193,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
     private static String askUserConfirmationForUpdate(MessageWriter log) {
         System.out.print(System.lineSeparator() +
-                format(BOLD,
-                        "Do you want run the generated update recipe with OpenRewrite ?")
-                + " ([" + format(GREEN, "y") + "]es, [" + format(RED, "n") + "]o, [" + format(BLUE, "d") + "]ry-run)"
+                MessageFormatter.bold(
+                        "Do you want to apply the generated update recipes with OpenRewrite?")
+                + " ([" + MessageFormatter.green("y") + "]es, [" + MessageFormatter.red("n") + "]o, ["
+                + MessageFormatter.blue("d") + "]ry-run + [Enter])"
                 + System.lineSeparator() + System.lineSeparator());
         try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
             @Override
@@ -212,7 +206,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         })) {
             return scanner.nextLine();
         } catch (Exception e) {
-            log.debug("Failed to collect user input for analytics", e);
+            log.debug("Unable to get user confirmation", e);
             return "";
         }
     }
@@ -256,7 +250,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             MessageWriter log) {
         printSeparator(log);
         if (currentState.getPlatformBoms().isEmpty()) {
-            log.info(format(RED, "The project does not import any Quarkus platform BOM"));
+            log.info(MessageFormatter.red("The project does not import any Quarkus platform BOM"));
             printSeparator(log);
             return false;
         }
@@ -266,43 +260,44 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             return false;
         }
         if (currentState == recommendedState) {
-            log.info(format(GREEN, "The project is up-to-date)"));
+            log.info(MessageFormatter.green("The project is up-to-date)"));
             printSeparator(log);
             return false;
         }
 
         if (platformUpdateInfo.isPlatformUpdatesAvailable()) {
-            log.info(format(BOLD, "Suggested Quarkus platform BOM updates:"));
+            log.info(MessageFormatter.bold("Suggested Quarkus platform BOM updates:"));
             if (!platformUpdateInfo.getImportVersionUpdates().isEmpty()) {
                 for (PlatformInfo importInfo : platformUpdateInfo.getImportVersionUpdates()) {
                     log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "~",
                             importInfo.getImported().getKey().toGacString() + ":pom:["
-                                    + format(RED, importInfo.getImported().getVersion()) + " -> "
-                                    + format(GREEN, importInfo.getRecommendedVersion())
+                                    + MessageFormatter.red(importInfo.getImported().getVersion()) + " -> "
+                                    + MessageFormatter.green(importInfo.getRecommendedVersion())
                                     + "]"));
-                }
-            }
-            if (!platformUpdateInfo.getNewImports().isEmpty()) {
-                for (PlatformInfo importInfo : platformUpdateInfo.getNewImports()) {
-                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "+",
-                            "[" + format(GREEN, importInfo.getRecommended().toCompactCoords()) + "] to add"));
                 }
             }
             if (platformUpdateInfo.isImportsToBeRemoved()) {
                 for (PlatformInfo importInfo : platformUpdateInfo.getPlatformImports().values()) {
                     if (importInfo.getRecommended() == null) {
                         log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "-",
-                                "[" + format(RED, importInfo.getImported().toCompactCoords()) + "] to remove"));
+                                "[" + MessageFormatter.red(importInfo.getImported().toCompactCoords()) + "]"));
                     }
+                }
+            }
+            if (!platformUpdateInfo.getNewImports().isEmpty()) {
+                for (PlatformInfo importInfo : platformUpdateInfo.getNewImports()) {
+                    log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "+",
+                            "[" + MessageFormatter.green(importInfo.getRecommended().toCompactCoords()) + "]"));
                 }
             }
             log.info("");
         } else if (!extensionsUpdateInfo.shouldUpdateExtensions()) {
-            log.info(format(GREEN, "The project is up-to-date " + MessageIcons.UP_TO_DATE_ICON.iconOrMessage()));
+            log.info(MessageFormatter.green("The project is up-to-date " + MessageIcons.UP_TO_DATE_ICON.iconOrMessage()));
             printSeparator(log);
             return false;
         } else {
-            log.info(format(GREEN, "Quarkus platform BOM(s) are up-to-date " + MessageIcons.UP_TO_DATE_ICON.iconOrMessage()));
+            log.info(MessageFormatter
+                    .green("Quarkus platform BOMs are up-to-date " + MessageIcons.UP_TO_DATE_ICON.iconOrMessage()));
             log.info("");
         }
 
@@ -321,7 +316,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             if (extensions.isEmpty()) {
                 continue;
             }
-            log.info(format(BOLD,
+            log.info(MessageFormatter.bold(
                     "Suggested extensions updates for '%s':".formatted(platform.getRecommendedProviderKey())));
             for (ExtensionUpdateInfo e : extensions) {
 
@@ -340,13 +335,14 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                         case RECOMMEND_PLATFORM_MANAGED:
                             log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "-",
                                     e.getCurrentDep().getArtifact().getKey().toGacString()) + ":["
-                                    + format(RED, e.getCurrentDep().getVersion()) + " -> " + format(GREEN, "managed") + "]");
+                                    + MessageFormatter.red(e.getCurrentDep().getVersion()) + " -> "
+                                    + MessageFormatter.green("managed") + "]");
                             break;
                         case ADD_VERSION:
                             log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, versionUpdateType.equals(
                                     ExtensionUpdateInfo.VersionUpdateType.ADD_VERSION) ? "+" : "-",
                                     e.getCurrentDep().getArtifact().getKey().toGacString()) + ":["
-                                    + format(RED, "managed") + " -> " + format(GREEN,
+                                    + MessageFormatter.red("managed") + " -> " + MessageFormatter.green(
                                             e.getRecommendedDependency().getVersion())
                                     + "]");
                             break;
@@ -362,12 +358,12 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         final List<ExtensionUpdateInfo> simpleVersionUpdates = extensionsUpdateInfo.getSimpleVersionUpdates().stream()
                 .filter(u -> !u.getCurrentDep().isPlatformExtension()).toList();
         if (!simpleVersionUpdates.isEmpty()) {
-            log.info(format(BOLD, "Suggested extensions updates from other origins:"));
+            log.info(MessageFormatter.bold("Suggested extension updates from other origins:"));
             for (ExtensionUpdateInfo u : simpleVersionUpdates) {
                 if (u.getVersionUpdateType() == ExtensionUpdateInfo.VersionUpdateType.PLATFORM_MANAGED) {
                     log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "-",
                             u.getCurrentDep().getArtifact().getKey().toGacString()) + ":["
-                            + format(RED, u.getCurrentDep().getVersion()) + "]");
+                            + MessageFormatter.red(u.getCurrentDep().getVersion()) + "]");
                 } else {
                     log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, "~",
                             updateInfo(u)));
@@ -390,9 +386,9 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     }
 
     static String updateInfo(ArtifactCoords current, String newVersion) {
-        return current.getKey().toGacString() + ":[" + format(RED,
+        return current.getKey().toGacString() + ":[" + MessageFormatter.red(
                 current.getVersion()) + " -> "
-                + format(GREEN, newVersion) + "]";
+                + MessageFormatter.green(newVersion) + "]";
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

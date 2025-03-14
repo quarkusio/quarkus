@@ -592,6 +592,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     @Test
     void testTestProfilesAreHandled()
             throws MavenInvocationException, IOException {
+        // This project is a somewhat complex project with a mix of profile-d tests and plain tests, and some tests which exercise that the settings in the profile is honoured
         testDir = initProject("projects/test-test-profile");
         runAndCheck();
 
@@ -599,8 +600,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
 
         //check that the tests in both class files ran
-        Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(2, results.getTestsPassed());
+        Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(9, results.getTestsPassed(), results.toString());
 
         // Edit the "Hello" message.
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
@@ -620,9 +621,86 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         results = testingTestUtils.waitForNextCompletion();
 
-        //make sure the test is failing now
-        Assertions.assertEquals(0, results.getTestsPassed());
-        Assertions.assertEquals(2, results.getTestsFailed());
+        //make sure the test is failing now, and others should have not run
+        Assertions.assertEquals(2, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(0, results.getTestsPassed(), results.toString());
+        Assertions.assertEquals(7, results.getTotalTestsPassed(), results.toString());
+
+        // Revert the change
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        // Wait until we get "hello" again
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+        Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(9, results.getTotalTestsPassed(), results.toString());
+    }
+
+    @Disabled("Not currently working, see https://github.com/quarkusio/quarkus/issues/46362")
+    @Test
+    void testTestProfilesWhichRunMainAreHandled()
+            throws MavenInvocationException, IOException {
+        // This project is a somewhat complex project with a mix of profile-d tests and plain tests, and some tests which exercise that the settings in the profile is honoured
+        // The difference to projects/test-test-profile is that the runMainMethod in the profile is set to true
+        testDir = initProject("projects/test-test-profile-run-main");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both class files ran
+        Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(9, results.getTestsPassed(), results.toString());
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now, and others should have not run
+        Assertions.assertEquals(2, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(0, results.getTestsPassed(), results.toString());
+        Assertions.assertEquals(7, results.getTotalTestsPassed(), results.toString());
+
+        // Revert the change
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        // Wait until we get "hello" again
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+        Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(9, results.getTotalTestsPassed(), results.toString());
     }
 
     @Test

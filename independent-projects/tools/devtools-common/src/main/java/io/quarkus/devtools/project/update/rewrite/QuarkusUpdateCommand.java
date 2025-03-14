@@ -4,6 +4,7 @@ import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdateRecipe.REC
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -155,7 +156,6 @@ public class QuarkusUpdateCommand {
         command.add(mvnBinary);
         command.add("-B");
         command.add("-e");
-        command.add("clean");
         command.add("process-sources");
         final String mavenSettings = getMavenSettingsArg();
         if (mavenSettings != null) {
@@ -195,10 +195,23 @@ public class QuarkusUpdateCommand {
 
         log.info("");
 
-        String logInfo = logFile != null ? "Logs can be found at: %s".formatted(baseDir.relativize(logFile).toString())
-                : "See the execution logs above for more details";
+        String logInfo;
+
+        if (logFile != null) {
+            logInfo = "Logs can be found at: %s".formatted(baseDir.relativize(logFile).toString());
+
+            try {
+                // we delete the log file prior to executing the command so that we start clean
+                Files.deleteIfExists(logFile);
+            } catch (IOException e) {
+                // ignore, it's not a big deal
+            }
+        } else {
+            logInfo = "See the execution logs above for more details";
+        }
 
         log.info("Update in progress (this may take a while):");
+
         for (Map.Entry<String, List<String>> e : commands.entrySet()) {
             log.info("  - executing " + e.getKey() + " command...");
             execute(e.getKey(), e.getValue(), log, logFile, logInfo);
@@ -218,7 +231,7 @@ public class QuarkusUpdateCommand {
 
         try {
             if (logFile != null) {
-                Files.writeString(logFile, "\n\n\nRunning: " + String.join(" ", effectiveCommand) + "\n",
+                Files.writeString(logFile, "Running: " + String.join(" ", effectiveCommand) + "\n",
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             }
 
@@ -260,13 +273,16 @@ public class QuarkusUpdateCommand {
                 }
 
                 log.info("");
-
             }
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 log.info("");
                 throw new QuarkusUpdateExitErrorException("The %s command exited with an error. %s".formatted(name, logInfo));
+            }
+
+            if (logFile != null) {
+                Files.writeString(logFile, "\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
             }
         } catch (QuarkusUpdateException e) {
             throw e;

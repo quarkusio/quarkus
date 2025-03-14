@@ -39,6 +39,28 @@ public class MethodNameParserTest {
     }
 
     @Test
+    public void testFindAllByNameAndOrder() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameAndOrder", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getParamCount()).isEqualTo(2);
+        assertThat(result.getQuery())
+                .isEqualTo("FROM Person AS person WHERE name = ?1 AND order = ?2");
+    }
+
+    @Test
+    public void testFindAllByNameOrOrder() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameOrOrder", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getParamCount()).isEqualTo(2);
+        assertThat(result.getQuery())
+                .isEqualTo("FROM Person AS person WHERE name = ?1 OR order = ?2");
+    }
+
+    @Test
     public void testFindAllByAddressCountry() throws Exception {
         MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByAddressCountry", entityClass,
                 additionalClasses);

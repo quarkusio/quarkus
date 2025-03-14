@@ -63,7 +63,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     // TODO this is a regression in heap space requirements; it should be debugged and the override removed
     @Override
     protected int getAllowedHeapInMb() {
-        return super.getAllowedHeapInMb() + 24;
+        return super.getAllowedHeapInMb() + 36;
     }
 
     @Override

@@ -169,15 +169,27 @@ quarkus.security.ldap.identity-mapping.search-base-dn=ou=Users,dc=quarkus,dc=io
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".from=cn
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <3>
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=Roles,dc=quarkus,dc=io
-
-quarkus.security.ldap.cache.enabled=true <4>
 ----
 <1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported link:{quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
 <2> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as link:{quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
 <3> `{0}` is substituted by the `uid`.
-<4> Without this configuration, every request to your service will cause an additional roundtrip to the LDAP server. Therefore, it's a common practice to cache these result to improve performance, but the tradeoff is that there will be a delay between changes in the LDAP getting effective in your service. The default cache max-age is `60s`.
 
-The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
+The `quarkus-elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
+
+[TIP]
+====
+By default, Quarkus doesn't cache the credentials obtained from the LDAP directory.
+Every request to your service will cause an additional roundtrip to the LDAP server.
+
+It is a common practice to cache these results to improve performance, but the tradeoff is that there will be a delay before the changes in the LDAP get effective in your service.
+
+To enable the cache, set `quarkus.security.ldap.cache.enabled=true` in your configuration file.
+
+The default cache max-age is `60s`.
+It can be configured by setting `quarkus.security.ldap.cache.max-age`.
+
+The number of cache entries is limited by `quarkus.security.ldap.cache.size`, which defaults to `100`.
+====
 
 === Map LDAP groups to `SecurityIdentity` roles
 

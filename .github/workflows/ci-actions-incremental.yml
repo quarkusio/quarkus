@@ -12,6 +12,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - '.devcontainer/**'
       - 'jakarta/**'
       - 'docs/**'
       - '.github/ISSUE_TEMPLATE/**'

@@ -83,6 +83,7 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.Authenticatio
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
+import io.quarkus.vertx.http.runtime.security.VertxSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
@@ -255,9 +256,11 @@ public class HttpSecurityProcessor {
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
+            var authConfig = httpBuildTimeConfig.auth();
             authenticationHandlerProducer.produce(
                     new HttpAuthenticationHandlerBuildItem(
-                            recorder.authenticationMechanismHandler(httpBuildTimeConfig.auth().proactive())));
+                            recorder.authenticationMechanismHandler(authConfig.proactive(),
+                                    authConfig.propagateSecurityIdentity())));
         }
     }
 
@@ -606,6 +609,11 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
+    AdditionalBeanBuildItem createSecurityIdentityAssociation() {
+        return AdditionalBeanBuildItem.unremovableOf(VertxSecurityIdentityAssociation.class);
+    }
+
     private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target) {
         if (target.kind() == AnnotationTarget.Kind.METHOD) {
             var method = target.asMethod();
@@ -826,6 +834,20 @@ public class HttpSecurityProcessor {
 
         private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
             this.handler = handler;
+        }
+    }
+
+    static final class AlwaysPropagateSecurityIdentity implements BooleanSupplier {
+
+        private final boolean alwaysPropagateSecurityIdentity;
+
+        AlwaysPropagateSecurityIdentity(VertxHttpBuildTimeConfig buildTimeConfig) {
+            this.alwaysPropagateSecurityIdentity = buildTimeConfig.auth().propagateSecurityIdentity();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return alwaysPropagateSecurityIdentity;
         }
     }
 }

@@ -17,8 +17,8 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -36,12 +36,12 @@ public class SecurityConstrainer {
     public static final Object CHECK_OK = new Object();
     private final SecurityCheckStorage storage;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
-    private final Instance<SecurityIdentityAssociation> securityIdentityAssociation;
+    private final Instance<CurrentIdentityAssociation> securityIdentityAssociation;
     private final Supplier<Map<String, Object>> additionalEventPropsSupplier;
 
     public SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
-            boolean runtimeConfigReady, Instance<SecurityIdentityAssociation> securityIdentityAssociation,
+            boolean runtimeConfigReady, Instance<CurrentIdentityAssociation> securityIdentityAssociation,
             Supplier<Map<String, Object>> additionalEventPropsSupplier) {
         this.securityIdentityAssociation = securityIdentityAssociation;
         this.additionalEventPropsSupplier = additionalEventPropsSupplier;

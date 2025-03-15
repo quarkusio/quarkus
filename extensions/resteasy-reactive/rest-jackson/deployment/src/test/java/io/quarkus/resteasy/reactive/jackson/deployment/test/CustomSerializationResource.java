@@ -27,9 +27,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
-@Path("/custom-serialization")
 @CustomSerialization(CustomSerializationResource.UnquotedFieldsPersonSerialization.class)
 @CustomDeserialization(CustomSerializationResource.UnquotedFieldsPersonDeserialization.class)
+@Path("")
 public class CustomSerializationResource {
 
     @ServerExceptionMapper
@@ -39,7 +39,7 @@ public class CustomSerializationResource {
     }
 
     @GET
-    @Path("/person")
+    @Path("/custom-serialization/person")
     public Person getPerson() {
         Person person = new Person();
         person.setFirst("Bob");
@@ -50,7 +50,7 @@ public class CustomSerializationResource {
     }
 
     @POST
-    @Path("/person")
+    @Path("/custom-serialization/person")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Person getPerson(Person person) {
@@ -58,7 +58,7 @@ public class CustomSerializationResource {
     }
 
     @POST
-    @Path("/people/list")
+    @Path("/custom-serialization/people/list")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<Person> getPeople(List<Person> people) {
         List<Person> reversed = new ArrayList<>(people.size());
@@ -69,7 +69,7 @@ public class CustomSerializationResource {
     }
 
     @GET
-    @Path("/invalid-use-of-custom-serializer")
+    @Path("/custom-serialization/invalid-use-of-custom-serializer")
     public User invalidUseOfCustomSerializer() {
         return testUser();
     }

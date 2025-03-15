@@ -19,7 +19,6 @@ public final class QuarkusPersistenceUnitDefinition {
     private final QuarkusPersistenceUnitDescriptor persistenceUnitDescriptor;
     private final RecordedConfig config;
     private final List<RecordableXmlMapping> xmlMappings;
-    private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final boolean isHibernateValidatorPresent;
     private final Optional<FormatMapperKind> jsonMapperCreator;
@@ -30,7 +29,6 @@ public final class QuarkusPersistenceUnitDefinition {
     public QuarkusPersistenceUnitDefinition(QuarkusPersistenceUnitDescriptor persistenceUnitDescriptor,
             RecordedConfig config,
             List<RecordableXmlMapping> xmlMappings,
-            boolean reactive,
             boolean fromPersistenceXml,
             boolean hibernateValidatorPresent,
             Optional<FormatMapperKind> jsonMapperCreator,
@@ -41,7 +39,6 @@ public final class QuarkusPersistenceUnitDefinition {
         this.persistenceUnitDescriptor = persistenceUnitDescriptor;
         this.config = config;
         this.xmlMappings = xmlMappings;
-        this.isReactive = reactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.isHibernateValidatorPresent = hibernateValidatorPresent;
         this.jsonMapperCreator = jsonMapperCreator;
@@ -67,7 +64,7 @@ public final class QuarkusPersistenceUnitDefinition {
 
     //TODO assert that we match the right type of ORM!
     public boolean isReactive() {
-        return isReactive;
+        return persistenceUnitDescriptor.isReactive();
     }
 
     public boolean isFromPersistenceXml() {

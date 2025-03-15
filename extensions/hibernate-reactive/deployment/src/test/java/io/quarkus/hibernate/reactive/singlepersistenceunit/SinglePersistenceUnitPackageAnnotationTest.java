@@ -49,9 +49,15 @@ public class SinglePersistenceUnitPackageAnnotationTest {
     @Test
     @RunOnVertxContext
     public void testIncluded(UniAsserter asserter) {
-        EntityIncludedThroughPackageAnnotation entity = new EntityIncludedThroughPackageAnnotation("default");
+        EntityIncludedThroughPackageAnnotation entity = new EntityIncludedThroughPackageAnnotation("default-reactive");
         asserter.assertThat(
-                () -> persist(entity).chain(() -> find(EntityIncludedThroughPackageAnnotation.class, entity.id)),
+                () -> {
+                    return persist(entity).chain(() -> {
+                        return find(
+                                EntityIncludedThroughPackageAnnotation.class,
+                                entity.id);
+                    });
+                },
                 retrievedEntity -> assertThat(retrievedEntity.name).isEqualTo(entity.name));
     }
 

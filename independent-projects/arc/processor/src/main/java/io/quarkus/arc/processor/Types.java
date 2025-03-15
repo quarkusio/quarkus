@@ -243,7 +243,7 @@ public final class Types {
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             ArrayType array = type.asArrayType();
-            Type elementType = getArrayElementType(array);
+            Type elementType = array.elementType();
 
             ResultHandle arrayHandle;
             if (elementType.kind() == Kind.PRIMITIVE || elementType.kind() == Kind.CLASS) {
@@ -418,14 +418,6 @@ public final class Types {
         } else {
             return Type.create(classInfo.name(), Kind.CLASS);
         }
-    }
-
-    static Type getArrayElementType(ArrayType array) {
-        Type elementType = array.constituent();
-        while (elementType.kind() == Kind.ARRAY) {
-            elementType = elementType.asArrayType().constituent();
-        }
-        return elementType;
     }
 
     static TypeClosure getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
@@ -616,11 +608,38 @@ public final class Types {
     }
 
     /**
+     * Throws {@code DefinitionException} if given {@code type} is not a legal bean type.
+     * <p>
+     * This method is currently only used for synthetic beans. Legal bean types are checked
+     * for producers through other means (see {@link #checkArrayType(ArrayType, AnnotationTarget) checkArrayType()}
+     * and {@link #containsWildcard(Type, AnnotationTarget, boolean) containsWildcard()}).
+     */
+    static void checkLegalBeanType(Type type, Object beanDescription) {
+        if (type.kind() == Kind.TYPE_VARIABLE) {
+            throw new DefinitionException("Type variable is not a legal bean type: " + beanDescription);
+        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            checkWildcard(type, beanDescription);
+        } else if (type.kind() == Kind.ARRAY) {
+            checkLegalBeanType(type.asArrayType().elementType(), beanDescription);
+        }
+    }
+
+    private static void checkWildcard(Type type, Object beanDescription) {
+        if (type.kind() == Kind.WILDCARD_TYPE) {
+            throw new DefinitionException("Wildcard type is not a legal bean type: " + beanDescription);
+        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            for (Type typeArgument : type.asParameterizedType().arguments()) {
+                checkWildcard(typeArgument, beanDescription);
+            }
+        }
+    }
+
+    /**
      * Throws {@code DefinitionException} if given {@code producerFieldOrMethod},
      * whose type is given {@code arrayType}, is invalid due to the rules for arrays.
      */
     static void checkArrayType(ArrayType arrayType, AnnotationTarget producerFieldOrMethod) {
-        Type elementType = getArrayElementType(arrayType);
+        Type elementType = arrayType.elementType();
         if (elementType.kind() == Kind.TYPE_VARIABLE) {
             throw new DefinitionException("A type variable array is not a legal bean type: " + producerFieldOrMethod);
         }

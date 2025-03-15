@@ -827,6 +827,13 @@ public class BeanInfo implements InjectionTargetInfo {
                 addDecoratedMethods(decoratedMethods, superClassInfo, originalClassInfo, boundDecorators, skipPredicate);
             }
         }
+
+        for (DotName i : classInfo.interfaceNames()) {
+            ClassInfo interfaceInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), i);
+            if (interfaceInfo != null) {
+                addDecoratedMethods(decoratedMethods, interfaceInfo, originalClassInfo, boundDecorators, skipPredicate);
+            }
+        }
     }
 
     private List<DecoratorMethod> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
@@ -856,6 +863,9 @@ public class BeanInfo implements InjectionTargetInfo {
                     boolean matches = true;
                     decoratedMethodParams = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
                             decoratedMethod,
+                            beanDeployment.getBeanArchiveIndex());
+                    methodParams = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
+                            method,
                             beanDeployment.getBeanArchiveIndex());
                     for (int i = 0; i < methodParams.size(); i++) {
                         BeanResolver resolver = beanDeployment.getDelegateInjectionPointResolver();

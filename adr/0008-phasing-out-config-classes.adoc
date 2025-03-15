@@ -1,0 +1,110 @@
+= Phasing out legacy config classes
+
+* Status: accepted
+* Date: 2025-02-06
+* Authors: @gsmet @radcortez @cescoffier
+
+== Context and Problem Statement
+
+We currently have two competing implementations to handle configuration properties in Quarkus extensions:
+
+- The legacy config class approach: it uses **classes** annotated with `@io.quarkus.runtime.annotations.ConfigRoot` and **fields** annotated with `@io.quarkus.runtime.annotations.ConfigItem` for the properties.
+- The new config interface approach: it uses **interfaces** annotated with `@io.smallrye.config.ConfigMapping` and `@io.quarkus.runtime.annotations.ConfigRoot` (for the config phase) and **methods** for the properties.
+
+The latter approach is what we have been recommending since 2022 (see this https://github.com/quarkusio/quarkus/pull/28643[pull request]).
+It actually requires a special flag for the extension annotation processor to support the legacy config class approach:
+
+[source,xml]
+----
+<compilerArgs>
+  <arg>-AlegacyConfigRoot=true</arg>
+</compilerArgs>
+----
+
+The legacy mechanism had a few issues that we wanted to address, namely:
+
+1. Classes were mutable, whereas Quarkus configuration is immutable, causing hard-to-debug problems and unexpected behaviours. It even encourages mutations by setting a default value to the field in the configuration class.
+2. It only worked for extensions and, in the context of Quarkus, reducing the portability.
+
+https://smallrye.io/smallrye-config/Main/[SmallRye Config] provides the recommended mechanism, which can be used in any application using SmallRye Config (even without Quarkus). Using an interface instead of a class clarifies that the configuration is immutable.
+On top of that, many of the new features were more straightforward to implement in this new model.
+
+A massive effort has been made to migrate from the legacy approach to the recommended approach, and all the Quarkus Core extensions have been switched to the `@ConfigMapping` approach.
+There are a few legacy classes left but they are there for compatibility purposes, for some config properties massively consumed outside of Quarkus that we didn't want to break to smooth the transition to the new model.
+
+At this stage, it is time to start planning phasing out the legacy approach.
+By phasing out, we mean that the approach with `@ConfigRoot` annotated **classes** will no longer be functional, including for external extensions.
+
+With the Quarkus core extension having switched to the new model, we have many examples we can point people to, and we are also very confident in the robustness of the `@ConfigMapping` support from SmallRye Config.
+
+@radcortez has also improved the performance of the new approach and allowed it to scale better.
+
+The main goal of this ADR is to propose an approach for the transition that reduces friction.
+
+== Why it is essential
+
+- We reduce the code base complexity and avoid maintaining the legacy code forever. It is complex, and the team's bandwidth is limited.
+- We avoid ambiguities and bad practices.
+- We avoid bugs that have never been fixed in the legacy approach due to limited bandwidth or high complexity.
+- We make sure we build the config on a unified approach making the config code more portable (from applications to extensions or even outside of Quarkus).
+- We reduce our startup footprint (with marginal improvements in terms of RSS and startup time).
+
+== Potential difficulties
+
+=== Transitioning
+
+Transitioning to config interfaces is a well-known and straightforward process.  For example, https://github.com/quarkusio/quarkus/pull/46070/files[this PR] illustrates such a transition in a non-simple extension (the MongoDB client extension).
+It can be a bit tedious, though, for extensions with massive configurations or projects with a lot of extensions (Camel Quarkus comes to mind).
+
+The main difficulty we identified is that the configuration is mutated in some extensions. It was possible with the legacy approach but never recommended. The new approach enforces the behavior, as the configuration is now immutable.
+It should concern very few extensions. Also, we need to stop this harmful practice anyway.
+
+=== Ecosystem
+
+The Quarkus extension ecosystem is broad and diverse: some extensions are very well maintained and following the progress of Quarkus, some are lagging and adjusted when time permits.
+
+If we phase out the legacy approach, we need the extension ecosystem ready.
+Indeed, each extension that still uses `@ConfigRoot` config classes must be updated and released, as the legacy mechanism will be sunsetted.
+
+For Quarkiverse extensions, the work has been done (in some cases, pending a release). The Quarkus community can be proactive as we can push changes there if needed.
+Things become a bit more complex for extensions hosted outside of the Quarkiverse, for which we will need the maintainers to do the work. We plan to contact the known maintainers and add notes in the release notes and migration guides.
+
+It is important to note that users might get confronted to extensions not having been migrated yet, and in this case, their only options are to either get the extension migrated or to drop the extension from their application.
+This is why a sunsetting plan with proper warnings is important.
+
+=== Compatibility classes
+
+During the migration, for a few key extensions, we decided to keep small and targeted config classes around to maintain the compatibility for all the extensions that consume this configuration (either as a CDI bean at runtime or during build time).
+This is for instance the case of the HTTP configuration coming from Vert.x HTTP.
+
+When we phase out the legacy approach, these classes will be removed: we need to ensure the extension ecosystem has moved to the new interfaces (or to a proper API if we put one in place).
+
+== Sunsetting plan
+
+Given all the items presented above, the key for this transition to be a success is communication and planning.
+Here is the approach we recommend:
+
+- **Step 1** - Communicate first about where we introduced compatibility config classes and that people should consume the new config interface ASAP
+- **Step 2** - Communicate early about this upcoming transition
+  - Blog post + post on quarkus-dev
+  - Post in the Quarkiverse community discussions
+  - Prepare a guide on how to do it. Make sure we add useful pointers with example pull requests.
+  - Make sure we provide points of contact in the community for people having difficulties (or who just don't have the time to do it and want someone else to handle it)
+  - Make sure we identify difficulties with potential solutions
+  - Announce specific versions and dates for the tentative sunset so that people can schedule their work
+  - Add a warning in applications using extensions leveraging legacy configuration classes
+- **Step 3** - In version X.Y (with at least two months between previous communication and release), throw an error in the extension annotation processor when legacy `@ConfigRoot` classes are detected
+  - It will allow us to detect the overall status in Ecosystem CI (at least for public extensions)
+  - Maybe provide a way to forcefully override this error for one version, and drop it in the next version
+  - Keep the support for legacy `@ConfigRoot` classes in quarkus-core though as we want the extensions to still work until they are updated
+  - Announce it via blog post + post on quarkus-dev
+- **Step 4 **- In version X.(Y + 2), if we are satisfied with the state of the Ecosystem, drop the legacy `@ConfigRoot` classes support from Quarkus entirely
+
+== Proposed schedule
+
+Given we were able to get everything ready for 3.19 and 3.20 LTS, here is the schedule we agreed on:
+
+- Step 1 - For the 3.20 release on March 26th
+- Step 2 - For the 3.20 release
+- Step 3 - For the 3.23 release on May 28th
+- Step 4 - For the 3.25 release on July 30th

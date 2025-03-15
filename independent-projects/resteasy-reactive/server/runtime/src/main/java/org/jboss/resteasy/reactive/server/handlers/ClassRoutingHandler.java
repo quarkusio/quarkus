@@ -108,7 +108,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
         }
 
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
-        if (!target.value.getConsumes().isEmpty()) {
+        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the content-type header
+        if (target.value.getHttpMethod() != null && !target.value.getConsumes().isEmpty()) {
             String contentType = (String) requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
             if (contentType != null) {
                 try {
@@ -123,7 +124,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
             }
         }
         // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
-        if (target.value.getProduces() != null) {
+        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the accept header
+        if (target.value.getHttpMethod() != null && target.value.getProduces() != null) {
             // there could potentially be multiple Accept headers and we need to response with 406
             // if none match the method's @Produces
             List<String> accepts = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);

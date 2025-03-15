@@ -18,6 +18,10 @@ public class QuarkusConnectionProvider implements ConnectionProvider {
         this.dataSource = dataSource;
     }
 
+    public AgroalDataSource getDataSource() {
+        return dataSource;
+    }
+
     @Override
     public Connection getConnection() throws SQLException {
         return dataSource.getConnection();

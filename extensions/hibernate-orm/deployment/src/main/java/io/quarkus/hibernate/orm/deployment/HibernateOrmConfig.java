@@ -90,6 +90,13 @@ public interface HibernateOrmConfig {
      */
     HibernateOrmConfigMetric metrics();
 
+    /**
+     * Dev UI.
+     */
+    @WithDefaults
+    @WithName("dev-ui")
+    HibernateOrmConfigDevUI devui();
+
     default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
         return defaultPersistenceUnit().isAnyPropertySet() ||
@@ -182,4 +189,12 @@ public interface HibernateOrmConfig {
         }
     }
 
+    @ConfigGroup
+    interface HibernateOrmConfigDevUI {
+        /**
+         * Allow hql queries in the Dev UI page
+         */
+        @WithDefault("false")
+        boolean allowHql();
+    }
 }

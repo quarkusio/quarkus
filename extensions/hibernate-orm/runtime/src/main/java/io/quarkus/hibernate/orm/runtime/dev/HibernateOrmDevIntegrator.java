@@ -12,6 +12,7 @@ public class HibernateOrmDevIntegrator implements Integrator {
     public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactoryImplementor,
             SessionFactoryServiceRegistry sessionFactoryServiceRegistry) {
         HibernateOrmDevController.get().pushPersistenceUnit(
+                sessionFactoryImplementor,
                 (String) sessionFactoryImplementor.getProperties()
                         .get(org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME),
                 metadata, sessionFactoryServiceRegistry,

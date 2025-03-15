@@ -2,11 +2,7 @@ package io.quarkus.hibernate.orm.runtime.dev;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 
 import org.hibernate.boot.Metadata;
@@ -14,6 +10,7 @@ import org.hibernate.boot.query.NamedHqlQueryDefinition;
 import org.hibernate.boot.query.NamedNativeQueryDefinition;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.Action;
@@ -51,13 +48,15 @@ public class HibernateOrmDevController {
         return info;
     }
 
-    void pushPersistenceUnit(String persistenceUnitName,
+    void pushPersistenceUnit(SessionFactoryImplementor sessionFactoryImplementor, String persistenceUnitName,
             Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
         List<HibernateOrmDevInfo.Entity> managedEntities = new ArrayList<>();
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
-            managedEntities
-                    .add(new HibernateOrmDevInfo.Entity(entityBinding.getClassName(), entityBinding.getTable().getName()));
+            managedEntities.add(new HibernateOrmDevInfo.Entity(entityBinding.getJpaEntityName(), entityBinding.getClassName(),
+                    entityBinding.getTable().getName()));
         }
+        // Sort entities alphabetically by JPA entity name
+        managedEntities.sort(Comparator.comparing(HibernateOrmDevInfo.Entity::getName));
 
         List<HibernateOrmDevInfo.Query> namedQueries = new ArrayList<>();
         {
@@ -67,6 +66,8 @@ public class HibernateOrmDevController {
                 namedQueries.add(new HibernateOrmDevInfo.Query(queryDefinition));
             }
         }
+        // Sort named queries alphabetically by name
+        namedQueries.sort(Comparator.comparing(HibernateOrmDevInfo.Query::getName));
 
         List<HibernateOrmDevInfo.Query> namedNativeQueries = new ArrayList<>();
         {
@@ -81,7 +82,7 @@ public class HibernateOrmDevController {
         DDLSupplier dropDDLSupplier = new DDLSupplier(Action.DROP, metadata, serviceRegistry, importFile);
         DDLSupplier updateDDLSupplier = new DDLSupplier(Action.UPDATE, metadata, serviceRegistry, importFile);
 
-        info.add(new HibernateOrmDevInfo.PersistenceUnit(persistenceUnitName, managedEntities,
+        info.add(new HibernateOrmDevInfo.PersistenceUnit(sessionFactoryImplementor, persistenceUnitName, managedEntities,
                 namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier));
     }
 

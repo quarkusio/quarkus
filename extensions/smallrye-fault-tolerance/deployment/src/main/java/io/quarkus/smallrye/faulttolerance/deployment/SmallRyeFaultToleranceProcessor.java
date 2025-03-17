@@ -26,6 +26,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -85,6 +86,7 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
+            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -177,14 +179,24 @@ public class SmallRyeFaultToleranceProcessor {
                         SpecCompatibility.class,
                         Enablement.class);
 
-        if (metricsCapability.isEmpty()) {
-            builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
-        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+        int metricsProviders = 0;
+        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
-        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+            metricsProviders++;
+        } else if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
+            metricsProviders++;
         }
-        // TODO support for OpenTelemetry Metrics -- not present in Quarkus yet
+        if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
+            metricsProviders++;
+        }
+
+        if (metricsProviders == 0) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
+        } else if (metricsProviders > 1) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.CompoundMetricsProvider");
+        }
 
         beans.produce(builder.build());
 

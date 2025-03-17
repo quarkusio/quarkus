@@ -32,6 +32,7 @@ import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
+import io.quarkus.resteasy.reactive.links.RestLink;
 
 /**
  * A standard JAX-RS method implementor.
@@ -108,7 +109,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
                 linkResource.addValue("entityClassName", entityClassName);
                 linkResource.addValue("rel", rel);
             } else {
-                AnnotationCreator linkResource = element.addAnnotation("io.quarkus.resteasy.reactive.links.RestLink");
+                AnnotationCreator linkResource = element.addAnnotation(RestLink.class);
                 Class<?> entityClass;
                 try {
                     entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);

@@ -57,6 +57,8 @@ public class MongoDnsClient implements DnsClient {
     private static final Map<String, List<SrvRecord>> SRV_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, List<String>> TXT_CACHE = new ConcurrentHashMap<>();
 
+    private static final Logger log = Logger.getLogger(MongoDnsClient.class);
+
     MongoDnsClient(io.vertx.core.Vertx vertx) {
         Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
 
@@ -74,12 +76,14 @@ public class MongoDnsClient implements DnsClient {
         DnsClientOptions dnsClientOptions = new DnsClientOptions()
                 .setLogActivity(activity);
         if (server != null) {
-            int port = config.getOptionalValue(DNS_SERVER_PORT, Integer.class)
-                    .orElse(53);
-            dnsClientOptions
-                    .setHost(server)
-                    .setPort(port);
+            dnsClientOptions.setHost(server);
+            if (config.getOptionalValue(DNS_SERVER_PORT, Integer.class).isPresent()) {
+                dnsClientOptions.setPort(config.getOptionalValue(DNS_SERVER_PORT, Integer.class).orElseThrow());
+            }
         }
+        dnsClientOptions.setQueryTimeout(config.getValue(DNS_LOOKUP_TIMEOUT, Duration.class).toMillis());
+
+        log.debugf("DNS client options: %s", dnsClientOptions.toJson());
         dnsClient = mutinyVertx.createDnsClient(dnsClientOptions);
     }
 
@@ -101,14 +105,12 @@ public class MongoDnsClient implements DnsClient {
 
     @Override
     public List<String> getResourceRecordData(String name, String type) throws DnsException {
-        switch (type) {
-            case "SRV":
-                return resolveSrvRequest(name);
-            case "TXT":
-                return resolveTxtRequest(name);
-            default:
-                throw new IllegalArgumentException("Unknown DNS record type: " + type);
-        }
+        log.debugf("Resolving DNS record for name: %s and type: %s", name, type);
+        return switch (type) {
+            case "SRV" -> resolveSrvRequest(name);
+            case "TXT" -> resolveTxtRequest(name);
+            default -> throw new IllegalArgumentException("Unknown DNS record type: " + type);
+        };
     }
 
     /*
@@ -152,13 +154,17 @@ public class MongoDnsClient implements DnsClient {
             if (srvRecords.isEmpty()) {
                 throw new MongoConfigurationException("No SRV records available for host " + srvHost);
             }
+            List<String> results = new ArrayList<>();
             for (SrvRecord srvRecord : srvRecords) {
                 String resolvedHost = srvRecord.target().endsWith(".")
                         ? srvRecord.target().substring(0, srvRecord.target().length() - 1)
                         : srvRecord.target();
 
-                hosts.add(format("%d %d %d %s", srvRecord.priority(), srvRecord.weight(), srvRecord.port(), resolvedHost));
+                var r = format("%d %d %d %s", srvRecord.priority(), srvRecord.weight(), srvRecord.port(), resolvedHost);
+                results.add(r);
             }
+            hosts.addAll(results);
+            log.debugf("Resolved SRV records for %s: %s", srvHost, String.join(", ", results));
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up SRV record for host " + srvHost, e);
         }
@@ -190,6 +196,7 @@ public class MongoDnsClient implements DnsClient {
                     .invoke(new Consumer<>() {
                         @Override
                         public void accept(List<String> strings) {
+                            log.debugf("Resolved TXT records for %s: %s", host, strings);
                             TXT_CACHE.put(host, strings);
                         }
                     })

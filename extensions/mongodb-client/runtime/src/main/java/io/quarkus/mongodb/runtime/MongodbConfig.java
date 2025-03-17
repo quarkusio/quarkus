@@ -100,14 +100,12 @@ public interface MongodbConfig {
      */
     @Deprecated
     @WithName(NATIVE_DNS_SERVER_PORT)
-    @WithDefault("53")
     OptionalInt dnsServerPortInNativeMode();
 
     /**
      * This property configures the DNS server port.
      */
     @WithName(DNS_SERVER_PORT)
-    @WithDefault("53")
     OptionalInt dnsServerPort();
 
     /**

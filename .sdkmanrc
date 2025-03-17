@@ -1,4 +1,4 @@
 # Enable auto-env through the sdkman_auto_env config
 # Add key=value pairs of SDKs to use below
-java=17.0.12-tem
+java=17.0.14-tem
 mvnd=1.0.2

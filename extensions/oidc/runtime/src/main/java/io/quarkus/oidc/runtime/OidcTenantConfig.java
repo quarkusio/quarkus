@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.oidc.JavaScriptRequestChecker;
 import io.quarkus.oidc.TenantConfigResolver;
@@ -291,6 +292,53 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * Front-Channel Logout configuration
          */
         Frontchannel frontchannel();
+
+        enum ClearSiteData {
+            /**
+             * Clear cache
+             */
+            CACHE("cache"),
+
+            /**
+             * Clear client hints.
+             */
+            CLIENT_HINTS("clientHints"),
+
+            /**
+             * Clear cookies.
+             */
+            COOKIES("cookies"),
+
+            /**
+             * Clear execution contexts
+             */
+            EXECUTION_CONTEXTS("executionContexts"),
+
+            /**
+             * Clear storage
+             */
+            STORAGE("storage"),
+
+            /**
+             * Clear all types of data
+             */
+            WILDCARD("*");
+
+            private String directive;
+
+            private ClearSiteData(String directive) {
+                this.directive = directive;
+            }
+
+            public String directive() {
+                return "\"" + directive + "\"";
+            }
+        }
+
+        /**
+         * Clear-Site-Data header directives
+         */
+        Optional<Set<ClearSiteData>> clearSiteData();
     }
 
     interface Backchannel {

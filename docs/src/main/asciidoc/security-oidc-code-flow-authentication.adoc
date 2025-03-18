@@ -1141,6 +1141,15 @@ There are two main ways for the authentication information to expire: the tokens
 
 Let's start with explicit logout operations.
 
+[NOTE]
+====
+You can request setting https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Clear-Site-Data[Clear-Site-Data] directives for all of the logout operations with a `quarkus.oidc.logout.clear-site-data` configuration property. For example:
+
+[source,properties]
+----
+quarkus.oidc.logout.clear-site-data=cache,cookies
+----
+====
 
 [[user-initiated-logout]]
 ==== User-initiated logout

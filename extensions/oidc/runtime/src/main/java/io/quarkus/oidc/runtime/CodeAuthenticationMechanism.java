@@ -1512,11 +1512,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (isRpInitiatedLogout(context, configContext)) {
                 LOG.debug("Performing an RP initiated logout");
                 fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
+                OidcUtils.setClearSiteData(context, configContext.oidcConfig());
                 return buildLogoutRedirectUriUni(context, configContext, idToken);
             }
             if (isBackChannelLogoutPendingAndValid(configContext, identity)
                     || isFrontChannelLogoutValid(context, configContext,
                             identity)) {
+                OidcUtils.setClearSiteData(context, configContext.oidcConfig());
                 return removeSessionCookie(context, configContext.oidcConfig())
                         .map(new Function<Void, Void>() {
                             @Override
@@ -1528,5 +1530,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             return VOID_UNI;
         }
+
     }
 }

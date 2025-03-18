@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
@@ -50,6 +51,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
@@ -104,6 +106,7 @@ public final class OidcUtils {
     public static final String DPOP_PROOF = "dpop_proof";
     public static final String DPOP_PROOF_JWT_HEADERS = "dpop_proof_jwt_headers";
     public static final String DPOP_PROOF_JWT_CLAIMS = "dpop_proof_jwt_claims";
+    public static final String CLEAR_SITE_DATA_HEADER = "Clear-Site-Data";
 
     private static final String APPLICATION_JWT = "application/jwt";
 
@@ -840,5 +843,19 @@ public final class OidcUtils {
         }
         String remainder = ct.substring(APPLICATION_JWT.length()).trim();
         return remainder.indexOf(';') == 0;
+    }
+
+    public static void setClearSiteData(RoutingContext context, OidcTenantConfig oidcConfig) {
+        Set<ClearSiteData> dirs = oidcConfig.logout().clearSiteData().orElse(Set.of());
+        if (!dirs.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            for (ClearSiteData dir : dirs) {
+                if (!builder.isEmpty()) {
+                    builder.append(",");
+                }
+                builder.append(dir.directive());
+            }
+            context.response().putHeader(CLEAR_SITE_DATA_HEADER, builder.toString());
+        }
     }
 }

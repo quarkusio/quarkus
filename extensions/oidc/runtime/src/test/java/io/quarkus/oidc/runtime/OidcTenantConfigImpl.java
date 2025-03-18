@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
@@ -160,15 +161,16 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
-        LOGOUT_POST_LOGOUT_EXTRA_PARAMS,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL,
-        LOGOUT_POST_LOGOUT_FRONT_CHANNEL,
-        LOGOUT_POST_LOGOUT_FRONT_CHANNEL_PATH,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL_PATH,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL_TOKEN_CACHE_SIZE,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL_TOKEN_CACHE_TTL,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL,
-        LOGOUT_POST_LOGOUT_BACK_CHANNEL_LOGOUT_TOKEN_KEY,
+        LOGOUT_CLEAR_SITE_DATA,
+        LOGOUT_EXTRA_PARAMS,
+        LOGOUT_BACK_CHANNEL,
+        LOGOUT_FRONT_CHANNEL,
+        LOGOUT_FRONT_CHANNEL_PATH,
+        LOGOUT_BACK_CHANNEL_PATH,
+        LOGOUT_BACK_CHANNEL_TOKEN_CACHE_SIZE,
+        LOGOUT_BACK_CHANNEL_TOKEN_CACHE_TTL,
+        LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL,
+        LOGOUT_BACK_CHANNEL_LOGOUT_TOKEN_KEY,
         TOKEN_ISSUER,
         TOKEN_AUDIENCE,
         TOKEN_SUBJECT_REQUIRED,
@@ -480,42 +482,48 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
 
             @Override
             public Map<String, String> extraParams() {
-                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_EXTRA_PARAMS, true);
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_EXTRA_PARAMS, true);
                 return Map.of();
             }
 
             @Override
+            public Optional<Set<ClearSiteData>> clearSiteData() {
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_CLEAR_SITE_DATA, true);
+                return Optional.of(Set.of());
+            }
+
+            @Override
             public Backchannel backchannel() {
-                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL, true);
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL, true);
                 return new Backchannel() {
                     @Override
                     public Optional<String> path() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL_PATH, true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_PATH, true);
                         return Optional.empty();
                     }
 
                     @Override
                     public int tokenCacheSize() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL_TOKEN_CACHE_SIZE, true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_TOKEN_CACHE_SIZE, true);
                         return 0;
                     }
 
                     @Override
                     public Duration tokenCacheTimeToLive() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL_TOKEN_CACHE_TTL, true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_TOKEN_CACHE_TTL, true);
                         return null;
                     }
 
                     @Override
                     public Optional<Duration> cleanUpTimerInterval() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL,
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL,
                                 true);
                         return Optional.empty();
                     }
 
                     @Override
                     public String logoutTokenKey() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_BACK_CHANNEL_LOGOUT_TOKEN_KEY, true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_LOGOUT_TOKEN_KEY, true);
                         return "";
                     }
                 };
@@ -523,11 +531,11 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
 
             @Override
             public Frontchannel frontchannel() {
-                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_FRONT_CHANNEL, true);
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_FRONT_CHANNEL, true);
                 return new Frontchannel() {
                     @Override
                     public Optional<String> path() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_POST_LOGOUT_FRONT_CHANNEL_PATH, true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_FRONT_CHANNEL_PATH, true);
                         return Optional.empty();
                     }
                 };

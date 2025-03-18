@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -483,6 +484,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Map<String, String> extraParams;
 
         /**
+         * Clear-Site-Data header directives
+         */
+        Optional<Set<ClearSiteData>> clearSiteData = Optional.of(Set.of());
+
+        /**
          * Back-Channel Logout configuration
          */
         public Backchannel backchannel = new Backchannel();
@@ -545,6 +551,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             postLogoutPath = mapping.postLogoutPath();
             postLogoutUriParam = mapping.postLogoutUriParam();
             extraParams = mapping.extraParams();
+            clearSiteData = mapping.clearSiteData();
             backchannel.addConfigMappingValues(mapping.backchannel());
             frontchannel.addConfigMappingValues(mapping.frontchannel());
         }
@@ -577,6 +584,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel frontchannel() {
             return frontchannel;
+        }
+
+        @Override
+        public Optional<Set<ClearSiteData>> clearSiteData() {
+            return clearSiteData;
         }
     }
 

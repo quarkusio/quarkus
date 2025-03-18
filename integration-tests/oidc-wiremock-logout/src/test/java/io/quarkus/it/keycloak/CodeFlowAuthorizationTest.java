@@ -7,6 +7,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.time.Duration;
@@ -94,6 +95,8 @@ public class CodeFlowAuthorizationTest {
             WebResponse webResponse = webClient
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/service/code-flow-form-post").toURL()));
             assertEquals(302, webResponse.getStatusCode());
+            String clearSiteData = webResponse.getResponseHeaderValue("clear-site-data");
+            assertTrue(clearSiteData.equals("\"cache\",\"cookies\"") || clearSiteData.equals("\"cookies\",\"cache\""));
 
             assertNull(getSessionCookie(webClient, "code-flow-form-post"));
 

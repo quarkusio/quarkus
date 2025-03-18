@@ -2,12 +2,16 @@ package io.quarkus.oidc.runtime.builders;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 
 /**
  * Builder for the {@link OidcTenantConfig.Logout}.
@@ -15,7 +19,8 @@ import io.quarkus.oidc.runtime.OidcTenantConfig;
 public final class LogoutConfigBuilder {
     private record LogoutImpl(Optional<String> path, Optional<String> postLogoutPath, String postLogoutUriParam,
             Map<String, String> extraParams, OidcTenantConfig.Backchannel backchannel,
-            OidcTenantConfig.Frontchannel frontchannel) implements OidcTenantConfig.Logout {
+            OidcTenantConfig.Frontchannel frontchannel,
+            Optional<Set<ClearSiteData>> clearSiteData) implements OidcTenantConfig.Logout {
     }
 
     private record FrontchannelImpl(Optional<String> path) implements OidcTenantConfig.Frontchannel {
@@ -28,6 +33,7 @@ public final class LogoutConfigBuilder {
     private String postLogoutUriParam;
     private OidcTenantConfig.Backchannel backchannel;
     private OidcTenantConfig.Frontchannel frontchannel;
+    private Optional<Set<ClearSiteData>> clearSiteData = Optional.of(new HashSet<>());
 
     public LogoutConfigBuilder() {
         this(new OidcTenantConfigBuilder());
@@ -44,6 +50,7 @@ public final class LogoutConfigBuilder {
         this.postLogoutUriParam = logout.postLogoutUriParam();
         this.backchannel = logout.backchannel();
         this.frontchannel = logout.frontchannel();
+        this.clearSiteData = logout.clearSiteData();
     }
 
     /**
@@ -106,6 +113,26 @@ public final class LogoutConfigBuilder {
     }
 
     /**
+     * Clear all site data
+     *
+     * @return this builder
+     */
+    public LogoutConfigBuilder clearSiteData() {
+        this.clearSiteData(List.of(ClearSiteData.WILDCARD));
+        return this;
+    }
+
+    /**
+     * @param clear site data directives {@link OidcTenantConfig.Logout#clearSiteData()}
+     * @return this builder
+     */
+    public LogoutConfigBuilder clearSiteData(List<ClearSiteData> directives) {
+        Objects.requireNonNull(directives);
+        this.clearSiteData.get().addAll(directives);
+        return this;
+    }
+
+    /**
      * @param backchannel {@link OidcTenantConfig.Logout#backchannel()}
      * @return this builder
      */
@@ -134,7 +161,8 @@ public final class LogoutConfigBuilder {
      * @return built {@link OidcTenantConfig.Logout}
      */
     public OidcTenantConfig.Logout build() {
-        return new LogoutImpl(path, postLogoutPath, postLogoutUriParam, Map.copyOf(extraParams), backchannel, frontchannel);
+        return new LogoutImpl(path, postLogoutPath, postLogoutUriParam, Map.copyOf(extraParams), backchannel, frontchannel,
+                clearSiteData);
     }
 
     /**

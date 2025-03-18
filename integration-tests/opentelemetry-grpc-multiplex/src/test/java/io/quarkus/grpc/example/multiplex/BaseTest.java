@@ -1,5 +1,19 @@
 package io.quarkus.grpc.example.multiplex;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+import java.time.Duration;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 import io.grpc.examples.multiplex.LongReply;
 import io.grpc.examples.multiplex.Multiplex;
 import io.grpc.examples.multiplex.StringRequest;
@@ -12,19 +26,6 @@ import io.opentelemetry.semconv.ResourceAttributes;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.time.Duration;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class BaseTest {

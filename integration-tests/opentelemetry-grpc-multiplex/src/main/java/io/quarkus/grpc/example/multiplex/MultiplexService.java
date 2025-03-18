@@ -1,5 +1,7 @@
 package io.quarkus.grpc.example.multiplex;
 
+import jakarta.inject.Inject;
+
 import io.grpc.examples.multiplex.LongReply;
 import io.grpc.examples.multiplex.MutinyMultiplexGrpc;
 import io.grpc.examples.multiplex.StringRequest;
@@ -9,7 +11,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
-import jakarta.inject.Inject;
 
 @GrpcService
 public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {

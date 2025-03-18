@@ -1,6 +1,23 @@
 package io.quarkus.grpc.example.multiplex;
 
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.GRPC;
+import static org.testcontainers.Testcontainers.exposeHostPorts;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.PullPolicy;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
+
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest;
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceResponse;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -13,21 +30,6 @@ import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.PullPolicy;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.GRPC;
-import static org.testcontainers.Testcontainers.exposeHostPorts;
 
 public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecycleManager {
 

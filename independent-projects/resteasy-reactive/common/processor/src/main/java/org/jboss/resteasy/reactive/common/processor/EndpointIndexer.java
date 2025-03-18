@@ -31,7 +31,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
@@ -1420,17 +1419,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
                             currentMethodInfo);
                 }
-            } else if ((pt.name().equals(MAP) || pt.name().equals(MULTI_VALUED_MAP)) && type != ParameterType.BODY
-                    && type != ParameterType.FORM) {
-                //Map and Multimap are typically used to represent query parameters or headers, not structured data in a request body or form.
-                //Body and form are often mapped to POJOs or richer structures.
-                typeHandled = true;
-                builder.setSingle(false);
-                elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                if (convertible) {
-                    handleMapParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
-                            currentMethodInfo);
-                }
             } else if (pt.name().equals(OPTIONAL)) {
                 typeHandled = true;
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
@@ -1588,10 +1576,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
-    }
-
-    protected void handleMapParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 

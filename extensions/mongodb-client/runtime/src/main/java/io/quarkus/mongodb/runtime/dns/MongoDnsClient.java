@@ -83,7 +83,9 @@ public class MongoDnsClient implements DnsClient {
         }
         dnsClientOptions.setQueryTimeout(config.getValue(DNS_LOOKUP_TIMEOUT, Duration.class).toMillis());
 
-        log.debugf("DNS client options: %s", dnsClientOptions.toJson());
+        if (log.isDebugEnabled()) {
+            log.debugf("DNS client options: %s", dnsClientOptions.toJson());
+        }
         dnsClient = mutinyVertx.createDnsClient(dnsClientOptions);
     }
 
@@ -97,7 +99,7 @@ public class MongoDnsClient implements DnsClient {
                         .map(line -> line.split(" ")[1])
                         .collect(Collectors.toList());
             } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                Logger.getLogger(MongoDnsClientProvider.class).info("Unable to read the /etc/resolv.conf file", e);
+                log.info("Unable to read the /etc/resolv.conf file", e);
             }
         }
         return nameServers;
@@ -164,7 +166,7 @@ public class MongoDnsClient implements DnsClient {
                 results.add(r);
             }
             hosts.addAll(results);
-            log.debugf("Resolved SRV records for %s: %s", srvHost, String.join(", ", results));
+            log.debugf("Resolved SRV records for %s: %s", srvHost, results);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up SRV record for host " + srvHost, e);
         }

@@ -1,9 +1,9 @@
 package io.quarkus.grpc.example.multiplex;
 
-import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest;
 
 public final class Traces {
 

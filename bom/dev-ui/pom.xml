@@ -20,7 +20,7 @@
         <ssr-dom-shim.version>1.2.1</ssr-dom-shim.version>
         <trusted-types.version>2.0.7</trusted-types.version>
         <reactive-element.version>2.0.4</reactive-element.version>
-        <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
+        <vaadin-usage-statistics.version>2.1.3</vaadin-usage-statistics.version>
         <vaadin-development-mode-detector.version>2.0.7</vaadin-development-mode-detector.version>
         <polymer.version>3.5.1</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>

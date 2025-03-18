@@ -202,7 +202,6 @@
         <module>flyway-derby</module>
         <module>flyway-db2</module>
         <module>liquibase</module>
-        <module>liquibase-mongodb</module>
 
         <!-- GraphQL -->
         <module>vertx-graphql</module>

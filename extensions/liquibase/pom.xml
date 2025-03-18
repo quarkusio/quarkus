@@ -16,6 +16,7 @@
     <modules>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
+        <module>liquibase-common</module>
     </modules>
 
 </project>

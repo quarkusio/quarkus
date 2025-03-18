@@ -13,7 +13,7 @@ include::_attributes.adoc[]
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
-Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
+Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content and generates REST Resources backed by Quarkus REST.
 
 == Setting up REST Data with Panache
 
@@ -22,22 +22,20 @@ Please, check out the next compatibility table to use the right one according to
 
 .Compatibility Table
 |===
-|Extension |Status |Hibernate |RESTEasy
+|Extension |Status |Hibernate
 
 |<<hr-hibernate-orm,quarkus-hibernate-orm-rest-data-panache>>
 |`Stable`
 |`ORM`
-|`Classic and Reactive`
 
 |<<hr-hibernate-reactive,quarkus-hibernate-reactive-rest-data-panache>>
 |`Experimental`
-|`Reactive`
 |`Reactive`
 
 |<<hr-mongodb,quarkus-mongodb-rest-data-panache>>
 |`Experimental`
 |`ORM`
-|`Classic and Reactive`
+
 |===
 
 [[hr-hibernate-orm]]
@@ -46,7 +44,7 @@ Please, check out the next compatibility table to use the right one according to
 * Add the required dependencies to your build file
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
 ** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-** One of the RESTEasy JSON serialization extensions (the extension supports both Quarkus REST (formerly RESTEasy Reactive) and RESTEasy Classic)
+** One of the REST JSON serialization extensions (such as `quarkus-rest-jackson`)
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -60,17 +58,9 @@ Please, check out the next compatibility table to use the right one according to
     <artifactId>quarkus-jdbc-postgresql</artifactId>
 </dependency>
 
-<!-- Use this if you are using Quarkus REST -->
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-jackson</artifactId>
-</dependency>
-
-<!-- Use this if you are going to use RESTEasy Classic -->
-<!--
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
 </dependency>
 -->
 ----
@@ -81,11 +71,7 @@ Please, check out the next compatibility table to use the right one according to
 implementation("io.quarkus:quarkus-hibernate-orm-rest-data-panache")
 implementation("io.quarkus:quarkus-jdbc-postgresql")
 
-// Use this if you are using Quarkus REST
 implementation("io.quarkus:quarkus-rest-jackson")
-
-// Use this if you are going to use RESTEasy Classic
-// implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
@@ -143,14 +129,6 @@ To see the Hibernate ORM REST Data with Panache in action, you can check out the
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
-
-<!-- Use this if you are going to use RESTEasy Classic -->
-<!--
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
-</dependency>
--->
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
@@ -160,9 +138,6 @@ implementation("io.quarkus:quarkus-mongodb-rest-data-panache")
 
 // Use this if you are using Quarkus REST
 implementation("io.quarkus:quarkus-rest-jackson")
-
-// Use this if you are going to use RESTEasy Classic
-// implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache] guide.

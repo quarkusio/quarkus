@@ -43,18 +43,29 @@
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
         <jandex.version>3.2.7</jandex.version>
 
-        <junit.jupiter.version>5.10.5</junit.jupiter.version>
+        <junit5.version>5.10.5</junit5.version>
         <junit.testkit.version>1.10.3</junit.testkit.version>
         <assertj.version>3.27.3</assertj.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit5.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
-            <version>${junit.jupiter.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>

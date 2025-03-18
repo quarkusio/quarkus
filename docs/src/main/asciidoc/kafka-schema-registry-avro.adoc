@@ -433,6 +433,13 @@ testImplementation("io.quarkus:quarkus-rest-client")
 testImplementation("org.awaitility:awaitility")
 ----
 
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+----
+testImplementation("io.quarkus:quarkus-rest-client")
+testImplementation("org.awaitility:awaitility")
+----
+
 In the test, we will send movies in a loop and check if the `ConsumedMovieResource` returns
 what we send.
 
@@ -564,6 +571,14 @@ testImplementation("io.strimzi:strimzi-test-container:0.105.0") {
 }
 ----
 
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+----
+testImplementation("io.strimzi:strimzi-test-container:0.105.0") {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-core")
+}
+----
+
 [source,java]
 ----
 package org.acme.kafka;
@@ -687,7 +702,7 @@ and the REST client `apicurio-common-rest-client-vertx` dependency are set to co
 .build.gradle
 ----
 dependencies {
-    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:2.12.3.Final"))
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}"))
 
     ...
 
@@ -713,6 +728,41 @@ dependencies {
     implementation("io.apicurio:apicurio-common-rest-client-vertx") {
         version {
             strictly "0.1.5.Final"
+        }
+    }
+}
+----
+
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin",subs=attributes+]
+.build.gradle.kts
+----
+dependencies {
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}"))
+
+    ...
+
+    implementation("io.quarkus:quarkus-apicurio-registry-avro")
+    implementation("io.apicurio:apicurio-registry-serdes-avro-serde") {
+        exclude(group = "io.apicurio", module = "apicurio-common-rest-client-jdk")
+        exclude(group = "io.apicurio", module = "apicurio-registry-client")
+        exclude(group = "io.apicurio", module = "apicurio-registry-common")
+        version {
+            strictly("2.1.5.Final")
+        }
+    }
+    implementation("io.apicurio:apicurio-registry-client") {
+        version {
+            strictly("2.1.5.Final")
+        }
+    }
+    implementation("io.apicurio:apicurio-registry-common") {
+        version {
+            strictly("2.1.5.Final")
+        }
+    }
+    implementation("io.apicurio:apicurio-common-rest-client-vertx") {
+        version {
+            strictly("0.1.5.Final")
         }
     }
 }
@@ -794,6 +844,31 @@ dependencies {
 }
 ----
 
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+----
+repositories {
+    ...
+
+    maven {
+        url = uri("https://packages.confluent.io/maven/")
+    }
+}
+
+dependencies {
+    ...
+
+    implementation("io.quarkus:quarkus-confluent-registry-avro")
+
+    // Confluent registry libraries use Jakarta REST client
+    implementation("io.quarkus:quarkus-rest-client")
+
+    implementation("io.confluent:kafka-avro-serializer:7.2.0") {
+        exclude(group = "jakarta.ws.rs", module = "jakarta.ws.rs-api")
+    }
+}
+----
+
 In JVM mode, any version of `io.confluent:kafka-avro-serializer` can be used.
 In native mode, Quarkus supports the following versions: `6.2.x`, `7.0.x`, `7.1.x`, `7.2.x`, `7.3.x`.
 
@@ -809,6 +884,13 @@ For version `7.4.x` and `7.5.x`, due to an issue with the Confluent Schema Seria
 ----
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
+----
+dependencies {
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
+}
+----
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
 ----
 dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")

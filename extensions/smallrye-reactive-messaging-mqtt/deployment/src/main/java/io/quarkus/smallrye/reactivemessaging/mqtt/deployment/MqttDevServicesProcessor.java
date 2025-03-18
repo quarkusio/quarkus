@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -37,6 +38,7 @@ import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -71,9 +73,13 @@ public class MqttDevServicesProcessor {
             MqttBuildTimeConfig mqttClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesConfig devServicesConfig,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
 
         MqttDevServiceCfg configuration = getConfiguration(mqttClientBuildTimeConfig);
+
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                devServicesSharedNetworkBuildItem);
 
         if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
@@ -89,7 +95,7 @@ public class MqttDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, composeProjectBuildItem,
-                    configuration, launchMode, devServicesConfig.timeout());
+                    configuration, launchMode, devServicesConfig.timeout(), useSharedNetwork);
             if (newDevService != null) {
                 devService = newDevService;
 
@@ -147,7 +153,7 @@ public class MqttDevServicesProcessor {
     private RunningDevService startMqttBroker(DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             MqttDevServiceCfg config, LaunchModeBuildItem launchMode,
-            Optional<Duration> timeout) {
+            Optional<Duration> timeout, boolean useSharedNetwork) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for MQTT, as it has been disabled in the config.");
@@ -165,12 +171,12 @@ public class MqttDevServicesProcessor {
             return null;
         }
 
-        ConfiguredMqttContainer container = new ConfiguredMqttContainer(
-                DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"),
-                config.fixedExposedPort,
-                launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
-
         final Supplier<RunningDevService> defaultMqttBrokerSupplier = () -> {
+
+            ConfiguredMqttContainer container = new ConfiguredMqttContainer(
+                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"),
+                    config.fixedExposedPort,
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null, useSharedNetwork);
 
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
@@ -179,7 +185,7 @@ public class MqttDevServicesProcessor {
             return getRunningDevService(
                     container.getContainerId(),
                     container::close,
-                    container.getHost(),
+                    container.getEffectiveHost(),
                     container.getPort());
         };
 
@@ -197,8 +203,10 @@ public class MqttDevServicesProcessor {
                         .findFirst().map(r -> getRunningDevService(
                                 r.containerInfo().id(),
                                 null,
-                                DockerClientFactory.instance().dockerHostIpAddress(),
-                                r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0))))
+                                useSharedNetwork ? ComposeLocator.getServiceName(r)
+                                        : DockerClientFactory.instance().dockerHostIpAddress(),
+                                useSharedNetwork ? MQTT_PORT
+                                        : r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0))))
                 .orElseGet(defaultMqttBrokerSupplier);
     }
 
@@ -282,13 +290,17 @@ public class MqttDevServicesProcessor {
     private static final class ConfiguredMqttContainer extends GenericContainer<ConfiguredMqttContainer> {
 
         private final int port;
+        private final boolean useSharedNetwork;
+        private String hostName;
 
         private ConfiguredMqttContainer(
                 DockerImageName dockerImageName,
                 int fixedExposedPort,
-                String serviceName) {
+                String serviceName,
+                boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
+            this.useSharedNetwork = useSharedNetwork;
             withExposedPorts(MQTT_PORT);
             withNetwork(Network.SHARED);
             if (serviceName != null) { // Only adds the label in dev mode.
@@ -306,12 +318,24 @@ public class MqttDevServicesProcessor {
         @Override
         protected void configure() {
             super.configure();
+            if (useSharedNetwork) {
+                hostName = ConfigureUtil.configureSharedNetwork(this, "mqtt");
+            } else {
+                hostName = super.getHost();
+            }
             if (port > 0) {
                 addFixedExposedPort(port, MQTT_PORT);
             }
         }
 
+        public String getEffectiveHost() {
+            return hostName;
+        }
+
         public int getPort() {
+            if (useSharedNetwork) {
+                return MQTT_PORT;
+            }
             return getMappedPort(MQTT_PORT);
         }
     }

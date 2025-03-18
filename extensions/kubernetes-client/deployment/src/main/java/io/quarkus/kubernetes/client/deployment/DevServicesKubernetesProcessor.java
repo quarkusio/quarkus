@@ -218,7 +218,7 @@ public class DevServicesKubernetesProcessor {
                 launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of("kube-apiserver", "k3s", "kindest/node"),
-                        KUBERNETES_PORT, launchMode.getLaunchMode()));
+                        KUBERNETES_PORT, launchMode.getLaunchMode(), useSharedNetwork));
 
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
             KubernetesContainer container;

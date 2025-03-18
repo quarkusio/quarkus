@@ -32,7 +32,6 @@ import org.testcontainers.containers.output.OutputFrame;
 
 import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
 import io.quarkus.deployment.IsDevelopment;
@@ -50,6 +49,7 @@ import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 
 public class DevServicesProcessor {
@@ -201,24 +201,12 @@ public class DevServicesProcessor {
                 container.getStatus(), getNetworks(container), container.getLabels(), getExposedPorts(container));
     }
 
-    private static String[] getNetworks(Container container) {
+    private static Map<String, String[]> getNetworks(Container container) {
         ContainerNetworkSettings networkSettings = container.getNetworkSettings();
         if (networkSettings == null) {
             return null;
         }
-        Map<String, ContainerNetwork> networks = networkSettings.getNetworks();
-        if (networks == null) {
-            return null;
-        }
-        return networks.entrySet().stream()
-                .map(e -> {
-                    List<String> aliases = e.getValue().getAliases();
-                    if (aliases == null || aliases.isEmpty()) {
-                        return e.getKey();
-                    }
-                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
-                })
-                .toArray(String[]::new);
+        return ContainerUtil.getNetworks(networkSettings.getNetworks());
     }
 
     private ContainerInfo.ContainerPort[] getExposedPorts(Container container) {

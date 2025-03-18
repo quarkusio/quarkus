@@ -179,7 +179,7 @@ public class DevServicesApicurioRegistryProcessor {
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(config.imageName, "apicurio"),
-                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode()))
+                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode(), useSharedNetwork))
                 .map(address -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
                         address.getId(), null,
                         // address does not have the URL Scheme - just the host:port, so prepend http://

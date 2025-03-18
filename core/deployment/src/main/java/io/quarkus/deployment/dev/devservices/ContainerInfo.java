@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public record ContainerInfo(String id, String[] names, String imageName, String status, String[] networks,
+public record ContainerInfo(String id, String[] names, String imageName, String status, Map<String, String[]> networks,
         Map<String, String> labels, ContainerPort[] exposedPorts) {
 
     public String getShortId() {
@@ -16,7 +16,14 @@ public record ContainerInfo(String id, String[] names, String imageName, String 
     }
 
     public String formatNetworks() {
-        return String.join(",", networks);
+        return networks.entrySet().stream()
+                .map(e -> {
+                    String[] aliases = e.getValue();
+                    if (aliases == null || aliases.length == 0) {
+                        return e.getKey();
+                    }
+                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
+                }).collect(Collectors.joining(", "));
     }
 
     public String formatPorts() {

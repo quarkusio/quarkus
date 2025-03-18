@@ -51,7 +51,7 @@ public class ContainerUtil {
                 getExposedPorts(inspectContainer));
     }
 
-    private static String[] getNetworks(InspectContainerResponse container) {
+    private static Map<String, String[]> getNetworks(InspectContainerResponse container) {
         NetworkSettings networkSettings = container.getNetworkSettings();
         if (networkSettings == null) {
             return null;
@@ -59,19 +59,16 @@ public class ContainerUtil {
         return getNetworks(networkSettings.getNetworks());
     }
 
-    private static String[] getNetworks(Map<String, ContainerNetwork> networkSettings) {
+    public static Map<String, String[]> getNetworks(Map<String, ContainerNetwork> networkSettings) {
         if (networkSettings == null) {
             return null;
         }
         return networkSettings.entrySet().stream()
-                .map(e -> {
-                    List<String> aliases = e.getValue().getAliases();
-                    if (aliases == null || aliases.isEmpty()) {
-                        return e.getKey();
-                    }
-                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
-                })
-                .toArray(String[]::new);
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> {
+                            List<String> aliases = e.getValue().getAliases();
+                            return aliases == null ? new String[0] : aliases.toArray(new String[0]);
+                        }));
     }
 
     private static ContainerInfo.ContainerPort[] getExposedPorts(InspectContainerResponse inspectContainer) {

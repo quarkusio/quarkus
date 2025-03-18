@@ -201,7 +201,7 @@ public class DevServicesElasticsearchProcessor {
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
                         ELASTICSEARCH_PORT,
-                        launchMode.getLaunchMode()));
+                        launchMode.getLaunchMode(), useSharedNetwork));
 
         // Starting the server
         final Supplier<RunningDevService> defaultElasticsearchSupplier = () -> {

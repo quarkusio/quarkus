@@ -210,8 +210,8 @@ public class PulsarDevServicesProcessor {
                         getHttpServiceUrl(containerAddress.getHost(),
                                 pulsarContainerLocator.locatePublicPort(config.serviceName, config.shared,
                                         launchMode.getLaunchMode(), PulsarContainer.BROKER_HTTP_PORT).orElse(8080))))
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "pulsar"), PulsarContainer.BROKER_PORT, launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(config.imageName, "pulsar"),
+                        PulsarContainer.BROKER_PORT, launchMode.getLaunchMode(), useSharedNetwork)
                         .map(this::getRunningService))
                 .orElseGet(defaultPulsarBrokerSupplier);
     }

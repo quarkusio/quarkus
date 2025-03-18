@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
@@ -49,6 +50,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ContainerUtil;
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
 /**
@@ -59,7 +61,7 @@ public class ComposeDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(ComposeDevServicesProcessor.class);
 
-    static final String PROJECT_PREFIX = "quarkus-compose-devservice";
+    static final String PROJECT_PREFIX = "quarkus-devservices";
     static final Pattern COMPOSE_FILE = Pattern.compile("(^docker-compose|^compose).*.(yml|yaml)");
 
     static volatile ComposeRunningService runningCompose;
@@ -118,7 +120,7 @@ public class ComposeDevServicesProcessor {
                         || s.getName().equals("Process stdout") || s.getName().startsWith("build-"));
         try {
             runningCompose = startCompose(buildExecutor, configuration, appInfo.getName(),
-                    dockerStatusBuildItem, devServicesConfig.timeout());
+                    dockerStatusBuildItem, launchMode, devServicesConfig.timeout());
             if (runningCompose == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -173,6 +175,7 @@ public class ComposeDevServicesProcessor {
     private ComposeRunningService startCompose(Executor buildExecutor, ComposeDevServiceCfg cfg,
             String appName,
             ContainerRuntimeStatusBuildItem dockerStatusBuildItem,
+            LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!cfg.devServicesEnabled) {
             // explicitly disabled
@@ -185,11 +188,22 @@ public class ComposeDevServicesProcessor {
             return null;
         }
 
-        ComposeProject.Builder builder = new ComposeProject.Builder(cfg.files, getComposeExecutable())
-                .withIdentifier(PROJECT_PREFIX + "-" + appName)
-                .withProject(cfg.project)
+        ComposeFiles composeFiles = new ComposeFiles(cfg.files);
+        String projectName = (PROJECT_PREFIX + "-" + appName).toLowerCase();
+        if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT && !cfg.reuseProjectForTests) {
+            projectName = projectName + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
+        } else {
+            if (cfg.project != null) {
+                projectName = cfg.project;
+            } else if (composeFiles.getProjectName() != null) {
+                projectName = composeFiles.getProjectName();
+            }
+        }
+
+        ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())
+                .withProject(projectName)
                 .withEnv(cfg.envVariables)
-                .withStopContainers(cfg.stopContainers)
+                .withStopContainers(cfg.stopServices)
                 .withRyukEnabled(cfg.ryukEnabled)
                 .withProfiles(cfg.profiles)
                 .withOptions(cfg.options)
@@ -202,18 +216,31 @@ public class ComposeDevServicesProcessor {
         timeout.ifPresent(builder::withStartupTimeout);
         ComposeProject compose = builder.build();
 
-        if (cfg.files.isEmpty()) {
-            if (cfg.project == null) {
-                // compose no files found
-                log.debug("Could not find any compose files, not starting Compose dev services.");
-                return null;
+        // if compose is configured to not start services, only try discovering existing services
+        if (!cfg.startServices) {
+            log.infof("Discovering existing Compose services for project %s", compose.getProject());
+            // discover existing services
+            compose.discoverServiceInstances(true);
+            if (!compose.getServices().isEmpty()) {
+                return new ComposeRunningService(compose, false);
             } else {
-                // discover existing services
-                compose.discoverServiceInstances();
-                if (!compose.getServices().isEmpty()) {
-                    return new ComposeRunningService(compose, false);
-                }
+                return null;
             }
+        }
+        // try discovering existing services, without checking for required services
+        compose.discoverServiceInstances(false);
+        if (!compose.getServices().isEmpty()) {
+            // if services are discovered, and compose files are defined, wait and check for them to be ready
+            if (!cfg.files.isEmpty()) {
+                compose.waitUntilServicesReady(buildExecutor);
+            }
+            log.infof("Discovered existing Compose services for project %s", compose.getProject());
+            return new ComposeRunningService(compose, false);
+        }
+        // failed discovering existing services, no compose files found
+        if (cfg.files.isEmpty()) {
+            log.debug("Could not find any compose files, not starting Compose dev services");
+            return null;
         }
 
         // Start compose
@@ -224,10 +251,12 @@ public class ComposeDevServicesProcessor {
     private static class ComposeRunningService extends RunningDevService {
 
         private final Map<String, List<RunningContainer>> composeServices;
+        private final String defaultNetworkId;
 
         public ComposeRunningService(ComposeProject compose, boolean isOwner) {
             super(compose.getProject(), "compose", null, isOwner ? compose::stop : null, configs(compose));
             this.composeServices = composeServices(compose);
+            this.defaultNetworkId = compose.getDefaultNetworkId();
         }
 
         static Map<String, String> configs(ComposeProject compose) {
@@ -246,7 +275,7 @@ public class ComposeDevServicesProcessor {
         }
 
         public DevServicesComposeProjectBuildItem toComposeBuildItem() {
-            return new DevServicesComposeProjectBuildItem(getName(), composeServices, getConfig());
+            return new DevServicesComposeProjectBuildItem(getName(), defaultNetworkId, composeServices, getConfig());
         }
     }
 
@@ -280,7 +309,8 @@ public class ComposeDevServicesProcessor {
     private static class ComposeDevServiceCfg {
         private final boolean devServicesEnabled;
         private final String project;
-        private final boolean stopContainers;
+        private final boolean startServices;
+        private final boolean stopServices;
         private final boolean ryukEnabled;
         private final List<File> files;
         private final List<String> profiles;
@@ -291,6 +321,7 @@ public class ComposeDevServicesProcessor {
         private final boolean followContainerLogs;
         private final Map<String, String> envVariables;
         private final Map<String, Integer> scalingPreferences;
+        private final boolean reuseProjectForTests;
         private final String filesSha;
 
         public ComposeDevServiceCfg(ComposeDevServicesBuildTimeConfig cfg) {
@@ -311,7 +342,8 @@ public class ComposeDevServicesProcessor {
                     .map(encoder::encodeToString)
                     .collect(Collectors.joining());
             this.project = cfg.projectName().orElse(null);
-            this.stopContainers = cfg.stopContainers();
+            this.startServices = cfg.startServices();
+            this.stopServices = cfg.stopServices();
             this.ryukEnabled = cfg.ryukEnabled();
             this.profiles = cfg.profiles().orElse(Collections.emptyList());
             this.options = cfg.options().orElse(Collections.emptyList());
@@ -320,6 +352,7 @@ public class ComposeDevServicesProcessor {
             this.envVariables = cfg.envVariables();
             this.scalingPreferences = cfg.scale();
             this.followContainerLogs = cfg.followContainerLogs();
+            this.reuseProjectForTests = cfg.reuseProjectForTests();
             this.build = cfg.build().orElse(null);
         }
 
@@ -332,7 +365,8 @@ public class ComposeDevServicesProcessor {
             ComposeDevServiceCfg that = (ComposeDevServiceCfg) o;
             return devServicesEnabled == that.devServicesEnabled
                     && Objects.equals(project, that.project)
-                    && Objects.equals(stopContainers, that.stopContainers)
+                    && Objects.equals(startServices, that.startServices)
+                    && Objects.equals(stopServices, that.stopServices)
                     && Objects.equals(ryukEnabled, that.ryukEnabled)
                     && Objects.equals(files, that.files)
                     && Objects.equals(filesSha, that.filesSha)
@@ -343,14 +377,15 @@ public class ComposeDevServicesProcessor {
                     && Objects.equals(followContainerLogs, that.followContainerLogs)
                     && Objects.equals(build, that.build)
                     && Objects.equals(envVariables, that.envVariables)
-                    && Objects.equals(scalingPreferences, that.scalingPreferences);
+                    && Objects.equals(scalingPreferences, that.scalingPreferences)
+                    && Objects.equals(reuseProjectForTests, that.reuseProjectForTests);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, project, stopContainers, ryukEnabled, files, filesSha,
+            return Objects.hash(devServicesEnabled, project, startServices, stopServices, ryukEnabled, files, filesSha,
                     profiles, options, removeImages, removeVolumes,
-                    followContainerLogs, build, envVariables, scalingPreferences);
+                    followContainerLogs, build, envVariables, scalingPreferences, reuseProjectForTests);
         }
     }
 }

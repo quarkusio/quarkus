@@ -284,7 +284,7 @@ public class DevServicesKafkaProcessor {
         return kafkaContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(config.imageName, "kafka", "strimzi", "redpanda"),
-                        KAFKA_PORT, launchMode.getLaunchMode()))
+                        KAFKA_PORT, launchMode.getLaunchMode(), useSharedNetwork))
                 .map(containerAddress -> new RunningDevService(Feature.KAFKA_CLIENT.getName(),
                         containerAddress.getId(),
                         null,

@@ -8,6 +8,7 @@ public final class Labels {
 
     public static final String QUARKUS_DEV_SERVICE = "io.quarkus.devservice";
     public static final String DOCKER_COMPOSE_PROJECT = "com.docker.compose.project";
+    public static final String DOCKER_COMPOSE_NETWORK = "com.docker.compose.network";
     public static final String DOCKER_COMPOSE_SERVICE = "com.docker.compose.service";
     public static final String DOCKER_COMPOSE_CONTAINER_NUMBER = "com.docker.compose.container-number";
 

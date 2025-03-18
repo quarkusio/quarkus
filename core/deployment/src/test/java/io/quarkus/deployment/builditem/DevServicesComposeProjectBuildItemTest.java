@@ -27,7 +27,7 @@ class DevServicesComposeProjectBuildItemTest {
                 new String[] { "postgres" },
                 "postgres:13",
                 "running",
-                new String[] { "default" },
+                Map.of("default", new String[] { "default" }),
                 Collections.emptyMap(),
                 new ContainerInfo.ContainerPort[] {
                         new ContainerInfo.ContainerPort("0.0.0.0", 5432, 5432, "tcp")
@@ -40,7 +40,7 @@ class DevServicesComposeProjectBuildItemTest {
                 new String[] { "mysql" },
                 "mysql:8",
                 "running",
-                new String[] { "default" },
+                Map.of("default", new String[] { "default" }),
                 Collections.emptyMap(),
                 new ContainerInfo.ContainerPort[] {
                         new ContainerInfo.ContainerPort("0.0.0.0", 3306, 3306, "tcp")
@@ -53,7 +53,7 @@ class DevServicesComposeProjectBuildItemTest {
                 new String[] { "redis" },
                 "redis:6",
                 "running",
-                new String[] { "default" },
+                Map.of("default", new String[] { "default" }),
                 Collections.emptyMap(),
                 new ContainerInfo.ContainerPort[] {
                         new ContainerInfo.ContainerPort("0.0.0.0", 6379, 6379, "tcp")
@@ -68,7 +68,7 @@ class DevServicesComposeProjectBuildItemTest {
                 new String[] { "ignored" },
                 "ignored:latest",
                 "running",
-                new String[] { "default" },
+                Map.of("default", new String[] { "default" }),
                 ignoredLabels,
                 new ContainerInfo.ContainerPort[] {
                         new ContainerInfo.ContainerPort("0.0.0.0", 8080, 8080, "tcp")
@@ -79,7 +79,7 @@ class DevServicesComposeProjectBuildItemTest {
         Map<String, List<RunningContainer>> composeServices = new HashMap<>();
         composeServices.put("default", Arrays.asList(postgresContainer, mysqlContainer, redisContainer, ignoredContainer));
 
-        buildItem = new DevServicesComposeProjectBuildItem("test-project", composeServices, Collections.emptyMap());
+        buildItem = new DevServicesComposeProjectBuildItem("test-project", "default", composeServices, Collections.emptyMap());
     }
 
     @Test
@@ -101,7 +101,7 @@ class DevServicesComposeProjectBuildItemTest {
                 new String[] { "postgres" },
                 "postgres:13",
                 "running",
-                new String[] { "default" },
+                Map.of("default", new String[] { "default" }),
                 Collections.emptyMap(),
                 new ContainerInfo.ContainerPort[] {}); // Empty ports array
         RunningContainer postgresContainerWithoutPort = new RunningContainer(postgresInfoWithoutPort, Collections.emptyMap());
@@ -109,7 +109,7 @@ class DevServicesComposeProjectBuildItemTest {
         Map<String, List<RunningContainer>> servicesWithoutPort = new HashMap<>();
         servicesWithoutPort.put("default", List.of(postgresContainerWithoutPort));
         DevServicesComposeProjectBuildItem buildItemWithoutPort = new DevServicesComposeProjectBuildItem(
-                "test-project", servicesWithoutPort, Collections.emptyMap());
+                "test-project", "default", servicesWithoutPort, Collections.emptyMap());
 
         result = buildItemWithoutPort.locate(List.of("postgres"), 5432);
         assertTrue(result.isPresent());

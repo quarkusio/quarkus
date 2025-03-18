@@ -39,10 +39,16 @@ public interface ComposeDevServicesBuildTimeConfig {
     Optional<List<String>> options();
 
     /**
+     * Whether to run compose up and start containers at startup, when disabled, services are discovered by project name
+     */
+    @WithDefault("true")
+    boolean startServices();
+
+    /**
      * Whether to run compose down and stop containers at shutdown
      */
     @WithDefault("true")
-    boolean stopContainers();
+    boolean stopServices();
 
     /**
      * Whether to use test containers Ryuk resource reaper to clean up containers
@@ -95,4 +101,10 @@ public interface ComposeDevServicesBuildTimeConfig {
      * When `false`, skips re-building images before starting containers.
      */
     Optional<Boolean> build();
+
+    /**
+     * Whether to reuse the project for tests, when disabled, a new project is created for each test run
+     */
+    @WithDefault("false")
+    boolean reuseProjectForTests();
 }

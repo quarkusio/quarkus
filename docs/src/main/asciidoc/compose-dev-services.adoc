@@ -18,9 +18,9 @@ While this level of automation is great for most use cases, there are times when
 *Compose Dev Services* extends the Dev Services concept by allowing you to define custom dev services using the https://compose-spec.io/[Compose specification].
 _The Compose Specification is a developer-focused standard for defining cloud and platform agnostic container-based applications_.
 
-https://docs.docker.com/compose/[Docker Compose] is the reference implementation and most widely used tool for defining and managing multi-container applications,
-for development and testing purposes.
+Compose is a widely used tool for defining and managing multi-container applications, for development and testing purposes.
 A YAML description file, typically named `compose.yml`, defines the services, networks, and volumes required for your application.
+https://docs.docker.com/compose/[Docker Compose] is the reference implementation and https://podman-desktop.io/docs/compose[Podman Desktop] also provides out-of-box support for the Compose specification.
 
 Quarkus detects the presence of a `compose.yml` (or similar) file in the project and automatically starts services when the application is started in dev or test mode.
 Extensions providing dev services discover the custom services and use them instead of creating default ones.
@@ -390,8 +390,8 @@ services:
     ports:
       - '8080'
     labels:
-      # Disable waiting for ports
-      io.quarkus.devservices.compose.wait_for.ports.disable: true
+      # Change to `true` to disable waiting for ports
+      io.quarkus.devservices.compose.wait_for.ports.disable: false
       # Or set a custom timeout for port waiting
       io.quarkus.devservices.compose.wait_for.ports.timeout: "30s"
 ----

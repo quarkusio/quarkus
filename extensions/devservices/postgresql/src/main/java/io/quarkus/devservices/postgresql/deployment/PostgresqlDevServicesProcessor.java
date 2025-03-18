@@ -116,7 +116,8 @@ public class PostgresqlDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")),
                         "postgres");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(createDevService);
             }

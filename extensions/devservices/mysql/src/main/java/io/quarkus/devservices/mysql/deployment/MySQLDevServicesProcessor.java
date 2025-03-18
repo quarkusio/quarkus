@@ -101,7 +101,7 @@ public class MySQLDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mysql")),
                         "mysql");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, MYSQL_PORT, launchMode)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, MYSQL_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(startService);
             }

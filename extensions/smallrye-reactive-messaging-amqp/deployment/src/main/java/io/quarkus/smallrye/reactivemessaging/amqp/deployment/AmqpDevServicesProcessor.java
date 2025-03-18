@@ -212,7 +212,7 @@ public class AmqpDevServicesProcessor {
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(config.imageName, "amqp", "activemq-artemis", "rabbitmq"),
                         AMQP_PORT,
-                        launchMode.getLaunchMode())
+                        launchMode.getLaunchMode(), useSharedNetwork)
                         .map(this::getRunningService))
                 .orElseGet(defaultAmqpBrokerSupplier);
     }

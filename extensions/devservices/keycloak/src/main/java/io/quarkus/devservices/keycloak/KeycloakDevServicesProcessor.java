@@ -447,7 +447,7 @@ public class KeycloakDevServicesProcessor {
 
         return maybeContainerAddress
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
-                        KEYCLOAK_PORT, LaunchMode.current()))
+                        KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
                     // TODO: this probably needs to be addressed
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);

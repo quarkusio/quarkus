@@ -93,7 +93,8 @@ public class MSSQLDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")),
                         "mssql");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(startService);
             }

@@ -107,7 +107,7 @@ public class OracleDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")),
                         "oracle");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(startService);
             }

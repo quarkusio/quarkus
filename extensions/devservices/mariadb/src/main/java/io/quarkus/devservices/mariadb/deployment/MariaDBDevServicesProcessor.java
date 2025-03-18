@@ -100,7 +100,7 @@ public class MariaDBDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")),
                         "maria");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(createDevService);
             }

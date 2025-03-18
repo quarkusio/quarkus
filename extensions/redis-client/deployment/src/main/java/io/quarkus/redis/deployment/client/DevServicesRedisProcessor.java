@@ -199,7 +199,7 @@ public class DevServicesRedisProcessor {
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(devServicesConfig.imageName().orElse("redis")),
-                        REDIS_EXPOSED_PORT, launchMode))
+                        REDIS_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
                     return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),

@@ -3,9 +3,7 @@ package io.quarkus.devservices.deployment.compose;
 import static io.quarkus.devservices.common.Labels.*;
 import static java.lang.Boolean.TRUE;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +32,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Network;
 
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
@@ -45,6 +44,7 @@ import io.quarkus.runtime.util.StringUtil;
 public class ComposeProject {
 
     private static final Logger LOG = Logger.getLogger(ComposeProject.class);
+    public static final String DEFAULT_NETWORK_NAME = "default";
 
     private final DockerClient dockerClient;
     private final ComposeFiles composeFiles;
@@ -66,11 +66,11 @@ public class ComposeProject {
     private final Map<String, WaitAllStrategy> waitStrategies;
 
     private List<ComposeServiceWaitStrategyTarget> serviceInstances;
+    private List<Network> networks;
 
     public ComposeProject(DockerClient dockerClient,
-            List<File> files,
+            ComposeFiles composeFiles,
             String executable,
-            String identifier,
             String project,
             Duration startupTimeout,
             boolean stopContainers,
@@ -84,8 +84,8 @@ public class ComposeProject {
             Map<String, Integer> scalingPreferences,
             Map<String, String> env) {
         this.dockerClient = dockerClient;
-        this.composeFiles = new ComposeFiles(files);
-        this.project = getProject(project, identifier);
+        this.composeFiles = composeFiles;
+        this.project = project;
         this.executable = executable;
         this.startupTimeout = startupTimeout;
         this.stopContainers = stopContainers;
@@ -101,36 +101,6 @@ public class ComposeProject {
 
         this.waitStrategies = new HashMap<>();
         registerWaitStrategies(composeFiles, waitStrategies);
-    }
-
-    private String getProject(String project, String identifier) {
-        if (project == null && identifier == null) {
-            throw new IllegalArgumentException("Either project or identifier must be set");
-        }
-        if (project != null) {
-            return project;
-        }
-        String projectName = this.composeFiles.getProjectName();
-        if (projectName == null) {
-            return randomProjectId(identifier);
-        }
-        return projectName;
-    }
-
-    private String randomProjectId(String identifier) {
-        return identifier.toLowerCase() + randomAlphaString(6);
-    }
-
-    public static String randomAlphaString(int length) {
-        StringBuilder builder = new StringBuilder(length);
-        SecureRandom random = new SecureRandom();
-        for (int i = 0; i < length; ++i) {
-            // Lowercase letter (a-z, ASCII 97-122)
-            char c = (char) ((int) (97.0D + random.nextInt(26)));
-            builder.append(c);
-        }
-
-        return builder.toString();
     }
 
     /**
@@ -202,7 +172,7 @@ public class ComposeProject {
     public synchronized void start() {
         registerContainersForShutdown();
         startServices();
-        discoverServiceInstances();
+        discoverServiceInstances(true);
     }
 
     public void waitUntilServicesReady(Executor waitOn) {
@@ -304,7 +274,7 @@ public class ComposeProject {
         runWithCompose(command, env);
     }
 
-    public synchronized void discoverServiceInstances() {
+    public synchronized void discoverServiceInstances(boolean checkForRequiredServices) {
         Set<String> servicesToWaitFor = new HashSet<>(waitStrategies.keySet());
         List<ComposeServiceWaitStrategyTarget> serviceInstances = new ArrayList<>();
         for (Container container : listChildContainers()) {
@@ -313,11 +283,12 @@ public class ComposeProject {
             servicesToWaitFor.remove(instance.getServiceName());
         }
 
-        if (!servicesToWaitFor.isEmpty()) {
+        if (checkForRequiredServices && !servicesToWaitFor.isEmpty()) {
             throw new IllegalStateException("Services named " + servicesToWaitFor +
                     " do not exist, but wait conditions have been defined for them.");
         }
 
+        this.networks = listChildNetworks();
         this.serviceInstances = serviceInstances;
     }
 
@@ -326,6 +297,13 @@ public class ComposeProject {
                 .listContainersCmd()
                 .withLabelFilter(Map.of(DOCKER_COMPOSE_PROJECT, project))
                 .withShowAll(true)
+                .exec();
+    }
+
+    private List<Network> listChildNetworks() {
+        return dockerClient
+                .listNetworksCmd()
+                .withFilter("label", List.of(DOCKER_COMPOSE_PROJECT + "=" + project))
                 .exec();
     }
 
@@ -374,6 +352,7 @@ public class ComposeProject {
         try {
             runWithCompose(cmd, env);
         } finally {
+            this.networks = null;
             this.serviceInstances = null;
         }
     }
@@ -448,12 +427,26 @@ public class ComposeProject {
         return e.getKey().substring(COMPOSE_CONFIG_MAP_ENV_VAR.length() + 1);
     }
 
+    public List<Network> getNetworks() {
+        return networks;
+    }
+
+    public String getDefaultNetworkId() {
+        return networks.stream()
+                .filter(n -> DEFAULT_NETWORK_NAME.equals(n.getLabels().get(DOCKER_COMPOSE_NETWORK)))
+                // multiple networks can have the default label, but only one can have containers
+                .filter(n -> !n.getContainers().isEmpty())
+                .findFirst()
+                .map(Network::getId)
+                // this is not an id, but a useful fallback
+                .orElse(project + "_" + DEFAULT_NETWORK_NAME);
+    }
+
     public static class Builder {
 
-        private final List<File> files;
+        private final ComposeFiles files;
         private final String executable;
         private DockerClient dockerClient = DockerClientFactory.lazyClient();
-        private String identifier;
         private String project;
         private Duration startupTimeout = Duration.ofMinutes(1);
         private boolean stopContainers = true;
@@ -467,8 +460,9 @@ public class ComposeProject {
         private Map<String, String> env = Collections.emptyMap();
         private Map<String, Integer> scalingPreferences = Collections.emptyMap();
 
-        public Builder(List<File> files, String executable) {
+        public Builder(ComposeFiles files, String executable) {
             this.files = files;
+            this.project = files.getProjectName();
             this.executable = executable;
         }
 
@@ -604,17 +598,6 @@ public class ComposeProject {
         }
 
         /**
-         * Set the identifier for the compose project. This is used to generate a random project name if the project name is
-         *
-         * @param identifier the identifier for the compose project
-         * @return this
-         */
-        public Builder withIdentifier(String identifier) {
-            this.identifier = identifier;
-            return this;
-        }
-
-        /**
          * Set the project name for the compose project.
          *
          * @param project the project name for the compose project
@@ -628,7 +611,6 @@ public class ComposeProject {
         public ComposeProject build() {
             return new ComposeProject(dockerClient, files,
                     executable,
-                    identifier,
                     project,
                     startupTimeout,
                     stopContainers,

@@ -23,9 +23,9 @@ public class ComposeProjectTest {
 
     @Test
     void testBasicProject() {
-        composeProject = new ComposeProject.Builder(List.of(composeFile), COMPOSE_EXECUTABLE)
+        ComposeFiles files = new ComposeFiles(List.of(composeFile));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .withProject("test")
-                .withIdentifier("test")
                 .withStartupTimeout(Duration.ofMinutes(2))
                 .build();
 
@@ -43,21 +43,21 @@ public class ComposeProjectTest {
 
     @Test
     void testProjectWithWaitStrategies() {
-        composeProject = new ComposeProject.Builder(List.of(composeFile), COMPOSE_EXECUTABLE)
-                .withIdentifier("test-wait")
+        ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .withStartupTimeout(Duration.ofMinutes(2))
                 .build();
 
         // Verify project name
         String project = composeProject.getProject();
         assertNotNull(project);
-        assertTrue(project.startsWith("test-wait"));
+        assertTrue(project.equals("devservices"));
     }
 
     @Test
     void testProjectWithProfiles() {
-        composeProject = new ComposeProject.Builder(List.of(composeFileWithProfiles), COMPOSE_EXECUTABLE)
-                .withIdentifier("test-profiles")
+        ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .build();
 
         // Verify only kafka service is running (as it's in the kafka profile)
@@ -68,8 +68,8 @@ public class ComposeProjectTest {
 
     @Test
     void testProjectWithScaling() {
-        composeProject = new ComposeProject.Builder(List.of(composeFile), COMPOSE_EXECUTABLE)
-                .withIdentifier("test-scaling")
+        ComposeFiles files = new ComposeFiles(List.of(composeFile));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .withScalingPreferences(Map.of("redis", 2))
                 .build();
 
@@ -81,8 +81,8 @@ public class ComposeProjectTest {
 
     @Test
     void testIgnoredServices() {
-        composeProject = new ComposeProject.Builder(List.of(composeFileWithIgnore), COMPOSE_EXECUTABLE)
-                .withIdentifier("test-scaling")
+        ComposeFiles files = new ComposeFiles(List.of(composeFileWithIgnore));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .build();
 
         // Verify only kafka service is selected (as it's in the kafka profile)
@@ -97,8 +97,8 @@ public class ComposeProjectTest {
 
     @Test
     void testProfileServices() {
-        composeProject = new ComposeProject.Builder(List.of(composeFileWithProfiles), COMPOSE_EXECUTABLE)
-                .withIdentifier("test-profiles")
+        ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
                 .withProfiles(List.of("redis"))
                 .build();
 

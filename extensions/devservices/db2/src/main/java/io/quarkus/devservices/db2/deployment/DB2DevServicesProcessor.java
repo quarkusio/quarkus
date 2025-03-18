@@ -91,7 +91,7 @@ public class DB2DevServicesProcessor {
                 List<String> images = List.of(containerConfig.getImageName()
                         .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")),
                         "db2");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(maybe);
             }

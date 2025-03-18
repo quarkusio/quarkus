@@ -207,7 +207,7 @@ public class DevServicesMongoProcessor {
         return MONGO_CONTAINER_LOCATOR
                 .locateContainer(capturedProperties.serviceName(), capturedProperties.shared(), launchMode)
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(capturedProperties.imageName, "mongo"), MONGO_EXPOSED_PORT, launchMode))
+                        List.of(capturedProperties.imageName, "mongo"), MONGO_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
                     final String effectiveUrl = getEffectiveUrl(configPrefix, containerAddress.getHost(),
                             containerAddress.getPort(), capturedProperties);

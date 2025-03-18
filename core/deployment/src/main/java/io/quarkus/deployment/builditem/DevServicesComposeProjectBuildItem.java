@@ -22,24 +22,32 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
 
     private final String project;
 
+    private final String defaultNetworkId;
+
     private final Map<String, List<RunningContainer>> composeServices;
 
     private final Map<String, String> config;
 
     public DevServicesComposeProjectBuildItem() {
-        this(null, Collections.emptyMap(), Collections.emptyMap());
+        this(null, null, Collections.emptyMap(), Collections.emptyMap());
     }
 
     public DevServicesComposeProjectBuildItem(String project,
+            String defaultNetworkId,
             Map<String, List<RunningContainer>> composeServices,
             Map<String, String> config) {
         this.project = project;
+        this.defaultNetworkId = defaultNetworkId;
         this.composeServices = composeServices;
         this.config = config;
     }
 
     public String getProject() {
         return project;
+    }
+
+    public String getDefaultNetworkId() {
+        return defaultNetworkId;
     }
 
     public Map<String, String> getConfig() {

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-S2I-howto"]
 = Using S2I to deploy {project-name} applications to {openshift}
-
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native

@@ -40,7 +40,7 @@
         <maven-core.version>3.9.9</maven-core.version>
         <jackson-bom.version>2.18.2</jackson-bom.version>
         <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
-        <junit.jupiter.version>5.10.5</junit.jupiter.version>
+        <junit.jupiter.version>5.11.4</junit.jupiter.version>
     </properties>
     <build>
         <testResources>

@@ -208,17 +208,18 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
     @GET
     @Path("{id}")
     @Produces("application/json")
-    public Person get(@PathParam("id") Long id){
+    public RestResponse<Person> get(@PathParam("id") Long id){
         Person person = resource.get(id);
         if (person == null) {
-            throw new WebApplicationException(404);
+            return ResponseBuilder.create(404).build();
+        } else {
+            return ResponseBuilder.ok(var3).build();
         }
-        return person;
     }
 
     @GET
     @Produces("application/json")
-    public Response list(@QueryParam("sort") List<String> sortQuery,
+    public RestResponse<Person> list(@QueryParam("sort") List<String> sortQuery,
             @QueryParam("page") @DefaultValue("0") int pageIndex,
             @QueryParam("size") @DefaultValue("20") int pageSize) {
         Page page = Page.of(pageIndex, pageSize);
@@ -229,16 +230,16 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
 
     @GET
     @Path("/count")
-    public long count() {
-        return resource.count();
+    public RestResponse<Long> count() {
+        return ResponseBuilder.ok(var1.count()).build()
     }
 
     @Transactional
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public Response add(Person personToSave) {
-        Person person = resource.add(person);
+    public RestResponse<Person> add(Person personToSave) {
+        Person person = resource.add(personToSave);
         // ... build a new location URL and return 201 response with an entity
     }
 
@@ -247,10 +248,10 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
     @Path("{id}")
     @Consumes("application/json")
     @Produces("application/json")
-    public Response update(@PathParam("id") Long id, Person personToSave) {
+    public RestResponse<Person> update(@PathParam("id") Long id, Person personToSave) {
         if (resource.get(id) == null) {
             Person person = resource.update(id, personToSave);
-            return Response.status(204).build();
+            return ResponseBuilder.create(204).build();
         }
         Person person = resource.update(id, personToSave);
         // ... build a new location URL and return 201 response with an entity
@@ -259,10 +260,8 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
     @Transactional
     @DELETE
     @Path("{id}")
-    public void delete(@PathParam("id") Long id) {
-        if (!resource.delete(id)) {
-            throw new WebApplicationException(404);
-        }
+    public RestResponse<Person> delete(@PathParam("id") Long id) {
+        return !var2.delete(id) ? ResponseBuilder.create(404).build() : ResponseBuilder.create(204).build();
     }
 }
 ----

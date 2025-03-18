@@ -13,10 +13,10 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -171,25 +171,25 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status) {
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION)
                     .add("responseCode", String.valueOf(status.getStatusCode()));
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, String entityType) {
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, String entityType) {
         addOpenApiResponseAnnotation(element, status, entityType, false);
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, String entityType,
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, String entityType,
             boolean isList) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             addOpenApiResponseAnnotation(element, status, toClass(entityType), isList);
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, Class<?> clazz,
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, Class<?> clazz,
             boolean isList) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             AnnotationCreator schemaAnnotation = AnnotationCreator.of(OPENAPI_SCHEMA_ANNOTATION)

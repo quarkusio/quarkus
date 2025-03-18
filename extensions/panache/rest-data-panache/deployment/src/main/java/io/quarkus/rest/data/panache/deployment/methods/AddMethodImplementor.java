@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import org.jboss.resteasy.reactive.RestResponse;
+
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -104,7 +106,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
-                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
+                        : uniType(resourceMetadata.getEntityType()),
                 param("entity", resourceMetadata.getEntityType()), param("uriInfo", UriInfo.class));
 
         // Add method annotations
@@ -115,7 +118,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.CREATED, resourceMetadata.getEntityType());
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.CREATED, resourceMetadata.getEntityType());
         addSecurityAnnotations(methodCreator, resourceProperties);
         // Add parameter annotations
         if (hasValidatorCapability()) {

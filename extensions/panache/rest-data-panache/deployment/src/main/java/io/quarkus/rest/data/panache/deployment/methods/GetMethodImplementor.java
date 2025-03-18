@@ -7,6 +7,8 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
+
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
@@ -86,7 +88,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
-                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
+                        : uniType(resourceMetadata.getEntityType()),
                 param("id", resourceMetadata.getIdType()));
 
         // Add method annotations
@@ -94,7 +97,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
         addGetAnnotation(methodCreator);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType());
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, resourceMetadata.getEntityType());
         addSecurityAnnotations(methodCreator, resourceProperties);
 
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");

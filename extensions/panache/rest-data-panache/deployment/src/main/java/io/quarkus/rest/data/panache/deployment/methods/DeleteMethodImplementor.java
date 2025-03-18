@@ -7,6 +7,8 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
+
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
@@ -84,7 +86,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
-                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
+                        : uniType(resourceMetadata.getEntityType()),
                 param("id", resourceMetadata.getIdType()));
 
         // Add method annotations
@@ -93,7 +96,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.NO_CONTENT);
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.NO_CONTENT);
         addSecurityAnnotations(methodCreator, resourceProperties);
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());

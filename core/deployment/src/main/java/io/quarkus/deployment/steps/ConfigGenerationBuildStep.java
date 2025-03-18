@@ -92,6 +92,7 @@ import io.quarkus.runtime.configuration.AbstractConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
@@ -517,9 +518,9 @@ public class ConfigGenerationBuildStep {
     }
 
     @BuildStep(onlyIf = IsNormal.class)
-    void persistReadConfigOptions(BuildProducer<ArtifactResultBuildItem> dummy,
+    void persistReadConfigOptions(
+            BuildProducer<ArtifactResultBuildItem> dummy,
             QuarkusBuildCloseablesBuildItem closeables,
-            LaunchModeBuildItem launchModeBuildItem,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             ConfigurationBuildItem configBuildItem,
             ConfigTrackingConfig configTrackingConfig) {
@@ -532,7 +533,7 @@ public class ConfigGenerationBuildStep {
                             readOptionsProvider.getReadOptions(),
                             configTrackingConfig,
                             configBuildItem.getReadResult(),
-                            launchModeBuildItem.getLaunchMode(),
+                            ConfigUtils.getProfiles(),
                             buildSystemTargetBuildItem.getOutputDirectory());
                 }
             });

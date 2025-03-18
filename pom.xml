@@ -77,7 +77,7 @@
         <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>2.4.5.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
-        <hibernate-search.version>7.2.2.Final</hibernate-search.version>
+        <hibernate-search.version>7.2.3.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->

@@ -22,7 +22,7 @@
         <reactive-element.version>2.0.4</reactive-element.version>
         <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
         <vaadin-development-mode-detector.version>2.0.7</vaadin-development-mode-detector.version>
-        <polymer.version>3.5.1</polymer.version>
+        <polymer.version>3.5.2</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <vaadin-router.version>1.7.5</vaadin-router.version>

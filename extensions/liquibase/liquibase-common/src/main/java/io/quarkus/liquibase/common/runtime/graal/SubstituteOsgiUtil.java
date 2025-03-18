@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.mongodb.runtime.graal;
+package io.quarkus.liquibase.common.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

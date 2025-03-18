@@ -13,7 +13,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SimpleJsonWithReflectionFreeSerializersTest extends SimpleJsonTest {
+public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJsonTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()

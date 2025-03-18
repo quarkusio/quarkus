@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
-import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigValue;
 
 public class ConfigTrackingWriter {
@@ -42,7 +41,7 @@ public class ConfigTrackingWriter {
      */
     public static void write(Map<String, String> readOptions, ConfigTrackingConfig config,
             BuildTimeConfigurationReader.ReadResult configReadResult,
-            LaunchMode launchMode, Path buildDirectory) {
+            List<String> profiles, Path buildDirectory) {
         if (!config.enabled()) {
             return;
         }
@@ -52,8 +51,7 @@ public class ConfigTrackingWriter {
             final Path dir = config.directory().orElseGet(() -> (buildDirectory.getParent() == null
                     ? buildDirectory
                     : buildDirectory.getParent()).resolve(".quarkus"));
-            file = dir
-                    .resolve(config.filePrefix() + "-" + launchMode.getDefaultProfile() + config.fileSuffix());
+            file = dir.resolve(config.filePrefix() + "-" + String.join("-", profiles) + config.fileSuffix());
         } else if (!file.isAbsolute()) {
             file = config.directory().orElse(buildDirectory).resolve(file);
         }

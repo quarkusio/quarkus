@@ -93,7 +93,7 @@ the [Build section](#build) and the [Usage section](#usage).
 Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
 Then just add <https://s01.oss.sonatype.org/content/repositories/snapshots> as a Maven repository **and** a plugin
-repository in your settings xml:
+repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
 
 ```xml
 

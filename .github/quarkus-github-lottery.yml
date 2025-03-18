@@ -295,4 +295,18 @@ participants:
         provided:
           maxIssues: 2
       stale:
-        maxIssues: 3        
+        maxIssues: 3
+  - username: "lucamolteni"
+    timezone: "Europe/Rome"
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/jdbc"]
+      days: [ "MONDAY" ]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 5
+        provided:
+          maxIssues: 5
+      stale:
+        maxIssues: 5

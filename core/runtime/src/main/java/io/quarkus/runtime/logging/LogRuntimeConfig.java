@@ -224,7 +224,7 @@ public interface LogRuntimeConfig {
 
         interface RotationConfig {
             /**
-             * The maximum log file size, after which a rotation is executed.
+             * The maximum log file size, after which a rotation is executed, up to {@code Long.MAX_VALUE} bytes.
              * Note that the file is rotated <em>after</em> the log record is written.
              * Thus, this isn't a hard maximum on the file size; rather, it's a hard <em>minimum</em>
              * on the size of the file before it is rotated.
@@ -401,7 +401,8 @@ public interface LogRuntimeConfig {
         Optional<String> filter();
 
         /**
-         * The maximum length, in bytes, of the message allowed to be sent. The length includes the header and the message.
+         * The maximum length, in bytes, of the message allowed to be sent, up to {@code Integer.MAX_VALUE} bytes. The length
+         * includes the header and the message.
          * <p>
          * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
          * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}

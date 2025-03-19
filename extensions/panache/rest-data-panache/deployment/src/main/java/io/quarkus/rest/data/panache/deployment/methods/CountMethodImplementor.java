@@ -4,7 +4,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
-import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
@@ -75,20 +75,16 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(RESOURCE_METHOD_NAME, classCreator,
-                isNotReactivePanache() ? responseType() : uniType(Long.class));
+                isNotReactivePanache() ? responseType(Long.class) : uniType(Long.class));
 
         // Add method annotations
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, Long.class, false);
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, Long.class, false);
         addSecurityAnnotations(methodCreator, resourceProperties);
-        if (!isResteasyClassic()) {
-            // We only add the Links annotation in Resteasy Reactive because Resteasy Classic ignores the REL parameter:
-            // it always uses "list" for GET methods, so it interferes with the list implementation.
-            addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
-        }
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
 

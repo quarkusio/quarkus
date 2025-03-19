@@ -22,7 +22,6 @@ import io.quarkus.hal.HalService;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.resteasy.links.runtime.hal.ResteasyHalService;
 import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService;
 
 public final class ListHalMethodImplementor extends ListMethodImplementor {
@@ -79,7 +78,7 @@ public final class ListHalMethodImplementor extends ListMethodImplementor {
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
                 arcContainer,
-                creator.loadClassFromTCCL(isResteasyClassic() ? ResteasyHalService.class : ResteasyReactiveHalService.class),
+                creator.loadClassFromTCCL(ResteasyReactiveHalService.class),
                 creator.newArray(Annotation.class, 0));
         ResultHandle halService = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);

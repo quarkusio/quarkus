@@ -31,6 +31,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.AnnotatedElement;
@@ -190,7 +191,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                     param.getClazz()));
         }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
-                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
+                        : uniType(resourceMetadata.getEntityType()),
                 parameters.toArray(new SignatureMethodCreator.Parameter[0]));
 
         // Add method annotations
@@ -199,7 +201,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
         addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
@@ -276,7 +278,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
                     param.getClazz()));
         }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
-                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
+                        : uniType(resourceMetadata.getEntityType()),
                 parameters.toArray(new SignatureMethodCreator.Parameter[0]));
 
         // Add method annotations
@@ -285,7 +288,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
-        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
+        addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "namedQuery");

@@ -187,8 +187,8 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().post("/books")
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("add.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("add.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 
     @Test
@@ -257,8 +257,8 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().put("/books/" + CRIME_AND_PUNISHMENT_ID)
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("update.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("update.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 
     @Test

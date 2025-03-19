@@ -13,10 +13,10 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -52,7 +52,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected StandardMethodImplementor(Capabilities capabilities) {
         this.capabilities = capabilities;
-        this.responseImplementor = new ResponseImplementor(capabilities);
+        this.responseImplementor = new ResponseImplementor();
     }
 
     /**
@@ -104,20 +104,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties, String entityClassName,
             String rel) {
         if (resourceProperties.isHal()) {
-            if (isResteasyClassic()) {
-                AnnotationCreator linkResource = element.addAnnotation("org.jboss.resteasy.links.LinkResource");
-                linkResource.addValue("entityClassName", entityClassName);
+            AnnotationCreator linkResource = element.addAnnotation(RestLink.class);
+            Class<?> entityClass;
+            try {
+                entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);
+                linkResource.addValue("entityType", entityClass);
                 linkResource.addValue("rel", rel);
-            } else {
-                AnnotationCreator linkResource = element.addAnnotation(RestLink.class);
-                Class<?> entityClass;
-                try {
-                    entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);
-                    linkResource.addValue("entityType", entityClass);
-                    linkResource.addValue("rel", rel);
-                } catch (ClassNotFoundException e) {
-                    LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
-                }
+            } catch (ClassNotFoundException e) {
+                LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
             }
         }
     }
@@ -177,25 +171,25 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status) {
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION)
                     .add("responseCode", String.valueOf(status.getStatusCode()));
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, String entityType) {
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, String entityType) {
         addOpenApiResponseAnnotation(element, status, entityType, false);
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, String entityType,
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, String entityType,
             boolean isList) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             addOpenApiResponseAnnotation(element, status, toClass(entityType), isList);
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, Response.Status status, Class<?> clazz,
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, Class<?> clazz,
             boolean isList) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             AnnotationCreator schemaAnnotation = AnnotationCreator.of(OPENAPI_SCHEMA_ANNOTATION)
@@ -230,10 +224,6 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected boolean hasValidatorCapability() {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
-    }
-
-    protected boolean isResteasyClassic() {
-        return capabilities.isPresent(Capability.RESTEASY);
     }
 
     protected boolean isNotReactivePanache() {

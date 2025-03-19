@@ -38,12 +38,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-links-deployment</artifactId>
+            <artifactId>quarkus-rest-links-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

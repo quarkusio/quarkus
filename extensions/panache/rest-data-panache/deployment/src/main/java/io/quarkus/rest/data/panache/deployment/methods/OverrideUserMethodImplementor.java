@@ -91,8 +91,7 @@ public class OverrideUserMethodImplementor extends StandardMethodImplementor {
             return;
         }
 
-        String linksAnnotationName = isResteasyClassic() ? "org.jboss.resteasy.links.LinkResource"
-                : "io.quarkus.resteasy.reactive.links.RestLink";
+        String linksAnnotationName = "io.quarkus.resteasy.reactive.links.RestLink";
         // Add the links annotation if and only if the user didn't add it.
         if (!methodInfo.hasAnnotation(linksAnnotationName)) {
             super.addLinksAnnotation(element, resourceProperties, entityClassName, rel);

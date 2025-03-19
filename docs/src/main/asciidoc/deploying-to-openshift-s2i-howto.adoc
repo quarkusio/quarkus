@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="deploying-to-openshift-S2I-howto"]
+[id="deploying-to-openshift-s2i-howto"]
 = Using S2I to deploy {project-name} applications to {openshift}
 include::_attributes.adoc[]
 :diataxis-type: howto

@@ -4,7 +4,7 @@
     <parent>
         <artifactId>quarkus-vertx-http-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.20.999-SNAPSHOT</version>
+        <version>3.20.0</version>
         <relativePath>../</relativePath>
     </parent>
     

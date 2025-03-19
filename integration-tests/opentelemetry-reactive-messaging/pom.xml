@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-tests-parent</artifactId>
-        <version>3.20.999-SNAPSHOT</version>
+        <version>3.20.0</version>
     </parent>
 
     <artifactId>quarkus-integration-test-opentelemetry-reactive-messaging</artifactId>

@@ -87,10 +87,10 @@ class HandlerChain {
         if (preClientSendHandler != null) {
             result.add(preClientSendHandler);
         }
+        result.add(clientCaptureCurrentContextRestHandler);
         for (int i = 0; i < requestFilters.size(); i++) {
             result.add(new ClientRequestFilterRestHandler(requestFilters.get(i)));
         }
-        result.add(clientCaptureCurrentContextRestHandler);
         result.add(clientSwitchToRequestContextRestHandler);
         result.add(clientSendHandler);
         result.add(clientSetResponseEntityRestHandler);

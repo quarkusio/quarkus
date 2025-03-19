@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.20.999-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <groupId>io.quarkus.arc</groupId>
@@ -16,7 +16,7 @@
     <name>ArC - Parent pom</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>3.20.999-SNAPSHOT</version>
 
     <licenses>
         <license>

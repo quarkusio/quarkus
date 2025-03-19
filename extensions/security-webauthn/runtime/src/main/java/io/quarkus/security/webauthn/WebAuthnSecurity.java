@@ -528,8 +528,8 @@ public class WebAuthnSecurity {
                 Origin newOrigin = Origin.create(origin);
                 if (firstOrigin == null) {
                     firstOrigin = newOrigin;
-                    origins.add(newOrigin);
                 }
+                origins.add(newOrigin);
             }
         }
         String rpId = this.rpId != null ? this.rpId : firstOrigin.getHost();

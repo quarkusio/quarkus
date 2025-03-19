@@ -217,6 +217,10 @@ include::{includes}/devtools/build-native.adoc[]
 [[the-truststore-path]]
 == The TrustStore path
 
+IMPORTANT: This section explains how to configure the default trust store when building a native executable.
+However, it is **strongly recommended** to use the xref:./tls-registry-reference.adoc[TLS registry] instead.
+The TLS registry ensures a consistent experience and feature set across both JVM and native modes.
+
 [WARNING]
 ====
 This behavior is new to GraalVM 21.3+.

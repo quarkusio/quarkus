@@ -51,7 +51,7 @@
         <maven.version>3.9.9</maven.version>
         <assertj.version>3.27.3</assertj.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>

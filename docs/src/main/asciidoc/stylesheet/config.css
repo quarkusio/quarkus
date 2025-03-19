@@ -105,7 +105,7 @@ table.configuration-reference.tableblock td.tableblock > .content > :last-child 
   margin-bottom: inherit;
 }
 
-input#config-search-0 {
+input[id^="config-search-"] {
   -webkit-appearance: none;
   display: block;
   width: 100%;
@@ -127,8 +127,8 @@ input#config-search-0 {
   letter-spacing: 1.5px;
 }
 
-input#config-search-0:hover,
-input#config-search-0:focus {
+input[id^="config-search-"]:hover,
+input[id^="config-search-"]:focus {
   padding: 12px 2px;
   outline: 0;
   border: 1px solid transparent;

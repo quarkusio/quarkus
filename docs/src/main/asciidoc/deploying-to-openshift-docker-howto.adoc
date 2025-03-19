@@ -1,0 +1,156 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deploying-to-openshift-docker-howto"]
+= Deploy {project-name} Java applications to {openshift} by using a Docker build strategy
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud, native
+:summary: This guide describes how to build and deploy a Quarkus application on {openshift} by using the Docker build strategy.
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
+
+As an application developer, you can deploy your applications to {openshift} by using the Docker build strategy as a deployment option.
+
+This stategy builds the artifacts outside the {openshift} cluster, locally or in a CI environment, and provides them to the {openshift} build system together with a Dockerfile.
+The artifacts include JAR files or a native executable.
+The {openshift} cluster builds the container and provides it as an image stream.
+
+This functionality is provided by the `quarkus-openshift` extension.
+If you want to use a custom Dockerfile, add the file to the `src/main/docker` directory or any location inside the module.
+Additionally, set the path to your Dockerfile by using the `quarkus.openshift.jvm-dockerfile` property.
+
+== Prerequisites
+
+* You have OpenJDK {jdk-version-all} installed.
+* You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
+* You have Apache Maven {maven-version} installed.
+* You have a Quarkus project that includes the `quarkus-openshift` extension.
+* You have access to a {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
+* You are working in the correct OpenShift project namespace.
+
+== Procedure
+
+. Set the Docker build strategy in your `application.properties` configuration file:
++
+[source, properties]
+----
+quarkus.openshift.build-strategy=docker
+----
+. Optional: Set the following properties in the `application.properties` file, based on your environment:
+** If you are using an untrusted certificate, enable certificate trust for the `KubernetesClient`:
++
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+** To expose the service and create an {openshift} route, set the following property:
++
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+----
+** To use a custom Dockerfile instead of the pregenerated Dockerfiles, set the path to your Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.jvm-dockerfile=<path_to_your_dockerfile>
+----
++
+For example, to specify a custom Dockerfile named `Dockerfile.custom-jvm`:
++
+[source,properties]
+----
+quarkus.openshift.jvm-dockerfile=src/main/resources/Dockerfile.custom-jvm
+----
+
+. Package and deploy your application to the current {openshift} project:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Dquarkus.openshift.deploy=true
+----
+
+== Verification
+
+The following verification steps use the `openshift-helloworld` example application.
+
+. Display the list of pods associated with your current OpenShift project:
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+oc get pods
+----
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+NAME                            READY   STATUS      RESTARTS   AGE
+openshift-helloworld-1-build    0/1     Completed   0          11m
+openshift-helloworld-1-deploy   0/1     Completed   0          10m
+openshift-helloworld-1-gzzrx    1/1     Running     0          10m
+----
+
+. To get the log output for your application's pod, use the `oc logs -f` command with its name.
+The following example uses the `openshift-helloworld-1-gzzrx` pod name, which corresponds to the latest pod prefixed with the name of your application:
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+oc logs -f _openshift-helloworld-1-gzzrx_
+----
++
+[source,shell,subs=attributes+]
+----
+Starting the Java application using /opt/jboss/container/java/run/run-java.sh ...
+INFO exec -a "java" java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -XX:MaxRAMPercentage=50.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:+ExitOnOutOfMemoryError -cp "." -jar /deployments/quarkus-run.jar
+__  ____  __  _____   ___  __ ____  ______
+--/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+-/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2024-09-17 10:23:25,254 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT on JVM (powered by Quarkus {QuarkusCore}) started in 0.653s. Listening on: http://0.0.0.0:8080
+2024-09-17 10:23:25,281 INFO  [io.quarkus] (main) Profile prod activated.
+2024-09-17 10:23:25,281 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, rest, smallrye-context-propagation, vertx]
+----
+
+. Get a list of services:
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+oc get svc
+----
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
+openshift-helloworld   ClusterIP   172.30.64.57     <none>        80/TCP                                14m
+----
+
+. Get a URL to test your application.
+To do so, ensure you have exposed an {openshift} route by setting the `quarkus.openshift.route.expose=true` property  in the `application.properties` file before building the application.
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+oc get routes
+----
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+NAME                   HOST/PORT                                                                   PATH   SERVICES               PORT   TERMINATION   WILDCARD
+openshift-helloworld   openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com          openshift-helloworld   http                 None
+----
++
+[NOTE]
+====
+Be aware that the route is now listening on port 80 and is no longer on port 8080.
+====
++
+You can test the application demonstrated in this example with a web browser or a terminal by using `curl` and the complete URL output from `oc get routes`, that is, "\http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com".
++
+For example: `curl \http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com`.
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploying {project-name} applications to {openshift}]
+
+

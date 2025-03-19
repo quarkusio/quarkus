@@ -892,11 +892,13 @@ public class CodeFlowTest {
             sessionCookie = getSessionCookie(webClient, null);
             assertEquals("1|2|3", sessionCookie.getValue());
 
+            webClient.getOptions().setRedirectEnabled(false);
+
             try {
                 webClient.getPage("http://localhost:8081/web-app");
-                fail("401 status error is expected");
+                fail("302 status error is expected");
             } catch (FailingHttpStatusCodeException ex) {
-                assertEquals(401, ex.getStatusCode());
+                assertEquals(302, ex.getStatusCode());
                 assertNull(getSessionCookie(webClient, null));
             }
             webClient.getCookieManager().clearCookies();
@@ -910,9 +912,9 @@ public class CodeFlowTest {
 
             try {
                 webClient.getPage("http://localhost:8081/web-app");
-                fail("401 status error is expected");
+                fail("302 status error is expected");
             } catch (FailingHttpStatusCodeException ex) {
-                assertEquals(401, ex.getStatusCode());
+                assertEquals(302, ex.getStatusCode());
                 assertNull(getSessionCookie(webClient, null));
             }
             webClient.getCookieManager().clearCookies();

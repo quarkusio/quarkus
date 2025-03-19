@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 # Dependencies for AWT
-RUN microdnf install freetype fontconfig \
-    && microdnf clean all
+RUN microdnf install freetype fontconfig -y \
+    && microdnf clean all -y
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

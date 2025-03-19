@@ -7,20 +7,27 @@ import java.util.Locale;
 
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class StringTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withApplicationRoot(root -> root.addAsResource(
+                    new StringAsset("{str:eval('Hello {name}!')}"),
+                    "templates/hello.txt"));
 
     @Inject
     Engine engine;
+
+    @Inject
+    Template hello;
 
     @Test
     public void testTemplateExtensions() {
@@ -82,6 +89,9 @@ public class StringTemplateExtensionsTest {
         assertEquals("Hello fool!",
                 engine.parse("{str:eval('Hello {name}!')}")
                         .data("name", "fool")
+                        .render());
+        assertEquals("Hello fool!",
+                hello.data("name", "fool")
                         .render());
     }
 

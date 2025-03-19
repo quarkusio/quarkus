@@ -44,7 +44,7 @@
         <microprofile-reactive-streams-operators.version>3.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>4.0</microprofile-rest-client.version>
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
-        <microprofile-lra.version>2.0</microprofile-lra.version>
+        <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.10.0</smallrye-common.version>
         <smallrye-config.version>3.11.4</smallrye-config.version>
@@ -52,7 +52,7 @@
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.8</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.1</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.8.0</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -96,7 +96,7 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.2.1.Final</narayana.version>
-        <narayana-lra.version>0.0.9.Final</narayana-lra.version>
+        <narayana-lra.version>1.0.0.Final</narayana-lra.version>
         <agroal.version>2.5</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.17.2</elasticsearch-opensource-components.version>
@@ -157,7 +157,7 @@
         <dekorate.version>4.1.4</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
-        <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <flyway.version>11.3.4</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
@@ -170,13 +170,13 @@
         <javaparser.version>3.26.3</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.18.1</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>6.1.SP4</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>6.2.SP1</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
+        <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
         <mockito.version>5.15.2</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
-        <quarkus-security.version>2.2.0</quarkus-security.version>
+        <quarkus-security.version>2.2.1</quarkus-security.version>
         <keycloak-client.version>26.0.4</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.49.0</checker-qual.version>

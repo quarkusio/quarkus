@@ -67,5 +67,15 @@
 // .
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}
+// Attributes required for single-sourcing to downstream.
+:jdk-version-other: 17
+:jdk-version-latest: 21
+:jdk-version-all: 17 or 21
+:openshift-long: OpenShift
+:openshift: OpenShift
+:name-image-ubi9-open-jdk-17: registry.access.redhat.com/ubi9/openjdk-17
+:name-image-ubi9-open-jdk-17-short: ubi9/openjdk-17
+:name-image-ubi9-open-jdk-21: registry.access.redhat.com/ubi9/openjdk-21
+:name-image-ubi9-open-jdk-21-short: ubi9/openjdk-21
 // .
 include::_attributes-local.adoc[]

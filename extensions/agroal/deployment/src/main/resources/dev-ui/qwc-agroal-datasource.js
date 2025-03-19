@@ -80,6 +80,26 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
             display: flex;
             justify-content: space-between;
             gap: 10px;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom-style: dotted;
+            border-bottom-color: var(--lumo-contrast-10pct);
+        }
+
+        .sqlInput .cm-content {
+            padding: 5px 0;
+        }
+        
+        .font-large {
+            font-size: var(--lumo-font-size-l);
+        }
+        
+        .cursor-text {
+            cursor: text;
+        }
+
+        .no-margin {
+            margin: 0;
         }
     
         #sql {
@@ -388,6 +408,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     _renderTableData(){
         if(this._selectedTable && this._currentDataSet && this._currentDataSet.cols){
             return html`<div class="data">
+                            ${this._renderSqlInput()}
                             <vaadin-grid .items="${this._currentDataSet.data}" theme="row-stripes no-border" class="fill" column-reordering-allowed>
                                 ${this._currentDataSet.cols.map((col) => 
                                     this._renderTableHeader(col)
@@ -395,7 +416,6 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                                 <span slot="empty-state">No data.</span>
                             </vaadin-grid>
                             ${this._renderPager()}
-                            ${this._renderSqlInput()}
                         </div>    
                     `;
         }else if(this._displaymessage){
@@ -457,15 +477,26 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                         <vaadin-icon icon="font-awesome-solid:circle-chevron-right"></vaadin-icon>
                     </vaadin-button>`;
     }
-    
-    _renderSqlInput(){
-        if(this._allowSql){
-            return html`<div class="sqlInput">
-                        <qui-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}" id="sql" mode="sql" theme="dark" value='${this._currentSQL}' editable></qui-code-block>
-                        <vaadin-icon class="sqlInputButton" title="Clear" icon="font-awesome-solid:broom" @click=${this._clearSqlInput}></vaadin-icon>
-                        <vaadin-icon class="sqlInputButton" title="Run" icon="font-awesome-solid:person-running" @click=${this._executeClicked}></vaadin-icon>
-                    </div>`;
-        }else {
+
+    _renderSqlInput() {
+        if (this._allowSql) {
+            return html`
+                <div class="sqlInput">
+                    <qui-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}"
+                                    class="font-large cursor-text" id="sql" mode="sql" theme="dark"
+                                    value='${this._currentSQL}' editable></qui-code-block>
+                    <vaadin-button class="no-margin" slot="suffix" theme="icon" aria-label="Clear">
+                        <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Clear"></vaadin-tooltip>
+                        <vaadin-icon class="small-icon" @click=${this._clearSqlInput}
+                                     icon="font-awesome-solid:trash"></vaadin-icon>
+                    </vaadin-button>
+                    <vaadin-button class="no-margin" slot="suffix" theme="icon" aria-label="Run">
+                        <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Run"></vaadin-tooltip>
+                        <vaadin-icon class="small-icon" @click=${this._executeClicked}
+                                     icon="font-awesome-solid:play"></vaadin-icon>
+                    </vaadin-button>
+                </div>`;
+        } else {
             return html`<vaadin-button theme="small" @click="${this._handleAllowSqlChange}">Allow any SQL execution from here</vaadin-button>`;
         }
     }
@@ -575,6 +606,8 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     
     _executeCurrentSQL(){
         if(this._currentSQL){
+            this._currentDataSet = null; // indicates loading
+
             this.jsonRpc.executeSQL({
                                     datasource:this._selectedDataSource.name, 
                                     sql:this._currentSQL,

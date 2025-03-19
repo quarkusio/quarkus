@@ -88,6 +88,10 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
         return html`
                 <vaadin-grid .items="${pu.managedEntities}" class="datatable" theme="no-border row-stripes">
                     <vaadin-grid-column auto-width
+                                        header="JPA entity name"
+                                        path="name">
+                    </vaadin-grid-column>
+                    <vaadin-grid-column auto-width
                                         header="Class name"
                                         path="className">
                     </vaadin-grid-column>

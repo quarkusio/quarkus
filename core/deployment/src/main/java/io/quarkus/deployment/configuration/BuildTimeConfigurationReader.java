@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
@@ -635,9 +636,39 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
+            // Always record properties coming from Runtime Properties
+            config.getConfigSource("PropertiesConfigSource[source=Runtime Properties]").ifPresent(
+                    new Consumer<ConfigSource>() {
+                        @Override
+                        public void accept(final ConfigSource configSource) {
+                            for (String propertyName : configSource.getPropertyNames()) {
+                                ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
+                                if (configValue.getValue() != null) {
+                                    runTimeValues.put(propertyName, configValue);
+                                }
+                            }
+                        }
+                    });
+
             // Remove properties coming from the Build System, because most likely they are used in build scripts
+            Iterable<ConfigSource> configSources = config.getConfigSources();
             config.getConfigSource("PropertiesConfigSource[source=Build system]").ifPresent(
-                    configSource -> unknownBuildProperties.removeAll(configSource.getPropertyNames()));
+                    new Consumer<ConfigSource>() {
+                        @Override
+                        public void accept(final ConfigSource buildSystem) {
+                            outer: for (String propertyName : buildSystem.getPropertyNames()) {
+                                for (ConfigSource configSource : configSources) {
+                                    if (configSource.equals(buildSystem)) {
+                                        continue;
+                                    }
+                                    if (configSource.getPropertyNames().contains(propertyName)) {
+                                        continue outer;
+                                    }
+                                }
+                                unknownBuildProperties.remove(propertyName);
+                            }
+                        }
+                    });
 
             // ConfigMappings
             for (ConfigClass mapping : buildTimeVisibleMappings) {

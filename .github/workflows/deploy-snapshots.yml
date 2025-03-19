@@ -53,7 +53,8 @@ jobs:
             -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
             -Dno-test-modules \
-            -Dgradle.cache.local.enabled=false \
+            -Ddevelocity.cache.local.enabled=false \
+            -Ddevelocity.cache.remote.enabled=false \
             -Ddokka \
             -Prelocations \
             clean deploy

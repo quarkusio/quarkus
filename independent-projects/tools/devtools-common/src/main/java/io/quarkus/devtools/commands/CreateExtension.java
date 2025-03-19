@@ -87,7 +87,7 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "18";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "19";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
     public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://docs.quarkiverse.io/%s/dev/";
 

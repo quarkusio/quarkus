@@ -213,7 +213,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
         if (person == null) {
             return ResponseBuilder.create(404).build();
         } else {
-            return ResponseBuilder.ok(var3).build();
+            return ResponseBuilder.ok(person).build();
         }
     }
 
@@ -231,7 +231,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
     @GET
     @Path("/count")
     public RestResponse<Long> count() {
-        return ResponseBuilder.ok(var1.count()).build()
+        return ResponseBuilder.ok(resource.count()).build();
     }
 
     @Transactional
@@ -261,7 +261,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
     @DELETE
     @Path("{id}")
     public RestResponse<Person> delete(@PathParam("id") Long id) {
-        return !var2.delete(id) ? ResponseBuilder.create(404).build() : ResponseBuilder.create(204).build();
+        return !resource.delete(id) ? ResponseBuilder.create(404).build() : ResponseBuilder.create(204).build();
     }
 }
 ----

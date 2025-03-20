@@ -45,7 +45,7 @@ public class ParameterResolverTest {
 
     @Test
     @ExtendWith(ParameterResolverTest.ListWithNonSerializableParameterResolver.class)
-    public void testSerializableParameterResolverFallbackToXStream(List<NonSerializable> list) {
+    public void testSerializableParameterResolverFallback(List<NonSerializable> list) {
         assertEquals("foo", list.get(0).value);
         assertEquals("bar", list.get(1).value);
     }

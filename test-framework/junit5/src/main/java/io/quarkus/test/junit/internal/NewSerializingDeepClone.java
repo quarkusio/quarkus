@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 import org.jboss.marshalling.cloner.ClassCloner;
 import org.jboss.marshalling.cloner.ClonerConfiguration;
@@ -20,7 +19,6 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
  */
 public final class NewSerializingDeepClone implements DeepClone {
     private final ObjectCloner cloner;
-    private static Pattern clonePattern;
     private RunningQuarkusApplication runningQuarkusApplication;
 
     public NewSerializingDeepClone(final ClassLoader sourceLoader, final ClassLoader targetLoader) {
@@ -56,7 +54,7 @@ public final class NewSerializingDeepClone implements DeepClone {
                     Class<?> theClassWeCareAbout = original.getClass();
 
                     // Short-circuit the checks if we've been configured to clone this
-                    if (!clonePattern.matcher(theClassWeCareAbout.getName()).matches()) {
+                    if (!theClassWeCareAbout.getName().startsWith("java.")) {
 
                         if (theClassWeCareAbout.isPrimitive()) {
                             // avoid copying things that do not need to be copied
@@ -140,9 +138,6 @@ public final class NewSerializingDeepClone implements DeepClone {
     @Override
     public void setRunningQuarkusApplication(RunningQuarkusApplication runningQuarkusApplication) {
         this.runningQuarkusApplication = runningQuarkusApplication;
-        String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
-                .orElse("java\\..*");
-        clonePattern = Pattern.compile(patternString);
     }
 
 }

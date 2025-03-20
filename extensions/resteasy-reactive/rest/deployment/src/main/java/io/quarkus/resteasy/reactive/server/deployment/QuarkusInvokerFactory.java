@@ -54,6 +54,8 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
             ResultHandle res;
             if (Modifier.isInterface(currentClassInfo.flags())) {
                 res = mc.invokeInterfaceMethod(info, mc.getMethodParam(0), args);
+            } else if (Modifier.isStatic(info.flags())) {
+                res = mc.invokeStaticMethod(info, args);
             } else {
                 res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
             }

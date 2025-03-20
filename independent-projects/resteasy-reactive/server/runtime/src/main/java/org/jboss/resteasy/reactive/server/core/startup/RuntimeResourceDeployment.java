@@ -327,7 +327,7 @@ public class RuntimeResourceDeployment {
         // given that we may inject form params in the endpoint we need to make sure we read the body before
         // we create/inject our endpoint
         ServerRestHandler instanceHandler = null;
-        if (!locatableResource) {
+        if (!locatableResource && !method.isStaticMethod()) {
             if (clazz.isPerRequestResource()) {
                 instanceHandler = new PerRequestInstanceHandler(clazz.getFactory(), info.getClientProxyUnwrapper());
                 score.add(ScoreSystem.Category.Resource, ScoreSystem.Diagnostic.ResourcePerRequest);

@@ -564,11 +564,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     + "' is not public and will therefore be ignored");
             return false;
         }
-        if ((info.flags() & Modifier.STATIC) != 0) {
-            log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
-                    + "' is static and will therefore be ignored");
-            return false;
-        }
         return true;
     }
 

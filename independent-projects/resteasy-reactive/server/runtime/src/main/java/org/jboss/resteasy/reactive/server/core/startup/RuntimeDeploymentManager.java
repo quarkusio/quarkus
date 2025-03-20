@@ -171,28 +171,53 @@ public class RuntimeDeploymentManager {
         //we use this map to merge them
         Map<MappersKey, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
 
-        for (int i = 0; i < resourceClasses.size(); i++) {
-            ResourceClass clazz = resourceClasses.get(i);
-            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
-                continue;
+        List<List<ResourceClass>> rcMap = List.of(resourceClasses, locatableResourceClasses);
+        // We only want to look for static methods on the locatableResourceClasses
+        // For resource classes we want to look for all methods
+        var justLookingForStatic = false;
+        for (var e : rcMap) {
+            for (int i = 0; i < e.size(); i++) {
+                ResourceClass clazz = e.get(i);
+                if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+                    continue;
+                }
+                List<ResourceMethod> methods;
+                String path = clazz.getPath();
+                if (!justLookingForStatic) {
+                    methods = clazz.getMethods();
+                } else {
+                    methods = new ArrayList<>();
+                    // This is a sub resource, we only register static methods as actual resource
+                    for (ResourceMethod method : clazz.getMethods()) {
+                        if (method.isStaticMethod()) {
+                            methods.add(method);
+                        }
+                    }
+                    if (path == null || path.isEmpty()) {
+                        path = "/";
+                    }
+                    if (methods.isEmpty()) {
+                        continue;
+                    }
+                }
+                URITemplate classTemplate = new URITemplate(path, true);
+
+                MappersKey key = new MappersKey(classTemplate);
+
+                var perClassMappers = mappers.get(key);
+                if (perClassMappers == null) {
+                    mappers.put(key, perClassMappers = new HashMap<>());
+                }
+                for (ResourceMethod method : methods) {
+                    RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
+                            clazz, (ServerResourceMethod) method, false, classTemplate, info);
+                    addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
+
+                    RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
+                }
+
             }
-            URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
-
-            MappersKey key = new MappersKey(classTemplate);
-
-            var perClassMappers = mappers.get(key);
-            if (perClassMappers == null) {
-                mappers.put(key, perClassMappers = new HashMap<>());
-            }
-            for (int j = 0; j < clazz.getMethods().size(); j++) {
-                ResourceMethod method = clazz.getMethods().get(j);
-                RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, (ServerResourceMethod) method, false, classTemplate, info);
-                addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
-
-                RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
-            }
-
+            justLookingForStatic = true;
         }
 
         classMappers = new ArrayList<>(mappers.size());

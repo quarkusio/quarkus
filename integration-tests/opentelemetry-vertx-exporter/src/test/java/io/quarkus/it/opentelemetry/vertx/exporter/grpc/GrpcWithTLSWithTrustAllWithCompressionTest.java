@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.it.opentelemetry.vertx.exporter.AbstractExporterTest;
-import io.quarkus.it.opentelemetry.vertx.exporter.OtelCollectorLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.opentelemetry.collector.OtelCollectorLifecycleManager;
 
 @QuarkusTest
 @TestProfile(GrpcWithTLSWithTrustAllWithCompressionTest.Profile.class)

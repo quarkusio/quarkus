@@ -31,9 +31,13 @@ import io.opentelemetry.proto.trace.v1.ResourceSpans;
 import io.opentelemetry.proto.trace.v1.ScopeSpans;
 import io.opentelemetry.proto.trace.v1.Span;
 import io.opentelemetry.semconv.ResourceAttributes;
+import io.quarkus.test.opentelemetry.collector.Logs;
+import io.quarkus.test.opentelemetry.collector.Metrics;
+import io.quarkus.test.opentelemetry.collector.Traces;
 
 public abstract class AbstractExporterTest {
 
+    // managed by OtelCollectorLifecycleManager
     Traces traces;
     Metrics metrics;
     Logs logs;

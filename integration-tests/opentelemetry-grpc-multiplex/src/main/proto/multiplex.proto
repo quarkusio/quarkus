@@ -8,13 +8,13 @@ package streaming;
 
 // Interface exported by the server.
 service Multiplex {
-    rpc Parse (stream StringRequest) returns (stream LongReply) {}
+  rpc Parse (stream StringRequest) returns (stream LongReply) {}
 }
 
 message StringRequest {
-    string number = 1;
+  string number = 1;
 }
 
 message LongReply {
-    int64 value = 1;
+  int64 value = 1;
 }

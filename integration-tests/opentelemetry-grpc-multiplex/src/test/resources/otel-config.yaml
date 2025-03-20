@@ -1,5 +1,6 @@
 extensions:
-  health_check: {}
+  health_check:
+    endpoint: 0.0.0.0:13133
 receivers:
   otlp:
     protocols:
@@ -12,32 +13,32 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:5317
         tls:
-          client_ca_file: $MTLS_CLIENT_CERTIFICATE
-          cert_file: $MTLS_SERVER_CERTIFICATE
-          key_file: $MTLS_SERVER_KEY
+          client_ca_file: ${env:MTLS_CLIENT_CERTIFICATE}
+          cert_file: ${env:MTLS_SERVER_CERTIFICATE}
+          key_file: ${env:MTLS_SERVER_KEY}
       http:
         endpoint: 0.0.0.0:5318
         tls:
-          client_ca_file: $MTLS_CLIENT_CERTIFICATE
-          cert_file: $MTLS_SERVER_CERTIFICATE
-          key_file: $MTLS_SERVER_KEY
+          client_ca_file: ${env:MTLS_CLIENT_CERTIFICATE}
+          cert_file: ${env:MTLS_SERVER_CERTIFICATE}
+          key_file: ${env:MTLS_SERVER_KEY}
 exporters:
-  logging:
-    verbosity: $LOGGING_EXPORTER_VERBOSITY_LEVEL
+  debug:
+    verbosity: ${env:LOGGING_EXPORTER_VERBOSITY_LEVEL}
   otlp:
-    endpoint: $OTLP_EXPORTER_ENDPOINT
+    endpoint: ${env:OTLP_EXPORTER_ENDPOINT}
     tls:
       insecure: true
     compression: none
 service:
   extensions: [health_check]
   pipelines:
-#    metrics:
-#      receivers: [otlp, otlp/mtls]
-#      exporters: [logging, otlp]
+    metrics:
+      receivers: [otlp, otlp/mtls]
+      exporters: [debug, otlp]
     traces:
       receivers: [otlp, otlp/mtls]
-      exporters: [logging, otlp]
-#    logs:
-#      receivers: [otlp, otlp/mtls]
-#      exporters: [logging, otlp]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp, otlp/mtls]
+      exporters: [debug, otlp]

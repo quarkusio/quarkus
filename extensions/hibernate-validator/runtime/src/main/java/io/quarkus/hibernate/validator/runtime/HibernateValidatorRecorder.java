@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.validation.ClockProvider;
 import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.MessageInterpolator;
@@ -40,6 +41,13 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateValidatorRecorder {
 
+    // We need to use an unbound type variable here,
+    // see https://github.com/quarkusio/quarkus/issues/36831#issuecomment-1790662104
+    private static <T> TypeLiteral<ValueExtractor<T>> valueExtractorTypeLiteral() {
+        return new TypeLiteral<>() {
+        };
+    }
+
     public void shutdownConfigValidator(ShutdownContext shutdownContext) {
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
@@ -54,7 +62,7 @@ public class HibernateValidatorRecorder {
     }
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
-            Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
+            Set<String> detectedBuiltinConstraints,
             boolean hasXmlConfiguration, boolean jpaInClasspath,
             ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
@@ -166,15 +174,8 @@ public class HibernateValidatorRecorder {
                 }
 
                 // Automatically add all the values extractors declared as beans
-                for (ValueExtractor<?> valueExtractor : HibernateValidatorRecorder
-                        // We cannot do something like `instance(...).select(ValueExtractor.class)`,
-                        // because `ValueExtractor` is usually implemented
-                        // as a parameterized type with wildcards,
-                        // and the CDI spec does not consider such types as bean types.
-                        // We work around that by listing all classes implementing `ValueExtractor` at build time,
-                        // then retrieving all bean instances implementing those types here.
-                        // See https://github.com/quarkusio/quarkus/pull/30447
-                        .<ValueExtractor<?>> uniqueBeanInstances(valueExtractorClasses)) {
+                for (ValueExtractor<?> valueExtractor : Arc.container().beanManager().createInstance()
+                        .select(valueExtractorTypeLiteral())) {
                     configuration.addValueExtractor(valueExtractor);
                 }
 

@@ -1607,10 +1607,8 @@ section of the OpenID Connect Multi-Tenancy guide.
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
+* xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]
-* link:https://www.keycloak.org/documentation.html[Keycloak documentation]
-* link:https://openid.net/connect/[OpenID Connect]
-* link:https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 client and filters reference guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
@@ -1621,3 +1619,6 @@ ifndef::no-quarkus-keycloak-admin-client[]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
 endif::no-quarkus-keycloak-admin-client[]
 * xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy]
+* link:https://www.keycloak.org/documentation.html[Keycloak documentation]
+* link:https://openid.net/connect/[OpenID Connect]
+* link:https://tools.ietf.org/html/rfc7519[JSON Web Token]

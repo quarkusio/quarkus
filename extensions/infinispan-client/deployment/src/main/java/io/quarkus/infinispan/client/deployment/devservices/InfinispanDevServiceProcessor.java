@@ -224,6 +224,7 @@ public class InfinispanDevServiceProcessor {
         Supplier<RunningDevService> infinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(clientName, devServicesConfig,
                     launchMode,
+                    composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.withEnv(devServicesConfig.containerEnv());
@@ -285,10 +286,10 @@ public class InfinispanDevServiceProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         public QuarkusInfinispanContainer(String clientName, InfinispanDevServicesConfig config,
-                LaunchMode launchMode, boolean useSharedNetwork) {
+                LaunchMode launchMode, String defaultNetworkId, boolean useSharedNetwork) {
             super(config.imageName().orElse(IMAGE_BASENAME + ":" + Version.getUnbrandedVersion()));
             this.fixedExposedPort = config.port();
             this.useSharedNetwork = useSharedNetwork;
@@ -335,6 +336,7 @@ public class InfinispanDevServiceProcessor {
             config.artifacts().ifPresent(a -> withArtifacts(a.toArray(new String[0])));
 
             withCommand(command);
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "infinispan");
         }
 
         @Override
@@ -342,7 +344,6 @@ public class InfinispanDevServiceProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "infinispan");
                 return;
             }
 

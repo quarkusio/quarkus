@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -199,6 +198,7 @@ public class RabbitMQDevServicesProcessor {
                     config.fixedExposedPort,
                     config.fixedExposedHttpPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                    composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork);
 
             config.vhosts.forEach(container::withVhost);
@@ -417,16 +417,15 @@ public class RabbitMQDevServicesProcessor {
         private final int port;
         private final int httpPort;
         private final boolean useSharedNetwork;
-        private String hostName;
+        private final String hostName;
 
         private ConfiguredRabbitMQContainer(DockerImageName dockerImageName,
                 int fixedExposedPort, int fixedExposedHttpPort,
-                String serviceName, boolean useSharedNetwork) {
+                String serviceName, String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
             this.httpPort = fixedExposedHttpPort;
             this.useSharedNetwork = useSharedNetwork;
-            withNetwork(Network.SHARED);
             withExposedPorts(RABBITMQ_PORT, RABBITMQ_HTTP_PORT);
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
@@ -435,14 +434,12 @@ public class RabbitMQDevServicesProcessor {
             if (!dockerImageName.getRepository().endsWith("rabbitmq")) {
                 throw new IllegalArgumentException("Only official rabbitmq images are supported");
             }
+            hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "rabbitmq");
         }
 
         @Override
         protected void configure() {
             super.configure();
-            if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "rabbitmq");
-            }
             if (port > 0) {
                 addFixedExposedPort(port, RABBITMQ_PORT);
             }

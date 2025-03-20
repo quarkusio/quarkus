@@ -58,6 +58,7 @@ public class MSSQLDevServicesProcessor {
                 Supplier<RunningDevServicesDatasource> startService = () -> {
                     QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             !devServicesSharedNetworkBuildItem.isEmpty());
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -105,14 +106,16 @@ public class MSSQLDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")))
                     .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
         }
 
         @Override
@@ -120,7 +123,6 @@ public class MSSQLDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mssql");
                 return;
             }
 

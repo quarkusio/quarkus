@@ -58,7 +58,7 @@ public class DB2DevServicesProcessor {
 
                 Supplier<RunningDevServicesDatasource> maybe = () -> {
                     QuarkusDb2Container container = new QuarkusDb2Container(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
+                            containerConfig.getFixedExposedPort(), composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -102,13 +102,15 @@ public class DB2DevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
                     .asCompatibleSubstituteFor(DockerImageName.parse("icr.io/db2_community/db2")));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "db2");
         }
 
         @Override
@@ -116,7 +118,6 @@ public class DB2DevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "db2");
                 return;
             }
 

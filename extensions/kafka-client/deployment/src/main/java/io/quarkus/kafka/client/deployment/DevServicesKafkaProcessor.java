@@ -234,6 +234,7 @@ public class DevServicesKafkaProcessor {
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("redpandadata/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork, config.redpanda);
                     timeout.ifPresent(redpanda::withStartupTimeout);
                     redpanda.withEnv(config.containerEnv);
@@ -248,7 +249,11 @@ public class DevServicesKafkaProcessor {
                             .withBrokerId(1)
                             .withKraft()
                             .waitForRunning();
-                    ConfigureUtil.configureSharedNetwork(strimzi, "kafka");
+                    String hostName = ConfigureUtil.configureNetwork(strimzi,
+                            composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
+                    if (useSharedNetwork) {
+                        strimzi.withBootstrapServers(c -> String.format("PLAINTEXT://%s:%s", hostName, KAFKA_PORT));
+                    }
                     if (config.serviceName != null) {
                         strimzi.withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, config.serviceName);
                         strimzi.withLabel(Labels.QUARKUS_DEV_SERVICE, config.serviceName);
@@ -268,6 +273,7 @@ public class DevServicesKafkaProcessor {
                     KafkaNativeContainer kafkaNative = new KafkaNativeContainer(DockerImageName.parse(config.imageName),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     timeout.ifPresent(kafkaNative::withStartupTimeout);
                     kafkaNative.withEnv(config.containerEnv);

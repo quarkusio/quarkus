@@ -187,7 +187,9 @@ public class DevServicesRedisProcessor {
 
         Supplier<RunningDevService> defaultRedisServerSupplier = () -> {
             QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port(),
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null, useSharedNetwork);
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null,
+                    composeProjectBuildItem.getDefaultNetworkId(),
+                    useSharedNetwork);
             timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.withEnv(devServicesConfig.containerEnv());
             redisContainer.start();
@@ -220,10 +222,10 @@ public class DevServicesRedisProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         public QuarkusPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -232,14 +234,13 @@ public class DevServicesRedisProcessor {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
         }
 
         @Override
         protected void configure() {
             super.configure();
-
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "redis");
                 return;
             }
 

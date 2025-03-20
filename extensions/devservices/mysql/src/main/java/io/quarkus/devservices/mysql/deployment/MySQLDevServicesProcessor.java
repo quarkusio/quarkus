@@ -63,6 +63,7 @@ public class MySQLDevServicesProcessor {
                 Supplier<RunningDevServicesDatasource> startService = () -> {
                     QuarkusMySQLContainer container = new QuarkusMySQLContainer(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -112,14 +113,16 @@ public class MySQLDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mysql")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.NAME)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
         }
 
         @Override
@@ -127,7 +130,6 @@ public class MySQLDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mssql");
                 return;
             }
 

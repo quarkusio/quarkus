@@ -15,7 +15,6 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
@@ -184,8 +183,9 @@ public class PulsarDevServicesProcessor {
         final Supplier<RunningDevService> defaultPulsarBrokerSupplier = () -> {
             // Starting the broker
             PulsarContainer container = new PulsarContainer(DockerImageName.parse(config.imageName)
-                    .asCompatibleSubstituteFor("apachepulsar/pulsar"))
-                    .withNetwork(Network.SHARED);
+                    .asCompatibleSubstituteFor("apachepulsar/pulsar"),
+                    composeProjectBuildItem.getDefaultNetworkId(),
+                    useSharedNetwork);
             config.brokerConfig.forEach((key, value) -> container.addEnv("PULSAR_PREFIX_" + key, value));
             if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) { // Only adds the label in dev mode.
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
@@ -195,9 +195,6 @@ public class PulsarDevServicesProcessor {
                 container.withPort(config.fixedExposedPort);
             }
             timeout.ifPresent(container::withStartupTimeout);
-            if (useSharedNetwork) {
-                container.withSharedNetwork();
-            }
             container.start();
 
             return getRunningService(container.getContainerId(), container::close, container.getPulsarBrokerUrl(),

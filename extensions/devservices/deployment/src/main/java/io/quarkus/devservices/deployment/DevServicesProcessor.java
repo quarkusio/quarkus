@@ -8,6 +8,7 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.FrameConsumerResultCallback;
 import org.testcontainers.containers.output.OutputFrame;
 
@@ -38,7 +40,9 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -59,6 +63,44 @@ public class DevServicesProcessor {
     static volatile ConsoleStateManager.ConsoleContext context;
     static volatile boolean logForwardEnabled = false;
     static Map<String, ContainerLogForwarder> containerLogForwarders = new HashMap<>();
+
+    @BuildStep
+    public DevServicesNetworkIdBuildItem networkId(
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            Optional<DevServicesComposeProjectBuildItem> composeProjectBuildItem) {
+        String networkId = composeProjectBuildItem
+                .map(DevServicesComposeProjectBuildItem::getDefaultNetworkId)
+                .or(() -> devServicesLauncherConfig.flatMap(ignored -> getSharedNetworkId()))
+                .orElse(null);
+        return new DevServicesNetworkIdBuildItem(networkId);
+    }
+
+    /**
+     * Get the network id from the shared testcontainers network, without forcing the creation of the network.
+     *
+     * @return the network id if available, empty otherwise
+     */
+    private Optional<String> getSharedNetworkId() {
+        try {
+            Field id;
+            Object sharedNetwork;
+            var tccl = Thread.currentThread().getContextClassLoader();
+            if (tccl.getName().contains("Deployment")) {
+                Class<?> networkClass = tccl.getParent().loadClass("org.testcontainers.containers.Network");
+                sharedNetwork = networkClass.getField("SHARED").get(null);
+                Class<?> networkImplClass = tccl.getParent().loadClass("org.testcontainers.containers.Network.NetworkImpl");
+                id = networkImplClass.getDeclaredField("id");
+            } else {
+                sharedNetwork = Network.SHARED;
+                id = Network.NetworkImpl.class.getDeclaredField("id");
+            }
+            id.setAccessible(true);
+            String value = (String) id.get(sharedNetwork);
+            return Optional.ofNullable(value);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
     public List<DevServiceDescriptionBuildItem> config(

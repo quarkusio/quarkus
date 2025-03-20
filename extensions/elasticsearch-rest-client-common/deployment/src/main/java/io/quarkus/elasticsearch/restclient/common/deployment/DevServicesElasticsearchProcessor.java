@@ -206,9 +206,10 @@ public class DevServicesElasticsearchProcessor {
         // Starting the server
         final Supplier<RunningDevService> defaultElasticsearchSupplier = () -> {
 
+            String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
             CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
-                    ? createElasticsearchContainer(config, resolvedImageName, useSharedNetwork)
-                    : createOpensearchContainer(config, resolvedImageName, useSharedNetwork);
+                    ? createElasticsearchContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork)
+                    : createOpensearchContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork);
             GenericContainer<?> container = createdContainer.genericContainer();
 
             if (config.serviceName() != null) {
@@ -226,10 +227,8 @@ public class DevServicesElasticsearchProcessor {
 
             container.start();
 
-            var httpHost = container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT);
-            if (createdContainer.hostName() != null) {
-                httpHost = createdContainer.hostName() + ":" + ELASTICSEARCH_PORT;
-            }
+            var httpHost = createdContainer.hostName + ":"
+                    + (useSharedNetwork ? ELASTICSEARCH_PORT : container.getMappedPort(ELASTICSEARCH_PORT));
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Elasticsearch"),
@@ -246,13 +245,11 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
-            DockerImageName resolvedImageName, boolean useSharedNetwork) {
+            DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork) {
         ElasticsearchContainer container = new ElasticsearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
-        String hostName = null;
-        if (useSharedNetwork) {
-            hostName = ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
-        }
+        String hostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
+                DEV_SERVICE_ELASTICSEARCH);
 
         // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
         container.addEnv("xpack.security.enabled", "false");
@@ -267,13 +264,10 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private CreatedContainer createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
-            DockerImageName resolvedImageName, boolean useSharedNetwork) {
+            DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork) {
         OpensearchContainer container = new OpensearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch"));
-        String hostName = null;
-        if (useSharedNetwork) {
-            hostName = ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
-        }
+        String hostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork, DEV_SERVICE_OPENSEARCH);
 
         container.addEnv("bootstrap.memory_lock", "true");
         container.addEnv("plugins.index_state_management.enabled", "false");

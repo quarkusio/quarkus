@@ -63,6 +63,7 @@ public class MariaDBDevServicesProcessor {
                 Supplier<RunningDevServicesDatasource> createDevService = () -> {
                     QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -111,14 +112,17 @@ public class MariaDBDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId,
+                boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.NAME)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mariadb");
         }
 
         @Override
@@ -126,7 +130,6 @@ public class MariaDBDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mariadb");
                 return;
             }
 

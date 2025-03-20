@@ -74,6 +74,7 @@ public class PostgresqlDevServicesProcessor {
                 Supplier<RunningDevServicesDatasource> createDevService = () -> {
                     QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -132,9 +133,10 @@ public class PostgresqlDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
@@ -154,6 +156,7 @@ public class PostgresqlDevServicesProcessor {
                     .withStrategy(Wait.forLogMessage("(" + READY_REGEX + ")?(" + SKIPPING_INITIALIZATION_REGEX + ")?", 2))
                     .withStrategy(Wait.forListeningPort())
                     .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "postgres");
         }
 
         @Override
@@ -161,7 +164,6 @@ public class PostgresqlDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "postgres");
                 return;
             }
 

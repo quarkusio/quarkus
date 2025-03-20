@@ -67,6 +67,7 @@ public class OracleDevServicesProcessor {
 
                     QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
@@ -118,15 +119,16 @@ public class OracleDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.ORIGINAL_IMAGE_NAME));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "oracle");
         }
 
         @Override
@@ -134,7 +136,6 @@ public class OracleDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "oracle");
                 return;
             }
 

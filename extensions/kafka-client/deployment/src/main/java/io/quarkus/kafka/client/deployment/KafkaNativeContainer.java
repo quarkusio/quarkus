@@ -22,10 +22,10 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
     private String additionalArgs = null;
     private int exposedPort = -1;
 
-    private String hostName = null;
+    private final String hostName;
 
     public KafkaNativeContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-            boolean useSharedNetwork) {
+            String defaultNetworkId, boolean useSharedNetwork) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
@@ -36,6 +36,7 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT, STARTER_SCRIPT);
         withCommand("sh", "-c", cmd);
         waitingFor(Wait.forLogMessage(".*Kafka broker started.*", 1));
+        this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "kafka");
     }
 
     @Override
@@ -88,7 +89,6 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         super.configure();
 
         addExposedPort(DevServicesKafkaProcessor.KAFKA_PORT);
-        hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
 
         if (fixedExposedPort != null) {
             addFixedExposedPort(fixedExposedPort, DevServicesKafkaProcessor.KAFKA_PORT);

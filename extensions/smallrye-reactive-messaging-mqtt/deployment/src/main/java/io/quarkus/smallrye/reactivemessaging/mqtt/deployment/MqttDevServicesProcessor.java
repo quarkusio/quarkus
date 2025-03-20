@@ -19,7 +19,6 @@ import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -176,7 +175,9 @@ public class MqttDevServicesProcessor {
             ConfiguredMqttContainer container = new ConfiguredMqttContainer(
                     DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"),
                     config.fixedExposedPort,
-                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null, useSharedNetwork);
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                    composeProjectBuildItem.getDefaultNetworkId(),
+                    useSharedNetwork);
 
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
@@ -291,18 +292,18 @@ public class MqttDevServicesProcessor {
 
         private final int port;
         private final boolean useSharedNetwork;
-        private String hostName;
+        private final String hostName;
 
         private ConfiguredMqttContainer(
                 DockerImageName dockerImageName,
                 int fixedExposedPort,
                 String serviceName,
+                String defaultNetworkId,
                 boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             withExposedPorts(MQTT_PORT);
-            withNetwork(Network.SHARED);
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
@@ -313,16 +314,12 @@ public class MqttDevServicesProcessor {
             if (!dockerImageName.getRepository().endsWith("eclipse-mosquitto")) {
                 throw new IllegalArgumentException("Only official eclipse-mosquitto images are supported");
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mqtt");
         }
 
         @Override
         protected void configure() {
             super.configure();
-            if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mqtt");
-            } else {
-                hostName = super.getHost();
-            }
             if (port > 0) {
                 addFixedExposedPort(port, MQTT_PORT);
             }

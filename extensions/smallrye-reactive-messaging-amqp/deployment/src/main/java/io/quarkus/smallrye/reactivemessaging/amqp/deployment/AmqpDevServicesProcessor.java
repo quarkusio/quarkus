@@ -197,6 +197,7 @@ public class AmqpDevServicesProcessor {
                     config.extra,
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                    composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork);
 
             timeout.ifPresent(container::withStartupTimeout);
@@ -326,10 +327,10 @@ public class AmqpDevServicesProcessor {
         private final int port;
         private final boolean useSharedNetwork;
 
-        private String hostName;
+        private final String hostName;
 
         private ArtemisContainer(DockerImageName dockerImageName, String extra, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -352,6 +353,7 @@ public class AmqpDevServicesProcessor {
                         dockerImageName);
                 log.info("Skipping startup probe for the Dev Service for AMQP as it does not use the default image.");
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "artemis");
         }
 
         @Override
@@ -359,12 +361,6 @@ public class AmqpDevServicesProcessor {
             super.configure();
             if (port > 0) {
                 addFixedExposedPort(port, AMQP_PORT);
-            }
-
-            if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "artemis");
-            } else {
-                hostName = super.getHost();
             }
         }
 

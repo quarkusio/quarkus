@@ -190,9 +190,12 @@ public class DevServicesMongoProcessor {
             if (capturedProperties.imageName != null) {
                 mongoDBContainer = new QuarkusMongoDBContainer(
                         DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
-                        capturedProperties.fixedExposedPort, useSharedNetwork);
+                        capturedProperties.fixedExposedPort,
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork);
             } else {
-                mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort, useSharedNetwork);
+                mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort,
+                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
             }
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
@@ -277,28 +280,29 @@ public class DevServicesMongoProcessor {
         private final Integer fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         private static final int MONGODB_INTERNAL_PORT = 27017;
 
         @SuppressWarnings("deprecation")
-        private QuarkusMongoDBContainer(Integer fixedExposedPort, boolean useSharedNetwork) {
+        private QuarkusMongoDBContainer(Integer fixedExposedPort, String defaultNetworkId, boolean useSharedNetwork) {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
         }
 
-        private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort, boolean useSharedNetwork) {
+        private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
         }
 
         @Override
         public void configure() {
             super.configure();
-
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mongo");
                 return;
             }
 

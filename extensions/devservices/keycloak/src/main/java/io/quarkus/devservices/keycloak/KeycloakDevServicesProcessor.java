@@ -413,6 +413,7 @@ public class KeycloakDevServicesProcessor {
 
             QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
                     capturedDevServicesConfiguration.port(),
+                    composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork,
                     capturedDevServicesConfiguration.realmPath().orElse(List.of()),
                     resourcesMap(errors),
@@ -493,7 +494,7 @@ public class KeycloakDevServicesProcessor {
         private final String containerLabelValue;
         private final Optional<String> javaOpts;
         private final boolean sharedContainer;
-        private String hostName;
+        private final String hostName;
         private final boolean keycloakX;
         private final List<RealmRepresentation> realmReps = new LinkedList<>();
         private final Optional<String> startCommand;
@@ -502,7 +503,9 @@ public class KeycloakDevServicesProcessor {
         private final MemorySize containerMemoryLimit;
         private final List<String> errors;
 
-        public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
+        public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId,
+                boolean useSharedNetwork,
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand,
                 Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit, List<String> errors) {
@@ -531,6 +534,7 @@ public class KeycloakDevServicesProcessor {
             this.errors = errors;
 
             super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "keycloak");
         }
 
         @Override
@@ -538,7 +542,6 @@ public class KeycloakDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "keycloak");
                 if (keycloakX) {
                     addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "http://" + hostName + ":" + KEYCLOAK_PORT);
                 } else {

@@ -189,6 +189,7 @@ public class DevServicesApicurioRegistryProcessor {
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apicurio/apicurio-registry-mem"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     timeout.ifPresent(container::withStartupTimeout);
                     container.withEnv(config.containerEnv);
@@ -267,10 +268,10 @@ public class DevServicesApicurioRegistryProcessor {
         private final int fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         private ApicurioRegistryContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -283,6 +284,7 @@ public class DevServicesApicurioRegistryProcessor {
             if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry-mem")) {
                 throw new IllegalArgumentException("Only apicurio/apicurio-registry-mem images are supported");
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "apicurio-registry");
         }
 
         @Override
@@ -290,7 +292,6 @@ public class DevServicesApicurioRegistryProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
                 return;
             }
 

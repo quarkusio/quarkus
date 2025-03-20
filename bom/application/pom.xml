@@ -203,7 +203,7 @@
         <aesh.version>2.8.2</aesh.version>
         <aesh-readline.version>2.6</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
-        <jgit.version>7.1.0.202411261347-r</jgit.version>
+        <jgit.version>7.2.0.202503040940-r</jgit.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.0.2</strimzi-oauth.nimbus.version>

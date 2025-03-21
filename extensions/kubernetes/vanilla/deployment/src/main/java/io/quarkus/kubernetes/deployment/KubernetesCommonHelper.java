@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
@@ -1017,8 +1018,13 @@ public class KubernetesCommonHelper {
                             PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.prometheus().path().orElse(prefix + "/path"), path, PROMETHEUS_ANNOTATION_TARGETS)));
+
+                    final var managementPort = ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
+                    final var prometheusPort = KubernetesConfigUtil.managementPortIsEnabled() ? managementPort
+                            : port.get().getContainerPort();
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
-                            config.prometheus().port().orElse(prefix + "/port"), "" + port.get().getContainerPort(),
+                            config.prometheus().port().orElse(prefix + "/port"), "" + prometheusPort,
                             PROMETHEUS_ANNOTATION_TARGETS)));
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.prometheus().scheme().orElse(prefix + "/scheme"), "http",

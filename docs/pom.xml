@@ -29,7 +29,7 @@
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
         <maven-model-helper.version>37</maven-model-helper.version>
         <eclipse-collections.version>11.1.0</eclipse-collections.version>
-        <jgit.version>7.1.0.202411261347-r</jgit.version>
+        <jgit.version>7.2.0.202503040940-r</jgit.version>
 
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>

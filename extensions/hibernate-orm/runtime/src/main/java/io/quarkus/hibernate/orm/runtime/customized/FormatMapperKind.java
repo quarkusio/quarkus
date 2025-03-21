@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
+import java.util.Optional;
+
 import jakarta.json.bind.Jsonb;
 
 import org.hibernate.type.format.FormatMapper;
@@ -20,11 +22,21 @@ public enum FormatMapperKind {
             // as well as an XmlMapper instance instead of an ObjectMapper...
             return new JacksonJsonFormatMapper(Arc.container().instance(ObjectMapper.class).get());
         }
+
+        @Override
+        public Optional<String> requiredBeanType() {
+            return Optional.of("com.fasterxml.jackson.databind.ObjectMapper");
+        }
     },
     JSONB {
         @Override
         public FormatMapper create() {
             return new JsonBJsonFormatMapper(Arc.container().instance(Jsonb.class).get());
+        }
+
+        @Override
+        public Optional<String> requiredBeanType() {
+            return Optional.of("io.quarkus.jsonb.JsonbProducer");
         }
     },
     JAXB {
@@ -32,7 +44,14 @@ public enum FormatMapperKind {
         public FormatMapper create() {
             return new JaxbXmlFormatMapper();
         }
+
+        @Override
+        public Optional<String> requiredBeanType() {
+            return Optional.empty();
+        }
     };
 
     public abstract FormatMapper create();
+
+    public abstract Optional<String> requiredBeanType();
 }

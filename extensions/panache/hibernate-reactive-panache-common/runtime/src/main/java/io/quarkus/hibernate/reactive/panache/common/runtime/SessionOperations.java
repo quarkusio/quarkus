@@ -12,6 +12,7 @@ import org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
@@ -43,7 +44,8 @@ public final class SessionOperations {
 
                 @Override
                 public Key<Session> get() {
-                    return new BaseKey<>(Mutiny.Session.class, ((Implementor) SESSION_FACTORY.get()).getUuid());
+                    Implementor implementor = (Implementor) ClientProxy.unwrap(SESSION_FACTORY.get());
+                    return new BaseKey<>(Mutiny.Session.class, implementor.getUuid());
                 }
             });
 

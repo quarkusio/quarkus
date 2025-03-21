@@ -27,7 +27,7 @@
         <version.dependency.plugin>3.6.1</version.dependency.plugin>
         <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
         <version.exec.plugin>3.5.0</version.exec.plugin>
-        <version.formatter.plugin>2.25.0</version.formatter.plugin>
+        <version.formatter.plugin>2.26.0</version.formatter.plugin>
         <version.gpg.plugin>3.0.1</version.gpg.plugin>
         <version.impsort.plugin>1.12.0</version.impsort.plugin>
         <version.install.plugin>3.1.1</version.install.plugin>

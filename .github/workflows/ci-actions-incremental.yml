@@ -10,6 +10,8 @@ on:
       - '*.scenario'
       - '*.txt'
       - 'adr/**'
+      - '.devcontainer/**'
+      - 'jakarta/**'
       - '.dockerignore'
       - 'docs/**'
       - '.github/ISSUE_TEMPLATE/**'

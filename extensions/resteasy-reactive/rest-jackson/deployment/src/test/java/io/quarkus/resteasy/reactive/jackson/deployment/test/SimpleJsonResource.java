@@ -110,6 +110,20 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/book-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Book echoBook(Book book) {
+        return book;
+    }
+
+    @POST
+    @Path("/lombok-book-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public LombokBook echoLombokBook(LombokBook book) {
+        return book;
+    }
+
+    @POST
     @Path("/record-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public StateRecord echoRecord(StateRecord stateRecord) {

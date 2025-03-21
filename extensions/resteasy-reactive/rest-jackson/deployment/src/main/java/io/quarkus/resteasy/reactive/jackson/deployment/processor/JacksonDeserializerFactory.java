@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.jandex.*;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -231,15 +232,22 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
-        if (deserData.classInfo.hasNoArgsConstructor() && !deserData.classInfo.isRecord()) {
-            return deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()));
+        var ctorOpt = deserData.classInfo.constructors().stream()
+                .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctor.hasAnnotation(JsonCreator.class))
+                .findFirst();
+
+        if (ctorOpt.isEmpty()) {
+            if (deserData.classInfo.hasNoArgsConstructor() && !deserData.classInfo.isRecord()) {
+                return deserData.methodCreator
+                        .newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()));
+            }
+            ctorOpt = deserData.classInfo.isRecord() ? Optional.of(deserData.classInfo.canonicalRecordConstructor())
+                    : deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
+            if (ctorOpt.isEmpty()) {
+                return null;
+            }
         }
 
-        var ctorOpt = deserData.classInfo.isRecord() ? Optional.of(deserData.classInfo.canonicalRecordConstructor())
-                : deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
-        if (!ctorOpt.isPresent()) {
-            return null;
-        }
         MethodInfo ctor = ctorOpt.get();
         ResultHandle[] params = new ResultHandle[ctor.parameters().size()];
         int i = 0;
@@ -452,7 +460,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private MethodInfo setterMethodInfo(ClassInfo classInfo, FieldSpecs fieldSpecs) {
         String methodName = "set" + ucFirst(fieldSpecs.fieldName);
-        return findMethod(classInfo, methodName, fieldSpecs.fieldType);
+        MethodInfo setter = findMethod(classInfo, methodName, fieldSpecs.fieldType);
+        if (setter == null) {
+            setter = findMethod(classInfo, fieldSpecs.fieldName, fieldSpecs.fieldType);
+        }
+        return setter;
     }
 
     private MethodDescriptor readMethodForPrimitiveFields(String typeName) {

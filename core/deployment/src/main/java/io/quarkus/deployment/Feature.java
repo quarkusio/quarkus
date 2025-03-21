@@ -17,6 +17,7 @@ public enum Feature {
     AWT,
     CACHE,
     CDI,
+    COMPOSE,
     CONFIG_YAML,
     CONFLUENT_REGISTRY_AVRO,
     CONFLUENT_REGISTRY_JSON,

@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    container_name: fixed-name-db
+    labels:
+      quarkus.wait-for-logs: "database system is ready to accept connections"
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"

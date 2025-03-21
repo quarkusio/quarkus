@@ -1,0 +1,14 @@
+services:
+  service1:
+    image: test/service1:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KEY1: value1
+
+  service2:
+    image: test/service2:latest
+    ports:
+      - "8081:8081"
+    environment:
+      KEY2: value2

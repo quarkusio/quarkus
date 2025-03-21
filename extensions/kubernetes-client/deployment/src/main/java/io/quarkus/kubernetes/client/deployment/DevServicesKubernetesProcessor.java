@@ -1,6 +1,8 @@
 package io.quarkus.kubernetes.client.deployment;
 
 import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.api_only;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -48,6 +50,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -57,6 +60,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -78,8 +82,8 @@ public class DevServicesKubernetesProcessor {
 
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kubernetes";
     static final int KUBERNETES_PORT = 6443;
-    private static final ContainerLocator KubernetesContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, KUBERNETES_PORT);
-
+    private static final ContainerLocator KubernetesContainerLocator = locateContainerWithLabels(KUBERNETES_PORT,
+            DEV_SERVICE_LABEL);
     static volatile RunningDevService devService;
     static volatile KubernetesDevServiceCfg cfg;
     static volatile boolean first = true;
@@ -87,6 +91,7 @@ public class DevServicesKubernetesProcessor {
     @BuildStep
     public DevServicesResultBuildItem setupKubernetesDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
             KubernetesClientBuildConfig kubernetesClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
@@ -112,7 +117,7 @@ public class DevServicesKubernetesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Kubernetes Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            devService = startKubernetes(dockerStatusBuildItem, configuration, launchMode,
+            devService = startKubernetes(dockerStatusBuildItem, composeProjectBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout(),
                     devServicesKube,
@@ -168,7 +173,9 @@ public class DevServicesKubernetesProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem, KubernetesDevServiceCfg config,
+    private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            KubernetesDevServiceCfg config,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout,
             BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
             Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
@@ -208,7 +215,10 @@ public class DevServicesKubernetesProcessor {
 
         final Optional<ContainerAddress> maybeContainerAddress = KubernetesContainerLocator.locateContainer(config.serviceName,
                 config.shared,
-                launchMode.getLaunchMode());
+                launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of("kube-apiserver", "k3s", "kindest/node"),
+                        KUBERNETES_PORT, launchMode.getLaunchMode(), useSharedNetwork));
 
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
             KubernetesContainer container;
@@ -245,7 +255,8 @@ public class DevServicesKubernetesProcessor {
                 ConfigureUtil.configureSharedNetwork(container, "quarkus-kubernetes-client");
             }
             if (config.serviceName != null) {
-                container.withLabel(DevServicesKubernetesProcessor.DEV_SERVICE_LABEL, config.serviceName);
+                container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
+                container.withLabel(QUARKUS_DEV_SERVICE, config.serviceName);
             }
             timeout.ifPresent(container::withStartupTimeout);
 

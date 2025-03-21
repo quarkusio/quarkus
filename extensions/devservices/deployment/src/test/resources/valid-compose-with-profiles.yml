@@ -1,0 +1,24 @@
+name: devservices
+services:
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    labels:
+      io.quarkus.devservices.compose.wait_for.logs: "database system is ready to accept connections"
+
+  redis:
+    image: redis:6
+    profiles: [redis]
+    ports:
+      - "6379:6379"
+  kafka:
+    image: confluentinc/cp-kafka:7.2.1
+    profiles: [kafka]
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1

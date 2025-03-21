@@ -57,7 +57,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
     File recordedBuildConfigDirectory;
 
     @Parameter(property = "quarkus.recorded-build-config.file", required = false)
-    File recordedBuildConfigFile;
+    String recordedBuildConfigFile;
 
     /**
      * Whether to dump the current build configuration in case the configuration from the previous build isn't found
@@ -101,16 +101,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             getLog().debug("Bootstrapping Quarkus application in mode " + launchMode);
         }
 
-        Path compareFile;
-        if (this.recordedBuildConfigFile == null) {
-            compareFile = recordedBuildConfigDirectory.toPath()
-                    .resolve("quarkus-" + launchMode.getDefaultProfile() + "-config-dump");
-        } else if (this.recordedBuildConfigFile.isAbsolute()) {
-            compareFile = this.recordedBuildConfigFile.toPath();
-        } else {
-            compareFile = recordedBuildConfigDirectory.toPath().resolve(this.recordedBuildConfigFile.toPath());
-        }
-
+        final Path compareFile = resolvePreviousBuildConfigDump(launchMode);
         final boolean prevConfigExists = Files.exists(compareFile);
         if (!prevConfigExists && !dumpCurrentWhenRecordedUnavailable && !dumpDependencies) {
             getLog().info("Config dump from the previous build does not exist at " + compareFile);
@@ -175,6 +166,19 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
                 deploymentClassLoader.close();
             }
         }
+    }
+
+    private Path resolvePreviousBuildConfigDump(LaunchMode launchMode) {
+        final Path previousBuildConfigDump = this.recordedBuildConfigFile == null ? null
+                : Path.of(this.recordedBuildConfigFile);
+        if (previousBuildConfigDump == null) {
+            return recordedBuildConfigDirectory.toPath()
+                    .resolve("quarkus-" + launchMode.getDefaultProfile() + "-config-dump");
+        }
+        if (previousBuildConfigDump.isAbsolute()) {
+            return previousBuildConfigDump;
+        }
+        return recordedBuildConfigDirectory.toPath().resolve(previousBuildConfigDump);
     }
 
     private Path getOutputFile(File outputFile, String profile, String fileNameSuffix) {

@@ -87,9 +87,9 @@ public class TlsConfigUtils {
             try {
                 options.setUseAlpn(sslOptions.isUseAlpn());
             } catch (UnsupportedOperationException e) {
-                log.warn(
-                        "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.".formatted(
-                                options.getClass().getName()));
+                log.warnf(
+                        "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
+                        options.getClass().getName());
             }
         }
     }

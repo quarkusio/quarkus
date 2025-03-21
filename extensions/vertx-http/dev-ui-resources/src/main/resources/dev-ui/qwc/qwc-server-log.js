@@ -138,10 +138,12 @@ export class QwcServerLog extends QwcAbstractLogElement {
         this._toggleOnOff(true);
         this._history();
         this._loadAllLoggers();
+        window.addEventListener('force-restart-event', this._handleForceRestartEvent.bind(this));
     }
     
     disconnectedCallback() {
         this._toggleOnOff(false);
+        window.removeEventListener('force-restart-event', this._handleForceRestartEvent.bind(this));
         super.disconnectedCallback();
     }
 
@@ -687,6 +689,10 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _handleZoomOut(event){
         this._zoomOut();
+    }
+    
+    _handleForceRestartEvent(event) {
+        this.jsonRpc.forceRestart();
     }
     
     _handleKeyPress(event) {

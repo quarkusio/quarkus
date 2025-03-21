@@ -94,9 +94,9 @@ public class ExecutionModelAnnotationsProcessor {
                 // gross hack to allow methods declared in Dev UI JSON RPC service classes,
                 // as the proper way (consuming `JsonRPCProvidersBuildItem`) only works in dev mode
                 String clazz = method.declaringClass().name().toString().toLowerCase(Locale.ROOT);
-                return clazz.startsWith("io.quarkus.")
-                        || clazz.startsWith("io.quarkiverse.")
-                        || clazz.endsWith("jsonrpcservice");
+                return (clazz.startsWith("io.quarkus.")
+                        || clazz.startsWith("io.quarkiverse."))
+                        && clazz.endsWith("jsonrpcservice");
             }
         });
     }

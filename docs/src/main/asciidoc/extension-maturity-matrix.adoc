@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
-What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide? Of course, it depends on the extension you are building. But, we found a set of attributes common to many extensions. This document explains what they are.
+What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide? Of course, it depends on the extension you are building. But, we found a set of attributes common to many extensions. This document explains what they are. We can arrange these charactertistics into a maturity matrix. Here's what the filled-in matrix might look like for a (made up) extension:
 
 image::extension-maturity-matrix.svg[A maturity matrix]
 

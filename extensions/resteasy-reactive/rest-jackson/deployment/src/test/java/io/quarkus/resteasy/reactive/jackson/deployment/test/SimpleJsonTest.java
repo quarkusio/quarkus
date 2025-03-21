@@ -38,7 +38,7 @@ public class SimpleJsonTest {
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
                                     NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
-                                    Fruit.class, Price.class, DogRecord.class, ItemExtended.class)
+                                    Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -806,5 +806,33 @@ public class SimpleJsonTest {
                 .body("email", Matchers.is("E-mail"))
                 .body("nameExtended", Matchers.is("Name-Extended"))
                 .body("emailExtended", Matchers.is(emptyOrNullString()));
+    }
+
+    @Test
+    public void testPojoWithJsonCreator() {
+        RestAssured
+                .with()
+                .body("{\"author\":\"Stephen King\",\"title\":\"IT\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/book-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("author", Matchers.is("Stephen King"))
+                .body("title", Matchers.is("IT"));
+    }
+
+    @Test
+    public void testPojoWithFluentSetters() {
+        RestAssured
+                .with()
+                .body("{\"author\":\"Mario Fusco\",\"title\":\"Lombok must die\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/lombok-book-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("author", Matchers.is("Mario Fusco"))
+                .body("title", Matchers.is("Lombok must die"));
     }
 }

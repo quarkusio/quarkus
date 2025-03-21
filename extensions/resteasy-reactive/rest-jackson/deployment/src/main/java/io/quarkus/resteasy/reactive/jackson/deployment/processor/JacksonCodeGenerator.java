@@ -25,6 +25,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -344,7 +345,9 @@ public abstract class JacksonCodeGenerator {
 
         private static boolean isUnknownAnnotation(String ann) {
             if (ann.startsWith("com.fasterxml.jackson.")) {
-                return !ann.equals(JsonProperty.class.getName()) && !ann.equals(JsonIgnore.class.getName());
+                return !ann.equals(JsonProperty.class.getName()) &&
+                        !ann.equals(JsonIgnore.class.getName()) &&
+                        !ann.equals(JsonCreator.class.getName());
             }
             return false;
         }

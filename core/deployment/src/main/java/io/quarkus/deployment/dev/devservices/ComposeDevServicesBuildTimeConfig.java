@@ -1,5 +1,6 @@
 package io.quarkus.deployment.dev.devservices;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,4 +108,11 @@ public interface ComposeDevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean reuseProjectForTests();
+
+    /**
+     * Timeout for stopping services, after the timeout the services are forcefully stopped,
+     *
+     */
+    @WithDefault("1s")
+    Duration stopTimeout();
 }

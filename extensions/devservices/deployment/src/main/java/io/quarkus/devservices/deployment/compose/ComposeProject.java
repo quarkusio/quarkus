@@ -52,6 +52,7 @@ public class ComposeProject {
     private final String executable;
 
     private final Duration startupTimeout;
+    private final Duration stopTimeout;
     private final boolean stopContainers;
     private final boolean ryukEnabled;
     private final boolean followContainerLogs;
@@ -73,6 +74,7 @@ public class ComposeProject {
             String executable,
             String project,
             Duration startupTimeout,
+            Duration stopTimeout,
             boolean stopContainers,
             boolean ryukEnabled,
             boolean followContainerLogs,
@@ -88,6 +90,7 @@ public class ComposeProject {
         this.project = project;
         this.executable = executable;
         this.startupTimeout = startupTimeout;
+        this.stopTimeout = stopTimeout;
         this.stopContainers = stopContainers;
         this.ryukEnabled = ryukEnabled;
         this.followContainerLogs = followContainerLogs;
@@ -348,6 +351,8 @@ public class ComposeProject {
         if (!isExecutablePodman() && !StringUtil.isNullOrEmpty(removeImages)) {
             cmd += " --rmi " + removeImages;
         }
+        // Set the timeout for stopping the services
+        cmd += " -t " + stopTimeout.getSeconds();
         // Run the docker compose container, which stops the services
         try {
             runWithCompose(cmd, env);
@@ -449,6 +454,7 @@ public class ComposeProject {
         private DockerClient dockerClient = DockerClientFactory.lazyClient();
         private String project;
         private Duration startupTimeout = Duration.ofMinutes(1);
+        private Duration stopTimeout;
         private boolean stopContainers = true;
         private boolean ryukEnabled = true;
         private boolean followContainerLogs = false;
@@ -507,6 +513,17 @@ public class ComposeProject {
          */
         public Builder withStartupTimeout(Duration duration) {
             this.startupTimeout = duration;
+            return this;
+        }
+
+        /**
+         * Set the stop timeout for the compose project.
+         *
+         * @param duration the startup timeout
+         * @return this
+         */
+        public Builder withStopTimeout(Duration duration) {
+            this.stopTimeout = duration;
             return this;
         }
 
@@ -613,6 +630,7 @@ public class ComposeProject {
                     executable,
                     project,
                     startupTimeout,
+                    stopTimeout,
                     stopContainers,
                     ryukEnabled,
                     followContainerLogs,

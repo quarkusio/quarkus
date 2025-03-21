@@ -211,6 +211,7 @@ public class ComposeDevServicesProcessor {
                 .withRemoveVolumes(cfg.removeVolumes)
                 .withFollowContainerLogs(cfg.followContainerLogs)
                 .withScalingPreferences(cfg.scalingPreferences)
+                .withStopTimeout(cfg.stopTimeout)
                 .withBuild(cfg.build);
 
         timeout.ifPresent(builder::withStartupTimeout);
@@ -311,6 +312,7 @@ public class ComposeDevServicesProcessor {
         private final String project;
         private final boolean startServices;
         private final boolean stopServices;
+        private final Duration stopTimeout;
         private final boolean ryukEnabled;
         private final List<File> files;
         private final List<String> profiles;
@@ -344,6 +346,7 @@ public class ComposeDevServicesProcessor {
             this.project = cfg.projectName().orElse(null);
             this.startServices = cfg.startServices();
             this.stopServices = cfg.stopServices();
+            this.stopTimeout = cfg.stopTimeout();
             this.ryukEnabled = cfg.ryukEnabled();
             this.profiles = cfg.profiles().orElse(Collections.emptyList());
             this.options = cfg.options().orElse(Collections.emptyList());

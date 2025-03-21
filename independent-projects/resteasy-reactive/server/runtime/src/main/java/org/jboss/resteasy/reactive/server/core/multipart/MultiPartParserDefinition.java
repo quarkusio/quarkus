@@ -71,7 +71,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     @Override
     public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
-        String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
+        String mimeType = exchange.getHttpHeaders().getHeaderString(HttpHeaders.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
             String boundary = HeaderUtil.extractQuotedValueFromHeader(mimeType, "boundary");
             if (boundary == null) {

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
@@ -29,6 +30,7 @@ import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
@@ -45,6 +47,7 @@ import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
@@ -1128,6 +1131,44 @@ public abstract class ResteasyReactiveRequestContext
 
     public String getResourceLocatorPathParam(String name, boolean encoded) {
         return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY), encoded);
+    }
+
+    /**
+     * Collects all path parameters, first from the current RuntimeResource, also known as target, and then from the previous
+     * RuntimeResources, including path parameters from sub resource locators in the process.
+     *
+     * @param encoded
+     * @return MultivaluedMap with path parameters. May be empty, but is never null
+     */
+    public MultivaluedMap<String, String> getAllPathParameters(boolean encoded) {
+        MultivaluedMap<String, String> pathParams = new QuarkusMultivaluedHashMap<>();
+        // a target can be null if this happens in a filter that runs before the target is set
+        if (target == null) {
+            return pathParams;
+        }
+
+        PreviousResource previousResource = null;
+        Object paramValues = this.pathParamValues;
+        do {
+            for (Map.Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
+                pathParams.add(pathParam.getKey(), doGetPathParam(pathParam.getValue(), paramValues, encoded));
+            }
+
+            if (previousResource != null) {
+                previousResource = previousResource.prev;
+            } else {
+                previousResource = (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY);
+            }
+            if (previousResource == null) {
+                break;
+            }
+
+            target = previousResource.locatorTarget;
+            paramValues = previousResource.locatorPathParamValues;
+
+        } while (true);
+
+        return pathParams;
     }
 
     public FormData getFormData() {

@@ -10,11 +10,13 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.smallrye.graphql.api.Subscription;
+import io.smallrye.graphql.api.federation.Resolver;
 
 public class GraphqlMethodsProcessor {
     private static final DotName QUERY = DotName.createSimple(Query.class);
     private static final DotName MUTATION = DotName.createSimple(Mutation.class);
     private static final DotName SUBSCRIPTION = DotName.createSimple(Subscription.class);
+    private static final DotName RESOLVER = DotName.createSimple(Resolver.class);
 
     @BuildStep
     ExecutionModelAnnotationsAllowedBuildItem graphqlMethods() {
@@ -24,7 +26,8 @@ public class GraphqlMethodsProcessor {
                 // maybe just look for `@GraphQLApi` on the declaring class?
                 return method.hasDeclaredAnnotation(QUERY)
                         || method.hasDeclaredAnnotation(MUTATION)
-                        || method.hasDeclaredAnnotation(SUBSCRIPTION);
+                        || method.hasDeclaredAnnotation(SUBSCRIPTION)
+                        || method.hasDeclaredAnnotation(RESOLVER);
             }
         });
     }

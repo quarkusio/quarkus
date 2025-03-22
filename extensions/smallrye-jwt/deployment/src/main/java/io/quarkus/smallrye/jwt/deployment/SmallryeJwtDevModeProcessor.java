@@ -112,7 +112,7 @@ public class SmallryeJwtDevModeProcessor {
             devServiceConfigs.put(SMALLRYE_JWT_SIGN_KEY, NONE);
         }
 
-        if (!devServiceConfigs.containsKey(MP_JWT_VERIFY_PUBLIC_KEY)) {
+        if (!userConfigs.contains(MP_JWT_VERIFY_PUBLIC_KEY)) {
             devServiceConfigs.put(MP_JWT_VERIFY_PUBLIC_KEY, NONE);
         }
 

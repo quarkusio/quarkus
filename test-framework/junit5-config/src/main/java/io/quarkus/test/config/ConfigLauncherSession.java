@@ -23,6 +23,13 @@ public class ConfigLauncherSession implements LauncherSessionListener {
 
     @Override
     public void launcherSessionClosed(final LauncherSession session) {
-        ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restore();
+        try {
+            ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restore();
+        } catch (ClassCastException e) {
+            e.printStackTrace();
+            throw new IllegalStateException(
+                    "Internal error: Attempted to close a launcher session which had already been closed.");
+
+        }
     }
 }

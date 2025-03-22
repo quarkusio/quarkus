@@ -15,6 +15,14 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
+import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathVisit;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
@@ -137,6 +145,10 @@ public final class PathTestHelper {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
         URL resource = testClass.getClassLoader().getResource(fromClassNameToResourceName(testClass.getName()));
 
+        if (resource == null) {
+            throw new IllegalStateException(
+                    "Could not find resource: " + testClass.getName() + " using class loader " + testClass.getClassLoader());
+        }
         if (resource.getProtocol().equals("jar")) {
             try {
                 resource = URI.create(resource.getFile().substring(0, resource.getFile().indexOf('!'))).toURL();
@@ -144,6 +156,10 @@ public final class PathTestHelper {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
+        } else if (resource.getProtocol().equals("quarkus")) {
+            // This is loaded with a quarkus classloader, so we can (sort of) ask it directly
+            QuarkusClassLoader qcl = (QuarkusClassLoader) testClass.getClassLoader();
+            return getTestClassesLocation(testClass, qcl.getCuratedApplication());
         }
         Path path = toPath(resource);
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
@@ -161,14 +177,63 @@ public final class PathTestHelper {
         return path;
     }
 
-    /**
-     * Resolves the directory or the JAR file containing the application being tested by the test class.
-     *
-     * @param testClass the test class
-     * @return directory or JAR containing the application being tested by the test class
-     */
-    public static Path getAppClassLocation(Class<?> testClass) {
-        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass));
+    public static Path getTestClassesLocation(Class<?> requiredTestClass, CuratedApplication curatedApplication) {
+        final WorkspaceModule module = curatedApplication.getApplicationModel().getAppArtifact().getWorkspaceModule();
+
+        ArtifactSources testSources = module.getTestSources();
+        final String testClassFileName = ClassLoaderHelper
+                .fromClassNameToResourceName(requiredTestClass.getName());
+        if (testSources != null) {
+            PathTree paths = testSources.getOutputTree();
+            var testClassesDir = paths.apply(testClassFileName, PathTestHelper::getRootOrNull);
+            if (testClassesDir != null) {
+                return testClassesDir;
+            }
+        }
+        // If there were no test sources, this may be an application with multiple source sets; we need to search them all
+        for (String classifier : module.getSourceClassifiers()) {
+            final ArtifactSources sources = module.getSources(classifier);
+            if (sources.isOutputAvailable()) {
+                PathTree paths = sources.getOutputTree();
+                var testClassesDir = paths.apply(testClassFileName, PathTestHelper::getRootOrNull);
+                if (testClassesDir != null) {
+                    return testClassesDir;
+                }
+            }
+        }
+
+        // If we got to this point, fall back to the filesystem search
+        // This happens for maven source set scenarios
+        // TODO getSourceClassifiers() should return the source sets in the maven case, but currently does not - see BuildIT.testCustomTestSourceSets test
+        return getTestClassesLocation(requiredTestClass);
+
+    }
+
+    private static Path getRootOrNull(PathVisit visit) {
+        if (visit == null) {
+            // this path does not exist in this path tree
+            return null;
+        } else {
+            return visit.getRoot();
+        }
+    }
+
+    public static void validateTestDir(Class<?> requiredTestClass, Path testClassesDir, WorkspaceModule module) {
+        if (testClassesDir == null) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Failed to locate ").append(requiredTestClass.getName()).append(" in ");
+            for (String classifier : module.getSourceClassifiers()) {
+                final ArtifactSources sources = module.getSources(classifier);
+                if (sources.isOutputAvailable()) {
+                    for (SourceDir d : sources.getSourceDirs()) {
+                        if (Files.exists(d.getOutputDir())) {
+                            sb.append(System.lineSeparator()).append(d.getOutputDir());
+                        }
+                    }
+                }
+            }
+            throw new RuntimeException(sb.toString());
+        }
     }
 
     /**
@@ -292,7 +357,6 @@ public final class PathTestHelper {
      *
      * @param projectRoot project dir
      * @param testClassLocation test dir
-     *
      * @return project build dir
      */
     public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {

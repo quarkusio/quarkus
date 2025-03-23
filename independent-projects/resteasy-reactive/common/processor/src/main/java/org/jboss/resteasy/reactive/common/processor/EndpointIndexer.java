@@ -283,7 +283,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             ResourceClass clazz = new ResourceClass();
-            if ((classInfo.enclosingClass() != null) && !Modifier.isStatic(classInfo.flags())) {
+            if ((classInfo.enclosingClass() != null) && !Modifier.isStatic(classInfo.flags()) && path != null) {
                 throw new DeploymentException(
                         "Non static nested resources classes are not supported: '" + classInfo.name() + "'");
             }

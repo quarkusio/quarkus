@@ -171,10 +171,10 @@ public class RuntimeDeploymentManager {
         //we use this map to merge them
         Map<MappersKey, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
 
-        List<List<ResourceClass>> rcMap = List.of(resourceClasses, locatableResourceClasses);
+        List<List<ResourceClass>> rcMap = List.of(locatableResourceClasses, resourceClasses);
         // We only want to look for static methods on the locatableResourceClasses
         // For resource classes we want to look for all methods
-        var justLookingForStatic = false;
+        var justLookingForStatic = true;
         for (var e : rcMap) {
             for (int i = 0; i < e.size(); i++) {
                 ResourceClass clazz = e.get(i);
@@ -217,7 +217,7 @@ public class RuntimeDeploymentManager {
                 }
 
             }
-            justLookingForStatic = true;
+            justLookingForStatic = false;
         }
 
         classMappers = new ArrayList<>(mappers.size());

@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.test;
 
 import static io.restassured.RestAssured.given;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
@@ -50,11 +49,7 @@ public class StaticMethodTest {
         }
     }
 
-    public static class FooNoClassPathStaticMethod {
-
-        public FooNoClassPathStaticMethod(StaticMethodTest someParam, Objects otherParam) { //CDI can't create this class
-
-        }
+    public class FooNoClassPathStaticMethod {
 
         @Path("noclass")
         @GET

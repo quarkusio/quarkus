@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +24,7 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
@@ -57,7 +59,6 @@ import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.stat.SessionStatistics;
 
 import io.quarkus.arc.Arc;
@@ -817,6 +818,14 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public <T> T merge(T object, EntityGraph<?> loadGraph) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.merge(object, loadGraph);
+        }
+    }
+
+    @Override
     public void persist(String entityName, Object object) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -1065,6 +1074,34 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public Collection<?> getManagedEntities() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getManagedEntities();
+        }
+    }
+
+    @Override
+    public Collection<?> getManagedEntities(String entityName) {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getManagedEntities(entityName);
+        }
+    }
+
+    @Override
+    public <E> Collection<E> getManagedEntities(Class<E> entityType) {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getManagedEntities(entityType);
+        }
+    }
+
+    @Override
+    public <E> Collection<E> getManagedEntities(EntityType<E> entityType) {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getManagedEntities(entityType);
+        }
+    }
+
+    @Override
     public void addEventListeners(SessionEventListener... listeners) {
         try (SessionResult emr = acquireSession()) {
             emr.session.addEventListeners(listeners);
@@ -1262,18 +1299,10 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insert) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.session.createMutationQuery(insertSelect);
-        }
-    }
-
-    @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.createMutationQuery(insertSelect);
+            return emr.session.createMutationQuery(insert);
         }
     }
 

@@ -9,7 +9,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.hibernate.MappingException;
-import org.hibernate.SessionFactory;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -90,7 +89,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public SessionFactory buildSessionFactory() {
+    public SessionFactoryImplementor buildSessionFactory() {
         //Ensure we don't boot Hibernate using this, but rather use the #buildSessionFactoryOptionsBuilder above.
         throw new IllegalStateException("This method is not supposed to be used in Quarkus");
     }

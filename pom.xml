@@ -71,7 +71,7 @@
         <jacoco.version>0.8.12</jacoco.version>
         <kubernetes-client.version>7.1.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.1</rest-assured.version>
-        <hibernate-orm.version>7.0.0.Beta4</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.0.0.Beta5</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>0.9.3</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->

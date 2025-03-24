@@ -46,7 +46,7 @@ public class ResteasyReactiveDevUIProcessor {
         cardPageProducer.produce(cardPageBuildItem);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
         jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(ResteasyReactiveJsonRPCService.class));
     }

@@ -65,8 +65,7 @@ public class ContinuousTestingProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void createJsonRPCService(LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
+    void registerBuildTimeActions(LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
 
         BuildTimeActionBuildItem actions = new BuildTimeActionBuildItem(NAMESPACE);
@@ -80,8 +79,11 @@ public class ContinuousTestingProcessor {
         registerGetResultsMethod(launchModeBuildItem, actions);
         registerGetStatusMethod(launchModeBuildItem, actions);
         buildTimeActionProducer.produce(actions);
+    }
 
-        jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem(NAMESPACE, ContinuousTestingJsonRPCService.class));
+    @BuildStep
+    JsonRPCProvidersBuildItem createJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(NAMESPACE, ContinuousTestingJsonRPCService.class);
     }
 
     private boolean testsDisabled(LaunchModeBuildItem launchModeBuildItem, Optional<TestSupport> ts) {

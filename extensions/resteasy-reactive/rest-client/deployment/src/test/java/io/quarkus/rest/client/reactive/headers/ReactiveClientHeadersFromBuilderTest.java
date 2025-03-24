@@ -30,7 +30,6 @@ import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
@@ -97,7 +96,6 @@ public class ReactiveClientHeadersFromBuilderTest {
 
     @ApplicationScoped
     public static class Service {
-        @Blocking
         public String getValue() {
             return HEADER_VALUE;
         }

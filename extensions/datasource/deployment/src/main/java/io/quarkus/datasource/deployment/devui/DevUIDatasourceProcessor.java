@@ -30,7 +30,7 @@ public class DevUIDatasourceProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(DatasourceJsonRpcService.class);
     }

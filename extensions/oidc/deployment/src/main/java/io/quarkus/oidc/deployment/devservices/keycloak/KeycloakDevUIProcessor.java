@@ -76,7 +76,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }

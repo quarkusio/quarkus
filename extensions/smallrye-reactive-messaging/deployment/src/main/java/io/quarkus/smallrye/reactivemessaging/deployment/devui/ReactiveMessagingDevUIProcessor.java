@@ -64,7 +64,7 @@ public class ReactiveMessagingDevUIProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
     }

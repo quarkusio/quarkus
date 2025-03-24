@@ -96,8 +96,7 @@ public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerJsonRpcService(
-            BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
+    void registerBuildTimeActions(
             BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             ConfigDevUIRecorder recorder,
@@ -144,8 +143,11 @@ public class ConfigurationProcessor {
                 CurrentConfig.CURRENT = Collections.emptyList();
             }
         }, true);
+    }
 
-        jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem(NAMESPACE, ConfigJsonRPCService.class));
+    @BuildStep
+    JsonRPCProvidersBuildItem registerJsonRpcService() {
+        return new JsonRPCProvidersBuildItem(NAMESPACE, ConfigJsonRPCService.class);
     }
 
     private static final Pattern codePattern = Pattern.compile("(\\{@code )([^}]+)(\\})");

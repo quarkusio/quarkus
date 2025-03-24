@@ -86,6 +86,11 @@ public class ExecutionModelAnnotationsProcessor {
         }
     }
 
+    /**
+     * @deprecated this method will be removed in Quarkus 3.24, which gives extensions 2 releases
+     *             to start producing {@code JsonRPCProvidersBuildItem} always, not just in dev mode
+     */
+    @Deprecated(since = "3.22", forRemoval = true)
     @BuildStep
     ExecutionModelAnnotationsAllowedBuildItem devuiJsonRpcServices() {
         return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {

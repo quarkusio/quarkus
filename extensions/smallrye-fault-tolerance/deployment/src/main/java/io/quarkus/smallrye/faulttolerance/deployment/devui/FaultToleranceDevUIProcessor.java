@@ -22,7 +22,7 @@ public class FaultToleranceDevUIProcessor {
         return pageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem jsonRPCService() {
         return new JsonRPCProvidersBuildItem(FaultToleranceJsonRpcService.class);
     }

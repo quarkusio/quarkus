@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment.devui;
 
+import java.util.Optional;
+
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.dev.ui.DatabaseInspector;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -7,8 +9,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.dev.assistant.Assistant;
+import io.quarkus.deployment.dev.assistant.AssistantBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
@@ -38,4 +43,33 @@ class AgroalDevUIProcessor {
             }
         }
     }
+
+    @BuildStep
+    void createBuildTimeActions(Optional<AssistantBuildItem> assistantBuildItem,
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
+
+        if (assistantBuildItem.isPresent()) {
+            BuildTimeActionBuildItem bta = new BuildTimeActionBuildItem();
+
+            Assistant assistant = assistantBuildItem.get().getAssistant();
+
+            // TODO: What if currentInsertScript is empty, maybe send table schema
+
+            bta.addAction("generateMoreData", params -> {
+                return assistant.assist(USER_MESSAGE, params);
+            });
+
+            buildTimeActionProducer.produce(bta);
+        }
+    }
+
+    private static final String USER_MESSAGE = """
+            Given the provided sql script:
+            {{currentInsertScript}}
+
+            Can you add 10 more inserts into the script and return the result
+            (including the provided entries, so update the script)
+
+            Return the result in a field called `script`.
+            """;
 }

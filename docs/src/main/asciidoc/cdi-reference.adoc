@@ -163,6 +163,113 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 <1> Value is a group id for a dependency identified by name `acme`.
 <2> Value is an artifact id for a dependency identified by name `acme`.
 
+[[string-based-qualifiers]]
+== String-Based Qualifiers
+
+The `@Named` qualifier, which you might be familiar with, is a _string-based qualifier_.
+That is, it's the string value of the qualifier annotation who determines whether the qualifier matches or not.
+This is not type-safe and should not be the norm in CDI applications.
+Specific qualifier types should be preferred.
+
+However, sometimes string-based qualifiers are necessary.
+In that case, avoid the `@Named` qualifier, because in CDI, it works differently to all other qualifiers.
+
+Specifically: if the only qualifier a bean has is `@Named`, it also automatically gets `@Default`.
+This means that if multiple beans of the same type exist, one of them without qualifiers and the others with `@Named`, they _all_ get the `@Default` qualifier and bean resolution will error with ambiguity.
+For example:
+
+[source,java]
+----
+@ApplicationScoped
+public class Producers {
+    @Produces
+    MyBean produce() {
+        ...
+    }
+
+    @Produces
+    @Named("foo")
+    MyBean produceFoo() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+In this case, the `Consumer#bean` injection point will cause ambiguity error, because both `MyBean` producers will have the `@Default` qualifier.
+
+Instead of `@Named`, use `@io.smallrye.common.annotation.Identifier`.
+This is a regular qualifier that works like all others.
+So if we rewrite the example to use `@Identifier`:
+
+[source,java]
+----
+@ApplicationScoped
+public class Producers {
+    @Produces
+    MyBean produce() {
+        ...
+    }
+
+    @Produces
+    @Identifier("foo")
+    MyBean produceFoo() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+Only the first producer will get the `@Default` qualifier, the second will not.
+Hence, there will be no error and everything will work as expected.
+
+=== When To Use `@Named`?
+
+There is one case where `@Named` is the right thing to use: specifying an external identifier for a different language that doesn't support dependency injection directly.
+
+For example:
+
+[source,java]
+----
+@ApplicationScoped
+@Named("myBean")
+public class MyBean {
+    public String getValue() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+As you can see, in the application code, the bean is injected without a qualifier.
+The bean name is only used to refer to the bean in the other language.
+
+Historically, the most common external language that used bean names was JSF.
+In Quarkus, we have xref:qute-reference.adoc#injecting-beans-directly-in-templates[Qute].
+In a Qute template, one would refer to the bean using its name:
+
+[source]
+----
+The current value is {inject:myBean.value}.
+----
+
+Outside of this use-case, just use `@Identifier`.
+
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.

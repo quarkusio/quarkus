@@ -12,6 +12,8 @@ public class RestClientRecorder {
     private static volatile Map<String, String> configKeys;
     private static volatile Set<String> blockingClassNames;
 
+    private static volatile Map<String, String> blockingMethods;
+
     public void setConfigKeys(Map<String, String> configKeys) {
         RestClientRecorder.configKeys = configKeys;
     }
@@ -31,4 +33,5 @@ public class RestClientRecorder {
     public void setRestClientBuilderResolver() {
         RestClientBuilderResolver.setInstance(new BuilderResolver());
     }
+
 }

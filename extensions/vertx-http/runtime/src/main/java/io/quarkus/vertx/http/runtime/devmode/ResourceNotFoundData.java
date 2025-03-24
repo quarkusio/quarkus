@@ -27,7 +27,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.smallrye.common.annotation.NonBlocking;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -135,7 +134,6 @@ public class ResourceNotFoundData {
         return builder.toString();
     }
 
-    @NonBlocking
     public JsonObject getJsonContent() {
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         JsonObject infoMap = new JsonObject();
@@ -200,7 +198,6 @@ public class ResourceNotFoundData {
 
     }
 
-    @NonBlocking
     public String getTextContent() {
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         try (StringWriter sw = new StringWriter()) {

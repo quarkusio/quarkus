@@ -317,6 +317,10 @@ Here's a list of things to pay attention when using Hibernate Reactive in Quarku
 * This extension only considers the default persistence unit at the moment:
 it's not possible to configure multiple persistence units,
 or even a single named persistence unit.
+* This extension does not support xref:hibernate-orm.adoc#database-approach[database-based multitenancy]
+or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the moment.
+xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
+See https://github.com/quarkusio/quarkus/issues/15959.
 * This extension cannot be used at the same time as Hibernate ORM.
 See https://github.com/quarkusio/quarkus/issues/13425.
 * Integration with the Envers extension is not supported.

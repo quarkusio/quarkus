@@ -32,7 +32,6 @@ import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -657,18 +656,10 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insert) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(insertSelect);
-        }
-    }
-
-    @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(insertSelect);
+            return emr.statelessSession.createMutationQuery(insert);
         }
     }
 

@@ -171,6 +171,9 @@ This bean would be assignable to `@Inject @Superior Translator` and `@Inject @Su
 The reason is that `@Inject Translator` is automatically transformed to `@Inject @Default Translator` during typesafe resolution.
 And since our `SuperiorTranslator` does not declare `@Default` only the original `Translator` bean is assignable.
 
+NOTE: The `@Named` qualifier, which you might be familiar with, is somewhat different in CDI to all other qualifiers.
+See the xref:cdi-reference.adoc#string-based-qualifiers[corresponding section] in CDI Reference Guide for why you typically shouldn't use it.
+
 [[bean-scope]]
 == Looks good. What is the bean scope?
 

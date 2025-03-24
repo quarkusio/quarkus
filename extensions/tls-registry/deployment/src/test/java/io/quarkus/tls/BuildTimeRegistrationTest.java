@@ -91,6 +91,11 @@ public class BuildTimeRegistrationTest {
                     public boolean isTrustAll() {
                         return false;
                     }
+
+                    @Override
+                    public String getName() {
+                        return "test";
+                    }
                 };
             } catch (Exception e) {
                 throw new RuntimeException(e);

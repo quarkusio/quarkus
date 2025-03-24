@@ -19,8 +19,6 @@ public class RestClientRecorder {
     private static volatile Map<String, String> configKeys;
     private static volatile Set<String> blockingClassNames;
 
-    private static volatile Map<String, String> blockingMethods;
-
     private static final Map<String, List<HttpClient>> tlsConfigNameToVertxHttpClients = new ConcurrentHashMap<>();
 
     public void setConfigKeys(Map<String, String> configKeys) {

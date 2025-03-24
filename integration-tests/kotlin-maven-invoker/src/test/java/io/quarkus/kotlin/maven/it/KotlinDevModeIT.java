@@ -123,7 +123,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         install(externalJarDir, false);
 
         // Change GreetingResource.kt endpoint response to upper case letters
-        filter(greetingResourceKotlin, Map.of(greetingBonjourCall, greetingBonjourCall.concat(".toUpperCase()")));
+        filter(greetingResourceKotlin, Map.of(greetingBonjourCall, greetingBonjourCall.concat(".uppercase()")));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)

@@ -88,6 +88,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -101,6 +102,7 @@ import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuil
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableRemovalTrailingSlashBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
+import io.quarkus.rest.client.reactive.CertificateUpdateEventListener;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
 import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
@@ -195,6 +197,7 @@ class RestClientReactiveProcessor {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(HeaderContainer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(CertificateUpdateEventListener.class));
     }
 
     @BuildStep
@@ -479,7 +482,8 @@ class RestClientReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientsBuildTimeConfig clientsBuildConfig,
-            RestClientRecorder recorder) {
+            RestClientRecorder recorder,
+            ShutdownContextBuildItem shutdown) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
 
@@ -639,6 +643,8 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
+
+        recorder.cleanUp(shutdown);
     }
 
     /**

@@ -220,6 +220,10 @@ public class ClientImpl implements Client {
                 clientContext.getMultipartResponsesData(), clientLogger);
     }
 
+    public HttpClient getVertxHttpClient() {
+        return httpClient;
+    }
+
     private boolean isCaptureStacktrace(ConfigurationImpl configuration) {
         Object captureStacktraceObj = configuration.getProperty(CAPTURE_STACKTRACE);
         if (captureStacktraceObj == null) {

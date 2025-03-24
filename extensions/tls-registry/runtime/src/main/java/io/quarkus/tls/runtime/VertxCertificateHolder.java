@@ -196,6 +196,11 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return true;
     }
 
+    @Override
+    public String getName() {
+        return name;
+    }
+
     public TlsBucketConfig config() {
         return config;
     }

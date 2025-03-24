@@ -85,6 +85,11 @@ public class BuildTimeRegistrationTest {
                     public KeyStore getTrustStore() {
                         return ts;
                     }
+
+                    @Override
+                    public String getName() {
+                        return "test";
+                    }
                 };
             } catch (Exception e) {
                 throw new RuntimeException(e);

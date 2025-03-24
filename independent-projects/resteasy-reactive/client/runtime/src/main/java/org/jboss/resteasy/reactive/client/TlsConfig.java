@@ -77,4 +77,9 @@ public interface TlsConfig {
      * @return {@code true} if the trust store is configured to trust all certificates, {@code false} otherwise.
      */
     boolean isTrustAll();
+
+    /**
+     * Name which was associated with this configuration
+     */
+    Optional<String> getName();
 }

@@ -32,8 +32,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
@@ -47,7 +45,6 @@ public class ClassNamesTest {
 
     private static final DotName RETENTION = DotName.createSimple(Retention.class.getName());
     private static final DotName TARGET = DotName.createSimple(Target.class.getName());
-    private static final Logger log = LoggerFactory.getLogger(ClassNamesTest.class);
 
     private static Index jpaIndex;
     private static Index hibernateIndex;

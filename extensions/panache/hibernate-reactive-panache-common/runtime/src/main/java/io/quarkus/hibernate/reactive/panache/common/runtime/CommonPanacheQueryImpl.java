@@ -376,7 +376,8 @@ public class CommonPanacheQueryImpl<Entity> {
         Mutiny.SelectionQuery<?> hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            hibernateQuery = em.createNamedQuery(namedQuery, projectionType);
+            hibernateQuery = projectionType == null ? em.createNamedQuery(namedQuery)
+                    : em.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
                 hibernateQuery = em.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);

@@ -27,7 +27,6 @@ import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 /**
  * Plays the exact same role as {@link org.hibernate.engine.spi.SessionLazyDelegator} for {@link org.hibernate.Session}
@@ -128,11 +127,6 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public void disableFilter(String filterName) {
         delegate.get().disableFilter(filterName);
-    }
-
-    @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
-        return delegate.get().createMutationQuery(insertSelect);
     }
 
     @Override
@@ -361,8 +355,8 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
-        return delegate.get().createMutationQuery(insertSelect);
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insert) {
+        return delegate.get().createMutationQuery(insert);
     }
 
     @Override

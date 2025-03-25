@@ -40,6 +40,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupport;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.TriParameterConverter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
@@ -294,27 +295,31 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         break;
                     case FORM:
                         injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, fieldIndex, ctxParamIndex);
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, true, fieldIndex,
+                                ctxParamIndex);
                         break;
                     case HEADER:
                         injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false,
-                                false, fieldIndex, ctxParamIndex);
+                                false, false, fieldIndex, ctxParamIndex);
                         break;
                     case MATRIX:
                         injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, fieldIndex, ctxParamIndex);
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, false, fieldIndex,
+                                ctxParamIndex);
                         break;
                     case COOKIE:
                         injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false, false,
-                                false, false, fieldIndex, ctxParamIndex);
+                                false, false, false, fieldIndex, ctxParamIndex);
                         break;
                     case PATH:
                         injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, fieldIndex, ctxParamIndex);
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), false, false, fieldIndex,
+                                ctxParamIndex);
                         break;
                     case QUERY:
                         injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), true, fieldIndex, ctxParamIndex);
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED), true, true, fieldIndex,
+                                ctxParamIndex);
                         break;
                     default:
                         break;
@@ -572,16 +577,6 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             // can be a RuntimeDelegating -> generated converter
             converter = removeRuntimeResolvedConverterDelegate(converter);
 
-            String delegateBinaryName = null;
-            if (converter instanceof DelegatingParameterConverterSupplier) {
-                ParameterConverterSupplier delegate = removeRuntimeResolvedConverterDelegate(
-                        ((DelegatingParameterConverterSupplier) converter).getDelegate());
-                if (delegate != null)
-                    delegateBinaryName = delegate.getClassName().replace('.', '/');
-            } else {
-                delegateBinaryName = converter.getClassName().replace('.', '/');
-            }
-
             MethodVisitor initConverterMethod = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
                     INIT_CONVERTER_METHOD_NAME + fieldInfo.name(),
                     INIT_CONVERTER_METHOD_DESCRIPTOR, null,
@@ -601,6 +596,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     "(Ljava/lang/Class;Ljava/lang/String;Z)" + PARAMETER_CONVERTER_DESCRIPTOR, false);
 
             // now if we have a backup delegate, let's call it
+            String delegateBinaryName = findUltimateConverter(converter);
             // stack: [converter]
             if (delegateBinaryName != null) {
                 // check if we have a delegate
@@ -625,12 +621,44 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
             // FIXME: throw if we don't have a converter
 
-            // we have our element converter, see if we need to use list/set/sortedset converter around it
+            delegateToConverter(initConverterMethod, converter, fieldInfo.type());
 
-            if (converter instanceof DelegatingParameterConverterSupplier) {
+            // store the converter in the static field
+            initConverterMethod.visitFieldInsn(Opcodes.PUTSTATIC, thisName, converterFieldName, PARAMETER_CONVERTER_DESCRIPTOR);
+
+            initConverterMethod.visitInsn(Opcodes.RETURN);
+            initConverterMethod.visitEnd();
+            initConverterMethod.visitMaxs(0, 0);
+        }
+
+        private String findUltimateConverter(ParameterConverterSupplier converter) {
+            if (converter == null) {
+                return null;
+            } else if (converter instanceof DelegatingParameterConverterSupplier delegator) {
+                return findUltimateConverter(delegator.getDelegate());
+            } else {
+                return converter.getClassName().replace('.', '/');
+            }
+        }
+
+        private void delegateToConverter(MethodVisitor initConverterMethod, ParameterConverterSupplier converter,
+                org.jboss.jandex.Type fieldType) {
+            // we have our element converter, see if we need to use list/set/sortedset converter around it
+            if (converter instanceof DelegatingParameterConverterSupplier delegatingConverter) {
+                // First deal with the delegate (for example List) then us (for example Parameter)
+                if (delegatingConverter.getDelegate() != null) {
+                    org.jboss.jandex.Type delegateType;
+                    // FIXME: we should add a method for that in the converter itself
+                    if (converter instanceof TriParameterConverter.TriParameterSupplier) {
+                        delegateType = fieldType.asParameterizedType().arguments().get(0);
+                    } else {
+                        delegateType = fieldType;
+                    }
+                    delegateToConverter(initConverterMethod, delegatingConverter.getDelegate(), delegateType);
+                }
                 // stack: [converter]
                 // let's instantiate our composite delegator
-                String delegatorBinaryName = converter.getClassName().replace('.', '/');
+                String delegatorBinaryName = delegatingConverter.getClassName().replace('.', '/');
                 initConverterMethod.visitTypeInsn(Opcodes.NEW, delegatorBinaryName);
                 // stack: [converter, instance]
                 initConverterMethod.visitInsn(Opcodes.DUP_X1);
@@ -638,8 +666,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 initConverterMethod.visitInsn(Opcodes.SWAP);
                 // [instance, instance, converter]
                 // array converter wants the array instance type
-                if (converter instanceof ArrayConverter.ArraySupplier) {
-                    org.jboss.jandex.Type componentType = fieldInfo.type().asArrayType().constituent();
+                if (delegatingConverter instanceof ArrayConverter.ArraySupplier) {
+                    org.jboss.jandex.Type componentType = fieldType.asArrayType().constituent();
                     initConverterMethod.visitLdcInsn(componentType.name().toString('.'));
                     // [instance, instance, converter, componentType]
                     initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
@@ -648,14 +676,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
                             "(" + PARAMETER_CONVERTER_DESCRIPTOR + ")V", false);
                 }
+                // stack: [composite converter]
             }
-
-            // store the converter in the static field
-            initConverterMethod.visitFieldInsn(Opcodes.PUTSTATIC, thisName, converterFieldName, PARAMETER_CONVERTER_DESCRIPTOR);
-
-            initConverterMethod.visitInsn(Opcodes.RETURN);
-            initConverterMethod.visitEnd();
-            initConverterMethod.visitMaxs(0, 0);
         }
 
         private ParameterConverterSupplier removeRuntimeResolvedConverterDelegate(ParameterConverterSupplier converter) {
@@ -670,7 +692,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
                 ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded,
-                boolean extraSeparatorParam, int fieldIndex, int ctxParamIndex) {
+                boolean extraSeparatorParam, boolean extraAllowEmptyParam, int fieldIndex, int ctxParamIndex) {
 
             // spec says:
             /*
@@ -705,12 +727,12 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             MultipartFormParamExtractor.Type multipartType = getMultipartFormType(extractor);
             if (multipartType == null) {
                 loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded,
-                        extraSeparatorParam, ctxParamIndex);
+                        extraSeparatorParam, extraAllowEmptyParam, ctxParamIndex);
             } else {
                 loadMultipartParameter(injectMethod, fieldInfo, extractor, multipartType, ctxParamIndex);
             }
             Label valueWasNull = null;
-            if (!extractor.isOptional()) {
+            if (!extractor.isOptional() && !extractor.isTriParameter()) {
                 valueWasNull = new Label();
                 // dup to test it
                 injectMethod.visitInsn(Opcodes.DUP);
@@ -1047,21 +1069,28 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private void loadParameter(MethodVisitor injectMethod, String methodName, IndexedParameter extractor,
                 boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded, boolean extraSeparatorParam,
-                int ctxParamIndex) {
+                boolean extraAllowEmptyParam, int ctxParamIndex) {
             // ctx param
             injectMethod.visitVarInsn(Opcodes.ALOAD, ctxParamIndex);
             // name param
             injectMethod.visitLdcInsn(extractor.getName());
             String methodSignature;
-            if (extraEncodedParam && extraSingleParameter && extraSeparatorParam) {
+            // FIXME: sanitise this
+            if (extraEncodedParam && extraSingleParameter && extraSeparatorParam && extraAllowEmptyParam) {
                 injectMethod.visitLdcInsn(extractor.isSingle());
                 injectMethod.visitLdcInsn(encoded);
+                injectMethod.visitLdcInsn(extractor.isTriParameter());
                 if (extractor.getSeparator() != null) {
                     injectMethod.visitLdcInsn(extractor.getSeparator());
                 } else {
                     injectMethod.visitInsn(Opcodes.ACONST_NULL);
                 }
-                methodSignature = "(Ljava/lang/String;ZZLjava/lang/String;)Ljava/lang/Object;";
+                methodSignature = "(Ljava/lang/String;ZZZLjava/lang/String;)Ljava/lang/Object;";
+            } else if (extraEncodedParam && extraSingleParameter && extraAllowEmptyParam) {
+                injectMethod.visitLdcInsn(extractor.isSingle());
+                injectMethod.visitLdcInsn(encoded);
+                injectMethod.visitLdcInsn(extractor.isTriParameter());
+                methodSignature = "(Ljava/lang/String;ZZZ)Ljava/lang/Object;";
             } else if (extraEncodedParam && extraSingleParameter) {
                 injectMethod.visitLdcInsn(extractor.isSingle());
                 injectMethod.visitLdcInsn(encoded);

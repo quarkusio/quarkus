@@ -35,7 +35,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
@@ -78,6 +77,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRI_PARAMETER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
@@ -1433,6 +1433,26 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
+            } else if (pt.name().equals(TRI_PARAMETER)) {
+                typeHandled = true;
+                Type triElement = pt.arguments().get(0);
+                elementType = toClassName(triElement, currentClassInfo, actualEndpointInfo, index);
+                String genericElementType = null;
+                if (convertible) {
+                    boolean isArray = false;
+                    if (triElement.kind() == Kind.ARRAY) {
+                        ArrayType at = triElement.asArrayType();
+                        genericElementType = toClassName(at.constituent(), currentClassInfo, actualEndpointInfo, index);
+                        isArray = true;
+                    } else if (triElement.kind() == Kind.PARAMETERIZED_TYPE) {
+                        genericElementType = toClassName(triElement.asParameterizedType().arguments().get(0),
+                                currentClassInfo, actualEndpointInfo, index);
+                    }
+
+                    handleTriParameterParam(existingConverters, anns, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType, currentMethodInfo, isArray);
+                }
+                builder.setTriParameter(true);
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
@@ -1573,6 +1593,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             String errorLocation,
             boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
             MethodInfo currentMethodInfo) {
+    }
+
+    protected void handleTriParameterParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo, boolean isArray) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

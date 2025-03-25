@@ -25,9 +25,10 @@ public class ParameterHandler implements ServerRestHandler {
     private final ParameterType parameterType;
     private final boolean isCollection;
     private final boolean isOptional;
+    private final boolean isTriParameter;
 
     public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter,
-            ParameterType parameterType, boolean isCollection, boolean isOptional) {
+            ParameterType parameterType, boolean isCollection, boolean isOptional, boolean isTriParameter) {
         this.index = index;
         this.defaultValue = defaultValue;
         this.extractor = extractor;
@@ -35,6 +36,7 @@ public class ParameterHandler implements ServerRestHandler {
         this.parameterType = parameterType;
         this.isCollection = isCollection;
         this.isOptional = isOptional;
+        this.isTriParameter = isTriParameter;
     }
 
     @Override
@@ -75,7 +77,7 @@ public class ParameterHandler implements ServerRestHandler {
             result = defaultValue;
         }
         Throwable toThrow = null;
-        if (converter != null && ((result != null) || isOptional)) {
+        if (converter != null && ((result != null) || isOptional || isTriParameter)) {
             // spec says:
             /*
              * 3.2 Fields and Bean Properties

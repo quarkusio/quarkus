@@ -368,7 +368,7 @@ public class RuntimeResourceDeployment {
 
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
                     converter, param.parameterType,
-                    param.isObtainedAsCollection(), param.isOptional()));
+                    param.isObtainedAsCollection(), param.isOptional(), param.isTriParameter()));
         }
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
         EndpointInvoker invoker = method.getInvoker().get();
@@ -673,10 +673,10 @@ public class RuntimeResourceDeployment {
                 }
                 if (multiPartType != null) {
                     return new MultipartFormParamExtractor(param.name, param.isSingle(), multiPartType, typeClass, genericType,
-                            param.mimeType, param.encoded);
+                            param.mimeType, param.encoded, param.triParameter);
                 }
                 // regular form
-                return new FormParamExtractor(param.name, param.isSingle(), param.encoded);
+                return new FormParamExtractor(param.name, param.isSingle(), param.encoded, param.triParameter);
             case PATH:
                 Integer index = pathParameterIndexes.get(param.name);
                 if (index == null) {
@@ -694,7 +694,8 @@ public class RuntimeResourceDeployment {
             case ASYNC_RESPONSE:
                 return AsyncResponseExtractor.INSTANCE;
             case QUERY:
-                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator);
+                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.triParameter,
+                        param.separator);
                 return extractor;
             case BODY:
                 return BodyParamExtractor.INSTANCE;

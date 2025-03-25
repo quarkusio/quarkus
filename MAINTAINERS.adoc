@@ -309,4 +309,7 @@ If you think some information is outdated, either provide a pull request or emai
 
 |Vert.x Web
 |https://github.com/cescoffier[Clément Escoffier]
+
+|Websockets Next
+|https://github.com/mkouba[Martin Kouba]
 |===

@@ -52,8 +52,7 @@ public final class ContainerRuntimeUtil {
     }
 
     public static ContainerRuntime detectContainerRuntime(boolean required, ContainerRuntime... orderToCheckRuntimes) {
-        return detectContainerRuntime(
-                required,
+        return detectContainerRuntime(required,
                 ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0)) ? Arrays.asList(orderToCheckRuntimes)
                         : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
     }
@@ -93,11 +92,9 @@ public final class ContainerRuntimeUtil {
         runtimesToCheck.retainAll(List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
 
         if (CONTAINER_EXECUTABLE != null) {
-            var runtime = runtimesToCheck.stream()
-                    .filter(containerRuntime -> CONTAINER_EXECUTABLE.trim()
-                            .equalsIgnoreCase(containerRuntime.getExecutableName()))
-                    .findFirst()
-                    .filter(r -> {
+            var runtime = runtimesToCheck.stream().filter(
+                    containerRuntime -> CONTAINER_EXECUTABLE.trim().equalsIgnoreCase(containerRuntime.getExecutableName()))
+                    .findFirst().filter(r -> {
                         var versionOutput = getVersionOutputFor(r);
 
                         return switch (r) {
@@ -110,8 +107,8 @@ public final class ContainerRuntimeUtil {
             if (runtime.isPresent()) {
                 return runtime.get();
             } else {
-                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
-                        "and the executable must be available. Ignoring it.");
+                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker "
+                        + "and the executable must be available. Ignoring it.");
             }
         }
 
@@ -151,8 +148,8 @@ public final class ContainerRuntimeUtil {
             rootlessProcess = pb.start();
             int exitCode = rootlessProcess.waitFor();
             if (exitCode != 0) {
-                log.warnf("Command \"%s\" exited with error code %d. " +
-                        "Rootless container runtime detection might not be reliable or the container service is not running at all.",
+                log.warnf("Command \"%s\" exited with error code %d. "
+                        + "Rootless container runtime detection might not be reliable or the container service is not running at all.",
                         String.join(" ", pb.command()), exitCode);
             }
             try (InputStream inputStream = rootlessProcess.getInputStream();
@@ -162,6 +159,7 @@ public final class ContainerRuntimeUtil {
                 if (exitCode != 0) {
                     log.debugf("Command \"%s\" output: %s", String.join(" ", pb.command()),
                             bufferedReader.lines().collect(Collectors.joining(System.lineSeparator())));
+                    return ContainerRuntime.UNAVAILABLE;
                 } else {
                     Predicate<String> stringPredicate;
                     // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless: <boolean>"
@@ -182,10 +180,13 @@ public final class ContainerRuntimeUtil {
                         isInWindowsWSL = bufferedReader.lines().anyMatch(stringPredicate);
                     }
                 }
+            } catch (Exception ex) {
+                log.debugf(ex, "Failure to read info output from %s", String.join(" ", pb.command()));
+                return ContainerRuntime.UNAVAILABLE;
             }
         } catch (IOException | InterruptedException e) {
-            // If an exception is thrown in the process, assume we are not running rootless (default docker installation)
-            log.debugf(e, "Failure to read info output from %s", String.join(" ", pb.command()));
+            log.debugf(e, "Failure to execute %s", String.join(" ", pb.command()));
+            return ContainerRuntime.UNAVAILABLE;
         } finally {
             if (rootlessProcess != null) {
                 rootlessProcess.destroy();
@@ -217,8 +218,7 @@ public final class ContainerRuntimeUtil {
         final ContainerRuntime containerRuntime = ContainerRuntime.of(runtime);
 
         if (containerRuntime == null) {
-            log.warnf("System property %s contains an unknown value %s. Ignoring it.",
-                    CONTAINER_RUNTIME_SYS_PROP, runtime);
+            log.warnf("System property %s contains an unknown value %s. Ignoring it.", CONTAINER_RUNTIME_SYS_PROP, runtime);
         }
 
         return containerRuntime;
@@ -235,11 +235,19 @@ public final class ContainerRuntimeUtil {
                     .redirectErrorStream(true);
             versionProcess = pb.start();
             final int timeoutS = 10;
-            if (versionProcess.waitFor(timeoutS, TimeUnit.SECONDS)) {
+            boolean processExitedBeforeWaitTimeElapsed = versionProcess.waitFor(timeoutS, TimeUnit.SECONDS);
+            int exitStatus = versionProcess.exitValue();
+
+            if ((exitStatus == 0) && processExitedBeforeWaitTimeElapsed) {
                 return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             } else {
-                log.debugf("Failure. It took command %s more than %d seconds to execute.", containerRuntime.getExecutableName(),
-                        timeoutS);
+                if (exitStatus != 0) {
+                    log.debugf("Failure. Exit status (%d) for command %s was not 0.", exitStatus,
+                            containerRuntime.getExecutableName());
+                } else {
+                    log.debugf("Failure. It took command %s more than %d seconds to execute.",
+                            containerRuntime.getExecutableName(), timeoutS);
+                }
                 return "";
             }
         } catch (IOException | InterruptedException e) {

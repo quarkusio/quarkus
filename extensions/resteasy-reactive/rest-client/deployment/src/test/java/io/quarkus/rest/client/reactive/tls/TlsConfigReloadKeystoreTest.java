@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.tls.CertificateUpdatedEvent;
 import io.quarkus.tls.TlsConfiguration;
@@ -120,7 +119,6 @@ public class TlsConfigReloadKeystoreTest {
 
         assertThat(tlsClient.reload()).isTrue();
         event.fire(new CertificateUpdatedEvent("my-tls-client", tlsClient));
-        Arc.container().requestContext().activate();
         assertThat(client.getResult()).isEqualTo(EXPECTED_RESPONSE);
     }
 

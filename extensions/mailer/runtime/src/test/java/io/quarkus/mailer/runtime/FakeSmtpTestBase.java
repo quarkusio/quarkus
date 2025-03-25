@@ -75,6 +75,11 @@ public class FakeSmtpTestBase {
                             public boolean isTrustAll() {
                                 return trustAll;
                             }
+
+                            @Override
+                            public String getName() {
+                                return "test";
+                            }
                         });
                     }
 

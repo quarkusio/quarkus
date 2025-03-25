@@ -424,7 +424,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.register(INTEGRATION_TEST_TASK_NAME, Test.class, intTestTask -> {
                         intTestTask.setGroup("verification");
                         intTestTask.setDescription("Runs Quarkus integration tests");
-                        intTestTask.dependsOn(quarkusBuild, testTask);
+                        intTestTask.dependsOn(quarkusBuild);
+                        intTestTask.shouldRunAfter(testTask);
                         intTestTask.setClasspath(intTestClasspath);
                         intTestTask.setTestClassesDirs(intTestSourceOutputClasses);
                     });
@@ -449,7 +450,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.register(TEST_NATIVE_TASK_NAME, Test.class, testNative -> {
                         testNative.setDescription("Runs native image tests");
                         testNative.setGroup("verification");
-                        testNative.dependsOn(quarkusBuild, testTask);
+                        testNative.dependsOn(quarkusBuild);
+                        testNative.shouldRunAfter(testTask);
                         testNative.setClasspath(nativeTestClasspath);
                         testNative.setTestClassesDirs(nativeTestClassesDirs);
                     });

@@ -5,6 +5,7 @@ import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
 import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.PRIMITIVE;
+import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isAssignableFrom;
@@ -83,6 +84,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
@@ -930,7 +932,7 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, interfaceClass, index, defaultMediaType,
                             httpAnnotationToMethod, name, classContext, baseTarget, methodIndex, method,
                             javaMethodParameters, jandexMethod, multipartResponseTypes, Collections.emptyList(),
-                            generatedSubResources);
+                            generatedSubResources, new HashMap<>());
                 } else {
                     FieldDescriptor methodField = classContext.createJavaMethodField(interfaceClass, jandexMethod,
                             methodIndex);
@@ -1228,7 +1230,7 @@ public class JaxrsClientReactiveProcessor {
                     handleReturn(interfaceClass, defaultMediaType, method.getHttpMethod(),
                             method.getConsumes(), jandexMethod, methodCreator, formParams,
                             bodyParameterIdx == null ? null : methodCreator.getMethodParam(bodyParameterIdx), builder,
-                            multipart);
+                            multipart, Collections.emptyMap());
                 }
             }
 
@@ -1399,9 +1401,48 @@ public class JaxrsClientReactiveProcessor {
             ClassRestClientContext ownerContext, ResultHandle ownerTarget, int methodIndex,
             ResourceMethod method, String[] javaMethodParameters, MethodInfo jandexMethod,
             Set<ClassInfo> multipartResponseTypes, List<SubResourceParameter> ownerSubResourceParameters,
-            Map<GeneratedSubResourceKey, String> generatedSubResources) {
+            Map<GeneratedSubResourceKey, String> generatedSubResources, Map<String, Type> ownerIdentifierToTypeVariable) {
+
+        Map<String, Type> identifierToTypeVariable = new HashMap<>();
         Type returnType = jandexMethod.returnType();
-        if (returnType.kind() != CLASS) {
+        if (returnType.kind() == PARAMETERIZED_TYPE) {
+
+            ParameterizedType parameterizedReturnType = returnType.asParameterizedType();
+            ClassInfo returnClass = index.getClassByName(returnType.name());
+            ParameterizedType.Builder methodReturnTypeBuilder = ParameterizedType.builder(returnType.name());
+            for (int i = 0; i < parameterizedReturnType.arguments().size(); i++) {
+                Type paramReturnTypeArg = parameterizedReturnType.arguments().get(i);
+                Type resolvedType;
+                if (paramReturnTypeArg.kind() == TYPE_VARIABLE) {
+                    // method returns another subresource, and one of the arguments is a type variable e.g.  Wrapper<T>
+                    resolvedType = ownerIdentifierToTypeVariable.get(paramReturnTypeArg.asTypeVariable().identifier());
+                    if (resolvedType == null) {
+                        throw new IllegalArgumentException(
+                                "Type variable %s of the sub resource locator method's return type %s could not be resolved."
+                                        .formatted(paramReturnTypeArg.asTypeVariable().identifier(), jandexMethod));
+                    }
+                } else {
+                    // Subresource, but no type variable, e.g. Wrapper<String>
+                    resolvedType = paramReturnTypeArg;
+                }
+
+                identifierToTypeVariable.put(returnClass.typeParameters().get(i).identifier(), resolvedType);
+                methodReturnTypeBuilder.addArgument(resolvedType);
+            }
+
+            // rewrite returnType to reflect the resolved type variable for the generatedSubResources cache
+            // i.e. Wrapper<String> instead of Wrapper<V>
+            returnType = methodReturnTypeBuilder.build();
+        } else if (returnType.kind() == TYPE_VARIABLE) {
+            TypeVariable typeVariable = returnType.asTypeVariable();
+            // rewrite returnType to reflect the resolved type variable for the generatedSubResources cache
+            // i.e. String instead of Type Variable V
+            returnType = identifierToTypeVariable.get(typeVariable.identifier());
+            if (returnType == null) {
+                return;
+            }
+
+        } else if (returnType.kind() != CLASS) {
             // sort of sub-resource method that returns a thing that isn't a class
             throw new IllegalArgumentException("Sub resource type is not a class: " + returnType.name().toString());
         }
@@ -1854,7 +1895,7 @@ public class JaxrsClientReactiveProcessor {
                     handleReturn(subInterface, defaultMediaType,
                             getHttpMethod(jandexSubMethod, subMethod.getHttpMethod(), httpAnnotationToMethod),
                             consumes, jandexSubMethod, subMethodCreator, formParams, bodyParameterValue,
-                            builder, multipart);
+                            builder, multipart, identifierToTypeVariable);
                 } else {
                     // finding corresponding jandex method, used by enricher (MicroProfile enricher stores it in a field
                     // to later fill in context with corresponding java.lang.reflect.Method)
@@ -1867,7 +1908,7 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, subInterface, index,
                             defaultMediaType, httpAnnotationToMethod, subName, subContext, subMethodTarget,
                             subMethodIndex, subMethod, subJavaMethodParameters, jandexSubMethod,
-                            multipartResponseTypes, subParamFields, generatedSubResources);
+                            multipartResponseTypes, subParamFields, generatedSubResources, identifierToTypeVariable);
                 }
 
             }
@@ -2295,13 +2336,24 @@ public class JaxrsClientReactiveProcessor {
 
     private void handleReturn(ClassInfo restClientInterface, String defaultMediaType, String httpMethod, String[] consumes,
             MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle formParams,
-            ResultHandle bodyValue, AssignableResultHandle builder, boolean multipart) {
+            ResultHandle bodyValue, AssignableResultHandle builder, boolean multipart,
+            Map<String, Type> identifierToTypeVariable) {
         Type returnType = jandexMethod.returnType();
         ReturnCategory returnCategory = ReturnCategory.BLOCKING;
 
+        if (returnType.kind() == TYPE_VARIABLE) {
+            TypeVariable typeVariable = returnType.asTypeVariable();
+            Type resolvedTypeVariable = identifierToTypeVariable.get(typeVariable.identifier());
+            if (resolvedTypeVariable != null) {
+                returnType = resolvedTypeVariable;
+            } else {
+                throw new RuntimeException("Type variable %s of the return type of method %s could not be resolved."
+                        .formatted(typeVariable.identifier(), jandexMethod));
+            }
+        }
+
         String simpleReturnType = returnType.name().toString();
         ResultHandle genericReturnType = null;
-
         if (returnType.kind() == PARAMETERIZED_TYPE) {
             ParameterizedType paramType = returnType.asParameterizedType();
             if (ASYNC_RETURN_TYPES.contains(paramType.name())) {

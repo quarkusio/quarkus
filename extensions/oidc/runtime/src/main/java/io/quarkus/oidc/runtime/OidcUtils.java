@@ -1,52 +1,7 @@
 package io.quarkus.oidc.runtime;
 
-import static io.quarkus.oidc.common.runtime.OidcCommonUtils.base64UrlDecode;
-import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
-import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
-import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
-import java.util.function.Consumer;
-import java.util.regex.Pattern;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.eclipse.microprofile.jwt.Claims;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.logging.Logger;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.JoseException;
-
-import io.quarkus.oidc.AccessTokenCredential;
-import io.quarkus.oidc.AuthorizationCodeTokens;
-import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.RefreshToken;
-import io.quarkus.oidc.TokenIntrospection;
-import io.quarkus.oidc.TokenStateManager;
-import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.*;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
@@ -75,9 +30,34 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
+import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.lang.JoseException;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.base64UrlDecode;
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
+import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 public final class OidcUtils {
     private static final Logger LOG = Logger.getLogger(OidcUtils.class);
@@ -151,7 +131,7 @@ public final class OidcUtils {
     }
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
-            OidcTenantConfig oidcTenantConfig) {
+                                          OidcTenantConfig oidcTenantConfig) {
         if (cookies.isEmpty()) {
             return null;
         }
@@ -288,7 +268,7 @@ public final class OidcUtils {
     }
 
     private static String[] splitClaimPath(String claimPath) {
-        return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
+        return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[]{claimPath};
     }
 
     private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
@@ -320,8 +300,8 @@ public final class OidcUtils {
     }
 
     static QuarkusSecurityIdentity validateAndCreateIdentity(Map<String, Object> requestData, TokenCredential credential,
-            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
-            TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
+                                                             TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
+                                                             TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
 
         OidcTenantConfig config = resolvedContext.oidcConfig();
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
@@ -361,7 +341,7 @@ public final class OidcUtils {
     }
 
     static void setSecurityIdentityPermissions(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
-            JsonObject permissionsJson) {
+                                               JsonObject permissionsJson) {
         addTokenScopesAsPermissions(builder, findClaimWithRoles(config.roles(), TOKEN_SCOPE, permissionsJson));
     }
 
@@ -372,7 +352,7 @@ public final class OidcUtils {
     }
 
     public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
-            JsonObject rolesJson) {
+                                                JsonObject rolesJson) {
         String clientId = config.clientId().isPresent() ? config.clientId().get() : null;
         for (String role : findRoles(clientId, config.roles(), rolesJson)) {
             builder.addRole(role);
@@ -395,7 +375,7 @@ public final class OidcUtils {
     }
 
     public static void setOidcProviderClientAttribute(QuarkusSecurityIdentity.Builder builder,
-            OidcProviderClient oidcProviderClient) {
+                                                      OidcProviderClient oidcProviderClient) {
         builder.addAttribute(OidcProviderClient.class.getName(), oidcProviderClient);
     }
 
@@ -412,7 +392,7 @@ public final class OidcUtils {
     }
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,
-            TenantConfigContext resolvedContext) {
+                                                         TenantConfigContext resolvedContext) {
         if (resolvedContext.provider().client != null) {
             builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider().client.getMetadata());
         }
@@ -431,7 +411,7 @@ public final class OidcUtils {
     }
 
     static Uni<Void> removeSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            TokenStateManager tokenStateManager) {
+                                         TokenStateManager tokenStateManager) {
         List<String> cookieNames = context.get(SESSION_COOKIE_NAME);
         if (cookieNames != null) {
             LOG.debugf("Remove session cookie names: %s", cookieNames);
@@ -479,13 +459,13 @@ public final class OidcUtils {
     /**
      * Merge the current tenant and well-known OpenId Connect provider configurations.
      * Initialized properties take priority over uninitialized properties.
-     *
+     * <p>
      * Initialized properties in the current tenant configuration take priority
      * over the same initialized properties in the well-known OpenId Connect provider configuration.
-     *
+     * <p>
      * Tenant id property of the current tenant must be set before the merge operation.
      *
-     * @param tenant current tenant configuration
+     * @param tenant   current tenant configuration
      * @param provider well-known OpenId Connect provider configuration
      * @return merged configuration
      */
@@ -634,7 +614,7 @@ public final class OidcUtils {
         return context.request().method() == HttpMethod.POST
                 && contentType != null
                 && (contentType.equals(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString())
-                        || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED + ";"));
+                || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED + ";"));
     }
 
     public static Uni<MultiMap> getFormUrlEncodedData(RoutingContext context) {
@@ -752,7 +732,7 @@ public final class OidcUtils {
     }
 
     public static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge) {
+                                            String name, String value, long maxAge) {
         ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(oidcConfig.authentication().cookieForceSecure() || context.request().isSSL());

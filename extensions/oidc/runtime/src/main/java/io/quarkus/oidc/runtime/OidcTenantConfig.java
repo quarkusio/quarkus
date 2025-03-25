@@ -1077,6 +1077,13 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         boolean refreshExpired();
 
         /**
+         * The refresh token might be Opaque, e.g. Azure is providing a token which is encrypted and cannot be parsed.
+         * If this property is enabled, the refresh token will be treated as opaque and won't be checked for validity.
+         */
+        @WithDefault("false")
+        Boolean refreshTokenOpaque();
+
+        /**
          * The refresh token time skew, in seconds.
          * If this property is enabled, the configured number of seconds is added to the current time
          * when checking if the authorization code ID or access token should be refreshed.

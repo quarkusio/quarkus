@@ -12,7 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 /**
  * Tests clients configured with Quarkus-style configuration.
  */
-public class QuarkusRestClientsTest extends MPRestClientsTest {
+public class QuarkusRestClientsTest extends AbstractRestClientsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

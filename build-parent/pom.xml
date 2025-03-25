@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.0.21</kotlin.version>
+        <kotlin.version>2.1.20</kotlin.version>
         <dokka.version>2.0.0</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>

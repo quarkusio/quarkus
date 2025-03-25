@@ -323,7 +323,9 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                         </div>
                     </div>`;
         }else{
-            return html`<qui-alert level="error" permanent><span>This feature is not available for remote databases</span></qui-alert>`
+            return html`<qui-alert level="warning" permanent>
+                            <span>No active local datasource found.</span>
+                        </qui-alert>`;
         }
     }
     
@@ -583,7 +585,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     }
     
     _previousPage(){
-        if(this._currentPageNumber!=1){
+        if(this._currentPageNumber!==1){
             this._currentPageNumber = this._currentPageNumber - 1;
             this._executeCurrentSQL();
         }
@@ -705,7 +707,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                 if (derbyUri.startsWith("localhost") || derbyUri.startsWith("127.0.0.1")) {
                     return true;
                 }
-                if(this._allowedHost && this._allowedHost!="" && derbyUri.startsWith(this._allowedHost)){
+                if(this._allowedHost && this._allowedHost!=="" && derbyUri.startsWith(this._allowedHost)){
                     return true;
                 }
             }
@@ -718,7 +720,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                 if(host === "localhost" || host === "127.0.0.1" || host === "::1"){
                     return true;
                 }
-                if(this._allowedHost && this._allowedHost!="" && host === this._allowedHost){
+                if(this._allowedHost && this._allowedHost!=="" && host === this._allowedHost){
                     return true;
                 }
             }

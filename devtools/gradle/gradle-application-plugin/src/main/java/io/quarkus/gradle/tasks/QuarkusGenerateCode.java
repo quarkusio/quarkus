@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -41,9 +42,6 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
 
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
-    // TODO dynamically load generation provider, or make them write code directly in quarkus-generated-sources
-    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
-    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
 
     private Set<Path> sourcesDirectories;
     private FileCollection compileClasspath;
@@ -52,13 +50,15 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     private final String inputSourceSetName;
 
     private final QuarkusPluginExtensionView extensionView;
+    private final List<String> codeGenInput;
 
     @Inject
-    public QuarkusGenerateCode(LaunchMode launchMode, String inputSourceSetName) {
+    public QuarkusGenerateCode(LaunchMode launchMode, String inputSourceSetName, List<String> codeGenInput) {
         super("Performs Quarkus pre-build preparations, such as sources generation", true);
         this.launchMode = launchMode;
         this.inputSourceSetName = inputSourceSetName;
         this.extensionView = getProject().getObjects().newInstance(QuarkusPluginExtensionView.class, extension());
+        this.codeGenInput = codeGenInput;
 
     }
 
@@ -98,7 +98,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
 
         Path src = projectDir.toPath().resolve("src").resolve(inputSourceSetName);
 
-        for (String input : CODE_GENERATION_INPUT) {
+        for (String input : codeGenInput) {
             Path providerSrcDir = src.resolve(input);
             if (Files.exists(providerSrcDir)) {
                 inputDirectories.add(providerSrcDir.toFile());

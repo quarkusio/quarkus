@@ -207,19 +207,22 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         // quarkusGenerateCode
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCode = tasks.register(QUARKUS_GENERATE_CODE_TASK_NAME,
-                QuarkusGenerateCode.class, LaunchMode.NORMAL, SourceSet.MAIN_SOURCE_SET_NAME);
+                QuarkusGenerateCode.class, LaunchMode.NORMAL, SourceSet.MAIN_SOURCE_SET_NAME,
+                quarkusExt.getCodeGenerationInputs().get());
         quarkusGenerateCode.configure(task -> configureGenerateCodeTask(task, quarkusGenerateAppModelTask,
                 QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES));
         // quarkusGenerateCodeDev
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeDev = tasks.register(QUARKUS_GENERATE_CODE_DEV_TASK_NAME,
-                QuarkusGenerateCode.class, LaunchMode.DEVELOPMENT, SourceSet.MAIN_SOURCE_SET_NAME);
+                QuarkusGenerateCode.class, LaunchMode.DEVELOPMENT, SourceSet.MAIN_SOURCE_SET_NAME,
+                quarkusExt.getCodeGenerationInputs().get());
         quarkusGenerateCodeDev.configure(task -> {
             task.dependsOn(quarkusGenerateCode);
             configureGenerateCodeTask(task, quarkusGenerateDevAppModelTask, QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
         });
         // quarkusGenerateCodeTests
         TaskProvider<QuarkusGenerateCode> quarkusGenerateCodeTests = tasks.register(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
-                QuarkusGenerateCode.class, LaunchMode.TEST, SourceSet.TEST_SOURCE_SET_NAME);
+                QuarkusGenerateCode.class, LaunchMode.TEST, SourceSet.TEST_SOURCE_SET_NAME,
+                quarkusExt.getCodeGenerationInputs().get());
         quarkusGenerateCodeTests.configure(task -> {
             task.dependsOn("compileQuarkusTestGeneratedSourcesJava");
             configureGenerateCodeTask(task, quarkusGenerateTestAppModelTask,
@@ -480,13 +483,17 @@ public class QuarkusPlugin implements Plugin<Project> {
                     SourceSet generatedSourceSet = sourceSets.getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
                     SourceSet generatedTestSourceSet = sourceSets.getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
 
-                    // Register the quarkus-generated-code
-                    for (String provider : QuarkusGenerateCode.CODE_GENERATION_PROVIDER) {
-                        mainSourceSet.getJava().srcDir(
-                                new File(generatedSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
-                        testSourceSet.getJava().srcDir(
-                                new File(generatedTestSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
-                    }
+                    project.afterEvaluate(project1 -> {
+                        // Register the quarkus-generated-code
+                        for (String provider : quarkusExt.getCodeGenerationProviders().get()) {
+
+                            mainSourceSet.getJava().srcDir(
+                                    new File(generatedSourceSet.getJava().getClassesDirectory().get().getAsFile(), provider));
+                            testSourceSet.getJava().srcDir(
+                                    new File(generatedTestSourceSet.getJava().getClassesDirectory().get().getAsFile(),
+                                            provider));
+                        }
+                    });
                 });
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {

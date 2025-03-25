@@ -6,6 +6,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,10 +45,15 @@ import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 
 public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
+    // TODO dynamically load generation provider, or make them write code directly in quarkus-generated-sources
+    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
+    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
     private final SourceSetExtension sourceSetExtension;
 
     private final Property<Boolean> cacheLargeArtifacts;
     private final Property<Boolean> cleanupBuildOutput;
+    private final ListProperty<String> codeGenerationProviders;
+    private final ListProperty<String> codeGenerationInputs;
 
     public QuarkusPluginExtension(Project project) {
         super(project);
@@ -56,6 +62,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
                 .convention(true);
         this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
                 .convention(!System.getenv().containsKey("CI"));
+        this.codeGenerationProviders = project.getObjects().listProperty(String.class)
+                .convention(List.of(CODE_GENERATION_PROVIDER));
+        this.codeGenerationInputs = project.getObjects().listProperty(String.class)
+                .convention(List.of(CODE_GENERATION_INPUT));
 
         this.sourceSetExtension = new SourceSetExtension();
     }
@@ -145,6 +155,30 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public void setCacheLargeArtifacts(boolean cacheLargeArtifacts) {
         this.cacheLargeArtifacts.set(cacheLargeArtifacts);
+    }
+
+    public void setCodeGenerationInputs(List<String> codeGenerationInputs) {
+        this.codeGenerationInputs.set(codeGenerationInputs);
+    }
+
+    /**
+     * The directories of code generation inputs, only needed if using a customer extension that provides its own code
+     * generator.
+     */
+    public ListProperty<String> getCodeGenerationInputs() {
+        return codeGenerationInputs;
+    }
+
+    public void setCodeGenerationProviders(List<String> codeGenerationProviders) {
+        this.codeGenerationProviders.set(codeGenerationProviders);
+    }
+
+    /**
+     * The identifiers of the code generation providers, only needed if using a customer extension that provides its own code
+     * generator.
+     */
+    public ListProperty<String> getCodeGenerationProviders() {
+        return codeGenerationProviders;
     }
 
     public String finalName() {

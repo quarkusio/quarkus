@@ -22,6 +22,7 @@ import jakarta.enterprise.inject.Alternative;
 
 import org.jboss.jandex.Index;
 
+import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -164,16 +165,17 @@ public class AppMakerHelper {
             boolean isContinuousTesting,
             Collection<Runnable> shutdownTasks) throws IOException, AppModelResolverException, BootstrapException {
         final PathList.Builder rootBuilder = PathList.builder();
-        Consumer<Path> addToBuilderIfConditionMet = path -> {
-            if (path != null && Files.exists(path) && !rootBuilder.contains(path)) {
+        final Consumer<Path> addToBuilderIfConditionMet = path -> {
+            if (path != null && !rootBuilder.contains(path) && Files.exists(path)) {
                 rootBuilder.add(path);
             }
         };
 
         final Path testClassLocation;
         final Path appClassLocation;
-        final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
+        final Path projectRoot = Path.of("").normalize().toAbsolutePath();
 
+        ApplicationModel testAppModel = null;
         final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
         // If gradle project running directly with IDE
         if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
@@ -225,12 +227,22 @@ public class AppMakerHelper {
             }
 
             addToBuilderIfConditionMet.accept(appClassLocation);
-            final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
-            addToBuilderIfConditionMet.accept(appResourcesLocation);
+
+            testAppModel = BootstrapAppModelFactory.newInstance()
+                    .setTest(true)
+                    .setEnableClasspathCache(true)
+                    .setProjectRoot(projectRoot)
+                    .resolveAppModel()
+                    .getApplicationModel();
+
+            for (var rootDir : testAppModel.getAppArtifact().getContentTree().getRoots()) {
+                addToBuilderIfConditionMet.accept(rootDir);
+            }
         }
 
         CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 //.setExistingModel(gradleAppModel) unfortunately this model is not re-usable due to PathTree serialization by Gradle
+                .setExistingModel(testAppModel)
                 .setBaseName(displayName + " (QuarkusTest)")
                 .setIsolateDeployment(true)
                 .setMode(QuarkusBootstrap.Mode.TEST)

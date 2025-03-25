@@ -645,6 +645,7 @@ Note that only `@Valid` is supported on the return type.
 The returned class can use any constraint.
 In the case of `Uni`, it checks the item produced asynchronously.
 
+[[using-vertx-web-router]]
 == Using the Vert.x Web Router
 
 You can also register your route directly on the _HTTP routing layer_ by registering routes directly on the `Router` object.

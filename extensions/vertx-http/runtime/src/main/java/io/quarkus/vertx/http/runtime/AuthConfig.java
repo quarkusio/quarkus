@@ -31,4 +31,12 @@ public interface AuthConfig {
      */
     @WithDefault("true")
     boolean proactive();
+
+    /**
+     * Propagate security identity to support the `SecurityIdentity` CDI bean injection.
+     * Enable this option if you inject the identity from a Vert.x route handler or a Reactive Route.
+     */
+    @WithDefault("false")
+    boolean propagateSecurityIdentity();
+
 }

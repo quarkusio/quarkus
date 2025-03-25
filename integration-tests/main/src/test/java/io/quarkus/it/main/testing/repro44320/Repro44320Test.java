@@ -8,7 +8,6 @@ import java.util.Set;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,8 +15,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import io.quarkus.it.testing.repro44320.MyService;
 import io.quarkus.test.junit.QuarkusTest;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/44320")
-// fails with `You must configure at least one set of arguments for this @ParameterizedTest`, because the `set` is empty
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @QuarkusTest
 public class Repro44320Test {

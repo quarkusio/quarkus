@@ -241,7 +241,8 @@ public class OidcUtilsTest {
     public void testTokenIsOpaque() throws Exception {
         assertTrue(OidcUtils.isOpaqueToken("123"));
         assertTrue(OidcUtils.isOpaqueToken("1.23"));
-        assertFalse(OidcUtils.isOpaqueToken("1.2.3"));
+        assertTrue(OidcUtils.isOpaqueToken("1.2.3"));
+        assertFalse(OidcUtils.isOpaqueToken(jwt()));
     }
 
     @Test
@@ -253,15 +254,19 @@ public class OidcUtilsTest {
 
     @Test
     public void testDecodeJwt() throws Exception {
-        final byte[] keyBytes = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
-                .getBytes(StandardCharsets.UTF_8);
-        SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
-        String jwt = Jwt.claims().sign(key);
+        String jwt = jwt();
         assertNull(OidcCommonUtils.decodeJwtContent(jwt + ".4"));
         JsonObject json = OidcCommonUtils.decodeJwtContent(jwt);
         assertTrue(json.containsKey("iat"));
         assertTrue(json.containsKey("exp"));
         assertTrue(json.containsKey("jti"));
+    }
+
+    private static String jwt() {
+        final byte[] keyBytes = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                .getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
+        return Jwt.claims().sign(key);
     }
 
     @Test

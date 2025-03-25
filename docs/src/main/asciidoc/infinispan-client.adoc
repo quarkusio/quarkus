@@ -292,25 +292,13 @@ Then, open the `src/main/resources/application.properties` file and add:
 
 [source, properties]
 ----
-%prod.quarkus.infinispan-client.hosts=localhost:11222 # <1>
+%prod.quarkus.infinispan-client.hosts=localhost:11222 <1>
 %prod.quarkus.infinispan-client.username=admin <2>
 %prod.quarkus.infinispan-client.password=password <3>
-
-## Docker 4 Mac workaround. Uncomment only if you are using Docker for Mac.
-## Read more about it in the Infinispan Reference Guide
-# %prod.quarkus.infinispan-client.client-intelligence=BASIC <4>
 ----
-<1> Sets Infinispan Server address list, separated with commas
+<1> Sets Infinispan Server address list, separated with semicolons
 <2> Sets the authentication username
 <3> Sets the authentication password
-<4> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac.
-
-[IMPORTANT]
-====
-Client intelligence changes impact your performance in production.
-Don't change the client intelligence unless strictly necessary for your case.
-Read more in the xref:infinispan-client-reference.adoc[Infinispan Client extension reference guide].
-====
 
 == Packaging and running in JVM mode
 

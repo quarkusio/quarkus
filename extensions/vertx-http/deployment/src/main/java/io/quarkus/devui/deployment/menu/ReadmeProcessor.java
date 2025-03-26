@@ -42,7 +42,7 @@ public class ReadmeProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(NS, ReadmeJsonRPCService.class);
     }

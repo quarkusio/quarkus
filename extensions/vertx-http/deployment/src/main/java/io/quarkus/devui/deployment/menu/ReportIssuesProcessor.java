@@ -8,7 +8,7 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
 public class ReportIssuesProcessor {
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem registerJsonRpcService() {
         return new JsonRPCProvidersBuildItem("report-issues", ReportIssuesJsonRPCService.class);
     }

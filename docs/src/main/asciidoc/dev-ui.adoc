@@ -876,14 +876,13 @@ You must register the `JsonPRCService` in your processor in the deployment modul
 
 [source,java]
 ----
-@BuildStep(onlyIf = IsDevelopment.class)// <1>
-JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <2>
-    return new JsonRPCProvidersBuildItem(CacheJsonRPCService.class);// <3>
+@BuildStep
+JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <1>
+    return new JsonRPCProvidersBuildItem(CacheJsonRPCService.class);// <2>
 }
 ----
-<1> Always only do this in Dev Mode
-<2> Produce or return a `JsonRPCProvidersBuildItem`
-<3> Define the class in your runtime module that will contain methods that make data available in the UI
+<1> Produce or return a `JsonRPCProvidersBuildItem`
+<2> Define the class in your runtime module that will contain methods that make data available in the UI
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/java/io/quarkus/cache/deployment/devui/CacheDevUiProcessor.java[Example code]
 

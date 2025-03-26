@@ -53,8 +53,7 @@ public class LogStreamProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
-            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+    void registerBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             LaunchModeBuildItem launchModeBuildItem) {
 
         Optional<TestSupport> ts = TestSupport.instance();
@@ -136,7 +135,11 @@ public class LogStreamProcessor {
         });
 
         buildTimeActionProducer.produce(keyStrokeActions);
-        jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem(namespace, LogStreamJsonRPCService.class));
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(namespace, LogStreamJsonRPCService.class);
     }
 
     private boolean testsDisabled(LaunchModeBuildItem launchModeBuildItem, Optional<TestSupport> ts) {

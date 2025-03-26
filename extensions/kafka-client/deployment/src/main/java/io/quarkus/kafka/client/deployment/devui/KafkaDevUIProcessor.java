@@ -48,7 +48,7 @@ public class KafkaDevUIProcessor {
         return cardPageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(KafkaJsonRPCService.class);
     }

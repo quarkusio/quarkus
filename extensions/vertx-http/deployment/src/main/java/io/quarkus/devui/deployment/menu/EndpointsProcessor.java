@@ -55,7 +55,7 @@ public class EndpointsProcessor {
         return endpointsPage;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(NAMESPACE, ResourceNotFoundData.class);
     }

@@ -18,7 +18,6 @@ class AgroalDevUIProcessor {
     @BuildStep
     void devUI(DataSourcesJdbcBuildTimeConfig config,
             BuildProducer<CardPageBuildItem> cardPageProducer,
-            BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProviderProducer,
             LaunchModeBuildItem launchMode) {
 
         if (launchMode.getDevModeType().isPresent() && launchMode.getDevModeType().get().equals(DevModeType.LOCAL)) {
@@ -34,8 +33,12 @@ class AgroalDevUIProcessor {
                         .metadata("allowedHost", config.devui().allowedDBHost().orElse(null)));
 
                 cardPageProducer.produce(cardPageBuildItem);
-                jsonRPCProviderProducer.produce(new JsonRPCProvidersBuildItem(DatabaseInspector.class));
             }
         }
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(DatabaseInspector.class);
     }
 }

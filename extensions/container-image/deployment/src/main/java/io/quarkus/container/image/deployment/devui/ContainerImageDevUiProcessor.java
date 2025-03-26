@@ -37,7 +37,7 @@ public class ContainerImageDevUiProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
         DevConsoleManager.register("container-image-build-action", build());
         return new JsonRPCProvidersBuildItem(ContainerBuilderJsonRpcService.class);

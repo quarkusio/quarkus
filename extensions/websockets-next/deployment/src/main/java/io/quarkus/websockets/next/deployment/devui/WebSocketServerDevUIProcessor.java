@@ -45,7 +45,7 @@ public class WebSocketServerDevUIProcessor {
         cardPages.produce(pageBuildItem);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(WebSocketNextJsonRPCService.class);
     }

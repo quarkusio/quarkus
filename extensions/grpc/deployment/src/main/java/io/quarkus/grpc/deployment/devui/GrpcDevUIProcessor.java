@@ -226,7 +226,7 @@ public class GrpcDevUIProcessor {
         return null;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(GrpcJsonRPCService.class);
     }

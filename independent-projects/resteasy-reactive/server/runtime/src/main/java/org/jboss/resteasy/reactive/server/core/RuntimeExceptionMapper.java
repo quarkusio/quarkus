@@ -66,7 +66,7 @@ public class RuntimeExceptionMapper {
         //we don't read WebApplicationException's thrown from the client as true 'WebApplicationException'
         //we consider it a security risk to transparently pass on the result to the calling server
         boolean isWebApplicationException = throwable instanceof WebApplicationException
-                && !(throwable instanceof ResteasyReactiveClientProblem);
+                && !(throwable.getCause() instanceof ResteasyReactiveClientProblem);
         Response response = null;
         if (isWebApplicationException) {
             response = ((WebApplicationException) throwable).getResponse();

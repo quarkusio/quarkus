@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,8 +30,9 @@ public class InvalidJsonFromServerTest {
     @Test
     public void test() {
         assertThatThrownBy(() -> client.get())
-                .isInstanceOf(ClientWebApplicationException.class)
+                .isInstanceOf(WebApplicationException.class)
                 .hasMessageContaining("HTTP 200")
+                .cause()
                 .cause()
                 .hasMessageContaining("was expecting double-quote to start field name");
     }

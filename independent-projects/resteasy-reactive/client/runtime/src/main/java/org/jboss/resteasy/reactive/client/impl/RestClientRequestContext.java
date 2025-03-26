@@ -199,10 +199,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                         + invokedMethod.getDeclaringClass().getName() + "#"
                         + invokedMethod.getName() + "'";
             }
-            return new ClientWebApplicationException(message,
-                    webApplicationException instanceof ClientWebApplicationException ? webApplicationException.getCause()
-                            : webApplicationException,
-                    webApplicationException.getResponse());
+            return ExceptionUtil.toException(message,
+                    webApplicationException.getResponse(),
+                    webApplicationException instanceof ClientWebApplicationException
+                            ? webApplicationException
+                            : new ClientWebApplicationException(
+                                    webApplicationException.getMessage(),
+                                    webApplicationException.getCause(),
+                                    webApplicationException.getResponse()));
         }
         return res;
     }

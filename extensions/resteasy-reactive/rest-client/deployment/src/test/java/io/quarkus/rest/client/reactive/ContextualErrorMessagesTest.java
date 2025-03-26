@@ -1,8 +1,9 @@
 package io.quarkus.rest.client.reactive;
 
+import jakarta.ws.rs.WebApplicationException;
+
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,7 +32,7 @@ public class ContextualErrorMessagesTest {
         try {
             client.echo("Bob");
             Assertions.fail("An exception was expected.");
-        } catch (ClientWebApplicationException e) {
+        } catch (WebApplicationException e) {
             Assertions.assertThat(e.getMessage()).contains("io.quarkus.rest.client.reactive.HelloClient2#echo");
         }
     }

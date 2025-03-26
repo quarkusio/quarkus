@@ -10,7 +10,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
 
-import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -60,7 +61,7 @@ class ClientResponseCompleteRestHandlerTest {
         try {
             httpClient.target(generateURL("/get-400")).request().get(String.class);
             fail("Should have thrown an exception");
-        } catch (WebApplicationException e) {
+        } catch (BadRequestException e) {
             Response response = e.getResponse();
             checkResponse(response);
             Map<String, Object> parsedResponseContent = readAndParseResponse(response);
@@ -80,7 +81,7 @@ class ClientResponseCompleteRestHandlerTest {
         try {
             httpClient.target(generateURL("/get-500")).request().get(String.class);
             fail("Should have thrown an exception");
-        } catch (WebApplicationException e) {
+        } catch (InternalServerErrorException e) {
             Response response = e.getResponse();
             checkResponse(response);
             Map<String, Object> parsedResponseContent = readAndParseResponse(response);

@@ -14,6 +14,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.funqy.lambda.model.cloudevents.CloudEventDataV1;
 import io.quarkus.funqy.lambda.model.cloudevents.CloudEventV1;
+import io.quarkus.funqy.lambda.model.kinesis.PipesKinesisEvent;
+import io.quarkus.funqy.lambda.model.pipes.BatchItemFailures;
+import io.quarkus.funqy.lambda.model.pipes.Response;
 
 public class FunqyAmazonLambdaProcessor {
 
@@ -39,8 +42,12 @@ public class FunqyAmazonLambdaProcessor {
                 Record.class.getName(),
                 StreamsEventResponse.class.getName(),
                 StreamsEventResponse.BatchItemFailure.class.getName(),
+                PipesKinesisEvent.class.getName(),
                 // DynamoDB
                 DynamodbEvent.class.getName(),
-                DynamodbEvent.DynamodbStreamRecord.class.getName()).constructors().methods().fields().build());
+                DynamodbEvent.DynamodbStreamRecord.class.getName(),
+                // Pipes
+                Response.class.getName(),
+                BatchItemFailures.class.getName()).constructors().methods().fields().build());
     }
 }

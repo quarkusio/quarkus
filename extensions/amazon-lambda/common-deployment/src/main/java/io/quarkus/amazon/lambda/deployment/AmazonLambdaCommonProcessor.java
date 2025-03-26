@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
+import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -14,6 +15,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SnapStartDefaultValueBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
@@ -86,6 +88,12 @@ public final class AmazonLambdaCommonProcessor {
             // only need context readers in native or dev or test mode
             recorder.initContextReaders();
         }
+    }
+
+    @BuildStep(onlyIf = NativeBuild.class)
+    public void registerForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                FunctionError.class.getName()).build());
     }
 
 }

@@ -350,7 +350,8 @@ public class OidcProvider implements Closeable {
                 });
     }
 
-    public Uni<TokenIntrospection> introspectToken(String token, Long expiresIn, boolean fallbackFromJwkMatch) {
+    public Uni<TokenIntrospection> introspectToken(String token, boolean idToken, Long expiresIn,
+            boolean fallbackFromJwkMatch) {
         if (client.getMetadata().getIntrospectionUri() == null) {
             String errorMessage = String.format("Token issued to client %s "
                     + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
@@ -358,7 +359,7 @@ public class OidcProvider implements Closeable {
                     + "please check if your OpenId Connect Provider supports the token introspection",
                     oidcConfig.clientId().get());
 
-            throw new AuthenticationFailedException(errorMessage);
+            throw new AuthenticationFailedException(errorMessage, tokenMap(token, idToken));
         }
         return client.introspectAccessToken(token).onItemOrFailure()
                 .transform(new BiFunction<TokenIntrospection, Throwable, TokenIntrospection>() {
@@ -366,7 +367,7 @@ public class OidcProvider implements Closeable {
                     @Override
                     public TokenIntrospection apply(TokenIntrospection introspectionResult, Throwable t) {
                         if (t != null) {
-                            throw new AuthenticationFailedException(t);
+                            throw new AuthenticationFailedException(t, tokenMap(token, idToken));
                         }
                         Long introspectionExpiresIn = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
                         if (introspectionExpiresIn == null && expiresIn != null) {
@@ -374,15 +375,16 @@ public class OidcProvider implements Closeable {
                             introspectionExpiresIn = now() + expiresIn;
                         }
                         if (!introspectionResult.isActive()) {
-                            verifyTokenExpiry(introspectionExpiresIn);
+                            verifyTokenExpiry(token, idToken, introspectionExpiresIn);
                             throw new AuthenticationFailedException(
-                                    String.format("Token issued to client %s is not active", oidcConfig.clientId().get()));
+                                    String.format("Token issued to client %s is not active", oidcConfig.clientId().get()),
+                                    tokenMap(token, idToken));
                         }
-                        verifyTokenExpiry(introspectionExpiresIn);
+                        verifyTokenExpiry(token, idToken, introspectionExpiresIn);
                         try {
                             verifyTokenAge(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_IAT));
                         } catch (InvalidJwtException ex) {
-                            throw new AuthenticationFailedException(ex);
+                            throw new AuthenticationFailedException(ex, tokenMap(token, idToken));
                         }
 
                         if (requiredClaims != null && !requiredClaims.isEmpty()) {
@@ -392,16 +394,16 @@ public class OidcProvider implements Closeable {
                                     introspectionClaimValue = introspectionResult.getString(requiredClaim.getKey());
                                 } catch (ClassCastException ex) {
                                     LOG.debugf("Introspection claim %s is not String", requiredClaim.getKey());
-                                    throw new AuthenticationFailedException();
+                                    throw new AuthenticationFailedException(tokenMap(token, idToken));
                                 }
                                 if (introspectionClaimValue == null) {
                                     LOG.debugf("Introspection claim %s is missing", requiredClaim.getKey());
-                                    throw new AuthenticationFailedException();
+                                    throw new AuthenticationFailedException(tokenMap(token, idToken));
                                 }
                                 if (!introspectionClaimValue.equals(requiredClaim.getValue())) {
                                     LOG.debugf("Value of the introspection claim %s does not match required value of %s",
                                             requiredClaim.getKey(), requiredClaim.getValue());
-                                    throw new AuthenticationFailedException();
+                                    throw new AuthenticationFailedException(tokenMap(token, idToken));
                                 }
                             }
                         }
@@ -412,14 +414,15 @@ public class OidcProvider implements Closeable {
                 });
     }
 
-    private void verifyTokenExpiry(Long exp) {
+    private void verifyTokenExpiry(String token, boolean idToken, Long exp) {
         if (isTokenExpired(exp)) {
             String error = String.format("Token issued to client %s has expired",
                     oidcConfig.clientId().get());
             LOG.debugf(error);
             throw new AuthenticationFailedException(
                     new InvalidJwtException(error,
-                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
+                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null),
+                    tokenMap(token, idToken));
         }
     }
 
@@ -668,4 +671,7 @@ public class OidcProvider implements Closeable {
         }
     }
 
+    private static Map<String, Object> tokenMap(String token, boolean idToken) {
+        return Map.of(idToken ? OidcConstants.ID_TOKEN_VALUE : OidcConstants.ACCESS_TOKEN_VALUE, token);
+    }
 }

@@ -72,7 +72,8 @@ public class BearerOpaqueTokenAuthorizationTest {
                 .header("Authorization", "Bearer " + "expired")
                 .get("/opaque/api/users/me/bearer")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .body(Matchers.equalTo("Token: expired"));
     }
 
     @Test

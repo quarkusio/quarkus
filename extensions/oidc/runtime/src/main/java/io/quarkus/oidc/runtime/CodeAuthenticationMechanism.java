@@ -369,7 +369,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         }
                                         if (t instanceof LogoutException) {
                                             LOG.debugf("User has been logged out, authentication challenge is required");
-                                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                            return Uni.createFrom()
+                                                    .failure(new AuthenticationFailedException(t, tokenMap(currentIdToken)));
                                         }
 
                                         if (!(t instanceof TokenAutoRefreshException)) {
@@ -392,7 +393,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     LOG.debugf(
                                                             "Session can not be verified due to an unresolved key exception, reauthentication is required");
                                                     // Redirect the user to the OIDC provider to re-authenticate
-                                                    failure = new AuthenticationFailedException();
+                                                    failure = new AuthenticationFailedException(tokenMap(currentIdToken));
                                                 } else {
                                                     // Failures such as the signature verification failures require 401 status
                                                     String error = logAuthenticationError(context, t);
@@ -1327,14 +1328,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
                                     return Uni.createFrom().item(fallback);
                                 } else {
-                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                    return Uni.createFrom()
+                                            .failure(new AuthenticationFailedException(t, tokenMap(currentIdToken)));
                                 }
                             } else if (configContext.oidcConfig().authentication().sessionExpiredPath().isPresent()) {
                                 // Token has expired but the refresh does not work, check if the session expired page is available
                                 return redirectToSessionExpiredPage(context, configContext);
                             }
                             // Redirect to the OIDC provider to reauthenticate
-                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                            return Uni.createFrom().failure(new AuthenticationFailedException(t, tokenMap(currentIdToken)));
                         } else {
                             context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                             context.put(AuthorizationCodeTokens.class.getName(), tokens);
@@ -1368,7 +1370,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         @Override
                                         public Throwable apply(Throwable tInner) {
                                             LOG.debugf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
-                                            return new AuthenticationFailedException(tInner);
+                                            return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });
                         }
@@ -1392,7 +1394,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 if (!autoRefresh) {
                                     LOG.debugf(
                                             "ID token is not returned in the refresh token grant response, re-authentication is required");
-                                    throw new AuthenticationFailedException();
+                                    throw new AuthenticationFailedException(tokenMap(currentIdToken));
                                 } else {
                                     // Auto-refresh is triggered while current ID token is still valid, continue using it.
                                     tokens.setIdToken(currentIdToken);
@@ -1531,5 +1533,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return VOID_UNI;
         }
 
+    }
+
+    private static Map<String, Object> tokenMap(String token) {
+        return Map.of(OidcConstants.ID_TOKEN_VALUE, token);
     }
 }

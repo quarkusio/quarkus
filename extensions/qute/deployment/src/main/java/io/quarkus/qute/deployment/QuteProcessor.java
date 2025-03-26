@@ -892,8 +892,10 @@ public class QuteProcessor {
                     String paramName = e.getKey();
                     MethodInfo methodOrConstructor = null;
                     if (validation.checkedTemplate.isRecord()) {
-                        Type[] componentTypes = validation.checkedTemplate.recordClass.recordComponents().stream()
-                                .map(RecordComponentInfo::type).toArray(Type[]::new);
+                        Type[] componentTypes = validation.checkedTemplate.recordClass.recordComponentsInDeclarationOrder()
+                                .stream()
+                                .map(RecordComponentInfo::type)
+                                .toArray(Type[]::new);
                         methodOrConstructor = validation.checkedTemplate.recordClass
                                 .method(MethodDescriptor.INIT, componentTypes);
                     } else {

@@ -2363,6 +2363,7 @@ If you wish to make sure your exception mapper is called for your exception type
 
 [source,java]
 ----
+@UnwrapException
 public class MyExceptionWrapper extends RuntimeException {
     public MyExceptionWrapper(Exception cause) {
         super(cause);

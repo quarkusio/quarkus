@@ -17,11 +17,13 @@ import '@vaadin/button';
 import '@qomponent/qui-alert';
 import '@vaadin/dialog';
 import { dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { devuiState } from 'devui-state';
+import { observeState } from 'lit-element-state';
 
 /**
  * Allows interaction with your Datasource
  */
-export class QwcAgroalDatasource extends QwcHotReloadElement {
+export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
     configJsonRpc = new JsonRpc("devui-configuration");
     
@@ -169,6 +171,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         _isAllowedDB: {state: true},
         _displaymessage: {state: true},
         _insertSQL: {state: true},
+        _updatingInsertScript: {state: true},
         _dialogOpened: {state: true}
     };
     
@@ -192,6 +195,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         this._allowedHost = null;
         this._displaymessage = null;
         this._insertSQL = null;
+        this._updatingInsertScript = false;
         this._dialogOpened = false;
     }
     
@@ -236,15 +240,19 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                         </div>
                         ${this._renderImportSqlDialog()}`;
         } else {
-            return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching data sources...</div>
-                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
-            </div>`;
+            return this._renderProgressBar("Fetching data sources...");
         }
     }
     
+    _renderProgressBar(message){
+        return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                <div>${message}</div>
+                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+            </div>`;
+    }
+    
     _renderImportSqlDialog(){
-        if(this._insertSQL){
+        if(this._insertSQL && !this._updatingInsertScript){
             return html`
                 <vaadin-dialog
                     resizable
@@ -262,6 +270,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                             <vaadin-button title="Copy insert script" theme="tertiary" @click="${this._copyInsertScript}">
                                 <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
                             </vaadin-button>
+                            ${this._renderAssistantButton()}
                             <vaadin-button theme="tertiary" @click="${this._closeDialog}">
                                 <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
                             </vaadin-button>`,
@@ -269,7 +278,42 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                     )}
                 ${dialogRenderer(this._renderImportSqlDialogContents)}
                 ></vaadin-dialog>`;
+        }else if(this._updatingInsertScript){
+            return html`<vaadin-dialog
+                    resizable
+                    draggable
+                    header-title="Generating more data"
+                    .opened="${true}"
+                    
+                ${dialogRenderer(this._renderGeneratingSqlDialogContents)}
+                ></vaadin-dialog>`;
         }
+    }
+    
+    _renderAssistantButton(){
+        if(devuiState.applicationInfo.assistantAvailable){
+            return html`<vaadin-button title="Generate mode data" theme="tertiary" @click="${this._generateMoreData}">
+                        <vaadin-icon icon="font-awesome-solid:wand-magic-sparkles"></vaadin-icon>
+                    </vaadin-button>`;
+        }
+     }
+
+    _generateMoreData(){
+        this._updatingInsertScript = true;
+        // TODO: What if script is empty
+        this.jsonRpc.generateMoreData({
+                                    currentInsertScript:this._insertSQL
+                                }).then(jsonRpcResponse => {
+                                    const script = jsonRpcResponse.result.script;
+                                    if (Array.isArray(script)) {
+                                        this._insertSQL = script.join('\n');
+                                    } else {
+                                        this._insertSQL = script;
+                                    }
+                                    this._updatingInsertScript = false;
+                                    this._dialogOpened = true;
+                                });
+
     }
     
     _saveInsertScript(){
@@ -310,6 +354,10 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     
     _renderImportSqlDialogContents(){
         return html`<qui-code-block content="${this._insertSQL}" mode="sql" theme="dark"></qui-code-block>`;
+    }
+    
+    _renderGeneratingSqlDialogContents(){
+        return this._renderProgressBar("Talking to AI... please hold on");
     }
     
     _renderDataOrWarning(){

@@ -124,4 +124,50 @@ public interface FormAuthRuntimeConfig {
      * The default value is empty, which means the cookie will be kept until the browser is closed.
      */
     Optional<Duration> cookieMaxAge();
+
+    /**
+     * The post location.
+     */
+    @WithDefault("/j_security_check")
+    String postLocation();
+
+    /**
+     * One-time authentication token configuration.
+     */
+    AuthenticationToken authenticationToken();
+
+    /**
+     * One-time authentication token configuration.
+     */
+    interface AuthenticationToken {
+
+        /**
+         * Enables one-time authentication token configuration as a single-factor authentication by allowing to request
+         * the one-time authentication token without providing valid username and password.
+         * By default, the one-time authentication token serves as the second-factor of the two-factor authentication,
+         * and the authentication token is generated only if user sent valid username and password to the post location.
+         */
+        Optional<String> requestPath();
+
+        /**
+         * Quarkus will redirect to this path once one-time authentication token has been successfully generated.
+         * When this configuration property is not set, Quarkus will respond to successful
+         * one-time authentication token requests with the HTTP status `204 No Content`.
+         */
+        @WithDefault("/authentication-token.html")
+        Optional<String> requestRedirectPath();
+
+        /**
+         * The one-time authentication token form field name.
+         */
+        @WithDefault("j_token")
+        String formParameterName();
+
+        /**
+         * The one-time authentication token expiration time.
+         * By default, the one-time authentication token expires in 5 minutes.
+         */
+        @WithDefault("PT5M")
+        Duration expiresIn();
+    }
 }

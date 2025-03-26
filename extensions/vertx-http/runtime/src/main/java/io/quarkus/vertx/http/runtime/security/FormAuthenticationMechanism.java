@@ -1,8 +1,11 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.fire;
+import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.createEmptyLoginEvent;
 import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.createLoginEvent;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
 import static io.quarkus.vertx.http.runtime.security.RoutingContextAwareSecurityIdentity.addRoutingCtxToIdentityIfMissing;
+import static io.quarkus.vertx.http.security.token.OneTimeTokenAuthenticator.REDIRECT_LOCATION_KEY;
 
 import java.net.URI;
 import java.security.SecureRandom;
@@ -26,6 +29,7 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -33,10 +37,9 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.FormAuthRuntimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.security.token.OneTimeTokenAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
@@ -48,11 +51,11 @@ import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
 
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
+
     private static final String FORM = "form";
     private static final String COOKIE_NAME = "io.quarkus.vertx.http.runtime.security.form.cookie-name";
     private static final String COOKIE_PATH = "io.quarkus.vertx.http.runtime.security.form.cookie-path";
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
-
     private final String loginPage;
     private final String errorPage;
     private final String postLocation;
@@ -68,16 +71,16 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final boolean isFormAuthEventObserver;
     private final PersistentLoginManager loginManager;
     private final Event<FormAuthenticationEvent> formAuthEvent;
+    private final String authTokenFormParameter;
+    private final boolean authTokenEnabled;
+    private final OneTimeAuthTokenRequestHandler twoFactorAuthHandler;
 
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
 
     @Inject
-    FormAuthenticationMechanism(
-            VertxHttpConfig httpConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            Event<FormAuthenticationEvent> formAuthEvent,
-            BeanManager beanManager,
+    FormAuthenticationMechanism(VertxHttpConfig httpConfig, BeanManager beanManager,
+            @ConfigProperty(name = "quarkus.http.auth.form.authentication-token.enabled") boolean authTokenEnabled,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         String key;
         if (httpConfig.encryptionKey().isEmpty()) {
@@ -93,7 +96,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         } else {
             key = httpConfig.encryptionKey().get();
         }
-        FormAuthConfig form = httpBuildTimeConfig.auth().form();
         FormAuthRuntimeConfig runtimeForm = httpConfig.auth().form();
         this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName(), runtimeForm.timeout().toMillis(),
                 runtimeForm.newCookieInterval().toMillis(), runtimeForm.httpOnlyCookie(), runtimeForm.cookieSameSite().name(),
@@ -101,7 +103,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.loginPage = startWithSlash(runtimeForm.loginPage().orElse(null));
         this.errorPage = startWithSlash(runtimeForm.errorPage().orElse(null));
         this.landingPage = startWithSlash(runtimeForm.landingPage().orElse(null));
-        this.postLocation = startWithSlash(form.postLocation());
+        this.postLocation = startWithSlash(runtimeForm.postLocation());
         this.usernameParameter = runtimeForm.usernameParameter();
         this.passwordParameter = runtimeForm.passwordParameter();
         this.locationCookie = runtimeForm.locationCookie();
@@ -111,9 +113,17 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
         this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite().name());
-        this.isFormAuthEventObserver = SecurityEventHelper.isEventObserved(createLoginEvent(null), beanManager,
+        this.isFormAuthEventObserver = SecurityEventHelper.isEventObserved(createEmptyLoginEvent(), beanManager,
                 securityEventsEnabled);
-        this.formAuthEvent = this.isFormAuthEventObserver ? formAuthEvent : null;
+        this.formAuthEvent = isFormAuthEventObserver ? beanManager.getEvent().select(FormAuthenticationEvent.class) : null;
+        this.authTokenFormParameter = runtimeForm.authenticationToken().formParameterName();
+        this.authTokenEnabled = authTokenEnabled;
+        boolean twoFactoAuthEnabled = authTokenEnabled && runtimeForm.authenticationToken().requestPath().isEmpty();
+        if (twoFactoAuthEnabled) {
+            this.twoFactorAuthHandler = OneTimeAuthTokenRequestHandler.of(runtimeForm, beanManager, securityEventsEnabled);
+        } else {
+            this.twoFactorAuthHandler = null;
+        }
     }
 
     public FormAuthenticationMechanism(String loginPage, String postLocation,
@@ -135,6 +145,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.loginManager = loginManager;
         this.isFormAuthEventObserver = false;
         this.formAuthEvent = null;
+        this.authTokenFormParameter = null;
+        this.authTokenEnabled = false;
+        this.twoFactorAuthHandler = null;
     }
 
     public Uni<SecurityIdentity> runFormAuth(final RoutingContext exchange,
@@ -147,32 +160,53 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                     @Override
                     public void handle(Void event) {
                         try {
-                            MultiMap res = exchange.request().formAttributes();
+                            final AuthenticationRequest authenticationRequest;
+                            final MultiMap res = exchange.request().formAttributes();
 
                             final String jUsername = res.get(usernameParameter);
                             final String jPassword = res.get(passwordParameter);
-                            if (jUsername == null || jPassword == null) {
-                                log.debugf(
-                                        "Could not authenticate as username or password was not present in the posted result for %s",
-                                        exchange);
+
+                            boolean foundUsernameAndPwd = jUsername != null && jPassword != null;
+                            if (foundUsernameAndPwd) {
+                                authenticationRequest = new UsernamePasswordAuthenticationRequest(jUsername,
+                                        new PasswordCredential(jPassword.toCharArray()));
+                            } else if (authTokenEnabled && res.get(authTokenFormParameter) != null) {
+                                authenticationRequest = new OneTimeTokenAuthenticationRequest(res.get(authTokenFormParameter));
+                            } else {
+                                final String logMessage;
+                                if (authTokenEnabled) {
+                                    logMessage = "Could not authenticate as neither one-time authentication token or"
+                                            + " username and password were present in the posted result for %s";
+                                } else {
+                                    logMessage = "Could not authenticate as username or password was not present in the posted result for %s";
+                                }
+                                log.debugf(logMessage, exchange);
                                 uniEmitter.complete(null);
                                 return;
                             }
                             securityContext
-                                    .authenticate(HttpSecurityUtils
-                                            .setRoutingContextAttribute(new UsernamePasswordAuthenticationRequest(jUsername,
-                                                    new PasswordCredential(jPassword.toCharArray())), exchange))
+                                    .authenticate(setRoutingContextAttribute(authenticationRequest, exchange))
+                                    // ideally identity providers should fail if credentials are wrong,
+                                    // but we can't control what users do, so let's stay on the safe side
+                                    .onItem().ifNull().failWith(AuthenticationFailedException::new)
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
+                                            if (foundUsernameAndPwd && twoFactorAuthHandler != null) {
+                                                twoFactorAuthHandler.handleTokenRequest(identity, exchange, jUsername);
+                                                uniEmitter.complete(null);
+                                                return;
+                                            }
+
                                             if (isFormAuthEventObserver) {
-                                                fire(formAuthEvent, createLoginEvent(identity));
+                                                fire(formAuthEvent, createLoginEvent(identity, authenticationRequest));
                                             }
 
                                             try {
                                                 loginManager.save(identity, exchange, null, exchange.request().isSSL());
                                                 if (redirectToLandingPage
-                                                        || exchange.request().getCookie(locationCookie) != null) {
+                                                        || exchange.request().getCookie(locationCookie) != null
+                                                        || exchange.get(REDIRECT_LOCATION_KEY) != null) {
                                                     handleRedirectBack(exchange);
                                                     //we  have authenticated, but we want to just redirect back to the original page
                                                     //so we don't actually authenticate the current request
@@ -212,6 +246,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             redirect.setSameSite(cookieSameSite);
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
+        } else if (authTokenEnabled && exchange.get(REDIRECT_LOCATION_KEY) != null) {
+            location = exchange.get(REDIRECT_LOCATION_KEY);
+            verifyRedirectBackLocation(exchange.request().absoluteURI(), location);
         } else {
             if (landingPage == null) {
                 // we know this won't happen with default implementation as we only call handleRedirectBack
@@ -281,8 +318,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             if (result != null) {
                 context.put(HttpAuthenticationMechanism.class.getName(), this);
                 Uni<SecurityIdentity> ret = identityProviderManager
-                        .authenticate(HttpSecurityUtils
-                                .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
+                        .authenticate(
+                                setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
                 return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                     @Override
                     public void accept(SecurityIdentity securityIdentity) {
@@ -348,7 +385,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         routingContext.response().addCookie(cookie);
     }
 
-    private static String startWithSlash(String page) {
+    static String startWithSlash(String page) {
         if (page == null) {
             return null;
         }

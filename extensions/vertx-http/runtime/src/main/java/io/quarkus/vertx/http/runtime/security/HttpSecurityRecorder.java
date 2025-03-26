@@ -49,6 +49,7 @@ import io.smallrye.mutiny.subscription.UniSubscription;
 import io.smallrye.mutiny.tuples.Functions;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -88,37 +89,51 @@ public class HttpSecurityRecorder {
      * This handler resolves the identity, and will be mapped to the post location. Otherwise,
      * for lazy auth the post will not be evaluated if there is no security rule for the post location.
      */
-    public Handler<RoutingContext> formAuthPostHandler() {
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
-                user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+    public void formAuthPostHandler(RuntimeValue<Router> httpRouter, VertxHttpConfig httpConfiguration) {
+        httpRouter.getValue().post(httpConfiguration.auth().form().postLocation())
+                .handler(new Handler<RoutingContext>() {
                     @Override
-                    public void onSubscribe(UniSubscription uniSubscription) {
+                    public void handle(RoutingContext event) {
+                        Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
+                        user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                            @Override
+                            public void onSubscribe(UniSubscription uniSubscription) {
 
-                    }
+                            }
 
-                    @Override
-                    public void onItem(SecurityIdentity securityIdentity) {
-                        // we expect that form-based authentication mechanism to recognize the post-location,
-                        // authenticate and if user provided credentials in form attribute, response will be ended
-                        if (!event.response().ended()) {
-                            event.response().end();
-                        }
-                    }
+                            @Override
+                            public void onItem(SecurityIdentity securityIdentity) {
+                                // we expect that form-based authentication mechanism to recognize the post-location,
+                                // authenticate and if user provided credentials in form attribute, response will be ended
+                                if (!event.response().ended()) {
+                                    event.response().end();
+                                }
+                            }
 
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        // with current builtin implementation if only form-based authentication mechanism the event here
-                        // won't be ended or failed, but we check in case there is custom implementation that differs
-                        if (!event.response().ended() && !event.failed()) {
-                            event.fail(throwable);
-                        }
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                                // with current builtin implementation if only form-based authentication mechanism the event here
+                                // won't be ended or failed, but we check in case there is custom implementation that differs
+                                if (!event.response().ended() && !event.failed()) {
+                                    event.fail(throwable);
+                                }
+                            }
+                        });
                     }
                 });
+    }
+
+    public void oneTimeAuthTokenRequestHandler(RuntimeValue<Router> httpRouter, VertxHttpConfig httpConfiguration,
+            BeanContainer beanContainer) {
+        httpConfiguration.auth().form().authenticationToken().requestPath().ifPresent(new Consumer<String>() {
+            @Override
+            public void accept(String tokenRequestPath) {
+                httpRouter
+                        .getValue()
+                        .post(tokenRequestPath)
+                        .handler(OneTimeAuthTokenRequestHandler.of(httpConfiguration.auth().form(), beanContainer));
             }
-        };
+        });
     }
 
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(

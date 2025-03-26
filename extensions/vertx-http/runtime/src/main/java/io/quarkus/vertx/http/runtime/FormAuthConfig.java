@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * config for the form authentication mechanism
@@ -13,8 +14,10 @@ public interface FormAuthConfig {
     boolean enabled();
 
     /**
-     * The post location.
+     * If one-time authentication token support is enabled.
      */
-    @WithDefault("/j_security_check")
-    String postLocation();
+    @WithDefault("false")
+    @WithName("authentication-token.enabled")
+    boolean authenticationTokenEnabled();
+
 }

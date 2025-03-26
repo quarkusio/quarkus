@@ -1049,21 +1049,21 @@ public class ResteasyReactiveProcessor {
 
     private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
-        Set<DotName> interfaceNames = new HashSet<>();
+        Set<DotName> allBeanTypes = new HashSet<>();
+        allBeanTypes.add(clazz.name());
+
         ClassInfo currentClazz = clazz;
-        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name())) {
-            currentClazz.interfaceNames().forEach(iface -> interfaceNames.add(iface));
-            // inspect super class
+        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name()) && currentClazz != null) {
+            if (currentClazz.isAbstract()) {
+                allBeanTypes.add(currentClazz.name());
+            }
+            allBeanTypes.addAll(getAllParentInterfaces(currentClazz.interfaceNames(), beanArchiveIndexBuildItem));
             currentClazz = beanArchiveIndexBuildItem.getIndex().getClassByName(currentClazz.superName());
         }
-        Set<DotName> allInterfaces = new HashSet<>();
-        recursiveInterfaceSearch(interfaceNames, allInterfaces, beanArchiveIndexBuildItem);
-        AnnotationValue[] annotationValues = new AnnotationValue[allInterfaces.size() + 1];
-        // always add the bean impl class
-        annotationValues[0] = AnnotationValue.createClassValue("value",
-                Type.create(clazz.name(), Type.Kind.CLASS));
-        Iterator<DotName> iterator = allInterfaces.iterator();
-        for (int i = 1; i < annotationValues.length; i++) {
+
+        AnnotationValue[] annotationValues = new AnnotationValue[allBeanTypes.size()];
+        Iterator<DotName> iterator = allBeanTypes.iterator();
+        for (int i = 0; i < annotationValues.length; i++) {
             annotationValues[i] = AnnotationValue.createClassValue("value",
                     Type.create(iterator.next(), Type.Kind.CLASS));
         }
@@ -1072,9 +1072,9 @@ public class ResteasyReactiveProcessor {
                         annotationValues) });
     }
 
-    private void recursiveInterfaceSearch(Set<DotName> interfacesToProcess, Set<DotName> allDiscoveredInterfaces,
+    private Set<DotName> getAllParentInterfaces(Collection<DotName> interfacesToProcess,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
-        allDiscoveredInterfaces.addAll(interfacesToProcess);
+        Set<DotName> allDiscoveredInterfaces = new HashSet<DotName>(interfacesToProcess);
         Set<DotName> additionalInterfacesToProcess = new HashSet<>();
         for (DotName name : interfacesToProcess) {
             ClassInfo clazz = beanArchiveIndexBuildItem.getIndex().getClassByName(name);
@@ -1085,8 +1085,10 @@ public class ResteasyReactiveProcessor {
         }
         if (!additionalInterfacesToProcess.isEmpty()) {
             // recursively process newly found interfaces
-            recursiveInterfaceSearch(additionalInterfacesToProcess, allDiscoveredInterfaces, beanArchiveIndexBuildItem);
+            allDiscoveredInterfaces.addAll(getAllParentInterfaces(additionalInterfacesToProcess, beanArchiveIndexBuildItem));
         }
+
+        return allDiscoveredInterfaces;
     }
 
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {

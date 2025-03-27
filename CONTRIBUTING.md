@@ -17,6 +17,7 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Coding Guidelines](#coding-guidelines)
   * [Continuous Integration](#continuous-integration)
   * [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
+  * [Test against Quarkus Superheroes Sample app](#test-against-quarkus-superheroes-sample-app)
 - [Setup](#setup)
   * [IDE Config and Code Style](#ide-config-and-code-style)
     + [Eclipse Setup](#eclipse-setup)
@@ -246,6 +247,23 @@ Also, make sure that any native tests you add will actually get executed on CI.
 In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
 are run in parallel. This means that each new integration test module needs to be configured explicitly
 in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+
+### Test against Quarkus Superheroes Sample app
+
+If your change is non-trivial then you probably want to do a sanity build against the [Quarkus Superheroes Sample app](https://github.com/quarkusio/quarkus-super-heroes). This app
+is the "official" sample application for Quarkus.
+
+The Quarkus Superheroes has a nightly job on https://status.quarkus.io that will build against Quarkus main. This job is used to catch any potential regressions that may
+have slipped past any of the tests. This job will automatically open an issue if the job fails.
+
+Here are the steps to follow to run a build of the Superheroes against your change:
+
+1. [Build](#build) your local branch of the Quarkus codebase containing your change.
+2. Switch to Java 21
+3. `git clone https://github.com/quarkusio/quarkus-super-heroes.git`
+4. `cd quarkus-super-heroes`
+5. `scripts/build-against-quarkus-main.sh`
+6. Wait for build to finish. It should take only a couple of minutes (< 10).
 
 ## Setup
 

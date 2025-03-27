@@ -694,7 +694,8 @@ public class RuntimeResourceDeployment {
             case ASYNC_RESPONSE:
                 return AsyncResponseExtractor.INSTANCE;
             case QUERY:
-                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator);
+                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator,
+                        param.restQueryMap);
                 return extractor;
             case BODY:
                 return BodyParamExtractor.INSTANCE;

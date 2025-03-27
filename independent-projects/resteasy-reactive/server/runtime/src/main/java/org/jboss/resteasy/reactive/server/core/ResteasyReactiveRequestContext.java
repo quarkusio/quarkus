@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -857,12 +858,8 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
-    public Object getQueryParameter(String name, boolean single, boolean encoded) {
-        return getQueryParameter(name, single, encoded, null);
-    }
-
     @Override
-    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
+    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator, boolean restQueryMap) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
             if (val != null && val.isEmpty()) {
@@ -872,6 +869,14 @@ public abstract class ResteasyReactiveRequestContext
                 val = Encode.encodeQueryParam(val);
             }
             return val;
+        }
+
+        if (restQueryMap) {
+            HashMap<String, String> allQueryAsMap = new HashMap<>();
+            serverRequest().queryParamNames().forEach(n -> {
+                allQueryAsMap.put(n, serverRequest().getQueryParam(n));
+            });
+            return allQueryAsMap;
         }
 
         // empty collections must not be turned to null

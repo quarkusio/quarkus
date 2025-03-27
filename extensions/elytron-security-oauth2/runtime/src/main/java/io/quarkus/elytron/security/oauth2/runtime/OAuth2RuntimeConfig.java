@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.oauth2.runtime;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -37,4 +38,16 @@ public interface OAuth2RuntimeConfig {
      * <a href="native-and-ssl.html">Using SSL With Native Executables</a>.
      */
     Optional<String> caCertFile();
+
+    /**
+     * Client connection timeout for token introspection.
+     * Infinite if not set.
+     */
+    Optional<Duration> connectionTimeout();
+
+    /**
+     * Client read timeout for token introspection.
+     * Infinite if not set.
+     */
+    Optional<Duration> readTimeout();
 }

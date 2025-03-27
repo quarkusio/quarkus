@@ -50,6 +50,14 @@ public class OAuth2Recorder {
             validatorBuilder.useSslContext(SSLContext.getDefault());
         }
 
+        if (runtimeConfig.connectionTimeout().isPresent()) {
+            validatorBuilder.connectionTimeout((int) runtimeConfig.connectionTimeout().get().toMillis());
+        }
+
+        if (runtimeConfig.readTimeout().isPresent()) {
+            validatorBuilder.readTimeout((int) runtimeConfig.readTimeout().get().toMillis());
+        }
+
         OAuth2IntrospectValidator validator = validatorBuilder.build();
 
         TokenSecurityRealm tokenRealm = TokenSecurityRealm.builder()

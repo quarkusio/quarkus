@@ -285,7 +285,7 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    public void collectEndpoints(BeanArchiveIndexBuildItem beanArchiveIndex,
+    void collectEndpoints(BeanArchiveIndexBuildItem beanArchiveIndex,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
             CallbackArgumentsBuildItem callbackArguments,
             TransformedAnnotationsBuildItem transformedAnnotations,
@@ -400,7 +400,7 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    public void validateConnectorInjectionPoints(List<WebSocketEndpointBuildItem> endpoints,
+    void validateConnectorInjectionPoints(List<WebSocketEndpointBuildItem> endpoints,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             if (injectionPoint.getRequiredType().name().equals(WebSocketDotNames.WEB_SOCKET_CONNECTOR)
@@ -420,7 +420,7 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    public void generateEndpoints(BeanArchiveIndexBuildItem index, List<WebSocketEndpointBuildItem> endpoints,
+    void generateEndpoints(BeanArchiveIndexBuildItem index, List<WebSocketEndpointBuildItem> endpoints,
             CallbackArgumentsBuildItem argumentProviders,
             TransformedAnnotationsBuildItem transformedAnnotations,
             GlobalErrorHandlersBuildItem globalErrorHandlers,
@@ -466,7 +466,7 @@ public class WebSocketProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class) // SecurityHttpUpgradeCheck is runtime init due to runtime config
     @Record(RUNTIME_INIT)
     @BuildStep
-    public void registerRoutes(WebSocketServerRecorder recorder, List<WebSocketEndpointBuildItem> endpoints,
+    void registerRoutes(WebSocketServerRecorder recorder, List<WebSocketEndpointBuildItem> endpoints,
             List<GeneratedEndpointBuildItem> generatedEndpoints, WebSocketsServerBuildConfig config,
             ValidationPhaseBuildItem validationPhase, BuildProducer<RouteBuildItem> routes,
             Optional<PermissionsAllowedMetaAnnotationBuildItem> metaPermissionsAllowed,

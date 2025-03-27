@@ -22,7 +22,7 @@ This functionality is provided by the `quarkus-openshift` extension, which suppo
 
 * xref:deploying-to-openshift-howto.adoc[With a single step]
 * xref:deploying-to-openshift-docker-howto.adoc[By using a Docker build strategy]
-* xref:deploying-to-openshift-S2I-howto.adoc[By using a Source-to-Image (S2I) strategy]
+* xref:deploying-to-openshift-s2i-howto.adoc[By using a Source-to-Image (S2I) strategy]
 * xref:deploying-to-openshift-native-howto.adoc[Compiled to native executables]
 
 == Overview of {openshift} build strategies

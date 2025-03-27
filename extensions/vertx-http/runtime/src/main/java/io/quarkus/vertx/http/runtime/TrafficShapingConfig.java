@@ -31,13 +31,13 @@ public interface TrafficShapingConfig {
     boolean enabled();
 
     /**
-     * Set bandwidth limit in bytes per second for inbound connections.
+     * Set bandwidth limit in bytes per second for inbound connections, up to {@code Long.MAX_VALUE} bytes.
      * If not set, no limits are applied.
      */
     Optional<MemorySize> inboundGlobalBandwidth();
 
     /**
-     * Set bandwidth limit in bytes per second for outbound connections.
+     * Set bandwidth limit in bytes per second for outbound connections, up to {@code Long.MAX_VALUE} bytes.
      * If not set, no limits are applied.
      */
     Optional<MemorySize> outboundGlobalBandwidth();
@@ -61,7 +61,7 @@ public interface TrafficShapingConfig {
 
     /**
      * Set the maximum global write size in bytes per second allowed in the buffer globally for all channels before write
-     * are suspended.
+     * are suspended, up to {@code Long.MAX_VALUE} bytes.
      * The default value is 400 MB.
      */
     Optional<MemorySize> peakOutboundGlobalBandwidth();

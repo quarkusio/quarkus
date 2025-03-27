@@ -833,9 +833,7 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
             // empty collections must not be turned to null
-            return serverRequest().getAllRequestHeaders(name).stream()
-                    .filter(h -> !h.isEmpty())
-                    .toList();
+            return filterEmpty(serverRequest().getAllRequestHeaders(name));
         } else {
             if (single) {
                 String header = httpHeaders.getMutableHeaders().getFirst(name);
@@ -850,11 +848,45 @@ public abstract class ResteasyReactiveRequestContext
             if (list == null) {
                 return Collections.emptyList();
             } else {
-                return list.stream()
-                        .filter(h -> !h.isEmpty())
-                        .toList();
+                return filterEmpty(list);
             }
         }
+    }
+
+    private static List<String> filterEmpty(List<String> list) {
+        // empty and tiny lists are handled inlined
+        int size = list.size();
+        if (size == 0) {
+            return list;
+        }
+        if (size == 1) {
+            String val = list.get(0);
+            if (val.isEmpty()) {
+                return List.of();
+            }
+            return list;
+        }
+        // this shouldn't be common both on query params and header values
+        return filterEmptyOnNonTinyList(list);
+    }
+
+    private static List<String> filterEmptyOnNonTinyList(List<String> list) {
+        assert list.size() > 1;
+        List<String> nonEmptyList = null;
+        int remaining = list.size();
+        for (String i : list) {
+            if (!i.isEmpty()) {
+                if (nonEmptyList == null) {
+                    nonEmptyList = new ArrayList<>(remaining);
+                }
+                nonEmptyList.add(i);
+            }
+            remaining--;
+        }
+        if (nonEmptyList == null) {
+            return List.of();
+        }
+        return nonEmptyList;
     }
 
     public Object getQueryParameter(String name, boolean single, boolean encoded) {
@@ -875,9 +907,7 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name).stream()
-                .filter(p -> !p.isEmpty())
-                .toList();
+        List<String> strings = filterEmpty(serverRequest().getAllQueryParams(name));
         if (encoded) {
             List<String> newStrings = new ArrayList<>();
             for (String i : strings) {

@@ -81,6 +81,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -289,6 +290,7 @@ public class WebSocketProcessor {
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
             CallbackArgumentsBuildItem callbackArguments,
             TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<WebSocketEndpointBuildItem> endpoints) {
 
         IndexView index = beanArchiveIndex.getIndex();
@@ -385,6 +387,22 @@ public class WebSocketProcessor {
                 throw new WebSocketServerException(
                         "The endpoint must declare at least one method annotated with @OnTextMessage, @OnBinaryMessage, @OnPingMessage, @OnPongMessage or @OnOpen: "
                                 + beanClass);
+            }
+            if (onTextMessage != null) {
+                Type effectiveMessageType;
+                if (onTextMessage.isKotlinSuspendFunction()) {
+                    effectiveMessageType = onTextMessage.isReturnTypeUni()
+                            ? onTextMessage.returnType().asParameterizedType().arguments().get(0)
+                            : KotlinUtils.getKotlinSuspendMethodResult(onTextMessage.method);
+                } else if (onTextMessage.isReturnTypeUni() || onTextMessage.isReturnTypeMulti()) {
+                    effectiveMessageType = onTextMessage.returnType().asParameterizedType().arguments().get(0);
+                } else {
+                    effectiveMessageType = onTextMessage.returnType();
+                }
+                if (effectiveMessageType.kind() != Type.Kind.VOID && onTextMessage.getOutputCodec() == null) {
+                    reflectiveHierarchy
+                            .produce(ReflectiveHierarchyBuildItem.builder(effectiveMessageType).build());
+                }
             }
             endpoints.produce(new WebSocketEndpointBuildItem(target == Target.CLIENT, bean, path, id,
                     inboundProcessingMode != null ? InboundProcessingMode.valueOf(inboundProcessingMode.asEnum())

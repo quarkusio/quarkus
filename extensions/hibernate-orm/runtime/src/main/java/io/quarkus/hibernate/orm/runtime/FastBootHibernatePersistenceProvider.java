@@ -165,11 +165,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 continue;
             }
 
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.getRecordedState(persistenceUnitName);
 
             if (recordedState.isReactive()) {
-                throw new IllegalStateException(
-                        "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
+                log.debug(
+                        "Ignoring reactive RecordedState in FastBootHibernatePersistenceProvider, it'll be handled in FastBootHibernateReactivePersistenceProvider");
+                continue;
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
             var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
@@ -190,7 +191,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
-                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
+                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
+                    true);
         }
 
         log.debug("Found no matching persistence units");

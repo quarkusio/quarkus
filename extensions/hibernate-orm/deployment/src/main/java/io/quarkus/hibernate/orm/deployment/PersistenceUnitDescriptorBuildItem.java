@@ -25,7 +25,6 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final RecordedConfig config;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
-    private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final boolean isHibernateValidatorPresent;
     private final Optional<FormatMapperKind> jsonMapper;
@@ -35,13 +34,12 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
             RecordedConfig config,
             String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml,
+            boolean fromPersistenceXml,
             boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper) {
         this.descriptor = descriptor;
         this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
-        this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.isHibernateValidatorPresent = isHibernateValidatorPresent;
         this.jsonMapper = jsonMapper;
@@ -80,6 +78,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return fromPersistenceXml;
     }
 
+    public boolean isReactive() {
+        return descriptor.isReactive();
+    }
+
     public boolean isHibernateValidatorPresent() {
         return isHibernateValidatorPresent;
     }
@@ -87,7 +89,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, isReactive, fromPersistenceXml, isHibernateValidatorPresent,
-                jsonMapper, xmlMapper, integrationStaticDescriptors);
+                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper,
+                integrationStaticDescriptors);
     }
 }

@@ -19,9 +19,10 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
     public FastBootReactiveEntityManagerFactoryBuilder(QuarkusPersistenceUnitDescriptor puDescriptor,
             PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy strategy) {
+            Object cdiBeanManager, MultiTenancyStrategy strategy,
+            boolean shouldApplySchemaMigration) {
         super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
-                cdiBeanManager, strategy);
+                cdiBeanManager, strategy, shouldApplySchemaMigration);
     }
 
     @Override

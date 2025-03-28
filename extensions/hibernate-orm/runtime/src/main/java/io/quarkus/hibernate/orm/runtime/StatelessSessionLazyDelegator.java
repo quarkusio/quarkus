@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -25,7 +27,6 @@ import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 /**
  * Plays the exact same role as {@link org.hibernate.engine.spi.SessionLazyDelegator} for {@link org.hibernate.Session}
@@ -54,6 +55,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public void insertMultiple(List<?> entities) {
+        delegate.get().insertMultiple(entities);
+    }
+
+    @Override
     public void update(Object entity) {
         delegate.get().update(entity);
     }
@@ -61,6 +67,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public void update(String entityName, Object entity) {
         delegate.get().update(entityName, entity);
+    }
+
+    @Override
+    public void updateMultiple(List<?> entities) {
+        delegate.get().updateMultiple(entities);
     }
 
     @Override
@@ -74,6 +85,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public void deleteMultiple(List<?> entities) {
+        delegate.get().deleteMultiple(entities);
+    }
+
+    @Override
     public Object get(String entityName, Object id) {
         return delegate.get().get(entityName, id);
     }
@@ -81,6 +97,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(Class<T> entityClass, Object id) {
         return delegate.get().get(entityClass, id);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
+        return delegate.get().getMultiple(entityClass, ids);
     }
 
     @Override
@@ -106,11 +127,6 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public void disableFilter(String filterName) {
         delegate.get().disableFilter(filterName);
-    }
-
-    @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
-        return delegate.get().createMutationQuery(insertSelect);
     }
 
     @Override
@@ -277,6 +293,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        return delegate.get().createQuery(typedQueryReference);
+    }
+
+    @Override
     @Deprecated(since = "6.0")
     public NativeQuery createNativeQuery(String sqlString) {
         return delegate.get().createNativeQuery(sqlString);
@@ -334,8 +355,8 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
-        return delegate.get().createMutationQuery(insertSelect);
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insert) {
+        return delegate.get().createMutationQuery(insert);
     }
 
     @Override
@@ -428,6 +449,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public void upsertMultiple(List<?> entities) {
+        delegate.get().upsertMultiple(entities);
+    }
+
+    @Override
     public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
         return delegate.get().get(graph, graphSemantic, id);
     }
@@ -435,5 +461,15 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
         return delegate.get().get(graph, graphSemantic, id, lockMode);
+    }
+
+    @Override
+    public CacheMode getCacheMode() {
+        return delegate.get().getCacheMode();
+    }
+
+    @Override
+    public void setCacheMode(CacheMode cacheMode) {
+        delegate.get().setCacheMode(cacheMode);
     }
 }

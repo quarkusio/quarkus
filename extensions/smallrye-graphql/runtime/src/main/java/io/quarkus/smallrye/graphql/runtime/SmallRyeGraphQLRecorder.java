@@ -53,6 +53,12 @@ public class SmallRyeGraphQLRecorder {
                 case UUID:
                     GraphQLScalarTypes.addUuid();
                     break;
+                case OBJECT:
+                    GraphQLScalarTypes.addObject();
+                    break;
+                case JSON:
+                    GraphQLScalarTypes.addJson();
+                    break;
             }
         }
     }

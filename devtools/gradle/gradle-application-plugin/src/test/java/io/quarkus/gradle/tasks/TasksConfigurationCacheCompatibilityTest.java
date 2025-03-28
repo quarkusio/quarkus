@@ -37,12 +37,13 @@ public class TasksConfigurationCacheCompatibilityTest {
     private static Stream<String> compatibleTasks() {
         return Stream.of(
                 QUARKUS_GENERATE_CODE_TASK_NAME,
+                QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
                 QUARKUS_GENERATE_CODE_DEV_TASK_NAME,
                 QUARKUS_BUILD_DEP_TASK_NAME,
                 QUARKUS_BUILD_APP_PARTS_TASK_NAME,
                 QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
                 QUARKUS_BUILD_TASK_NAME,
-                QUARKUS_GENERATE_CODE_TESTS_TASK_NAME);
+                "build");
     }
 
     private static Stream<String> nonCompatibleQuarkusBuildTasks() {
@@ -66,14 +67,12 @@ public class TasksConfigurationCacheCompatibilityTest {
     }
 
     @ParameterizedTest
-    @Order(4)
+    @Order(2)
     @MethodSource("compatibleTasks")
     public void configurationCacheIsReusedTest(String taskName) throws IOException, URISyntaxException {
         URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
-
-        buildResult(":help", "--configuration-cache");
 
         BuildResult firstBuild = buildResult(taskName, "--configuration-cache");
         assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
@@ -83,7 +82,7 @@ public class TasksConfigurationCacheCompatibilityTest {
     }
 
     @ParameterizedTest
-    @Order(5)
+    @Order(3)
     @MethodSource("compatibleTasks")
     public void configurationCacheIsReusedWhenProjectIsolationIsUsedTest(String taskName)
             throws IOException, URISyntaxException {
@@ -99,7 +98,7 @@ public class TasksConfigurationCacheCompatibilityTest {
     }
 
     @ParameterizedTest
-    @Order(2)
+    @Order(4)
     @MethodSource("nonCompatibleQuarkusBuildTasks")
     public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFail(String taskName)
             throws IOException, URISyntaxException {
@@ -114,7 +113,7 @@ public class TasksConfigurationCacheCompatibilityTest {
 
     @ParameterizedTest
     @MethodSource("nonCompatibleQuarkusBuildTasks")
-    @Order(3)
+    @Order(5)
     public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFailWhenUsingConfigurationCache(String taskName)
             throws IOException, URISyntaxException {
         URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");

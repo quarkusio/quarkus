@@ -81,8 +81,7 @@ public class CachingTest {
                 "-Dquarkus.randomized.value=" + UUID.randomUUID())
                 .toArray(new String[0]);
 
-        Map<String, String> env = Map.of();
-
+        Map<String, String> env = Map.of("FOO_ENV_VAR", "initial-value");
         assertBuildResult("initial", gradleBuild(rerunTasks(arguments), env), ALL_SUCCESS);
         assertBuildResult("initial rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
 
@@ -97,8 +96,8 @@ public class CachingTest {
         assertBuildResult("change FOO_ENV_VAR rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
 
         // Change an unrelated environment variable, all up-to-date
-        env = Map.of("SOME_UNRELATED", "meep");
-        assertBuildResult("SOME_UNRELATED", gradleBuild(arguments, env), FROM_CACHE);
+        env = Map.of("FOO_ENV_VAR", "some-other-value", "SOME_UNRELATED", "meep");
+        assertBuildResult("SOME_UNRELATED", gradleBuild(arguments, env), ALL_UP_TO_DATE);
     }
 
     @Test
@@ -170,7 +169,7 @@ public class CachingTest {
         Map<String, String> env = simulateCI ? Map.of("CI", "yes") : Map.of();
 
         List<String> args = new ArrayList<>();
-        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--configuration-cache");
+        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache");
         if (packageType.equals("native-sources")) {
             args.add("-Dquarkus.native.enabled=true");
             args.add("-Dquarkus.native.sources-only=true");

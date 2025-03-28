@@ -56,11 +56,15 @@ public class IdeProcessor {
                     String lang = map.get("lang");
                     String lineNumber = map.get("lineNumber");
 
-                    if (isNullOrEmpty(fileName) || isNullOrEmpty(lang)) {
-                        return false;
+                    if (fileName != null && fileName.startsWith(FILE_PROTOCOL)) {
+                        fileName = fileName.substring(FILE_PROTOCOL.length());
+                        return typicalProcessLaunch(fileName, lineNumber, ide);
+                    } else {
+                        if (isNullOrEmpty(fileName) || isNullOrEmpty(lang)) {
+                            return false;
+                        }
+                        return typicalProcessLaunch(fileName, lang, lineNumber, ide);
                     }
-
-                    return typicalProcessLaunch(fileName, lang, lineNumber, ide);
                 });
 
                 buildTimeActionProducer.produce(ideActions);
@@ -73,6 +77,10 @@ public class IdeProcessor {
         if (fileName == null) {
             return false;
         }
+        return typicalProcessLaunch(fileName, line, ide);
+    }
+
+    private boolean typicalProcessLaunch(String fileName, String line, Ide ide) {
         List<String> args = ide.createFileOpeningArgs(fileName, line);
         return launchInIDE(ide, args);
     }
@@ -171,5 +179,6 @@ public class IdeProcessor {
         return arg == null || arg.isBlank();
     }
 
+    private static final String FILE_PROTOCOL = "file://";
     private static final String NAMESPACE = "devui-ide-interaction";
 }

@@ -172,17 +172,19 @@ export class QwcMenu extends observeState(LitElement) {
         event.preventDefault();
     
         const data = event.dataTransfer.getData('application/json');
-        const customMenu = JSON.parse(data);
+        if(data){
+            const customMenu = JSON.parse(data);
     
-        let storedMenu = this._restoreDynamicMenuItems();
+            let storedMenu = this._restoreDynamicMenuItems();
         
-        const index = storedMenu.findIndex(obj => obj.id === customMenu.id);
-        if (index === -1) {
-            storedMenu.push(customMenu);
+            const index = storedMenu.findIndex(obj => obj.id === customMenu.id);
+            if (index === -1) {
+                storedMenu.push(customMenu);
+            }
+        
+            this._storeDynamicMenuItems(storedMenu);
+            this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         }
-        
-        this._storeDynamicMenuItems(storedMenu);
-        this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
     }
 
     _restoreDynamicMenuItems(){

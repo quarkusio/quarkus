@@ -76,7 +76,7 @@ public class CachingTest {
                 "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                 "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache",
                 "-Dquarkus.package.jar.type=fast-jar",
                 "-Dquarkus.randomized.value=" + UUID.randomUUID())
                 .toArray(new String[0]);
@@ -114,7 +114,7 @@ public class CachingTest {
                     "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                     "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-            String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+            String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache",
                     "-Dquarkus.package.jar.type=fast-jar",
                     "-Dquarkus.randomized.value=" + UUID.randomUUID())
                     .toArray(new String[0]);
@@ -170,7 +170,7 @@ public class CachingTest {
         Map<String, String> env = simulateCI ? Map.of("CI", "yes") : Map.of();
 
         List<String> args = new ArrayList<>();
-        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--configuration-cache");
+        Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache");
         if (packageType.equals("native-sources")) {
             args.add("-Dquarkus.native.enabled=true");
             args.add("-Dquarkus.native.sources-only=true");

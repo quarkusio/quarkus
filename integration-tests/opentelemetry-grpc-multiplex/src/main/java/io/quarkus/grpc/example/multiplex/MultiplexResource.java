@@ -1,5 +1,14 @@
 package io.quarkus.grpc.example.multiplex;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import jakarta.inject.Inject;
+
 import io.grpc.examples.multiplex.LongReply;
 import io.grpc.examples.multiplex.MutinyMultiplexGrpc;
 import io.grpc.examples.multiplex.StringRequest;
@@ -11,15 +20,9 @@ import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
-import jakarta.inject.Inject;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @GrpcService
-public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {
-
+public class MultiplexResource extends MutinyMultiplexGrpc.MultiplexImplBase {
 
     @Inject
     Tracer tracer;
@@ -28,7 +31,10 @@ public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {
     Vertx vertx;
 
     @Inject
-//    @VirtualThreads
+    TheService service;
+
+    @Inject
+    //    @VirtualThreads
     ExecutorService executorService;
 
     public Multi<LongReply> parse(Multi<StringRequest> request) {
@@ -38,7 +44,7 @@ public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {
         return request
                 .emitOn(executorService)
                 .map(x -> {
-
+                    final CompletableFuture<LongReply> result = new CompletableFuture<>();
                     final io.vertx.core.Context newerContext = VertxContext.createNewDuplicatedContext();
                     CountDownLatch outerLatch = new CountDownLatch(1);
                     newerContext.runOnContext(childEvent -> {
@@ -54,13 +60,7 @@ public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {
                                         .setParent(Context.current().with(childSpan))
                                         .startSpan();
 
-                                try (Scope scope = innerSpan.makeCurrent()) {
-                                    innerSpan.setAttribute("inner.number", x.getNumber());
-//                                    LongReply result = LongReply.newBuilder().setValue(Long.parseLong(x.getNumber())).build();
-                                    latch.countDown();
-                                } finally {
-                                    innerSpan.end();
-                                }
+                                service.processResult(x, result, latch);
                             });
 
                             try {
@@ -79,10 +79,10 @@ public class MultiplexService extends MutinyMultiplexGrpc.MultiplexImplBase {
 
                     try {
                         outerLatch.await(2, TimeUnit.SECONDS);
-                    } catch (InterruptedException e) {
+                        return result.get(2, TimeUnit.SECONDS);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
                         throw new RuntimeException(e);
                     }
-                    return LongReply.newBuilder().setValue(Long.parseLong(x.getNumber())).build();
                 });
     }
 }

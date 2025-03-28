@@ -1,14 +1,14 @@
 package io.quarkus.grpc.example.multiplex;
 
-import io.opentelemetry.proto.trace.v1.Span;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.opentelemetry.collector.OtelCollectorLifecycleManager;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.opentelemetry.proto.trace.v1.Span;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.collector.OtelCollectorLifecycleManager;
 
 @QuarkusTest
 @QuarkusTestResource(value = OtelCollectorLifecycleManager.class, restrictToAnnotatedClass = true)
@@ -27,19 +27,19 @@ public class LongStreamTest extends BaseTest {
                 serverSpan.getSpanId(), "child", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("child.number", "1"));
         assertAndGet(scopeSpans,
-                child.getSpanId(), "inner", Span.SpanKind.SPAN_KIND_INTERNAL,
+                child.getSpanId(), "TheService.processResult", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("inner.number", "1"));
         child = assertAndGet(scopeSpans,
                 serverSpan.getSpanId(), "child", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("child.number", "2"));
         assertAndGet(scopeSpans,
-                child.getSpanId(), "inner", Span.SpanKind.SPAN_KIND_INTERNAL,
+                child.getSpanId(), "TheService.processResult", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("inner.number", "2"));
         child = assertAndGet(scopeSpans,
                 serverSpan.getSpanId(), "child", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("child.number", "3"));
         assertAndGet(scopeSpans,
-                child.getSpanId(), "inner", Span.SpanKind.SPAN_KIND_INTERNAL,
+                child.getSpanId(), "TheService.processResult", Span.SpanKind.SPAN_KIND_INTERNAL,
                 Map.of("inner.number", "3"));
     }
 }

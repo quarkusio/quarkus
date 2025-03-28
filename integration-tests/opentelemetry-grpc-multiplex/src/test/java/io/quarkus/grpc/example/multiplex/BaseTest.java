@@ -1,6 +1,25 @@
 package io.quarkus.grpc.example.multiplex;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 import com.google.protobuf.ByteString;
+
 import io.grpc.examples.multiplex.LongReply;
 import io.grpc.examples.multiplex.Multiplex;
 import io.grpc.examples.multiplex.StringRequest;
@@ -15,23 +34,6 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.opentelemetry.collector.Traces;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("NewClassNamingConvention")
 public abstract class BaseTest {
@@ -41,10 +43,10 @@ public abstract class BaseTest {
     Traces traces;
 
     static Span assertAndGet(List<Span> scopeSpans,
-                             ByteString parent,
-                             String spanName,
-                             Span.SpanKind kind,
-                             Map<String, String> keyValues) {
+            ByteString parent,
+            String spanName,
+            Span.SpanKind kind,
+            Map<String, String> keyValues) {
         List<Span> matchingSpans = scopeSpans.stream()
                 .filter(span -> span.getName().equals(spanName))
                 .filter(span -> span.getKind().equals(kind))
@@ -131,11 +133,10 @@ public abstract class BaseTest {
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
 
-//        assertThat(resourceSpans.getScopeSpansCount()).isEqualTo(1);
-//        ScopeSpans scopeSpans = resourceSpans.getScopeSpans(0);
+        //        assertThat(resourceSpans.getScopeSpansCount()).isEqualTo(1);
+        //        ScopeSpans scopeSpans = resourceSpans.getScopeSpans(0);
 
-        System.out.println(scopeSpans.stream().
-                map(ss -> ss.getSpansList())
+        System.out.println(scopeSpans.stream().map(ss -> ss.getSpansList())
                 .flatMap(List::stream)
                 .map(span -> toHex(span.getParentSpanId()) + "::" +
                         toHex(span.getSpanId()) + "::" +
@@ -143,15 +144,13 @@ public abstract class BaseTest {
                         span.getKind() + "::\n" +
                         span.getAttributesList().stream()
                                 .map(attrib -> "   " + attrib.getKey() + ":" + attrib.getValue())
-                                .collect(Collectors.joining(" ")) + "\n")
+                                .collect(Collectors.joining(" "))
+                        + "\n")
                 .collect(Collectors.toList()));
 
-        verifySpans(scopeSpans.stream().
-                map(ss -> ss.getSpansList())
+        verifySpans(scopeSpans.stream().map(ss -> ss.getSpansList())
                 .flatMap(List::stream)
                 .collect(Collectors.toList()));
-
-//        assertThat(scopeSpans.getSpansCount()).isEqualTo(8);
     }
 
     abstract void verifySpans(List<Span> scopeSpans);

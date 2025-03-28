@@ -1,6 +1,5 @@
-package io.quarkus.it.opentelemetry.vertx.exporter;
+package io.quarkus.test.opentelemetry.collector;
 
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
 import static org.testcontainers.Testcontainers.exposeHostPorts;
 
 import java.util.HashMap;
@@ -35,6 +34,7 @@ import io.vertx.grpc.server.GrpcServer;
 
 public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecycleManager {
 
+    private static final String GRPC = "grpc";
     // from https://github.com/open-telemetry/opentelemetry-java/pkgs/container/opentelemetry-java%2Fotel-collector/versions
     // otel collector v0.114.0. The last with OpenTelemetry proto 1.3.x
     private static final String COLLECTOR_IMAGE = "ghcr.io/open-telemetry/opentelemetry-java/otel-collector" +

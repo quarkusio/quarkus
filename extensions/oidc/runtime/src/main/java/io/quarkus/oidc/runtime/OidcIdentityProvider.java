@@ -133,7 +133,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             @Override
                             public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
                                 if (t != null) {
-                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                    return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                                            : new AuthenticationFailedException(t));
                                 }
                                 return validateTokenWithUserInfoAndCreateIdentity(requestData, request, resolvedContext,
                                         userInfo);
@@ -162,7 +163,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessToken, Throwable t) {
                         if (t != null) {
                             requestData.put(OidcUtils.CODE_ACCESS_TOKEN_FAILURE, t);
-                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                            return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                                    : new AuthenticationFailedException(t, codeAccessTokenMap(requestData)));
                         }
 
                         if (codeAccessToken != null) {
@@ -178,7 +180,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                             @Override
                                             public Uni<SecurityIdentity> apply(TokenVerificationResult result, Throwable t) {
                                                 if (t != null) {
-                                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                                    return Uni.createFrom()
+                                                            .failure(t instanceof AuthenticationFailedException ? t
+                                                                    : new AuthenticationFailedException(t,
+                                                                            tokenMap(request.getToken())));
                                                 }
 
                                                 return createSecurityIdentityWithOidcServer(result, requestData, request,
@@ -204,7 +209,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         } else {
             final boolean idToken = isIdToken(request);
             Uni<TokenVerificationResult> result = verifyTokenUni(requestData, resolvedContext, request.getToken(), idToken,
-                    false, userInfo);
+                    idToken, false, userInfo);
             if (!idToken) {
                 if (resolvedContext.oidcConfig().token().binding().certificate()) {
                     result = result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
@@ -215,16 +220,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (tokenCertificateThumbprint == null) {
                                 LOG.warn(
                                         "Access token does not contain a confirmation 'cnf' claim with the certificate thumbprint");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
                             String clientCertificateThumbprint = (String) requestData.get(OidcConstants.X509_SHA256_THUMBPRINT);
                             if (clientCertificateThumbprint == null) {
                                 LOG.warn("Client certificate thumbprint is not available");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
                             if (!clientCertificateThumbprint.equals(tokenCertificateThumbprint)) {
                                 LOG.warn("Client certificate thumbprint does not match the token certificate thumbprint");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
                             return t;
                         }
@@ -242,7 +247,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (dpopJwkThumbprint == null) {
                                 LOG.warn(
                                         "DPoP access token does not contain a confirmation 'cnf' claim with the JWK thumbprint");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             JsonObject proofHeaders = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_HEADERS);
@@ -250,7 +255,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             JsonObject jwkProof = proofHeaders.getJsonObject(OidcConstants.DPOP_JWK_HEADER);
                             if (jwkProof == null) {
                                 LOG.warn("DPoP proof jwk header is missing");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             PublicJsonWebKey publicJsonWebKey = null;
@@ -258,12 +263,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 publicJsonWebKey = PublicJsonWebKey.Factory.newPublicJwk(jwkProof.getMap());
                             } catch (JoseException ex) {
                                 LOG.warn("DPoP proof jwk header does not represent a valid JWK key");
-                                throw new AuthenticationFailedException(ex);
+                                throw new AuthenticationFailedException(ex, tokenMap(request.getToken()));
                             }
 
                             if (publicJsonWebKey.getPrivateKey() != null) {
                                 LOG.warn("DPoP proof JWK key is a private key but it must be a public key");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             byte[] jwkProofDigest = publicJsonWebKey.calculateThumbprint("SHA-256");
@@ -271,7 +276,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                             if (!dpopJwkThumbprint.equals(jwkProofThumbprint)) {
                                 LOG.warn("DPoP access token JWK thumbprint does not match the DPoP proof JWK thumbprint");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             try {
@@ -281,11 +286,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 jws.setKey(publicJsonWebKey.getPublicKey());
                                 if (!jws.verifySignature()) {
                                     LOG.warn("DPoP proof token signature is invalid");
-                                    throw new AuthenticationFailedException();
+                                    throw new AuthenticationFailedException(tokenMap(request.getToken()));
                                 }
                             } catch (JoseException ex) {
                                 LOG.warn("DPoP proof token signature can not be verified");
-                                throw new AuthenticationFailedException(ex);
+                                throw new AuthenticationFailedException(ex, tokenMap(request.getToken()));
                             }
 
                             JsonObject proofClaims = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_CLAIMS);
@@ -295,7 +300,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             String accessTokenProof = proofClaims.getString(OidcConstants.DPOP_ACCESS_TOKEN_THUMBPRINT);
                             if (accessTokenProof == null) {
                                 LOG.warn("DPoP proof access token hash is missing");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             String accessTokenHash = null;
@@ -308,7 +313,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                             if (!accessTokenProof.equals(accessTokenHash)) {
                                 LOG.warn("DPoP access token hash does not match the DPoP proof access token hash");
-                                throw new AuthenticationFailedException();
+                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
                             }
 
                             return t;
@@ -357,7 +362,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     @Override
                     public Uni<SecurityIdentity> apply(TokenVerificationResult result, Throwable t) {
                         if (t != null) {
-                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                            return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                                    : new AuthenticationFailedException(t, tokenMap(request.getToken())));
                         }
 
                         Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(requestData, request,
@@ -370,7 +376,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                         if (t != null) {
                                             requestData.put(OidcUtils.CODE_ACCESS_TOKEN_FAILURE, t);
                                             return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
-                                                    : new AuthenticationFailedException(t));
+                                                    : new AuthenticationFailedException(t, codeAccessTokenMap(requestData)));
                                         }
                                         if (codeAccessTokenResult != null) {
                                             if (tokenAutoRefreshPrepared(codeAccessTokenResult, requestData,
@@ -388,8 +394,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                                                 public Uni<SecurityIdentity> apply(UserInfo userInfo,
                                                                         Throwable t) {
                                                                     if (t != null) {
-                                                                        return Uni.createFrom()
-                                                                                .failure(new AuthenticationFailedException(t));
+                                                                        return Uni.createFrom().failure(
+                                                                                t instanceof AuthenticationFailedException ? t
+                                                                                        : new AuthenticationFailedException(t));
                                                                     }
                                                                     return createSecurityIdentityWithOidcServer(result,
                                                                             requestData, request, resolvedContext, userInfo);
@@ -450,20 +457,21 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult, request);
                 // If the primary token is a bearer access token then there's no point of checking if
                 // it should be refreshed as RT is only available for the code flow tokens
-                if (isIdToken(request)
+                if (isIdToken(tokenCred)
                         && tokenAutoRefreshPrepared(result, requestData, resolvedContext.oidcConfig(), false)) {
                     return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
                 } else {
                     return Uni.createFrom().item(securityIdentity);
                 }
             } catch (Throwable ex) {
-                return Uni.createFrom().failure(new AuthenticationFailedException(ex));
+                return Uni.createFrom().failure(ex instanceof AuthenticationFailedException ? ex
+                        : new AuthenticationFailedException(ex, tokenMap(tokenCred)));
             }
-        } else if (isIdToken(request)
+        } else if (isIdToken(tokenCred)
                 || tokenCred instanceof AccessTokenCredential
                         && !((AccessTokenCredential) tokenCred).isOpaque()) {
             return Uni.createFrom()
-                    .failure(new AuthenticationFailedException("JWT token can not be converted to JSON"));
+                    .failure(new AuthenticationFailedException("JWT token can not be converted to JSON", tokenMap(tokenCred)));
         } else {
             // ID Token or Bearer access token has been introspected or verified via Userinfo acquisition
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
@@ -482,7 +490,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 } else {
                     // we don't expect this to ever happen
                     LOG.debug("Illegal state - token introspection result is not available.");
-                    return Uni.createFrom().failure(new AuthenticationFailedException());
+                    return Uni.createFrom().failure(new AuthenticationFailedException(tokenMap(tokenCred)));
                 }
             } else {
                 OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
@@ -517,7 +525,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             SecurityIdentity identity = builder.build();
             // If the primary token is a bearer access token then there's no point of checking if
             // it should be refreshed as RT is only available for the code flow tokens
-            if (isIdToken(request)
+            if (isIdToken(tokenCred)
                     && tokenAutoRefreshPrepared(result, requestData, resolvedContext.oidcConfig(), false)) {
                 return Uni.createFrom().failure(new TokenAutoRefreshException(identity));
             }
@@ -526,12 +534,26 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     }
 
+    private static Map<String, Object> codeAccessTokenMap(Map<String, Object> requestData) {
+        final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+        return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, codeAccessToken);
+    }
+
+    private static Map<String, Object> tokenMap(TokenCredential tokenCred) {
+        final String tokenType = isIdToken(tokenCred) ? OidcConstants.ID_TOKEN_VALUE : OidcConstants.ACCESS_TOKEN_VALUE;
+        return Map.of(tokenType, tokenCred.getToken());
+    }
+
     private static boolean isInternalIdToken(TokenAuthenticationRequest request) {
         return isIdToken(request) && ((IdTokenCredential) request.getToken()).isInternal();
     }
 
+    private static boolean isIdToken(TokenCredential tokenCred) {
+        return tokenCred instanceof IdTokenCredential;
+    }
+
     private static boolean isIdToken(TokenAuthenticationRequest request) {
-        return request.getToken() instanceof IdTokenCredential;
+        return isIdToken(request.getToken());
     }
 
     private static boolean tokenAutoRefreshPrepared(TokenVerificationResult result, Map<String, Object> requestData,
@@ -593,15 +615,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && (resolvedContext.oidcConfig().authentication().verifyAccessToken()
                         || resolvedContext.oidcConfig().roles().source().orElse(null) == Source.accesstoken)) {
             final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
-            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false, true,
-                    userInfo);
+            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false,
+                    false, true, userInfo);
         } else {
             return NULL_CODE_ACCESS_TOKEN_UNI;
         }
     }
 
     private Uni<TokenVerificationResult> verifyTokenUni(Map<String, Object> requestData, TenantConfigContext resolvedContext,
-            TokenCredential tokenCred, boolean enforceAudienceVerification, boolean codeFlowAccessToken, UserInfo userInfo) {
+            TokenCredential tokenCred, boolean idToken, boolean enforceAudienceVerification, boolean codeFlowAccessToken,
+            UserInfo userInfo) {
         final String token = tokenCred.getToken();
         Long expiresIn = null;
         if (codeFlowAccessToken) {
@@ -611,26 +634,27 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (OidcUtils.isOpaqueToken(token)) {
             if (!resolvedContext.oidcConfig().token().allowOpaqueTokenIntrospection()) {
                 LOG.debug("Token is opaque but the opaque token introspection is not allowed");
-                throw new AuthenticationFailedException();
+                throw new AuthenticationFailedException(tokenMap(tokenCred));
             }
             // verify opaque access token with UserInfo if enabled and introspection URI is absent
             if (resolvedContext.oidcConfig().token().verifyAccessTokenWithUserInfo().orElse(false)
                     && resolvedContext.provider().getMetadata().getIntrospectionUri() == null) {
                 if (userInfo == null) {
                     return Uni.createFrom().failure(
-                            new AuthenticationFailedException("Opaque access token verification failed as user info is null."));
+                            new AuthenticationFailedException("Opaque access token verification failed as user info is null.",
+                                    tokenMap(tokenCred)));
                 } else {
                     // valid token verification result
                     return Uni.createFrom().item(new TokenVerificationResult(null, null));
                 }
             }
             LOG.debug("Starting the opaque token introspection");
-            return introspectTokenUni(resolvedContext, token, expiresIn, false);
+            return introspectTokenUni(resolvedContext, token, idToken, expiresIn, false);
         } else if (resolvedContext.provider().getMetadata().getJsonWebKeySetUri() == null
                 || resolvedContext.oidcConfig().token().requireJwtIntrospectionOnly()) {
             // Verify JWT token with the remote introspection
             LOG.debug("Starting the JWT token introspection");
-            return introspectTokenUni(resolvedContext, token, expiresIn, false);
+            return introspectTokenUni(resolvedContext, token, idToken, expiresIn, false);
         } else if (resolvedContext.oidcConfig().jwks().resolveEarly()) {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             final String nonce = tokenCred instanceof IdTokenCredential ? (String) requestData.get(OidcConstants.NONCE) : null;
@@ -642,7 +666,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             } catch (Throwable t) {
                 if (t.getCause() instanceof UnresolvableKeyException) {
                     LOG.debug("No matching JWK key is found, refreshing and repeating the token verification");
-                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, enforceAudienceVerification,
+                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, idToken, enforceAudienceVerification,
                             resolvedContext.oidcConfig().token().subjectRequired(), nonce, expiresIn);
                 } else {
                     LOG.debugf("Token verification has failed: %s", t.getMessage());
@@ -666,11 +690,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> refreshJwksAndVerifyTokenUni(TenantConfigContext resolvedContext, String token,
+            boolean idToken,
             boolean enforceAudienceVerification, boolean subjectRequired, String nonce, Long expiresIn) {
         return resolvedContext.provider()
                 .refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
-                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, expiresIn, true));
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, idToken, expiresIn, true));
     }
 
     private Uni<TokenVerificationResult> resolveJwksAndVerifyTokenUni(TenantConfigContext resolvedContext,
@@ -680,7 +705,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce,
                         (tokenCred instanceof IdTokenCredential))
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
-                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), expiresIn, true));
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(),
+                        isIdToken(tokenCred), expiresIn, true));
     }
 
     private static boolean fallbackToIntrospectionIfNoMatchingKey(Throwable f, TenantConfigContext resolvedContext) {
@@ -698,28 +724,28 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, final String token,
-            Long expiresIn, boolean fallbackFromJwkMatch) {
+            boolean idToken, Long expiresIn, boolean fallbackFromJwkMatch) {
         TokenIntrospectionCache tokenIntrospectionCache = tenantResolver.getTokenIntrospectionCache();
         Uni<TokenIntrospection> tokenIntrospectionUni = tokenIntrospectionCache == null ? null
                 : tokenIntrospectionCache
                         .getIntrospection(token, resolvedContext.oidcConfig(), getIntrospectionRequestContext);
         if (tokenIntrospectionUni == null) {
-            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token, expiresIn, fallbackFromJwkMatch);
+            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token, idToken, expiresIn, fallbackFromJwkMatch);
         } else {
             tokenIntrospectionUni = tokenIntrospectionUni.onItem().ifNull()
                     .switchTo(new Supplier<Uni<? extends TokenIntrospection>>() {
                         @Override
                         public Uni<TokenIntrospection> get() {
-                            return newTokenIntrospectionUni(resolvedContext, token, expiresIn, fallbackFromJwkMatch);
+                            return newTokenIntrospectionUni(resolvedContext, token, idToken, expiresIn, fallbackFromJwkMatch);
                         }
                     });
         }
         return tokenIntrospectionUni.onItem().transform(t -> new TokenVerificationResult(null, t));
     }
 
-    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token,
+    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token, boolean idToken,
             Long expiresIn, boolean fallbackFromJwkMatch) {
-        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider().introspectToken(token, expiresIn,
+        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider().introspectToken(token, idToken, expiresIn,
                 fallbackFromJwkMatch);
         if (tenantResolver.getTokenIntrospectionCache() == null
                 || !resolvedContext.oidcConfig().allowTokenIntrospectionCache()) {
@@ -746,7 +772,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,
                             result.localVerificationResult, result.localVerificationResult, null, null, request));
         } catch (Throwable t) {
-            return Uni.createFrom().failure(new AuthenticationFailedException(t));
+            return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                    : new AuthenticationFailedException(t, tokenMap(request.getToken())));
         }
     }
 

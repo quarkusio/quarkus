@@ -322,7 +322,7 @@ public class ApplicationDeploymentClasspathBuilder {
         return platformImports.get(this.platformImportName);
     }
 
-    public PlatformImports getPlatformImportsWithoutResolvingPlatform() {
+    public PlatformImportsImpl getPlatformImportsWithoutResolvingPlatform() {
         return platformImports.get(this.platformImportName);
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.gradle;
 
+import static io.quarkus.gradle.extension.QuarkusPluginExtension.combinedOutputSourceDirs;
 import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 
 import java.io.File;
@@ -12,7 +13,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -38,6 +38,7 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.gradle.actions.BeforeTestAction;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
@@ -58,6 +59,7 @@ import io.quarkus.gradle.tasks.QuarkusInfo;
 import io.quarkus.gradle.tasks.QuarkusListCategories;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
+import io.quarkus.gradle.tasks.QuarkusPluginExtensionView;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
 import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
 import io.quarkus.gradle.tasks.QuarkusRun;
@@ -460,20 +462,16 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
 
                     tasks.withType(Test.class).configureEach(t -> {
-                        // Calling this method tells Gradle that it should not fail the build.
-                        // Side effect is that the configuration cache will be at least degraded,
-                        // but the build will not fail.
-                        t.notCompatibleWithConfigurationCache(
-                                "The quarkus-plugin isn't compatible with the configuration cache");
-
+                        t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Quarkus test configuration action which should be executed before any Quarkus test
-                        // Use anonymous classes in order to leverage task avoidance.
-                        t.doFirst(new Action<Task>() {
-                            @Override
-                            public void execute(Task task) {
-                                quarkusExt.beforeTest((Test) task);
-                            }
-                        });
+                        t.doFirst(new BeforeTestAction(
+                                project.getProjectDir(),
+                                combinedOutputSourceDirs(project),
+                                quarkusGenerateTestAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel),
+                                quarkusBuild.map(QuarkusBuild::getNativeRunner),
+                                mainSourceSet.getOutput().getClassesDirs(),
+                                project.getObjects().newInstance(QuarkusPluginExtensionView.class, quarkusExt)));
+
                         // also make each task use the JUnit platform since it's the only supported test environment
                         t.useJUnitPlatform();
                     });
@@ -512,12 +510,13 @@ public class QuarkusPlugin implements Plugin<Project> {
             LaunchMode launchMode, String quarkusModelFile) {
         task.getProjectDescriptor().set(projectDescriptor);
         task.getLaunchMode().set(launchMode);
+        task.getTypeModel().set(task.getPath());
         task.getOriginalClasspath().setFrom(classpath.getOriginalRuntimeClasspathAsInput());
         task.getAppClasspath().configureFrom(classpath.getRuntimeConfigurationWithoutResolvingDeployment());
         task.getPlatformConfiguration().configureFrom(classpath.getPlatformConfiguration());
         task.getDeploymentClasspath().configureFrom(classpath.getDeploymentConfiguration());
         task.getDeploymentResolvedWorkaround().from(classpath.getDeploymentConfiguration().getIncoming().getFiles());
-        task.getPlatformImportProperties().set(classpath.getPlatformImportsWithoutResolvingPlatform().getPlatformProperties());
+        task.getPlatformImports().set(classpath.getPlatformImportsWithoutResolvingPlatform());
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
     }
 

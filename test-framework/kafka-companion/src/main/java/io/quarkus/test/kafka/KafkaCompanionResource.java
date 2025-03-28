@@ -59,7 +59,7 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
             kraft = Boolean.parseBoolean(initArgs.get(KRAFT_KEY));
             kafka = createContainer(strimziKafkaContainerImage);
             if (kraft) {
-                kafka.withBrokerId(1).withKraft();
+                kafka.withBrokerId(1);
             }
             if (kafkaPort != null) {
                 kafka.withPort(kafkaPort);

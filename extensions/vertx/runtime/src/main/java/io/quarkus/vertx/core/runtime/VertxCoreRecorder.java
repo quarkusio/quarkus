@@ -604,10 +604,19 @@ public class VertxCoreRecorder {
         thread.setContextClassLoader(cl);
     }
 
-    public ContextHandler<Object> executionContextHandler(boolean customizeArcContext) {
-        VertxCurrentContextFactory currentContextFactory = customizeArcContext
-                ? (VertxCurrentContextFactory) Arc.container().getCurrentContextFactory()
-                : null;
+    public Supplier<List<String>> getIgnoredArcContextKeysSupplier() {
+        return new Supplier<List<String>>() {
+            @Override
+            public List<String> get() {
+                // The CDI contexts must not be propagated if VertxCurrentContextFactory is actually used
+                VertxCurrentContextFactory currentContextFactory = (VertxCurrentContextFactory) Arc.container()
+                        .getCurrentContextFactory();
+                return currentContextFactory.keys();
+            }
+        };
+    }
+
+    public ContextHandler<Object> executionContextHandler(List<Supplier<List<String>>> ignoredKeysSuppliers) {
         return new ContextHandler<Object>() {
             @Override
             public Object captureContext() {
@@ -620,17 +629,20 @@ public class VertxCoreRecorder {
                 // Only do context handling if it's non-null
                 if (context != null && context != currentContext) {
                     ContextInternal vertxContext = (ContextInternal) context;
-                    // The CDI contexts must not be propagated
-                    // First test if VertxCurrentContextFactory is actually used
-                    if (currentContextFactory != null) {
-                        List<String> keys = currentContextFactory.keys();
+                    if (!ignoredKeysSuppliers.isEmpty()) {
                         ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsScopeKey(keys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
-                            vertxContext.localContextData().putAll(local);
-                            keys.forEach(vertxContext.localContextData()::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                        ContextInternal duplicateVertxContext = null;
+                        for (Supplier<List<String>> ignoredKeysSupplier : ignoredKeysSuppliers) {
+                            List<String> keys = ignoredKeysSupplier.get();
+                            if (containsScopeKey(keys, local)) {
+                                if (duplicateVertxContext == null) {
+                                    // Duplicate the context, copy the data, remove the request context
+                                    duplicateVertxContext = vertxContext = vertxContext.duplicate();
+                                    vertxContext.localContextData().putAll(local);
+                                    VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                                }
+                                keys.forEach(vertxContext.localContextData()::remove);
+                            }
                         }
                     }
                     vertxContext.beginDispatch();

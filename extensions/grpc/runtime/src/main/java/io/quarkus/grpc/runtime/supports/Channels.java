@@ -212,7 +212,7 @@ public class Channels {
                 // just use the existing Vertx event loop group, if possible
                 Vertx vertx = container.instance(Vertx.class).get();
                 // only support NIO for now, since Vertx::transport is not exposed in the API
-                if (vertx != null && vertx.isNativeTransportEnabled()) {
+                if (vertx != null && !vertx.isNativeTransportEnabled()) {
                     // see https://github.com/eclipse-vertx/vert.x/pull/5292
                     boolean reuseNettyAllocators = Boolean.getBoolean("vertx.reuseNettyAllocators");
                     if (reuseNettyAllocators) {

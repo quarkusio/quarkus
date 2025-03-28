@@ -102,7 +102,7 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.0.2.Final</narayana.version>
-        <agroal.version>2.5</agroal.version>
+        <agroal.version>2.6</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.15.0</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>

@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -24,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -31,9 +33,11 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
+import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.common.config.ContainerConfigUtil;
@@ -82,6 +86,7 @@ class ObservabilityDevServiceProcessor {
             ObservabilityConfiguration configuration,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
@@ -162,6 +167,7 @@ class ObservabilityDevServiceProcessor {
             try {
                 DevServicesResultBuildItem.RunningDevService newDevService = startContainer(
                         devId,
+                        composeProjectBuildItem,
                         dev,
                         currentDevServicesConfiguration,
                         configuration,
@@ -216,6 +222,7 @@ class ObservabilityDevServiceProcessor {
 
     private DevServicesResultBuildItem.RunningDevService startContainer(
             String devId,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             DevResourceLifecycleManager<ContainerConfig> dev,
             ContainerConfig capturedDevServicesConfiguration,
             ModulesConfiguration root,
@@ -250,14 +257,24 @@ class ObservabilityDevServiceProcessor {
                 .locateContainer(
                         capturedDevServicesConfiguration.serviceName(), capturedDevServicesConfiguration.shared(),
                         LaunchMode.current(), (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort())))
-                .map(new Function<String, DevServicesResultBuildItem.RunningDevService>() {
-                    @Override
-                    public DevServicesResultBuildItem.RunningDevService apply(String cid) {
-                        log.infof("Dev Service %s re-used, config: %s", devId, config);
-                        return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid,
-                                null, config);
-                    }
+                .map(cid -> {
+                    log.infof("Dev Service %s re-used, config: %s", devId, config);
+                    return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid,
+                            null, config);
                 })
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(capturedDevServicesConfiguration.imageName()), LaunchMode.current())
+                        .stream().findFirst()
+                        .map(r -> {
+                            Map<String, String> cfg = new LinkedHashMap<>();
+                            for (ContainerInfo.ContainerPort port : r.containerInfo().exposedPorts()) {
+                                cfg.putAll(dev.config(port.privatePort(),
+                                        DockerClientFactory.instance().dockerHostIpAddress(),
+                                        port.publicPort()));
+                            }
+                            return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),
+                                    r.containerInfo().id(), null, cfg);
+                        }))
                 .orElseGet(defaultContainerSupplier);
     }
 }

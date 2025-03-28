@@ -1,0 +1,6 @@
+name: test-project
+services:
+  service1:  # This will cause a conflict with base.yml
+    image: test/service1:v2
+    ports:
+      - "9090:8080"

@@ -44,6 +44,7 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -269,22 +270,16 @@ public final class IntegrationTestUtil {
             public void accept(String s, String s2) {
                 propertyMap.put(s, s2);
             }
-        }, DevServicesLauncherConfigResultBuildItem.class.getName());
+        }, DevServicesLauncherConfigResultBuildItem.class.getName(),
+                DevServicesNetworkIdBuildItem.class.getName());
 
+        networkId = propertyMap.get("quarkus.test.container.network");
         boolean manageNetwork = false;
         if (isDockerAppLaunch) {
-            // obtain the ID of the shared network - this needs to be done after the augmentation has been run
-            // or else we run into various ClassLoader problems
-            try {
-                Class<?> networkClass = curatedApplication.getOrCreateAugmentClassLoader()
-                        .loadClass("org.testcontainers.containers.Network");
-                Object sharedNetwork = networkClass.getField("SHARED").get(null);
-                networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
-            } catch (Exception e) {
+            if (networkId == null) {
                 // use the network the use has specified or else just generate one if none is configured
-
-                Optional<String> networkIdOpt = ConfigProvider.getConfig().getOptionalValue("quarkus.test.container.network",
-                        String.class);
+                Optional<String> networkIdOpt = ConfigProvider.getConfig().getOptionalValue(
+                        "quarkus.test.container.network", String.class);
                 if (networkIdOpt.isPresent()) {
                     networkId = networkIdOpt.get();
                 } else {

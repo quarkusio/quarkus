@@ -170,6 +170,7 @@
                 <module>bouncycastle-fips</module>
                 <module>bouncycastle-fips-jsse</module>
                 <module>bouncycastle-jsse</module>
+                <module>compose-devservices</module>
                 <module>funqy-amazon-lambda</module>
                 <module>funqy-google-cloud-functions</module>
                 <module>class-transformer</module>

@@ -43,7 +43,7 @@ public class IdeProcessor {
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
         IDE_PROCESSES.put(
-                (processInfo -> processInfo.containInArguments("netbeans")),
+                (processInfo -> (processInfo.containInArguments("netbeans") || processInfo.containInCommand("nbexec"))),
                 Ide.NETBEANS);
 
         IDE_ARGUMENTS_EXEC_INDICATOR.put(Ide.NETBEANS, (ProcessInfo processInfo) -> {

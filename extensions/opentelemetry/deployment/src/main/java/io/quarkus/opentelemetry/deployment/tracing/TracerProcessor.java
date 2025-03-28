@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.inject.spi.EventContext;
-import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -25,7 +24,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
@@ -35,10 +33,8 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.builder.Version;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -46,13 +42,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
-import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
@@ -170,17 +164,6 @@ public class TracerProcessor {
             }
         }
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem setupDelayedAttribute(TracerRecorder recorder, ApplicationInfoBuildItem appInfo) {
-        return SyntheticBeanBuildItem.configure(DelayedAttributes.class).types(Attributes.class)
-                .supplier(recorder.delayedAttributes(Version.getVersion(),
-                        appInfo.getName(), appInfo.getVersion()))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .done();
     }
 
     @BuildStep

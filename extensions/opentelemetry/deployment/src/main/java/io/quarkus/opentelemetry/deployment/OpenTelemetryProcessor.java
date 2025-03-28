@@ -24,6 +24,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.otlp.internal.OtlpLogRecordExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
@@ -46,6 +47,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.Transformation;
+import io.quarkus.builder.Version;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -54,6 +56,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -66,6 +69,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
+import io.quarkus.opentelemetry.runtime.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
@@ -111,12 +115,24 @@ public class OpenTelemetryProcessor {
                 .setUnremovable()
                 .addBeanClasses(
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SimpleLogRecordProcessorCustomizer.class,
-                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracingResourceCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
+    }
+
+    // Signal independent resource attributes
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    SyntheticBeanBuildItem setupDelayedAttribute(OpenTelemetryRecorder recorder, ApplicationInfoBuildItem appInfo) {
+        return SyntheticBeanBuildItem.configure(DelayedAttributes.class).types(Attributes.class)
+                .supplier(recorder.delayedAttributes(Version.getVersion(),
+                        appInfo.getName(), appInfo.getVersion()))
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done();
     }
 
     @BuildStep

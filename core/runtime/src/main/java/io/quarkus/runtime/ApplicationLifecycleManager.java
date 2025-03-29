@@ -81,6 +81,9 @@ public class ApplicationLifecycleManager {
     private static ShutdownHookThread shutdownHookThread;
 
     private static int exitCode = -1;
+    // this is used to determine if the config setup has completed to determine if we can use logs or not for error
+    // reporting in early crashes. Its value is set by io.quarkus.deployment.steps.RuntimeConfigSetup#deploy
+    private static boolean configSetupCompleted;
     private static volatile boolean shutdownRequested;
     private static volatile Application currentApplication;
     private static boolean vmShuttingDown;
@@ -205,8 +208,12 @@ public class ApplicationLifecycleManager {
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());
                 } else {
-                    applicationLogger.errorv(e, "Failed to start application");
-                    ensureConsoleLogsDrained();
+                    if (configSetupCompleted) {
+                        applicationLogger.errorv(e, "Failed to start application");
+                        ensureConsoleLogsDrained();
+                    } else {
+                        e.printStackTrace();
+                    }
                 }
             }
             stateLock.lock();
@@ -239,6 +246,14 @@ public class ApplicationLifecycleManager {
         }
         currentApplication = null;
         (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
+    }
+
+    /**
+     * This method is only meant to be used by {@code io.quarkus.deployment.steps.RuntimeConfigSetup#deploy}
+     */
+    @SuppressWarnings("unused")
+    public static void setConfigSetupCompleted(boolean configSetupCompleted) {
+        ApplicationLifecycleManager.configSetupCompleted = configSetupCompleted;
     }
 
     // this is needed only when async console logging is enabled

@@ -34,6 +34,12 @@ public class GlobalDevServicesConfig {
     @ConfigItem(generateDocumentation = false)
     public Optional<Duration> timeout;
 
+    /**
+     * An advanced option that makes Quarkus launch all Dev Services containers on shared container network
+     */
+    @ConfigItem
+    public Optional<Boolean> launchOnSharedNetwork;
+
     public static class Enabled implements BooleanSupplier {
 
         final GlobalDevServicesConfig config;

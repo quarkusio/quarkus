@@ -150,7 +150,7 @@ public class PersistentLoginManager {
             if (maxAgeSeconds >= 0) {
                 cookie.setMaxAge(maxAgeSeconds);
             }
-            context.addCookie(cookie);
+            context.response().addCookie(cookie);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

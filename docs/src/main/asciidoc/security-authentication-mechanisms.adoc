@@ -217,6 +217,111 @@ The following properties can be used to configure form-based authentication:
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.auth.adoc[opts=optional, leveloffset=+1]
 
+[[two-factor-auth]]
+==== Two-factor authentication
+
+The form-based authentication mechanism supports two-factor authentication (2FA) with a one-time authentication token second-factor option.
+
+.Enable two-factor authentication
+[source,properties]
+----
+quarkus.http.auth.form.authentication-token.enabled=true
+quarkus.http.auth.form.authentication-token.request-redirect-path=/authentication-token-form <1>
+----
+<1> Once the one-time authentication token has been generated, redirect to a page with an authentication token form.
+
+When user submit a username and password to the `/j_security_check` POST location, they will get relocated to the `/authentication-token-form` page.
+The `/authentication-token-form` page should allow users to submit the one-time authentication token sent to them.
+
+.Example form for authentication with a one-time authentication token
+[source,html]
+----
+<form action="/j_security_check" method="post"> <1>
+    <label>Authentication token</label>
+    <input type="password" placeholder="Authentication token" name="j_token" required>
+    <button type="submit">Login</button>
+</form>
+----
+<1> Send the one-time authentication token to the POST location.
+
+Once Quarkus has generated the one-time authentication token, you need to deliver the token to a user by declaring a CDI bean that implements the `io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender` interface.
+
+.Example one-time authentication token sender
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.security.credential.PasswordCredential;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.ApplicationScoped;
+
+@ApplicationScoped
+public final class AuthorizationCodeMailer implements OneTimeAuthorizationCodeSender {
+
+    @Inject
+    ReactiveMailer reactiveMailer;
+
+    @Override
+    public Uni<Void> send(SecurityIdentity securityIdentity, PasswordCredential tokenCredential) {
+        // send the one-time authentication token to the user represented by the security identity
+        String authenticationToken = new String(tokenCredential.getPassword());
+        var mail = Mail.withText("to@acme.org", "Your authentication token", authenticationToken).setFrom("from@acme.org");
+        return reactiveMailer.send(mail); <1>
+    }
+
+}
+----
+<1> Use the Quarkus Mailer extension to send the email with the authentication token.
+See the xref:mailer-reference.adoc[Quarkus Mailer Reference documentation] for more information about the mailer.
+
+NOTE: By default Quarkus stores generated authentication tokens in memory.
+If you run your application in multiple instances, you need to store the tokens in a database, clustered cache or other external storage.
+It is possible to implement custom storage by declaring a CDI bean that implements the `io.quarkus.vertx.http.security.token.OneTimeTokenAuthenticator` interface.
+
+==== Password recovery using a one-time authentication token
+
+Instead of using the one-time authentication token feature as the second authentication factor, you can enable using the token as the single authentication factor.
+Users can still authenticate with the username and password, but for example if they forgot a password, they can generate the one-time authentication token to authenticate and use the session for the password recovery.
+
+.Enable two-factor authentication
+[source,properties]
+----
+quarkus.http.auth.form.authentication-token.enabled=true
+quarkus.http.auth.form.authentication-token.request-path=/generate-authentication-token <1>
+----
+<1> Users can generate the one-time authentication token by sending a username (the `j_username` form param) to the `/generate-authentication-token` POST location.
+
+.Example form for requesting the one-time authentication token
+[source,html]
+----
+<form action="/generate-authentication-token" method="post">
+    <label>Username</label>
+    <input type="text" placeholder="Username" name="j_username" required> <1>
+    <button type="submit">Login</button>
+</form>
+----
+<1> Request the one-time authentication token for a user with specified `username`.
+
+.Example form for authentication with the one-time authentication token
+[source,html]
+----
+<form action="/j_security_check" method="post"> <1>
+    <label>Authentication token</label>
+    <input type="password" placeholder="Authentication token" name="j_token" required>
+    <button type="submit">Login</button>
+</form>
+----
+<1> Send the one-time authentication token to the POST location.
+
+The one-time authentication token is send in the same fashion as described in the <<two-factor-auth>> section of this guide.
+Once users are logged in, you can provide them with a form to change the password.
+
+IMPORTANT: The `/generate-authentication-token` request path may need to access database or execute remote calls depending on the identity provider you are using.
+In order to prevent the Denial-of-service attack, you should use load shedding to avoid system overload.
+
 [[mutual-tls]]
 === Mutual TLS authentication
 

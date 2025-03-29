@@ -9,7 +9,6 @@
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>@project.version@</quarkus.platform.version>
-        <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
         <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
@@ -47,20 +46,6 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>\${compiler-plugin.version}</version>
-            </plugin>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
-                <version>\${quarkus-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate-code</goal>
-                            <goal>generate-code-tests</goal>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

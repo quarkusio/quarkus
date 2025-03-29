@@ -101,7 +101,6 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void initFormAuthPathHandlers(VertxWebRouterBuildItem vertxWebRouterBuildItem, HttpSecurityRecorder recorder,
             VertxHttpBuildTimeConfig httpBuildTimeConfig, VertxHttpConfig httpConfig,
-            BeanContainerBuildItem beanContainerBuildItem,
             BeanDiscoveryFinishedBuildItem beanDiscoveryResult) {
         var authBuildTimeConfig = httpBuildTimeConfig.auth();
         if (authBuildTimeConfig.form().enabled()) {
@@ -110,7 +109,6 @@ public class HttpSecurityProcessor {
                 recorder.formAuthPostHandler(httpRouter, httpConfig);
             }
             if (authBuildTimeConfig.form().authenticationTokenEnabled()) {
-                recorder.oneTimeAuthTokenRequestHandler(httpRouter, httpConfig, beanContainerBuildItem.getValue());
                 DotName tokenSenderInterfaceName = DotName.createSimple(OneTimeAuthenticationTokenSender.class);
                 if (beanDiscoveryResult.beanStream().stream().noneMatch(bi -> bi.hasType(tokenSenderInterfaceName))) {
                     throw new ConfigurationException(

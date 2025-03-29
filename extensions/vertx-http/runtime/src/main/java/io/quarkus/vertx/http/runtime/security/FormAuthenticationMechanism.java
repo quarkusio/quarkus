@@ -118,8 +118,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.formAuthEvent = isFormAuthEventObserver ? beanManager.getEvent().select(FormAuthenticationEvent.class) : null;
         this.authTokenFormParameter = runtimeForm.authenticationToken().formParameterName();
         this.authTokenEnabled = authTokenEnabled;
-        boolean twoFactoAuthEnabled = authTokenEnabled && runtimeForm.authenticationToken().requestPath().isEmpty();
-        if (twoFactoAuthEnabled) {
+        if (authTokenEnabled) {
             this.twoFactorAuthHandler = OneTimeAuthTokenRequestHandler.of(runtimeForm, beanManager, securityEventsEnabled);
         } else {
             this.twoFactorAuthHandler = null;

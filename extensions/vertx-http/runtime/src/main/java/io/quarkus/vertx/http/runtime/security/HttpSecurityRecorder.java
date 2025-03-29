@@ -123,19 +123,6 @@ public class HttpSecurityRecorder {
                 });
     }
 
-    public void oneTimeAuthTokenRequestHandler(RuntimeValue<Router> httpRouter, VertxHttpConfig httpConfiguration,
-            BeanContainer beanContainer) {
-        httpConfiguration.auth().form().authenticationToken().requestPath().ifPresent(new Consumer<String>() {
-            @Override
-            public void accept(String tokenRequestPath) {
-                httpRouter
-                        .getValue()
-                        .post(tokenRequestPath)
-                        .handler(OneTimeAuthTokenRequestHandler.of(httpConfiguration.auth().form(), beanContainer));
-            }
-        });
-    }
-
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
             Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor,
             Map<String, Consumer<RoutingContext>> classNameToInterceptor) {

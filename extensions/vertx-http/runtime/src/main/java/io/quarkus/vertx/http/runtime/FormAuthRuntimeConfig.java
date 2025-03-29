@@ -140,15 +140,6 @@ public interface FormAuthRuntimeConfig {
      * One-time authentication token configuration.
      */
     interface AuthenticationToken {
-
-        /**
-         * Enables one-time authentication token configuration as a single-factor authentication by allowing to request
-         * the one-time authentication token without providing valid username and password.
-         * By default, the one-time authentication token serves as the second-factor of the two-factor authentication,
-         * and the authentication token is generated only if user sent valid username and password to the post location.
-         */
-        Optional<String> requestPath();
-
         /**
          * Quarkus will redirect to this path once one-time authentication token has been successfully generated.
          * When this configuration property is not set, Quarkus will respond to successful

@@ -22,7 +22,8 @@ export class QuiIdeLink extends observeState(LitElement) {
         lang: {type: String},
         lineNumber: {type: String},
         stackTraceLine: {type: String},
-        _fontWeight: {type: String}
+        _fontWeight: {type: String},
+        noCheck: {type: Boolean},
     };
 
     constructor() {
@@ -32,6 +33,7 @@ export class QuiIdeLink extends observeState(LitElement) {
         this.lang = "java";
         this.lineNumber = "0";
         this._fontWeight = "normal";
+        this.noCheck = false;
     }
     
     connectedCallback() {
@@ -75,7 +77,7 @@ export class QuiIdeLink extends observeState(LitElement) {
 
     render() {
         if(this.fileName){
-            if(this._checkIfStringStartsWith(this.fileName, devuiState.ideInfo.idePackages)){
+            if(this.noCheck || this._checkIfStringStartsWith(this.fileName, devuiState.ideInfo.idePackages)){
                 return html`<span style="font-weight: ${this._fontWeight};" @click=${() => this._openInIde()}><slot></slot></span>`;
             }else{
                 return html`<slot></slot>`;

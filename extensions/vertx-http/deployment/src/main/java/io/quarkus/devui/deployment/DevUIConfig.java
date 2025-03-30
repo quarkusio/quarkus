@@ -2,6 +2,7 @@ package io.quarkus.devui.deployment;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -42,6 +43,11 @@ public interface DevUIConfig {
     Optional<List<String>> hosts();
 
     /**
+     * Workspace configuration.
+     */
+    Workspace workspace();
+
+    /**
      * CORS configuration.
      */
     Cors cors();
@@ -50,6 +56,21 @@ public interface DevUIConfig {
      * Fine tune the theme
      */
     Optional<Theme> theme();
+
+    @ConfigGroup
+    interface Workspace {
+
+        /**
+         * Folders to ignore in the workspace
+         */
+        Optional<List<String>> ignoreFolders();
+
+        /**
+         * Files to ignore in the workspace
+         */
+        Optional<List<Pattern>> ignoreFiles();
+
+    }
 
     @ConfigGroup
     interface Cors {

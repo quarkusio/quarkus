@@ -1,16 +1,26 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * Provide entries from the "user data" section of the RoutingContext
  */
-public class ExchangeDataAttribute implements ExchangeAttribute {
+public class ExchangeDataAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
+
+    private static final String NAME = "Exchange data";
 
     private final String dataKey;
 
     public ExchangeDataAttribute(String dataKey) {
         this.dataKey = dataKey;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -27,7 +37,7 @@ public class ExchangeDataAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Exchange data";
+            return ExchangeDataAttribute.NAME;
         }
 
         @Override

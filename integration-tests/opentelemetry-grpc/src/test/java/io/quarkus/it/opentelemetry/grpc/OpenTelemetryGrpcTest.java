@@ -1,6 +1,7 @@
 package io.quarkus.it.opentelemetry.grpc;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
@@ -56,11 +57,12 @@ public class OpenTelemetryGrpcTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 4);
         List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
+        assertEquals(4, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
 
+        // REST server -> gRPC client -> gRPC server -> WithSpan
         // First span is the rest server call. It does not have a parent span.
         Map<String, Object> rest = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals(SpanKind.SERVER.toString(), rest.get("kind"));
@@ -91,6 +93,10 @@ public class OpenTelemetryGrpcTest {
         assertNotNull(getAttributes(server).get(SERVER_ADDRESS.getKey()));
         assertNotNull(getAttributes(server).get(SERVER_PORT.getKey()));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
+
+        //from @WithSpan
+        Map<String, Object> withSpan = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
+        assertEquals("HelloService.sayHello", withSpan.get("name"));
     }
 
     private static List<Map<String, Object>> getSpans() {
@@ -103,14 +109,14 @@ public class OpenTelemetryGrpcTest {
     }
 
     private static List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
+                                                                       Object parentSpanId) {
         return spans.stream()
                 .filter(map -> map.get("kind").equals(kind.toString()))
                 .filter(map -> map.get("parentSpanId").equals(parentSpanId)).collect(toList());
     }
 
     private static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
+                                                                Object parentSpanId) {
         List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);
         assertEquals(1, span.size());
         return span.get(0);

@@ -1,4 +1,4 @@
-package io.quarkus.it.opentelemetry.vertx.exporter;
+package io.quarkus.test.opentelemetry.collector;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

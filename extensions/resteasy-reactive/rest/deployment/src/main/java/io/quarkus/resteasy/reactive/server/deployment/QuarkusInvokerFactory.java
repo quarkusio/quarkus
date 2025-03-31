@@ -1,12 +1,12 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.server.processor.EndpointInvokerFactory;
@@ -34,14 +34,14 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
     @Override
     public Supplier<EndpointInvoker> create(ResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
 
-        StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(method.getName())
-                .append(method.getReturnType());
-        for (MethodParameter t : method.getParameters()) {
-            sigBuilder.append(t);
-        }
+        String endpointIdentifier = info.toString() +
+                method.getHttpMethod() +
+                method.getPath() +
+                Arrays.toString(method.getConsumes()) +
+                Arrays.toString(method.getProduces());
+
         String baseName = currentClassInfo.name() + "$quarkusrestinvoker$" + method.getName() + "_"
-                + HashUtil.sha1(sigBuilder.toString());
+                + HashUtil.sha1(endpointIdentifier);
         try (ClassCreator classCreator = new ClassCreator(
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
                 Object.class.getName(), EndpointInvoker.class.getName())) {

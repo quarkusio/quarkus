@@ -7,14 +7,19 @@ import { devuiState } from 'devui-state';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/tabs';
 import '@vaadin/confirm-dialog';
+import '@vaadin/popover';
+import '@vaadin/vertical-layout';
+import { popoverRenderer } from '@vaadin/popover/lit.js';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
+
 /**
  * This component represent the Dev UI Header
  */
 export class QwcHeader extends observeState(LitElement) {
     
     routerController = new RouterController(this);
+    jsonRpc = new JsonRpc("report-issues", true);
     
     static styles = css`
         
@@ -89,6 +94,9 @@ export class QwcHeader extends observeState(LitElement) {
         .hidden {
             display:none;
         }
+        .button {
+            --vaadin-button-background: var(--lumo-base-color);
+        }
         `;
 
     static properties = {
@@ -125,6 +133,7 @@ export class QwcHeader extends observeState(LitElement) {
             <div class="right-bar">
                 ${this._renderRightSideNav()}
                 ${this._renderThemeOptions()}
+                ${this._renderBugReportButton()}
             </div>
             ${this._renderReconnectPopup()}
         </div>`;
@@ -179,6 +188,37 @@ export class QwcHeader extends observeState(LitElement) {
 
     _renderThemeOptions(){
         return html`<qwc-theme-switch></qwc-theme-switch>`;
+    }
+
+    _renderBugReportButton(){
+        return html`<vaadin-button id="bugButton" theme="icon" aria-label="Issue" title="Report an issue" class="button">
+                        <vaadin-icon icon="font-awesome-solid:bug"></vaadin-icon>
+                    </vaadin-button>
+                    <vaadin-popover
+                        for="bugButton"
+                        .position="bottom-end"
+                        ${popoverRenderer(this._popoverRenderer)}
+                    ></vaadin-popover>`;
+    }
+
+    _popoverRenderer() {
+        return html`<vaadin-vertical-layout>
+                        <vaadin-button theme="small tertiary" @click="${this._reportBug}" style="color: var(--lumo-body-text-color);">Report a bug</vaadin-button>
+                        <vaadin-button theme="small tertiary" @click="${this._reportFeature}" style="color: var(--lumo-body-text-color);">Request a new feature/enhancement</vaadin-button>
+                    </vaadin-vertical-layout>`;
+        
+    }
+
+    _reportBug(event){
+        event.preventDefault();
+        this.jsonRpc.reportBug().then(e => {
+            window.open(e.result.url, "_blank");
+        });
+    }
+
+    _reportFeature(event)  {
+        event.preventDefault();
+        window.open("https://github.com/quarkusio/quarkus/issues/new?assignees=&labels=kind%2Fenhancement&template=feature_request.yml", "_blank");
     }
 
     _updateHeader(event){

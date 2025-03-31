@@ -690,7 +690,9 @@ public class GrpcServerProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             VertxWebRouterBuildItem routerBuildItem,
             VertxBuildItem vertx, Capabilities capabilities,
-            List<FilterBuildItem> filterBuildItems) {
+            List<FilterBuildItem> filterBuildItems,
+            // used to ensure that gRPC server starts after OTel has been set up
+            @SuppressWarnings("unused") BeanContainerBuildItem beanContainerBuildItem) {
 
         // Build the list of blocking methods per service implementation
         Map<String, List<String>> blocking = new HashMap<>();

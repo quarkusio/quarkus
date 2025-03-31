@@ -279,7 +279,7 @@ public interface RestClientsConfig {
     /**
      * Configures two different things:
      * <ul>
-     * <li>The max HTTP chunk size</li>
+     * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
      * <li>The size of the chunk to be read when an {@link InputStream} is being used as an input</li>
      * </ul>
      * <p>
@@ -616,7 +616,7 @@ public interface RestClientsConfig {
         /**
          * Configures two different things:
          * <ul>
-         * <li>The max HTTP chunk size</li>
+         * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
          * <li>The size of the chunk to be read when an {@link InputStream} is being read and sent to the server</li>
          * </ul>
          * <p>

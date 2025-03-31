@@ -255,9 +255,6 @@ public class GreetingResource {
 }
 ----
 
-NOTE: This currently does not support the `@ApplicationPath()` annotation to set the Jakarta REST context path. Use the
-`quarkus.resteasy.path` config value instead if you want a custom context path.
-
 === TestHTTPResource
 
 You can the use the `io.quarkus.test.common.http.TestHTTPEndpoint` annotation to specify the endpoint path, and the path

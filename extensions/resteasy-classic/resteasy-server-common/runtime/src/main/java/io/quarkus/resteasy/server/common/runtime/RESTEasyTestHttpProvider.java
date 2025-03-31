@@ -5,7 +5,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Application;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -21,16 +25,23 @@ public class RESTEasyTestHttpProvider implements TestHttpEndpointProvider {
                 if (value == null) {
                     return null;
                 }
+
                 if (value.startsWith("/")) {
                     value = value.substring(1);
                 }
-                //TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest apps, but we can't for
-                //native apps, so we just have to document the limitation
+
                 String path = "/";
-                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.resteasy.path", String.class);
-                if (appPath.isPresent()) {
-                    path = appPath.get();
+                Instance<Application> application = CDI.current().select(Application.class);
+                if (application.isResolvable()) {
+                    path = application.get().getClass().getDeclaredAnnotation(ApplicationPath.class).value();
+                } else {
+                    Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.resteasy.path",
+                            String.class);
+                    if (appPath.isPresent()) {
+                        path = appPath.get();
+                    }
                 }
+
                 if (!path.endsWith("/")) {
                     path = path + "/";
                 }

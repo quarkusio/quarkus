@@ -2,12 +2,9 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
 import java.util.function.Function;
 
 import jakarta.ws.rs.Path;
-
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 
@@ -24,13 +21,8 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
                 if (value.startsWith("/")) {
                     value = value.substring(1);
                 }
-                //TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest apps but we can't for
-                //native apps, so we just have to document the limitation
-                String path = "/";
-                Optional<String> appPath = getAppPath();
-                if (appPath.isPresent()) {
-                    path = appPath.get();
-                }
+
+                String path = ResteasyReactiveRecorder.getCurrentDeployment().getPrefix();
                 if (!path.endsWith("/")) {
                     path = path + "/";
                 }
@@ -38,10 +30,6 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
                 return value;
             }
         };
-    }
-
-    private Optional<String> getAppPath() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.rest.path", String.class);
     }
 
     private String getPath(Class<?> aClass) {

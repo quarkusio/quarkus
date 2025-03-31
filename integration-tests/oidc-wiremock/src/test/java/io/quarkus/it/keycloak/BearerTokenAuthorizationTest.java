@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TrustStoreUtils;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -85,7 +84,7 @@ public class BearerTokenAuthorizationTest {
 
     private String readFile(String filePath) throws Exception {
         try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath)) {
-            byte[] content = FileUtil.readFileContents(is);
+            byte[] content = is.readAllBytes();
             return new String(content, StandardCharsets.UTF_8);
         }
     }

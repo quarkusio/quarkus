@@ -18,7 +18,7 @@
             <artifactId>wiremock-standalone</artifactId>
         </dependency>
         <dependency>
-            <groupId> jakarta.servlet</groupId>
+            <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
         <dependency>
@@ -30,8 +30,12 @@
             <artifactId>quarkus-test-common</artifactId>
         </dependency>
         <dependency>
-          <groupId>io.smallrye.reactive</groupId>
-          <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>

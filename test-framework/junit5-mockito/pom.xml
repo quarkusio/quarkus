@@ -32,6 +32,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

@@ -17,6 +17,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

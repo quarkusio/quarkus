@@ -30,6 +30,18 @@
       <scope>test</scope>
     </dependency>
 
+   <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-development-mode-spi</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-builder</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-internal</artifactId>

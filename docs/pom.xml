@@ -105,6 +105,11 @@
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Minimal test dependencies for consistent build order -->
         <!-- START update-extension-dependencies.sh -->
         <dependency>

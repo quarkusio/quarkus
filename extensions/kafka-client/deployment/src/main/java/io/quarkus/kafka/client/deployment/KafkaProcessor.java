@@ -20,7 +20,7 @@ import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
-import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.metrics.MetricsReporter;
 import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
@@ -249,6 +249,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
+        collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
                 OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
@@ -295,7 +296,6 @@ public class KafkaProcessor {
 
         // built in partitioner and partition assignors
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                DefaultPartitioner.class,
                 RangeAssignor.class,
                 RoundRobinAssignor.class,
                 StickyAssignor.class)

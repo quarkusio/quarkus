@@ -36,12 +36,12 @@ import io.vertx.core.http.HttpClientOptions;
 public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClientBuilder> {
 
     static QuarkusRestClientBuilder newBuilder() {
-        RestClientBuilderImpl proxy = new RestClientBuilderImpl();
+        RestClientBuilderImpl delegate = new RestClientBuilderImpl();
         for (RestClientBuilderListener listener : ServiceLoader.load(RestClientBuilderListener.class)) {
-            listener.onNewBuilder(proxy);
+            listener.onNewBuilder(delegate);
         }
 
-        return new QuarkusRestClientBuilderImpl(proxy);
+        return new QuarkusRestClientBuilderImpl(delegate);
     }
 
     /**

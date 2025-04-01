@@ -19,9 +19,15 @@ public class StringTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addAsResource(
-                    new StringAsset("{str:eval('Hello {name}!')}"),
-                    "templates/hello.txt"));
+            .withApplicationRoot(root -> root
+                    .addAsResource(
+                            new StringAsset("{str:eval('Hello {name}!')}"),
+                            "templates/hello.txt")
+                    .addAsResource(
+                            // https://github.com/quarkusio/quarkus/issues/47092
+                            // This will trigger value resolver generation for StringBuilder
+                            new StringAsset("{str:builder.append('Qute').append(\" is\").append(' cool!')}"),
+                            "templates/builder.txt"));
 
     @Inject
     Engine engine;

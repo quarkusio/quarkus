@@ -45,7 +45,7 @@ public class MutinyStubInjectionTest {
     @Test
     public void test() {
         String neo = service.invoke("neo-mutiny");
-        assertThat(neo).startsWith("Hello neo-mutiny").doesNotContain("vert.x");
+        assertThat(neo).startsWith("Hello neo-mutiny").contains("vert.x");
 
         neo = service.invokeFromIoThread("neo-io");
         assertThat(neo).startsWith("Hello neo-io").contains("vert.x");

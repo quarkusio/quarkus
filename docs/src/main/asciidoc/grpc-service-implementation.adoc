@@ -254,6 +254,46 @@ quarkus.grpc.server.ssl.trust-store-password=*****
 quarkus.grpc.server.ssl.client-auth=REQUIRED
 ----
 
+=== Custom server building
+
+When Quarkus builds a gRPC server instance, users can apply their own Server(Builder) customizers. The customizers are applied by `priority`, the higher the number the later customizer is applied. The customizers are applied before Quarkus applies user's server configuration; e.g. ideal for some initial defaults.
+
+There are two `customize` methods, the first one uses gRPC's `ServerBuilder` as a parameter - to be used with Quarkus' legacy gRPC support, where the other uses `GrpcServerOptions` - to be used with the new Vert.x gRPC support. User should implement the right `customize` method per gRPC support type usage, or both if the customizer is gRPC type neutral.
+
+[source, java]
+----
+public interface ServerBuilderCustomizer<T extends ServerBuilder<T>> {
+
+    /**
+     * Customize a ServerBuilder instance.
+     *
+     * @param config server's configuration
+     * @param builder Server builder instance
+     */
+    default void customize(GrpcServerConfiguration config, T builder) {
+    }
+
+    /**
+     * Customize a GrpcServerOptions instance.
+     *
+     * @param config server's configuration
+     * @param options GrpcServerOptions instance
+     */
+    default void customize(GrpcServerConfiguration config, GrpcServerOptions options) {
+    }
+
+    /**
+     * Priority by which the customizers are applied.
+     * Higher priority is applied later.
+     *
+     * @return the priority
+     */
+    default int priority() {
+        return 0;
+    }
+}
+----
+
 == Server Interceptors
 
 gRPC server interceptors let you perform logic, such as authentication, before your service is invoked.

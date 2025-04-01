@@ -25,6 +25,7 @@ import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.RegisterInterceptor;
 import io.quarkus.grpc.RegisterInterceptors;
 import io.quarkus.grpc.api.ChannelBuilderCustomizer;
+import io.quarkus.grpc.api.ServerBuilderCustomizer;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.smallrye.common.annotation.Blocking;
@@ -60,6 +61,7 @@ public class GrpcDotNames {
     public static final DotName CLIENT_INTERCEPTOR = DotName.createSimple(ClientInterceptor.class.getName());
 
     public static final DotName CHANNEL_BUILDER_CUSTOMIZER = DotName.createSimple(ChannelBuilderCustomizer.class.getName());
+    public static final DotName SERVER_BUILDER_CUSTOMIZER = DotName.createSimple(ServerBuilderCustomizer.class.getName());
 
     static final MethodDescriptor CREATE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "createChannel",
             Channel.class, String.class, Set.class);

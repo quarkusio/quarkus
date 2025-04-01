@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,7 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
@@ -41,6 +44,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
+import io.quarkus.grpc.api.ServerBuilderCustomizer;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
 import io.quarkus.grpc.reflection.service.ReflectionServiceV1;
 import io.quarkus.grpc.reflection.service.ReflectionServiceV1alpha;
@@ -173,6 +177,16 @@ public class GrpcServerRecorder {
             Map<Integer, Handler<RoutingContext>> securityHandlers) {
 
         GrpcServerOptions options = new GrpcServerOptions();
+
+        List<ServerBuilderCustomizer<?>> serverBuilderCustomizers = Arc.container()
+                .select(new TypeLiteral<ServerBuilderCustomizer<?>>() {
+                }, Any.Literal.INSTANCE)
+                .stream()
+                .sorted(Comparator.<ServerBuilderCustomizer<?>, Integer> comparing(ServerBuilderCustomizer::priority))
+                .toList();
+
+        serverBuilderCustomizers.forEach(sbc -> sbc.customize(configuration, options));
+
         if (!configuration.maxInboundMessageSize().isEmpty()) {
             options.setMaxMessageSize(configuration.maxInboundMessageSize().getAsInt());
         }
@@ -556,11 +570,27 @@ public class GrpcServerRecorder {
 
         AtomicBoolean usePlainText = new AtomicBoolean();
 
-        ServerBuilder builder;
+        ServerBuilder<?> builder;
         if (provider != null) {
             builder = provider.createServerBuilder(vertx, configuration, launchMode);
         } else {
-            VertxServerBuilder vsBuilder = VertxServerBuilder.forAddress(vertx, configuration.host(), port);
+            builder = VertxServerBuilder.forAddress(vertx, configuration.host(), port);
+        }
+
+        List<ServerBuilderCustomizer<? extends ServerBuilder<?>>> serverBuilderCustomizers = Arc.container()
+                .select(new TypeLiteral<ServerBuilderCustomizer<?>>() {
+                }, Any.Literal.INSTANCE)
+                .stream()
+                .sorted(Comparator.<ServerBuilderCustomizer<?>, Integer> comparing(ServerBuilderCustomizer::priority))
+                .toList();
+
+        for (ServerBuilderCustomizer scb : serverBuilderCustomizers) {
+            scb.customize(configuration, builder);
+        }
+
+        // moved here - after ctor call, so it's applied after customizers
+        if (provider == null) {
+            VertxServerBuilder vsBuilder = (VertxServerBuilder) builder;
             // add Vert.x specific stuff here
             vsBuilder.useSsl(options -> {
                 try {
@@ -576,7 +606,6 @@ public class GrpcServerRecorder {
                         false)
                         .onComplete(result -> devModeWrapper.run(command)));
             }
-            builder = vsBuilder;
         }
 
         if (configuration.maxInboundMessageSize().isPresent()) {

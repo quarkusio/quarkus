@@ -442,6 +442,11 @@ public class GrpcClientProcessor {
         return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.CHANNEL_BUILDER_CUSTOMIZER);
     }
 
+    @BuildStep
+    UnremovableBeanBuildItem unremovableServerBuilderCustomizers() {
+        return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.SERVER_BUILDER_CUSTOMIZER);
+    }
+
     Set<String> getRegisteredInterceptors(InjectionPointInfo injectionPoint) {
         Set<AnnotationInstance> qualifiers = injectionPoint.getRequiredQualifiers();
         if (qualifiers.size() <= 1) {

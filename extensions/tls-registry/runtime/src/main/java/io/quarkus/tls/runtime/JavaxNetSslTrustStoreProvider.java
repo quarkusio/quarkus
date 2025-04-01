@@ -6,8 +6,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 
 import javax.naming.InvalidNameException;
@@ -56,33 +58,50 @@ public class JavaxNetSslTrustStoreProvider {
                 final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
                 tmf.init((KeyStore) null);
 
-                final String tsType = System.getProperty("javax.net.ssl.trustStoreType", KeyStore.getDefaultType());
-                final KeyStore cacerts = KeyStore.getInstance(tsType);
-                cacerts.load(null, null);
-                for (TrustManager tm : tmf.getTrustManagers()) {
-                    for (X509Certificate c : ((X509TrustManager) tm).getAcceptedIssuers()) {
-                        final String dn = c.getSubjectX500Principal().getName();
-                        final List<Rdn> rdns = new LdapName(dn).getRdns();
-                        String alias = rdns.stream()
-                                .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
-                                .map(rdn -> rdn.getValue().toString())
-                                .findFirst()
-                                .orElseGet(() -> rdns.stream()
-                                        .filter(rdn -> rdn.getType().equalsIgnoreCase("ou"))
-                                        .map(rdn -> rdn.getValue().toString())
-                                        .findFirst()
-                                        .orElseThrow(() -> new IllegalStateException("No CN or OU in " + dn)));
-                        alias = alias.replace(" ", "");
-                        alias = alias.toLowerCase(Locale.ROOT);
-                        cacerts.setCertificateEntry(alias, c);
-                    }
-                }
+                final KeyStore cacerts = copyCerts(tmf);
                 trustManagerFactory = tmf;
                 keystore = cacerts;
             } catch (NoSuchAlgorithmException | KeyStoreException | InvalidNameException | CertificateException
                     | IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        static KeyStore copyCerts(final TrustManagerFactory tmf)
+                throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, InvalidNameException {
+            final String tsType = System.getProperty("javax.net.ssl.trustStoreType", KeyStore.getDefaultType());
+            final KeyStore cacerts = KeyStore.getInstance(tsType);
+            cacerts.load(null, null);
+            final Set<String> aliases = new HashSet<>();
+            for (TrustManager tm : tmf.getTrustManagers()) {
+                for (X509Certificate c : ((X509TrustManager) tm).getAcceptedIssuers()) {
+                    final String dn = c.getSubjectX500Principal().getName();
+                    final List<Rdn> rdns = new LdapName(dn).getRdns();
+                    String alias = rdns.stream()
+                            .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
+                            .map(rdn -> rdn.getValue().toString())
+                            .findFirst()
+                            .orElseGet(() -> rdns.stream()
+                                    .filter(rdn -> rdn.getType().equalsIgnoreCase("ou"))
+                                    .map(rdn -> rdn.getValue().toString())
+                                    .findFirst()
+                                    .orElse(dn));
+                    alias = alias.replace(" ", "");
+                    alias = alias.toLowerCase(Locale.ROOT);
+                    if (aliases.contains(alias)) {
+                        /* Make the alias unique if needed */
+                        int i = 1;
+                        String indexedAlias = alias + i;
+                        while (aliases.contains(indexedAlias)) {
+                            indexedAlias = alias + (++i);
+                        }
+                        alias = indexedAlias;
+                    }
+                    aliases.add(alias);
+                    cacerts.setCertificateEntry(alias, c);
+                }
+            }
+            return cacerts;
         }
 
         @Override

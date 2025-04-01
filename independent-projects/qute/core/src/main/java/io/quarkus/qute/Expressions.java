@@ -72,7 +72,7 @@ public final class Expressions {
         if (value == null || value.isEmpty()) {
             return Collections.emptyList();
         }
-        boolean literal = false;
+        char literal = 0;
         char separator = 0;
         byte infix = 0;
         byte brackets = 0;
@@ -83,7 +83,7 @@ public final class Expressions {
             if (splitConfig.isSeparator(c)) {
                 // Adjacent separators may be ignored
                 if (separator == 0 || separator != c) {
-                    if (!literal && brackets == 0 && infix == 0) {
+                    if (literal == 0 && brackets == 0 && infix == 0) {
                         if (splitConfig.shouldPrependSeparator(c)) {
                             buffer.append(c);
                         }
@@ -99,11 +99,15 @@ public final class Expressions {
                     }
                 }
             } else {
-                if (splitConfig.isLiteralSeparator(c)) {
-                    literal = !literal;
+                if (literal == 0
+                        && splitConfig.isLiteralSeparatorStart(c)) {
+                    literal = c;
+                } else if (literal != 0
+                        && splitConfig.isLiteralSeparatorEnd(literal, c)) {
+                    literal = 0;
                 }
                 // Non-separator char
-                if (!literal) {
+                if (literal == 0) {
                     // Not inside a string/type literal
                     if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
                         // Infix supported, blank space and not inside a virtual method
@@ -212,8 +216,19 @@ public final class Expressions {
         }
 
         @Override
-        public boolean isLiteralSeparator(char candidate) {
-            return SplitConfig.super.isLiteralSeparator(candidate) || candidate == '<' || candidate == '>';
+        public boolean isLiteralSeparatorStart(char candidate) {
+            return SplitConfig.super.isLiteralSeparatorStart(candidate)
+                    // We need this in order to support things like {@com.foo.Bar<? extends org.acme.Baz, String> bar}
+                    // where a space should not be treated as a separator
+                    || candidate == '<';
+        }
+
+        @Override
+        public boolean isLiteralSeparatorEnd(char startSeparator, char candidate) {
+            if (startSeparator == '<') {
+                return candidate == '>';
+            }
+            return SplitConfig.super.isLiteralSeparatorEnd(startSeparator, candidate);
         }
 
     };
@@ -221,7 +236,7 @@ public final class Expressions {
     private static final SplitConfig TYPE_INFO_SPLIT_CONFIG = new DefaultSplitConfig() {
 
         @Override
-        public boolean isLiteralSeparator(char candidate) {
+        public boolean isLiteralSeparatorStart(char candidate) {
             return candidate == TYPE_INFO_SEPARATOR || LiteralSupport.isStringLiteralSeparator(candidate);
         }
     };
@@ -247,10 +262,34 @@ public final class Expressions {
 
     public interface SplitConfig {
 
+        /**
+         *
+         * @param candidate
+         * @return {@code true} if the characted should be treated as a "part" separator
+         */
         boolean isSeparator(char candidate);
 
-        default boolean isLiteralSeparator(char candidate) {
+        /**
+         * A "part" separator used inside a literal must be ignored.
+         *
+         * @param candidate
+         * @return {@code true} if the characted should be treated as a "literal" start separator
+         */
+        default boolean isLiteralSeparatorStart(char candidate) {
             return LiteralSupport.isStringLiteralSeparator(candidate);
+        }
+
+        /**
+         *
+         * @param startSeparator
+         * @param candidate
+         * @return {@code true} if the characted should be treated as a "literal" end separator
+         */
+        default boolean isLiteralSeparatorEnd(char startSeparator, char candidate) {
+            if (isLiteralSeparatorStart(startSeparator)) {
+                return startSeparator == candidate;
+            }
+            return false;
         }
 
         default boolean shouldPrependSeparator(char candidate) {

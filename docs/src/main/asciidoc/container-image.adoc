@@ -293,3 +293,10 @@ include::{generated-dir}/config/quarkus-container-image-podman.adoc[opts=optiona
 In addition to the generic container image options, the `container-image-openshift` also provides the following options:
 
 include::{generated-dir}/config/quarkus-container-image-openshift_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
+
+[[BuildpackOptions]]
+=== Buildpack Options
+
+In addition to the generic container image options, the `container-image-buildpack` also provides the following options:
+
+include::{generated-dir}/config/quarkus-container-image-buildpack_quarkus.buildpack.adoc[opts=optional,leveloffset=+1]

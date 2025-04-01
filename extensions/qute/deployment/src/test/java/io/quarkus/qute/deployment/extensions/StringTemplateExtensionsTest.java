@@ -93,6 +93,21 @@ public class StringTemplateExtensionsTest {
         assertEquals("Hello fool!",
                 hello.data("name", "fool")
                         .render());
+
+        // https://github.com/quarkusio/quarkus/issues/47092
+        assertEquals("Quteiscool!",
+                engine.parse("{str:builder('Qute').append(\"is\").append(\"cool!\")}")
+                        .render());
+        assertEquals("Qute's cool!",
+                engine.parse("{str:builder('Qute').append(\"'s\").append(\" cool!\")}")
+                        .render());
+        assertEquals("\"Qute\" is cool!",
+                engine.parse("{str:builder('\"Qute\" ').append('is').append(\" cool!\")}")
+                        .render());
+        assertEquals("Hello '!",
+                engine.parse("{str:concat(\"Hello '\",\"!\")}")
+                        .render());
+
     }
 
 }

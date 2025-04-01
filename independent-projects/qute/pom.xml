@@ -43,7 +43,7 @@
         <version.jandex>3.2.7</version.jandex>
         <version.gizmo>1.9.0</version.gizmo>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.smallrye-common>2.10.0</version.smallrye-common>
+        <version.smallrye-common>2.11.0</version.smallrye-common>
         <version.smallrye-mutiny>2.8.0</version.smallrye-mutiny>
     </properties>
 

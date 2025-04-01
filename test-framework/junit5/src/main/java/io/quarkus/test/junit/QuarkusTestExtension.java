@@ -616,6 +616,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
         boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
+
+        QuarkusClassLoader cl = (QuarkusClassLoader) extensionContext.getRequiredTestClass().getClassLoader();
+
+        CuratedApplication curatedApplication = runningQuarkusApplication != null
+                ? ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader())
+                        .getCuratedApplication()
+                : null;
+        boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+        cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
+
         // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
         // we could try to start and application which has already been started, and fail with a mysterious error about
         // null shutdown contexts; we should try and detect that case, and give a friendlier error message

@@ -337,11 +337,16 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
-                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST &&
-                                !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
-                            //for tests, we just always shut down the curated application, as it is only used once
-                            //dev mode might be about to restart, so we leave it
-                            curatedApplication.close();
+                        System.out.println("HOLLY CLOOOOSING But " + curatedApplication.keepAlive());
+                        if (!curatedApplication.keepAlive()) {
+                            if (curatedApplication.getQuarkusBootstrap()
+                                    .getMode() == QuarkusBootstrap.Mode.TEST &&
+                                    !curatedApplication.getQuarkusBootstrap()
+                                            .isAuxiliaryApplication()) {
+                                //for tests, we just always shut down the curated application, as it is only used once
+                                //dev mode might be about to restart, so we leave it
+                                curatedApplication.close();
+                            }
                         }
                     }
                 }

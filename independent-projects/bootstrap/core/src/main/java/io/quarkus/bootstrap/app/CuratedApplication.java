@@ -68,6 +68,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     final ApplicationModel appModel;
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
+    private boolean keepAlive = false;
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -75,6 +76,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         this.curationResult = curationResult;
         this.appModel = curationResult.getApplicationModel();
         this.configuredClassLoading = configuredClassLoading;
+    }
+
+    public void setKeepAlive(boolean ka) {
+        this.keepAlive = ka;
     }
 
     public boolean isFlatClassPath() {
@@ -431,6 +436,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     @Override
     public void close() {
+        new Exception("who closed me?").printStackTrace();
+
         if (augmentClassLoader != null) {
             augmentClassLoader.close();
             augmentClassLoader = null;
@@ -440,6 +447,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+    }
+
+    public boolean keepAlive() {
+        return keepAlive;
     }
 
     /**

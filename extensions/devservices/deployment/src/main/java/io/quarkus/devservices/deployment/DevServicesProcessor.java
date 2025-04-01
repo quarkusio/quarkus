@@ -17,14 +17,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
@@ -36,22 +34,29 @@ import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 
@@ -101,6 +106,27 @@ public class DevServicesProcessor {
         }
     }
 
+    @BuildStep(onlyIfNot = IsNormal.class)
+    DevServicesRegistryBuildItem getDevServicesRegistry(LaunchModeBuildItem launchMode,
+            ApplicationInstanceIdBuildItem applicationId,
+            DevServicesConfig globalDevServicesConfig,
+            CuratedApplicationShutdownBuildItem shutdownBuildItem) {
+        //        We want to track two kinds of things;
+        //        one is dev services from a previous run that a processor might want to re - use, and the other is dev services from a previous run that a processor might want to close
+        //        The getting is different, but the setting can be the same
+        DevServicesRegistryBuildItem trackerBuildItem = new DevServicesRegistryBuildItem(applicationId.getUUID(),
+                globalDevServicesConfig, launchMode.getLaunchMode());
+        shutdownBuildItem.addCloseTask(trackerBuildItem::closeAllRunningServices, true);
+        return trackerBuildItem;
+    }
+
+    @BuildStep
+    public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource(
+            List<DevServicesResultBuildItem> devServicesResults) {
+        // Once all the dev services are registered, we can share config
+        return new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class);
+    }
+
     @BuildStep(onlyIf = { IsDevelopment.class })
     public List<DevServiceDescriptionBuildItem> config(
             DockerStatusBuildItem dockerStatusBuildItem,
@@ -110,8 +136,9 @@ public class DevServicesProcessor {
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults) {
         containerLogForwarders.clear();
+        boolean isContainerRuntimeAvailable = dockerStatusBuildItem.isContainerRuntimeAvailable();
         List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(
-                dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
+                isContainerRuntimeAvailable, devServicesResults, devServicesLauncherConfig);
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
 
@@ -142,7 +169,7 @@ public class DevServicesProcessor {
         context.reset(
                 new ConsoleCommand('c', "Show Dev Services containers", null, () -> {
                     List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(
-                            dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
+                            isContainerRuntimeAvailable, devServicesResults, devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
                     builder.append("\n\n")
                             .append(RED + "==" + RESET + " " + UNDERLINE + "Dev Services" + NO_UNDERLINE)
@@ -188,21 +215,16 @@ public class DevServicesProcessor {
     }
 
     private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(
-            DockerStatusBuildItem dockerStatusBuildItem,
+            boolean isContainerRuntimeAvailable,
             List<DevServicesResultBuildItem> devServicesResults,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
-        // Fetch container infos
-        Set<String> containerIds = devServicesResults.stream()
-                .map(DevServicesResultBuildItem::getContainerId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<String, Container> containerInfos = fetchContainerInfos(dockerStatusBuildItem, containerIds);
+
         // Build descriptions
         Set<String> configKeysFromDevServices = new HashSet<>();
         List<DevServiceDescriptionBuildItem> descriptions = new ArrayList<>();
         for (DevServicesResultBuildItem buildItem : devServicesResults) {
             configKeysFromDevServices.addAll(buildItem.getConfig().keySet());
-            descriptions.add(toDevServiceDescription(buildItem, containerInfos.get(buildItem.getContainerId())));
+            descriptions.add(toDevServiceDescription(buildItem, buildItem::getContainerId, isContainerRuntimeAvailable));
         }
         // Sort descriptions by name
         descriptions.sort(Comparator.comparing(DevServiceDescriptionBuildItem::getName));
@@ -219,32 +241,43 @@ public class DevServicesProcessor {
         return descriptions;
     }
 
-    private Map<String, Container> fetchContainerInfos(DockerStatusBuildItem dockerStatusBuildItem,
-            Set<String> containerIds) {
-        if (containerIds.isEmpty() || !dockerStatusBuildItem.isContainerRuntimeAvailable()) {
-            return Collections.emptyMap();
+    private Optional<Container> fetchContainerInfo(String containerId, boolean isContainerRuntimeAvailable) {
+        if (containerId == null || !isContainerRuntimeAvailable) {
+            return Optional.empty();
         }
         return DockerClientFactory.lazyClient().listContainersCmd()
-                .withIdFilter(containerIds)
+                .withIdFilter(Collections.singleton(containerId))
                 .withShowAll(true)
                 .exec()
                 .stream()
-                .collect(Collectors.toMap(Container::getId, Function.identity()));
+                .findAny();
     }
 
-    private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem, Container container) {
-        if (container == null) {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(), null,
-                    buildItem.getConfig());
-        } else {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
-                    toContainerInfo(container), buildItem.getConfig());
-        }
+    private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem,
+            Supplier<String> containerIdFun,
+            boolean isContainerRuntimeAvailable) {
+        return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
+                toContainerInfo(containerIdFun, isContainerRuntimeAvailable), buildItem.getConfig(),
+                buildItem::getDynamicConfig);
+
     }
 
-    private ContainerInfo toContainerInfo(Container container) {
-        return new ContainerInfo(container.getId(), container.getNames(), container.getImage(),
-                container.getStatus(), getNetworks(container), container.getLabels(), getExposedPorts(container));
+    private Supplier<ContainerInfo> toContainerInfo(Supplier<String> containerIdFun, boolean isContainerRuntimeAvailable) {
+
+        return () -> {
+            String containerId = containerIdFun.get();
+            if (containerId != null) {
+                Optional<Container> maybeContainer = fetchContainerInfo(containerId, isContainerRuntimeAvailable);
+                if (maybeContainer.isPresent()) {
+                    Container container = maybeContainer.get();
+                    return new ContainerInfo(container.getId(), container.getNames(), container.getImage(),
+                            container.getStatus(), getNetworks(container), container.getLabels(), getExposedPorts(container));
+                }
+            }
+            return null;
+
+        };
+
     }
 
     private static Map<String, String[]> getNetworks(Container container) {
@@ -281,17 +314,18 @@ public class DevServicesProcessor {
         builder.append(BOLD).append(devService.getName()).append(NO_BOLD);
         builder.append("\n");
 
-        if (devService.hasContainerInfo()) {
+        ContainerInfo containerInfo = devService.getContainerInfo();
+        if (containerInfo != null) {
             builder.append(String.format("  %-18s", "Container: "))
-                    .append(devService.getContainerInfo().id(), 0, 12)
-                    .append(devService.getContainerInfo().formatNames())
+                    .append(containerInfo.id(), 0, 12)
+                    .append(containerInfo.formatNames())
                     .append("  ")
-                    .append(devService.getContainerInfo().imageName())
+                    .append(containerInfo.imageName())
                     .append("\n");
             builder.append(String.format("  %-18s", "Network: "))
-                    .append(devService.getContainerInfo().formatNetworks())
+                    .append(containerInfo.formatNetworks())
                     .append(" - ")
-                    .append(devService.getContainerInfo().formatPorts())
+                    .append(containerInfo.formatPorts())
                     .append("\n");
 
             ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime(false);
@@ -299,7 +333,7 @@ public class DevServicesProcessor {
                 builder.append(String.format("  %-18s", "Exec command: "))
                         .append(String.format(EXEC_FORMAT,
                                 containerRuntime.getExecutableName(),
-                                devService.getContainerInfo().getShortId()))
+                                containerInfo.getShortId()))
                         .append("\n");
             }
         }

@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev.devservices;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -10,27 +11,31 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     private String name;
     private String description;
-    private ContainerInfo containerInfo;
+    private Supplier<ContainerInfo> lazyContainerInfo;
     private Map<String, String> configs;
+    private final Supplier<Map<String, String>> lazyConfigs;
 
     public DevServiceDescriptionBuildItem() {
-    }
-
-    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo,
-            Map<String, String> configs) {
-        this(name, null, containerInfo, configs);
+        this.lazyConfigs = null;
     }
 
     public DevServiceDescriptionBuildItem(String name, String description, ContainerInfo containerInfo,
             Map<String, String> configs) {
-        this.name = name;
-        this.description = description;
-        this.containerInfo = containerInfo;
-        this.configs = configs instanceof SortedMap ? configs : new TreeMap<>(configs);
+        this(name, description, () -> containerInfo, configs, null);
     }
 
-    public boolean hasContainerInfo() {
-        return containerInfo != null;
+    public DevServiceDescriptionBuildItem(String name, Supplier<ContainerInfo> lazyContainerInfo,
+            Map<String, String> configs, Supplier<Map<String, String>> lazyConfigs) {
+        this(name, null, lazyContainerInfo, configs, lazyConfigs);
+    }
+
+    public DevServiceDescriptionBuildItem(String name, String description, Supplier<ContainerInfo> lazyContainerInfo,
+            Map<String, String> configs, Supplier<Map<String, String>> lazyConfigs) {
+        this.name = name;
+        this.description = description;
+        this.lazyContainerInfo = lazyContainerInfo;
+        this.configs = configs instanceof SortedMap ? configs : new TreeMap<>(configs);
+        this.lazyConfigs = lazyConfigs;
     }
 
     public String getName() {
@@ -42,11 +47,19 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     }
 
     public ContainerInfo getContainerInfo() {
-        return containerInfo;
+        return lazyContainerInfo != null ? lazyContainerInfo.get() : null;
     }
 
     public Map<String, String> getConfigs() {
-        return configs;
+        if (lazyConfigs == null) {
+            return configs;
+        } else {
+            Map<String, String> result = new TreeMap<>(configs);
+            // This will make sure the lazy config is sorted even though we couldn't sort it up-front
+            result.putAll(lazyConfigs.get());
+            return result;
+        }
+
     }
 
     public void setName(String name) {
@@ -55,10 +68,6 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public void setContainerInfo(ContainerInfo containerInfo) {
-        this.containerInfo = containerInfo;
     }
 
     public void setConfigs(Map<String, String> configs) {

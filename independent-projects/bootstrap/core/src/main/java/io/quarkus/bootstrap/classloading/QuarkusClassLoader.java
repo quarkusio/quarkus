@@ -222,7 +222,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private boolean parentFirst(String name, ClassPathResourceIndex classPathResourceIndex) {
-        return parentFirst || classPathResourceIndex.isParentFirst(name);
+        return parentFirst || name.startsWith("io/quarkus/devservices/crossclassloader")
+                || classPathResourceIndex.isParentFirst(name);
     }
 
     public void reset(Map<String, byte[]> generatedResources, Map<String, byte[]> transformedClasses) {

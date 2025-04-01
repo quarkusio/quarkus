@@ -132,8 +132,8 @@ public class DevServicesRedisContinuousTestingTest {
 
     private static String prettyPrintContainerList(List<Container> newContainers) {
         return newContainers.stream()
-                .map(c -> Arrays.toString(c.getPorts()) + "--" + Arrays.toString(c.getNames()))
-                .collect(Collectors.joining(", "));
+                .map(c -> Arrays.toString(c.getPorts()) + " -- " + Arrays.toString(c.getNames()) + " -- " + c.getLabels())
+                .collect(Collectors.joining(", \n"));
     }
 
     private static boolean hasPublicPort(Container newContainer, int newPort) {
@@ -242,6 +242,12 @@ public class DevServicesRedisContinuousTestingTest {
 
     private static List<Container> getRedisContainersExcludingExisting(Collection<Container> existingContainers) {
         return getRedisContainers().stream().filter(
+                container -> existingContainers.stream().noneMatch(existing -> existing.getId().equals(container.getId())))
+                .toList();
+    }
+
+    private static List<Container> getAllContainersExcludingExisting(Collection<Container> existingContainers) {
+        return getAllContainers().stream().filter(
                 container -> existingContainers.stream().noneMatch(existing -> existing.getId().equals(container.getId())))
                 .toList();
     }

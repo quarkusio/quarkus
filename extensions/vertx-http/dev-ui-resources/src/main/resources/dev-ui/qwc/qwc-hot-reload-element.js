@@ -32,6 +32,15 @@ class QwcHotReloadElement extends LitElement {
         throw new Error("Method 'hotReload()' must be implemented.");
     }
 
+    forceRestart(message = ""){
+        const event = new CustomEvent('force-restart-event', {
+            detail: { message: message },
+            bubbles: false, 
+            composed: false
+        });
+        window.dispatchEvent(event);
+    }
+
 }
 
 export { QwcHotReloadElement };

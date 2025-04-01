@@ -8,9 +8,12 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Locale;
 import java.util.function.BiConsumer;
+import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.launcher.QuarkusLauncher;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
@@ -97,6 +100,10 @@ public class Quarkus {
         if (exitHandler != null) {
             exitHandler.accept(1, t);
         } else {
+            QuarkusDelayedHandler handler = InitialConfigurator.DELAYED_HANDLER;
+            if (!handler.isActivated()) {
+                handler.setHandlers(new Handler[] { InitialConfigurator.createDefaultHandler() });
+            }
             Logger.getLogger(Quarkus.class).error("Error running Quarkus", t);
             ApplicationLifecycleManager.getDefaultExitCodeHandler().accept(1, t);
         }

@@ -736,10 +736,13 @@ public class ResteasyReactiveProcessor {
                     DotName typeName = type.name();
                     if (type.kind() == Type.Kind.CLASS) {
                         return typeName;
-                    } else if (type.kind() == Type.Kind.PARAMETERIZED_TYPE
-                            && DotNames.CLASS_NAME.equals(typeName)) {
-                        // spec allows for Class<SubResource> to be returned that the container should instantiate
-                        return type.asParameterizedType().arguments().get(0).name();
+                    } else if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        if (DotNames.CLASS_NAME.equals(typeName)) {
+                            // spec allows for Class<SubResource> to be returned that the container should instantiate
+                            return type.asParameterizedType().arguments().get(0).name();
+                        } else {
+                            return typeName;
+                        }
                     }
                     return null;
                 }

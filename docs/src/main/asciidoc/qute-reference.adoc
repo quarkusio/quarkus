@@ -789,7 +789,7 @@ A loop section may also define the `{#else}` block that is executed when there a
 
 The `{#if}` section represents a basic control flow section.
 The simplest possible version accepts a single parameter and renders the content if the condition is evaluated to `true`.
-A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
+A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence, an empty `java.util.Optional`/`java.util.OptionalInt`/`java.util.OptionalLong`/`java.util.OptionalDouble` or a number equal to zero.
 
 [source,html]
 ----

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -171,6 +172,8 @@ public class IfSectionTest {
         data.put("mapEmpty", Collections.emptyMap());
         data.put("array", new String[] { "foo" });
         data.put("arrayEmpty", new String[] {});
+        data.put("optional", Optional.of("foo"));
+        data.put("optionalEmpty", Optional.empty());
 
         assertEquals("1", engine.parse("{#if name}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if nameEmpty}1{#else}0{/if}").render(data));
@@ -183,6 +186,8 @@ public class IfSectionTest {
         assertEquals("0", engine.parse("{#if mapEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if array}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if arrayEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if optional}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if optionalEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if !arrayEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if arrayEmpty || name}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if arrayEmpty && name}1{#else}0{/if}").render(data));

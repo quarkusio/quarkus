@@ -4,7 +4,6 @@ import static io.quarkus.devservices.common.ContainerLocator.locateContainerWith
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
-import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,13 +23,15 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunnableDevService;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DevServicesTrackerBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -46,6 +47,9 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class })
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
+
+    private static final String IMAGE_NAME_KEY = "quarkus.redis.devservices.image-name";
+
     private static final String REDIS_IMAGE = "docker.io/redis:7";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
@@ -61,9 +65,6 @@ public class DevServicesRedisProcessor {
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
-    private static volatile List<RunningDevService> devServices;
-    private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
-    private static volatile boolean first = true;
 
     @BuildStep
     public List<DevServicesResultBuildItem> startRedisContainers(LaunchModeBuildItem launchMode,
@@ -71,33 +72,18 @@ public class DevServicesRedisProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             RedisBuildTimeConfig config,
+            DevServicesTrackerBuildItem tracker,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices());
         currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService());
 
-        // figure out if we need to shut down and restart existing redis containers
-        // if not and the redis containers have already started we just return
-        if (devServices != null) {
-            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
-            if (!restartRequired) {
-                return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
-            }
-            for (Closeable closeable : devServices) {
-                try {
-                    closeable.close();
-                } catch (Throwable e) {
-                    log.error("Failed to stop redis container", e);
-                }
-            }
-            devServices = null;
-            capturedDevServicesConfiguration = null;
-        }
+        // We cannot assume an augmentation order, so we cannot just check and reuse previous dev services.
+        // We *could* get the services from the tracker, and short circuit some work. But that short circuit has some risk.
+        // If the matching RunningDevService was in a different classloader, we'd get a ClassCastException.
 
-        capturedDevServicesConfiguration = currentDevServicesConfiguration;
         List<RunningDevService> newDevServices = new ArrayList<>();
 
         StartupLogCompressor compressor = new StartupLogCompressor(
@@ -108,14 +94,16 @@ public class DevServicesRedisProcessor {
                 String connectionName = entry.getKey();
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
-                RunningDevService devService = startContainer(dockerStatusBuildItem, composeProjectBuildItem,
+
+                RunningDevService devService = createContainer(dockerStatusBuildItem, composeProjectBuildItem,
                         connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        useSharedNetwork, devServicesConfig.timeout());
+                        useSharedNetwork, devServicesConfig.timeout(), tracker);
                 if (devService == null) {
                     continue;
                 }
+
                 newDevServices.add(devService);
                 String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
                 log.infof("The %s redis server is ready to accept connections on %s", connectionName,
@@ -131,34 +119,15 @@ public class DevServicesRedisProcessor {
             throw new RuntimeException(t);
         }
 
-        devServices = newDevServices;
-
-        if (first) {
-            first = false;
-            Runnable closeTask = () -> {
-                if (devServices != null) {
-                    for (Closeable closeable : devServices) {
-                        try {
-                            closeable.close();
-                        } catch (Throwable t) {
-                            log.error("Failed to stop database", t);
-                        }
-                    }
-                }
-                first = true;
-                devServices = null;
-                capturedDevServicesConfiguration = null;
-            };
-            closeBuildItem.addCloseTask(closeTask, true);
-        }
-        return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
+        return newDevServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
+    private RunningDevService createContainer(DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             String name,
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork, Optional<Duration> timeout) {
+            boolean useSharedNetwork, Optional<Duration> timeout, DevServicesTrackerBuildItem tracker) {
+
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
@@ -170,7 +139,7 @@ public class DevServicesRedisProcessor {
 
         boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
         if (!needToStart) {
-            log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
+            log.debug("Not starting dev services for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as hosts have been provided");
             return null;
         }
@@ -186,16 +155,38 @@ public class DevServicesRedisProcessor {
                 .asCompatibleSubstituteFor(REDIS_IMAGE);
 
         Supplier<RunningDevService> defaultRedisServerSupplier = () -> {
-            QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port(),
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null,
-                    composeProjectBuildItem.getDefaultNetworkId(),
+            OptionalInt fixedExposedPort = devServicesConfig.port();
+            String serviceName = launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null;
+            String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
+            QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, fixedExposedPort,
+                    serviceName,
+                    defaultNetworkId,
                     useSharedNetwork);
             timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.withEnv(devServicesConfig.containerEnv());
-            redisContainer.start();
-            String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
-            return new RunningDevService(Feature.REDIS_CLIENT.getName(), redisContainer.getContainerId(),
-                    redisContainer::close, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
+            String redisHost = fixedExposedPort.isPresent()
+                    ? REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort()
+                    : null;
+
+            // This config map is what we use for deciding if a container from another profile can be re-used
+            // TODO ideally the container properties would get put into it in a centralised way, but the RunnableDevService object doesn't get passed detailed information about the container
+            Map config = new HashMap();
+            if (fixedExposedPort.isPresent()) {
+                config.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
+            }
+            config.put(IMAGE_NAME_KEY, dockerImageName.asCanonicalNameString());
+
+            Map dynamicConfig = new HashMap();
+            Supplier hoster = () -> REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
+            dynamicConfig.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, hoster);
+
+            RunnableDevService answer = new RunnableDevService(
+                    Feature.REDIS_CLIENT.getName(),
+                    redisContainer.getContainerId(),
+                    redisContainer, config, dynamicConfig, tracker);
+
+            return answer;
+
         };
 
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
@@ -204,7 +195,9 @@ public class DevServicesRedisProcessor {
                         REDIS_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
-                    return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),
+                    // If there's a pre-existing container, it's already running, so create a running container, not a runnable one
+                    return new RunningDevService(Feature.REDIS_CLIENT.getName(),
+                            containerAddress.getId(),
                             null, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisUrl);
                 })
                 .orElseGet(defaultRedisServerSupplier);
@@ -218,7 +211,7 @@ public class DevServicesRedisProcessor {
         return configPrefix;
     }
 
-    private static class QuarkusPortRedisContainer extends GenericContainer<QuarkusPortRedisContainer> {
+    private static class QuarkusPortRedisContainer extends GenericContainer<QuarkusPortRedisContainer> implements Startable {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
@@ -265,6 +258,10 @@ public class DevServicesRedisProcessor {
         @Override
         public String getHost() {
             return useSharedNetwork ? hostName : super.getHost();
+        }
+
+        public void close() {
+            super.close();
         }
     }
 }

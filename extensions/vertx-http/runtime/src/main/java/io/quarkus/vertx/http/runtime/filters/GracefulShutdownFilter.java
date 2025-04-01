@@ -13,14 +13,14 @@ import io.vertx.core.http.HttpServerRequest;
 
 public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpServerRequest> {
 
-    private static Logger log = Logger.getLogger(GracefulShutdownFilter.class);
+    private static final Logger log = Logger.getLogger(GracefulShutdownFilter.class);
 
     private volatile Handler<HttpServerRequest> next;
     private volatile boolean running = true;
     private final AtomicInteger currentRequestCount = new AtomicInteger();
     private final AtomicReference<ShutdownNotification> notification = new AtomicReference<>();
 
-    private final Handler<Void> requestDoneHandler = new Handler<Void>() {
+    private final Handler<Void> requestDoneHandler = new Handler<>() {
         @Override
         public void handle(Void event) {
             int count = currentRequestCount.decrementAndGet();

@@ -1,5 +1,6 @@
 package io.quarkus.observability.test;
 
+import java.io.UncheckedIOException;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
@@ -21,13 +22,13 @@ public abstract class LgtmTestHelper {
 
         Awaitility.setDefaultPollInterval(1, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(61, TimeUnit.SECONDS).until(
                 client::user,
                 u -> "admin".equals(u.login));
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(61, TimeUnit.SECONDS).until(
                 () -> client.query("xvalue_X"),
                 result -> !result.data.result.isEmpty());
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(61, TimeUnit.SECONDS).until(
                 () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
                 result -> !result.traces.isEmpty());
     }

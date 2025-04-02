@@ -174,7 +174,7 @@ By default, the Kotlin code generation is enabled if the dependency `io.quarkus:
 To explicitly en-/disable this feature, set the `quarkus.generate-code.grpc.kotlin.generate` property in your `application.properties` file to `true` or `false`.
 
 
-IMPORTANT: When using Gradle, you also have to include `com.google.protobuf:protobuf-kotlin` as a `compileOnly` dependency in your project.
+IMPORTANT: `com.google.protobuf:protobuf-kotlin` needs to be included as dependency in the project.
 
 == Skipping code generation
 

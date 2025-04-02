@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.runtime.tracing;
+package io.quarkus.opentelemetry.runtime;
 
 import java.util.Collections;
 import java.util.Map;

@@ -127,6 +127,7 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
+import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -313,6 +314,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
 
         if (!hasEntities(jpaModel)) {
@@ -329,6 +331,12 @@ public final class HibernateOrmProcessor {
                     .filter(i -> i.isDefault())
                     .findFirst();
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
+            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
+            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+            jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
+                    .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+            xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
+                    .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(
                             QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor),
@@ -343,14 +351,14 @@ public final class HibernateOrmProcessor {
                                     hibernateOrmConfig.database().ormCompatibilityVersion(), Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            false, true, capabilities));
+                            false, true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaModel, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    reflectiveMethods, dbKindMetadataBuildItems);
+                    reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
     }
 
@@ -827,6 +835,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyNonPersistenceXmlPropertySet()) {
@@ -875,7 +884,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    reflectiveMethods, storageEngineCollector, dbKindMetadataBuildItems);
+                    reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
         } else if (!modelClassesAndPackagesForDefaultPersistenceUnit.isEmpty()
                 && (!hibernateOrmConfig.defaultPersistenceUnit().datasource().isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit().datasource().get()))
@@ -895,7 +904,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    reflectiveMethods, storageEngineCollector, dbKindMetadataBuildItems);
+                    reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
         }
 
         if (storageEngineCollector.size() > 1) {
@@ -919,6 +928,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Set<String> storageEngineCollector,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
@@ -1119,6 +1129,12 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.IGNORE_EXPLICIT_DISCRIMINATOR_COLUMNS_FOR_JOINED_SUBCLASS,
                 String.valueOf(persistenceUnitConfig.discriminator().ignoreExplicitForJoined()));
 
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
@@ -1131,7 +1147,8 @@ public final class HibernateOrmProcessor {
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         xmlMappings,
-                        false, false, capabilities));
+                        false, false,
+                        isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
     }
 
     private static void collectDialectConfig(String persistenceUnitName,
@@ -1678,6 +1695,27 @@ public final class HibernateOrmProcessor {
             return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
         }
         return false;
+    }
+
+    private static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            return Optional.of(FormatMapperKind.JACKSON);
+        }
+        if (capabilities.isPresent(Capability.JSONB)) {
+            return Optional.of(FormatMapperKind.JSONB);
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JAXB)) {
+            return Optional.of(FormatMapperKind.JAXB);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isHibernateValidatorPresent(Capabilities capabilities) {
+        return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
     }
 
     private static final class ProxyCache {

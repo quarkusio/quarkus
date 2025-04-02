@@ -793,7 +793,7 @@ public class CodeFlowAuthorizationTest {
                                         + "\","
                                         + "  \"access_token\": \"alice\","
                                         + "  \"expires_in\":" + 3 + ","
-                                        + "  \"refresh_token\": \"refresh_expires_in\""
+                                        + "  \"refresh_token\": \"refresh.expires.in\""
                                         + "}")));
 
         wireMockServer
@@ -819,7 +819,7 @@ public class CodeFlowAuthorizationTest {
 
         wireMockServer
                 .stubFor(WireMock.post("/auth/realms/quarkus/access_token_expires_in")
-                        .withRequestBody(containing("refresh_token=refresh_expires_in"))
+                        .withRequestBody(containing("refresh_token=refresh.expires.in"))
                         .willReturn(WireMock.aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

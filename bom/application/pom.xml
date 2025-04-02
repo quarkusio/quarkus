@@ -47,11 +47,11 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.10.0</smallrye-common.version>
-        <smallrye-config.version>3.12.3</smallrye-config.version>
+        <smallrye-config.version>3.12.4</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.8</smallrye-open-api.version>
-        <smallrye-graphql.version>2.12.1</smallrye-graphql.version>
+        <smallrye-graphql.version>2.12.2</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
@@ -99,7 +99,7 @@
         <narayana-lra.version>1.0.0.Final</narayana-lra.version>
         <agroal.version>2.5</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.17.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.17.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -107,7 +107,7 @@
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.6.1.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.6.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.2.Final</jboss-marshalling.version>
         <jboss-threads.version>3.8.0.Final</jboss-threads.version>
         <vertx.version>4.5.13</vertx.version>
@@ -119,7 +119,7 @@
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.5</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.2</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -174,7 +174,7 @@
         <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
-        <mockito.version>5.16.1</mockito.version>
+        <mockito.version>5.12.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.2.1</quarkus-security.version>
         <keycloak-client.version>26.0.4</keycloak-client.version>

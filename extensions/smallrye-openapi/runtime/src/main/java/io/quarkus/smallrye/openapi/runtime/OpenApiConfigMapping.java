@@ -54,6 +54,7 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
         mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_NAME, QUARKUS_INFO_LICENSE_NAME);
         mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_URL, QUARKUS_INFO_LICENSE_URL);
         mapKey(relocations, SmallRyeOASConfig.OPERATION_ID_STRAGEGY, QUARKUS_OPERATION_ID_STRATEGY);
+        mapKey(relocations, SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES, QUARKUS_MERGE_SCHEMA_EXAMPLES);
         return Collections.unmodifiableMap(relocations);
     }
 
@@ -74,5 +75,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final String QUARKUS_INFO_LICENSE_NAME = "quarkus.smallrye-openapi.info-license-name";
     private static final String QUARKUS_INFO_LICENSE_URL = "quarkus.smallrye-openapi.info-license-url";
     private static final String QUARKUS_OPERATION_ID_STRATEGY = "quarkus.smallrye-openapi.operation-id-strategy";
+    private static final String QUARKUS_MERGE_SCHEMA_EXAMPLES = "quarkus.smallrye-openapi.merge-schema-examples";
 
 }

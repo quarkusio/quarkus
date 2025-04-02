@@ -100,4 +100,9 @@ public interface TlsConfiguration {
      */
     boolean reload();
 
+    /**
+     * Returns the name which was associated with this configuration
+     */
+    String getName();
+
 }

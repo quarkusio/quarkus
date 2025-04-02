@@ -144,6 +144,11 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
             public boolean isTrustAll() {
                 return tlsConfiguration.isTrustAll();
             }
+
+            @Override
+            public Optional<String> getName() {
+                return Optional.ofNullable(tlsConfiguration.getName());
+            }
         };
     }
 }

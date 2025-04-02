@@ -17,6 +17,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.CredentialsProviderLink;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.RabbitMQRecorder;
+import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.RabbitmqClientConfigCustomizer;
 import io.smallrye.common.annotation.Identifier;
 
 public class SmallRyeReactiveMessagingRabbitMQProcessor {
@@ -24,6 +25,14 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.MESSAGING_RABBITMQ);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem build() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(RabbitmqClientConfigCustomizer.class)
+                .setUnremovable()
+                .build();
     }
 
     @BuildStep

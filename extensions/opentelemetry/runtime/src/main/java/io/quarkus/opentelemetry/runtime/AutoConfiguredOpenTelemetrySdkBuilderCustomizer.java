@@ -35,7 +35,6 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
-import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
@@ -87,7 +86,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelBuildConfig oTelBuildConfig;
@@ -95,7 +94,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public TracingResourceCustomizer(ApplicationConfig appConfig,
+        public ResourceCustomizer(ApplicationConfig appConfig,
                 OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
@@ -112,36 +111,31 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
-                    if (oTelBuildConfig.traces().enabled().orElse(TRUE) ||
-                            oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
-                        Resource consolidatedResource = existingResource.merge(
-                                Resource.create(delayedAttributes.get()));
+                    Resource consolidatedResource = existingResource.merge(
+                            Resource.create(delayedAttributes.get()));
 
-                        // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
-                        // inside resource customizer
-                        String serviceName = oTelRuntimeConfig
-                                .serviceName()
-                                .filter(new Predicate<String>() {
-                                    @Override
-                                    public boolean test(String sn) {
-                                        return !sn.equals(appConfig.name().orElse("unset"));
-                                    }
-                                })
-                                .orElse(null);
+                    // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
+                    // inside resource customizer
+                    String serviceName = oTelRuntimeConfig
+                            .serviceName()
+                            .filter(new Predicate<String>() {
+                                @Override
+                                public boolean test(String sn) {
+                                    return !sn.equals(appConfig.name().orElse("unset"));
+                                }
+                            })
+                            .orElse(null);
 
-                        String hostname = getHostname();
+                    String hostname = getHostname();
 
-                        // Merge resource instances with env attributes
-                        Resource resource = resources.stream()
-                                .reduce(Resource.empty(), Resource::merge)
-                                .merge(TracerUtil.mapResourceAttributes(
-                                        oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
-                                        serviceName, // from properties
-                                        hostname));
-                        return consolidatedResource.merge(resource);
-                    } else {
-                        return Resource.builder().build();
-                    }
+                    // Merge resource instances with env attributes
+                    Resource resource = resources.stream()
+                            .reduce(Resource.empty(), Resource::merge)
+                            .merge(TracerUtil.mapResourceAttributes(
+                                    oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
+                                    serviceName, // from properties
+                                    hostname));
+                    return consolidatedResource.merge(resource);
                 }
             });
         }

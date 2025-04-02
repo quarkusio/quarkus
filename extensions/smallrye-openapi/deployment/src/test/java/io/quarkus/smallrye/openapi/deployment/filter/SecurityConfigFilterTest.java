@@ -261,5 +261,10 @@ class SecurityConfigFilterTest {
         public Map<String, String> securitySchemeExtensions() {
             return Map.of();
         }
+
+        @Override
+        public boolean mergeSchemaExamples() {
+            return false;
+        }
     }
 }

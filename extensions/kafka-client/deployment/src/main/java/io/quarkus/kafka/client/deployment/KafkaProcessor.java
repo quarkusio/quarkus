@@ -80,6 +80,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
@@ -403,6 +404,7 @@ public class KafkaProcessor {
     @BuildStep
     public void withSasl(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBundleBuildItem> resources,
             BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
@@ -429,6 +431,8 @@ public class KafkaProcessor {
         }
         // Kafka oauth login internally iterates over all ServiceLoader available LoginModule's
         registerJDKLoginModules(reflectiveClass);
+        // Accessed through org.apache.kafka.common.security.plain.PlainLoginModule.initialize
+        resources.produce(new NativeImageResourceBundleBuildItem("sun.security.util.resources.security"));
         for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authenticateCallbackHandler.name().toString())
                     .reason(getClass().getName() + " sasl support " + AUTHENTICATE_CALLBACK_HANDLER

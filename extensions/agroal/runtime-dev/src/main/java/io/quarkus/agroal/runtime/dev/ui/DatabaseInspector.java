@@ -20,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -32,8 +30,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
-import io.quarkus.agroal.runtime.DataSources;
-import io.quarkus.arc.Arc;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
+import io.quarkus.arc.InactiveBeanException;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
@@ -41,9 +40,9 @@ import io.quarkus.runtime.LaunchMode;
 public final class DatabaseInspector {
 
     @Inject
-    Instance<DataSources> dataSources;
+    Instance<AgroalDataSourceSupport> agroalDataSourceSupports;
 
-    private final Map<String, DataSource> checkedDataSources = new HashMap<>();
+    private final Map<String, AgroalDataSource> checkedDataSources = new HashMap<>();
 
     private boolean isDev = false;
     private boolean allowSql = false;
@@ -64,18 +63,23 @@ public final class DatabaseInspector {
 
     @PostConstruct
     protected void init() {
-        if (!dataSources.isResolvable()) {
+        if (!agroalDataSourceSupports.isResolvable()) {
             // No configured Agroal datasource at build time.
             return;
         }
 
         if (isDev) {
-            AgroalDataSourceSupport agroalSupport = Arc.container().instance(AgroalDataSourceSupport.class)
-                    .get();
+            AgroalDataSourceSupport agroalSupport = agroalDataSourceSupports.get();
             for (String name : agroalSupport.entries.keySet()) {
-                DataSource ds = dataSources.get().getDataSource(name);
-                if (ds != null) {
-                    checkedDataSources.put(name, ds);
+                AgroalDataSourceSupport.Entry entry = agroalSupport.entries.get(name);
+                if (entry != null) {
+                    InjectableInstance<AgroalDataSource> dataSourceInstance = AgroalDataSourceUtil.dataSourceInstance(name);
+                    if (dataSourceInstance.isResolvable()) {
+                        AgroalDataSource ads = dataSourceInstance.get();
+                        if (isAllowedDatabase(ads)) {
+                            checkedDataSources.put(name, ads);
+                        }
+                    }
                 }
             }
         }
@@ -96,7 +100,7 @@ public final class DatabaseInspector {
 
     private Datasource getDatasource(String datasource) {
         if (isDev) {
-            AgroalDataSource ads = (AgroalDataSource) checkedDataSources.get(datasource);
+            AgroalDataSource ads = checkedDataSources.get(datasource);
             if (isAllowedDatabase(ads)) {
                 AgroalDataSourceConfiguration configuration = ads.getConfiguration();
 
@@ -113,7 +117,7 @@ public final class DatabaseInspector {
         if (isDev) {
             List<Table> tableList = new ArrayList<>();
             try {
-                AgroalDataSource ads = (AgroalDataSource) checkedDataSources.get(datasource);
+                AgroalDataSource ads = checkedDataSources.get(datasource);
                 if (isAllowedDatabase(ads)) {
                     try (Connection connection = ads.getConnection()) {
                         DatabaseMetaData metaData = connection.getMetaData();
@@ -159,7 +163,7 @@ public final class DatabaseInspector {
     public DataSet executeSQL(String datasource, String sql, Integer pageNumber, Integer pageSize) {
         if (isDev && sqlIsValid(sql)) {
             try {
-                AgroalDataSource ads = (AgroalDataSource) checkedDataSources.get(datasource);
+                AgroalDataSource ads = checkedDataSources.get(datasource);
                 if (isAllowedDatabase(ads)) {
                     try (Connection connection = ads.getConnection()) {
                         // Create a scrollable ResultSet
@@ -236,7 +240,7 @@ public final class DatabaseInspector {
     public String getInsertScript(String datasource) {
         if (isDev) {
             try {
-                AgroalDataSource ads = (AgroalDataSource) checkedDataSources.get(datasource);
+                AgroalDataSource ads = checkedDataSources.get(datasource);
                 if (isAllowedDatabase(ads)) {
                     try (Connection connection = ads.getConnection();
                             StringWriter writer = new StringWriter()) {
@@ -325,10 +329,9 @@ public final class DatabaseInspector {
     }
 
     private boolean isAllowedDatabase(AgroalDataSource ads) {
-        AgroalDataSourceConfiguration configuration = ads.getConfiguration();
-        String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
-
         try {
+            AgroalDataSourceConfiguration configuration = ads.getConfiguration();
+            String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
             if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
                     || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
                     || (this.allowedHost != null && !this.allowedHost.isBlank()
@@ -347,6 +350,8 @@ public final class DatabaseInspector {
 
         } catch (URISyntaxException e) {
             Log.warn(e.getMessage());
+        } catch (InactiveBeanException ibe) {
+            // The datasource is disabled.
         }
 
         return false;

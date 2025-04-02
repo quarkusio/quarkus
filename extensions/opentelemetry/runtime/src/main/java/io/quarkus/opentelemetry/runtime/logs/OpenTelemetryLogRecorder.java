@@ -16,7 +16,9 @@ public class OpenTelemetryLogRecorder {
         if (config.sdkDisabled() || !config.logs().handlerEnabled()) {
             return new RuntimeValue<>(Optional.empty());
         }
-        OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
-        return new RuntimeValue<>(Optional.of(new OpenTelemetryLogHandler(openTelemetry)));
+        final OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
+        final OpenTelemetryLogHandler logHandler = new OpenTelemetryLogHandler(openTelemetry);
+        logHandler.setLevel(config.logs().level());
+        return new RuntimeValue<>(Optional.of(logHandler));
     }
 }

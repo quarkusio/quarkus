@@ -41,6 +41,7 @@
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.24.0</commonmark.version>
+        <jgit.version>7.2.0.202503040940-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -190,6 +191,11 @@
                 <groupId>org.commonmark</groupId>
                 <artifactId>commonmark</artifactId>
                 <version>${commonmark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>${jgit.version}</version>
             </dependency>
 
             <!-- Extension processor -->

@@ -7,12 +7,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :extension-status: preview
 :categories: observability
-:summary: This guide explains how your Quarkus application can utilize OpenTelemetry Logging to provide distributed logging for interactive web applications.
+:summary: This guide explains how your Quarkus application can utilize OpenTelemetry Logging to provide centralised logging for interactive web applications.
 :topics: observability,opentelemetry,logging
 :extensions: io.quarkus:quarkus-opentelemetry
 
-This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
-distributed logging for interactive web applications.
+This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide structured, contextual, vendor-neutral and centralised logging for interactive web applications.
 
 include::{includes}/extension-status.adoc[]
 
@@ -31,7 +30,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this guide, we create a straightforward REST application to demonstrate distributed logging, similar to the other OpenTelemetry guides.
+In this guide, we create a straightforward REST application to demonstrate OTel logging, in a similar way to the other OpenTelemetry signal guides.
 
 == Solution
 

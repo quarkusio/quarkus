@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-tests-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.21.1</version>
     </parent>
     <artifactId>quarkus-integration-test-jfr-blocking</artifactId>
     <name>Quarkus - Integration Tests - JFR Blocking</name>

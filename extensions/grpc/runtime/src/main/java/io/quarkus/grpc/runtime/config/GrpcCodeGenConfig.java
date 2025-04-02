@@ -1,9 +1,12 @@
 package io.quarkus.grpc.runtime.config;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * not really used, here only to describe config options for code generation
@@ -39,4 +42,11 @@ public interface GrpcCodeGenConfig {
      */
     @WithDefault("com.google.protobuf:protobuf-java")
     String scanForImports();
+
+    /**
+     * Controls whether Kotlin code is generated when the {@code quarkus-kotlin} extension is present (in which case the default
+     * is {@code true}).
+     */
+    @WithName("kotlin.generate")
+    Optional<Boolean> generateKotlin();
 }

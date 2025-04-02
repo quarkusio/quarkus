@@ -25,7 +25,28 @@ public interface BuildpackConfig {
     Optional<String> nativeBuilderImage();
 
     /**
-     * Should the builder image be 'trusted' (use creator lifecycle)
+     * The lifecycle image to use when building the project
+     *
+     * This is optional, but can be used to override the lifecycle present within a builder image.
+     */
+    Optional<String> lifecycleImage();
+
+    /**
+     * The platform level to force for the build.
+     *
+     * Normally the platform level is determined from the intersection of the builder image supported
+     * levels, and the platform implementation supported levels. Sometimes it can be beneficial to force
+     * the platform to a particular version to force behavior during the build.
+     */
+    Optional<String> platformLevel();
+
+    /**
+     * Should the builder image be 'trusted' ?
+     *
+     * Trusted builders are allowed to attempt to use the `creator` lifecycle, which runs all the
+     * build phases within a single container. This is only possible for builders that do not use
+     * extensions. Running all phases in one container exposes some phases to information they may
+     * not see normally with a container-per-phase.
      */
     Optional<Boolean> trustBuilderImage();
 
@@ -36,9 +57,28 @@ public interface BuildpackConfig {
     Map<String, String> builderEnv();
 
     /**
+     * Usernames to use with registry hosts
+     */
+    @ConfigDocMapKey("registry-host")
+    Map<String, String> registryUser();
+
+    /**
+     * Passwords to use with registry hosts
+     */
+    @ConfigDocMapKey("registry-host")
+    Map<String, String> registryPassword();
+
+    /**
+     * Tokens to use with registry hosts
+     */
+    @ConfigDocMapKey("registry-host")
+    Map<String, String> registryToken();
+
+    /**
      * The buildpacks run image to use when building the project
      *
      * When not supplied, the run image is determined by the builder image.
+     * If extensions are used by the builder image, they may override the run image.
      */
     Optional<String> runImage();
 
@@ -63,14 +103,34 @@ public interface BuildpackConfig {
     /**
      * DOCKER_HOST value to use.
      *
-     * If not set, the env var DOCKER_HOST is used, if that is not set the platform will look for
-     * 'npipe:///./pipe/docker_engine' for windows, and `unix:///var/run/docker.sock' then
-     * `unix:///var/run/podman.sock` then `unix:///var/run/user/<uid>/podman/podman.sock` for linux
+     * This value is normally auto-determined, and is available for override if needed.
+     *
+     * If not set, the env var DOCKER_HOST is used, if that is not set the platform will
+     * test if `podman` is available on the path, if so, it will use podman to configure the
+     * appropriate values. If `podman` is not on the path, docker is assumed, and per-platform
+     * defaults for docker are used.
      */
     Optional<String> dockerHost();
 
     /**
+     * Path to the Docker socket to use.
+     *
+     * This value is normally auto-determined, and is available for override if needed.
+     *
+     * The path to the socket can vary, especially when the docker/podman daemon is running inside
+     * a VM, if useDaemon mode is true, then this path must refer to the path that can be used to
+     * mount the socket inside a container, so may refer to the path to the socket in the VM rather
+     * than the host.
+     */
+    Optional<String> dockerSocket();
+
+    /**
      * use Daemon mode?
+     *
+     * Should the buildpack build have the docker socket mounted into the build container(s).
+     * If this is false, then the image will be built directly as layers in a remote registry,
+     * this will probably require registry credentials to be passed.
+     *
      * Defaults to 'true'
      */
     @WithDefault("true")
@@ -78,24 +138,27 @@ public interface BuildpackConfig {
 
     /**
      * Use specified docker network during build
+     *
+     * This can be handy when building against a locally hosted docker registry, where you
+     * will require the build containers to be part of the 'host' network to enable them
+     * to access the local registry.
      */
     Optional<String> dockerNetwork();
 
     /**
      * Log level to use.
-     * Defaults to 'info'
+     *
+     * The log level to use when executing the build phases in containers.
+     *
+     * Defaults to 'info', supported values are 'info', 'warn' and 'debug'
      */
     @WithDefault("info")
     String logLevel();
 
     /**
-     * The username to use to authenticate with the registry used to pull the base JVM image
+     * Should the container log information include timestamps?
      */
-    Optional<String> baseRegistryUsername();
-
-    /**
-     * The password to use to authenticate with the registry used to pull the base JVM image
-     */
-    Optional<String> baseRegistryPassword();
+    @WithDefault("true")
+    Boolean getUseTimestamps();
 
 }

@@ -652,7 +652,7 @@ Some sections support optional end tags, i.e. if the end tag is missing then the
 ==== Parameters
 
 A start tag can define parameters with optional names, e.g. `{#if item.isActive}` and `{#let foo=1 bar=false}`.
-Parameters are separated by one or more spaces.
+Parameters are separated by one or more whitespaces.
 Names are separated from the values by the equals sign.
 Names and values can be prefixed and suffixed with any number of spaces, e.g. `{#let id='Foo'}` and `{#let id  = 'Foo'}` are equivalents where the name of the parameter is `id` and the value is `Foo`.
 Values can be grouped using parentheses, e.g. `{#let id=(item.id ?: 42)}` where the name is `id` and the value is `item.id ?: 42`.

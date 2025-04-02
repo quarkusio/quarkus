@@ -135,6 +135,18 @@ If not set, it will default to `http://localhost:4317`.
 
 To configure the connection using the same properties for all signals, please check the base xref:opentelemetry.adoc#create-the-configuration[configuration section of the OpenTelemetry guide].
 
+==== Setting the log level
+
+By default all log levels are exported.
+
+If the following configuration is created in the the `application.properties` file, only logs with a level of `ERROR` or higher will be exported:
+[source,properties]
+----
+quarkus.otel.logs.level=ERROR
+----
+
+As in other logs in Quarkus, log levels can be set to xref:logging.adoc#use-log-levels[these values].
+
 == Run the application
 
 First we need to start a system to visualise the OpenTelemetry data.

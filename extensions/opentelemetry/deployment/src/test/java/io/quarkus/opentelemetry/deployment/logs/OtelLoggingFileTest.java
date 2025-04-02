@@ -84,7 +84,7 @@ public class OtelLoggingFileTest {
                                 .doesNotContainKey(EXCEPTION_TYPE)
                                 .doesNotContainKey(EXCEPTION_MESSAGE)
                                 .doesNotContainKey(EXCEPTION_STACKTRACE)
-                                // attributed do not duplicate tracing data
+                                // attributes do not duplicate tracing data
                                 .doesNotContainKey("spanId")
                                 .doesNotContainKey("traceId")
                                 .doesNotContainKey("sampled"));

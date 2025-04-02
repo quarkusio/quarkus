@@ -142,7 +142,7 @@ public class OtelLoggingTest {
                                 .doesNotContainKey(EXCEPTION_MESSAGE)
                                 .doesNotContainKey(EXCEPTION_STACKTRACE)
                                 .doesNotContainKey(LOG_FILE_PATH)
-                                // attributed do not duplicate tracing data
+                                // attributes do not duplicate tracing data
                                 .doesNotContainKey("spanId")
                                 .doesNotContainKey("traceId")
                                 .doesNotContainKey("sampled"));
@@ -166,7 +166,7 @@ public class OtelLoggingTest {
                                 .containsEntry(EXCEPTION_MESSAGE, "Crafted exception")
                                 .containsEntry(EXCEPTION_STACKTRACE, extractStackTrace(craftedException))
                                 .doesNotContainKey(LOG_FILE_PATH)
-                                // attributed do not duplicate tracing data
+                                // attributes do not duplicate tracing data
                                 .doesNotContainKey("spanId")
                                 .doesNotContainKey("traceId")
                                 .doesNotContainKey("sampled"));
@@ -203,7 +203,7 @@ public class OtelLoggingTest {
                                 .doesNotContainKey(EXCEPTION_MESSAGE)
                                 .doesNotContainKey(EXCEPTION_STACKTRACE)
                                 .doesNotContainKey(LOG_FILE_PATH)
-                                // attributed do not duplicate tracing data
+                                // attributes do not duplicate tracing data
                                 .doesNotContainKey("spanId")
                                 .doesNotContainKey("traceId")
                                 .doesNotContainKey("sampled"));
@@ -240,7 +240,7 @@ public class OtelLoggingTest {
                                 .doesNotContainKey(EXCEPTION_MESSAGE)
                                 .doesNotContainKey(EXCEPTION_STACKTRACE)
                                 .doesNotContainKey(LOG_FILE_PATH)
-                                // attributed do not duplicate tracing data
+                                // attributes do not duplicate tracing data
                                 .doesNotContainKey("spanId")
                                 .doesNotContainKey("traceId")
                                 .doesNotContainKey("sampled"));

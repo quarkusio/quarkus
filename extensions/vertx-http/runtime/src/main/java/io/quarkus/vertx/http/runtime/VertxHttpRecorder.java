@@ -12,7 +12,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -853,34 +852,17 @@ public class VertxHttpRecorder {
         // See https://vertx.io/docs/vertx-core/java/#_server_sharing for more information
         AtomicBoolean startEventsFired = new AtomicBoolean();
 
-        vertx.deployVerticle(new Supplier<Verticle>() {
+        vertx.deployVerticle(new Supplier<>() {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
                         launchMode, insecureRequestStrategy, httpConfig, connectionCount, registry, startEventsFired);
             }
-        }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
+        }, new DeploymentOptions().setInstances(ioThreads), new Handler<>() {
             @Override
             public void handle(AsyncResult<String> event) {
                 if (event.failed()) {
-                    Throwable effectiveCause = event.cause();
-                    if (effectiveCause instanceof BindException) {
-                        List<Integer> portsUsed = Collections.emptyList();
-
-                        if ((httpMainSslServerOptions == null) && (httpMainServerOptions != null)) {
-                            portsUsed = List.of(httpMainServerOptions.getPort());
-                        } else if ((insecureRequestStrategy == InsecureRequests.DISABLED)
-                                && (httpMainSslServerOptions != null)) {
-                            portsUsed = List.of(httpMainSslServerOptions.getPort());
-                        } else if ((httpMainSslServerOptions != null)
-                                && (insecureRequestStrategy == InsecureRequests.ENABLED)
-                                && (httpMainServerOptions != null)) {
-                            portsUsed = List.of(httpMainServerOptions.getPort(), httpMainSslServerOptions.getPort());
-                        }
-
-                        effectiveCause = new QuarkusBindException((BindException) effectiveCause, portsUsed);
-                    }
-                    futureResult.completeExceptionally(effectiveCause);
+                    futureResult.completeExceptionally(event.cause());
                 } else {
                     futureResult.complete(event.result());
                 }
@@ -1362,7 +1344,11 @@ public class VertxHttpRecorder {
                 @Override
                 public void handle(AsyncResult<HttpServer> event) {
                     if (event.cause() != null) {
-                        startFuture.fail(event.cause());
+                        if (event.cause() instanceof BindException e) {
+                            startFuture.fail(new QuarkusBindException(options.getHost(), options.getPort(), e));
+                        } else {
+                            startFuture.fail(event.cause());
+                        }
                     } else {
                         // Port may be random, so set the actual port
                         int actualPort = event.result().actualPort();

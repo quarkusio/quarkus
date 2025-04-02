@@ -370,7 +370,7 @@ public class GrpcServerRecorder {
             VertxServer vertxServer = (VertxServer) server;
             vertxServer.start(ar -> {
                 if (ar.failed()) {
-                    Throwable effectiveCause = getEffectiveThrowable(ar, portToServer);
+                    Throwable effectiveCause = getEffectiveThrowable(ar, configuration.host(), portToServer.getKey());
                     if (effectiveCause instanceof QuarkusBindException) {
                         LOGGER.error("Unable to start the gRPC server");
                     } else {
@@ -457,13 +457,13 @@ public class GrpcServerRecorder {
         return definitions;
     }
 
-    private Throwable getEffectiveThrowable(AsyncResult<Void> ar, Map.Entry<Integer, Server> portToServer) {
+    private Throwable getEffectiveThrowable(AsyncResult<Void> ar, String host, int port) {
         Throwable effectiveCause = ar.cause();
         while (effectiveCause.getCause() != null) {
             effectiveCause = effectiveCause.getCause();
         }
-        if (effectiveCause instanceof BindException) {
-            effectiveCause = new QuarkusBindException(portToServer.getKey());
+        if (effectiveCause instanceof BindException e) {
+            effectiveCause = new QuarkusBindException(host, port, e);
         }
         return effectiveCause;
     }
@@ -706,7 +706,7 @@ public class GrpcServerRecorder {
                 VertxServer server = (VertxServer) grpcServer;
                 server.start(ar -> {
                     if (ar.failed()) {
-                        Throwable effectiveCause = getEffectiveThrowable(ar, portToServer);
+                        Throwable effectiveCause = getEffectiveThrowable(ar, configuration.host(), portToServer.getKey());
                         if (effectiveCause instanceof QuarkusBindException) {
                             LOGGER.error("Unable to start the gRPC server");
                         } else {

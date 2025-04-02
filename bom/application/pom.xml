@@ -167,7 +167,7 @@
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.4.0</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
-        <javaparser.version>3.26.3</javaparser.version>
+        <javaparser.version>3.26.4</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.20.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>

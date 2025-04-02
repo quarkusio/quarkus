@@ -48,6 +48,9 @@ All this functionality is part of the Quarkus `deployment` modules, so does not 
 way. If you want to disable all Dev Services you can use the `quarkus.devservices.enabled=false` config property, although
 in most cases this is not necessary as simply configuring the service will result in the Dev Service being disabled automatically.
 
+== Compose Dev Services
+
+xref:compose-dev-services.adoc[Quarkus Compose Dev Services] allows you to define custom dev services using the https://compose-spec.io/[Compose specification].
 
 
 == Platform Dev Services

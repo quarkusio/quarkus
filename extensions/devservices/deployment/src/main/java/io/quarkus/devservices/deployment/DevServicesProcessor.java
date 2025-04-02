@@ -8,6 +8,7 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,19 +28,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.FrameConsumerResultCallback;
 import org.testcontainers.containers.output.OutputFrame;
 
 import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -50,6 +53,7 @@ import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 
 public class DevServicesProcessor {
@@ -59,6 +63,44 @@ public class DevServicesProcessor {
     static volatile ConsoleStateManager.ConsoleContext context;
     static volatile boolean logForwardEnabled = false;
     static Map<String, ContainerLogForwarder> containerLogForwarders = new HashMap<>();
+
+    @BuildStep
+    public DevServicesNetworkIdBuildItem networkId(
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            Optional<DevServicesComposeProjectBuildItem> composeProjectBuildItem) {
+        String networkId = composeProjectBuildItem
+                .map(DevServicesComposeProjectBuildItem::getDefaultNetworkId)
+                .or(() -> devServicesLauncherConfig.flatMap(ignored -> getSharedNetworkId()))
+                .orElse(null);
+        return new DevServicesNetworkIdBuildItem(networkId);
+    }
+
+    /**
+     * Get the network id from the shared testcontainers network, without forcing the creation of the network.
+     *
+     * @return the network id if available, empty otherwise
+     */
+    private Optional<String> getSharedNetworkId() {
+        try {
+            Field id;
+            Object sharedNetwork;
+            var tccl = Thread.currentThread().getContextClassLoader();
+            if (tccl.getName().contains("Deployment")) {
+                Class<?> networkClass = tccl.getParent().loadClass("org.testcontainers.containers.Network");
+                sharedNetwork = networkClass.getField("SHARED").get(null);
+                Class<?> networkImplClass = tccl.getParent().loadClass("org.testcontainers.containers.Network$NetworkImpl");
+                id = networkImplClass.getDeclaredField("id");
+            } else {
+                sharedNetwork = Network.SHARED;
+                id = Network.NetworkImpl.class.getDeclaredField("id");
+            }
+            id.setAccessible(true);
+            String value = (String) id.get(sharedNetwork);
+            return Optional.ofNullable(value);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
     public List<DevServiceDescriptionBuildItem> config(
@@ -73,7 +115,7 @@ public class DevServicesProcessor {
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
             if (devService.hasContainerInfo()) {
-                containerLogForwarders.compute(devService.getContainerInfo().getId(),
+                containerLogForwarders.compute(devService.getContainerInfo().id(),
                         (id, forwarder) -> Objects.requireNonNullElseGet(forwarder,
                                 () -> new ContainerLogForwarder(devService)));
             }
@@ -91,7 +133,7 @@ public class DevServicesProcessor {
         for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
             if (service.getContainerInfo() != null) {
                 footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
-                    return createLogPublisher(service.getContainerInfo().getId());
+                    return createLogPublisher(service.getContainerInfo().id());
                 }));
             }
         }
@@ -201,24 +243,12 @@ public class DevServicesProcessor {
                 container.getStatus(), getNetworks(container), container.getLabels(), getExposedPorts(container));
     }
 
-    private static String[] getNetworks(Container container) {
+    private static Map<String, String[]> getNetworks(Container container) {
         ContainerNetworkSettings networkSettings = container.getNetworkSettings();
         if (networkSettings == null) {
             return null;
         }
-        Map<String, ContainerNetwork> networks = networkSettings.getNetworks();
-        if (networks == null) {
-            return null;
-        }
-        return networks.entrySet().stream()
-                .map(e -> {
-                    List<String> aliases = e.getValue().getAliases();
-                    if (aliases == null || aliases.isEmpty()) {
-                        return e.getKey();
-                    }
-                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
-                })
-                .toArray(String[]::new);
+        return ContainerUtil.getNetworks(networkSettings.getNetworks());
     }
 
     private ContainerInfo.ContainerPort[] getExposedPorts(Container container) {
@@ -249,10 +279,10 @@ public class DevServicesProcessor {
 
         if (devService.hasContainerInfo()) {
             builder.append(String.format("  %-18s", "Container: "))
-                    .append(devService.getContainerInfo().getId(), 0, 12)
+                    .append(devService.getContainerInfo().id(), 0, 12)
                     .append(devService.getContainerInfo().formatNames())
                     .append("  ")
-                    .append(devService.getContainerInfo().getImageName())
+                    .append(devService.getContainerInfo().imageName())
                     .append("\n");
             builder.append(String.format("  %-18s", "Network: "))
                     .append(devService.getContainerInfo().formatNetworks())

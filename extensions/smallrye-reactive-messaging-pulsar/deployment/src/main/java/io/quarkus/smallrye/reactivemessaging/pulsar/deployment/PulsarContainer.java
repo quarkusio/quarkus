@@ -24,20 +24,22 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
     public static final int BROKER_PORT = 6650;
     public static final int BROKER_HTTP_PORT = 8080;
 
-    private boolean useSharedNetwork;
-    private String hostName;
+    private final boolean useSharedNetwork;
+    private final String hostName;
 
     public PulsarContainer() {
-        this(PULSAR_IMAGE);
+        this(PULSAR_IMAGE, null, false);
     }
 
-    public PulsarContainer(DockerImageName imageName) {
+    public PulsarContainer(DockerImageName imageName, String defaultNetworkId, boolean useSharedNetwork) {
         super(imageName);
         super.withExposedPorts(BROKER_PORT, BROKER_HTTP_PORT);
         super.withStartupTimeout(Duration.ofSeconds(60));
         super.waitingFor(Wait.forLogMessage(".*Created namespace public/default.*", 1));
         super.withCommand("sh", "-c", runStarterScript());
         super.withTmpFs(Collections.singletonMap("/pulsar/data", "rw"));
+        this.useSharedNetwork = useSharedNetwork;
+        this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, DEV_SERVICE_PULSAR);
     }
 
     protected String runStarterScript() {
@@ -56,13 +58,6 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
         copyFileToContainer(
                 Transferable.of(command.getBytes(StandardCharsets.UTF_8), 700),
                 STARTER_SCRIPT);
-    }
-
-    public PulsarContainer withSharedNetwork() {
-        useSharedNetwork = true;
-        hostName = ConfigureUtil.configureSharedNetwork(this, DEV_SERVICE_PULSAR);
-
-        return self();
     }
 
     public PulsarContainer withPort(final int fixedPort) {

@@ -43,7 +43,7 @@ public class DevServicesLogsCommand implements Command {
                 resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
                         frame -> commandInvocation.print(frame.getUtf8String()));
                 LogContainerCmd logCmd = DockerClientFactory.lazyClient()
-                        .logContainerCmd(desc.getContainerInfo().getId())
+                        .logContainerCmd(desc.getContainerInfo().id())
                         .withFollowStream(follow)
                         .withTail(tail)
                         .withStdErr(true)

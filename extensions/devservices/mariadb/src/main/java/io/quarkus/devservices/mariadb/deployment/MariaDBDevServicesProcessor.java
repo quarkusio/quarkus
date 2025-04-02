@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MariaDBContainer;
@@ -19,8 +20,10 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
@@ -35,9 +38,12 @@ public class MariaDBDevServicesProcessor {
     public static final Integer PORT = 3306;
     public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
+    private static final MariaDBDatasourceServiceConfigurator configurator = new MariaDBDatasourceServiceConfigurator();
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
             @SuppressWarnings("unchecked")
@@ -46,48 +52,58 @@ public class MariaDBDevServicesProcessor {
                     String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
                     LaunchMode launchMode, Optional<Duration> startupTimeout) {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                        devServicesSharedNetworkBuildItem);
-                QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(containerConfig.getImageName(),
-                        containerConfig.getFixedExposedPort(),
-                        useSharedNetwork);
-                startupTimeout.ifPresent(container::withStartupTimeout);
-
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
                 String effectiveDbName = containerConfig.getDbName().orElse(
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
-                container.withUsername(effectiveUsername)
-                        .withPassword(effectivePassword)
-                        .withDatabaseName(effectiveDbName)
-                        .withReuse(containerConfig.isReuse());
-                Labels.addDataSourceLabel(container, datasourceName);
-                Volumes.addVolumes(container, containerConfig.getVolumes());
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                        devServicesSharedNetworkBuildItem);
 
-                container.withEnv(containerConfig.getContainerEnv());
+                Supplier<RunningDevServicesDatasource> createDevService = () -> {
+                    QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(containerConfig.getImageName(),
+                            containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(),
+                            useSharedNetwork);
+                    startupTimeout.ifPresent(container::withStartupTimeout);
 
-                if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
-                    container.withConfigurationOverride(
-                            containerConfig.getContainerProperties().get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
-                }
+                    container.withUsername(effectiveUsername)
+                            .withPassword(effectivePassword)
+                            .withDatabaseName(effectiveDbName)
+                            .withReuse(containerConfig.isReuse());
+                    Labels.addDataSourceLabel(container, datasourceName);
+                    Volumes.addVolumes(container, containerConfig.getVolumes());
 
-                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
-                containerConfig.getCommand().ifPresent(container::setCommand);
-                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
-                if (containerConfig.isShowLogs()) {
-                    container.withLogConsumer(new JBossLoggingConsumer(LOG));
-                }
-                container.start();
+                    container.withEnv(containerConfig.getContainerEnv());
 
-                LOG.info("Dev Services for MariaDB started.");
+                    if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
+                        container.withConfigurationOverride(
+                                containerConfig.getContainerProperties().get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
+                    }
 
-                return new RunningDevServicesDatasource(container.getContainerId(),
-                        container.getEffectiveJdbcUrl(),
-                        container.getReactiveUrl(),
-                        container.getUsername(),
-                        container.getPassword(),
-                        new ContainerShutdownCloseable(container, "MariaDB"));
+                    containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                    containerConfig.getCommand().ifPresent(container::setCommand);
+                    containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                    if (containerConfig.isShowLogs()) {
+                        container.withLogConsumer(new JBossLoggingConsumer(LOG));
+                    }
+                    container.start();
+
+                    LOG.info("Dev Services for MariaDB started.");
+
+                    return new RunningDevServicesDatasource(container.getContainerId(),
+                            container.getEffectiveJdbcUrl(),
+                            container.getReactiveUrl(),
+                            container.getUsername(),
+                            container.getPassword(),
+                            new ContainerShutdownCloseable(container, "MariaDB"));
+                };
+                List<String> images = List.of(
+                        containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")),
+                        "maria");
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
+                        .orElseGet(createDevService);
             }
         });
     }
@@ -96,14 +112,17 @@ public class MariaDBDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
-        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
+        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
+                String defaultNetworkId,
+                boolean useSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.NAME)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mariadb");
         }
 
         @Override
@@ -111,7 +130,6 @@ public class MariaDBDevServicesProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mariadb");
                 return;
             }
 

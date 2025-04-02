@@ -26,6 +26,20 @@ public final class ConfigureUtil {
     private ConfigureUtil() {
     }
 
+    public static String configureNetwork(GenericContainer<?> container,
+            String defaultNetworkId,
+            boolean useSharedNetwork,
+            String hostNamePrefix) {
+        if (defaultNetworkId != null) {
+            // Set the network`without creating the network
+            container.setNetworkMode(defaultNetworkId);
+            return setGeneratedHostname(container, hostNamePrefix);
+        } else if (useSharedNetwork) {
+            return configureSharedNetwork(container, hostNamePrefix);
+        }
+        return container.getHost();
+    }
+
     public static String configureSharedNetwork(GenericContainer<?> container, String hostNamePrefix) {
         // When a shared network is requested for the launched containers, we need to configure
         // the container to use it. We also need to create a hostname that will be applied to the returned
@@ -53,7 +67,10 @@ public final class ConfigureUtil {
         } else {
             container.setNetwork(Network.SHARED);
         }
+        return setGeneratedHostname(container, hostNamePrefix);
+    }
 
+    public static String setGeneratedHostname(GenericContainer<?> container, String hostNamePrefix) {
         String hostName = (hostNamePrefix + "-" + Base58.randomString(5)).toLowerCase(Locale.ROOT);
         // some containers might try to add their own aliases on start, so we want to keep this list modifiable:
         container.setNetworkAliases(new ArrayList<>(List.of(hostName)));

@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.deployment;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
 
 import java.io.Closeable;
@@ -26,6 +27,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -35,6 +37,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.mongodb.runtime.MongodbConfig;
@@ -60,11 +63,13 @@ public class DevServicesMongoProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mongodb";
 
-    private static final ContainerLocator MONGO_CONTAINER_LOCATOR = new ContainerLocator(DEV_SERVICE_LABEL, MONGO_EXPOSED_PORT);
+    private static final ContainerLocator MONGO_CONTAINER_LOCATOR = locateContainerWithLabels(MONGO_EXPOSED_PORT,
+            DEV_SERVICE_LABEL);
 
     @BuildStep
     public List<DevServicesResultBuildItem> startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -109,7 +114,8 @@ public class DevServicesMongoProcessor {
             try {
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
-                devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
+                devService = startMongo(dockerStatusBuildItem, composeProjectBuildItem, connectionName,
+                        currentCapturedProperties.get(connectionName),
                         useSharedNetwork, devServicesConfig.timeout(), launchMode.getLaunchMode());
                 if (devService == null) {
                     compressor.closeAndDumpCaptured();
@@ -149,8 +155,10 @@ public class DevServicesMongoProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startMongo(DockerStatusBuildItem dockerStatusBuildItem, String connectionName,
-            CapturedProperties capturedProperties, boolean useSharedNetwork, Optional<Duration> timeout,
+    private RunningDevService startMongo(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            String connectionName, CapturedProperties capturedProperties,
+            boolean useSharedNetwork, Optional<Duration> timeout,
             LaunchMode launchMode) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
@@ -182,9 +190,12 @@ public class DevServicesMongoProcessor {
             if (capturedProperties.imageName != null) {
                 mongoDBContainer = new QuarkusMongoDBContainer(
                         DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
-                        capturedProperties.fixedExposedPort, useSharedNetwork);
+                        capturedProperties.fixedExposedPort,
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork);
             } else {
-                mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort, useSharedNetwork);
+                mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort,
+                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
             }
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
@@ -198,6 +209,8 @@ public class DevServicesMongoProcessor {
 
         return MONGO_CONTAINER_LOCATOR
                 .locateContainer(capturedProperties.serviceName(), capturedProperties.shared(), launchMode)
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(capturedProperties.imageName, "mongo"), MONGO_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
                     final String effectiveUrl = getEffectiveUrl(configPrefix, containerAddress.getHost(),
                             containerAddress.getPort(), capturedProperties);
@@ -267,28 +280,29 @@ public class DevServicesMongoProcessor {
         private final Integer fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         private static final int MONGODB_INTERNAL_PORT = 27017;
 
         @SuppressWarnings("deprecation")
-        private QuarkusMongoDBContainer(Integer fixedExposedPort, boolean useSharedNetwork) {
+        private QuarkusMongoDBContainer(Integer fixedExposedPort, String defaultNetworkId, boolean useSharedNetwork) {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
         }
 
-        private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort, boolean useSharedNetwork) {
+        private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
         }
 
         @Override
         public void configure() {
             super.configure();
-
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "mongo");
                 return;
             }
 

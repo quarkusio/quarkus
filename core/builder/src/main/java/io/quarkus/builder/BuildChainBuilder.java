@@ -180,7 +180,8 @@ public final class BuildChainBuilder {
                 final ItemId id = entry.getKey();
                 if (!consume.flags().contains(ConsumeFlag.OPTIONAL) && !id.isMulti()) {
                     if (!initialIds.contains(id) && !allProduces.containsKey(id)) {
-                        throw new ChainBuildException("No producers for required item " + id);
+                        throw new ChainBuildException(
+                                "No producers for required item " + id + ", step builder used: " + stepBuilder);
                     }
                 }
                 // add every producer

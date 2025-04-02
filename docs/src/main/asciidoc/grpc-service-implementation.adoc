@@ -331,6 +331,21 @@ public class MyInterceptor implements ServerInterceptor, Prioritized {
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
 
+There is also a support to inject Vert.x `RoutingContext` instance into your gRPC service, if / when needed.
+Quarkus doesn't do that by default, you will need to add `RoutingContextGrpcInterceptor` to your gRPC service.
+
+[source, java]
+----
+@GrpcService
+@RegisterInterceptor(RoutingContextGrpcInterceptor.class)
+public class HelloWorldService extends GreeterGrpc.GreeterImplBase {
+
+    @Inject
+    RoutingContext context;
+
+    // ...
+}
+----
 
 == Testing your services
 

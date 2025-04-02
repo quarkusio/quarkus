@@ -86,6 +86,7 @@ import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.supports.context.GrpcDuplicatedContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
+import io.quarkus.grpc.runtime.supports.context.RoutingContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.exc.DefaultExceptionHandlerProvider;
 import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -565,6 +566,7 @@ public class GrpcServerProcessor {
             // Global interceptors are invoked before any of the per-service interceptors
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcRequestContextGrpcInterceptor.class));
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcDuplicatedContextGrpcInterceptor.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(RoutingContextGrpcInterceptor.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));
 
             if (capabilities.isPresent(Capability.SECURITY)) {

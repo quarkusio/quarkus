@@ -269,18 +269,28 @@ public class GrpcServerRecorder {
                         capturedVertxContext.runOnContext(new Handler<Void>() {
                             @Override
                             public void handle(Void unused) {
-                                server.handle(ctx.request());
+                                routingContextAware(server, ctx);
                             }
                         });
                         return;
                     }
                 }
-                server.handle(ctx.request());
+                routingContextAware(server, ctx);
             }
         });
         shutdown.addShutdownTask(route::remove); // remove this route at shutdown, this should reset it
 
         initHealthStorage();
+    }
+
+    private static void routingContextAware(GrpcServer server, RoutingContext context) {
+        Context currentContext = Vertx.currentContext();
+        currentContext.putLocal(RoutingContext.class.getName(), context);
+        try {
+            server.handle(context.request());
+        } finally {
+            currentContext.removeLocal(RoutingContext.class.getName());
+        }
     }
 
     // TODO -- handle Avro, plain text ... when supported / needed

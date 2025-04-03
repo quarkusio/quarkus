@@ -3,10 +3,12 @@ package io.quarkus.grpc.stubs;
 import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import java.util.concurrent.ArrayBlockingQueue;
+
 public class StreamObserverFlowHandler<T> implements StreamObserver<T> {
 
-    private final Object waitLock = new Object();
     private final CallStreamObserver<T> wrapped;
+    private final ArrayBlockingQueue<T> queue = new ArrayBlockingQueue<>(100);
 
     public StreamObserverFlowHandler(StreamObserver<T> wrapped) {
         if (!(wrapped instanceof CallStreamObserver<?>)) {
@@ -17,15 +19,24 @@ public class StreamObserverFlowHandler<T> implements StreamObserver<T> {
 
     @Override
     public void onNext(T value) {
-        while (!wrapped.isReady()) {
-            synchronized (waitLock) {
-                try {
-                    waitLock.wait(0, 100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException(e);
+        if (!wrapped.isReady()) {
+            if (queue.offer(value)) {
+                return;
+            } else {
+                while (!wrapped.isReady()) {
+                    synchronized (queue) {
+                        try {
+                            queue.wait(0, 100);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(e);
+                        }
+                    }
                 }
             }
+        }
+        while (!queue.isEmpty()) {
+            wrapped.onNext(queue.poll());
         }
         wrapped.onNext(value);
     }
@@ -37,6 +48,9 @@ public class StreamObserverFlowHandler<T> implements StreamObserver<T> {
 
     @Override
     public void onCompleted() {
+        while (!queue.isEmpty()) {
+            wrapped.onNext(queue.poll());
+        }
         wrapped.onCompleted();
     }
 }

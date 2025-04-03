@@ -69,6 +69,21 @@ public class PersistentLoginManager {
         return restore(context, cookieName);
     }
 
+    String getAndRemoveCookie(RoutingContext context) {
+        var restoreResult = restore(context, cookieName);
+        if (restoreResult != null) {
+            Cookie cookie = context.request().getCookie(cookieName);
+            cookie.setMaxAge(0);
+            cookie.setPath(cookiePath);
+            cookie.setValue("");
+            cookie.setSecure(context.request().isSSL());
+            cookie.setSameSite(cookieSameSite);
+            context.response().addCookie(cookie);
+            return restoreResult.getPrincipal();
+        }
+        return null;
+    }
+
     public RestoreResult restore(RoutingContext context, String cookieName) {
         Cookie existing = context.request().getCookie(cookieName);
         // If there is no credential cookie, we have nothing to restore.
@@ -117,6 +132,10 @@ public class PersistentLoginManager {
         save(identity.getPrincipal().getName(), context, cookieName, restoreResult, secureCookie);
     }
 
+    void save(String value, RoutingContext context) {
+        save(value, context, cookieName, null, context.request().isSSL());
+    }
+
     public void save(String value, RoutingContext context, String cookieName, RestoreResult restoreResult,
             boolean secureCookie) {
         if (restoreResult != null) {
@@ -150,7 +169,7 @@ public class PersistentLoginManager {
             if (maxAgeSeconds >= 0) {
                 cookie.setMaxAge(maxAgeSeconds);
             }
-            context.addCookie(cookie);
+            context.response().addCookie(cookie);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

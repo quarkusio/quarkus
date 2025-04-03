@@ -28,7 +28,6 @@ import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
-import io.quarkus.paths.PathVisitor;
 
 public class PathTreeClassPathElement extends AbstractClassPathElement {
 
@@ -104,7 +103,11 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         if (resources != null && !resources.contains(sanitized)) {
             return null;
         }
-        return apply(tree -> tree.apply(sanitized, visit -> visit == null ? null : new Resource(visit)));
+        return apply(tree -> tree.apply(sanitized, this::getResource));
+    }
+
+    private Resource getResource(PathVisit visit) {
+        return visit == null ? null : new Resource(visit);
     }
 
     @Override
@@ -114,17 +117,15 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         if (resources != null && !resources.contains(sanitized)) {
             return List.of();
         }
-        List<ClassPathResource> ret = new ArrayList<>();
-        apply(tree -> {
+        return apply(tree -> {
+            final List<ClassPathResource> ret = new ArrayList<>();
             tree.acceptAll(sanitized, visit -> {
                 if (visit != null) {
                     ret.add(new Resource(visit));
-
                 }
             });
-            return List.of();
+            return ret;
         });
-        return ret;
     }
 
     @Override
@@ -155,23 +156,21 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     public Set<String> getProvidedResources() {
         Set<String> resources = this.resources;
         if (resources == null) {
-            resources = apply(tree -> {
-                final Set<String> relativePaths = new HashSet<>();
-                tree.walk(new PathVisitor() {
-                    @Override
-                    public void visitPath(PathVisit visit) {
-                        final String relativePath = visit.getRelativePath("/");
-                        if (relativePath.isEmpty()) {
-                            return;
-                        }
-                        relativePaths.add(relativePath);
-                    }
-                });
-                return relativePaths;
-            });
+            resources = apply(PathTreeClassPathElement::collectResources);
             this.resources = resources;
         }
         return resources;
+    }
+
+    private static Set<String> collectResources(OpenPathTree tree) {
+        final Set<String> relativePaths = new HashSet<>();
+        tree.walk(visit -> {
+            final String relativePath = visit.getRelativePath();
+            if (!relativePath.isEmpty()) {
+                relativePaths.add(relativePath);
+            }
+        });
+        return relativePaths;
     }
 
     @Override
@@ -229,7 +228,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         private volatile URL url;
 
         private Resource(PathVisit visit) {
-            name = visit.getRelativePath("/");
+            name = visit.getRelativePath();
             path = visit.getPath();
         }
 
@@ -271,12 +270,34 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                     }
                     return this.url = url;
                 }
-                return url = apply(tree -> tree.apply(name, visit -> visit == null ? null : visit.getUrl()));
+                return url = apply(this::getUrl);
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to translate " + path + " to URL", e);
             } finally {
                 lock.readLock().unlock();
             }
+        }
+
+        /**
+         * URL for this resource in a given {@link OpenPathTree}.
+         * If the path tree contains the resource, its URL is returned.
+         * Otherwise, the method returns null.
+         *
+         * @param tree path tree to look for the resource in
+         * @return resource URL if it exists in a given path tree or null if it does not
+         */
+        private URL getUrl(OpenPathTree tree) {
+            return tree.apply(name, Resource::getUrl);
+        }
+
+        /**
+         * Returns a URL for a given {@link PathVisit} or null if the argument is null.
+         *
+         * @param visit visited path or null
+         * @return URL for a given path or null, in case the argument is null
+         */
+        private static URL getUrl(PathVisit visit) {
+            return visit == null ? null : visit.getUrl();
         }
 
         @Override
@@ -358,10 +379,18 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                 if (pathTree.isOpen()) {
                     return Files.isDirectory(path);
                 }
-                return apply(tree -> tree.apply(name, visit -> visit == null ? null : Files.isDirectory(visit.getPath())));
+                return apply(this::isDirectory);
             } finally {
                 lock.readLock().unlock();
             }
+        }
+
+        private boolean isDirectory(OpenPathTree tree) {
+            return tree.apply(name, Resource::isDirectory);
+        }
+
+        private static boolean isDirectory(PathVisit visit) {
+            return visit != null && Files.isDirectory(visit.getPath());
         }
     }
 }

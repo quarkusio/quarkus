@@ -102,10 +102,14 @@ public interface ClassPathElement extends Closeable {
     }
 
     static ClassPathElement fromDependency(ResolvedDependency dep) {
-        return new PathTreeClassPathElement(dep.getContentTree(), dep.isRuntimeCp(), dep);
+        return fromDependency(dep.getContentTree(), dep);
     }
 
-    static ClassPathElement EMPTY = new ClassPathElement() {
+    static ClassPathElement fromDependency(PathTree contentTree, ResolvedDependency dep) {
+        return new PathTreeClassPathElement(contentTree, dep.isRuntimeCp(), dep);
+    }
+
+    ClassPathElement EMPTY = new ClassPathElement() {
 
         @Override
         public Path getRoot() {

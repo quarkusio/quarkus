@@ -397,6 +397,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         return response.headWritten();
     }
 
+    public ServerHttpResponse end(Buffer data) {
+        response.end(data, null);
+        return this;
+    }
+
     @Override
     public ServerHttpResponse end(byte[] data) {
         response.end(Buffer.buffer(data), null);

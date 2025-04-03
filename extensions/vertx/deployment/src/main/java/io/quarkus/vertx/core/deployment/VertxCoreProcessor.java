@@ -289,8 +289,21 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
-        return new ContextHandlerBuildItem(recorder.executionContextHandler(buildConfig.customizeArcContext()));
+    void dontPropagateCdiContext(BuildProducer<IgnoredContextLocalDataKeysBuildItem> ignoredContextKeysProducer,
+            VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
+        if (buildConfig.customizeArcContext()) {
+            ignoredContextKeysProducer
+                    .produce(new IgnoredContextLocalDataKeysBuildItem(recorder.getIgnoredArcContextKeysSupplier()));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder,
+            List<IgnoredContextLocalDataKeysBuildItem> ignoredKeysSuppliersItems) {
+        var ignoredKeysSuppliers = ignoredKeysSuppliersItems.stream()
+                .map(IgnoredContextLocalDataKeysBuildItem::getIgnoredKeysSupplier).toList();
+        return new ContextHandlerBuildItem(recorder.executionContextHandler(ignoredKeysSuppliers));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

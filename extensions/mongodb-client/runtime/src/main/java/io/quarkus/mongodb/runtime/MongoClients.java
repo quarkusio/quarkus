@@ -283,19 +283,18 @@ public class MongoClients {
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
 
-        switch (config.reactiveTransport()) {
-            case NETTY:
-                // we supports just NIO for now
-                if (!vertx.isNativeTransportEnabled()) {
-                    configureNettyTransport(settings);
-                }
-                break;
-            case MONGO:
-                // no-op since this is the default behaviour
-                break;
-        }
-
         if (isReactive) {
+            switch (config.reactiveTransport()) {
+                case NETTY:
+                    // we supports just NIO for now
+                    if (!vertx.isNativeTransportEnabled()) {
+                        configureNettyTransport(settings);
+                    }
+                    break;
+                case MONGO:
+                    // no-op since this is the default behaviour
+                    break;
+            }
             reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
         }
 

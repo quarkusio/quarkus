@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -202,10 +203,12 @@ public class Channels {
                 builder = NettyChannelBuilder.forTarget(target);
             }
 
+            Map<String, Object> configMap = new LinkedHashMap<>();
             for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
                 Map<String, Object> map = customizer.customize(name, config, builder);
-                builder.defaultServiceConfig(map);
+                configMap.putAll(map);
             }
+            builder.defaultServiceConfig(configMap);
 
             if (config.useVertxEventLoop() && builder instanceof NettyChannelBuilder) {
                 NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;

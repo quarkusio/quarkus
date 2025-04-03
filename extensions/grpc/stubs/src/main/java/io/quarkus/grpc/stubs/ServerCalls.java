@@ -58,8 +58,9 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
             handleSubscription(returnValue.subscribe().with(
-                    response::onNext,
+                    flowHandler::onNext,
                     throwable -> onError(response, throwable),
                     () -> onCompleted(response)), response);
         } catch (Throwable throwable) {
@@ -119,8 +120,9 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
             handleSubscription(multi.subscribe().with(
-                    response::onNext,
+                    flowHandler::onNext,
                     failure -> onError(response, failure),
                     () -> onCompleted(response)), response);
 

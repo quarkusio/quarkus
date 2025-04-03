@@ -10,6 +10,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.security.credential.Credential;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
@@ -17,7 +18,7 @@ import io.smallrye.mutiny.Uni;
 public class SecurityIdentityProxy implements SecurityIdentity {
 
     @Inject
-    SecurityIdentityAssociation association;
+    CurrentIdentityAssociation association;
 
     @Override
     public Principal getPrincipal() {

@@ -11,11 +11,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -42,12 +38,15 @@ import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
 import io.smallrye.mutiny.tuples.Functions;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
@@ -56,8 +55,9 @@ public class HttpSecurityRecorder {
 
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
 
-    public RuntimeValue<AuthenticationHandler> authenticationMechanismHandler(boolean proactiveAuthentication) {
-        return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication));
+    public RuntimeValue<AuthenticationHandler> authenticationMechanismHandler(boolean proactiveAuthentication,
+            boolean propagateRoutingContext) {
+        return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication, propagateRoutingContext));
     }
 
     public Handler<RoutingContext> getHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue) {
@@ -251,11 +251,17 @@ public class HttpSecurityRecorder {
     public static final class AuthenticationHandler implements Handler<RoutingContext> {
         volatile HttpAuthenticator authenticator;
         private final boolean proactiveAuthentication;
+        private final boolean propagateRoutingContext;
         private AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy;
         private RolesMapping rolesMapping;
 
-        public AuthenticationHandler(boolean proactiveAuthentication) {
+        AuthenticationHandler(boolean proactiveAuthentication, boolean propagateRoutingContext) {
             this.proactiveAuthentication = proactiveAuthentication;
+            this.propagateRoutingContext = propagateRoutingContext;
+        }
+
+        public AuthenticationHandler(boolean proactiveAuthentication) {
+            this(proactiveAuthentication, false);
         }
 
         @Override
@@ -265,6 +271,12 @@ public class HttpSecurityRecorder {
                 // all the build items are finished before this is called (for example Elytron identity providers use
                 // SecurityDomain that is not ready when identity providers are ready; it's racy)
                 authenticator = CDI.current().select(HttpAuthenticator.class).get();
+            }
+            if (propagateRoutingContext) {
+                Context context = Vertx.currentContext();
+                if (context != null && VertxContext.isDuplicatedContext(context)) {
+                    context.putLocal(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE, event);
+                }
             }
             //we put the authenticator into the routing context so it can be used by other systems
             event.put(HttpAuthenticator.class.getName(), authenticator);
@@ -482,6 +494,10 @@ public class HttpSecurityRecorder {
                 };
             }
         };
+    }
+
+    public RuntimeValue<List<String>> getSecurityIdentityContextKeySupplier() {
+        return new RuntimeValue<>(List.of(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE));
     }
 
     public Consumer<RoutingContext> createEagerSecurityInterceptor(

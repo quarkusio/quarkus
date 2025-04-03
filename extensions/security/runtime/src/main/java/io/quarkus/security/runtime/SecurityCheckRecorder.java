@@ -29,6 +29,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.StringPermission;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
@@ -392,7 +393,7 @@ public class SecurityCheckRecorder {
                 return new SecurityConstrainer(container.instance(SecurityCheckStorage.class).get(),
                         beanManager, beanManager.getEvent().select(AuthorizationFailureEvent.class),
                         beanManager.getEvent().select(AuthorizationSuccessEvent.class), runtimeConfigReady,
-                        container.select(SecurityIdentityAssociation.class), eventPropsSupplier);
+                        container.select(CurrentIdentityAssociation.class), eventPropsSupplier);
             }
         };
     }

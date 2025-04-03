@@ -8,15 +8,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -35,11 +27,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.ExecutorRecorder;
-import io.quarkus.runtime.IOThreadDetector;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.ThreadPoolConfig;
+import io.quarkus.runtime.*;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
@@ -604,10 +592,22 @@ public class VertxCoreRecorder {
         thread.setContextClassLoader(cl);
     }
 
-    public ContextHandler<Object> executionContextHandler(boolean customizeArcContext) {
-        VertxCurrentContextFactory currentContextFactory = customizeArcContext
-                ? (VertxCurrentContextFactory) Arc.container().getCurrentContextFactory()
-                : null;
+    public RuntimeValue<List<String>> getIgnoredArcContextKeysSupplier() {
+        final VertxCurrentContextFactory currentContextFactory = (VertxCurrentContextFactory) Arc.container()
+                .getCurrentContextFactory();
+        return new RuntimeValue<>(currentContextFactory.keys());
+    }
+
+    public ContextHandler<Object> executionContextHandler(List<RuntimeValue<List<String>>> ignoredKeysSuppliers) {
+        final List<String> ignoredKeys;
+        if (ignoredKeysSuppliers.isEmpty()) {
+            ignoredKeys = null;
+        } else {
+            ignoredKeys = new ArrayList<>();
+            for (RuntimeValue<List<String>> ignoredKeysSupplier : ignoredKeysSuppliers) {
+                ignoredKeys.addAll(ignoredKeysSupplier.getValue());
+            }
+        }
         return new ContextHandler<Object>() {
             @Override
             public Object captureContext() {
@@ -622,14 +622,13 @@ public class VertxCoreRecorder {
                     ContextInternal vertxContext = (ContextInternal) context;
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
-                    if (currentContextFactory != null) {
-                        List<String> keys = currentContextFactory.keys();
+                    if (ignoredKeys != null) {
                         ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsScopeKey(keys, local)) {
+                        if (containsIgnoredKey(ignoredKeys, local)) {
                             // Duplicate the context, copy the data, remove the request context
                             vertxContext = vertxContext.duplicate();
                             vertxContext.localContextData().putAll(local);
-                            keys.forEach(vertxContext.localContextData()::remove);
+                            ignoredKeys.forEach(vertxContext.localContextData()::remove);
                             VertxContextSafetyToggle.setContextSafe(vertxContext, true);
                         }
                     }
@@ -644,7 +643,7 @@ public class VertxCoreRecorder {
                 }
             }
 
-            private boolean containsScopeKey(List<String> keys, Map<Object, Object> localContextData) {
+            private boolean containsIgnoredKey(List<String> keys, Map<Object, Object> localContextData) {
                 if (keys.isEmpty()) {
                     return false;
                 }

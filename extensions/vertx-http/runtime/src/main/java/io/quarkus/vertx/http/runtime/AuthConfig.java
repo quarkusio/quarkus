@@ -31,4 +31,11 @@ public interface AuthConfig {
      */
     @WithDefault("true")
     boolean proactive();
+
+    /**
+     * Propagate security identity to support its injection in Vert.x route handlers registered directly with the router.
+     */
+    @WithDefault("false")
+    boolean propagateSecurityIdentity();
+
 }

@@ -741,6 +741,54 @@ Depending on the application, that can be a lot of the `AuthenticationSuccessEve
 For that reason, asynchronous processing can have positive effect on performance.
 <2> Common code for all supported security event types is possible because they all implement the `io.quarkus.security.spi.runtime.SecurityEvent` interface.
 
+== `SecurityIdentity` injection in Vert.x route handlers
+
+When you need to inject `SecurityIdentity` in a Vert.x route handler registered directly on the xref:reactive-routes.adoc#using-vertx-web-router[Vert.x Web Router], then requesting the `SecurityIdentity` propagation is required.
+For example:
+
+[source,java]
+----
+package io.quarkus.it.security;
+
+public class RouterObserver {
+
+    public void route(@Observes Router router, UserInformation userInformation) {
+        router.route("/user-info").handler(event -> event.response().end(userInformation.getPrincipalName()));
+    }
+
+}
+----
+
+The `UserInformation` bean in the example can look like this:
+
+[source,java]
+----
+package io.quarkus.it.security;
+
+@ApplicationScoped
+public class UserInformation {
+
+    @Inject
+    SecurityIdentity identity;
+
+    @ActivateRequestContext
+    String getPrincipalName() {
+        return identity.getPrincipal().getName();
+    }
+
+}
+----
+
+For the `SecurityIdentity` injection in this example to work, you must activate the `SecurityIdentity` propagation:
+
+[source,properties]
+----
+quarkus.http.auth.propagate-security-identity=true <1>
+----
+<1> Propagate the `SecurityIdentity` when a Vert.x route handler is registered programmatically on the Vert.x HTTP router.
+It is required because Quarkus cannot detect that the `SecurityIdentity` injection point is used in the programmatically registered Vert.x route handler.
+For the routes registered declaratively with the `@Route` annotation as well as Jakarta REST endpoints, this configuration is not required.
+
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]

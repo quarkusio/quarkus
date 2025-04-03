@@ -621,9 +621,12 @@ public class GrpcServerProcessor {
         // the rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
 
+        // Remove our internal non-global interceptors
+        superfluousInterceptors.remove(RoutingContextGrpcInterceptor.class.getName());
+
         // Remove the metrics interceptors
-        for (String MICROMETER_INTERCEPTOR : MICROMETER_INTERCEPTORS) {
-            superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
+        for (String mi : MICROMETER_INTERCEPTORS) {
+            superfluousInterceptors.remove(mi);
         }
 
         List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_INTERCEPTOR));

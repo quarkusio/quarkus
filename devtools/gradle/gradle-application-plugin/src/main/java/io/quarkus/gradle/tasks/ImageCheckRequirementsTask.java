@@ -51,7 +51,8 @@ public abstract class ImageCheckRequirementsTask extends DefaultTask {
         docker,
         jib,
         buildpack,
-        openshift
+        openshift,
+        podman
     }
 
     Optional<ImageCheckRequirementsTask.Builder> builderFromSystemProperties() {

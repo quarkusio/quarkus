@@ -154,6 +154,8 @@ class HibernateValidatorProcessor {
 
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
 
+    private static final DotName GRAALVM_FEATURE = DotName.createSimple("org.graalvm.nativeimage.hosted.Feature");
+
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
 
     @BuildStep
@@ -498,12 +500,12 @@ class HibernateValidatorProcessor {
 
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass().name());
+                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass());
                     reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), annotation.target().asField()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asField().type());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass().name());
+                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass());
                     // we need to register the method for reflection as it could be a getter
                     reflectiveMethods
                             .produce(new ReflectiveMethodBuildItem(getClass().getName(), annotation.target().asMethod()));
@@ -513,7 +515,7 @@ class HibernateValidatorProcessor {
                             annotation.target().asMethod());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     contributeClass(classNamesToBeValidated, indexView,
-                            annotation.target().asMethodParameter().method().declaringClass().name());
+                            annotation.target().asMethodParameter().method().declaringClass());
                     // a getter does not have parameters so it's a pure method: no need for reflection in this case
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             // FIXME this won't work in the case of synthetic parameters
@@ -522,13 +524,13 @@ class HibernateValidatorProcessor {
                     contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
                             annotation.target().asMethodParameter().method());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
+                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass());
                     // no need for reflection in the case of a class level constraint
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
                     // container element constraints
                     AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
                     if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
-                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass());
                         reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), enclosingTarget.asField()));
                         if (annotation.target().asType().target() != null) {
                             contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
@@ -536,7 +538,7 @@ class HibernateValidatorProcessor {
                                     annotation.target().asType().target());
                         }
                     } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
-                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
+                        contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass());
                         reflectiveMethods
                                 .produce(new ReflectiveMethodBuildItem(getClass().getName(), enclosingTarget.asMethod()));
                         if (annotation.target().asType().target() != null) {
@@ -701,31 +703,60 @@ class HibernateValidatorProcessor {
         }
     }
 
-    private static void contributeClass(Set<DotName> classNamesCollector, IndexView indexView, DotName className) {
-        classNamesCollector.add(className);
-
-        if (DotNames.OBJECT.equals(className)) {
+    private static void contributeClass(Set<DotName> classNamesCollector, IndexView indexView, ClassInfo classInfo) {
+        if (!isRuntimeClass(indexView, classInfo)) {
             return;
         }
 
-        for (ClassInfo subclass : indexView.getAllKnownSubclasses(className)) {
+        classNamesCollector.add(classInfo.name());
+
+        if (DotNames.OBJECT.equals(classInfo.name())) {
+            return;
+        }
+
+        for (ClassInfo subclass : indexView.getAllKnownSubclasses(classInfo.name())) {
             if (Modifier.isAbstract(subclass.flags())) {
                 // we can avoid adding the abstract classes here: either they are parent classes
                 // and they will be dealt with by Hibernate Validator or they are child classes
                 // without any proper implementation and we can ignore them.
                 continue;
             }
+            if (!isRuntimeClass(indexView, subclass)) {
+                return;
+            }
             classNamesCollector.add(subclass.name());
         }
-        for (ClassInfo implementor : indexView.getAllKnownImplementors(className)) {
+        for (ClassInfo implementor : indexView.getAllKnownImplementors(classInfo.name())) {
             if (Modifier.isAbstract(implementor.flags())) {
                 // we can avoid adding the abstract classes here: either they are parent classes
                 // and they will be dealt with by Hibernate Validator or they are child classes
                 // without any proper implementation and we can ignore them.
                 continue;
             }
+            if (!isRuntimeClass(indexView, implementor)) {
+                continue;
+            }
             classNamesCollector.add(implementor.name());
         }
+    }
+
+    private static boolean isRuntimeClass(IndexView indexView, ClassInfo classInfo) {
+        // Note: we cannot check that the class is a runtime one with QuarkusClassLoader.isClassPresentAtRuntime() here
+        // because generated classes have not been pushed yet to the class loader
+
+        if (classInfo.interfaceNames().contains(GRAALVM_FEATURE)) {
+            return false;
+        }
+
+        DotName enclosingClassName = classInfo.enclosingClassAlways();
+        if (enclosingClassName != null) {
+            ClassInfo enclosingClass = indexView.getClassByName(enclosingClassName);
+            if (enclosingClass != null) {
+                return isRuntimeClass(indexView, enclosingClass);
+            }
+        }
+
+        return true;
     }
 
     private static void contributeClassMarkedForCascadingValidation(Set<DotName> classNamesCollector,
@@ -736,7 +767,10 @@ class HibernateValidatorProcessor {
 
         DotName className = getClassName(type);
         if (className != null) {
-            contributeClass(classNamesCollector, indexView, className);
+            ClassInfo classInfo = indexView.getClassByName(className);
+            if (classInfo != null) {
+                contributeClass(classNamesCollector, indexView, classInfo);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -20,6 +21,7 @@ import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.CompositeResourceAccessor;
 import liquibase.resource.DirectoryResourceAccessor;
@@ -126,7 +128,8 @@ public class LiquibaseFactory {
                     database.setDefaultSchemaName(config.defaultSchemaName.get());
                 }
             }
-            Liquibase liquibase = new Liquibase(parsedChangeLog, resourceAccessor, database);
+            Liquibase liquibase = new QuarkusLiquibase(parsedChangeLog, resourceAccessor, database,
+                    createResettableSystemProperties());
 
             for (Map.Entry<String, String> entry : config.changeLogParameters.entrySet()) {
                 liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());
@@ -165,11 +168,38 @@ public class LiquibaseFactory {
         return dataSourceName;
     }
 
-    public ResettableSystemProperties createResettableSystemProperties() {
-        if (config.allowDuplicatedChangesetIdentifiers.isEmpty()) {
-            return ResettableSystemProperties.empty();
+    private ResettableSystemProperties createResettableSystemProperties() {
+        Map<String, String> resettableProperties = new HashMap<>();
+
+        if (config.allowDuplicatedChangesetIdentifiers.isPresent()) {
+            resettableProperties.put("liquibase.allowDuplicatedChangesetIdentifiers",
+                    config.allowDuplicatedChangesetIdentifiers.get().toString());
         }
-        return ResettableSystemProperties.of("liquibase.allowDuplicatedChangesetIdentifiers",
-                config.allowDuplicatedChangesetIdentifiers.get().toString());
+
+        if (!config.secureParsing) {
+            resettableProperties.put("liquibase.secureParsing", "false");
+        }
+
+        return new ResettableSystemProperties(resettableProperties);
+    }
+
+    private static class QuarkusLiquibase extends Liquibase {
+
+        private final ResettableSystemProperties resettableSystemProperties;
+
+        public QuarkusLiquibase(String changeLogFile, ResourceAccessor resourceAccessor, Database database,
+                ResettableSystemProperties resettableSystemProperties) {
+            super(changeLogFile, resourceAccessor, database);
+            this.resettableSystemProperties = resettableSystemProperties;
+        }
+
+        @Override
+        public void close() throws LiquibaseException {
+            try {
+                super.close();
+            } finally {
+                resettableSystemProperties.close();
+            }
+        }
     }
 }

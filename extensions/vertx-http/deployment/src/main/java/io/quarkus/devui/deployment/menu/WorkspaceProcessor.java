@@ -23,6 +23,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
@@ -44,54 +45,62 @@ public class WorkspaceProcessor {
 
     @BuildStep
     void locateWorkspaceItems(BuildSystemTargetBuildItem buildSystemTarget,
+            LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<WorkspaceBuildItem> workspaceProducer,
             DevUIConfig devUIConfig) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
 
         Path outputDir = buildSystemTarget.getOutputDirectory();
         Path projectRoot = outputDir.getParent();
 
-        List<WorkspaceBuildItem.WorkspaceItem> workspaceItems = new ArrayList<>();
+        if (projectRoot != null && Files.exists(projectRoot)) {
 
-        List<String> ignoreFolders = devUIConfig.workspace().ignoreFolders().orElse(new ArrayList<>());
-        ignoreFolders.add("node_modules");
+            List<WorkspaceBuildItem.WorkspaceItem> workspaceItems = new ArrayList<>();
 
-        final List<Pattern> ignoreFilePatterns = devUIConfig.workspace().ignoreFiles().orElse(List.of());
+            List<String> ignoreFolders = devUIConfig.workspace().ignoreFolders().orElse(new ArrayList<>());
+            ignoreFolders.add("node_modules");
 
-        try {
-            Files.walkFileTree(projectRoot, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())) {
-                        return FileVisitResult.SKIP_SUBTREE;
+            final List<Pattern> ignoreFilePatterns = devUIConfig.workspace().ignoreFiles().orElse(List.of());
+
+            try {
+                Files.walkFileTree(projectRoot, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                        if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())) {
+                            return FileVisitResult.SKIP_SUBTREE;
+                        }
+                        return FileVisitResult.CONTINUE;
                     }
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String fileName = file.getFileName().toString();
-                    boolean shouldIgnore = Files.isHidden(file)
-                            || file.startsWith(outputDir)
-                            || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        String fileName = file.getFileName().toString();
+                        boolean shouldIgnore = Files.isHidden(file)
+                                || file.startsWith(outputDir)
+                                || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
 
-                    if (!shouldIgnore) {
-                        String name = projectRoot.relativize(file).toString();
-                        workspaceItems.add(new WorkspaceBuildItem.WorkspaceItem(name, file));
+                        if (!shouldIgnore) {
+                            String name = projectRoot.relativize(file).toString();
+                            workspaceItems.add(new WorkspaceBuildItem.WorkspaceItem(name, file));
+                        }
+                        return FileVisitResult.CONTINUE;
                     }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+                });
 
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            sortWorkspaceItems(workspaceItems);
+            workspaceProducer.produce(new WorkspaceBuildItem(workspaceItems));
         }
-
-        sortWorkspaceItems(workspaceItems);
-        workspaceProducer.produce(new WorkspaceBuildItem(workspaceItems));
     }
 
     @BuildStep
-    InternalPageBuildItem createReportIssuePage() {
+    InternalPageBuildItem createWorkspacePage() {
         InternalPageBuildItem item = new InternalPageBuildItem("Workspace", 25);
 
         item.addPage(Page.webComponentPageBuilder().internal()
@@ -120,63 +129,66 @@ public class WorkspaceProcessor {
     }
 
     @BuildStep
-    void createBuildTimeActions(WorkspaceBuildItem workspaceBuildItem,
+    void createBuildTimeActions(Optional<WorkspaceBuildItem> workspaceBuildItem,
             List<WorkspaceActionBuildItem> workspaceActionBuildItems,
             BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
 
-        // Dev UI Build Time Actions
-        BuildTimeActionBuildItem buildItemActions = new BuildTimeActionBuildItem(NAMESPACE);
+        if (workspaceBuildItem.isPresent()) {
 
-        // Workspace Actions
-        Map<String, Action> actionMap = workspaceActionBuildItems.stream()
-                .flatMap(item -> item.getActions().stream())
-                .map(ActionBuilder::build)
-                .collect(Collectors.toMap(Action::getId, action -> action, (a, b) -> a));
+            // Dev UI Build Time Actions
+            BuildTimeActionBuildItem buildItemActions = new BuildTimeActionBuildItem(NAMESPACE);
 
-        buildItemActions.addAction("getWorkspaceItems", (t) -> {
-            return workspaceBuildItem.getWorkspaceItems();
-        });
+            // Workspace Actions
+            Map<String, Action> actionMap = workspaceActionBuildItems.stream()
+                    .flatMap(item -> item.getActions().stream())
+                    .map(ActionBuilder::build)
+                    .collect(Collectors.toMap(Action::getId, action -> action, (a, b) -> a));
 
-        buildItemActions.addAction("getWorkspaceActions", (t) -> {
-            return actionMap.values().stream()
-                    .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
-                            action.getDisplay(), action.getDisplayType()))
-                    .sorted(Comparator.comparing(WorkspaceAction::label))
-                    .collect(Collectors.toList());
-        });
+            buildItemActions.addAction("getWorkspaceItems", (t) -> {
+                return workspaceBuildItem.get().getWorkspaceItems();
+            });
 
-        buildItemActions.addAction("executeAction", (t) -> {
+            buildItemActions.addAction("getWorkspaceActions", (t) -> {
+                return actionMap.values().stream()
+                        .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
+                                action.getDisplay(), action.getDisplayType()))
+                        .sorted(Comparator.comparing(WorkspaceAction::label))
+                        .collect(Collectors.toList());
+            });
 
-            String actionId = t.get("actionId");
+            buildItemActions.addAction("executeAction", (t) -> {
 
-            if (actionId != null) {
-                Path path = Path.of(URI.create(t.get("path")));
-                Action actionToExecute = actionMap.get(actionId);
-                Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
-                return new WorkspaceActionResult(convertedPath, actionToExecute.getFunction().apply(t));
-            }
-            return null;
-        });
+                String actionId = t.get("actionId");
 
-        buildItemActions.addAction("getWorkspaceItemContent", (Map<String, String> params) -> {
-            if (params.containsKey("path")) {
-                Path path = Paths.get(URI.create(params.get("path")));
-                return readContents(path);
-            }
-            return null;
-        });
+                if (actionId != null) {
+                    Path path = Path.of(URI.create(t.get("path")));
+                    Action actionToExecute = actionMap.get(actionId);
+                    Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
+                    return new WorkspaceActionResult(convertedPath, actionToExecute.getFunction().apply(t));
+                }
+                return null;
+            });
 
-        buildItemActions.addAction("saveWorkspaceItemContent", (Map<String, String> params) -> {
-            if (params.containsKey("content")) {
-                String content = params.get("content");
-                Path path = Paths.get(URI.create(params.get("path")));
-                writeContent(path, content);
-                return new SavedResult(path, true, null);
-            }
-            return new SavedResult(null, false, "Invalid input");
-        });
+            buildItemActions.addAction("getWorkspaceItemContent", (Map<String, String> params) -> {
+                if (params.containsKey("path")) {
+                    Path path = Paths.get(URI.create(params.get("path")));
+                    return readContents(path);
+                }
+                return null;
+            });
 
-        buildTimeActionProducer.produce(buildItemActions);
+            buildItemActions.addAction("saveWorkspaceItemContent", (Map<String, String> params) -> {
+                if (params.containsKey("content")) {
+                    String content = params.get("content");
+                    Path path = Paths.get(URI.create(params.get("path")));
+                    writeContent(path, content);
+                    return new SavedResult(path, true, null);
+                }
+                return new SavedResult(null, false, "Invalid input");
+            });
+
+            buildTimeActionProducer.produce(buildItemActions);
+        }
     }
 
     private void sortWorkspaceItems(List<WorkspaceBuildItem.WorkspaceItem> items) {

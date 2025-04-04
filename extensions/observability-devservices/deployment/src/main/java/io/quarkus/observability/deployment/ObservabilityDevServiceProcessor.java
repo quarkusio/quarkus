@@ -263,7 +263,8 @@ class ObservabilityDevServiceProcessor {
                             null, config);
                 })
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(capturedDevServicesConfiguration.imageName()), LaunchMode.current())
+                        List.of(capturedDevServicesConfiguration.imageName(), capturedDevServicesConfiguration.serviceName()),
+                        LaunchMode.current())
                         .stream().findFirst()
                         .map(r -> {
                             Map<String, String> cfg = new LinkedHashMap<>();
@@ -272,6 +273,7 @@ class ObservabilityDevServiceProcessor {
                                         DockerClientFactory.instance().dockerHostIpAddress(),
                                         port.publicPort()));
                             }
+                            log.infof("Compose Dev Service %s started, config: %s", devId, cfg);
                             return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),
                                     r.containerInfo().id(), null, cfg);
                         }))

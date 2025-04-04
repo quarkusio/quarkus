@@ -205,14 +205,13 @@ public interface MongoClientConfig {
      */
     Optional<UuidRepresentation> uuidRepresentation();
 
-    enum TransportConfig {
+    enum ReactiveTransportConfig {
         /**
          * Uses a Netty-based transport re-using the existing Netty event loops.
          */
         NETTY,
         /**
-         * With a reactive driver it uses an async transport backed by a driver-managed thread pool,
-         * while with a blocking driver it uses a blocking transport.
+         * With a reactive driver it uses an async transport backed by a driver-managed thread pool.
          */
         MONGO
     }
@@ -221,12 +220,6 @@ public interface MongoClientConfig {
      * Configures the reactive transport.
      */
     @WithDefault("netty")
-    TransportConfig reactiveTransport();
-
-    /**
-     * Configures the blocking transport.
-     */
-    @WithDefault("mongo")
-    TransportConfig blockingTransport();
+    ReactiveTransportConfig reactiveTransport();
 
 }

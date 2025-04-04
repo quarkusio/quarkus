@@ -58,11 +58,22 @@ final class BaseConfig {
     Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
         List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
                 .collect(Collectors.toList());
+        readMissingEnvVariables(propertyPatterns);
         Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
         return values.entrySet().stream()
                 .filter(keyPredicate)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (s, s2) -> {
                     throw new IllegalArgumentException("Duplicate key");
                 }, TreeMap::new));
+    }
+
+    /**
+     * Reads missing environment variables that have been defined as `cachingRelevantProperties`.
+     * This ensures that the configuration cache tracks these variables as inputs and detects changes in them.
+     */
+    private void readMissingEnvVariables(List<String> cachingRelevantProperties) {
+        cachingRelevantProperties.stream()
+                .filter(name -> !values.containsKey(name))
+                .forEach(name -> System.getenv(name));
     }
 }

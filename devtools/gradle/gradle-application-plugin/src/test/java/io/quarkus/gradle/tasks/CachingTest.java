@@ -81,7 +81,7 @@ public class CachingTest {
                 "-Dquarkus.randomized.value=" + UUID.randomUUID())
                 .toArray(new String[0]);
 
-        Map<String, String> env = Map.of("FOO_ENV_VAR", "initial-value");
+        Map<String, String> env = Map.of();
         assertBuildResult("initial", gradleBuild(rerunTasks(arguments), env), ALL_SUCCESS);
         assertBuildResult("initial rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
 

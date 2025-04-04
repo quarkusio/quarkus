@@ -40,13 +40,6 @@ final class MockitoMocksTracker {
         return Optional.empty();
     }
 
-    static class Mocked {
-        final Object mock;
-        final Object beanInstance;
-
-        public Mocked(Object mock, Object beanInstance) {
-            this.mock = mock;
-            this.beanInstance = beanInstance;
-        }
+    record Mocked(Object mock, Object beanInstance) {
     }
 }

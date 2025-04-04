@@ -25,7 +25,9 @@ final class MockitoMocksTracker {
     }
 
     static void reset(Object testInstance) {
-        Mockito.framework().clearInlineMock(testInstance);
+        for (Mocked m : getMocks(testInstance)) {
+            Mockito.framework().clearInlineMock(m.mock);
+        }
     }
 
     static Optional<Object> currentMock(Object testInstance, Object beanInstance) {
@@ -38,13 +40,6 @@ final class MockitoMocksTracker {
         return Optional.empty();
     }
 
-    static class Mocked {
-        final Object mock;
-        final Object beanInstance;
-
-        public Mocked(Object mock, Object beanInstance) {
-            this.mock = mock;
-            this.beanInstance = beanInstance;
-        }
+    record Mocked(Object mock, Object beanInstance) {
     }
 }

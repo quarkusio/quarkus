@@ -257,7 +257,7 @@ public class BookService {
 }
 ----
 
-Calling the service in your rest end point triggers the `Book` validation automatically:
+Calling such service method, e.g. in your rest end point, triggers the `Book` validation automatically:
 
 [source, java]
 ----
@@ -276,10 +276,22 @@ public Result tryMeServiceMethodValidation(Book book) {
 ----
 
 Note that, if you want to push the validation errors to the frontend, you have to catch the exception and push the information yourselves
-as they will not be automatically pushed to the JSON output.
+as they will not be automatically pushed to the JSON output and will be treated as any other internal server errors.
 
 Keep in mind that you usually don't want to expose to the public the internals of your services
-- and especially not the validated value contained in the violation object.
+-- and especially not the validated value contained in the violation object.
+
+[IMPORTANT]
+====
+By default, only failing the validation of the constraints defined for the parameters of the REST endpoints
+will result in bad request responses with a validation report as a part of the response body.
+In any other case, e.g. validation of service methods (be it parameters or return values),
+validation of the return value of a REST endpoint, etc., will result in an internal server error (response status code `5xx`),
+unless the application code explicitly catches and handles the `ConstraintViolationException` (or a custom `ExceptionMapper` is implemented).
+The reasoning behind such behaviour is that only REST endpoint parameters are considered as the user input
+and hence can be treated as a bad request (response status code `4xx`),
+At the same time, constraint violations in other places result from the application logic execution and, hence, are treated as internal errors.
+====
 
 == A frontend
 

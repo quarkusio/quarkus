@@ -100,6 +100,13 @@ public class LiquibaseConfig {
     /**
      * Allows duplicated changeset identifiers without failing Liquibase execution.
      */
-    public Optional<Boolean> allowDuplicatedChangesetIdentifiers;
+    public Optional<Boolean> allowDuplicatedChangesetIdentifiers = Optional.empty();
+
+    /**
+     * Whether Liquibase should enforce secure parsing.
+     * <p>
+     * If secure parsing is enforced, unsecure files may not be parsed.
+     */
+    public boolean secureParsing = true;
 
 }

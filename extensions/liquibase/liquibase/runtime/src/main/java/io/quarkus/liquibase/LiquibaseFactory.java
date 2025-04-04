@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -166,10 +167,17 @@ public class LiquibaseFactory {
     }
 
     public ResettableSystemProperties createResettableSystemProperties() {
-        if (config.allowDuplicatedChangesetIdentifiers.isEmpty()) {
-            return ResettableSystemProperties.empty();
+        Map<String, String> resettableProperties = new HashMap<>();
+
+        if (config.allowDuplicatedChangesetIdentifiers.isPresent()) {
+            resettableProperties.put("liquibase.allowDuplicatedChangesetIdentifiers",
+                    config.allowDuplicatedChangesetIdentifiers.get().toString());
         }
-        return ResettableSystemProperties.of("liquibase.allowDuplicatedChangesetIdentifiers",
-                config.allowDuplicatedChangesetIdentifiers.get().toString());
+
+        if (!config.secureParsing) {
+            resettableProperties.put("liquibase.secureParsing", "false");
+        }
+
+        return new ResettableSystemProperties(resettableProperties);
     }
 }

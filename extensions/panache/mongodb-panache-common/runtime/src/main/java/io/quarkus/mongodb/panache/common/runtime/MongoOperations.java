@@ -2,9 +2,11 @@ package io.quarkus.mongodb.panache.common.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,6 +41,7 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
+import io.quarkus.mongodb.panache.common.validation.EntityValidator;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
@@ -214,9 +217,28 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     //
     // Private stuff
+    private void validate(Object entity) {
+        Set violations = EntityValidator.Holder.INSTANCE.validate(entity);
+        Optional<? extends RuntimeException> exception = EntityValidator.Holder.INSTANCE.toException(violations);
+        if (exception.isPresent()) {
+            throw exception.get();
+        }
+    }
+
+    private void validate(List<Object> entities) {
+        Set violations = new HashSet();
+        for (Object entity : entities) {
+            violations.addAll(EntityValidator.Holder.INSTANCE.validate(entity));
+        }
+        Optional<? extends RuntimeException> exception = EntityValidator.Holder.INSTANCE.toException(violations);
+        if (exception.isPresent()) {
+            throw exception.get();
+        }
+    }
 
     private void persist(MongoCollection collection, Object entity) {
         ClientSession session = getSession(entity);
+        validate(entity);
         if (session == null) {
             collection.insertOne(entity);
         } else {
@@ -226,6 +248,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private void persist(List<Object> entities) {
         if (!entities.isEmpty()) {
+            validate(entities);
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = entities.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -239,7 +262,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void update(MongoCollection collection, Object entity) {
-        //we transform the entity as a document first
+        // validate things first:
+        validate(entity);
+
+        //then we transform the entity as a document
         BsonDocument document = getBsonDocument(collection, entity);
 
         //then we get its id field and create a new Document with only this one that will be our replace query
@@ -260,7 +286,9 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void persistOrUpdate(MongoCollection collection, Object entity) {
-        //we transform the entity as a document first
+        // validate the entity first:
+        validate(entity);
+        // then we transform the entity as a document
         BsonDocument document = getBsonDocument(collection, entity);
 
         ClientSession session = getSession(entity);
@@ -288,6 +316,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         if (entities.isEmpty()) {
             return;
         }
+        validate(entities);
 
         // get the first entity to be able to retrieve the collection with it
         Object firstEntity = entities.get(0);

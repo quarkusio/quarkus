@@ -3,8 +3,11 @@ package io.quarkus.it.mongodb.panache.book;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -127,4 +130,20 @@ public class BookEntityResource {
         BookEntity.deleteAll();
     }
 
+    @GET
+    @Path("/validation")
+    public Response validation() {
+        BookEntity book = null;
+        try {
+            book = new BookEntity()
+                    .setAuthor("author name")
+                    .setTitle(null) // not setting the title to trigger validation failure
+                    .setCategories(List.of("category1", "category2"));
+            book.persist();
+        } catch (ConstraintViolationException e) {
+            return Response.ok().entity(e.getConstraintViolations().stream()
+                    .map(ConstraintViolation::getMessage).collect(Collectors.joining("; "))).build();
+        }
+        return Response.notAcceptable(null).build();
+    }
 }

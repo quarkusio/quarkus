@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,7 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExecutableInvoker;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.MediaType;
 import org.junit.jupiter.api.extension.TestInstances;
+import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import io.quarkus.test.junit5.virtual.ShouldNotPin;
@@ -212,6 +215,19 @@ class VirtualThreadExtensionTest {
         @Override
         public ExecutableInvoker getExecutableInvoker() {
             return null;
+        }
+
+        @Override
+        public List<Class<?>> getEnclosingTestClasses() {
+            return List.of();
+        }
+
+        @Override
+        public void publishFile(String name, MediaType mediaType, ThrowingConsumer<Path> action) {
+        }
+
+        @Override
+        public void publishDirectory(String name, ThrowingConsumer<Path> action) {
         }
     }
 

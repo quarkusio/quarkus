@@ -51,10 +51,10 @@
         <assertj.version>3.27.3</assertj.version>
         <jackson-bom.version>2.18.3</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <junit.version>5.10.5</junit.version>
+        <junit5.version>5.12.1</junit5.version>
         <commons-compress.version>1.27.1</commons-compress.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <mockito.version>5.12.0</mockito.version>
+        <mockito.version>5.16.1</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
         <jandex.version>3.2.7</jandex.version>
@@ -98,6 +98,15 @@
                 <version>${mockito.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit5.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <dependency>
@@ -180,12 +189,6 @@
                 <groupId>org.codejive</groupId>
                 <artifactId>java-properties</artifactId>
                 <version>${java-properties.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

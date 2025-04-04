@@ -182,7 +182,12 @@ class BuildIT extends MojoTestBase {
                 assertThat(section.getValue("visibility")).isEqualTo("private");
             }
         }
+    }
 
+    @Test
+    void testIdeDevModeBuildPropsPropagation() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/ide-dev-mode-build-props");
+        build();
     }
 
     private void launch() throws IOException {

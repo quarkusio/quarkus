@@ -555,28 +555,16 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 
-        ClassLoader original = Thread.currentThread()
-                .getContextClassLoader();
-        try {
-            // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
-            Thread.currentThread()
-                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+        QuarkusClassLoader loader = startupAction.getClassLoader();
 
-            QuarkusClassLoader loader = startupAction.getClassLoader();
+        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
 
-            Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
+        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
+        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor()
+                .newInstance();
 
-            Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-            Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
-                    .newInstance(loader);
-
-            configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
-                    .invoke(null,
-                            testConfigProviderResolver);
-        } finally {
-            Thread.currentThread()
-                    .setContextClassLoader(original);
-        }
+        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
+                .invoke(null, testConfigProviderResolver);
 
         return startupAction;
 

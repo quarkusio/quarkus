@@ -117,4 +117,11 @@ public interface LiquibaseDataSourceRuntimeConfig {
      */
     Optional<Boolean> allowDuplicatedChangesetIdentifiers();
 
+    /**
+     * Whether Liquibase should enforce secure parsing.
+     * <p>
+     * If secure parsing is enforced, insecure files may not be parsed.
+     */
+    @WithDefault("true")
+    boolean secureParsing();
 }

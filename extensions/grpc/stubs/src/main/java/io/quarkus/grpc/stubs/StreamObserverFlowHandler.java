@@ -3,12 +3,14 @@ package io.quarkus.grpc.stubs;
 import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 
 public class StreamObserverFlowHandler<T> implements StreamObserver<T> {
 
     private final CallStreamObserver<T> wrapped;
-    private final ArrayBlockingQueue<T> queue = new ArrayBlockingQueue<>(100);
+    private final Queue<T> queue = new ArrayBlockingQueue<>(100);
 
     public StreamObserverFlowHandler(StreamObserver<T> wrapped) {
         if (!(wrapped instanceof CallStreamObserver<?>)) {
@@ -24,14 +26,7 @@ public class StreamObserverFlowHandler<T> implements StreamObserver<T> {
                 return;
             } else {
                 while (!wrapped.isReady()) {
-                    synchronized (queue) {
-                        try {
-                            queue.wait(0, 100);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new IllegalStateException(e);
-                        }
-                    }
+                    LockSupport.parkNanos(100);
                 }
             }
         }

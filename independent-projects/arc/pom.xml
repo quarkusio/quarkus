@@ -87,6 +87,14 @@
             </dependency>
 
             <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${version.mockito}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
                 <groupId>io.quarkus.arc</groupId>
                 <artifactId>arc</artifactId>
                 <version>${project.version}</version>

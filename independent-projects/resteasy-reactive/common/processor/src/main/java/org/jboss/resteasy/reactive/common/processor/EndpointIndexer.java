@@ -296,7 +296,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 clazz.setPath(sanitizePath(path));
             }
-            if (factoryCreator != null) {
+            if (factoryCreator != null && !classInfo.isInterface()) {
+                // Most likely an interface for a sub resource. The ResourceLocatorHandler does not use the factory to create new instances, but uses the result of the sub resource locator method instead
+                // Interfaces therefore do not need a factory here
+                // Otherwise, when having multiple implementations of the interface, an Ambiguous Bean Resolution error occurs, since io.quarkus.arc.runtime.BeanContainerImpl.createFactory is run, even if the factory is never invoked
                 clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());

@@ -3,14 +3,12 @@ package io.quarkus.hibernate.reactive;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
@@ -34,27 +32,4 @@ public class MultiLineImportTest {
                 "from Hero h where h.name = :name").setParameter("name", "Galadriel").getResultList()),
                 list -> assertThat(list).hasSize(1));
     }
-
-    @Entity(name = "Hero")
-    @Table(name = "hero")
-    public static class Hero {
-
-        @jakarta.persistence.Id
-        @jakarta.persistence.GeneratedValue
-        public java.lang.Long id;
-
-        @Column(unique = true)
-        public String name;
-
-        public String otherName;
-
-        public int level;
-
-        public String picture;
-
-        @Column(columnDefinition = "TEXT")
-        public String powers;
-
-    }
-
 }

@@ -311,7 +311,12 @@ public class DataSources {
         }
 
         // Connection management
-        poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
+        if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
+            poolConfiguration.connectionValidator(ConnectionValidator
+                    .defaultValidatorWithTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds()));
+        } else {
+            poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
+        }
         if (dataSourceJdbcRuntimeConfig.acquisitionTimeout().isPresent()) {
             poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout().get());
         }
@@ -326,6 +331,9 @@ public class DataSources {
                 @Override
                 public boolean isValid(Connection connection) {
                     try (Statement stmt = connection.createStatement()) {
+                        if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
+                            stmt.setQueryTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds());
+                        }
                         stmt.execute(validationQuery);
                         return true;
                     } catch (Exception e) {

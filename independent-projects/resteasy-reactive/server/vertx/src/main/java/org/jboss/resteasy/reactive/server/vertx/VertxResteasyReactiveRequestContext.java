@@ -33,11 +33,14 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.vertx.utils.VertxJavaIoContext;
 import io.quarkus.vertx.utils.VertxOutputStream;
 import io.vertx.core.AsyncResult;
@@ -46,6 +49,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.Http1xServerResponse;
@@ -399,13 +403,17 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end(byte[] data) {
-        response.end(Buffer.buffer(data), null);
+        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(data.length);
+        buffer.writeBytes(data);
+        response.end(new NoBoundChecksBuffer(buffer), null);
         return this;
     }
 
     @Override
     public ServerHttpResponse end(String data) {
-        response.end(Buffer.buffer(data), null);
+        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(ByteBufUtil.utf8MaxBytes(data.length()));
+        buffer.writeCharSequence(data, CharsetUtil.UTF_8);
+        response.end(new NoBoundChecksBuffer(buffer), null);
         return this;
     }
 

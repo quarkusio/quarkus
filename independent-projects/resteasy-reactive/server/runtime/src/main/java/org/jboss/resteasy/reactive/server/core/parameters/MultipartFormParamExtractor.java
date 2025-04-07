@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
+import static org.jboss.resteasy.reactive.server.core.multipart.MultipartSupport.*;
+
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -24,7 +26,8 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
         PartType,
         String,
         ByteArray,
-        InputStream;
+        InputStream,
+        EntityPart;
     }
 
     public MultipartFormParamExtractor(String name, boolean single, Type type, Class<Object> typeClass,
@@ -87,6 +90,12 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
                     return upload != null ? upload.uploadedFile() : null;
                 } else {
                     return MultipartSupport.getJavaPathFileUploads(name, context);
+                }
+            case EntityPart:
+                if (single) {
+                    return MultipartSupport.getEntityPart(name, context);
+                } else {
+                    return MultipartSupport.getEntityParts(name, context);
                 }
             default:
                 throw new RuntimeException("Unknown multipart parameter type: " + type + " for parameter " + name);

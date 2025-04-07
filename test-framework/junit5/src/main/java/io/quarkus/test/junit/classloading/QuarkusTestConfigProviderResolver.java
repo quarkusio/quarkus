@@ -9,15 +9,23 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class QuarkusTestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     private final SmallRyeConfigProviderResolver resolver;
 
-    public QuarkusTestConfigProviderResolver(final ClassLoader classLoader) {
+    public QuarkusTestConfigProviderResolver() {
         this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
 
-        SmallRyeConfig config = ConfigUtils.configBuilder(false, true, LaunchMode.TEST)
-                .withProfile(LaunchMode.TEST.getDefaultProfile())
-                .withMapping(TestConfig.class, "quarkus.test")
-                .forClassLoader(classLoader)
-                .build();
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(classLoader);
+            SmallRyeConfig config = ConfigUtils.configBuilder(false, true, LaunchMode.TEST)
+                    .withProfile(LaunchMode.TEST.getDefaultProfile())
+                    .withMapping(TestConfig.class, "quarkus.test")
+                    .forClassLoader(classLoader)
+                    .build();
 
-        this.registerConfig(config, Thread.currentThread().getContextClassLoader());
+            // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
+            this.registerConfig(config, ClassLoader.getSystemClassLoader());
+        } finally {
+            Thread.currentThread().setContextClassLoader(original);
+        }
     }
 }

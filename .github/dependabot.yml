@@ -67,10 +67,8 @@ updates:
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Hibernate
-      - dependency-name: org.hibernate.orm:*
-      - dependency-name: org.hibernate.reactive:*
-      - dependency-name: org.hibernate.validator:*
-      - dependency-name: org.hibernate.search:*
+      - dependency-name: org.hibernate:*
+      - dependency-name: org.hibernate.*:*
       # Test dependencies
       - dependency-name: org.htmlunit:htmlunit
       - dependency-name: io.rest-assured:*
@@ -212,6 +210,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # Major/minor upgrades require more work and synchronization, we do them manually.
       # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.kafka:*

@@ -27,7 +27,7 @@ public class SmallRyeStorkRecorder {
             Stork.initialize(infrastructure);
         }
 
-        shutdown.addShutdownTask(new Runnable() {
+        shutdown.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
                 Stork.shutdown();

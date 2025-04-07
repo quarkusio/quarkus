@@ -66,6 +66,18 @@ public class OverridableIndex implements IndexView {
     }
 
     @Override
+    public Collection<ClassInfo> getKnownDirectImplementations(DotName dn) {
+        return overrideCollection(original.getKnownDirectImplementations(dn), override.getKnownDirectImplementations(dn),
+                classInfoComparator);
+    }
+
+    @Override
+    public Collection<ClassInfo> getAllKnownImplementations(DotName dn) {
+        return overrideCollection(original.getAllKnownImplementations(dn), override.getAllKnownImplementations(dn),
+                classInfoComparator);
+    }
+
+    @Override
     public Collection<ClassInfo> getKnownDirectImplementors(DotName dn) {
         return overrideCollection(original.getKnownDirectImplementors(dn), override.getKnownDirectImplementors(dn),
                 classInfoComparator);

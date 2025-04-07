@@ -69,7 +69,7 @@
         <awaitility.version>4.3.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>3.18.1</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <mockito.version>5.16.1</mockito.version>
+        <mockito.version>5.17.0</mockito.version>
         <wiremock.version>3.12.1</wiremock.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
 
@@ -92,6 +92,15 @@
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- Mockito dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

@@ -55,7 +55,7 @@
         <version.junit5>5.12.1</version.junit5>
         <version.kotlin>2.1.20</version.kotlin>
         <version.kotlin-coroutines>1.10.1</version.kotlin-coroutines>
-        <version.mockito>5.16.1</version.mockito>
+        <version.mockito>5.17.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
@@ -84,6 +84,14 @@
                 <version>${version.smallrye-common}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${version.mockito}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <dependency>

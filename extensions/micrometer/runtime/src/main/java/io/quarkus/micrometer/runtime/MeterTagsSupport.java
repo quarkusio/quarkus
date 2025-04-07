@@ -15,6 +15,7 @@ import io.micrometer.common.annotation.ValueExpressionResolver;
 import io.micrometer.common.annotation.ValueResolver;
 import io.micrometer.common.util.StringUtils;
 import io.micrometer.core.aop.MeterTag;
+import io.micrometer.core.aop.MeterTags;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.arc.All;
@@ -27,7 +28,7 @@ public class MeterTagsSupport {
     private final ValueExpressionResolver valueExpressionResolver;
 
     public MeterTagsSupport(@All List<ValueResolver> valueResolvers,
-            Instance<ValueExpressionResolver> valueExpressionResolver) {
+                            Instance<ValueExpressionResolver> valueExpressionResolver) {
         this.valueResolvers = createValueResolverMap(valueResolvers);
         this.valueExpressionResolver = valueExpressionResolver.isUnsatisfied() ? null : valueExpressionResolver.get();
     }
@@ -43,16 +44,27 @@ public class MeterTagsSupport {
         Parameter[] parameters = method.getParameters();
         for (int i = 0; i < parameters.length; i++) {
             Parameter methodParameter = parameters[i];
-            MeterTag annotation = methodParameter.getAnnotation(MeterTag.class);
-            if (annotation != null) {
-                Object parameterValue = context.getParameters()[i];
-
-                tags.add(Tag.of(
-                        resolveTagKey(annotation, methodParameter.getName()),
-                        resolveTagValue(annotation, parameterValue)));
+            MeterTag meterTagAnnotation = methodParameter.getAnnotation(MeterTag.class);
+            if (meterTagAnnotation != null) {
+                tags.add(resolveMeterTag(context, meterTagAnnotation, i, methodParameter));
+            }
+            MeterTags meterTagsAnnotation = methodParameter.getAnnotation(MeterTags.class);
+            if (meterTagsAnnotation != null) {
+                for (MeterTag meterTag : meterTagsAnnotation.value()) {
+                    tags.add(resolveMeterTag(context, meterTag, i, methodParameter));
+                }
             }
         }
         return Tags.of(tags);
+    }
+
+    private Tag resolveMeterTag(ArcInvocationContext context, MeterTag meterTagAnnotation, int i,
+                                Parameter methodParameter) {
+        Object parameterValue = context.getParameters()[i];
+
+        return Tag.of(
+                resolveTagKey(meterTagAnnotation, methodParameter.getName()),
+                resolveTagValue(meterTagAnnotation, parameterValue));
     }
 
     private static Tags getCommonTags(ArcInvocationContext context) {

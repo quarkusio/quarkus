@@ -264,4 +264,37 @@ public class MicrometerCounterInterceptorTest {
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());
     }
+
+
+    @Test
+    void testCountMultipleMeterTags_Success() {
+        counted.multipleMeterTags(false);
+        Counter counter = registry.get("method.counted")
+                .tag("method", "multipleMeterTags")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("extra", "tag")
+                .tag("do_fail", "prefix_false")
+                .tag("exception", "none")
+                .tag("fail", "false")
+                .tag("result", "success").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+
+    }
+
+
+    @Test
+    void testCountMultipleMeterTags_Failure() {
+        Assertions.assertThrows(NullPointerException.class, () -> counted.multipleMeterTags(true));
+        Counter counter = registry.get("method.counted")
+                .tag("method", "multipleMeterTags")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("extra", "tag")
+                .tag("do_fail", "prefix_true")
+                .tag("exception", "NullPointerException")
+                .tag("result", "failure").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+
+    }
 }

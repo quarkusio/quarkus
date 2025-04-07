@@ -104,8 +104,6 @@ import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableRemovalTrail
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
 import io.quarkus.rest.client.reactive.CertificateUpdateEventListener;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
-import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
-import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
@@ -114,7 +112,6 @@ import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
-import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 class RestClientReactiveProcessor {
@@ -196,18 +193,12 @@ class RestClientReactiveProcessor {
             RestClientRecorder restClientRecorder) {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(HeaderContainer.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CertificateUpdateEventListener.class));
     }
 
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class, ClientLogger.class);
-    }
-
-    @BuildStep
-    void setupRequestCollectingFilter(BuildProducer<ContainerRequestFilterBuildItem> filters) {
-        filters.produce(new ContainerRequestFilterBuildItem(HeaderCapturingServerFilter.class.getName()));
     }
 
     @BuildStep

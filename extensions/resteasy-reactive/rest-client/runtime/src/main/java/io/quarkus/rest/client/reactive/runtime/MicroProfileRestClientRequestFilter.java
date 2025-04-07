@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import jakarta.annotation.Priority;
-import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
@@ -17,6 +18,9 @@ import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilte
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 
@@ -54,13 +58,7 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
 
         }
 
-        MultivaluedMap<String, String> incomingHeaders = MicroProfileRestClientRequestFilter.EMPTY_MAP;
-        if (Arc.container().getActiveContext(RequestScoped.class) != null) {
-            HeaderContainer headerContainer = Arc.container().instance(HeaderContainer.class).get();
-            if (headerContainer != null) {
-                incomingHeaders = headerContainer.getHeaders();
-            }
-        }
+        MultivaluedMap<String, String> incomingHeaders = determineIncomingHeaders();
 
         // Propagation with the default factory will then overwrite any values if required.
         for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
@@ -95,6 +93,30 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
                     requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
                 }
             }
+        }
+    }
+
+    private MultivaluedMap<String, String> determineIncomingHeaders() {
+        ArcContainer container = Arc.container();
+        if (container == null) {
+            return MicroProfileRestClientRequestFilter.EMPTY_MAP;
+        }
+        ManagedContext requestContext = container.requestContext();
+        if (!requestContext.isActive()) {
+            return MicroProfileRestClientRequestFilter.EMPTY_MAP;
+        }
+        InstanceHandle<HttpHeaders> jakartaRestServerHeaders = container.instance(HttpHeaders.class);
+        if (!jakartaRestServerHeaders.isAvailable()) {
+            return MicroProfileRestClientRequestFilter.EMPTY_MAP;
+        }
+        // TODO: we could in the future consider using the Vert.x request headers here as well...
+        try {
+            return jakartaRestServerHeaders.get().getRequestHeaders();
+        } catch (ContextNotActiveException | IllegalStateException ignored) {
+            // guard against the race condition that exists between checking if the context is active
+            // and actually pulling the headers out of that request context
+            // this could happen if the REST call is being offloaded to another thread pool in a fire and forget manner
+            return MicroProfileRestClientRequestFilter.EMPTY_MAP;
         }
     }
 

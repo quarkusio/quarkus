@@ -1,23 +1,23 @@
 package io.quarkus.vertx.utils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
-import java.util.Optional;
-
-import org.jboss.logging.Logger;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
+import org.jboss.logging.Logger;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import java.util.Optional;
 
 /**
  * An {@link OutputStream} forwarding the bytes to Vert.x Web {@link HttpResponse}.
@@ -117,8 +117,8 @@ public class VertxOutputStream extends OutputStream {
     }
 
     private boolean awaitWriteable() throws IOException {
-        if (Vertx.currentContext() == ((HttpServerRequestInternal) request).context()) {
-            return false; // we are on the (right) event loop, so we can write - Netty will do the right thing.
+        if (Context.isOnEventLoopThread()) {
+            return request.response().writeQueueFull();
         }
         if (first) {
             first = false;

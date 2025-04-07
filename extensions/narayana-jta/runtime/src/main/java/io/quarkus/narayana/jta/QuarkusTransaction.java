@@ -69,12 +69,23 @@ public interface QuarkusTransaction {
 
     /**
      * If a transaction is active.
+     * A transaction is considered active after it has been started and prior to a Coordinator issuing any prepares, unless the
+     * transaction has been marked for rollback
      *
-     * @return {@code true} if the transaction is active.
+     * @return {@code true} if the transaction is in the {@link Status#STATUS_ACTIVE} state.
      */
     static boolean isActive() {
+        return getStatus() == Status.STATUS_ACTIVE;
+    }
+
+    /**
+     * Returns the status of the current transaction.
+     *
+     * @return The status of the current transaction based on the {@link Status} constants.
+     */
+    static int getStatus() {
         try {
-            return UserTransaction.userTransaction().getStatus() != Status.STATUS_NO_TRANSACTION;
+            return UserTransaction.userTransaction().getStatus();
         } catch (SystemException e) {
             throw new QuarkusTransactionException(e);
         }
@@ -86,11 +97,7 @@ public interface QuarkusTransaction {
      * @return If the transaction has been marked for rollback
      */
     static boolean isRollbackOnly() {
-        try {
-            return UserTransaction.userTransaction().getStatus() == Status.STATUS_MARKED_ROLLBACK;
-        } catch (SystemException e) {
-            throw new QuarkusTransactionException(e);
-        }
+        return getStatus() == Status.STATUS_MARKED_ROLLBACK;
     }
 
     /**

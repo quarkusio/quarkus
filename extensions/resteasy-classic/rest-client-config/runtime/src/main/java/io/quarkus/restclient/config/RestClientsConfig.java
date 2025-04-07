@@ -152,7 +152,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    @ConfigDocDefault("50")
+    @ConfigDocDefault("500")
     OptionalInt connectionPoolSize();
 
     /**
@@ -562,7 +562,7 @@ public interface RestClientsConfig {
         /**
          * The size of the connection pool for this client.
          */
-        @ConfigDocDefault("50")
+        @ConfigDocDefault("500")
         OptionalInt connectionPoolSize();
 
         /**

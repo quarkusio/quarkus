@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.RequestScoped;
@@ -68,21 +69,29 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
 
         ClientHeadersFactory clientHeadersFactory = clientHeadersFactory(requestContext);
         if (clientHeadersFactory != null) {
-            if (clientHeadersFactory instanceof ReactiveClientHeadersFactory) {
+            if (clientHeadersFactory instanceof ReactiveClientHeadersFactory reactiveClientHeadersFactory) {
                 // reactive
-                ReactiveClientHeadersFactory reactiveClientHeadersFactory = (ReactiveClientHeadersFactory) clientHeadersFactory;
                 requestContext.suspend();
-                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(newHeaders -> {
-                    for (Map.Entry<String, List<String>> headerEntry : newHeaders.entrySet()) {
-                        requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
-                    }
-                    requestContext.resume();
-                }, requestContext::resume);
+                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(
+                        new Consumer<>() {
+                            @Override
+                            public void accept(MultivaluedMap<String, String> newHeaders) {
+                                for (var headerEntry : newHeaders.entrySet()) {
+                                    requestContext.getHeaders()
+                                            .put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                                }
+                                requestContext.resume();
+                            }
+                        }, new Consumer<>() {
+                            @Override
+                            public void accept(Throwable t) {
+                                requestContext.resume(t);
+                            }
+                        });
             } else {
                 // blocking
                 incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
-
-                for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
+                for (var headerEntry : incomingHeaders.entrySet()) {
                     requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
                 }
             }
@@ -90,8 +99,7 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
     }
 
     private ClientHeadersFactory clientHeadersFactory(ResteasyReactiveClientRequestContext requestContext) {
-        if (requestContext.getConfiguration() instanceof ConfigurationImpl) {
-            ConfigurationImpl configuration = (ConfigurationImpl) requestContext.getConfiguration();
+        if (requestContext.getConfiguration() instanceof ConfigurationImpl configuration) {
             ClientHeadersFactory localHeadersFactory = configuration.getFromContext(ClientHeadersFactory.class);
             if (localHeadersFactory != null) {
                 return localHeadersFactory;

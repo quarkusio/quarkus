@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -117,8 +118,7 @@ public class WorkspaceProcessor {
         ActionBuilder actionBuilder = Action.actionBuilder()
                 .label("Preview")
                 .function((t) -> {
-                    Map params = (Map) t;
-                    return params.get("content"); // We just return the content, we will markup in the UI
+                    return t; // We just return the content, we will markup in the UI
                 })
                 .display(Display.split)
                 .displayType(DisplayType.markdown)
@@ -156,15 +156,18 @@ public class WorkspaceProcessor {
                         .collect(Collectors.toList());
             });
 
-            buildItemActions.addAction("executeAction", (t) -> {
-
+            buildItemActions.addAction("executeAction", (Map<String, String> t) -> {
                 String actionId = t.get("actionId");
-
                 if (actionId != null) {
                     Path path = Path.of(URI.create(t.get("path")));
                     Action actionToExecute = actionMap.get(actionId);
                     Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
-                    return new WorkspaceActionResult(convertedPath, actionToExecute.getFunction().apply(t));
+                    Object result = actionToExecute.getFunction().apply(t);
+                    if (result instanceof CompletionStage<?> stage) {
+                        return stage.thenApply(res -> new WorkspaceActionResult(convertedPath, res));
+                    } else {
+                        return new WorkspaceActionResult(convertedPath, result);
+                    }
                 }
                 return null;
             });

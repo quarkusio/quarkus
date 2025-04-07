@@ -10,8 +10,7 @@ public interface Patterns {
     public static Pattern JAVA_SRC = Pattern.compile("^((?!test).)*\\.java$");
     public static Pattern JAVA_TEST = Pattern.compile("^.*test.*\\.java$");
 
-    public static Pattern README_MD = Pattern.compile("^README\\.md$");
-
+    public static Pattern README_MD = Pattern.compile(".*README\\.md$");
     public static Pattern POM_XML = Pattern.compile("^pom\\.xml$");
     public static Pattern APPLICATION_PROPERTIES = Pattern.compile("^.*application\\.properties$");
 
@@ -27,4 +26,13 @@ public interface Patterns {
     public static Pattern WSDL = Pattern.compile(".*\\.wsdl$");
     public static Pattern PROPERTIES = Pattern.compile(".*\\.properties$");
     public static Pattern YAML = Pattern.compile(".*\\.(yaml|yml)$");
+
+    public static Pattern ANY_KNOWN_TEXT = Pattern.compile(
+            ".*(" +
+                    "README\\.md" + "|" +
+                    "pom\\.xml" + "|" +
+                    "application\\.properties" + "|" +
+                    "Dockerfile(\\..*)?" + "|" +
+                    "\\.(java|sh|bash|zsh|ksh|html|htm|css|js|json|xml|wsdl|properties|yaml|yml)" +
+                    ")$");
 }

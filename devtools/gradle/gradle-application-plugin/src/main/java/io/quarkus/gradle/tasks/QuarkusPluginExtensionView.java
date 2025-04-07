@@ -210,7 +210,7 @@ public abstract class QuarkusPluginExtensionView {
         }
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel,
+    public EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel,
             Map<String, ?> additionalForcedProperties) {
         ResolvedDependency appArtifact = appModel.getAppArtifact();
 

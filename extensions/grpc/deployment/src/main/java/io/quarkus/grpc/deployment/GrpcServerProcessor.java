@@ -52,6 +52,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanStream;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
@@ -696,8 +697,8 @@ public class GrpcServerProcessor {
             VertxWebRouterBuildItem routerBuildItem,
             VertxBuildItem vertx, Capabilities capabilities,
             List<FilterBuildItem> filterBuildItems,
-            // used to ensure that gRPC server starts after OTel has been set up
-            @SuppressWarnings("unused") BeanContainerBuildItem beanContainerBuildItem) {
+            ValidationPhaseBuildItem validationPhase,
+            BeanContainerBuildItem beanContainerBuildItem) {
 
         // Build the list of blocking methods per service implementation
         Map<String, List<String>> blocking = new HashMap<>();
@@ -733,7 +734,16 @@ public class GrpcServerProcessor {
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();
             }
-            recorder.initializeGrpcServer(vertx.getVertx(), routerRuntimeValue,
+            Type bindableServiceType = Type.create(GrpcDotNames.BINDABLE_SERVICE, org.jboss.jandex.Type.Kind.CLASS);
+            BeanStream bindableServiceBeanStream = validationPhase.getContext().beans().classBeans()
+                    .matchBeanTypes(new Predicate<>() {
+                        @Override
+                        public boolean test(Set<Type> types) {
+                            return types.contains(bindableServiceType);
+                        }
+                    });
+            recorder.initializeGrpcServer(bindableServiceBeanStream.isEmpty(), beanContainerBuildItem.getValue(),
+                    vertx.getVertx(), routerRuntimeValue,
                     config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
                     capabilities.isPresent(Capability.SECURITY), securityHandlers);
             return new ServiceStartBuildItem(GRPC_SERVER);

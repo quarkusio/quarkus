@@ -45,14 +45,16 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 
@@ -85,6 +87,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
+@CacheableTask
 public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     /* @formatter:off */
@@ -109,6 +112,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     public abstract ConfigurableFileCollection getOriginalClasspath();
 
     @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
     public abstract ConfigurableFileCollection getDeploymentResolvedWorkaround();
 
     @Nested
@@ -124,7 +128,10 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     public abstract Property<LaunchMode> getLaunchMode();
 
     @Input
-    public abstract MapProperty<String, String> getPlatformImportProperties();
+    public abstract Property<String> getTypeModel();
+
+    @Internal
+    public abstract Property<PlatformImportsImpl> getPlatformImports();
 
     /**
      * If any project task changes, we will invalidate this task anyway
@@ -162,18 +169,16 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @TaskAction
     public void execute() throws IOException {
         final ResolvedDependencyBuilder appArtifact = getProjectArtifact();
-        PlatformImportsImpl platformImports = new PlatformImportsImpl();
-        platformImports.setPlatformProperties(getPlatformImportProperties().get());
         Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifactsByCapability = getPlatformConfiguration()
                 .resolvedArtifactsByComponentIdentifier();
         getPlatformConfiguration().getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult) {
-                collectPlatforms((ResolvedDependencyResult) d, artifactsByCapability, platformImports);
+                collectPlatforms((ResolvedDependencyResult) d, artifactsByCapability, getPlatformImports().get());
             }
         });
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
-                .setPlatformImports(platformImports)
+                .setPlatformImports(getPlatformImports().get())
                 .addReloadableWorkspaceModule(appArtifact.getKey());
 
         collectDependencies(getAppClasspath(), modelBuilder, appArtifact.getWorkspaceModule().mutable());

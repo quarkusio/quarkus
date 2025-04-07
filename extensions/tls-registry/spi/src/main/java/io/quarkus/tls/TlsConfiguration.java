@@ -102,7 +102,12 @@ public interface TlsConfiguration {
 
     /**
      * Returns the name which was associated with this configuration
+     * <p>
+     * Note: Although this was made default in order to not break deep integrations, it is strongly recommended that the method
+     * be implemented.
      */
-    String getName();
+    default String getName() {
+        return "unset";
+    }
 
 }

@@ -49,6 +49,11 @@
             <artifactId>quarkus-arc-test-supplement</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Used to test wrong @Singleton detection -->
         <dependency>
             <groupId>jakarta.ejb</groupId>

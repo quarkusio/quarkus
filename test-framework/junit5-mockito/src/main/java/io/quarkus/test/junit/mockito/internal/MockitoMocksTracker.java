@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.mockito.Mockito;
 import org.mockito.internal.util.MockUtil;
 
 final class MockitoMocksTracker {
@@ -28,6 +29,13 @@ final class MockitoMocksTracker {
         for (Mocked m : getMocks(testInstance)) {
             MockUtil.resetMock(m.mock);
         }
+    }
+
+    static void clear(Object testInstance) {
+        for (Mocked m : getMocks(testInstance)) {
+            Mockito.framework().clearInlineMock(m.mock);
+        }
+        TEST_TO_USED_MOCKS.remove(testInstance);
     }
 
     static Optional<Object> currentMock(Object testInstance, Object beanInstance) {

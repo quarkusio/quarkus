@@ -17,6 +17,7 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>test-supplement</module>
+        <module>test-supplement-decorator</module>
     </modules>
 
 </project>

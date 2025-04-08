@@ -18,7 +18,7 @@ public abstract class CompatibilityUnitTestBase {
 
     public static final String POSTGRES_KIND = "postgresql";
     public static final String USERNAME_PWD = "hibernate_orm_test";
-    public static final String DATABASE_GENERATION = "drop-and-create";
+    public static final String SCHEMA_MANAGEMENT_STRATEGY = "drop-and-create";
 
     public void testReactiveWorks(UniAsserter asserter) {
         Mutiny.SessionFactory mutinySessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();

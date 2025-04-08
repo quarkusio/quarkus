@@ -152,7 +152,7 @@ Before going further, open the `src/main/resources/application.properties` file 
 [source, properties]
 ----
 quarkus.datasource.db-kind=postgresql
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 It instructs the application to use PostgreSQL for the database and to handle the database schema generation.

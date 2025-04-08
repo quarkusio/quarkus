@@ -17,7 +17,7 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveUnitTest extends Compatib
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .withConfigurationResource("application-unittest-onlyreactive.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", DATABASE_GENERATION)
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "true")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)

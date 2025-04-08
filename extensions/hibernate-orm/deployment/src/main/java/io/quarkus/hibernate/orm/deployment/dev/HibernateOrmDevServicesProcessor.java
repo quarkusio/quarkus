@@ -44,7 +44,7 @@ public class HibernateOrmDevServicesProcessor {
 
             if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
                 String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
-                        "database.generation");
+                        "schema-management.strategy");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
                         && !ConfigUtils.isPropertyNonEmpty(databaseGenerationPropertyKey)) {
                     devServicesAdditionalConfigProducer

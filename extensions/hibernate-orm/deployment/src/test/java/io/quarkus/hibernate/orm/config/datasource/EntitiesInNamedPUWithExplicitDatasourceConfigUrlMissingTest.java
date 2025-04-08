@@ -17,7 +17,7 @@ public class EntitiesInNamedPUWithExplicitDatasourceConfigUrlMissingTest {
             .withApplicationRoot((jar) -> jar
                     .addPackage(MyEntity.class.getPackage().getName()))
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
-            .overrideConfigKey("quarkus.hibernate-orm.pu-1.database.generation", "drop-and-create")
+            .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property for the datasource,

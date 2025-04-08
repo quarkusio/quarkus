@@ -654,7 +654,9 @@ public class LoggingSetupRecorder {
             final boolean includeFilters) {
         FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation();
-        if (rotationConfig.fileSuffix().isPresent()) {
+        if (!rotationConfig.enabled()) {
+            handler = new FileHandler();
+        } else if (rotationConfig.fileSuffix().isPresent()) {
             PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
             periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix().get());
             periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize().asLongValue());

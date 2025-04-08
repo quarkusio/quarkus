@@ -289,17 +289,17 @@ public class IndexingUtil {
                 try {
                     if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
                         log.warnf(
-                                "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                visit.getPath());
+                                "Re-indexing %s:%s - at least Jandex 2.1 must be used to index an application dependency",
+                                visit.getRoot(), visit.getPath());
                         return null;
                     }
                     return reader.read();
                 } catch (UnsupportedVersion e) {
                     throw new UnsupportedVersion(
-                            "Can't read Jandex index from " + visit.getPath() + ": " + e.getMessage());
+                            "Can't read Jandex index from " + visit.getRoot() + ":" + visit.getPath() + ": " + e.getMessage());
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException("Can't read Jandex index from " + visit.getPath(), e);
+                throw new UncheckedIOException("Can't read Jandex index from " + visit.getRoot() + ":" + visit.getPath(), e);
             }
         }
     }

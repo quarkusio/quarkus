@@ -26,7 +26,7 @@ public class MariaDbLifecycleManager implements QuarkusTestResourceLifecycleMana
                         mariaDbContainer.getFirstMappedPort(), QUARKUS));
         properties.put("quarkus.datasource.mariadb.password", QUARKUS);
         properties.put("quarkus.datasource.mariadb.username", QUARKUS);
-        properties.put("quarkus.hibernate-orm.mariadb.database.generation", "drop-and-create");
+        properties.put("quarkus.hibernate-orm.mariadb.schema-management.strategy", "drop-and-create");
         properties.put("quarkus.hibernate-orm.mariadb.active", "true");
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.postgresql.active", "false");

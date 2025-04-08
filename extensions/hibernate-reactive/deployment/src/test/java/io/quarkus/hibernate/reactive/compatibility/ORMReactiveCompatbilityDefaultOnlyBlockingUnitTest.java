@@ -22,7 +22,7 @@ public class ORMReactiveCompatbilityDefaultOnlyBlockingUnitTest extends Compatib
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
             ))
             .withConfigurationResource("application-unittest-onlyblocking.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", DATABASE_GENERATION)
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "false")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)

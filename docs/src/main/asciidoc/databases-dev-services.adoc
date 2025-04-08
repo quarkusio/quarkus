@@ -181,7 +181,7 @@ When starting Dev Services (for example, in tests or in dev mode), you will see 
 [IMPORTANT]
 ====
 When using Dev Services with Hibernate ORM, by default Quarkus will wipe out the database on application startup, which will wipe out the database data on your Docker host's filesystem.
-Configure `quarkus.hibernate-orm.database.generation=none` or `quarkus.hibernate-orm.database.generation=validate` to avoid this behavior.
+Configure `quarkus.hibernate-orm.schema-management.strategy=none` or `quarkus.hibernate-orm.schema-management.strategy=validate` to avoid this behavior.
 
 Also, using Flyway to migrate your schema when starting the application will modify the database data on your Docker hosts's file system.
 ====

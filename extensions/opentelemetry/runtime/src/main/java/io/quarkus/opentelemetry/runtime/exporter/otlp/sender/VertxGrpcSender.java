@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp.sender;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +61,7 @@ public final class VertxGrpcSender implements GrpcSender {
     private final boolean compressionEnabled;
     private final Map<String, String> headers;
     private final String grpcEndpointPath;
+    private final Duration exportTimeout;
 
     private final GrpcClient client;
 
@@ -74,6 +77,7 @@ public final class VertxGrpcSender implements GrpcSender {
         this.server = SocketAddress.inetSocketAddress(OTelExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
+        this.exportTimeout = timeout;
         var httpClientOptions = new HttpClientOptions()
                 .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
                 .setReadIdleTimeout((int) timeout.getSeconds())
@@ -92,9 +96,9 @@ public final class VertxGrpcSender implements GrpcSender {
         var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled,
                 request,
                 loggedUnimplemented, logger, marshalerType, onSuccess, onError, 1, grpcEndpointPath,
-                isShutdown::get);
+                isShutdown::get, exportTimeout);
 
-        initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, new Consumer<>() {
+        initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, exportTimeout, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
                 failOnClientRequest(marshalerType, throwable, onError);
@@ -128,12 +132,14 @@ public final class VertxGrpcSender implements GrpcSender {
 
     private static void initiateSend(GrpcClient client, SocketAddress server,
             int numberOfAttempts,
-            Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler,
+            Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {
             @Override
             public CompletionStage<GrpcClientRequest<Buffer, Buffer>> get() {
-                return client.request(server).toCompletionStage();
+                return client.request(server)
+                        .timeout(exportTimeout.toMillis(), MILLISECONDS)
+                        .toCompletionStage();
             }
         })
                 .onFailure(new Predicate<Throwable>() {
@@ -189,6 +195,7 @@ public final class VertxGrpcSender implements GrpcSender {
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
+        private final Duration exportTimeout;
 
         public ClientRequestOnSuccessHandler(GrpcClient client,
                 SocketAddress server,
@@ -202,7 +209,8 @@ public final class VertxGrpcSender implements GrpcSender {
                 Consumer<Throwable> onError,
                 int attemptNumber,
                 String grpcEndpointPath,
-                Supplier<Boolean> isShutdown) {
+                Supplier<Boolean> isShutdown,
+                Duration exportTimeout) {
             this.client = client;
             this.server = server;
             this.grpcEndpointPath = grpcEndpointPath;
@@ -216,6 +224,7 @@ public final class VertxGrpcSender implements GrpcSender {
             this.onError = onError;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
+            this.exportTimeout = exportTimeout;
         }
 
         @Override
@@ -250,7 +259,7 @@ public final class VertxGrpcSender implements GrpcSender {
                                     // retry
                                     initiateSend(client, server,
                                             MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(),
+                                            newAttempt(), exportTimeout,
                                             new Consumer<>() {
                                                 @Override
                                                 public void accept(Throwable throwable) {
@@ -394,7 +403,7 @@ public final class VertxGrpcSender implements GrpcSender {
                             // retry
                             initiateSend(client, server,
                                     MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(),
+                                    newAttempt(), exportTimeout,
                                     new Consumer<>() {
                                         @Override
                                         public void accept(Throwable throwable) {
@@ -429,7 +438,7 @@ public final class VertxGrpcSender implements GrpcSender {
         public ClientRequestOnSuccessHandler newAttempt() {
             return new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, marshaler,
                     loggedUnimplemented, logger, type, onSuccess, onError, attemptNumber + 1,
-                    grpcEndpointPath, isShutdown);
+                    grpcEndpointPath, isShutdown, exportTimeout);
         }
     }
 }

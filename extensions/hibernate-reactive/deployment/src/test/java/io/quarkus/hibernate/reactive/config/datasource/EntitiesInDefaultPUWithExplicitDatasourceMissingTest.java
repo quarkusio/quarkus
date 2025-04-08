@@ -23,7 +23,7 @@ public class EntitiesInDefaultPUWithExplicitDatasourceMissingTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "ds-1")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", "drop-and-create")
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-reactive-pg-client", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))

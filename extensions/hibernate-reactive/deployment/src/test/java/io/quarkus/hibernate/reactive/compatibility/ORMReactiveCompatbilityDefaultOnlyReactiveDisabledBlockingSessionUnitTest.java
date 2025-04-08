@@ -24,7 +24,7 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUn
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
             .withConfigurationResource("application-unittest-onlyreactive.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", DATABASE_GENERATION)
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.blocking", "false")
             .overrideConfigKey("quarkus.datasource.reactive", "true")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)

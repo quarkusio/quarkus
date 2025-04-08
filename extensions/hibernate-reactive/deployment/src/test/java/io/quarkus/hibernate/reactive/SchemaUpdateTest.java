@@ -22,7 +22,7 @@ public class SchemaUpdateTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(Hero.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", "update");
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "update");
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

@@ -248,7 +248,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${basedir}/../../.github/docker-prune.sh</executable>
+                                    <executable>${docker-prune.location}</executable>
                                 </configuration>
                             </execution>
                         </executions>

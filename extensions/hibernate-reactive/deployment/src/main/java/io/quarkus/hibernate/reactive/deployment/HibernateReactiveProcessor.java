@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
@@ -94,6 +95,13 @@ public final class HibernateReactiveProcessor {
             "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
             "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
     };
+
+    @BuildStep
+    void registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
+        services.produce(new ServiceProviderBuildItem(
+                "io.vertx.core.spi.VertxServiceProvider",
+                "org.hibernate.reactive.context.impl.ContextualDataStorage"));
+    }
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,

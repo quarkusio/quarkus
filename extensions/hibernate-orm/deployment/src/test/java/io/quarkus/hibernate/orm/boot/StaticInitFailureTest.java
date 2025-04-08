@@ -27,7 +27,9 @@ public class StaticInitFailureTest {
                     .addClass(EntityWithIncorrectMapping.class))
             .withConfigurationResource("application.properties")
             // Expect only one error: the one we triggered
-            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
+                    // Ignore these particular warnings: they are not relevant to this test.
+                    && !record.getMessage().contains("must be used to index an application dependency")) // too old Jandex
             // In particular we don't want a log telling us JPAConfig could not be created
             // because HibernateOrmRuntimeConfig is not initialized yet.
             // JPAConfig should not be created in the first place!

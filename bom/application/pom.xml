@@ -3296,6 +3296,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-observability-devservices-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-observability-devservices-lgtm</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>

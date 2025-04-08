@@ -223,6 +223,13 @@ public interface LogRuntimeConfig {
         RotationConfig rotation();
 
         interface RotationConfig {
+
+            /**
+             * Whether log rotation is enabled.
+             */
+            @WithDefault("true")
+            boolean enabled();
+
             /**
              * The maximum log file size, after which a rotation is executed, up to {@code Long.MAX_VALUE} bytes.
              * Note that the file is rotated <em>after</em> the log record is written.

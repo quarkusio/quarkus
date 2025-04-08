@@ -4,11 +4,11 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.micrometer.core.aop.MeterTags;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.aop.MeterTag;
+import io.micrometer.core.aop.MeterTags;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

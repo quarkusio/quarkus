@@ -265,7 +265,6 @@ public class MicrometerCounterInterceptorTest {
         Assertions.assertEquals(1, counter.count());
     }
 
-
     @Test
     void testCountMultipleMeterTags_Success() {
         counted.multipleMeterTags(false);
@@ -281,7 +280,6 @@ public class MicrometerCounterInterceptorTest {
         Assertions.assertEquals(1, counter.count());
 
     }
-
 
     @Test
     void testCountMultipleMeterTags_Failure() {

@@ -28,7 +28,7 @@ public class MeterTagsSupport {
     private final ValueExpressionResolver valueExpressionResolver;
 
     public MeterTagsSupport(@All List<ValueResolver> valueResolvers,
-                            Instance<ValueExpressionResolver> valueExpressionResolver) {
+            Instance<ValueExpressionResolver> valueExpressionResolver) {
         this.valueResolvers = createValueResolverMap(valueResolvers);
         this.valueExpressionResolver = valueExpressionResolver.isUnsatisfied() ? null : valueExpressionResolver.get();
     }
@@ -59,7 +59,7 @@ public class MeterTagsSupport {
     }
 
     private Tag resolveMeterTag(ArcInvocationContext context, MeterTag meterTagAnnotation, int i,
-                                Parameter methodParameter) {
+            Parameter methodParameter) {
         Object parameterValue = context.getParameters()[i];
 
         return Tag.of(

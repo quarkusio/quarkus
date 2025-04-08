@@ -8,14 +8,15 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -247,7 +248,7 @@ public final class PathTestHelper {
 
         if (testClassLocation.endsWith(".jar")) {
             if (testClassLocation.endsWith("-tests.jar")) {
-                return Paths.get(new StringBuilder()
+                return Path.of(new StringBuilder()
                         .append(testClassLocation, 0, testClassLocation.length() - "-tests.jar".length())
                         .append(".jar")
                         .toString());
@@ -323,6 +324,25 @@ public final class PathTestHelper {
     }
 
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
+        if (classLoader instanceof QuarkusClassLoader qcl) {
+            // this appears to be a more efficient and reliable way of performing this check
+            // the code after this IF block has an issue on Windows
+            final List<ClassPathElement> cpeList = qcl.getElementsWithResource(fromClassNameToResourceName(className),
+                    false);
+            if (!cpeList.isEmpty()) {
+                // if it's not empty, it's pretty much always a list with a single element
+                if (cpeList.size() == 1) {
+                    final ClassPathElement cpe = cpeList.get(0);
+                    return cpe.isRuntime() && testLocation.equals(cpe.getRoot());
+                }
+                for (ClassPathElement cpe : cpeList) {
+                    if (cpe.isRuntime()) {
+                        return cpe.getRoot().equals(testLocation);
+                    }
+                }
+            }
+            return false;
+        }
         URL resource = classLoader.getResource(fromClassNameToResourceName(className));
         if (resource == null) {
             return false;

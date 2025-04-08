@@ -11,6 +11,7 @@ public class StorkConfigProvider implements ConfigProvider {
     private static final List<ServiceConfig> serviceConfigs = new ArrayList<>();
 
     public static void init(List<ServiceConfig> configs) {
+        serviceConfigs.clear();
         serviceConfigs.addAll(configs);
     }
 

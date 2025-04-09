@@ -1,10 +1,10 @@
 package io.quarkus.runtime;
 
 import java.io.Closeable;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Queue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -20,26 +20,26 @@ public class StartupContext implements Closeable {
     // For example, the raw command line args and ShutdownContext are set when the StartupContext is created
     private final Map<String, Object> values = new HashMap<>();
 
-    private final Deque<Runnable> shutdownTasks = new ConcurrentLinkedDeque<>();
-    private final Deque<Runnable> lastShutdownTasks = new ConcurrentLinkedDeque<>();
+    private final PriorityBlockingQueue<ShutdownTask> shutdownTasks = new PriorityBlockingQueue<>();
+    private final PriorityBlockingQueue<ShutdownTask> lastShutdownTasks = new PriorityBlockingQueue<>();
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
     public StartupContext() {
         ShutdownContext shutdownContext = new ShutdownContext() {
             @Override
-            public void addShutdownTask(Runnable runnable) {
+            public void addShutdownTask(int priority, Runnable runnable) {
                 if (runnable != null) {
-                    shutdownTasks.addFirst(runnable);
+                    shutdownTasks.offer(new ShutdownTask(priority, runnable));
                 } else {
                     throw new IllegalArgumentException("Extension passed an invalid shutdown handler");
                 }
             }
 
             @Override
-            public void addLastShutdownTask(Runnable runnable) {
+            public void addLastShutdownTask(int priority, Runnable runnable) {
                 if (runnable != null) {
-                    lastShutdownTasks.addFirst(runnable);
+                    lastShutdownTasks.offer(new ShutdownTask(priority, runnable));
                 } else {
                     throw new IllegalArgumentException("Extension passed an invalid last shutdown handler");
                 }
@@ -72,7 +72,7 @@ public class StartupContext implements Closeable {
         values.clear();
     }
 
-    private void runAllAndClear(Deque<Runnable> tasks) {
+    private void runAllAndClear(Queue<ShutdownTask> tasks) {
         while (!tasks.isEmpty()) {
             try {
                 var runnable = tasks.remove();
@@ -96,5 +96,20 @@ public class StartupContext implements Closeable {
     @SuppressWarnings("unused")
     public void setCurrentBuildStepName(String currentBuildStepName) {
         this.currentBuildStepName = currentBuildStepName;
+    }
+
+    private record ShutdownTask(int priority, Runnable action) implements Runnable, Comparable<ShutdownTask> {
+
+        @Override
+        public int compareTo(ShutdownTask task) {
+            // with a regular int compare we'll get the asc ordered queue [1,2,3,4]
+            //  but we want the desc order [4,3,2,1] so that the task with the higher priority is polled first:
+            return task == null ? 1 : -Integer.compare(priority, task.priority);
+        }
+
+        @Override
+        public void run() {
+            action.run();
+        }
     }
 }

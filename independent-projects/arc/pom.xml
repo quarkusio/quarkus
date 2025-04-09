@@ -95,6 +95,14 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-coroutines-bom</artifactId>
+                <version>${version.kotlin-coroutines}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>io.quarkus.arc</groupId>
                 <artifactId>arc</artifactId>
                 <version>${project.version}</version>

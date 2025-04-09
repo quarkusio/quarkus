@@ -29,7 +29,7 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.2.7</jandex.version>
+        <jandex.version>3.3.0</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
@@ -41,6 +41,7 @@
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.24.0</commonmark.version>
+        <jgit.version>7.2.0.202503040940-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -189,6 +190,11 @@
                 <groupId>org.commonmark</groupId>
                 <artifactId>commonmark</artifactId>
                 <version>${commonmark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>${jgit.version}</version>
             </dependency>
 
             <!-- Extension processor -->

@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.TemplateException.Builder;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -460,13 +461,38 @@ public class ParserTest {
         assertSectionParams(engine, "{#let id=\"'Foo \"}", Map.of("id", "\"'Foo \""));
         assertSectionParams(engine, "{#let id=\"'Foo ' \"}", Map.of("id", "\"'Foo ' \""));
         assertSectionParams(engine, "{#let id=\"'Foo ' \" bar='baz'}", Map.of("id", "\"'Foo ' \"", "bar", "'baz'"));
-        assertSectionParams(engine, "{#let my=bad id=(\"'Foo ' \" + 1) bar='baz'}",
-                Map.of("my", "bad", "id", "(\"'Foo ' \" + 1)", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let my=bad id=(foo + 1) bar='baz'}",
+                Map.of("my", "bad", "id", "(foo + 1)", "bar", "'baz'"));
         assertSectionParams(engine, "{#let id = 'Foo'}", Map.of("id", "'Foo'"));
         assertSectionParams(engine, "{#let id= 'Foo'}", Map.of("id", "'Foo'"));
         assertSectionParams(engine, "{#let my = (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
         assertSectionParams(engine, "{#let my= (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+    }
 
+    @Test
+    public void testVirtualMethodWithNestedLiteralSeparator() {
+        Engine engine = Engine.builder().addDefaults().build();
+        List<Part> parts = engine.parse("{foo('Bar \"!')}").findExpression(e -> true).getParts();
+        assertVirtualMethodParam(parts.get(0), "foo", "Bar \"!");
+
+        parts = engine.parse("{foo(\"Bar '!\")}").findExpression(e -> true).getParts();
+        assertVirtualMethodParam(parts.get(0), "foo", "Bar '!");
+
+        parts = engine.parse("{foo(\"Bar '!\").baz(1)}").findExpression(e -> true).getParts();
+        assertVirtualMethodParam(parts.get(0), "foo", "Bar '!");
+        assertVirtualMethodParam(parts.get(1), "baz", "1");
+
+        parts = engine.parse("{str:builder('Qute').append(\"is '\").append(\"cool!\")}").findExpression(e -> true).getParts();
+        assertVirtualMethodParam(parts.get(0), "builder", "Qute");
+        assertVirtualMethodParam(parts.get(1), "append", "is '");
+        assertVirtualMethodParam(parts.get(2), "append", "cool!");
+    }
+
+    private void assertVirtualMethodParam(Part part, String name, String literal) {
+        assertTrue(part.isVirtualMethod());
+        assertEquals(name, part.getName());
+        assertTrue(part.asVirtualMethod().getParameters().get(0).isLiteral());
+        assertEquals(literal, part.asVirtualMethod().getParameters().get(0).getLiteral().toString());
     }
 
     @Test

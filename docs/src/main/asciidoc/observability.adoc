@@ -19,7 +19,7 @@ Over the time, many extensions have been developed to provide observability capa
 
 Telemetry contains data about the internal state of the system and can be split into categories or *signals*:
 
-* *Logging*, classical local or distributed logs
+* *Logging*, classical local or centralised logs
 * *Metrics*, metrics calculated in each Quarkus application instance
 * *Tracing*, distributed tracing across applications
 * *Profiling*, to analyze and monitor the application's performance, resource usage, and runtime behavior

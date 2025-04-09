@@ -13,6 +13,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -39,15 +41,16 @@ public class SimpleGeneratorTest {
     public static void init() throws IOException {
         TestClassOutput classOutput = new TestClassOutput();
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
-                CompletionStage.class, List.class, MyEnum.class);
+                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class);
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
                 .addClass(myServiceClazz)
-                .addClass(index.getClassByName(DotName.createSimple(PublicMyService.class.getName())))
-                .addClass(index.getClassByName(DotName.createSimple(MyItem.class.getName())))
-                .addClass(index.getClassByName(DotName.createSimple(String.class.getName())))
-                .addClass(index.getClassByName(DotName.createSimple(List.class.getName())))
-                .addClass(index.getClassByName(DotName.createSimple(MyEnum.class.getName())))
+                .addClass(index.getClassByName(PublicMyService.class))
+                .addClass(index.getClassByName(MyItem.class))
+                .addClass(index.getClassByName(String.class))
+                .addClass(index.getClassByName(List.class))
+                .addClass(index.getClassByName(MyEnum.class))
+                .addClass(index.getClassByName(StringBuilder.class), stringBuilderTemplateData())
                 .build();
 
         generator.generate();
@@ -146,6 +149,7 @@ public class SimpleGeneratorTest {
         assertEquals("OK", engine.parse("{#if enum is MyEnum:BAR}OK{/if}").data("enum", MyEnum.BAR).render());
         assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
+        assertEquals("foo", engine.parse("{builder.append('foo')}").data("builder", new StringBuilder()).render());
     }
 
     @Test
@@ -190,6 +194,17 @@ public class SimpleGeneratorTest {
             }
         }
         return indexer.complete();
+    }
+
+    private static AnnotationInstance stringBuilderTemplateData() {
+        AnnotationValue ignoreValue = AnnotationValue.createArrayValue(ValueResolverGenerator.IGNORE, new AnnotationValue[] {});
+        AnnotationValue targetValue = AnnotationValue.createClassValue("target",
+                Type.create(ValueResolverGenerator.TEMPLATE_DATA, Kind.CLASS));
+        AnnotationValue propertiesValue = AnnotationValue.createBooleanValue(ValueResolverGenerator.PROPERTIES, false);
+        AnnotationValue ignoreSuperclassesValue = AnnotationValue.createBooleanValue(ValueResolverGenerator.IGNORE_SUPERCLASSES,
+                true);
+        return AnnotationInstance.create(ValueResolverGenerator.TEMPLATE_DATA, null,
+                new AnnotationValue[] { targetValue, ignoreValue, propertiesValue, ignoreSuperclassesValue });
     }
 
 }

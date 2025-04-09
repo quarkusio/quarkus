@@ -1435,9 +1435,9 @@ to your `SessionFactory` by simply defining a CDI bean with the appropriate qual
 [source,java]
 ----
 @PersistenceUnitExtension // <1>
-public static class MyInterceptor extends EmptyInterceptor { // <2>
+public static class MyInterceptor implements Interceptor, Serializable { // <2>
     @Override
-    public boolean onLoad(Object entity, Serializable id, Object[] state, // <3>
+    public boolean onLoad(Object entity, Object id, Object[] state, // <3>
             String[] propertyNames, Type[] types) {
         // ...
         return false;
@@ -1448,8 +1448,7 @@ public static class MyInterceptor extends EmptyInterceptor { // <2>
 to tell Quarkus it should be used in the default persistence unit.
 +
 For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
-<2> Either extend `org.hibernate.EmptyInterceptor` or implement `org.hibernate.Interceptor` directly.
-<3> Implement methods as necessary.
+<2> Implement methods of `org.hibernate.Interceptor` as necessary.
 
 [TIP]
 ====

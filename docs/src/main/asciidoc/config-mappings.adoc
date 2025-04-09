@@ -157,11 +157,12 @@ server.port=8080
 
 ==== `@WithParentName`
 
-The `@WithParentName` annotation allows to configurations mapping to inherit its container name, simplifying the
+The `@WithParentName` annotation allows the configuration mapping property to inherit its container name, simplifying the
 configuration property name required to match the mapping:
 
 [source,java]
 ----
+@ConfigMapping(prefix = "server")
 interface Server {
     @WithParentName
     ServerHostAndPort hostAndPort();

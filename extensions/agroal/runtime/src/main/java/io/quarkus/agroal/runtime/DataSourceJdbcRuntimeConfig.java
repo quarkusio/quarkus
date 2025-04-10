@@ -118,6 +118,11 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<String> validationQuerySql();
 
     /**
+     * The timeout for the connection validation query
+     */
+    Optional<Duration> validationQueryTimeout();
+
+    /**
      * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
      * <p>
      * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation

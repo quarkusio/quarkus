@@ -1,9 +1,5 @@
 package io.quarkus.grpc.stubs;
 
-import java.util.function.Function;
-
-import org.jboss.logging.Logger;
-
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -13,6 +9,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 import io.smallrye.mutiny.subscription.Cancellable;
+import org.jboss.logging.Logger;
+
+import java.util.function.Function;
 
 public class ServerCalls {
     private static final Logger log = Logger.getLogger(ServerCalls.class);
@@ -58,10 +57,11 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
             handleSubscription(returnValue.subscribe().with(
-                    response::onNext,
-                    throwable -> onError(response, throwable),
-                    () -> onCompleted(response)), response);
+                    flowHandler::onNext,
+                    throwable -> onError(flowHandler, throwable),
+                    () -> onCompleted(flowHandler)), response);
         } catch (Throwable throwable) {
             onError(response, throwable);
         }
@@ -119,10 +119,11 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
+            StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
             handleSubscription(multi.subscribe().with(
-                    response::onNext,
-                    failure -> onError(response, failure),
-                    () -> onCompleted(response)), response);
+                    flowHandler::onNext,
+                    failure -> onError(flowHandler, failure),
+                    () -> onCompleted(flowHandler)), response);
 
             return pump;
         } catch (Throwable throwable) {

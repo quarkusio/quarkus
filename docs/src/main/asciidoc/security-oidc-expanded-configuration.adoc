@@ -1242,7 +1242,7 @@ Use xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Qu
 === Revoke OIDC tokens
 
 You may need to revoke access tokens, for example, in case of the local logout.
-See the xef:security-oidc-code-flow-authentication#oidc-token-revocation[Token revocation] section for more information.
+See the xref:security-oidc-code-flow-authentication#oidc-token-revocation[Token revocation] section for more information.
 
 == References
 

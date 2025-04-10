@@ -35,6 +35,19 @@ public interface HibernateOrmConfig {
     boolean enabled();
 
     /**
+     * Whether Hibernate ORM is working in blocking mode.
+     *
+     * Hibernate ORM's blocking `EntityManager`/`Session`/`SessionFactory`
+     * are normally disabled by default if no JDBC datasource is found.
+     * You can set this property to `false` if you want to disable them
+     * despite having a JDBC datasource.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean blocking();
+
+    /**
      * Database related configuration.
      */
     @ConfigDocSection

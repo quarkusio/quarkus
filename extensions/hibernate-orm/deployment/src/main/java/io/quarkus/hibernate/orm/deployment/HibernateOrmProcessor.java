@@ -286,14 +286,11 @@ public final class HibernateOrmProcessor {
     public ImpliedBlockingPersistenceUnitTypeBuildItem defineTypeOfImpliedPU(
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem, //This is from Agroal SPI: safe to use even for Hibernate Reactive
             Capabilities capabilities) {
-        // If we have some blocking datasources defined, we can have an implied PU
-        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE) && jdbcDataSourcesBuildItem.isEmpty()) {
             // if we don't have any blocking datasources and Hibernate Reactive is present,
             // we don't want a blocking persistence unit
             return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
         } else {
-            // even if we don't have any JDBC datasource, we trigger the implied blocking persistence unit
-            // to properly trigger error conditions and error messages to guide the user
             return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
         }
     }
@@ -351,7 +348,7 @@ public final class HibernateOrmProcessor {
                                     hibernateOrmConfig.database().ormCompatibilityVersion(), Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            false, true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
+                            true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -667,7 +664,7 @@ public final class HibernateOrmProcessor {
             Capabilities capabilities, HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
             BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
-        if (capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
+        if (capabilities.isPresent(Capability.AGROAL)) {
             recorder.setupPersistenceProvider(hibernateOrmRuntimeConfig,
                     HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         }
@@ -862,6 +859,12 @@ public final class HibernateOrmProcessor {
             }
         }
 
+        if (!hibernateOrmConfig.blocking()) {
+            LOG.infof(
+                    "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false");
+            return;
+        }
+
         Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
                 .filter(i -> i.isDefault())
                 .findFirst();
@@ -952,7 +955,8 @@ public final class HibernateOrmProcessor {
                 // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
                 //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(modelClassesAndPackages),
-                new Properties());
+                new Properties(),
+                false);
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
         collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
@@ -1147,7 +1151,7 @@ public final class HibernateOrmProcessor {
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         xmlMappings,
-                        false, false,
+                        false,
                         isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
     }
 

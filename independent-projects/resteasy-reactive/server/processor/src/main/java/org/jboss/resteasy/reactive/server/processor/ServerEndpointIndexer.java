@@ -84,6 +84,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegment
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.TriParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.YearMonthParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.YearParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
@@ -468,7 +469,8 @@ public class ServerEndpointIndexer
                 elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator());
+                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator(),
+                parameterResult.isTriParameter());
     }
 
     @Override
@@ -524,6 +526,48 @@ public class ServerEndpointIndexer
         }
 
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
+    }
+
+    @Override
+    protected void handleTriParameterParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo, boolean isArray) {
+        ParameterConverterSupplier converter = null;
+
+        if (isArray) {
+            converter = extractConverter(genericElementType, index,
+                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+            converter = new ArrayConverter.ArraySupplier(converter, genericElementType);
+            builder.setSingle(false);
+        } else if (genericElementType != null) {
+            ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
+                    errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+            if (LIST.toString().equals(elementType)) {
+                converter = new ListConverter.ListSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SET.toString().equals(elementType)) {
+                converter = new SetConverter.SetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SORTED_SET.toString().equals(elementType)) {
+                converter = new SortedSetConverter.SortedSetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            }
+        } else if (SUPPORT_TEMPORAL_PARAMS.contains(DotName.createSimple(elementType))) {
+            converter = determineTemporalConverter(DotName.createSimple(elementType), parameterAnnotations,
+                    currentMethodInfo);
+            handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                    currentMethodInfo);
+        }
+
+        if (converter == null) {
+            // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
+            converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters,
+                    builder.getAnns(), currentMethodInfo);
+        }
+
+        builder.setConverter(new TriParameterConverter.TriParameterSupplier(converter));
     }
 
     @Override

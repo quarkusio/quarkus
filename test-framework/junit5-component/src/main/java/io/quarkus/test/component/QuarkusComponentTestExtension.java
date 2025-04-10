@@ -70,6 +70,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
@@ -218,6 +219,11 @@ public class QuarkusComponentTestExtension
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
+        if (context.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            // There is no callback that runs after all tests in a test class but before any @Nested test classes run
+            // Therefore we need to discard the existing container here
+            cleanup(context);
+        }
         buildContainer(context);
         startContainer(context, Lifecycle.PER_CLASS);
         LOG.debugf("beforeAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
@@ -605,7 +611,7 @@ public class QuarkusComponentTestExtension
             AtomicReference<BeanResolver> beanResolver = new AtomicReference<>();
 
             // Collect all @Inject and @InjectMock test class injection points to define a bean removal exclusion
-            List<Field> injectFields = findInjectFields(testClass);
+            List<Field> injectFields = findInjectFields(testClass, true);
             List<Parameter> injectParams = findInjectParams(testClass);
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
@@ -1051,13 +1057,13 @@ public class QuarkusComponentTestExtension
 
     private List<FieldInjector> injectFields(Class<?> testClass, Object testInstance) throws Exception {
         List<FieldInjector> injectedFields = new ArrayList<>();
-        for (Field field : findInjectFields(testClass)) {
+        for (Field field : findInjectFields(testClass, false)) {
             injectedFields.add(new FieldInjector(field, testInstance));
         }
         return injectedFields;
     }
 
-    private List<Field> findInjectFields(Class<?> testClass) {
+    private List<Field> findInjectFields(Class<?> testClass, boolean scanEnclosingClasses) {
         List<Class<? extends Annotation>> injectAnnotations;
         Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
         if (deprecatedInjectMock != null) {
@@ -1065,7 +1071,16 @@ public class QuarkusComponentTestExtension
         } else {
             injectAnnotations = List.of(Inject.class, InjectMock.class);
         }
-        return findFields(testClass, injectAnnotations);
+        List<Field> found = findFields(testClass, injectAnnotations);
+        if (scanEnclosingClasses) {
+            Class<?> enclosing = testClass.getEnclosingClass();
+            while (enclosing != null) {
+                // @Nested test class
+                found.addAll(findFields(enclosing, injectAnnotations));
+                enclosing = enclosing.getEnclosingClass();
+            }
+        }
+        return found;
     }
 
     private List<Parameter> findInjectParams(Class<?> testClass) {

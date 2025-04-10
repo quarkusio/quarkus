@@ -289,8 +289,8 @@ public class BeanDeployment {
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         BeanDiscoveryResult beanDiscoveryResult = findBeans(
-                initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
-                injectionPoints, jtaCapabilities);
+                initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet(), strictCompatibility),
+                observers, injectionPoints, jtaCapabilities);
         this.beans.addAll(beanDiscoveryResult.beans);
         this.skippedClasses.addAll(beanDiscoveryResult.skippedClasses);
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
@@ -1485,9 +1485,13 @@ public class BeanDeployment {
 
     // keep it public we need this method in quarkus integration
     public static Set<DotName> initBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
-            Set<DotName> stereotypes) {
+            Set<DotName> stereotypes, boolean strictCompatibility) {
         Set<DotName> beanDefiningAnnotations = new HashSet<>();
         for (BuiltinScope scope : BuiltinScope.values()) {
+            if (strictCompatibility && scope == BuiltinScope.SINGLETON) {
+                // `@Singleton` is not a bean defining annotation in CDI, skip it in strict mode
+                continue;
+            }
             beanDefiningAnnotations.add(scope.getInfo().getDotName());
         }
         if (additionalBeanDefiningAnnotations != null) {

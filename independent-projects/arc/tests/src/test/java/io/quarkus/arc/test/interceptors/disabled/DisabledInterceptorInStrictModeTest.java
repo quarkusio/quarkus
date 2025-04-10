@@ -7,7 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InterceptorBinding;
@@ -32,7 +32,7 @@ public class DisabledInterceptorInStrictModeTest {
         assertEquals("pong", bean.ping());
     }
 
-    @Singleton
+    @Dependent
     @MyInterceptorBinding
     static class MyBean {
         String ping() {

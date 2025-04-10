@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
+import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +30,7 @@ public class DisabledDecoratorInStrictModeTest {
         T convert(T value);
     }
 
-    @Singleton
+    @Dependent
     static class ToUpperCaseConverter implements Converter<String> {
         @Override
         public String convert(String value) {

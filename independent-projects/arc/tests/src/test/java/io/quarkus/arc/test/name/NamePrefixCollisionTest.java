@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +29,7 @@ public class NamePrefixCollisionTest {
     }
 
     @Named("x")
-    @Singleton
+    @Dependent
     static class Alpha {
     }
 

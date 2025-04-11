@@ -20,7 +20,7 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property, otherwise the PU gets ignored...
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
-            .overrideConfigKey("quarkus.hibernate-orm.pu-1.database.generation", "drop-and-create")
+            .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'."));;

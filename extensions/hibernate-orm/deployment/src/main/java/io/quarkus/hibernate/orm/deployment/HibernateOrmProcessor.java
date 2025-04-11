@@ -227,10 +227,11 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void warnOfSchemaProblems(HibernateOrmConfig config, HibernateOrmRecorder recorder) {
-        for (var e : config.persistenceUnits().entrySet()) {
+    void warnOfSchemaProblems(HibernateOrmConfig hibernateOrmBuildTimeConfig,
+            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, HibernateOrmRecorder recorder) {
+        for (var e : hibernateOrmBuildTimeConfig.persistenceUnits().entrySet()) {
             if (e.getValue().validateInDevMode()) {
-                recorder.doValidation(e.getKey());
+                recorder.doValidation(hibernateOrmRuntimeConfig, e.getKey());
             }
         }
     }

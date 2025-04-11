@@ -438,12 +438,17 @@ Note though that the `code` is a one time token that can only be exchanged by Qu
 `quarkus.oidc.authentication.pkce-required` can be used to enable https://www.rfc-editor.org/rfc/rfc7636[Proof Key for Code Exchange (PKCE)]. PKCE is of primary interest to public SPA OIDC clients running in a browser. Typically, Quarkus OIDC acts as a confidential OIDC client which can prove to the OIDC provider that it knows the client secret, when PKCE is not strictly necessary. However you may have to enable it when your provider enforces PKCE for all authorization code flow clients.
 
 When the authorization code flow is completed, Quarkus gets access to the `ID token` which can provide sufficient information about the currently authenticated user. However, quite often, an additional remote request to the OIDC provider's https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] endpoint is required to get more details about the user. 
-This property is enabled automatically if it detects that the Quarkus endpoint has `quarkus.oidc.UserInfo` injected - you `do not have to enable` this property yourself in this case.
+
+`quarkus.oidc.authentication.user-info-required` can be used to enable an additional remote `UserInfo` request.
 
 When you work with pure OAuth2 providers such as GitHub, setting `quarkus.oidc.authentication.user-info-required=true` is always required. The reason is that `OAuth2` does not provide `ID token`, but only an `access token`. In the OAuth2-only world alone, the access token is not even meant for the current client, which is the Quarkus endpoint which acquired it, but for this endpoint to access some downstream service on behalf of the current user.
-But Quarkus needs to have an access to the current user identity, therefore this property must be set in such cases. 
+But Quarkus needs to have an access to the current user identity, therefore this property must be set in such cases.
 But since OAuth2 providers do not have a standard OIDC `UserInfo` endpoint, `quarkus.oidc.user-info-path` must be configured to point to the OAuth2 provider specific endpoint returning information about the current user, for example, in case of GitHub, it is `https://api.github.com/user`.
 See the xref:security-oidc-code-flow-authentication.adoc#oauth2[OAuth2 providers] section for more informatiom.
+
+`quarkus.oidc.authentication.user-info-required` is enabled automatically if it is detected that the Quarkus endpoint has `quarkus.oidc.UserInfo` injected - you `do not have to enable` this property in this case.
+
+This property is also enabled automatically if you have to <<verify-access-token-with-user-info>> or work with OAuth2 providers that do not return an ID token but a binary access token only that must be indirectly verified with `UserInfo`, see the <<id-token-availability>> section for more details.
 
 [[authorization-code-flow-errors]]
 === Authorization code flow errors
@@ -577,6 +582,8 @@ If you prefer the users to re-authenticate after some rather long idle period of
 You can use this property to request the refresh if a still valid ID token is due to expire within the next hour. If you would like to auto-refresh user sessions, then having this property minimizes the risk of the user missing out on the session refresh if the session cookie itself got expired and removed by the browser. When you use SPA, you can have a background thread pinging Quarkus periodically, leading to a session refresh once Quarkus determines the ID token will expire soon within a configured `quarkus.oidc.token.refresh-token-time-skew` period of time.
 
 For example, let's assume the ID token age is 6 hours and therefore the session cookie age is also 6 hours. If the user accessed Quarkus 1 hour before it was about to expire, and then stayed idle for 2 hours, then, after the user accesses Quarkus again, 7 hours after the session cookie was created and 1 hour after it and the ID token got expired and removed by the browser, Quarkus OIDC can only request the user re-authentication since it can no longer see the session cookie. To minimize a number of re-authentication attempts, consider extending the session age, for example, by 3 hours. Now, given the last example, Quarkus OIDC may still get access to the expired ID token and do somethnig useful with it if required - refresh it or offer a user a session expired page, instead of immediately requesting a new authentication.
+
+The `quarkus.oidc.token.refresh-token` property is automatically enabled if the `quarkus.oidc.token.refresh-token-time-skew` property is configured.
 
 `quarkus.oidc.authentication.session-expired-path` can be used to present the user whose session has expired with the page explaining that the session has expired and letting user follow a link to re-authenticate. It improves the user experience, since otherwise, the authenticated user, whose session has expired, may get surprised after getting an unexpected OIDC provider's authentication challenge screen, when accessing the Quarkus application, following some delay after successfully authenticating earlier.
 
@@ -786,10 +793,10 @@ It is the job of the OIDC provider or one of the downstream Quarkus services tha
 
 However, if you have designed your application with an expectation that the code flow access token, typically in JWT format, can be used as a source of roles or other information relevant to your application then do `quarkus.oidc.authentication.verify-access-token=true`. Quarkus enables this property automatically if it can detect that `JsonWebToken` without an `@IdToken` qualifier is injected in the application code, indicating that the application intends to access a code flow access token.
 
-[[indirect-token-verification]]
-=== Indirect token verification
+[[verify-access-token-with-user-info]]
+=== Verify access token with UserInfo
 
-.Indirect token verification
+.Verify access token with UserInfo
 [options="header"]
 |====
 |Property | Default |Description

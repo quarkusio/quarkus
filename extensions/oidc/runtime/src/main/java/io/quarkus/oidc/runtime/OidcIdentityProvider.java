@@ -105,6 +105,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, Map<String, Object> requestData,
             TenantConfigContext resolvedContext) {
+        if (!isIdToken(request.getToken()) && resolvedContext.oidcConfig().token().decryptAccessToken()) {
+            String decryptedToken = OidcUtils.decryptToken(resolvedContext.provider(), request.getToken().getToken());
+            request = new TokenAuthenticationRequest(new AccessTokenCredential(decryptedToken));
+        }
         if (resolvedContext.oidcConfig().authServerUrl().isPresent()) {
             return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         } else if (resolvedContext.oidcConfig().certificateChain().trustStoreFile().isPresent()) {
@@ -614,7 +618,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (isIdToken(request)
                 && (resolvedContext.oidcConfig().authentication().verifyAccessToken()
                         || resolvedContext.oidcConfig().roles().source().orElse(null) == Source.accesstoken)) {
-            final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            if (resolvedContext.oidcConfig().token().decryptAccessToken()) {
+                codeAccessToken = OidcUtils.decryptToken(resolvedContext.provider(), codeAccessToken);
+                requestData.put(OidcConstants.ACCESS_TOKEN_VALUE, codeAccessToken);
+            }
             return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false,
                     false, true, userInfo);
         } else {

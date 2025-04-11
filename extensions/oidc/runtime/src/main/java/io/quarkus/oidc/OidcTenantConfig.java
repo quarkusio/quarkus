@@ -2333,6 +2333,16 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<String> decryptionKeyLocation = Optional.empty();
 
         /**
+         * Decrypt ID token when the {@link Token#decryptionKeyLocation()} property is configured.
+         */
+        boolean decryptIdToken = true;
+
+        /**
+         * Decrypt access token when the {@link Token#decryptionKeyLocation()} property is configured.
+         */
+        boolean decryptAccessToken;
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value
@@ -2507,6 +2517,22 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.decryptionKeyLocation = Optional.of(decryptionKeyLocation);
         }
 
+        public boolean isDecryptIdToken() {
+            return decryptIdToken;
+        }
+
+        public void setDecryptIdToken(boolean decryptIdToken) {
+            this.decryptIdToken = decryptIdToken;
+        }
+
+        public boolean isDecryptAccessToken() {
+            return decryptAccessToken;
+        }
+
+        public void setDecryptAccessToken(boolean decryptAccessToken) {
+            this.decryptAccessToken = decryptAccessToken;
+        }
+
         public Map<String, String> getRequiredClaims() {
             return requiredClaims;
         }
@@ -2572,6 +2598,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             authorizationScheme = mapping.authorizationScheme();
             signatureAlgorithm = mapping.signatureAlgorithm().map(Enum::toString).map(SignatureAlgorithm::valueOf);
             decryptionKeyLocation = mapping.decryptionKeyLocation();
+            decryptIdToken = mapping.decryptIdToken();
+            decryptAccessToken = mapping.decryptAccessToken();
             allowJwtIntrospection = mapping.allowJwtIntrospection();
             requireJwtIntrospectionOnly = mapping.requireJwtIntrospectionOnly();
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
@@ -2659,6 +2687,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<String> decryptionKeyLocation() {
             return decryptionKeyLocation;
+        }
+
+        @Override
+        public boolean decryptIdToken() {
+            return decryptIdToken;
+        }
+
+        public boolean decryptAccessToken() {
+            return decryptAccessToken;
         }
 
         @Override

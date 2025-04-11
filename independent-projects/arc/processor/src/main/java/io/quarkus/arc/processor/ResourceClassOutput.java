@@ -10,12 +10,11 @@ import java.util.function.Function;
 
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
-import io.quarkus.gizmo.ClassOutput;
 
 /**
  *
  */
-public class ResourceClassOutput implements ClassOutput {
+public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.quarkus.gizmo2.ClassOutput {
 
     private static final Function<String, SpecialType> NO_SPECIAL_TYPE = cn -> null;
 
@@ -38,6 +37,10 @@ public class ResourceClassOutput implements ClassOutput {
 
     @Override
     public void write(String name, byte[] data) {
+        if (name.endsWith(".class")) {
+            // Gizmo 2 calls `write()` with the full file path
+            name = name.substring(0, name.length() - ".class".length());
+        }
         resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction.apply(name),
                 applicationClass, getSource(name)));
     }
@@ -49,7 +52,7 @@ public class ResourceClassOutput implements ClassOutput {
             sources.put(className, writer);
             return writer;
         }
-        return ClassOutput.super.getSourceWriter(className);
+        return io.quarkus.gizmo.ClassOutput.super.getSourceWriter(className);
     }
 
     List<Resource> getResources() {
@@ -63,5 +66,4 @@ public class ResourceClassOutput implements ClassOutput {
         StringWriter source = sources.get(className);
         return source != null ? source.toString() : null;
     }
-
 }

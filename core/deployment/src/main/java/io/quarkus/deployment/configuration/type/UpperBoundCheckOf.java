@@ -43,7 +43,7 @@ public final class UpperBoundCheckOf extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof UpperBoundCheckOf && equals((UpperBoundCheckOf) obj);
+        return obj instanceof UpperBoundCheckOf ubco && equals(ubco);
     }
 
     public boolean equals(final UpperBoundCheckOf obj) {

@@ -103,17 +103,19 @@ public class JvmStartupOptimizerArchiveBuildStep {
         if (containerImage == null) {
             if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
                 log.infof(
-                        "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
-                                +
-                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        """
+                                To ensure they are loaded properly, \
+                                run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' \
+                                JVM flag.
+                                Moreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.""",
                         System.getProperty("java.version"));
             } else {
                 log.infof(
-                        "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:AOTCache=app.aot' "
-                                +
-                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        """
+                                To ensure they are loaded properly, \
+                                run the application jar from its directory and also add the '-XX:AOTCache=app.aot' \
+                                JVM flag.
+                                Moreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.""",
                         System.getProperty("java.version"));
             }
         }
@@ -182,7 +184,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         boolean debug = log.isDebugEnabled();
         List<String> javaArgs = new ArrayList<>(debug ? 4 : 3);
         javaArgs.add("-XX:ArchiveClassesAtExit=" + appCDSPath.getFileName().toString());
-        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        javaArgs.add("-D%s=true".formatted(MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
         if (debug) {
             javaArgs.add("-Xlog:cds=debug");
         }
@@ -247,7 +249,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("-XX:AOTMode=record");
         javaArgs.add("-XX:AOTConfiguration=" + aotConfigPathContainers.resultingFile.getFileName().toString());
-        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        javaArgs.add("-D%s=true".formatted(MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
         javaArgs.add("-jar");
 
         List<String> command;

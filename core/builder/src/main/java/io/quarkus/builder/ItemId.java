@@ -20,7 +20,7 @@ final class ItemId {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof ItemId && equals((ItemId) obj);
+        return obj instanceof ItemId ii && equals(ii);
     }
 
     boolean equals(ItemId obj) {

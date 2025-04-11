@@ -69,8 +69,7 @@ public final class PatternMapBuilder {
                                 + ". This is likely because you have an incompatible combination of extensions that both define the same properties (e.g. including both reactive and blocking database extensions)");
             }
             patternMap.setMatched(container);
-        } else if (member instanceof ClassDefinition.MapMember) {
-            ClassDefinition.MapMember mapMember = (ClassDefinition.MapMember) member;
+        } else if (member instanceof ClassDefinition.MapMember mapMember) {
             ConfigPatternMap<Container> addTo = patternMap.getChild(ConfigPatternMap.WILD_CARD);
             if (addTo == null) {
                 patternMap.addChild(ConfigPatternMap.WILD_CARD, addTo = new ConfigPatternMap<>());

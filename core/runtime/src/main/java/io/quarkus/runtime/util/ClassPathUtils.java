@@ -10,7 +10,6 @@ import java.net.URLConnection;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -221,7 +220,7 @@ public class ClassPathUtils {
      */
     public static Path toLocalPath(final URL url) {
         try {
-            return Paths.get(url.toURI());
+            return Path.of(url.toURI());
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Failed to translate " + url + " to local path", e);
         }

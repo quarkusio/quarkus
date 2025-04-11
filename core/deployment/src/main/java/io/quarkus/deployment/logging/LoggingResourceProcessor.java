@@ -4,7 +4,6 @@ import static io.quarkus.runtime.logging.LoggingSetupRecorder.initializeBuildTim
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -757,7 +756,7 @@ public final class LoggingResourceProcessor {
             }
             return baseDir.resolve(SRC_MAIN_JAVA);
         }
-        return Paths.get(SRC_MAIN_JAVA);
+        return Path.of(SRC_MAIN_JAVA);
     }
 
     private static final String SRC_MAIN_JAVA = "src/main/java";

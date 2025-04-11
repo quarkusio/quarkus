@@ -8,7 +8,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +43,7 @@ public final class ConfigDiagnostic {
     public static void invalidValue(String name, IllegalArgumentException ex) {
         final String message = ex.getMessage();
         final String loggedMessage = message != null ? message
-                : String.format("An invalid value was given for configuration key \"%s\"", name);
+                : "An invalid value was given for configuration key \"%s\"".formatted(name);
         errorsMessages.add(loggedMessage);
         errorKeys.add(name);
     }
@@ -52,13 +51,13 @@ public final class ConfigDiagnostic {
     public static void missingValue(String name, NoSuchElementException ex) {
         final String message = ex.getMessage();
         final String loggedMessage = message != null ? message
-                : String.format("Configuration key \"%s\" is required, but its value is empty/missing", name);
+                : "Configuration key \"%s\" is required, but its value is empty/missing".formatted(name);
         errorsMessages.add(loggedMessage);
         errorKeys.add(name);
     }
 
     public static void duplicate(String name) {
-        final String loggedMessage = String.format("Configuration key \"%s\" was specified more than once", name);
+        final String loggedMessage = "Configuration key \"%s\" was specified more than once".formatted(name);
         errorsMessages.add(loggedMessage);
         errorKeys.add(name);
     }
@@ -214,14 +213,14 @@ public final class ConfigDiagnostic {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
 
         Set<String> configFiles = new HashSet<>();
-        configFiles.addAll(configFiles(Paths.get(System.getProperty("user.dir"), "config")));
+        configFiles.addAll(configFiles(Path.of(System.getProperty("user.dir"), "config")));
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(new Consumer<List<URI>>() {
             @Override
             public void accept(final List<URI> locations) {
                 for (URI location : locations) {
-                    Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
-                            : Paths.get(location.getPath());
+                    Path path = location.getScheme() != null && location.getScheme().equals("file") ? Path.of(location)
+                            : Path.of(location.getPath());
                     if (Files.isDirectory(path)) {
                         try {
                             configFiles.addAll(configFiles(path));

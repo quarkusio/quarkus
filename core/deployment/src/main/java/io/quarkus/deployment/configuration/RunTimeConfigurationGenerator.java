@@ -608,8 +608,7 @@ public final class RunTimeConfigurationGenerator {
                     bc.invokeVirtualMethod(SB_APPEND_CHAR, nameBuilder, bc.load('.'));
                     bc.invokeVirtualMethod(SB_APPEND_STRING, nameBuilder, bc.load(propertyName));
                 }
-                if (member instanceof ClassDefinition.ItemMember) {
-                    ClassDefinition.ItemMember leafMember = (ClassDefinition.ItemMember) member;
+                if (member instanceof ClassDefinition.ItemMember leafMember) {
                     final FieldDescriptor convField = getOrCreateConverterInstance(leafMember.getField());
                     final ResultHandle name = bc.invokeVirtualMethod(OBJ_TO_STRING, nameBuilder);
                     final ResultHandle converter = bc.readStaticField(convField);
@@ -627,8 +626,7 @@ public final class RunTimeConfigurationGenerator {
                             catchNoValue.invokeStaticMethod(CD_MISSING_VALUE, name, catchNoValue.getCaughtException());
                         }
                     }
-                } else if (member instanceof ClassDefinition.GroupMember) {
-                    ClassDefinition.GroupMember groupMember = (ClassDefinition.GroupMember) member;
+                } else if (member instanceof ClassDefinition.GroupMember groupMember) {
                     if (groupMember.isOptional()) {
                         final ResultHandle val = bc.invokeStaticMethod(OPT_EMPTY);
                         if (setter == null) {
@@ -744,8 +742,7 @@ public final class RunTimeConfigurationGenerator {
                         assert member instanceof ClassDefinition.ItemMember;
                         ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
 
-                        if (matched instanceof FieldContainer) {
-                            final FieldContainer fieldContainer = (FieldContainer) matched;
+                        if (matched instanceof FieldContainer fieldContainer) {
                             if (dynamic) {
                                 generateConsumeSegments(matchedBody, keyIter, itemMember.getPropertyName());
                                 // we have to get or create all containing (and contained) groups of this member
@@ -897,9 +894,7 @@ public final class RunTimeConfigurationGenerator {
                     FieldDescriptor fieldDescriptor = configRootsByType.get(definition.getConfigurationClass());
                     assert fieldDescriptor != null : "Field descriptor defined for " + definition.getConfigurationClass();
                     mc.returnValue(mc.readStaticField(fieldDescriptor));
-                } else if (parent instanceof FieldContainer) {
-                    // get the parent
-                    final FieldContainer fieldContainer = (FieldContainer) parent;
+                } else if (parent instanceof FieldContainer fieldContainer) {
                     final ClassDefinition.ClassMember classMember = fieldContainer.getClassMember();
                     int consumedSegmentsCount = generateConsumeSegments(mc, keyIter, classMember.getPropertyName());
                     final ResultHandle enclosing = mc.invokeStaticMethod(generateGetEnclosing(fieldContainer, type),
@@ -914,8 +909,8 @@ public final class RunTimeConfigurationGenerator {
                     }
 
                     final AssignableResultHandle group = mc.createVariable(Object.class);
-                    if (classMember instanceof ClassDefinition.GroupMember
-                            && ((ClassDefinition.GroupMember) classMember).isOptional()) {
+                    if (classMember instanceof ClassDefinition.GroupMember groupMember
+                            && groupMember.isOptional()) {
                         final BranchResult isPresent = mc.ifNonZero(mc.invokeVirtualMethod(OPT_IS_PRESENT, fieldVal));
                         final BytecodeCreator trueBranch = isPresent.trueBranch();
                         final BytecodeCreator falseBranch = isPresent.falseBranch();
@@ -1001,9 +996,7 @@ public final class RunTimeConfigurationGenerator {
                 final ResultHandle keyIter = mc.getMethodParam(0);
                 final ResultHandle config = mc.getMethodParam(1);
                 final Container parent = matchNode.getParent();
-                if (parent instanceof FieldContainer) {
-                    // get the parent
-                    final FieldContainer fieldContainer = (FieldContainer) parent;
+                if (parent instanceof FieldContainer fieldContainer) {
                     int consumedSegmentsCount = generateConsumeSegments(mc, keyIter,
                             fieldContainer.getClassMember().getPropertyName());
                     final ResultHandle enclosing = mc.invokeStaticMethod(generateGetEnclosing(fieldContainer, type),
@@ -1078,9 +1071,7 @@ public final class RunTimeConfigurationGenerator {
             fd = FieldDescriptor.of(cc.getClassName(), "conv$" + converterIndex++, Converter.class);
             ResultHandle converter;
             boolean storeConverter = false;
-            if (type instanceof Leaf) {
-                // simple type
-                final Leaf leaf = (Leaf) type;
+            if (type instanceof Leaf leaf) {
                 final Class<? extends Converter<?>> convertWith = leaf.getConvertWith();
                 if (convertWith != null) {
                     // TODO: temporary until type param inference is in
@@ -1095,14 +1086,12 @@ public final class RunTimeConfigurationGenerator {
                     converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
                     storeConverter = true;
                 }
-            } else if (type instanceof ArrayOf) {
-                final ArrayOf arrayOf = (ArrayOf) type;
+            } else if (type instanceof ArrayOf arrayOf) {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, arrayOf.getElementType()));
                 converter = converterSetup.invokeStaticMethod(CONVS_NEW_ARRAY_CONVERTER, nestedConv,
                         converterSetup.loadClassFromTCCL(arrayOf.getArrayType()));
-            } else if (type instanceof CollectionOf) {
-                final CollectionOf collectionOf = (CollectionOf) type;
+            } else if (type instanceof CollectionOf collectionOf) {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, collectionOf.getElementType()));
                 final ResultHandle factory;
@@ -1117,18 +1106,15 @@ public final class RunTimeConfigurationGenerator {
                     throw reportError(field, "Unsupported configuration collection type: %s", collectionClass);
                 }
                 converter = converterSetup.invokeStaticMethod(CONVS_NEW_COLLECTION_CONVERTER, nestedConv, factory);
-            } else if (type instanceof LowerBoundCheckOf) {
-                final LowerBoundCheckOf boundCheckOf = (LowerBoundCheckOf) type;
+            } else if (type instanceof LowerBoundCheckOf boundCheckOf) {
                 // todo: add in bounds checker
                 converter = instanceCache
                         .get(getOrCreateConverterInstance(field, boundCheckOf.getClassConverterType()));
-            } else if (type instanceof UpperBoundCheckOf) {
-                final UpperBoundCheckOf boundCheckOf = (UpperBoundCheckOf) type;
+            } else if (type instanceof UpperBoundCheckOf boundCheckOf) {
                 // todo: add in bounds checker
                 converter = instanceCache
                         .get(getOrCreateConverterInstance(field, boundCheckOf.getClassConverterType()));
-            } else if (type instanceof MinMaxValidated) {
-                MinMaxValidated minMaxValidated = (MinMaxValidated) type;
+            } else if (type instanceof MinMaxValidated minMaxValidated) {
                 String min = minMaxValidated.getMin();
                 boolean minInclusive = minMaxValidated.isMinInclusive();
                 String max = minMaxValidated.getMax();
@@ -1159,13 +1145,11 @@ public final class RunTimeConfigurationGenerator {
                             converterSetup.load(max),
                             converterSetup.load(maxInclusive));
                 }
-            } else if (type instanceof OptionalOf) {
-                OptionalOf optionalOf = (OptionalOf) type;
+            } else if (type instanceof OptionalOf optionalOf) {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, optionalOf.getNestedType()));
                 converter = converterSetup.invokeStaticMethod(CONVS_NEW_OPTIONAL_CONVERTER, nestedConv);
-            } else if (type instanceof PatternValidated) {
-                PatternValidated patternValidated = (PatternValidated) type;
+            } else if (type instanceof PatternValidated patternValidated) {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, patternValidated.getNestedType()));
                 final ResultHandle patternStr = converterSetup.load(patternValidated.getPatternString());

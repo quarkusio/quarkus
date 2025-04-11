@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,7 @@ import io.quarkus.runtime.util.StringUtil;
 public final class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E>, Serializable {
     private static final String HYPHEN = "-";
     private static final Pattern PATTERN = Pattern.compile("([-_]+)");
+    @Serial
     private static final long serialVersionUID = 5675903245398498741L;
 
     private final Class<E> enumType;
@@ -52,7 +54,7 @@ public final class HyphenateEnumConverter<E extends Enum<E>> implements Converte
             return enumType.cast(enumValue);
         }
 
-        throw new IllegalArgumentException(String.format("Cannot convert %s to enum %s", value, enumType));
+        throw new IllegalArgumentException("Cannot convert %s to enum %s".formatted(value, enumType));
     }
 
     private String hyphenate(String value) {

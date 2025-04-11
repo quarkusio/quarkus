@@ -30,8 +30,7 @@ public final class FieldContainer extends Container {
             parent.getCombinedName(sb);
         }
         final ClassDefinition enclosing = member.getEnclosingDefinition();
-        if (enclosing instanceof RootDefinition) {
-            RootDefinition rootDefinition = (RootDefinition) enclosing;
+        if (enclosing instanceof RootDefinition rootDefinition) {
             String rootName = rootDefinition.getRootName();
             if (!rootName.isEmpty()) {
                 sb.append(rootName.replace('.', ':'));
@@ -51,8 +50,7 @@ public final class FieldContainer extends Container {
             parent.getPropertyName(sb);
         }
         final ClassDefinition enclosing = member.getEnclosingDefinition();
-        if (enclosing instanceof RootDefinition) {
-            RootDefinition rootDefinition = (RootDefinition) enclosing;
+        if (enclosing instanceof RootDefinition rootDefinition) {
             String rootName = rootDefinition.getRootName();
             if (!rootName.isEmpty()) {
                 sb.append(rootName);

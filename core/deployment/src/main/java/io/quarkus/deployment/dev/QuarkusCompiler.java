@@ -7,7 +7,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -159,7 +158,7 @@ public class QuarkusCompiler implements Closeable {
                                     f = new File(cpEntryURI.getPath());
                                 } else {
                                     try {
-                                        f = Paths.get(new URI("file", null, "/", null).resolve(cpEntryURI)).toFile();
+                                        f = Path.of(new URI("file", null, "/", null).resolve(cpEntryURI)).toFile();
                                     } catch (URISyntaxException e) {
                                         f = new File(file.getParentFile(), classPathEntry);
                                     }

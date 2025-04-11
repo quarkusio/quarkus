@@ -123,13 +123,13 @@ public class TemplateHtmlBuilder {
                     </div>
             """;
 
-    private static final String HTML_TEMPLATE_START_NO_STACK = "" +
-            "<!doctype html>\n" +
-            "<html lang=\"en\">\n" +
-            "<head>\n" +
-            "    <title>%1$s%2$s</title>\n" +
-            "    <meta charset=\"utf-8\">\n" +
-            "</head>";
+    private static final String HTML_TEMPLATE_START_NO_STACK = """
+            <!doctype html>
+            <html lang="en">
+            <head>
+                <title>%1$s%2$s</title>
+                <meta charset="utf-8">
+            </head>""";
 
     private static final String HTML_TEMPLATE_START = "" +
             "<!doctype html>\n" +
@@ -195,25 +195,29 @@ public class TemplateHtmlBuilder {
             "   </svg>\n" +
             "</div> ";
 
-    private static final String HTML_TEMPLATE_END = "</div></body>\n" +
-            "</html>\n";
+    private static final String HTML_TEMPLATE_END = """
+            </div></body>
+            </html>
+            """;
 
-    private static final String HEADER_TEMPLATE = "<div class=\"banner\">\n" +
-            "                            <div class=\"callout\">%1$s</div>\n" +
-            "                        </div>"
-            + ""
-            + ""
-            + "<header>\n" +
-            "    <div class=\"exception-message\">\n" +
-            "        <h2 class=\"container\">%2$s</h2>\n" +
-            "        <div class=\"actions\">%3$s</div>\n" +
-            "    </div>\n" +
-            "</header>\n" +
-            "<div class=\"container content\">\n";
+    private static final String HEADER_TEMPLATE = """
+            <div class="banner">
+                                        <div class="callout">%1$s</div>
+                                    </div>\
+            <header>
+                <div class="exception-message">
+                    <h2 class="container">%2$s</h2>
+                    <div class="actions">%3$s</div>
+                </div>
+            </header>
+            <div class="container content">
+            """;
 
-    private static final String HEADER_TEMPLATE_NO_STACK = "<h1>%1$s</h1>\n" +
-            "%2$s \n" +
-            "<div class=\"container content\">\n";
+    private static final String HEADER_TEMPLATE_NO_STACK = """
+            <h1>%1$s</h1>
+            %2$s\s
+            <div class="container content">
+            """;
 
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
@@ -228,15 +232,18 @@ public class TemplateHtmlBuilder {
 
     private static final String LIST_START = "<ul>\n";
 
-    private static final String METHOD_START = "<li> %1$s <strong>%2$s</strong>\n"
-            + "    <ul>\n";
+    private static final String METHOD_START = """
+            <li> %1$s <strong>%2$s</strong>
+                <ul>
+            """;
 
     private static final String METHOD_IO = "<li>%1$s: %2$s</li>\n";
 
     private static final String LIST_ITEM = "<li>%s</li>\n";
 
-    private static final String METHOD_END = "    </ul>\n"
-            + "</li>";
+    private static final String METHOD_END = """
+                </ul>
+            </li>""";
 
     private static final String LIST_END = "</ul>\n";
 
@@ -249,26 +256,32 @@ public class TemplateHtmlBuilder {
 
     private static final String OPEN_IDE_LINK = "<div class='rel-stacktrace-item' onclick=\"event.preventDefault(); fetch('/q/open-in-ide/%s/%s/%d');\">";
 
-    private static final String ORIGINAL_STACK_TRACE = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
-            "<h3>The stacktrace below is the original. " +
-            "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the stacktrace in reversed order</a> (root-cause first)</h3>"
-            +
-            "        <code class=\"stacktrace\"><pre>%1$s</pre></code>\n" +
-            "    </div>\n";
+    private static final String ORIGINAL_STACK_TRACE = """
+                <div id="original-stacktrace" class="trace hidden">
+            <h3>The stacktrace below is the original. \
+            <a href="" onClick="toggleStackTraceOrder(); return false;">See the stacktrace in reversed order</a> (root-cause first)</h3>\
+                    <code class="stacktrace"><pre>%1$s</pre></code>
+                </div>
+            """;
 
-    private static final String ERROR_STACK_REVERSED = "    <div id=\"reversed-stacktrace\" class=\"trace hidden\">\n" +
-            "<h3>The stacktrace below has been reversed to show the root cause first. " +
-            "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the original stacktrace</a></h3>" +
-            "        <code class=\"stacktrace\"><pre>%1$s</pre></code>\n" +
-            "    </div>\n";
+    private static final String ERROR_STACK_REVERSED = """
+                <div id="reversed-stacktrace" class="trace hidden">
+            <h3>The stacktrace below has been reversed to show the root cause first. \
+            <a href="" onClick="toggleStackTraceOrder(); return false;">See the original stacktrace</a></h3>\
+                    <code class="stacktrace"><pre>%1$s</pre></code>
+                </div>
+            """;
 
     private static final String DECORATE_DIV = "<pre class='decorate'>%s</pre>";
     private static final String CONFIG_EDITOR_HEAD = "<h3>The following incorrect config values were detected:</h3>" +
             "<form class=\"updateConfigForm\" method=\"post\" enctype=\"application/x-www-form-urlencoded\"  action=\"/io.quarkus.vertx-http.devmode.config.fix\">"
             + "<input type=\"hidden\" name=\"redirect\" value=\"%s\"/>\n";
 
-    private static final String CONFIG_EDITOR_ROW = "<code class=\"configKey\">%s\n</code>\n" +
-            "                <input class=\"configValue\" type=\"text\" name=\"key.%s\" value=\"%s\"/>\n";
+    private static final String CONFIG_EDITOR_ROW = """
+            <code class="configKey">%s
+            </code>
+                            <input class="configValue" type="text" name="key.%s" value="%s"/>
+            """;
 
     private static final String CONFIG_UPDATE_BUTTON = "<input class=\"cta-button\" type=\"submit\" value=\"Update\" >";
 
@@ -318,20 +331,20 @@ public class TemplateHtmlBuilder {
                 actionLinks.append(buildLink(epa.name(), epa.url()));
             }
 
-            result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
+            result = new StringBuilder(HTML_TEMPLATE_START.formatted(escapeHtml(title),
                     subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-            result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+            result.append(HEADER_TEMPLATE.formatted(escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         } else {
-            result = new StringBuilder(String.format(HTML_TEMPLATE_START_NO_STACK, escapeHtml(title),
+            result = new StringBuilder(HTML_TEMPLATE_START_NO_STACK.formatted(escapeHtml(title),
                     subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
             result.append(
-                    String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+                    HEADER_TEMPLATE_NO_STACK.formatted(escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         }
 
         if (!config.isEmpty()) {
-            result.append(String.format(CONFIG_EDITOR_HEAD, redirect));
+            result.append(CONFIG_EDITOR_HEAD.formatted(redirect));
             for (CurrentConfig i : config) {
-                result.append(String.format(CONFIG_EDITOR_ROW, escapeHtml(i.getPropertyName()), escapeHtml(i.getPropertyName()),
+                result.append(CONFIG_EDITOR_ROW.formatted(escapeHtml(i.getPropertyName()), escapeHtml(i.getPropertyName()),
                         escapeHtml(i.getCurrentValue())));
             }
             result.append(CONFIG_EDITOR_TAIL);
@@ -341,7 +354,7 @@ public class TemplateHtmlBuilder {
     public TemplateHtmlBuilder decorate(final Throwable throwable, String srcMainJava, List<String> knowClasses) {
         String decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
         if (decoratedString != null) {
-            result.append(String.format(DECORATE_DIV, decoratedString));
+            result.append(DECORATE_DIV.formatted(decoratedString));
         }
 
         return this;
@@ -385,16 +398,16 @@ public class TemplateHtmlBuilder {
             String rootFirst = escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable));
             if (original.contains(BRSTI)) {
                 original = original.replace(BRSTI,
-                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                        OPEN_IDE_LINK.formatted(className, type, lineNumber));
                 original = original.replace(ERSTI, "</div>");
                 rootFirst = rootFirst.replace(BRSTI,
-                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                        OPEN_IDE_LINK.formatted(className, type, lineNumber));
                 rootFirst = rootFirst.replace(ERSTI, "</div>");
             }
 
             result.append(UTILITIES);
-            result.append(String.format(ORIGINAL_STACK_TRACE, original));
-            result.append(String.format(ERROR_STACK_REVERSED, rootFirst));
+            result.append(ORIGINAL_STACK_TRACE.formatted(original));
+            result.append(ERROR_STACK_REVERSED.formatted(rootFirst));
             result.append(STACKTRACE_DISPLAY_DIV);
 
             throwable.setStackTrace(originalStackTrace);
@@ -403,12 +416,12 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder resourcesStart(String title) {
-        result.append(String.format(RESOURCES_START, title));
+        result.append(RESOURCES_START.formatted(title));
         return this;
     }
 
     public TemplateHtmlBuilder resourcesStart(String title, String cssclass) {
-        result.append(String.format(RESOURCES_START_WITH_CLASS, title, cssclass));
+        result.append(RESOURCES_START_WITH_CLASS.formatted(title, cssclass));
         return this;
     }
 
@@ -418,7 +431,7 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder noResourcesFound() {
-        result.append(String.format(RESOURCE_TEMPLATE, "No resources discovered"));
+        result.append(RESOURCE_TEMPLATE.formatted("No resources discovered"));
         return this;
     }
 
@@ -448,14 +461,14 @@ public class TemplateHtmlBuilder {
             if (!title.startsWith("http") && baseUrl != null) {
                 title = baseUrl + title;
             }
-            content = String.format(ANCHOR_TEMPLATE_ABSOLUTE, title, escapeHtml(title));
+            content = ANCHOR_TEMPLATE_ABSOLUTE.formatted(title, escapeHtml(title));
         } else {
             content = escapeHtml(title);
         }
         if (description != null && !description.isEmpty()) {
-            content = String.format(DESCRIPTION_TEMPLATE, content, description);
+            content = DESCRIPTION_TEMPLATE.formatted(content, description);
         }
-        result.append(String.format(RESOURCE_TEMPLATE, content));
+        result.append(RESOURCE_TEMPLATE.formatted(content));
         if (withListStart) {
             result.append(LIST_START);
         }
@@ -471,22 +484,22 @@ public class TemplateHtmlBuilder {
                 fullPath = "<a href='" + fullPath + "' target='_blank'>" + fullPath + "</a>";
             }
         }
-        result.append(String.format(METHOD_START, escapeHtml(method), fullPath));
+        result.append(METHOD_START.formatted(escapeHtml(method), fullPath));
         return this;
     }
 
     public TemplateHtmlBuilder consumes(String consumes) {
-        result.append(String.format(METHOD_IO, "Consumes", escapeHtml(consumes)));
+        result.append(METHOD_IO.formatted("Consumes", escapeHtml(consumes)));
         return this;
     }
 
     public TemplateHtmlBuilder produces(String produces) {
-        result.append(String.format(METHOD_IO, "Produces", escapeHtml(produces)));
+        result.append(METHOD_IO.formatted("Produces", escapeHtml(produces)));
         return this;
     }
 
     public TemplateHtmlBuilder listItem(String content) {
-        result.append(String.format(LIST_ITEM, escapeHtml(content)));
+        result.append(LIST_ITEM.formatted(escapeHtml(content)));
         return this;
     }
 

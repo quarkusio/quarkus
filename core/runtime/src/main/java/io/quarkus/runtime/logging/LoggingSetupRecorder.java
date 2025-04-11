@@ -468,7 +468,7 @@ public class LoggingSetupRecorder {
 
     private static void addToNamedHandlers(Map<String, Handler> namedHandlers, Handler handler, String handlerName) {
         if (namedHandlers.containsKey(handlerName)) {
-            throw new RuntimeException(String.format("Only one handler can be configured with the same name '%s'",
+            throw new RuntimeException("Only one handler can be configured with the same name '%s'".formatted(
                     handlerName));
         }
         namedHandlers.put(handlerName, handler);
@@ -496,7 +496,7 @@ public class LoggingSetupRecorder {
                     }
                 });
             } else if (checkHandlerLinks) {
-                errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
+                errorManager.error("Handler with name '%s' is linked to a category but not configured.".formatted(
                         categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
         }
@@ -553,7 +553,7 @@ public class LoggingSetupRecorder {
             if (handler != null) {
                 effectiveHandlers.add(handler);
             } else {
-                errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
+                errorManager.error("Handler with name '%s' is linked to a category but not configured.".formatted(
                         namedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
         }
@@ -884,8 +884,7 @@ public class LoggingSetupRecorder {
         public void accept(String name, Handler handler) {
             Handler previous = additionalNamedHandlersMap.putIfAbsent(name, handler);
             if (previous != null) {
-                throw new IllegalStateException(String.format(
-                        "Duplicate key %s (attempted merging values %s and %s)",
+                throw new IllegalStateException("Duplicate key %s (attempted merging values %s and %s)".formatted(
                         name, previous, handler));
             }
             handler.setErrorManager(errorManager);

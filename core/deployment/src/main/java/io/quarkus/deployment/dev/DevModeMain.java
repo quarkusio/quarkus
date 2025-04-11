@@ -15,7 +15,6 @@ import java.net.URL;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -110,7 +109,7 @@ public class DevModeMain implements Closeable {
                     map);
         } catch (Throwable t) {
             log.error("Quarkus dev mode failed to start", t);
-            throw (t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException(t));
+            throw (t instanceof RuntimeException re ? re : new RuntimeException(t));
             //System.exit(1);
         }
     }
@@ -188,7 +187,7 @@ public class DevModeMain implements Closeable {
         if (projectDir == null) { // this is the case for QuarkusDevModeTest
             return;
         }
-        Path currentDir = Paths.get("").toAbsolutePath().normalize();
+        Path currentDir = Path.of("").toAbsolutePath().normalize();
         if (projectDir.toPath().equals(currentDir)) {
             // the current directory is the same as the project directory so there is no need to copy the file as it's already in the proper location
             // see https://github.com/quarkusio/quarkus/issues/8812

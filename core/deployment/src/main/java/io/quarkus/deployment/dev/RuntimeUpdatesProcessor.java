@@ -388,7 +388,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     ret.add(path);
                 }
             } else if (i.getMain().getResourcesOutputPath() != null) {
-                ret.add(Paths.get(i.getMain().getResourcesOutputPath()));
+                ret.add(Path.of(i.getMain().getResourcesOutputPath()));
             }
         }
         Collections.reverse(ret); //make sure the actual project is before dependencies
@@ -838,7 +838,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         try {
             for (String folder : cuf.apply(module).getClassesPath().split(File.pathSeparator)) {
-                final Path moduleClassesPath = Paths.get(folder);
+                final Path moduleClassesPath = Path.of(folder);
                 if (!Files.exists(moduleClassesPath)) {
                     continue;
                 }
@@ -953,7 +953,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty()) {
                 String rootPath = compilationUnit.getClassesPath();
                 if (rootPath != null) {
-                    rootPaths = PathList.of(Paths.get(rootPath));
+                    rootPaths = PathList.of(Path.of(rootPath));
                 }
                 outputPath = rootPath;
                 doCopy = false;
@@ -961,7 +961,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty() || outputPath == null) {
                 continue;
             }
-            Path outputDir = Paths.get(outputPath);
+            Path outputDir = Path.of(outputPath);
             final List<Path> roots = rootPaths.stream()
                     .filter(Files::exists)
                     .filter(Files::isReadable)
@@ -1216,7 +1216,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     // Then process glob patterns
                     for (Entry<String, Boolean> e : watchedFilePaths.entrySet()) {
                         String watchedFilePath = e.getKey();
-                        Path path = Paths.get(sanitizedPattern(watchedFilePath));
+                        Path path = Path.of(sanitizedPattern(watchedFilePath));
                         if (!path.isAbsolute() && !watchedRootPaths.contains(e.getKey())
                                 && maybeGlobPattern(watchedFilePath)) {
                             try {
@@ -1252,9 +1252,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         // Finally process watched absolute paths
         for (Entry<String, Boolean> e : watchedFilePaths.entrySet()) {
             String watchedFilePath = e.getKey();
-            Path path = Paths.get(sanitizedPattern(watchedFilePath));
+            Path path = Path.of(sanitizedPattern(watchedFilePath));
             if (path.isAbsolute()) {
-                path = Paths.get(watchedFilePath);
+                path = Path.of(watchedFilePath);
                 log.debugf("Watch %s", path);
                 if (Files.exists(path)) {
                     putLastModifiedTime(path, path, e.getValue(), timestamps);

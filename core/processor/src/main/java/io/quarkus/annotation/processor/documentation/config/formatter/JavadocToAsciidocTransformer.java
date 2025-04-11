@@ -105,8 +105,7 @@ public final class JavadocToAsciidocTransformer {
         Map<Integer, String> inlineTagsReplacements = new TreeMap<>();
 
         for (JavadocDescriptionElement javadocDescriptionElement : parsedJavadoc.getDescription().getElements()) {
-            if (javadocDescriptionElement instanceof JavadocInlineTag) {
-                JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
+            if (javadocDescriptionElement instanceof JavadocInlineTag inlineTag) {
                 String content = inlineTag.getContent().trim();
                 switch (inlineTag.getType()) {
                     case CODE:
@@ -209,7 +208,7 @@ public final class JavadocToAsciidocTransformer {
                     sb.append(link);
                     final StringBuilder caption = new StringBuilder();
                     htmlToAsciidoc(caption, childNode, inlineMacroMode, context);
-                    sb.append(String.format(LINK_ATTRIBUTE_FORMAT, trim(caption)));
+                    sb.append(LINK_ATTRIBUTE_FORMAT.formatted(trim(caption)));
                     break;
                 case CODE_NODE:
                     sb.append(BACKTICK);

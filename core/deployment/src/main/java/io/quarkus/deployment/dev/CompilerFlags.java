@@ -81,7 +81,7 @@ public class CompilerFlags {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof CompilerFlags && toList().equals(((CompilerFlags) obj).toList());
+        return obj instanceof CompilerFlags cf && toList().equals(cf.toList());
     }
 
     @Override

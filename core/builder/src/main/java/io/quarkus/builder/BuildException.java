@@ -1,5 +1,6 @@
 package io.quarkus.builder;
 
+import java.io.Serial;
 import java.util.Collections;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import io.smallrye.common.constraint.Assert;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public class BuildException extends Exception {
+    @Serial
     private static final long serialVersionUID = -2190774463525631311L;
 
     private final List<Diagnostic> diagnostics;

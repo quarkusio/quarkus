@@ -278,24 +278,24 @@ final class Substitutions {
 
                 @Override
                 public Object get(final Object key) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.get(key);
                 }
 
                 @Override
                 public synchronized Object put(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.put(key, value);
                 }
 
                 @Override
                 public synchronized Object remove(final Object key) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.remove(key);
                 }
@@ -347,8 +347,8 @@ final class Substitutions {
 
                 @Override
                 public Object getOrDefault(final Object key, final Object defaultValue) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.getOrDefault(key, defaultValue);
                 }
@@ -367,32 +367,32 @@ final class Substitutions {
 
                 @Override
                 public synchronized Object putIfAbsent(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.putIfAbsent(key, value);
                 }
 
                 @Override
                 public synchronized boolean remove(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.remove(key, value);
                 }
 
                 @Override
                 public synchronized boolean replace(final Object key, final Object oldValue, final Object newValue) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.replace(key, oldValue, newValue);
                 }
 
                 @Override
                 public synchronized Object replace(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.replace(key, value);
                 }
@@ -401,8 +401,8 @@ final class Substitutions {
                 public synchronized Object computeIfAbsent(
                         final Object key,
                         final Function<? super Object, ?> mappingFunction) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.computeIfAbsent(key, mappingFunction);
                 }
@@ -411,8 +411,8 @@ final class Substitutions {
                 public synchronized Object computeIfPresent(
                         final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.computeIfPresent(key, remappingFunction);
                 }
@@ -421,8 +421,8 @@ final class Substitutions {
                 public synchronized Object compute(
                         final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.compute(key, remappingFunction);
                 }
@@ -432,8 +432,8 @@ final class Substitutions {
                         final Object key,
                         final Object value,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        initializeLazyValue((String) key);
+                    if (key instanceof String string) {
+                        initializeLazyValue(string);
                     }
                     return properties.merge(key, value, remappingFunction);
                 }
@@ -611,24 +611,24 @@ final class Substitutions {
 
                 @Override
                 public Object get(final Object key) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.get(key);
                 }
 
                 @Override
                 public synchronized Object put(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.put(key, value);
                 }
 
                 @Override
                 public synchronized Object remove(final Object key) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.remove(key);
                 }
@@ -680,8 +680,8 @@ final class Substitutions {
 
                 @Override
                 public Object getOrDefault(final Object key, final Object defaultValue) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.getOrDefault(key, defaultValue);
                 }
@@ -700,32 +700,32 @@ final class Substitutions {
 
                 @Override
                 public synchronized Object putIfAbsent(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.putIfAbsent(key, value);
                 }
 
                 @Override
                 public synchronized boolean remove(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.remove(key, value);
                 }
 
                 @Override
                 public synchronized boolean replace(final Object key, final Object oldValue, final Object newValue) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.replace(key, oldValue, newValue);
                 }
 
                 @Override
                 public synchronized Object replace(final Object key, final Object value) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.replace(key, value);
                 }
@@ -734,8 +734,8 @@ final class Substitutions {
                 public synchronized Object computeIfAbsent(
                         final Object key,
                         final Function<? super Object, ?> mappingFunction) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.computeIfAbsent(key, mappingFunction);
                 }
@@ -744,8 +744,8 @@ final class Substitutions {
                 public synchronized Object computeIfPresent(
                         final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.computeIfPresent(key, remappingFunction);
                 }
@@ -754,8 +754,8 @@ final class Substitutions {
                 public synchronized Object compute(
                         final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.compute(key, remappingFunction);
                 }
@@ -765,8 +765,8 @@ final class Substitutions {
                         final Object key,
                         final Object value,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
-                    if (key instanceof String) {
-                        ensurePropertyInitialized((String) key);
+                    if (key instanceof String string) {
+                        ensurePropertyInitialized(string);
                     }
                     return currentProperties.merge(key, value, remappingFunction);
                 }

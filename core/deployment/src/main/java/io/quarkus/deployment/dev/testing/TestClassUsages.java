@@ -73,8 +73,8 @@ public class TestClassUsages implements Serializable {
                     return FilterResult.included("Class was touched");
                 }
                 TestSource source = testDescriptor.getSource().get();
-                if (source instanceof ClassSource) {
-                    String testClassName = ((ClassSource) source).getClassName();
+                if (source instanceof ClassSource classSource) {
+                    String testClassName = classSource.getClassName();
                     ClassAndMethod cm = new ClassAndMethod(testClassName, null);
                     if (!classNames.containsKey(cm)) {
                         return FilterResult.included("No test information");
@@ -85,8 +85,7 @@ public class TestClassUsages implements Serializable {
                     } else {
                         return FilterResult.excluded("Has no tests");
                     }
-                } else if (source instanceof MethodSource) {
-                    MethodSource ms = (MethodSource) source;
+                } else if (source instanceof MethodSource ms) {
                     ClassAndMethod cm = new ClassAndMethod(ms.getClassName(), testDescriptor.getUniqueId());
                     if (!classNames.containsKey(cm)) {
                         return FilterResult.included("No test information");

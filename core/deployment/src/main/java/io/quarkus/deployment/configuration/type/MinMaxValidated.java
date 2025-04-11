@@ -62,7 +62,7 @@ public final class MinMaxValidated extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof MinMaxValidated && equals((MinMaxValidated) obj);
+        return obj instanceof MinMaxValidated mmv && equals(mmv);
     }
 
     public boolean equals(final MinMaxValidated obj) {

@@ -57,7 +57,7 @@ public final class Diagnostic {
             b.append(location).append(": ");
         }
         b.append('[').append(level).append("]: ");
-        b.append(String.format(format, args));
+        b.append(format.formatted(args));
         if (thrown != null) {
             Writer stacktraceWriter = new StringWriter();
             thrown.printStackTrace(new PrintWriter(stacktraceWriter));

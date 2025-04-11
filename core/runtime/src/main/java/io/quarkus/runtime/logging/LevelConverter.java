@@ -2,6 +2,7 @@ package io.quarkus.runtime.logging;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -17,6 +18,7 @@ import org.jboss.logmanager.LogContext;
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
 public final class LevelConverter implements Converter<Level>, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 704275577610445233L;
 
     public Level convert(final String value) {

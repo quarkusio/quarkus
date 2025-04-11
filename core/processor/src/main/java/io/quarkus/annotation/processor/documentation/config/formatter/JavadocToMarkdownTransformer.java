@@ -44,8 +44,7 @@ public class JavadocToMarkdownTransformer {
         StringBuilder sb = new StringBuilder();
 
         for (JavadocDescriptionElement javadocDescriptionElement : javadocDescription.getElements()) {
-            if (javadocDescriptionElement instanceof JavadocInlineTag) {
-                JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
+            if (javadocDescriptionElement instanceof JavadocInlineTag inlineTag) {
                 String content = inlineTag.getContent().trim();
                 switch (inlineTag.getType()) {
                     case CODE:

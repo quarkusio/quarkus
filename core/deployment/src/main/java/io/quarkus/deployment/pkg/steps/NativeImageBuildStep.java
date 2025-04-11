@@ -8,7 +8,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -291,7 +290,7 @@ public class NativeImageBuildStep {
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
             if (nativeConfig.debug().enabled()) {
-                final String symbolsName = String.format("%s.debug", nativeImageName);
+                final String symbolsName = "%s.debug".formatted(nativeImageName);
                 Path generatedSymbols = outputDir.resolve(symbolsName);
                 if (generatedSymbols.toFile().exists()) {
                     Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
@@ -332,7 +331,7 @@ public class NativeImageBuildStep {
         } finally {
             if (nativeConfig.debug().enabled()) {
                 removeJarSourcesFromLib(outputTargetBuildItem);
-                IoUtils.recursiveDelete(outputDir.resolve(Paths.get(APP_SOURCES)));
+                IoUtils.recursiveDelete(outputDir.resolve(Path.of(APP_SOURCES)));
             }
         }
     }
@@ -439,7 +438,7 @@ public class NativeImageBuildStep {
         final Path parent = path.getParent();
         final String fileName = path.getFileName().toString();
         final int extensionIndex = fileName.lastIndexOf('.');
-        final String sourcesFileName = String.format("%s-sources.jar", fileName.substring(0, extensionIndex));
+        final String sourcesFileName = "%s-sources.jar".formatted(fileName.substring(0, extensionIndex));
         return parent.resolve(sourcesFileName);
     }
 
@@ -457,19 +456,19 @@ public class NativeImageBuildStep {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
 
-        final Path targetSrc = targetDirectory.resolve(Paths.get(APP_SOURCES));
+        final Path targetSrc = targetDirectory.resolve(Path.of(APP_SOURCES));
         final File targetSrcFile = targetSrc.toFile();
         if (!targetSrcFile.exists()) {
             targetSrcFile.mkdirs();
         }
 
         final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
-                Paths.get("..", "src", "main", "java"));
+                Path.of("..", "src", "main", "java"));
 
         if (Files.exists(javaSourcesPath)) {
             try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
                 paths.forEach(path -> {
-                    Path targetPath = Paths.get(targetSrc.toString(),
+                    Path targetPath = Path.of(targetSrc.toString(),
                             path.toString().substring(javaSourcesPath.toString().length()));
                     try {
                         Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
@@ -518,7 +517,7 @@ public class NativeImageBuildStep {
     private static NativeImageBuildLocalRunner getNativeImageBuildLocalRunner(NativeConfig nativeConfig) {
         String executableName = getNativeImageExecutableName();
         if (nativeConfig.graalvmHome().isPresent()) {
-            File file = Paths.get(nativeConfig.graalvmHome().get(), "bin", executableName).toFile();
+            File file = Path.of(nativeConfig.graalvmHome().get(), "bin", executableName).toFile();
             if (file.exists()) {
                 return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
@@ -1078,7 +1077,7 @@ public class NativeImageBuildStep {
                                 String configuredTrustStorePath = trimmedBuildArg
                                         .substring(index + TRUST_STORE_SYSTEM_PROPERTY_MARKER.length());
                                 try {
-                                    IoUtils.copy(Paths.get(configuredTrustStorePath),
+                                    IoUtils.copy(Path.of(configuredTrustStorePath),
                                             outputDir.resolve(MOVED_TRUST_STORE_NAME));
                                     command.add(trimmedBuildArg.substring(0, index) + TRUST_STORE_SYSTEM_PROPERTY_MARKER
                                             + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);

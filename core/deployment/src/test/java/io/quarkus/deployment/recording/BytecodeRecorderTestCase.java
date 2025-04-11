@@ -404,12 +404,12 @@ public class BytecodeRecorderTestCase {
         assertEquals(expected.length, TestRecorder.RESULT.size());
         for (Object i : expected) {
             if (i.getClass().isArray()) {
-                if (i instanceof int[]) {
-                    assertArrayEquals((int[]) i, (int[]) TestRecorder.RESULT.poll());
-                } else if (i instanceof double[]) {
-                    assertArrayEquals((double[]) i, (double[]) TestRecorder.RESULT.poll(), 0);
-                } else if (i instanceof Object[]) {
-                    assertArrayEquals((Object[]) i, (Object[]) TestRecorder.RESULT.poll());
+                if (i instanceof int[] ints) {
+                    assertArrayEquals(ints, (int[]) TestRecorder.RESULT.poll());
+                } else if (i instanceof double[] doubles) {
+                    assertArrayEquals(doubles, (double[]) TestRecorder.RESULT.poll(), 0);
+                } else if (i instanceof Object[] objects) {
+                    assertArrayEquals(objects, (Object[]) TestRecorder.RESULT.poll());
                 } else {
                     throw new RuntimeException("not implemented");
                 }

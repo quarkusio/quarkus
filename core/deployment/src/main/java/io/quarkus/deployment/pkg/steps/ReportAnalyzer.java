@@ -2,7 +2,7 @@ package io.quarkus.deployment.pkg.steps;
 
 import java.io.BufferedReader;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -26,7 +26,7 @@ public class ReportAnalyzer {
     public ReportAnalyzer(String report) {
         try {
             Deque<String> lines = new ArrayDeque<>();
-            try (BufferedReader in = Files.newBufferedReader(Paths.get(report))) {
+            try (BufferedReader in = Files.newBufferedReader(Path.of(report))) {
                 for (String re = in.readLine(); re != null; re = in.readLine()) {
                     lines.add(re);
                 }

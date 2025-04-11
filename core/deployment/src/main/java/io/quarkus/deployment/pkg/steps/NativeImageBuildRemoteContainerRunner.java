@@ -85,8 +85,8 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
                 final JsonObject jsonRead = JsonReader.of(buildArtifactsJson).read();
                 final JsonValue jdkLibraries = jsonRead.get("jdk_libraries");
                 // The jdk_libraries field is optional, there might not be any.
-                if (jdkLibraries instanceof JsonArray) {
-                    for (JsonValue lib : ((JsonArray) jdkLibraries).value()) {
+                if (jdkLibraries instanceof JsonArray array) {
+                    for (JsonValue lib : array.value()) {
                         copyFromContainerVolume(outputDir, ((JsonString) lib).value(),
                                 "Failed to copy " + lib + " from container volume back to the host.");
                     }
@@ -99,7 +99,7 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         if (nativeConfig.debug().enabled()) {
             copyFromContainerVolume(outputDir, "sources",
                     "Failed to copy sources from container volume back to the host.");
-            final String symbols = String.format("%s.debug", nativeImageName);
+            final String symbols = "%s.debug".formatted(nativeImageName);
             copyFromContainerVolume(outputDir, symbols,
                     "Failed to copy debug symbols from container volume back to the host.");
         }

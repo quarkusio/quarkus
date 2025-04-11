@@ -159,7 +159,7 @@ public final class BuildContext {
      * Emit a build note. This indicates information that the user may be interested in.
      *
      * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
+     * @param format the format string (see {@link String#formatted(Object...)})
      * @param args the format arguments
      */
     public void note(Location location, String format, Object... args) {
@@ -171,7 +171,7 @@ public final class BuildContext {
      * Emit a build warning. This indicates a significant build problem that the user should be made aware of.
      *
      * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
+     * @param format the format string (see {@link String#formatted(Object...)})
      * @param args the format arguments
      */
     public void warn(Location location, String format, Object... args) {
@@ -183,7 +183,7 @@ public final class BuildContext {
      * Emit a build error. This indicates a build problem that prevents the build from proceeding.
      *
      * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
+     * @param format the format string (see {@link String#formatted(Object...)})
      * @param args the format arguments
      */
     public void error(Location location, String format, Object... args) {

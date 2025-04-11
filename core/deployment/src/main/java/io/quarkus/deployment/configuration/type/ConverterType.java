@@ -37,12 +37,9 @@ public abstract class ConverterType {
     }
 
     public static ConverterType of(Type type, AnnotatedElement element) {
-        if (type instanceof GenericArrayType) {
-            GenericArrayType genericArrayType = (GenericArrayType) type;
+        if (type instanceof GenericArrayType genericArrayType) {
             return new ArrayOf(of(genericArrayType.getGenericComponentType(), element));
-        } else if (type instanceof Class<?>) {
-            // simple type
-            Class<?> clazz = (Class<?>) type;
+        } else if (type instanceof Class<?> clazz) {
             if (clazz.isArray()) {
                 return new ArrayOf(of(clazz.getComponentType(), element));
             }
@@ -57,16 +54,14 @@ public abstract class ConverterType {
             // vvv todo: add validations here vvv
             // return result
             return leaf;
-        } else if (type instanceof ParameterizedType) {
-            final ParameterizedType paramType = (ParameterizedType) type;
+        } else if (type instanceof ParameterizedType paramType) {
             final Class<?> rawType = ReflectUtil.rawTypeOf(paramType);
             final Type[] args = paramType.getActualTypeArguments();
             if (args.length == 1) {
                 final Type arg = args[0];
                 if (rawType == Class.class) {
                     ConverterType result = of(Class.class, element);
-                    if (arg instanceof WildcardType) {
-                        final WildcardType wcType = (WildcardType) arg;
+                    if (arg instanceof WildcardType wcType) {
                         // gather bounds for validation
                         Class<?>[] upperBounds = ReflectUtil.rawTypesOfDestructive(wcType.getUpperBounds());
                         Class<?>[] lowerBounds = ReflectUtil.rawTypesOfDestructive(wcType.getLowerBounds());

@@ -1,5 +1,6 @@
 package io.quarkus.runtime.types;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -7,6 +8,7 @@ import java.util.Arrays;
 
 public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
 
+    @Serial
     private static final long serialVersionUID = -3005183010706452884L;
 
     private final Type[] actualTypeArguments;
@@ -63,16 +65,16 @@ public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        if (rawType instanceof Class) {
-            sb.append(((Class<?>) rawType).getName());
+        if (rawType instanceof Class<?> clazz) {
+            sb.append(clazz.getName());
         } else {
             sb.append(rawType);
         }
         if (actualTypeArguments.length > 0) {
             sb.append("<");
             for (Type actualType : actualTypeArguments) {
-                if (actualType instanceof Class) {
-                    sb.append(((Class<?>) actualType).getName());
+                if (actualType instanceof Class<?> clazz) {
+                    sb.append(clazz.getName());
                 } else {
                     sb.append(actualType);
                 }

@@ -15,7 +15,7 @@ public abstract class Location {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof Location && Objects.equals(parent, ((Location) obj).getParent());
+        return obj instanceof Location l && Objects.equals(parent, l.getParent());
     }
 
     @Override

@@ -243,8 +243,7 @@ public class ConfigResolver {
     }
 
     public static String getType(TypeMirror typeMirror) {
-        if (typeMirror instanceof DeclaredType) {
-            DeclaredType declaredType = (DeclaredType) typeMirror;
+        if (typeMirror instanceof DeclaredType declaredType) {
             TypeElement typeElement = (TypeElement) declaredType.asElement();
             return typeElement.getQualifiedName().toString();
         }

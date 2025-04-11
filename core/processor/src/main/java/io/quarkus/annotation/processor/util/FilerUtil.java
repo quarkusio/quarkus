@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -143,7 +142,7 @@ public class FilerUtil {
     public Path getTargetPath() {
         try {
             FileObject dummyFile = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy");
-            return Paths.get(dummyFile.toUri()).getParent().getParent();
+            return Path.of(dummyFile.toUri()).getParent().getParent();
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to determine the path of target/" + e);
             throw new UncheckedIOException(e);
@@ -152,7 +151,7 @@ public class FilerUtil {
 
     public Optional<Path> getPomPath() {
         try {
-            Path pomPath = Paths.get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
+            Path pomPath = Path.of(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
                     .getParent().getParent().getParent().resolve("pom.xml");
 
             if (!Files.isReadable(pomPath)) {

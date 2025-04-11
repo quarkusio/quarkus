@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.Serial;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -10,6 +11,7 @@ import io.quarkus.dev.config.ConfigurationProblem;
  * An exception indicating that a configuration failure has occurred.
  */
 public class ConfigurationException extends RuntimeException implements ConfigurationProblem {
+    @Serial
     private static final long serialVersionUID = 4445679764085720090L;
 
     private final Set<String> configKeys;
@@ -91,9 +93,9 @@ public class ConfigurationException extends RuntimeException implements Configur
     }
 
     private static Set<String> forwardCauseConfigKeys(Set<String> configKeys, Throwable cause) {
-        if (cause instanceof ConfigurationProblem) {
+        if (cause instanceof ConfigurationProblem problem) {
             var merged = new HashSet<String>(configKeys);
-            merged.addAll(((ConfigurationProblem) cause).getConfigKeys());
+            merged.addAll(problem.getConfigKeys());
         }
         return configKeys;
     }

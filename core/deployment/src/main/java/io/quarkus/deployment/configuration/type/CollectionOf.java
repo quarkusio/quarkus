@@ -43,7 +43,7 @@ public final class CollectionOf extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof CollectionOf && equals((CollectionOf) obj);
+        return obj instanceof CollectionOf co && equals(co);
     }
 
     public boolean equals(final CollectionOf obj) {

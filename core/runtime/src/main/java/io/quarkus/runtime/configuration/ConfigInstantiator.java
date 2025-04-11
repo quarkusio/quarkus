@@ -166,11 +166,11 @@ public class ConfigInstantiator {
             var nextFullName = fullNameWithDot + segment;
             var mapValueType = typeOfParameter(genericType, 1);
             Object mapValue;
-            if (mapValueType instanceof ParameterizedType
-                    && ((ParameterizedType) mapValueType).getRawType().equals(Map.class)) {
+            if (mapValueType instanceof ParameterizedType type
+                    && type.getRawType().equals(Map.class)) {
                 mapValue = handleMap(nextFullName, mapValueType, config, quarkusPropertyNames);
             } else {
-                Class<?> mapValueClass = mapValueType instanceof Class ? (Class<?>) mapValueType : null;
+                Class<?> mapValueClass = mapValueType instanceof Class<?> c ? c : null;
                 if (mapValueClass != null && mapValueClass.isAnnotationPresent(ConfigGroup.class)) {
                     Constructor<?> constructor = mapValueClass.getConstructor();
                     constructor.setAccessible(true);
@@ -206,20 +206,20 @@ public class ConfigInstantiator {
 
     // cribbed from io.quarkus.deployment.util.ReflectUtil
     private static Class<?> rawTypeOf(final Type type) {
-        if (type instanceof Class<?>) {
-            return (Class<?>) type;
-        } else if (type instanceof ParameterizedType) {
-            return rawTypeOf(((ParameterizedType) type).getRawType());
-        } else if (type instanceof GenericArrayType) {
-            return Array.newInstance(rawTypeOf(((GenericArrayType) type).getGenericComponentType()), 0).getClass();
+        if (type instanceof Class<?> clazz) {
+            return clazz;
+        } else if (type instanceof ParameterizedType parameterizedType) {
+            return rawTypeOf(parameterizedType.getRawType());
+        } else if (type instanceof GenericArrayType arrayType) {
+            return Array.newInstance(rawTypeOf(arrayType.getGenericComponentType()), 0).getClass();
         } else {
             throw new IllegalArgumentException("Type has no raw type class: " + type);
         }
     }
 
     static Type typeOfParameter(final Type type, final int paramIdx) {
-        if (type instanceof ParameterizedType) {
-            return ((ParameterizedType) type).getActualTypeArguments()[paramIdx];
+        if (type instanceof ParameterizedType parameterizedType) {
+            return parameterizedType.getActualTypeArguments()[paramIdx];
         } else {
             throw new IllegalArgumentException("Type is not parameterized: " + type);
         }

@@ -38,7 +38,7 @@ public final class PatternValidated extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof PatternValidated && equals((PatternValidated) obj);
+        return obj instanceof PatternValidated pv && equals(pv);
     }
 
     public boolean equals(final PatternValidated obj) {

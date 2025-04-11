@@ -3,7 +3,6 @@ package io.quarkus.deployment.dev;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.objectweb.asm.ClassVisitor;
 
@@ -28,7 +27,7 @@ public class RuntimeUpdatesClassVisitor extends ClassVisitor {
 
     public Path getSourceFileForClass(final Path classFilePath) {
         for (Path sourcesDir : sourcePaths) {
-            final Path classesDir = Paths.get(classesPath);
+            final Path classesDir = Path.of(classesPath);
             final StringBuilder sourceRelativeDir = new StringBuilder();
             sourceRelativeDir.append(classesDir.relativize(classFilePath.getParent()));
             sourceRelativeDir.append(File.separator);

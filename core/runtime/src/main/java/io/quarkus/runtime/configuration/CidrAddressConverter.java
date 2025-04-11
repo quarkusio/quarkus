@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 import jakarta.annotation.Priority;
@@ -17,6 +18,7 @@ import io.smallrye.common.net.Inet;
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
 public class CidrAddressConverter implements Converter<CidrAddress>, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 2023552088048952902L;
 
     @Override

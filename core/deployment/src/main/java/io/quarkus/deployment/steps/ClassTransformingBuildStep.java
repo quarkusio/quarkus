@@ -360,8 +360,8 @@ public class ClassTransformingBuildStep {
             ClassVisitor visitor = writer;
             for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                 visitor = i.apply(className, visitor);
-                if (visitor instanceof QuarkusClassVisitor) {
-                    ((QuarkusClassVisitor) visitor).setOriginalClassReaderOptions(classReaderOptions);
+                if (visitor instanceof QuarkusClassVisitor classVisitor) {
+                    classVisitor.setOriginalClassReaderOptions(classReaderOptions);
                 }
             }
             cr.accept(visitor, classReaderOptions);

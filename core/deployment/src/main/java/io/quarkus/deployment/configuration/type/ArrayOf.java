@@ -47,7 +47,7 @@ public final class ArrayOf extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof ArrayOf && equals((ArrayOf) obj);
+        return obj instanceof ArrayOf ao && equals(ao);
     }
 
     public boolean equals(final ArrayOf obj) {

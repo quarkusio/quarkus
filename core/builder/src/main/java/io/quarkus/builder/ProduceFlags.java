@@ -26,7 +26,7 @@ public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
 
     @Override
     protected ProduceFlag castItemOrNull(final Object obj) {
-        return obj instanceof ProduceFlag ? (ProduceFlag) obj : null;
+        return obj instanceof ProduceFlag pf ? pf : null;
     }
 
     @Override

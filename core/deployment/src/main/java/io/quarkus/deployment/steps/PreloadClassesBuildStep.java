@@ -19,7 +19,7 @@ public class PreloadClassesBuildStep {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void preInit(Optional<PreloadClassesEnabledBuildItem> preload, PreloadClassesRecorder recorder) {
-        if (!preload.isPresent())
+        if (preload.isEmpty())
             return;
         recorder.invokePreloadClasses(preload.get().doInitialize());
     }

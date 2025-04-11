@@ -143,7 +143,7 @@ public class AnnotationProxyProvider {
                 String name = annotationInstance.name().toString();
 
                 // Ljakarta/enterprise/util/AnnotationLiteral<Lcom/foo/MyAnnotation;>;Lcom/foo/MyAnnotation;
-                String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                String signature = "L%1$s<L%2$s;>;L%2$s;".formatted(
                         AnnotationLiteral.class.getName().replace('.', '/'),
                         name.replace('.', '/'));
 

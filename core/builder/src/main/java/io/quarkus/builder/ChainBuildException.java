@@ -1,11 +1,14 @@
 package io.quarkus.builder;
 
+import java.io.Serial;
+
 /**
  * The exception thrown when a deployer chain build fails.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class ChainBuildException extends Exception {
+    @Serial
     private static final long serialVersionUID = -1143606746171493097L;
 
     /**

@@ -75,7 +75,7 @@ public interface KeycloakDevServicesConfig {
      *
      * Applicable only in dev mode.
      */
-    @WithDefault("quarkus")
+    @WithDefault("keycloak")
     String serviceName();
 
     /**

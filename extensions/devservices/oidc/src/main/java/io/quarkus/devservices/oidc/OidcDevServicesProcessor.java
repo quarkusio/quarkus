@@ -540,12 +540,12 @@ public class OidcDevServicesProcessor {
         String clientId = rc.request().formAttributes().get("client_id");
         String username = rc.request().formAttributes().get("username");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token request");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         if (username == null || username.isEmpty()) {
-            LOG.warn("Invalid username, denying token request");
+            LOG.warn("Username is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
@@ -570,7 +570,7 @@ public class OidcDevServicesProcessor {
         String scope = rc.request().formAttributes().get("scope");
         String clientId = rc.request().formAttributes().get("client_id");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token request");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
@@ -593,19 +593,19 @@ public class OidcDevServicesProcessor {
         String clientSecret = rc.request().formAttributes().get("client_secret");
         String scope = rc.request().formAttributes().get("scope");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token refresh");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         if (clientSecret == null || clientSecret.isEmpty()) {
-            LOG.warn("Invalid client secret, denying token refresh");
+            LOG.warn("Client secret is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         String refreshToken = rc.request().formAttributes().get("refresh_token");
         UserAndRoles userAndRoles = decode(refreshToken);
         if (userAndRoles == null) {
-            LOG.warn("Received invalid refresh token, denying token refresh");
+            LOG.warnf("Received invalid refresh token, denying token refresh: %s", refreshToken);
             invalidTokenResponse(rc);
             return;
         }

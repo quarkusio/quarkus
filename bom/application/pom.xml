@@ -56,7 +56,7 @@
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
-        <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
+        <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.18.1</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.27.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>

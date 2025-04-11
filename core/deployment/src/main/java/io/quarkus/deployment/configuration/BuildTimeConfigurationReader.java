@@ -307,8 +307,8 @@ public final class BuildTimeConfigurationReader {
                 throw reportError(field, "Map key types other than String are not yet supported");
             }
             final ClassDefinition.ClassMember.Specification nested = processValue(field, typeOfParameter(valueType, 1), groups);
-            if (nested instanceof ClassDefinition.GroupMember.Specification
-                    && ((ClassDefinition.GroupMember.Specification) nested).isOptional()) {
+            if (nested instanceof ClassDefinition.GroupMember.Specification specification
+                    && specification.isOptional()) {
                 throw reportError(field, "Group map values may not be optional");
             }
             return new ClassDefinition.MapMember.Specification(nested);
@@ -458,8 +458,7 @@ public final class BuildTimeConfigurationReader {
 
     private void collectDeprecatedConfigItems(ClassMember classMember, Set<String> deprecatedConfigItems,
             StringBuilder nameBuilder) {
-        if (classMember instanceof ItemMember) {
-            ItemMember im = (ItemMember) classMember;
+        if (classMember instanceof ItemMember im) {
             if (im.getField().isAnnotationPresent(Deprecated.class)) {
                 int len = nameBuilder.length();
                 try {
@@ -469,8 +468,7 @@ public final class BuildTimeConfigurationReader {
                     nameBuilder.setLength(len);
                 }
             }
-        } else if (classMember instanceof GroupMember) {
-            GroupMember gm = (GroupMember) classMember;
+        } else if (classMember instanceof GroupMember gm) {
             int len = nameBuilder.length();
             try {
                 nameBuilder.append(".").append(gm.getPropertyName());
@@ -479,8 +477,7 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(len);
             }
 
-        } else if (classMember instanceof MapMember) {
-            MapMember mm = (MapMember) classMember;
+        } else if (classMember instanceof MapMember mm) {
             collectDeprecatedConfigItems(mm.getNested(), deprecatedConfigItems, nameBuilder);
         }
     }
@@ -551,13 +548,13 @@ public final class BuildTimeConfigurationReader {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
                     boolean knownProperty = matched != null;
-                    if (matched instanceof FieldContainer) {
+                    if (matched instanceof FieldContainer container) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
                         if (configValue.getValue() != null) {
                             allBuildTimeValues.put(configValue.getNameProfiled(), configValue);
                             ni.goToEnd();
                             // cursor is located after group property key (if any)
-                            getGroup((FieldContainer) matched, ni);
+                            getGroup(container, ni);
                             // we don't have to set the field because the group object init does it for us
                         }
                     } else if (matched != null) {
@@ -580,12 +577,12 @@ public final class BuildTimeConfigurationReader {
                     ni.goToStart();
                     matched = buildTimeRunTimePatternMap.match(ni);
                     knownProperty = knownProperty || matched != null;
-                    if (matched instanceof FieldContainer) {
+                    if (matched instanceof FieldContainer container) {
                         ConfigValue configValue = config.getConfigValue(propertyName);
                         if (configValue.getValue() != null) {
                             ni.goToEnd();
                             // cursor is located after group property key (if any)
-                            getGroup((FieldContainer) matched, ni);
+                            getGroup(container, ni);
                             allBuildTimeValues.put(configValue.getNameProfiled(), configValue);
                             buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue);
                         }
@@ -752,8 +749,7 @@ public final class BuildTimeConfigurationReader {
                 ni.previous();
             }
             // now the cursor is *before* the group member key but after the base group
-            if (parent instanceof FieldContainer) {
-                FieldContainer parentClass = (FieldContainer) parent;
+            if (parent instanceof FieldContainer parentClass) {
                 Field field = parentClass.findField();
                 // the cursor is located after the enclosing group's property name (if any)
                 Object enclosing = getGroup(parentClass, ni);
@@ -761,8 +757,8 @@ public final class BuildTimeConfigurationReader {
                 if (consume) {
                     ni.next();
                 }
-                if ((classMember instanceof ClassDefinition.GroupMember)
-                        && ((ClassDefinition.GroupMember) classMember).isOptional()) {
+                if ((classMember instanceof ClassDefinition.GroupMember member)
+                        && member.isOptional()) {
                     Optional<?> opt;
                     try {
                         opt = (Optional<?>) field.get(enclosing);
@@ -815,8 +811,7 @@ public final class BuildTimeConfigurationReader {
          */
         private Map<String, Object> getMap(MapContainer matched, NameIterator ni) {
             Container parent = matched.getParent();
-            if (parent instanceof FieldContainer) {
-                FieldContainer parentClass = (FieldContainer) parent;
+            if (parent instanceof FieldContainer parentClass) {
                 Field field = parentClass.findField();
                 ni.previous();
                 // now the cursor is before our map key and after the enclosing group property (if any)
@@ -896,8 +891,7 @@ public final class BuildTimeConfigurationReader {
                     continue;
                 }
                 String propertyName = member.getPropertyName();
-                if (member instanceof ClassDefinition.ItemMember) {
-                    ClassDefinition.ItemMember leafMember = (ClassDefinition.ItemMember) member;
+                if (member instanceof ClassDefinition.ItemMember leafMember) {
                     int len = nameBuilder.length();
                     try {
                         if (!propertyName.isEmpty()) {
@@ -978,13 +972,11 @@ public final class BuildTimeConfigurationReader {
             if (converter != null) {
                 return converter;
             }
-            if (valueType instanceof ArrayOf) {
-                ArrayOf arrayOf = (ArrayOf) valueType;
+            if (valueType instanceof ArrayOf arrayOf) {
                 converter = Converters.newArrayConverter(
                         getConverter(config, field, arrayOf.getElementType()),
                         arrayOf.getArrayType());
-            } else if (valueType instanceof CollectionOf) {
-                CollectionOf collectionOf = (CollectionOf) valueType;
+            } else if (valueType instanceof CollectionOf collectionOf) {
                 Class<?> collectionClass = collectionOf.getCollectionClass();
                 final Converter<?> nested = getConverter(config, field, collectionOf.getElementType());
                 if (collectionClass == List.class) {
@@ -996,8 +988,7 @@ public final class BuildTimeConfigurationReader {
                 } else {
                     throw reportError(field, "Unsupported configuration collection type: %s", collectionClass);
                 }
-            } else if (valueType instanceof Leaf) {
-                Leaf leaf = (Leaf) valueType;
+            } else if (valueType instanceof Leaf leaf) {
                 Class<? extends Converter<?>> convertWith = leaf.getConvertWith();
                 if (convertWith != null) {
                     try {
@@ -1022,14 +1013,13 @@ public final class BuildTimeConfigurationReader {
                 } else {
                     converter = config.requireConverter(leaf.getLeafType());
                 }
-            } else if (valueType instanceof LowerBoundCheckOf) {
+            } else if (valueType instanceof LowerBoundCheckOf of) {
                 // todo: add in bounds checker
-                converter = getConverter(config, field, ((LowerBoundCheckOf) valueType).getClassConverterType());
-            } else if (valueType instanceof UpperBoundCheckOf) {
+                converter = getConverter(config, field, of.getClassConverterType());
+            } else if (valueType instanceof UpperBoundCheckOf of) {
                 // todo: add in bounds checker
-                converter = getConverter(config, field, ((UpperBoundCheckOf) valueType).getClassConverterType());
-            } else if (valueType instanceof MinMaxValidated) {
-                MinMaxValidated minMaxValidated = (MinMaxValidated) valueType;
+                converter = getConverter(config, field, of.getClassConverterType());
+            } else if (valueType instanceof MinMaxValidated minMaxValidated) {
                 String min = minMaxValidated.getMin();
                 boolean minInclusive = minMaxValidated.isMinInclusive();
                 String max = minMaxValidated.getMax();
@@ -1046,11 +1036,9 @@ public final class BuildTimeConfigurationReader {
                     assert min == null && max != null;
                     converter = Converters.maximumValueStringConverter((Converter) nestedConverter, max, maxInclusive);
                 }
-            } else if (valueType instanceof OptionalOf) {
-                OptionalOf optionalOf = (OptionalOf) valueType;
+            } else if (valueType instanceof OptionalOf optionalOf) {
                 converter = Converters.newOptionalConverter(getConverter(config, field, optionalOf.getNestedType()));
-            } else if (valueType instanceof PatternValidated) {
-                PatternValidated patternValidated = (PatternValidated) valueType;
+            } else if (valueType instanceof PatternValidated patternValidated) {
                 converter = Converters.patternValidatingConverter(getConverter(config, field, patternValidated.getNestedType()),
                         patternValidated.getPatternString());
             } else {

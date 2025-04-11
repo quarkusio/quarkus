@@ -1,6 +1,7 @@
 package io.quarkus.deployment.dev;
 
 import java.io.File;
+import java.io.Serial;
 import java.io.Serializable;
 import java.net.URL;
 import java.nio.file.Path;
@@ -28,6 +29,7 @@ import io.quarkus.paths.PathList;
  */
 public class DevModeContext implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 4688502145533897982L;
 
     public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null, null);
@@ -260,6 +262,7 @@ public class DevModeContext implements Serializable {
 
     public static class ModuleInfo implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = -1376678003747618410L;
 
         private final ArtifactKey appArtifactKey;
@@ -309,7 +312,7 @@ public class DevModeContext implements Serializable {
         public void addSourcePaths(Collection<String> additionalPaths) {
             this.main.sourcePaths = this.main.sourcePaths.add(
                     additionalPaths.stream()
-                            .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
+                            .map(p -> Path.of(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
                             .map(Paths::get)
                             .toArray(Path[]::new));
         }
@@ -335,9 +338,9 @@ public class DevModeContext implements Serializable {
         }
 
         public void addSourcePathFirst(String path) {
-            String absolutePath = Paths.get(path).isAbsolute() ? path
+            String absolutePath = Path.of(path).isAbsolute() ? path
                     : (projectDirectory + File.separator + path);
-            this.main.sourcePaths = this.main.sourcePaths.addFirst(Paths.get(absolutePath));
+            this.main.sourcePaths = this.main.sourcePaths.addFirst(Path.of(absolutePath));
         }
 
         public static class Builder {
@@ -443,6 +446,7 @@ public class DevModeContext implements Serializable {
 
     public static class CompilationUnit implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = -511238068393954948L;
 
         private PathCollection sourcePaths;

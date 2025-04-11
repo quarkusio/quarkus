@@ -30,8 +30,8 @@ public class ConfigRecorder {
         Optional<ConfigSource> builtTimeRunTimeFixedConfigSource = config.getConfigSource("BuildTime RunTime Fixed");
         if (builtTimeRunTimeFixedConfigSource.isPresent()) {
             ConfigSource configSource = builtTimeRunTimeFixedConfigSource.get();
-            if (configSource instanceof DisableableConfigSource) {
-                ((DisableableConfigSource) configSource).disable();
+            if (configSource instanceof DisableableConfigSource source) {
+                source.disable();
             }
         }
 
@@ -53,8 +53,8 @@ public class ConfigRecorder {
         // Enable the BuildTime RunTime Fixed. It should be fine doing these operations, because this is on startup
         if (builtTimeRunTimeFixedConfigSource.isPresent()) {
             ConfigSource configSource = builtTimeRunTimeFixedConfigSource.get();
-            if (configSource instanceof DisableableConfigSource) {
-                ((DisableableConfigSource) configSource).enable();
+            if (configSource instanceof DisableableConfigSource source) {
+                source.enable();
             }
         }
 

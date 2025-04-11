@@ -42,7 +42,7 @@ public final class Json {
         REPLACEMENTS = new HashMap<>();
         // control characters
         for (int i = CONTROL_CHAR_START; i <= CONTROL_CHAR_END; i++) {
-            REPLACEMENTS.put((char) i, String.format("\\u%04x", i));
+            REPLACEMENTS.put((char) i, "\\u%04x".formatted(i));
         }
         // quotation mark
         REPLACEMENTS.put('"', "\\\"");
@@ -127,7 +127,7 @@ public final class Json {
          *         otherwise
          */
         protected boolean isIgnored(Object value) {
-            return value == null || (ignoreEmptyBuilders && value instanceof JsonBuilder && ((JsonBuilder<?>) value).isEmpty());
+            return value == null || (ignoreEmptyBuilders && value instanceof JsonBuilder<?> jb && jb.isEmpty());
         }
 
         protected boolean isValuesEmpty(Collection<Object> values) {
@@ -135,8 +135,8 @@ public final class Json {
                 return true;
             }
             for (Object object : values) {
-                if (object instanceof JsonBuilder) {
-                    if (!((JsonBuilder<?>) object).isEmpty()) {
+                if (object instanceof JsonBuilder<?> builder) {
+                    if (!builder.isEmpty()) {
                         return false;
                     }
                 } else {
@@ -250,25 +250,25 @@ public final class Json {
 
         @Override
         void add(JsonValue element) {
-            if (element instanceof JsonString) {
-                add(((JsonString) element).value());
-            } else if (element instanceof JsonInteger) {
-                final long longValue = ((JsonInteger) element).longValue();
+            if (element instanceof JsonString string) {
+                add(string.value());
+            } else if (element instanceof JsonInteger integer) {
+                final long longValue = integer.longValue();
                 final int intValue = (int) longValue;
                 if (longValue == intValue) {
                     add(intValue);
                 } else {
                     add(longValue);
                 }
-            } else if (element instanceof JsonBoolean) {
-                add(((JsonBoolean) element).value());
-            } else if (element instanceof JsonArray) {
+            } else if (element instanceof JsonBoolean bool) {
+                add(bool.value());
+            } else if (element instanceof JsonArray array) {
                 final JsonArrayBuilder arrayBuilder = Json.array(ignoreEmptyBuilders, skipEscapeCharacters);
-                arrayBuilder.transform((JsonArray) element, transform);
+                arrayBuilder.transform(array, transform);
                 add(arrayBuilder);
-            } else if (element instanceof JsonObject) {
+            } else if (element instanceof JsonObject object) {
                 final JsonObjectBuilder objectBuilder = Json.object(ignoreEmptyBuilders, skipEscapeCharacters);
-                objectBuilder.transform((JsonObject) element, transform);
+                objectBuilder.transform(object, transform);
                 if (!objectBuilder.isEmpty()) {
                     add(objectBuilder);
                 }
@@ -368,30 +368,29 @@ public final class Json {
 
         @Override
         void add(JsonValue element) {
-            if (element instanceof JsonMember) {
-                final JsonMember member = (JsonMember) element;
+            if (element instanceof JsonMember member) {
                 final String attribute = member.attribute().value();
                 final JsonValue value = member.value();
-                if (value instanceof JsonString) {
-                    put(attribute, ((JsonString) value).value());
-                } else if (value instanceof JsonInteger) {
-                    final long longValue = ((JsonInteger) value).longValue();
+                if (value instanceof JsonString string) {
+                    put(attribute, string.value());
+                } else if (value instanceof JsonInteger integer) {
+                    final long longValue = integer.longValue();
                     final int intValue = (int) longValue;
                     if (longValue == intValue) {
                         put(attribute, intValue);
                     } else {
                         put(attribute, longValue);
                     }
-                } else if (value instanceof JsonBoolean) {
-                    final boolean booleanValue = ((JsonBoolean) value).value();
+                } else if (value instanceof JsonBoolean bool) {
+                    final boolean booleanValue = bool.value();
                     put(attribute, booleanValue);
-                } else if (value instanceof JsonArray) {
+                } else if (value instanceof JsonArray array) {
                     final JsonArrayBuilder arrayBuilder = Json.array(ignoreEmptyBuilders, skipEscapeCharacters);
-                    arrayBuilder.transform((JsonArray) value, transform);
+                    arrayBuilder.transform(array, transform);
                     put(attribute, arrayBuilder);
-                } else if (value instanceof JsonObject) {
+                } else if (value instanceof JsonObject object) {
                     final JsonObjectBuilder objectBuilder = Json.object(ignoreEmptyBuilders, skipEscapeCharacters);
-                    objectBuilder.transform((JsonObject) value, transform);
+                    objectBuilder.transform(object, transform);
                     if (!objectBuilder.isEmpty()) {
                         put(attribute, objectBuilder);
                     }
@@ -401,10 +400,10 @@ public final class Json {
     }
 
     static void appendValue(Appendable appendable, Object value, boolean skipEscapeCharacters) throws IOException {
-        if (value instanceof JsonObjectBuilder) {
-            appendable.append(((JsonObjectBuilder) value).build());
-        } else if (value instanceof JsonArrayBuilder) {
-            appendable.append(((JsonArrayBuilder) value).build());
+        if (value instanceof JsonObjectBuilder builder) {
+            appendable.append(builder.build());
+        } else if (value instanceof JsonArrayBuilder builder) {
+            appendable.append(builder.build());
         } else if (value instanceof String) {
             appendStringValue(appendable, value.toString(), skipEscapeCharacters);
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {

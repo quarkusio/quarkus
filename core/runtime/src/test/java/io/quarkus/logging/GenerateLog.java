@@ -38,10 +38,10 @@ import com.github.javaparser.ast.type.PrimitiveType;
 import io.quarkus.runtime.Application;
 
 public class GenerateLog {
-    private static final String CLASS_JAVADOC = "" +
-            "Copy of {@link org.jboss.logging.BasicLogger}.\n" +
-            "Invocations of all {@code static} methods of this class are, during build time, replaced by invocations\n" +
-            "of the same methods on a generated instance of {@link Logger}.";
+    private static final String CLASS_JAVADOC = """
+            Copy of {@link org.jboss.logging.BasicLogger}.
+            Invocations of all {@code static} methods of this class are, during build time, replaced by invocations
+            of the same methods on a generated instance of {@link Logger}.""";
 
     public static void main(String[] args) throws Exception {
         String source = BasicLogger.class.getProtectionDomain().getCodeSource().getLocation().getPath();

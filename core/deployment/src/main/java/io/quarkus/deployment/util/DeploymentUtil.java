@@ -38,7 +38,7 @@ public class DeploymentUtil {
      * @return a {@link Predicate} that tests if deployer is enabled.
      */
     public static Predicate<String> isDeployExplicitlyEnabled() {
-        return deployer -> ConfigProvider.getConfig().getOptionalValue(String.format(DEPLOY, deployer), Boolean.class)
+        return deployer -> ConfigProvider.getConfig().getOptionalValue(DEPLOY.formatted(deployer), Boolean.class)
                 .orElse(false);
     }
 

@@ -67,8 +67,8 @@ public class ElementUtil {
 
     StringBuilder buildRelativeBinaryName(TypeElement typeElement, StringBuilder builder) {
         final Element enclosing = typeElement.getEnclosingElement();
-        if (enclosing instanceof TypeElement) {
-            buildRelativeBinaryName((TypeElement) enclosing, builder);
+        if (enclosing instanceof TypeElement element) {
+            buildRelativeBinaryName(element, builder);
             builder.append('$');
         }
         builder.append(typeElement.getSimpleName());
@@ -82,9 +82,9 @@ public class ElementUtil {
         if (typeArguments.isEmpty()) {
             return simpleName;
         } else if (typeArguments.size() == 1) {
-            return String.format("%s<%s>", simpleName, simplifyGenericType(typeArguments.get(0)));
+            return "%s<%s>".formatted(simpleName, simplifyGenericType(typeArguments.get(0)));
         } else if (typeArguments.size() == 2) {
-            return String.format("%s<%s,%s>", simpleName, simplifyGenericType(typeArguments.get(0)),
+            return "%s<%s,%s>".formatted(simpleName, simplifyGenericType(typeArguments.get(0)),
                     simplifyGenericType(typeArguments.get(1)));
         }
 

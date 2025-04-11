@@ -110,8 +110,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
         try {
             curatedApplication = o;
             Object potentialContext = params.get(DevModeContext.class.getName());
-            if (potentialContext instanceof DevModeContext) {
-                context = (DevModeContext) potentialContext;
+            if (potentialContext instanceof DevModeContext modeContext) {
+                context = modeContext;
             } else {
                 //this was from the external class loader
                 //we need to copy it into this one

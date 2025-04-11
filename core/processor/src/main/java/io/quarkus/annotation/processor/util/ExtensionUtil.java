@@ -3,7 +3,6 @@ package io.quarkus.annotation.processor.util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
@@ -191,8 +190,8 @@ public final class ExtensionUtil {
 
     private ExtensionModuleType detectExtensionModuleType(String artifactId) {
         try {
-            Path runtimeMarkerFile = Paths
-                    .get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
+            Path runtimeMarkerFile = Path
+                    .of(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
             if (Files.exists(runtimeMarkerFile)) {
                 return ExtensionModuleType.RUNTIME;
             }

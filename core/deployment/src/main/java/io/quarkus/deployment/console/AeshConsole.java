@@ -2,7 +2,7 @@ package io.quarkus.deployment.console;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -572,7 +572,7 @@ public class AeshConsole extends QuarkusConsole {
                     .enableExport(false)
                     .enableAlias(true)
                     .aliasManager(
-                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                            new AliasManager(Path.of(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
                     .connection(delegateConnection)
                     .commandRegistry(registry)
                     .build();
@@ -597,7 +597,7 @@ public class AeshConsole extends QuarkusConsole {
     @Override
     public Map<Character, String> singleLetterAliases() {
         try {
-            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            var manager = new AliasManager(Path.of(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
             Map<Character, String> ret = new HashMap<>();
             for (String alias : manager.getAllNames()) {
                 if (alias.length() == 1) {
@@ -624,7 +624,7 @@ public class AeshConsole extends QuarkusConsole {
                     .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
                     .enableAlias(true)
                     .aliasManager(
-                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                            new AliasManager(Path.of(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
                     .connection(delegateConnection)
                     .commandRegistry(registry)
                     .build();

@@ -61,8 +61,7 @@ public class IndexWrapper implements IndexView {
             return index.getKnownClasses();
         }
         Collection<ClassInfo> known = index.getKnownClasses();
-        Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
-                .map(Optional::get)
+        Collection<ClassInfo> additional = additionalClasses.values().stream().flatMap(Optional::stream)
                 .collect(Collectors.toList());
         List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
         all.addAll(known);
@@ -207,7 +206,7 @@ public class IndexWrapper implements IndexView {
         }
         Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementors(className));
         for (Optional<ClassInfo> additional : additionalClasses.values()) {
-            if (!additional.isPresent()) {
+            if (additional.isEmpty()) {
                 continue;
             }
             for (Type interfaceType : additional.get().interfaceTypes()) {

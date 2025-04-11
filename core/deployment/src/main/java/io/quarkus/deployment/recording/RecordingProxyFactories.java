@@ -14,8 +14,8 @@ class RecordingProxyFactories {
         RECORDING_PROXY_FACTORIES.put(clazz, proxyFactory);
 
         ClassLoader proxyClassLoader = proxyFactory.getClassLoader();
-        if (proxyClassLoader instanceof QuarkusClassLoader) {
-            ((QuarkusClassLoader) proxyClassLoader).addCloseTask(new Runnable() {
+        if (proxyClassLoader instanceof QuarkusClassLoader loader) {
+            loader.addCloseTask(new Runnable() {
                 @Override
                 public void run() {
                     RecordingProxyFactories.RECORDING_PROXY_FACTORIES.remove(clazz);

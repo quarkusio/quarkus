@@ -26,7 +26,7 @@ public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
 
     @Override
     protected ConsumeFlag castItemOrNull(final Object obj) {
-        return obj instanceof ConsumeFlag ? (ConsumeFlag) obj : null;
+        return obj instanceof ConsumeFlag cf ? cf : null;
     }
 
     @Override

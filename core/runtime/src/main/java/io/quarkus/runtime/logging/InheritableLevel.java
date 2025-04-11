@@ -34,7 +34,7 @@ public abstract class InheritableLevel {
     public abstract String toString();
 
     public final boolean equals(Object obj) {
-        return obj instanceof InheritableLevel && equals((InheritableLevel) obj);
+        return obj instanceof InheritableLevel il && equals(il);
     }
 
     public abstract boolean equals(InheritableLevel other);
@@ -61,7 +61,7 @@ public abstract class InheritableLevel {
         }
 
         public boolean equals(final InheritableLevel other) {
-            return other instanceof ActualLevel && level.equals(((ActualLevel) other).level);
+            return other instanceof ActualLevel al && level.equals(al.level);
         }
 
         public int hashCode() {

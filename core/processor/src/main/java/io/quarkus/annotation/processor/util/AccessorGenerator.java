@@ -91,8 +91,7 @@ public final class AccessorGenerator {
                 // 1) the field is public
                 // 2) the enclosing class is public
                 // 3) the class type of the field is public
-                if (fieldType instanceof DeclaredType) {
-                    final DeclaredType declaredType = (DeclaredType) fieldType;
+                if (fieldType instanceof DeclaredType declaredType) {
                     final TypeElement typeElement = (TypeElement) declaredType.asElement();
                     if (typeElement.getModifiers()
                             .contains(Modifier.PUBLIC)) {

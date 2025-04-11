@@ -210,8 +210,8 @@ public class ApplicationLifecycleManager {
                 stateLock.unlock();
             }
             application.stop();
-            int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
-                    ? ((PreventFurtherStepsException) rootCause).getExitCode()
+            int exceptionExitCode = rootCause instanceof PreventFurtherStepsException pfse
+                    ? pfse.getExitCode()
                     : 1;
             currentApplication = null;
             (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
@@ -238,8 +238,8 @@ public class ApplicationLifecycleManager {
     private static void ensureConsoleLogsDrained() {
         AsyncHandler asyncHandler = null;
         for (Handler handler : InitialConfigurator.DELAYED_HANDLER.getHandlers()) {
-            if (handler instanceof AsyncHandler) {
-                asyncHandler = (AsyncHandler) handler;
+            if (handler instanceof AsyncHandler asyncHandler1) {
+                asyncHandler = asyncHandler1;
                 Handler[] nestedHandlers = asyncHandler.getHandlers();
                 boolean foundNestedConsoleHandler = false;
                 for (Handler nestedHandler : nestedHandlers) {
@@ -272,8 +272,7 @@ public class ApplicationLifecycleManager {
      */
     private static void longLivedPostBootCleanup() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if (cl instanceof RunnerClassLoader) {
-            RunnerClassLoader rcl = (RunnerClassLoader) cl;
+        if (cl instanceof RunnerClassLoader rcl) {
             rcl.resetInternalCaches();
         }
     }

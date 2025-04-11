@@ -17,7 +17,6 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -446,23 +445,23 @@ public class ConfigGenerationBuildStep {
         // Main files
         configWatchedFiles.add("application.properties");
         configWatchedFiles.add("META-INF/microprofile-config.properties");
-        configWatchedFiles.add(Paths.get(userDir, ".env").toAbsolutePath().toString());
-        configWatchedFiles.add(Paths.get(userDir, "config", "application.properties").toAbsolutePath().toString());
+        configWatchedFiles.add(Path.of(userDir, ".env").toAbsolutePath().toString());
+        configWatchedFiles.add(Path.of(userDir, "config", "application.properties").toAbsolutePath().toString());
 
         // Profiles
         for (String profile : config.getProfiles()) {
-            configWatchedFiles.add(String.format("application-%s.properties", profile));
-            configWatchedFiles.add(String.format("META-INF/microprofile-config-%s.properties", profile));
-            configWatchedFiles.add(Paths.get(userDir, String.format(".env-%s", profile)).toAbsolutePath().toString());
-            configWatchedFiles.add(Paths.get(userDir, "config", String.format("application-%s.properties", profile))
+            configWatchedFiles.add("application-%s.properties".formatted(profile));
+            configWatchedFiles.add("META-INF/microprofile-config-%s.properties".formatted(profile));
+            configWatchedFiles.add(Path.of(userDir, ".env-%s".formatted(profile)).toAbsolutePath().toString());
+            configWatchedFiles.add(Path.of(userDir, "config", "application-%s.properties".formatted(profile))
                     .toAbsolutePath().toString());
         }
 
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
             for (URI location : locations) {
-                Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
-                        : Paths.get(location.getPath());
+                Path path = location.getScheme() != null && location.getScheme().equals("file") ? Path.of(location)
+                        : Path.of(location.getPath());
                 if (Files.isRegularFile(path)) {
                     configWatchedFiles.add(path.toAbsolutePath().toString());
                     for (String profile : config.getProfiles()) {
@@ -542,7 +541,7 @@ public class ConfigGenerationBuildStep {
 
     private String appendProfileToFilename(Path path, String activeProfile) {
         String pathWithoutExtension = getPathWithoutExtension(path);
-        return String.format("%s-%s.%s", pathWithoutExtension, activeProfile, getFileExtension(path));
+        return "%s-%s.%s".formatted(pathWithoutExtension, activeProfile, getFileExtension(path));
     }
 
     private static String getFileExtension(Path path) {

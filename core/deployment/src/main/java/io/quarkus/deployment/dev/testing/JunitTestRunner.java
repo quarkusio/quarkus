@@ -11,7 +11,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -573,7 +572,7 @@ public class JunitTestRunner {
         //we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
         moduleInfo.getTest().ifPresent(test -> {
-            try (Stream<Path> files = Files.walk(Paths.get(test.getClassesPath()))) {
+            try (Stream<Path> files = Files.walk(Path.of(test.getClassesPath()))) {
                 files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
                     try (InputStream in = Files.newInputStream(s)) {
                         indexer.index(in);

@@ -6,7 +6,6 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,7 +47,7 @@ public final class ArtifactInfoUtil {
         try {
             URL codeLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
             if (curateOutcomeBuildItem != null) {
-                Path path = Paths.get(codeLocation.toURI());
+                Path path = Path.of(codeLocation.toURI());
                 String pathAsString = path.toString();
                 // Workspace artifacts paths are resolved to the maven module, not the jar file
                 // If the clazz is inside a jar, but does not contain the artifact name, we have to open
@@ -74,7 +73,7 @@ public final class ArtifactInfoUtil {
 
             if (codeLocation.toString().endsWith(".jar")) {
                 // Search inside the jar for pom properties, needed for workspace artifacts
-                try (FileSystem fs = ZipUtils.newFileSystem(Paths.get(codeLocation.toURI()),
+                try (FileSystem fs = ZipUtils.newFileSystem(Path.of(codeLocation.toURI()),
                         Thread.currentThread().getContextClassLoader())) {
                     Entry<String, String> ret = groupIdAndArtifactId(fs);
                     if (ret == null) {
@@ -89,7 +88,7 @@ public final class ArtifactInfoUtil {
                 // and this app is part of a multi-module project which also declares the extension
                 // Just try to locate the pom.properties file in the target/maven-archiver directory
                 // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overridden
-                Path location = Paths.get(codeLocation.toURI());
+                Path location = Path.of(codeLocation.toURI());
                 while (!isDeploymentTargetClasses(location) && location.getParent() != null) {
                     location = location.getParent();
                 }

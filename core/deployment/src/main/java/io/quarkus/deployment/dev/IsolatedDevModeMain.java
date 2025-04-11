@@ -400,8 +400,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             curatedApplication = o;
 
             Object potentialContext = params.get(DevModeContext.class.getName());
-            if (potentialContext instanceof DevModeContext) {
-                context = (DevModeContext) potentialContext;
+            if (potentialContext instanceof DevModeContext modeContext) {
+                context = modeContext;
             } else {
                 //this was from the external class loader
                 //we need to copy it into this one
@@ -434,7 +434,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
                             : deploymentProblem.get();
 
-                    throw (throwable instanceof RuntimeException ? (RuntimeException) throwable
+                    throw (throwable instanceof RuntimeException re ? re
                             : new RuntimeException(throwable));
                 }
             }
@@ -455,7 +455,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }, "Quarkus Shutdown Thread");
             Runtime.getRuntime().addShutdownHook(shutdownThread);
         } catch (Exception e) {
-            RuntimeException toThrow = (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
+            RuntimeException toThrow = (e instanceof RuntimeException re ? re : new RuntimeException(e));
             try {
                 close();
             } catch (IllegalStateException x) {

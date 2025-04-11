@@ -214,6 +214,6 @@ public final class ConfigNamingUtil {
     }
 
     public static String getMapKey(String mapKey) {
-        return String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, mapKey);
+        return NAMED_MAP_CONFIG_ITEM_FORMAT.formatted(mapKey);
     }
 }

@@ -20,7 +20,6 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -633,7 +632,7 @@ public class JarResultBuildStep {
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
             decompiler = new Decompiler.VineflowerDecompiler();
-            Path jarDirectory = Paths.get(decompilerConfig.jarDirectory());
+            Path jarDirectory = Path.of(decompilerConfig.jarDirectory());
             if (!Files.exists(jarDirectory)) {
                 Files.createDirectory(jarDirectory);
             }
@@ -1451,8 +1450,8 @@ public class JarResultBuildStep {
             });
         } catch (RuntimeException re) {
             final Throwable cause = re.getCause();
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
+            if (cause instanceof IOException exception) {
+                throw exception;
             }
             throw re;
         }
@@ -1645,7 +1644,7 @@ public class JarResultBuildStep {
             @Override
             public void init(Context context) {
                 this.context = context;
-                this.decompilerJar = context.jarLocation.resolve(String.format("vineflower-%s.jar", context.versionStr));
+                this.decompilerJar = context.jarLocation.resolve("vineflower-%s.jar".formatted(context.versionStr));
             }
 
             @Override
@@ -1653,9 +1652,9 @@ public class JarResultBuildStep {
                 if (Files.exists(decompilerJar)) {
                     return true;
                 }
-                String downloadURL = String.format(
-                        "https://repo.maven.apache.org/maven2/org/vineflower/vineflower/%s/vineflower-%s.jar",
-                        context.versionStr, context.versionStr);
+                String downloadURL = "https://repo.maven.apache.org/maven2/org/vineflower/vineflower/%s/vineflower-%s.jar"
+                        .formatted(
+                                context.versionStr, context.versionStr);
                 try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
                         OutputStream fileOutputStream = Files.newOutputStream(decompilerJar)) {
                     in.transferTo(fileOutputStream);

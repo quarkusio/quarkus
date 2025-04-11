@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -31,7 +31,7 @@ public class NativeImageResourcesStep {
         for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
             String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
                     .getPath();
-            File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
+            File resourceFile = Path.of(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
             try (JarFile jarFile = new JarFile(resourceFile)) {
                 Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {

@@ -5,7 +5,6 @@ import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,9 +36,9 @@ public class QuarkusLauncher {
             if ("jar".equals(uri.getScheme())) {
                 JarURLConnection connection = (JarURLConnection) uri.toURL().openConnection();
                 connection.setDefaultUseCaches(false);
-                appClasses = Paths.get(connection.getJarFileURL().toURI());
+                appClasses = Path.of(connection.getJarFileURL().toURI());
             } else {
-                appClasses = Paths.get(uri);
+                appClasses = Path.of(uri);
             }
             if (quarkusApplication != null) {
                 System.setProperty("quarkus.package.main-class", quarkusApplication);

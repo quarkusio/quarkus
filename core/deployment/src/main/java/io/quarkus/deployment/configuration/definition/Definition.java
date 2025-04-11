@@ -19,11 +19,11 @@ public abstract class Definition {
     }
 
     static IllegalArgumentException reportError(AnnotatedElement e, String msg) {
-        if (e instanceof Member) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getEnclosingDefinition());
-        } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
-                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+        if (e instanceof Member member) {
+            return new IllegalArgumentException(msg + " at " + e + " of " + member.getEnclosingDefinition());
+        } else if (e instanceof Parameter parameter) {
+            return new IllegalArgumentException(msg + " at " + e + " of " + parameter.getDeclaringExecutable() + " of "
+                    + parameter.getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }

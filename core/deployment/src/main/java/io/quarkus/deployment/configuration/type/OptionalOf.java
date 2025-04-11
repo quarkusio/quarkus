@@ -32,7 +32,7 @@ public final class OptionalOf extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof OptionalOf && equals((OptionalOf) obj);
+        return obj instanceof OptionalOf oo && equals(oo);
     }
 
     public boolean equals(final OptionalOf obj) {

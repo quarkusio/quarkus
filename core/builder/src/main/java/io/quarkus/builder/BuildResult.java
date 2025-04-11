@@ -116,18 +116,18 @@ public final class BuildResult {
      */
     public void closeAll() throws RuntimeException {
         for (BuildItem obj : simpleItems.values()) {
-            if (obj instanceof AutoCloseable)
+            if (obj instanceof AutoCloseable closeable)
                 try {
-                    ((AutoCloseable) obj).close();
+                    closeable.close();
                 } catch (Exception e) {
                     Messages.msg.closeFailed(obj, e);
                 }
         }
         for (List<? extends BuildItem> list : multiItems.values()) {
             for (BuildItem obj : list) {
-                if (obj instanceof AutoCloseable)
+                if (obj instanceof AutoCloseable closeable)
                     try {
-                        ((AutoCloseable) obj).close();
+                        closeable.close();
                     } catch (Exception e) {
                         Messages.msg.closeFailed(obj, e);
                     }

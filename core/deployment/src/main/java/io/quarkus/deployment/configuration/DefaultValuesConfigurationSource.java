@@ -34,8 +34,7 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
             return null;
         }
         final ClassDefinition.ClassMember member = match.getClassMember();
-        if (member instanceof ClassDefinition.ItemMember) {
-            final ClassDefinition.ItemMember leafMember = (ClassDefinition.ItemMember) member;
+        if (member instanceof ClassDefinition.ItemMember leafMember) {
             return leafMember.getDefaultValue();
         }
         return null;

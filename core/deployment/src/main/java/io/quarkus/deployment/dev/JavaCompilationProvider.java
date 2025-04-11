@@ -130,6 +130,6 @@ public class JavaCompilationProvider implements CompilationProvider {
     private String extractCompilationErrorMessage(final DiagnosticCollector<JavaFileObject> diagnosticsCollector) {
         StringBuilder builder = new StringBuilder();
         diagnosticsCollector.getDiagnostics().forEach(diagnostic -> builder.append("\n").append(diagnostic));
-        return String.format("\u001B[91mCompilation Failed:%s\u001b[0m", builder);
+        return "\u001B[91mCompilation Failed:%s\u001b[0m".formatted(builder);
     }
 }

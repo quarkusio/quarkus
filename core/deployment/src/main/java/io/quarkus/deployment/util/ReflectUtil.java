@@ -24,16 +24,16 @@ public final class ReflectUtil {
 
     public static boolean rawTypeIs(Type type, Class<?> clazz) {
         return type instanceof Class<?> && clazz == type
-                || type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == clazz
-                || type instanceof GenericArrayType && clazz.isArray()
-                        && rawTypeIs(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
+                || type instanceof ParameterizedType pt && pt.getRawType() == clazz
+                || type instanceof GenericArrayType gat && clazz.isArray()
+                        && rawTypeIs(gat.getGenericComponentType(), clazz.getComponentType());
     }
 
     public static boolean rawTypeExtends(Type type, Class<?> clazz) {
-        return type instanceof Class<?> && clazz.isAssignableFrom((Class<?>) type)
-                || type instanceof ParameterizedType && rawTypeExtends(((ParameterizedType) type).getRawType(), clazz)
-                || type instanceof GenericArrayType
-                        && rawTypeExtends(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
+        return type instanceof Class<?> c && clazz.isAssignableFrom(c)
+                || type instanceof ParameterizedType pt && rawTypeExtends(pt.getRawType(), clazz)
+                || type instanceof GenericArrayType gat
+                        && rawTypeExtends(gat.getGenericComponentType(), clazz.getComponentType());
     }
 
     public static boolean isListOf(Type type, Class<?> nestedType) {
@@ -67,12 +67,12 @@ public final class ReflectUtil {
     }
 
     public static Class<?> rawTypeOf(final Type type) {
-        if (type instanceof Class<?>) {
-            return (Class<?>) type;
-        } else if (type instanceof ParameterizedType) {
-            return rawTypeOf(((ParameterizedType) type).getRawType());
-        } else if (type instanceof GenericArrayType) {
-            return Array.newInstance(rawTypeOf(((GenericArrayType) type).getGenericComponentType()), 0).getClass();
+        if (type instanceof Class<?> clazz) {
+            return clazz;
+        } else if (type instanceof ParameterizedType parameterizedType) {
+            return rawTypeOf(parameterizedType.getRawType());
+        } else if (type instanceof GenericArrayType arrayType) {
+            return Array.newInstance(rawTypeOf(arrayType.getGenericComponentType()), 0).getClass();
         } else {
             throw new IllegalArgumentException("Type has no raw type class: " + type);
         }
@@ -97,8 +97,8 @@ public final class ReflectUtil {
     }
 
     public static Type typeOfParameter(final Type type, final int paramIdx) {
-        if (type instanceof ParameterizedType) {
-            return ((ParameterizedType) type).getActualTypeArguments()[paramIdx];
+        if (type instanceof ParameterizedType parameterizedType) {
+            return parameterizedType.getActualTypeArguments()[paramIdx];
         } else {
             throw new IllegalArgumentException("Type is not parameterized: " + type);
         }
@@ -171,15 +171,15 @@ public final class ReflectUtil {
     }
 
     public static IllegalArgumentException reportError(AnnotatedElement e, String fmt, Object... args) {
-        if (e instanceof Member) {
+        if (e instanceof Member member) {
             return new IllegalArgumentException(
-                    String.format(fmt, args) + " at " + e + " of " + ((Member) e).getDeclaringClass());
-        } else if (e instanceof Parameter) {
+                    fmt.formatted(args) + " at " + e + " of " + member.getDeclaringClass());
+        } else if (e instanceof Parameter parameter) {
             return new IllegalArgumentException(
-                    String.format(fmt, args) + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
-                            + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+                    fmt.formatted(args) + " at " + e + " of " + parameter.getDeclaringExecutable() + " of "
+                            + parameter.getDeclaringExecutable().getDeclaringClass());
         } else {
-            return new IllegalArgumentException(String.format(fmt, args) + " at " + e);
+            return new IllegalArgumentException(fmt.formatted(args) + " at " + e);
         }
     }
 }

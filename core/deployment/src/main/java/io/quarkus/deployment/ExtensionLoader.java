@@ -620,8 +620,7 @@ public final class ExtensionLoader {
                             if (ctors.length == 1 || ctor.isAnnotationPresent(Inject.class)) {
                                 for (var type : ctor.getGenericParameterTypes()) {
                                     Class<?> theType = null;
-                                    if (type instanceof ParameterizedType) {
-                                        ParameterizedType pt = (ParameterizedType) type;
+                                    if (type instanceof ParameterizedType pt) {
                                         if (pt.getRawType().equals(RuntimeValue.class)) {
                                             theType = (Class<?>) pt.getActualTypeArguments()[0];
                                         } else {
@@ -823,8 +822,8 @@ public final class ExtensionLoader {
                                                 clazz.getSimpleName(), method.getName(),
                                                 Integer.toString(Math.abs(method.toString().hashCode())), identityComparison,
                                                 s -> {
-                                                    if (s instanceof Class) {
-                                                        var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
+                                                    if (s instanceof Class<?> clazz) {
+                                                        var cfg = clazz.getAnnotation(ConfigRoot.class);
                                                         if (cfg == null
                                                                 || (cfg.phase() != ConfigPhase.BUILD_AND_RUN_TIME_FIXED
                                                                         && recordAnnotation
@@ -835,8 +834,7 @@ public final class ExtensionLoader {
                                                         }
                                                         return runTimeProxies.get(s);
                                                     }
-                                                    if (s instanceof ParameterizedType) {
-                                                        ParameterizedType p = (ParameterizedType) s;
+                                                    if (s instanceof ParameterizedType p) {
                                                         if (p.getRawType() == RuntimeValue.class) {
                                                             Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
                                                             if (object == null) {
@@ -945,11 +943,11 @@ public final class ExtensionLoader {
     }
 
     static IllegalArgumentException reportError(AnnotatedElement e, String msg) {
-        if (e instanceof Member) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getDeclaringClass());
-        } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
-                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+        if (e instanceof Member member) {
+            return new IllegalArgumentException(msg + " at " + e + " of " + member.getDeclaringClass());
+        } else if (e instanceof Parameter parameter) {
+            return new IllegalArgumentException(msg + " at " + e + " of " + parameter.getDeclaringExecutable() + " of "
+                    + parameter.getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }

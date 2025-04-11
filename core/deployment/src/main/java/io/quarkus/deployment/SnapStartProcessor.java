@@ -37,7 +37,7 @@ public class SnapStartProcessor {
                 return;
             }
 
-        } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {
+        } else if (defaultVal == null || defaultVal.isEmpty() || !defaultVal.get().isDefaultValue()) {
             return;
         }
         snapStartEnabled.produce(SnapStartEnabledBuildItem.INSTANCE);
@@ -58,7 +58,7 @@ public class SnapStartProcessor {
             if (!config.enable().get()) {
                 return;
             }
-        } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {
+        } else if (defaultVal == null || defaultVal.isEmpty() || !defaultVal.get().isDefaultValue()) {
             return;
         }
 

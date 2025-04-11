@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ public class MemorySizeConverter implements Converter<MemorySize>, Serializable 
     private static final Pattern MEMORY_SIZE_PATTERN = Pattern.compile("^(\\d+)([BbKkMmGgTtPpEeZzYy]?)$");
     static final BigInteger KILO_BYTES = BigInteger.valueOf(1024);
     private static final Map<String, BigInteger> MEMORY_SIZE_MULTIPLIERS;
+    @Serial
     private static final long serialVersionUID = -1988485929047973068L;
 
     static {
@@ -57,6 +59,6 @@ public class MemorySizeConverter implements Converter<MemorySize>, Serializable 
         }
 
         throw new IllegalArgumentException(
-                String.format("value %s not in correct format (regular expression): [0-9]+[BbKkMmGgTtPpEeZzYy]?", value));
+                "value %s not in correct format (regular expression): [0-9]+[BbKkMmGgTtPpEeZzYy]?".formatted(value));
     }
 }

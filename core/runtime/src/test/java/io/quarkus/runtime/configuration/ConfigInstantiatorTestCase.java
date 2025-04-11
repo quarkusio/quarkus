@@ -144,7 +144,7 @@ public class ConfigInstantiatorTestCase {
 
         @Override
         public String toString() {
-            return String.format("MapValueConfig[%s]", value);
+            return "MapValueConfig[%s]".formatted(value);
         }
     }
 

@@ -116,12 +116,12 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideUlTag() {
-        String javaDoc = "List:" +
-                "<ul>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ul>" +
-                "";
+        String javaDoc = """
+                List:\
+                <ul>
+                <li>1</li>
+                <li>2</li>
+                </ul>""";
         String expectedOutput = "List:\n\n - 1\n - 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -131,12 +131,12 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideOlTag() {
-        String javaDoc = "List:" +
-                "<ol>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ol>" +
-                "";
+        String javaDoc = """
+                List:\
+                <ol>
+                <li>1</li>
+                <li>2</li>
+                </ol>""";
         String expectedOutput = "List:\n\n . 1\n . 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -217,22 +217,26 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     @Test
     public void parseJavaDocWithBlockquoteBlock() {
         ParsedJavadoc parsed = JavadocUtil
-                .parseConfigItemJavadoc("See Section 4.5.5 of the JSR 380 specification, specifically\n"
-                        + "\n"
-                        + "<blockquote>\n"
-                        + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may\n"
-                        + "be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.\n"
-                        + "This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
-                        + "</blockquote>\nThat was interesting, wasn't it?");
+                .parseConfigItemJavadoc("""
+                        See Section 4.5.5 of the JSR 380 specification, specifically
 
-        assertEquals("See Section 4.5.5 of the JSR 380 specification, specifically\n"
-                + "\n"
-                + "[quote]\n"
-                + "____\n"
-                + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation. This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
-                + "____\n"
-                + "\n"
-                + "That was interesting, wasn't it?",
+                        <blockquote>
+                        In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may
+                        be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.
+                        This would pose a strengthening of preconditions to be fulfilled by the caller.
+                        </blockquote>
+                        That was interesting, wasn't it?""");
+
+        assertEquals(
+                """
+                        See Section 4.5.5 of the JSR 380 specification, specifically
+
+                        [quote]
+                        ____
+                        In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation. This would pose a strengthening of preconditions to be fulfilled by the caller.
+                        ____
+
+                        That was interesting, wasn't it?""",
                 JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
 
         parsed = JavadocUtil.parseConfigItemJavadoc(
@@ -268,19 +272,20 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidoc() {
-        String asciidoc = "== My Asciidoc\n" +
-                "\n" +
-                "Let's have a https://quarkus.io[link to our website].\n" +
-                "\n" +
-                "[TIP]\n" +
-                "====\n" +
-                "A nice tip\n" +
-                "====\n" +
-                "\n" +
-                "[source,java]\n" +
-                "----\n" +
-                "And some code\n" +
-                "----";
+        String asciidoc = """
+                == My Asciidoc
+
+                Let's have a https://quarkus.io[link to our website].
+
+                [TIP]
+                ====
+                A nice tip
+                ====
+
+                [source,java]
+                ----
+                And some code
+                ----""";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 
@@ -289,12 +294,13 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidocLists() {
-        String asciidoc = "* A list\n" +
-                "\n" +
-                "* 1\n" +
-                "  * 1.1\n" +
-                "  * 1.2\n" +
-                "* 2";
+        String asciidoc = """
+                * A list
+
+                * 1
+                  * 1.1
+                  * 1.2
+                * 2""";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 

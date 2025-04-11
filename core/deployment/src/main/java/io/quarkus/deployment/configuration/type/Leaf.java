@@ -41,7 +41,7 @@ public final class Leaf extends ConverterType {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof Leaf && equals((Leaf) obj);
+        return obj instanceof Leaf l && equals(l);
     }
 
     public boolean equals(final Leaf obj) {

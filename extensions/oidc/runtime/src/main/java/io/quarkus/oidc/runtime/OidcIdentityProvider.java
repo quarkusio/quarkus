@@ -105,6 +105,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, Map<String, Object> requestData,
             TenantConfigContext resolvedContext) {
+        if (!isIdToken(request.getToken()) && resolvedContext.oidcConfig().token().decryptAccessToken()) {
+            String decrypedToken = OidcUtils.decryptToken(resolvedContext.provider(), request.getToken().getToken());
+            request = new TokenAuthenticationRequest(new AccessTokenCredential(decrypedToken));
+        }
         if (resolvedContext.oidcConfig().authServerUrl().isPresent()) {
             return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         } else if (resolvedContext.oidcConfig().certificateChain().trustStoreFile().isPresent()) {

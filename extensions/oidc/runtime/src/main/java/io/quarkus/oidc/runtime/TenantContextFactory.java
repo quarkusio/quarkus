@@ -17,9 +17,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.oidc.OIDCException;
@@ -37,8 +34,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
-import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -414,22 +409,7 @@ final class TenantContextFactory {
     private Key readTokenDecryptionKey(OidcTenantConfig oidcConfig) {
         if (oidcConfig.token().decryptionKeyLocation().isPresent()) {
             try {
-                Key key = null;
-
-                String keyContent = KeyUtils.readKeyContent(oidcConfig.token().decryptionKeyLocation().get());
-                if (keyContent != null) {
-                    List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
-                    if (keys != null && keys.size() == 1 &&
-                            (keys.get(0).getAlgorithm() == null
-                                    || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
-                            && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
-                        key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
-                    }
-                }
-                if (key == null) {
-                    key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
-                }
-                return key;
+                return OidcUtils.readDecryptionKey(oidcConfig.token().decryptionKeyLocation().get());
             } catch (Exception ex) {
                 throw new ConfigurationException(
                         String.format("Token decryption key for tenant %s can not be read from %s",

@@ -228,7 +228,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
             try {
                 KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
                         .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
-                return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
+                return OidcUtils.encryptString(token, configContext.getSessionCookieEncryptionKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }
@@ -242,7 +242,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
             try {
                 KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
                         .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
-                return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
+                return OidcUtils.decryptString(token, configContext.getSessionCookieEncryptionKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,6 +35,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
@@ -65,6 +68,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
@@ -330,7 +334,8 @@ public final class OidcUtils {
         if (codeTokens != null) {
             RefreshToken refreshTokenCredential = new RefreshToken(codeTokens.getRefreshToken());
             builder.addCredential(refreshTokenCredential);
-            builder.addCredential(new AccessTokenCredential(codeTokens.getAccessToken(), refreshTokenCredential));
+            builder.addCredential(new AccessTokenCredential((String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE),
+                    refreshTokenCredential));
         }
         JsonWebToken jwtPrincipal;
         try {
@@ -603,7 +608,7 @@ public final class OidcUtils {
         return encryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
     }
 
-    public static String encryptString(String jweString, SecretKey key, KeyEncryptionAlgorithm algorithm) throws Exception {
+    public static String encryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setAlgorithmHeaderValue(algorithm.getAlgorithm());
         jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
@@ -714,7 +719,9 @@ public final class OidcUtils {
             return null;
         }
 
-        return headerValue.substring(idx + 1);
+        String token = headerValue.substring(idx + 1);
+
+        return token;
     }
 
     static void storeExtractedBearerToken(RoutingContext context, String token) {
@@ -765,6 +772,15 @@ public final class OidcUtils {
         }
         context.response().addCookie(cookie);
         return cookie;
+    }
+
+    public static SecretKey createSecretKeyFromDigest(String secretKey) {
+        try {
+            final byte[] secretBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+            return new SecretKeySpec(getSha256Digest(secretBytes), "AES");
+        } catch (Exception ex) {
+            throw new OIDCException(ex);
+        }
     }
 
     public static SecretKey createSecretKeyFromDigest(byte[] secretBytes) {
@@ -858,5 +874,46 @@ public final class OidcUtils {
             }
             context.response().putHeader(CLEAR_SITE_DATA_HEADER, builder.toString());
         }
+    }
+
+    public static Key readDecryptionKey(String decryptionKeyLocation) throws Exception {
+        Key key = null;
+
+        String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
+        if (keyContent != null) {
+            List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
+            if (keys != null && keys.size() == 1 &&
+                    (keys.get(0).getAlgorithm() == null
+                            || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
+                    && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
+                key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+            }
+        }
+        if (key == null) {
+            key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
+        }
+        return key;
+    }
+
+    public static String decryptToken(TenantConfigContext resolvedContext, String token) {
+        if (OidcUtils.isEncryptedToken(token)) {
+
+            Key decryptionKey = resolvedContext.getTokenDecryptionKey();
+            if (decryptionKey == null) {
+                LOG.error("Token decryption key is not available");
+                throw new AuthenticationFailedException();
+            }
+
+            //TODO: Make the encryption algorithm configurable
+            KeyEncryptionAlgorithm encryptionAlgorithm = decryptionKey instanceof PrivateKey ? KeyEncryptionAlgorithm.RSA_OAEP
+                    : KeyEncryptionAlgorithm.A256GCMKW;
+
+            try {
+                return OidcUtils.decryptString(token, decryptionKey, encryptionAlgorithm);
+            } catch (JoseException ex) {
+                LOG.debugf("Failed to decrypt a token: %s", ex.getMessage());
+            }
+        }
+        return token;
     }
 }

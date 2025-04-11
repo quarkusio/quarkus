@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,19 +38,24 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     private final Map<Redirect.Location, List<OidcRedirectFilter>> redirectFilters;
 
     /**
-     * PKCE Secret Key
+     * State cookie encryption key
      */
-    private final SecretKey stateSecretKey;
+    private final SecretKey stateCookieEncryptionKey;
 
     /**
-     * Token Encryption Secret Key
+     * Session cookie encryption key
      */
-    private final SecretKey tokenEncSecretKey;
+    private final SecretKey sessionCookieEncryptionKey;
+
+    /**
+     * ID and access token decryption key;
+     */
+    private final Key tokenDecryptionKey;
 
     /**
      * Internal ID token generated key
      */
-    private final SecretKey internalIdTokenGeneratedKey;
+    private final SecretKey internalIdTokenSigningKey;
 
     private final boolean ready;
 
@@ -64,13 +70,47 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         this.ready = ready;
 
         boolean isService = OidcUtils.isServiceApp(config);
-        stateSecretKey = !isService && provider != null && provider.client != null ? createStateSecretKey(config) : null;
-        tokenEncSecretKey = !isService && provider != null && provider.client != null
+        stateCookieEncryptionKey = !isService && providerIsNoNull(provider) ? createStateSecretKey(config)
+                : null;
+        sessionCookieEncryptionKey = !isService && providerIsNoNull(provider)
                 ? createTokenEncSecretKey(config, provider)
                 : null;
-        internalIdTokenGeneratedKey = !isService && provider != null && provider.client != null
+        internalIdTokenSigningKey = !isService && providerIsNoNull(provider)
                 ? generateIdTokenSecretKey(config, provider)
                 : null;
+        tokenDecryptionKey = providerIsNoNull(provider) ? createTokenDecryptionKey(provider) : null;
+    }
+
+    private static boolean providerIsNoNull(OidcProvider provider) {
+        return provider != null && provider.client != null;
+    }
+
+    private static Key createTokenDecryptionKey(OidcProvider provider) {
+        Key key = null;
+
+        OidcTenantConfig oidcConfig = provider.oidcConfig;
+        if (oidcConfig.token().decryptionKeyLocation().isPresent()) {
+            try {
+                return OidcUtils.readDecryptionKey(oidcConfig.token().decryptionKeyLocation().get());
+            } catch (Exception ex) {
+                throw new ConfigurationException(
+                        String.format("Token decryption key for tenant %s can not be read from %s",
+                                oidcConfig.tenantId().get(), oidcConfig.token().decryptionKeyLocation().get()),
+                        ex);
+            }
+        }
+
+        if (oidcConfig.token().decryptIdToken().orElse(false) || oidcConfig.token().decryptAccessToken()) {
+            if (provider.client.getClientJwtKey() != null) {
+                key = provider.client.getClientJwtKey();
+            } else {
+                String clientSecret = OidcCommonUtils.clientSecret(provider.oidcConfig.credentials());
+                if (clientSecret != null) {
+                    key = OidcUtils.createSecretKeyFromDigest(clientSecret);
+                }
+            }
+        }
+        return key;
     }
 
     private static SecretKey createStateSecretKey(OidcTenantConfig config) {
@@ -206,18 +246,23 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     @Override
-    public SecretKey getStateEncryptionKey() {
-        return stateSecretKey;
+    public SecretKey getStateCookieEncryptionKey() {
+        return stateCookieEncryptionKey;
     }
 
     @Override
-    public SecretKey getTokenEncSecretKey() {
-        return tokenEncSecretKey;
+    public SecretKey getSessionCookieEncryptionKey() {
+        return sessionCookieEncryptionKey;
     }
 
     @Override
-    public SecretKey getInternalIdTokenSecretKey() {
-        return this.internalIdTokenGeneratedKey;
+    public SecretKey getInternalIdTokenSigningKey() {
+        return this.internalIdTokenSigningKey;
+    }
+
+    @Override
+    public Key getTokenDecryptionKey() {
+        return tokenDecryptionKey;
     }
 
     private static Map<Redirect.Location, List<OidcRedirectFilter>> getRedirectFiltersMap(List<OidcRedirectFilter> filters) {

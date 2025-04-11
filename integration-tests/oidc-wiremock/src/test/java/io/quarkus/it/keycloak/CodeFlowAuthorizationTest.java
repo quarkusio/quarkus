@@ -204,6 +204,29 @@ public class CodeFlowAuthorizationTest {
         clearCache();
     }
 
+    @Test
+    public void testCodeFlowEncryptedIdTokenDisabled() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/code-flow-encrypted-id-token/code-flow-encrypted-id-token-disabled");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            try {
+                form.getInputByValue("login").click();
+                fail("ID token decryption is disabled");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(500, ex.getResponse().getStatusCode());
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
+    }
+
     private static boolean isEncryptedToken(String token, KeyEncryptionAlgorithm alg) {
         int expectedNonEmptyParts = alg == KeyEncryptionAlgorithm.DIR ? 4 : 5;
         return new StringTokenizer(token, ".").countTokens() == expectedNonEmptyParts;

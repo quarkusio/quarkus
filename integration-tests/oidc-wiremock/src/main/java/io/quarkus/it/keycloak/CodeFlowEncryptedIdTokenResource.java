@@ -29,4 +29,11 @@ public class CodeFlowEncryptedIdTokenResource {
     public String accessPem() {
         return "user: " + idToken.getName();
     }
+
+    @GET
+    @Authenticated
+    @Path("/code-flow-encrypted-id-token-disabled")
+    public String idTokenDecryptionDisabled() {
+        throw new RuntimeException("ID token decryption disabled");
+    }
 }

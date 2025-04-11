@@ -193,6 +193,7 @@ When a client secret is configured with `quarkus.oidc.credentials.secret`, it is
 
 The remaining three properties in the `quarkus.oidc.credentials.client-secret.provider.*` namespace allow to customize how a custom xref:credentials-provider.adoc[CredentialsProvider] can be used to provide secrets stored in secure locations. Alternatively, you can use Quarkus Configuration system to manage secrets, see the xref:config-secrets.adoc[Secrets in Configuration] guide.
 
+[[jwt-client-credentials]]
 === JWT client credentials
 
 Instead of sending a client secret, Quarkus OIDC can authenticate to OIDC providers by sending a generated JWT authentication token signed with either a client secret or private key.
@@ -715,7 +716,7 @@ Token properties cover a lot of requirements related to the token verification, 
 [[token-preprocessing]]
 === Token preprocessing
 
-Some tokens may have to decrypted or their headers preprocessed for the verification process to start and succeed.
+ID and access tokens may have to be decrypted or their headers preprocessed for the verification process to start and succeed.
 
 .Token preprocessing properties
 [options="header"]
@@ -723,10 +724,18 @@ Some tokens may have to decrypted or their headers preprocessed for the verifica
 |Property | Default |Description
 
 |quarkus.oidc.token.decryption-key-location || Decryption key location
+|quarkus.oidc.token.decrypt-id-token || Decrypt ID token if this property is `true` or if `quarkus.oidc.token.decryption-key-location` is set
+|quarkus.oidc.token.decrypt-access-token |false| Decrypt access token
 |quarkus.oidc.token.customizer-name || Customizer name
 |====
 
-OIDC providers usually issue signed ID tokens but they may also issue encrypted ID tokens which Quarkus needs to decrypt. Use the `quarkus.oidc.token.decryption-key-location` property to point to a JWK or PEM decryption key file in this case.
+OIDC providers usually issue signed ID and access tokens but may also additionally encrypt these tokens which Quarkus needs to decrypt to verify them. Choose which token types must be decrypted: the ID token with `quarkus.oidc.token.decrypt-id-token`, or the access token with `quarkus.oidc.token.decrypt-access-token`.
+
+Both ID and access tokens are considered encrypted if they contain 5 parts separated by the dot character, indicating that the JWE encryption was used.
+
+For backward compatibility reasons, ID token decryption is attempted if  `quarkus.oidc.token.decryption-key-location` is configured, but using an optional `quarkus.oidc.token.decrypt-id-token` boolean property is RECOMMENDED instead, to allow for more flexibility in selecting decryption keys.
+
+When either ID or access token must be decrypted, `quarkus.oidc.token.decryption-key-location` is checked first. If this property is not configured, then the <<jwt-client-credentials>> key, if available, is used. Finally, if the decryption key is still not initialized, the configured client secret is used as a decryption key.
 
 `quarkus.oidc.token.customizer-name` is an advanced property that may be used to select a specific `io.quarkus.oidc.TokenCustomizer` implementation which can pre-process JWT token headers before its signature can be verified. The main use-case is to support verifying legacy Azure JWT tokens which must have their `nonce` header recalculated for the signature verification to succeed.
 

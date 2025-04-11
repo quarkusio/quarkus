@@ -6,7 +6,6 @@ import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_NOT_AVAILABLE;
 import static io.quarkus.oidc.runtime.OidcRecorder.LOG;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 
-import java.security.Key;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -37,8 +33,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
-import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -174,7 +168,7 @@ final class TenantContextFactory {
 
         if (!oidcConfig.tenantEnabled()) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return Uni.createFrom().item(TenantConfigContext.createReady(new OidcProvider(null, null, null, null), oidcConfig));
+            return Uni.createFrom().item(TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig));
         }
 
         if (oidcConfig.authServerUrl().isEmpty()) {
@@ -201,7 +195,7 @@ final class TenantContextFactory {
                                 + " or named tenants are configured.");
                         oidcConfig.tenantEnabled = false;
                         return Uni.createFrom()
-                                .item(TenantConfigContext.createReady(new OidcProvider(null, null, null, null), oidcConfig));
+                                .item(TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig));
                     }
                 }
                 throw new ConfigurationException(
@@ -377,7 +371,7 @@ final class TenantContextFactory {
                 + " no connection to the OIDC server will be created");
 
         return TenantConfigContext.createReady(
-                new OidcProvider(oidcConfig.publicKey().get(), oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
+                new OidcProvider(oidcConfig.publicKey().get(), oidcConfig), oidcConfig);
     }
 
     private TenantConfigContext createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
@@ -387,7 +381,7 @@ final class TenantContextFactory {
         }
 
         return TenantConfigContext.createReady(
-                new OidcProvider(null, oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
+                new OidcProvider(null, oidcConfig), oidcConfig);
     }
 
     private OIDCException toOidcException(Throwable cause, String authServerUrl, String tenantId) {
@@ -409,46 +403,15 @@ final class TenantContextFactory {
                                     .transform(new Function<JsonWebKeySet, OidcProvider>() {
                                         @Override
                                         public OidcProvider apply(JsonWebKeySet jwks) {
-                                            return new OidcProvider(client, oidcConfig, jwks,
-                                                    readTokenDecryptionKey(oidcConfig));
+                                            return new OidcProvider(client, oidcConfig, jwks);
                                         }
                                     });
                         } else {
                             return Uni.createFrom()
-                                    .item(new OidcProvider(client, oidcConfig, null, readTokenDecryptionKey(oidcConfig)));
+                                    .item(new OidcProvider(client, oidcConfig, null));
                         }
                     }
                 });
-    }
-
-    private Key readTokenDecryptionKey(OidcTenantConfig oidcConfig) {
-        if (oidcConfig.token().decryptionKeyLocation().isPresent()) {
-            try {
-                Key key = null;
-
-                String keyContent = KeyUtils.readKeyContent(oidcConfig.token().decryptionKeyLocation().get());
-                if (keyContent != null) {
-                    List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
-                    if (keys != null && keys.size() == 1 &&
-                            (keys.get(0).getAlgorithm() == null
-                                    || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
-                            && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
-                        key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
-                    }
-                }
-                if (key == null) {
-                    key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
-                }
-                return key;
-            } catch (Exception ex) {
-                throw new ConfigurationException(
-                        String.format("Token decryption key for tenant %s can not be read from %s",
-                                oidcConfig.tenantId().get(), oidcConfig.token().decryptionKeyLocation().get()),
-                        ex);
-            }
-        } else {
-            return null;
-        }
     }
 
     private Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClientImpl client, OidcTenantConfig oidcConfig) {

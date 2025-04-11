@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.crypto.SecretKey;
+
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jose4j.jwx.HeaderParameterNames;
@@ -170,6 +172,55 @@ public class BearerTokenAuthorizationTest {
         // PS256 is OK
         RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin"), SignatureAlgorithm.PS256))
                 .when().get("/api/admin/bearer-required-algorithm")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testBearerTokenEncryptedWithPublicKey() {
+        // We can pass encrypted ID token as if it were an encrypted access token
+        String encryptedToken = OidcWiremockTestResource.getEncryptedIdToken("admin", Set.of("admin"));
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-without-decryption-key")
+                .then()
+                .statusCode(401);
+
+        // This endpoint expects that a token was encrypted with the client secret key
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-with-client-secret")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-with-decryption-key")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testBearerTokenEncryptedWithClientSecret() throws Exception {
+        // We can pass encrypted ID token as if it were an encrypted access token
+
+        SecretKey encryptionKey = OidcUtils.createSecretKeyFromDigest(
+                "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+        String token = OidcWiremockTestResource.getIdToken("admin", Set.of("admin"));
+        String encryptedToken = OidcUtils.encryptString(token, encryptionKey);
+
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-without-decryption-key")
+                .then()
+                .statusCode(401);
+
+        // This endpoint expects that a token was encrypted with the public key
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-with-decryption-key")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-with-client-secret")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));

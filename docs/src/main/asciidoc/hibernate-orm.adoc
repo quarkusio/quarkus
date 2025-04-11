@@ -1646,3 +1646,134 @@ try {
 Since Quarkus has built-in exception mappers for `jakarta.validation.ConstraintViolationException`,
 explicitly handling these exceptions might be redundant. See the xref:validation.adoc#rest-end-point-validation[REST end point validation]
 section of the Hibernate Validator guide for more details.
+
+[[jakarta-data]]
+== Static metamodel and Jakarta Data
+
+Both static metamodel and Jakarta Data capabilities of Hibernate ORM are available in Quarkus
+through the `hibernate-jpamodelgen` annotation processor. Since it is an annotation processor,
+you must configure the annotation processor in your build tool:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<plugin>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-jpamodelgen</artifactId>
+                <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
+            </path>
+            <!-- other processors that may be required by your app -->
+        </annotationProcessorPaths>
+        <!-- Other compiler plugin configuration options -->
+    </configuration>
+</plugin>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Enforce the version management of your annotation processor dependencies,
+// so that there's no need to define an explicit version of the hibernate-jpamodelgen
+annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+annotationProcessor 'org.hibernate.orm:hibernate-jpamodelgen'
+----
+
+=== Static metamodel
+
+The generated static metamodel allows for building queries in a type-safe manner.
+Let's consider having a simple entity:
+
+[source,java]
+----
+@Entity
+public class MyEntity {
+    @Id
+    @GeneratedValue
+    public Integer id;
+
+    @Column(unique = true)
+    public String name;
+}
+----
+
+A query created with the help of static metamodel may look as:
+
+[source,java]
+----
+var builder = session.getCriteriaBuilder();
+var criteria = builder.createQuery(MyEntity.class);
+var e = criteria.from(MyEntity_.class);
+criteria.where(e.get(MyEntity_.name).equalTo(name));
+var query = session.createQuery(criteria);
+var result = query.list();
+----
+
+For a more detailed overview of static metamodel, please refer to the link:{jakarta-persistence-spec-url}#a6072[Jakarta Persistence specification].
+
+=== Jakarta Data
+
+Jakarta Data requires, besides having the `hibernate-jpamodelgen` annotation processor in place, one extra dependency to be added:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>jakarta.data</groupId>
+    <artifactId>jakarta.data-api</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation 'jakarta.data:jakarta.data-api'
+----
+
+With this dependency, and the annotation processor in place you could simply create your repositories as follows:
+
+[source,java]
+----
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> { // <1>
+
+    @Query("select e from MyEntity e where e.name like :name") // <2>
+    List<MyEntity> findByName(String name);
+
+    @Delete // <3>
+    void delete(String name);
+
+}
+----
+1. To skip the boilerplate definition of CRUD operations,
+we can use one of the available interfaces (e.g. `CrudRepository` or `BasicRepository`).
+2. Adding custom queries with parameters is as easy as providing your query string to the `@Query` annotation.
+3. If the basic CRUD operations from the Jakarta Data interfaces are not enough,
+we can always add a custom one, in this case a delete operation that removes `MyEntity`s by name.
+
+And then the repository can be used as any other bean:
+
+[source,java]
+----
+public class MyEntityResource {
+
+    @Inject
+    MyRepository repository;
+
+    @POST
+    @Transactional
+    public void create(MyEntity entity) {
+        repository.insert(entity);
+    }
+
+	// ...
+
+}
+----
+
+Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
+and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
+guides to learn what else they have to offer.

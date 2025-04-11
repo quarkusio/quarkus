@@ -1111,8 +1111,8 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<SignatureAlgorithm> signatureAlgorithm();
 
         /**
-         * Decryption key location.
-         * JWT tokens can be inner-signed and encrypted by OpenId Connect providers.
+         * Decryption key location for encrypted ID and access tokens.
+         * ID and access tokens may be encrypted by OpenId Connect providers.
          * However, it is not always possible to remotely introspect such tokens because
          * the providers might not control the private decryption keys.
          * In such cases set this property to point to the file containing the decryption private key in
@@ -1121,6 +1121,18 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * used to sign the client authentication JWT tokens are also used to decrypt the encrypted ID tokens.
          */
         Optional<String> decryptionKeyLocation();
+
+        /**
+         * Decrypt ID token when the {@link Token#decryptionKeyLocation()} property is configured.
+         */
+        @WithDefault("true")
+        boolean decryptIdToken();
+
+        /**
+         * Decrypt access token when the {@link Token#decryptionKeyLocation()} property is configured.
+         */
+        @WithDefault("false")
+        boolean decryptAccessToken();
 
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.

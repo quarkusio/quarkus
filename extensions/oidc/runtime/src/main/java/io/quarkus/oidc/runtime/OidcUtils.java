@@ -34,10 +34,13 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
 
+import io.quarkus.logging.Log;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
@@ -65,6 +68,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
@@ -714,7 +718,9 @@ public final class OidcUtils {
             return null;
         }
 
-        return headerValue.substring(idx + 1);
+        String token = headerValue.substring(idx + 1);
+
+        return token;
     }
 
     static void storeExtractedBearerToken(RoutingContext context, String token) {
@@ -858,5 +864,40 @@ public final class OidcUtils {
             }
             context.response().putHeader(CLEAR_SITE_DATA_HEADER, builder.toString());
         }
+    }
+
+    public static Key readDecryptionKey(String decryptionKeyLocation) throws Exception {
+        Key key = null;
+
+        String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
+        if (keyContent != null) {
+            List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
+            if (keys != null && keys.size() == 1 &&
+                    (keys.get(0).getAlgorithm() == null
+                            || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
+                    && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
+                key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+            }
+        }
+        if (key == null) {
+            key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
+        }
+        return key;
+    }
+
+    public static String decryptToken(OidcProvider provider, String token) {
+        if ((provider.tokenDecryptionKey != null
+                || provider.client.getClientJwtKey() != null)
+                && OidcUtils.isEncryptedToken(token)) {
+            try {
+                return OidcUtils.decryptString(token,
+                        provider.tokenDecryptionKey != null ? provider.tokenDecryptionKey
+                                : provider.client.getClientJwtKey(),
+                        KeyEncryptionAlgorithm.RSA_OAEP);
+            } catch (JoseException ex) {
+                Log.debugf("Failed to decrypt a token: %s, a token introspection will be attempted instead", ex.getMessage());
+            }
+        }
+        return token;
     }
 }

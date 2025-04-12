@@ -197,7 +197,8 @@ public final class DatabaseInspector {
                                             Map<String, String> row = new HashMap<>();
                                             for (int i = 1; i <= columnCount; i++) {
                                                 String columnName = metaData.getColumnName(i);
-                                                boolean isBinary = isBinary(metaData.getColumnType(i));
+                                                boolean isBinary = isBinary(metaData.getColumnType(i),
+                                                        metaData.getColumnClassName(i));
                                                 if (!isBinary) {
                                                     Object columnValue = resultSet.getObject(i);
                                                     row.put(columnName, String.valueOf(columnValue));
@@ -355,6 +356,15 @@ public final class DatabaseInspector {
         }
 
         return false;
+    }
+
+    private boolean isBinary(int dataType, String javaClassName) {
+
+        // Some java classes can be handled as String
+        if (java.util.UUID.class.getName().equals(javaClassName)) {
+            return false;
+        }
+        return isBinary(dataType);
     }
 
     private boolean isBinary(int dataType) {

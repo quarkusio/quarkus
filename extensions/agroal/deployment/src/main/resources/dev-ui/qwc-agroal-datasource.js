@@ -156,7 +156,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         _tables: {state: true},
         _selectedTable: {state: true},
         _selectedTableIndex:{state: true},
-        _selectedTableCols:{state: false},
+        _selectedTableCols:{state: true},
         _currentSQL: {state: true},
         _currentDataSet: {state: true},
         _isWatching: {state: true},
@@ -524,12 +524,14 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         const value = item[columnName];
         if(value){
             let colDef = this._selectedTableCols.get(columnName);
-            let colType = colDef.columnType.toLowerCase();
+            if(colDef){
+                let colType = colDef.columnType.toLowerCase();
             
-            if(colDef.binary){
-                return this._renderBinaryCell(value, colType);
-            }else {
-                return this._renderTextCell(value, colType);
+                if(colDef.binary){
+                    return this._renderBinaryCell(value, colType);
+                }else {
+                    return this._renderTextCell(value, colType);
+                }
             }
         }
     }
@@ -594,6 +596,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     }
     
     _onTableChanged(event){
+        this._fetchTableDefinitions();
         this._selectedTableIndex = event.detail.value;
         this._selectedTable = this._tables[this._selectedTableIndex];
         this._clearSqlInput();

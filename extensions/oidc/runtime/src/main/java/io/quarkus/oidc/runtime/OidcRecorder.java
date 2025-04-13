@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OidcAuthenticationPolicy.AUTHENTICATION_POLICY_KEY;
 import static io.quarkus.oidc.runtime.OidcConfig.getDefaultTenant;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
@@ -23,6 +24,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.oidc.runtime.OidcAuthenticationPolicy.OAuth2StepUpAuthenticationPolicy;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
@@ -130,6 +132,35 @@ public class OidcRecorder {
             @Override
             public TenantIdentityProvider get() {
                 return new TenantSpecificOidcIdentityProvider(tenantName);
+            }
+        };
+    }
+
+    public Function<String, Consumer<RoutingContext>> authCtxInterceptorCreator() {
+        return new Function<String, Consumer<RoutingContext>>() {
+            @Override
+            public Consumer<RoutingContext> apply(String acrValues) {
+                OidcAuthenticationPolicy policy = OAuth2StepUpAuthenticationPolicy.create(acrValues);
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        String requestPath = routingContext.request().path();
+                        OidcTenantConfig tenantConfig = routingContext.get(OidcTenantConfig.class.getName());
+                        if (tenantConfig != null || routingContext.user() != null) {
+                            throw new AuthenticationFailedException("""
+                                    Authentication has happened before the '@AuthenticationContext' annotation was
+                                    matched with the HTTP request path '%s'. It can happen when the authentication
+                                    is required by an HTTP Security Policy before the JAX-RS chain is run. In such
+                                    cases, please set the 'quarkus.http.auth.permission."permissions".applies-to=JAXRS'
+                                    to all HTTP Security Policies which secure the same REST endpoints as the ones
+                                    annotated with the '@AuthenticationContext' annotation.
+                                    """.formatted(requestPath));
+                        }
+                        LOG.debugf("The '@AuthenticationContext' annotation set required 'acr' values for the '%s' request"
+                                + " path to '%s'", requestPath, acrValues);
+                        routingContext.put(AUTHENTICATION_POLICY_KEY, policy);
+                    }
+                };
             }
         };
     }

@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OidcAuthenticationPolicy.AUTHENTICATION_POLICY_KEY;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
@@ -42,18 +44,26 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
                 if (!oidcConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
-                return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
-                        : bearerAuth.authenticate(context, identityProviderManager, oidcConfig);
+                OidcAuthenticationPolicy authenticationPolicy = context.get(AUTHENTICATION_POLICY_KEY);
+                if (authenticationPolicy != null) {
+                    return authenticate(oidcConfig, context, identityProviderManager).invoke(authenticationPolicy);
+                }
+                return authenticate(oidcConfig, context, identityProviderManager);
             }
         });
+    }
+
+    private Uni<SecurityIdentity> authenticate(OidcTenantConfig oidcConfig, RoutingContext context,
+            IdentityProviderManager identityProviderManager) {
+        return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
+                : bearerAuth.authenticate(context, identityProviderManager, oidcConfig);
     }
 
     @Override
@@ -125,7 +135,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     private static void setTenantIdAttribute(RoutingContext context) {
         if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
-            for (String cookieName : context.cookieMap().keySet()) {
+            for (var cookie : context.request().cookies()) {
+                String cookieName = cookie.getName();
                 if (OidcUtils.isSessionCookie(cookieName)) {
                     setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName, true);
                     break;

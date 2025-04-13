@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -66,7 +67,20 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         if (bindingToValue.containsKey(annotation.toString())) {
             return bindingToValue.get(annotation.toString());
         }
-        if (annotationInstance.value() == null || annotationInstance.value().asString().isBlank()) {
+        AnnotationValue annotationValue = annotationInstance.value();
+        if (annotationValue == null) {
+            throw new ConfigurationException("Annotation '" + annotation + "' placed on '"
+                    + toTargetName(annotationTarget) + "' has no value");
+        }
+        if (annotationValue.kind() == AnnotationValue.Kind.ARRAY) {
+            String[] annotationValues = annotationValue.asStringArray();
+            if (annotationValues.length == 0) {
+                throw new ConfigurationException("Annotation '" + annotation + "' placed on '"
+                        + toTargetName(annotationTarget) + "' has no value");
+            }
+            return String.join(",", annotationValues);
+        }
+        if (annotationValue.asString().isBlank()) {
             throw new ConfigurationException("Annotation '" + annotation + "' placed on '"
                     + toTargetName(annotationTarget) + "' must not have blank value");
         }

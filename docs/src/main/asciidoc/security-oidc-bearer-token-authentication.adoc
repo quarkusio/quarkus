@@ -1604,6 +1604,57 @@ public class OidcStartup {
 For more complex setup involving multiple tenants please see the xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
 section of the OpenID Connect Multi-Tenancy guide.
 
+== OAuth 2.0 Step Up Authentication
+
+The `io.quarkus.oidc.AuthenticationContext` annotation can be used to enforce required authentication level for the Jakarta REST resource classes and methods.
+The https://datatracker.ietf.org/doc/rfc9470/[OAuth 2.0 Step Up Authentication Challenge Protocol] introduced a mechanism for resource servers like Quarkus to challenge authentication requirements.
+Consider following example:
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false <1>
+----
+<1> Disable proactive authentication so that the `@AuthenticationContext` annotation can be matched with the endpoint before Quarkus authenticates incoming requests.
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.AuthenticationContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("hello")
+public class HelloResource {
+
+    @AuthenticationContext("myACR") <1>
+    @GET
+    public String hello() {
+        return "hello";
+    }
+
+}
+----
+<1> Only HTTP requests with valid Bearer access token with `acr` claim value that contains `myACR` can access this endpoint.
+
+If the Bearer token claim `acr` does not contain `myACR`, Quarkus returns the Authentication Requirements Challenge indicating required `acr_values`:
+
+----
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="insufficient_user_authentication",
+ error_description="A different authentication level is required",
+ acr_values="myACR"
+----
+
+A client receiving the challenge from the Quarkus server carrying the `insufficient_user_authentication` error code should parse `acr_values` from the `WWW-Authenticate` header and use them when constructing new authorization request.
+
+[NOTE]
+====
+The `io.quarkus.oidc.AuthenticationContext` annotation can be used to enforce required authentication level for a WebSockets Next server endpoint.
+The annotation must be placed on the endpoint class, because the `SecurityIdentity` is created before the HTTP connection is upgraded to a WebSocket connection.
+For more information about the HTTP upgrade security, see the xref:websockets-next-reference.adoc#secure-http-upgrade[Secure HTTP upgrade] section of the Quarkus "WebSockets Next reference" guide.
+====
+
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]

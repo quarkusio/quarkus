@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OidcAuthenticationPolicy.OAuth2StepUpAuthenticationPolicy.isInsufficientUserAuth;
 import static io.quarkus.oidc.runtime.OidcUtils.extractBearerToken;
 
 import java.security.cert.Certificate;
@@ -18,6 +19,7 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcAuthenticationPolicy.OAuth2StepUpAuthenticationPolicy;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -138,8 +140,15 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
             @Override
             public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
+                final String wwwAuthHeaderValue;
+                if (isInsufficientUserAuth(context)) {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme() +
+                            OAuth2StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
+                } else {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
+                }
                 return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                        HttpHeaderNames.WWW_AUTHENTICATE, tenantContext.oidcConfig().token().authorizationScheme()));
+                        HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue));
             }
         });
     }

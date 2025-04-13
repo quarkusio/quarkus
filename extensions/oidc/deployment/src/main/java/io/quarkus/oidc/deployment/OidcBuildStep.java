@@ -7,14 +7,19 @@ import static io.quarkus.arc.processor.DotNames.NAMED;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
+import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
@@ -25,8 +30,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -63,6 +70,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
@@ -90,11 +98,17 @@ import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.runtime.SecurityConfig;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
+import io.quarkus.vertx.http.deployment.HttpSecurityProcessor;
+import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -111,6 +125,7 @@ public class OidcBuildStep {
     private static final Set<DotName> ALL_PROVIDER_NAMES = Set.of(DotNames.PROVIDER, DotNames.INSTANCE,
             DotNames.INJECTABLE_INSTANCE);
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
+    private static final DotName AUTHENTICATION_CONTEXT_NAME = DotName.createSimple(AuthenticationContext.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
@@ -342,13 +357,79 @@ public class OidcBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    public void registerAuthenticationContextInterceptor(Capabilities capabilities, OidcRecorder recorder,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
+        var authCtxAnnotations = combinedIndexBuildItem.getIndex().getAnnotations(AUTHENTICATION_CONTEXT_NAME);
+        if (authCtxAnnotations.isEmpty()) {
+            return;
+        }
+        if (!areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
+            if (httpBuildTimeConfig.auth().proactive()) {
+                // if class annotated with @AuthenticationContext is declared as @QuarkusTest inner class, don't fail
+                if (isDeclaredOnQuarkusTestInnerClass(combinedIndexBuildItem, authCtxAnnotations)) {
+                    return;
+                }
+                throw new RuntimeException("The '%s' annotation is only supported when proactive authentication is disabled"
+                        .formatted(AUTHENTICATION_CONTEXT_NAME));
+            } else {
+                throw new RuntimeException("The '%s' can only be used on Jakarta REST or WebSockets Next endpoints");
+            }
+        }
+        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authCtxInterceptorCreator(),
+                AUTHENTICATION_CONTEXT_NAME));
+
+        // @AuthenticationContext -> authentication required
+        // register @Authenticated for annotated methods
+        Set<MethodInfo> annotatedMethods = HttpSecurityProcessor.collectMethodsWithoutRbacAnnotation(authCtxAnnotations
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(at -> at.kind() == METHOD)
+                .map(AnnotationTarget::asMethod)
+                .toList());
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedMethods, Optional.of(List.of("**"))));
+        // method-level security; this registers @Authenticated if no RBAC is explicitly declared
+        Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+        Set<MethodInfo> annotatedClassMethods = collectClassMethodsWithoutRbacAnnotation(
+                collectAnnotatedClasses(authCtxAnnotations, Predicate.not(useClassLevelSecurity)));
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedClassMethods, Optional.of(List.of("**"))));
+        // class-level security; this registers @Authenticated if no RBAC is explicitly declared
+        collectAnnotatedClasses(authCtxAnnotations, useClassLevelSecurity).stream()
+                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                .forEach(c -> registerClassSecurityCheckProducer.produce(
+                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                                .builder(Authenticated.class).buildWithTarget(c))));
+    }
+
+    private static boolean isDeclaredOnQuarkusTestInnerClass(CombinedIndexBuildItem combinedIndexBuildItem,
+            Collection<AnnotationInstance> authCtxAnnotations) {
+        return authCtxAnnotations.stream().allMatch(ai -> {
+            ClassInfo classInfo;
+            if (ai.target().kind() == METHOD) {
+                classInfo = ai.target().asMethod().declaringClass();
+            } else {
+                classInfo = ai.target().asClass();
+            }
+            while (classInfo != null && classInfo.enclosingClass() != null) {
+                classInfo = combinedIndexBuildItem.getIndex().getClassByName(classInfo.enclosingClass());
+            }
+            return classInfo != null && classInfo.hasAnnotation("io.quarkus.test.junit.QuarkusTest");
+        });
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
-        if (!httpBuildTimeConfig.auth().proactive()
-                && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
+        if (areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
             boolean foundTenantResolver = combinedIndexBuildItem
                     .getIndex()
                     .getAnnotations(TENANT_NAME)
@@ -366,6 +447,13 @@ public class OidcBuildStep {
                         Boolean.TRUE.toString()));
             }
         }
+    }
+
+    private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return !httpBuildTimeConfig.auth().proactive()
+                && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY)
+                        || capabilities.isPresent(Capability.WEBSOCKETS_NEXT));
     }
 
     private static boolean isMethodWithTenantAnnButNotInjPoint(AnnotationTarget t) {

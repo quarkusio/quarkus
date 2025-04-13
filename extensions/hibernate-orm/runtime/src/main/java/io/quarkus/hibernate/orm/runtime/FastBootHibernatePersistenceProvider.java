@@ -208,6 +208,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
+        unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
@@ -286,6 +287,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         return runtimeSettingsBuilder.build();
+    }
+
+    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
+        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                (String) runtimeSettingsBuilder.get(AvailableSettings.HBM2DDL_IMPORT_FILES));
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_IMPORT_FILES, newValue);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,

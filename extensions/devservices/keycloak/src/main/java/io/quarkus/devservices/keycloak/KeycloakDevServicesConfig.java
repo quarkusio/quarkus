@@ -206,9 +206,9 @@ public interface KeycloakDevServicesConfig {
     /**
      * Memory limit for Keycloak container
      * </p>
-     * If not specified, 750MiB is the default memory limit.
+     * If not specified, 1250MiB is the default memory limit.
      */
-    @WithDefault("750M")
+    @WithDefault("1250M")
     MemorySize containerMemoryLimit();
 
     /**

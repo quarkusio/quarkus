@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -378,7 +377,7 @@ public class BootstrapMavenContext {
                 : localRepoTailIgnoreAvailability;
     }
 
-    private LocalProject resolveCurrentProject(Function<Path, Model> modelProvider) throws BootstrapMavenException {
+    private LocalProject resolveCurrentProject(Map<Path, Model> modelProvider) throws BootstrapMavenException {
         try {
             return LocalProject.loadWorkspace(this, modelProvider);
         } catch (Exception e) {

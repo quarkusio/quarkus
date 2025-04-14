@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -63,7 +62,6 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     private final Deque<RawModule> moduleQueue = new ConcurrentLinkedDeque<>();
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
 
-    private final Function<Path, Model> modelProvider;
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
 
     private final LocalWorkspace workspace = new LocalWorkspace();
@@ -77,7 +75,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     private List<String> inactiveProfileIds;
     private List<Profile> profiles;
 
-    WorkspaceLoader(BootstrapMavenContext ctx, Path currentProjectPom, Function<Path, Model> modelProvider)
+    WorkspaceLoader(BootstrapMavenContext ctx, Path currentProjectPom, Map<Path, Model> modelProvider)
             throws BootstrapMavenException {
         try {
             final BasicFileAttributes fileAttributes = Files.readAttributes(currentProjectPom, BasicFileAttributes.class);
@@ -86,8 +84,16 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         } catch (IOException e) {
             throw new IllegalArgumentException(currentProjectPom + " does not exist", e);
         }
-        addModulePom(this.currentProjectPom);
-        this.modelProvider = modelProvider == null ? pom -> null : modelProvider;
+        if (modelProvider != null) {
+            // queue all the provided POMs
+            for (var e : modelProvider.entrySet()) {
+                moduleQueue.push(new RawModule(e.getKey(), e.getValue()));
+            }
+        }
+        // make sure the current project POM is queued
+        if (modelProvider == null || !modelProvider.containsKey(this.currentProjectPom)) {
+            addModulePom(this.currentProjectPom);
+        }
 
         if (ctx != null && ctx.isEffectiveModelBuilder()) {
             modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
@@ -118,50 +124,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     LocalProject load() throws BootstrapMavenException {
-        final AtomicReference<LocalProject> currentProject = new AtomicReference<>();
-        final Consumer<Model> processor;
-        if (modelBuilder == null) {
-            processor = rawModel -> {
-                var project = new LocalProject(rawModel, workspace);
-                if (currentProject.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
-                    currentProject.set(project);
-                }
-            };
-        } else {
-            processor = rawModel -> {
-                var req = new DefaultModelBuildingRequest();
-                req.setPomFile(rawModel.getPomFile());
-                req.setModelResolver(modelResolver);
-                req.setSystemProperties(System.getProperties());
-                req.setUserProperties(System.getProperties());
-                req.setModelCache(modelCache);
-                req.setActiveProfileIds(activeProfileIds);
-                req.setInactiveProfileIds(inactiveProfileIds);
-                req.setProfiles(profiles);
-                req.setRawModel(rawModel);
-                req.setWorkspaceModelResolver(this);
-                LocalProject project = null;
-                try {
-                    project = new LocalProject(modelBuilder.build(req), workspace);
-                } catch (Exception e) {
-                    if (warnOnFailingWsModules) {
-                        log.warn("Failed to resolve effective model for " + rawModel.getPomFile(), e);
-                        return;
-                    }
-                    throw new RuntimeException("Failed to resolve the effective model for " + rawModel.getPomFile(), e);
-                }
-                if (currentProject.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
-                    currentProject.set(project);
-                }
-                for (var module : project.getModelBuildingResult().getEffectiveModel().getModules()) {
-                    addModulePom(project.getDir().resolve(module).resolve(POM_XML));
-                }
-            };
-        }
-
         final ConcurrentLinkedDeque<Exception> errors = new ConcurrentLinkedDeque<>();
+        final AtomicReference<LocalProject> currentProjectRef = new AtomicReference<>();
+        final Consumer<Model> modelProcessor = getModelProcessor(currentProjectRef);
         while (!moduleQueue.isEmpty()) {
-            ConcurrentLinkedDeque<RawModule> newModules = new ConcurrentLinkedDeque<>();
+            final ConcurrentLinkedDeque<RawModule> newModules = new ConcurrentLinkedDeque<>();
             while (!moduleQueue.isEmpty()) {
                 final Phaser phaser = new Phaser(1);
                 while (!moduleQueue.isEmpty()) {
@@ -181,58 +148,91 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 assertNoErrors(errors);
             }
             for (var newModule : newModules) {
-                newModule.process(processor);
+                newModule.process(modelProcessor);
             }
         }
 
-        if (currentProject.get() == null) {
+        final LocalProject result = currentProjectRef.get();
+        if (result == null) {
             throw new BootstrapMavenException("Failed to load project " + currentProjectPom);
         }
-        return currentProject.get();
+        return result;
+    }
+
+    private Consumer<Model> getModelProcessor(AtomicReference<LocalProject> currentProjectRef) {
+        if (modelBuilder == null) {
+            return rawModel -> {
+                var project = new LocalProject(rawModel, workspace);
+                if (currentProjectRef.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
+                    currentProjectRef.set(project);
+                }
+            };
+        }
+        return rawModel -> {
+            var req = new DefaultModelBuildingRequest();
+            req.setPomFile(rawModel.getPomFile());
+            req.setModelResolver(modelResolver);
+            req.setSystemProperties(System.getProperties());
+            req.setUserProperties(System.getProperties());
+            req.setModelCache(modelCache);
+            req.setActiveProfileIds(activeProfileIds);
+            req.setInactiveProfileIds(inactiveProfileIds);
+            req.setProfiles(profiles);
+            req.setRawModel(rawModel);
+            req.setWorkspaceModelResolver(this);
+            LocalProject project;
+            try {
+                project = new LocalProject(modelBuilder.build(req), workspace);
+            } catch (Exception e) {
+                if (warnOnFailingWsModules) {
+                    log.warn("Failed to resolve effective model for " + rawModel.getPomFile(), e);
+                    return;
+                }
+                throw new RuntimeException("Failed to resolve the effective model for " + rawModel.getPomFile(), e);
+            }
+            if (currentProjectRef.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
+                currentProjectRef.set(project);
+            }
+            for (var module : project.getModelBuildingResult().getEffectiveModel().getModules()) {
+                addModulePom(project.getDir().resolve(module).resolve(POM_XML));
+            }
+        };
     }
 
     private void loadModule(RawModule rawModule, Collection<RawModule> newModules) {
-        var moduleDir = rawModule.pom.getParent();
-        if (moduleDir == null) {
-            moduleDir = getFsRootDir();
-        }
+        final Path moduleDir = rawModule.getModuleDir();
         if (loadedPoms.containsKey(moduleDir)) {
             return;
         }
 
-        rawModule.model = modelProvider == null ? null : modelProvider.apply(moduleDir);
-        if (rawModule.model == null) {
-            rawModule.model = readModel(rawModule.pom);
-        }
-        loadedPoms.put(moduleDir, rawModule.model);
-        if (rawModule.model == MISSING_MODEL) {
+        final Model model = rawModule.getModel();
+        loadedPoms.put(moduleDir, model);
+        if (model == MISSING_MODEL) {
             return;
         }
 
-        final String rawVersion = ModelUtils.getRawVersion(rawModule.model);
+        final String rawVersion = ModelUtils.getRawVersion(model);
         final String version = ModelUtils.isUnresolvedVersion(rawVersion)
-                ? ModelUtils.resolveVersion(rawVersion, rawModule.model)
+                ? ModelUtils.resolveVersion(rawVersion, model)
                 : rawVersion;
-        var added = loadedModules.putIfAbsent(
-                new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(), version),
-                rawModule.model);
-        if (added != null) {
+        final Model existingModel = loadedModules.putIfAbsent(
+                new GAV(ModelUtils.getGroupId(model), model.getArtifactId(), version),
+                model);
+        if (existingModel != null) {
             return;
         }
         newModules.add(rawModule);
 
         if (!rawVersion.equals(version)) {
-            loadedModules.putIfAbsent(
-                    new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(), rawVersion),
-                    rawModule.model);
+            loadedModules.putIfAbsent(new GAV(ModelUtils.getGroupId(model), model.getArtifactId(), rawVersion), model);
         }
 
-        for (var module : rawModule.model.getModules()) {
-            queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));
+        for (var module : model.getModules()) {
+            queueModule(model.getProjectDirectory().toPath().resolve(module));
         }
-        for (var profile : rawModule.model.getProfiles()) {
+        for (var profile : model.getProfiles()) {
             for (var module : profile.getModules()) {
-                queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));
+                queueModule(model.getProjectDirectory().toPath().resolve(module));
             }
         }
         if (rawModule.parent == null) {
@@ -353,6 +353,20 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             this.parent = parent;
         }
 
+        public RawModule(Path pom, Model model) {
+            this.pom = pom;
+            this.model = model;
+        }
+
+        private Path getModuleDir() {
+            var moduleDir = pom.getParent();
+            return moduleDir == null ? getFsRootDir() : moduleDir;
+        }
+
+        private Model getModel() {
+            return model == null ? model = readModel(pom) : model;
+        }
+
         private Path getParentPom() {
             if (model == null) {
                 return null;
@@ -381,9 +395,14 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             if (parent != null) {
                 parent.process(consumer);
             }
-            if (model != null) {
+            if (model != null && model != MISSING_MODEL) {
                 consumer.accept(model);
             }
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(pom);
         }
     }
 }

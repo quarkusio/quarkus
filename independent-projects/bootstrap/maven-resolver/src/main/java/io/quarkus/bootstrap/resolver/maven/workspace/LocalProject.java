@@ -104,7 +104,7 @@ public class LocalProject {
         return loadWorkspace(ctx, null);
     }
 
-    public static LocalProject loadWorkspace(BootstrapMavenContext ctx, Function<Path, Model> modelProvider)
+    public static LocalProject loadWorkspace(BootstrapMavenContext ctx, Map<Path, Model> modelProvider)
             throws BootstrapMavenException {
         final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
         if (currentProjectPom == null) {
@@ -163,6 +163,9 @@ public class LocalProject {
         this.workspace = workspace;
         if (workspace != null) {
             workspace.addProject(this);
+            if (!version.equals(ModelUtils.getRawVersion(rawModel))) {
+                workspace.setResolvedVersion(version);
+            }
         }
     }
 

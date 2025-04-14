@@ -8,6 +8,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.THROWABLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
@@ -330,6 +331,8 @@ final class CustomFilterGenerator {
             } else if (ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                 targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
                         ResteasyReactiveContainerRequestContext.class);
+            } else if (SERVER_REQUEST_CONTEXT.equals(paramDotName)) {
+                targetMethodParamHandles[i] = rrReqCtxHandle;
             } else if (URI_INFO.equals(paramDotName)) {
                 GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
                         i,

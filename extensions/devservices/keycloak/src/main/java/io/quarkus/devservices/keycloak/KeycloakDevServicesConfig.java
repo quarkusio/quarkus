@@ -75,7 +75,7 @@ public interface KeycloakDevServicesConfig {
      *
      * Applicable only in dev mode.
      */
-    @WithDefault("quarkus")
+    @WithDefault("keycloak")
     String serviceName();
 
     /**
@@ -206,9 +206,9 @@ public interface KeycloakDevServicesConfig {
     /**
      * Memory limit for Keycloak container, up to {@code Long.MAX_VALUE} bytes.
      * </p>
-     * If not specified, 750MiB is the default memory limit.
+     * If not specified, 1250MiB is the default memory limit.
      */
-    @WithDefault("750M")
+    @WithDefault("1250M")
     MemorySize containerMemoryLimit();
 
     /**

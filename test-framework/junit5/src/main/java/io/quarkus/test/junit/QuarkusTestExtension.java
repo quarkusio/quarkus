@@ -617,7 +617,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
 
-        QuarkusClassLoader cl = (QuarkusClassLoader) extensionContext.getRequiredTestClass().getClassLoader();
+        QuarkusClassLoader cl = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
 
         CuratedApplication curatedApplication = runningQuarkusApplication != null
                 ? ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader())

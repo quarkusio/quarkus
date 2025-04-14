@@ -31,14 +31,16 @@ public class CustomFiltersTest {
 
     @Test
     public void testFilters() {
-        Headers responseHeaders = RestAssured.given().header("some-input", "bar").get("/custom/req")
-                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar-null")).extract().headers();
+        Headers responseHeaders = RestAssured.given().header("some-input", "bar").header("some-other-input", "bar2")
+                .get("/custom/req")
+                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar-bar2-null")).extract().headers();
         assertThat(responseHeaders.getValues("java-method")).containsOnly("filters");
         Assertions.assertEquals(3, AssertContainerFilter.COUNT.get());
         assertThat(responseHeaders.getValues("very")).isEmpty();
 
-        responseHeaders = RestAssured.given().header("some-input", "bar").get("/custom/metal")
-                .then().statusCode(200).body(Matchers.containsString("/custom/metal-bar-metal")).extract().headers();
+        responseHeaders = RestAssured.given().header("some-input", "bar").header("some-other-input", "bar2")
+                .get("/custom/metal")
+                .then().statusCode(200).body(Matchers.containsString("/custom/metal-bar-bar2-metal")).extract().headers();
         assertThat(responseHeaders.getValues("very")).containsOnly("heavy");
     }
 }

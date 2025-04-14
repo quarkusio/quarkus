@@ -9,6 +9,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratorUtils.paramHandleFromReqContextMethod;
@@ -569,6 +570,8 @@ public final class ServerExceptionMapperGenerator {
                         ofMethod(ResteasyReactiveRequestContext.class.getName(), "getContainerRequestContext",
                                 ContainerRequestContextImpl.class),
                         contextHandle);
+            } else if (SERVER_REQUEST_CONTEXT.equals(paramDotName)) {
+                targetMethodParamHandles[i] = contextHandle;
             } else if (URI_INFO.equals(paramDotName)) {
                 paramHandleFromReqContextMethod(mc, contextHandle, targetMethodParamHandles, i,
                         "getUriInfo",

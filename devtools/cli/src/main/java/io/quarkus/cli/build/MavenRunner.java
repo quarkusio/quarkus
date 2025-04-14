@@ -204,6 +204,7 @@ public class MavenRunner implements BuildSystemRunner {
 
         if (runMode.isBatchMode()) {
             args.add("-B");
+            args.add("-ntp");
         }
 
         if (buildOptions.offline) {
@@ -242,7 +243,12 @@ public class MavenRunner implements BuildSystemRunner {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
-        setMavenProperties(args, false);
+        setMavenProperties(args, commonOptions.isBatchMode());
+
+        if (commonOptions.isBatchMode()) {
+            args.add("-B");
+            args.add("-ntp");
+        }
 
         if (commonOptions.clean) {
             args.add("clean");

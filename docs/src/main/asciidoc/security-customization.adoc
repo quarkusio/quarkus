@@ -248,52 +248,45 @@ The solution is to activate the request context, the following example shows how
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.smallrye.mutiny.Uni;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
 @ApplicationScoped
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Inject
-    Instance<SecurityIdentitySupplier> identitySupplierInstance;
+    UserEntityAugmentor userEntityAugmentor;
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        if(identity.isAnonymous()) {
+        if (identity.isAnonymous()) {
             return Uni.createFrom().item(identity);
         }
 
         // Hibernate ORM is blocking
-        SecurityIdentitySupplier identitySupplier = identitySupplierInstance.get();
-        identitySupplier.setIdentity(identity);
-        return context.runBlocking(identitySupplier);
+        return context.runBlocking(() -> userEntityAugmentor.augment(identity));
     }
 }
 ----
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.context.control.ActivateRequestContext;
-import java.util.function.Supplier;
+@ApplicationScoped
+class UserEntityAugmentor {
 
-@Dependent
-class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
-
-    private SecurityIdentity identity;
-
-    @Override
     @ActivateRequestContext
-    public SecurityIdentity get() {
+    public SecurityIdentity augment(SecurityIdentity identity) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
         String user = identity.getPrincipal().getName();
 
@@ -302,10 +295,6 @@ class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
                 .forEach(role -> builder.addRole(role.role));
 
         return builder.build();
-    }
-
-    public void setIdentity(SecurityIdentity identity) {
-        this.identity = identity;
     }
 }
 ----

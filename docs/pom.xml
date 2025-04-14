@@ -3230,6 +3230,17 @@
                             <versionString>${hibernate-validator.version}</versionString>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>parse-version-jakarta-persistence</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <propertyPrefix>jakarta-persistence</propertyPrefix>
+                            <versionString>${jakarta.persistence-api.version}</versionString>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

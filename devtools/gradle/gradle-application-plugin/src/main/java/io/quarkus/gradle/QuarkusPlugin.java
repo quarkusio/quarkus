@@ -5,8 +5,11 @@ import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -461,6 +464,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.notCompatibleWithConfigurationCache(
                                 "The quarkus-plugin isn't compatible with the configuration cache");
 
+                        t.setSystemProperties(extractQuarkusSystemProperties());
+
                         // Quarkus test configuration action which should be executed before any Quarkus test
                         // Use anonymous classes in order to leverage task avoidance.
                         t.doFirst(new Action<Task>() {
@@ -717,5 +722,18 @@ public class QuarkusPlugin implements Plugin<Project> {
         } catch (UnknownTaskException e) {
             return Optional.empty();
         }
+    }
+
+    private static Map<String, Object> extractQuarkusSystemProperties() {
+        Properties systemProperties = System.getProperties();
+        Map<String, Object> quarkusSystemProperties = new HashMap<>();
+        for (String propertyName : systemProperties.stringPropertyNames()) {
+            if (!propertyName.startsWith("quarkus.")) {
+                continue;
+            }
+
+            quarkusSystemProperties.put(propertyName, systemProperties.get(propertyName));
+        }
+        return quarkusSystemProperties;
     }
 }

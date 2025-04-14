@@ -7,7 +7,9 @@ public class ResetMockitoMocksAfterAllCallback implements QuarkusTestAfterAllCal
 
     @Override
     public void afterAll(QuarkusTestContext context) {
-        MockitoMocksTracker.clear(context.getTestInstance());
+        if (context.getTestInstance() != null) {
+            MockitoMocksTracker.clear(context.getTestInstance());
+        }
 
         if (context.getOuterInstances() != null) {
             for (Object outerInstance : context.getOuterInstances()) {

@@ -161,12 +161,27 @@ public class OidcDevServicesProcessor {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
             return true;
         }
-        if (devServicesConfig.enabled().isEmpty() && dockerStatusBuildItem.isContainerRuntimeAvailable()) {
-            LOG.debug(
-                    "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started");
-            return true;
+        if (devServicesConfig.enabled().isEmpty()) {
+            if (isDockerAvailable(dockerStatusBuildItem)) {
+                LOG.debug(
+                        "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started."
+                                + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
+                return true;
+            } else {
+                LOG.debug(
+                        "Starting Dev Services for OIDC as a container runtime is not available."
+                                + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
+            }
         }
         return false;
+    }
+
+    private static boolean isDockerAvailable(DockerStatusBuildItem dockerStatusBuildItem) {
+        try {
+            return dockerStatusBuildItem.isContainerRuntimeAvailable();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     private static void updateDevSvcConfigProperties() {

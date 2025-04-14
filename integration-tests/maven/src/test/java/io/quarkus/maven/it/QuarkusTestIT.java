@@ -23,6 +23,40 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  */
 public class QuarkusTestIT extends RunAndCheckMojoTestBase {
 
+    @Test
+    public void testQuarkusTestWithThirdPartyExtensionContinuousTesting()
+            throws MavenInvocationException, FileNotFoundException {
+        //we also check continuous testing
+        String sourceDir = "projects/test-third-party-junit-extension";
+        testDir = initProject(sourceDir, sourceDir + "-processed-devmode");
+
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+        // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
+        // so we need to check the pass count explicitly
+        Assertions.assertEquals(0, results.getTestsFailed());
+        Assertions.assertEquals(1, results.getTestsPassed());
+    }
+
+    @Test
+    public void testQuarkusTestWithThirdPartyExtension()
+            throws MavenInvocationException, InterruptedException {
+        String sourceDir = "projects/test-third-party-junit-extension";
+        testDir = initProject(sourceDir, sourceDir + "-processed");
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+
+        // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
+        MavenProcessInvocationResult installInvocation = invoker.execute(
+                List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
+                Collections.emptyMap());
+        assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExecutionException()).isNull();
+        assertThat(installInvocation.getExitCode()).isEqualTo(0);
+
+    }
+
     /**
      * Tests that if @QuarkusTest is added as a JUnitExtension through META-INF/services, things still work.
      * JBeret does this, for example.
@@ -89,4 +123,5 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
         assertThat(installInvocation.getExitCode()).isEqualTo(0);
 
     }
+
 }

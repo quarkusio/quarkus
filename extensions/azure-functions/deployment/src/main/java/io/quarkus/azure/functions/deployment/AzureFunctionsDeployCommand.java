@@ -2,6 +2,7 @@ package io.quarkus.azure.functions.deployment;
 
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.fromAppService;
 import static com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils.mergeAppServiceConfig;
+import static java.lang.String.format;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -69,7 +70,7 @@ public class AzureFunctionsDeployCommand {
     private static final String RESOURCE_GROUP_PATTERN = "[a-zA-Z0-9._\\-()]{1,90}";
     private static final String APP_SERVICE_PLAN_NAME_PATTERN = "[a-zA-Z0-9\\-]{1,40}";
     private static final String EMPTY_APP_NAME = "Please config the <appName> in pom.xml.";
-    private static final String INVALID_APP_NAME = "The <appName> only allow alphanumeric characters, hyphens and cannot start or end in a hyphen.";
+    private static final String INVALID_APP_NAME = "The app name '%s' is not valid. The <appName> only allow alphanumeric characters, hyphens and cannot start or end in a hyphen.";
     private static final String EMPTY_RESOURCE_GROUP = "Please config the <resourceGroup> in pom.xml.";
     private static final String INVALID_RESOURCE_GROUP_NAME = "The <resourceGroup> only allow alphanumeric characters, periods, underscores, "
             +
@@ -102,8 +103,9 @@ public class AzureFunctionsDeployCommand {
             OutputTargetBuildItem output,
 
             BuildProducer<DeployCommandActionBuildItem> producer) throws Exception {
-        if (!deployConfig.isEnabled(AZURE_FUNCTIONS))
+        if (!deployConfig.isEnabled(AZURE_FUNCTIONS)) {
             return;
+        }
         validateParameters(config, appName.getAppName());
         setCurrentOperation();
         AzureMessager.setDefaultMessager(new QuarkusAzureMessager());
@@ -115,7 +117,7 @@ public class AzureFunctionsDeployCommand {
         final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
                 config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
         Path outputDirectory = output.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
+        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
         deployArtifact(functionStagingDir, target);
         producer.produce(new DeployCommandActionBuildItem(AZURE_FUNCTIONS, true));
@@ -164,7 +166,7 @@ public class AzureFunctionsDeployCommand {
             throw new BuildException(EMPTY_APP_NAME);
         }
         if (appName.startsWith("-") || !appName.matches(APP_NAME_PATTERN)) {
-            throw new BuildException(INVALID_APP_NAME);
+            throw new BuildException(format(INVALID_APP_NAME, appName));
         }
         // resource group
         if (StringUtils.isBlank(config.resourceGroup())) {
@@ -176,7 +178,7 @@ public class AzureFunctionsDeployCommand {
         // asp name & resource group
         if (StringUtils.isNotEmpty(config.appServicePlanName())
                 && !config.appServicePlanName().matches(APP_SERVICE_PLAN_NAME_PATTERN)) {
-            throw new BuildException(String.format(INVALID_SERVICE_PLAN_NAME, APP_SERVICE_PLAN_NAME_PATTERN));
+            throw new BuildException(format(INVALID_SERVICE_PLAN_NAME, APP_SERVICE_PLAN_NAME_PATTERN));
         }
         if (config.appServicePlanResourceGroup().isPresent()
                 && StringUtils.isNotEmpty(config.appServicePlanResourceGroup().orElse(null))
@@ -197,7 +199,7 @@ public class AzureFunctionsDeployCommand {
          */
         // region
         if (StringUtils.isNotEmpty(config.region()) && Region.fromName(config.region()).isExpandedValue()) {
-            log.warn(String.format(EXPANDABLE_REGION_WARNING, config.region()));
+            log.warn(format(EXPANDABLE_REGION_WARNING, config.region()));
         }
         // os
         if (StringUtils.isNotEmpty(config.runtime().os()) && OperatingSystem.fromString(config.runtime().os()) == null) {
@@ -206,12 +208,12 @@ public class AzureFunctionsDeployCommand {
         // java version
         if (StringUtils.isNotEmpty(config.runtime().javaVersion())
                 && JavaVersion.fromString(config.runtime().javaVersion()).isExpandedValue()) {
-            log.warn(String.format(EXPANDABLE_JAVA_VERSION_WARNING, config.runtime().javaVersion()));
+            log.warn(format(EXPANDABLE_JAVA_VERSION_WARNING, config.runtime().javaVersion()));
         }
         // pricing tier
         if (config.pricingTier().isPresent() && StringUtils.isNotEmpty(config.pricingTier().orElse(null))
                 && PricingTier.fromString(config.pricingTier().orElse(null)).isExpandedValue()) {
-            log.warn(String.format(EXPANDABLE_PRICING_TIER_WARNING, config.pricingTier().orElse(null)));
+            log.warn(format(EXPANDABLE_PRICING_TIER_WARNING, config.pricingTier().orElse(null)));
         }
         // docker image
         if (OperatingSystem.fromString(config.runtime().os()) == OperatingSystem.DOCKER
@@ -249,7 +251,7 @@ public class AzureFunctionsDeployCommand {
                 .filter(subscription -> StringUtils.equals(subscription.getId(), targetSubscriptionId))
                 .findAny();
         if (!optionalSubscription.isPresent()) {
-            throw new BuildException(String.format(SUBSCRIPTION_NOT_FOUND, targetSubscriptionId));
+            throw new BuildException(format(SUBSCRIPTION_NOT_FOUND, targetSubscriptionId));
         }
     }
 
@@ -326,7 +328,7 @@ public class AzureFunctionsDeployCommand {
         final List<Subscription> subscriptions = Azure.az(IAzureAccount.class).account().getSelectedSubscriptions();
         final Subscription subscription = subscriptions.get(0);
         if (subscription != null) {
-            Log.info(String.format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
+            Log.info(format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
                     TextUtils.cyan(subscription.getId())));
         }
     }

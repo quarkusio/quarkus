@@ -1,5 +1,7 @@
 package io.quarkus.azure.functions.deployment;
 
+import static io.quarkus.azure.functions.deployment.AzureFunctionsDeployCommand.AZURE_FUNCTIONS;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -104,7 +106,7 @@ public class AzureFunctionsProcessor {
 
         Path rootPath = target.getOutputDirectory().resolve("..");
         Path outputDirectory = target.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
+        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
         copyHostJson(rootPath, functionStagingDir);
 
@@ -113,7 +115,7 @@ public class AzureFunctionsProcessor {
         writeFunctionJsonFiles(objectWriter, configMap, functionStagingDir);
 
         copyJarsToStageDirectory(jar, functionStagingDir);
-        return new ArtifactResultBuildItem(functionStagingDir, "azure-functions", Collections.EMPTY_MAP);
+        return new ArtifactResultBuildItem(functionStagingDir, AZURE_FUNCTIONS, Collections.EMPTY_MAP);
     }
 
     protected void writeFunctionJsonFiles(final ObjectWriter objectWriter,

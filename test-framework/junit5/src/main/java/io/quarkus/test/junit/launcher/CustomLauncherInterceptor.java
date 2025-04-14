@@ -1,21 +1,29 @@
 package io.quarkus.test.junit.launcher;
 
+import org.junit.platform.launcher.LauncherDiscoveryListener;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.LauncherInterceptor;
 
 import io.quarkus.test.junit.classloading.FacadeClassLoader;
 
-public class CustomLauncherInterceptor implements LauncherInterceptor {
+public class CustomLauncherInterceptor implements LauncherDiscoveryListener, LauncherInterceptor {
 
-    private FacadeClassLoader facadeLoader = null;
-    private ClassLoader origCl = null;
+    private static FacadeClassLoader facadeLoader = null;
+    // Also use a static variable to store a 'first' starting state that we can reset to
+    private static ClassLoader origCl = null;
 
     public CustomLauncherInterceptor() {
+    }
+
+    private static boolean isProductionModeTests() {
+        // We're too early for config to be available, so just check the system props
+        return System.getProperty("prod.mode.tests") != null;
     }
 
     @Override
     public <T> T intercept(Invocation<T> invocation) {
         // Do not do any classloading dance for prod mode tests;
-        if (System.getProperty("prod.mode.tests") != null) {
+        if (isProductionModeTests()) {
             return invocation.proceed();
 
         } else {
@@ -25,29 +33,78 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
     }
 
     private <T> T actuallyIntercept(Invocation<T> invocation) {
+        if (origCl == null) {
+            origCl = Thread.currentThread()
+                    .getContextClassLoader();
+        }
+        ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+        // Be aware, this method might be called more than once, for different kinds of invocations; especially for Gradle executions, the executions could happen before the TCCL gets constructed and set by JUnitTestRunner
+        // We might not be in the same classloader as the Facade ClassLoader, so use a name comparison instead of an instanceof
+        if (true || currentCl == null
+                || (currentCl != facadeLoader && !currentCl.getClass().getName().equals(FacadeClassLoader.class.getName()))) {
+            initializeFacadeClassLoader();
+            adjustContextClassLoader();
+            return invocation.proceed();
+
+            // It's tempting to tidy up in a finally block by resetting the TCCL, but the gradle tests
+            // do discovery 'between' invocation blocks, and outside the main
+
+        } else {
+            return invocation.proceed();
+        }
+    }
+
+    // Make a facade classloader if needed, so that we can close it at the end of the launcher session
+    private void initializeFacadeClassLoader() {
         ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
         // Be aware, this method might be called more than once, for different kinds of invocations; especially for Gradle executions, the executions could happen before the TCCL gets constructed and set by JUnitTestRunner
         // We might not be in the same classloader as the Facade ClassLoader, so use a name comparison instead of an instanceof
         if (currentCl == null
                 || (currentCl != facadeLoader && !currentCl.getClass().getName().equals(FacadeClassLoader.class.getName()))) {
-            this.origCl = currentCl;
 
             // We don't ever want more than one FacadeClassLoader active, especially since config gets initialised on it.
             // The gradle test execution can make more than one, perhaps because of its threading model.
             if (facadeLoader == null) {
-                // We want to tidy up classloaders we created, but not ones created upstream, so keep a record of what we created
                 facadeLoader = new FacadeClassLoader(currentCl);
             }
+        }
+    }
+
+    @Override
+    public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
+        // Do not do any classloading dance for prod mode tests;
+        if (!isProductionModeTests()) {
+            adjustContextClassLoader();
+        }
+
+    }
+
+    private void adjustContextClassLoader() {
+        ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+        // Be aware, this method might be called more than once, for different kinds of invocations; especially for Gradle executions, the executions could happen before the TCCL gets constructed and set by JUnitTestRunner
+        // We might not be in the same classloader as the Facade ClassLoader, so use a name comparison instead of an instanceof
+        if (currentCl == null
+                || (currentCl != facadeLoader && !currentCl.getClass().getName().equals(FacadeClassLoader.class.getName()))) {
             Thread.currentThread().setContextClassLoader(facadeLoader);
-            return invocation.proceed();
+        }
+    }
 
-            // It's tempting to tidy up in a finally block by resetting the TCCL, but it looks like the gradle
-            // devtools tests may be asynchronous, because if we reset the TCCL
-            // at this point, the test loads with the wrong classloader.
-            // Instead, reset the TCCL when close() is called
+    @Override
+    public void launcherDiscoveryFinished(LauncherDiscoveryRequest request) {
 
-        } else {
-            return invocation.proceed();
+        // We need to support two somewhat incompatible scenarios.
+        // If there are user extensions present which implement `ExecutionCondition`, and they call config in `evaluateExecutionCondition`,
+        // they need the TCCL to be right for reading config (that is, the app classloader)
+        // On the other hand, if the QuarkusTestExtension is registered by a service loader mechanism, it gets loaded after the discovery phase finishes,
+        // so needs the TCCL to still be the facade classloader.
+        // This compromise does mean you can't use the service loader mechanism to avoid having to use `@QuarkusTest` and also use Quarkus config in your own test extensions, but that combination is very unlikely.
+        if (!facadeLoader.isServiceLoaderMechanism()) {
+            // Do not close the facade loader at this stage, because discovery finished may be called several times within a single run
+            // Ideally we would reset to what the TCCL was when we started discovery, but we can't,
+            // because the intercept method will have set something before the discovery start is triggered.
+            // So, rather annoyingly and clumsily, reset the TCCL to what it was when the first interception happened
+            Thread.currentThread().setContextClassLoader(origCl);
+
         }
     }
 
@@ -68,6 +125,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 facadeLoader = null;
 
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to close custom classloader", e);
         }

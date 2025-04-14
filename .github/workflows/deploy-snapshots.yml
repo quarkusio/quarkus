@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx6g -XX:MaxMetaspaceSize=2g
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,7 +45,6 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build and Deploy
         env:
-          MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}

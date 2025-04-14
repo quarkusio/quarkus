@@ -57,7 +57,7 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <commons-io.version>2.18.0</commons-io.version>
         <commons-lang.version>3.17.0</commons-lang.version>
-        <guava.version>33.4.7-jre</guava.version>
+        <guava.version>33.4.8-jre</guava.version>
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>

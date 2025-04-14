@@ -185,6 +185,17 @@ class BuildIT extends MojoTestBase {
 
     }
 
+    @Test
+    void testMavenExtensionManipulatingPom()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/maven-extension-manipulating-pom/mvn-ext",
+                "projects/maven-extension-manipulating-pom/mvn-ext-processed");
+        build("install");
+        testDir = initProject("projects/maven-extension-manipulating-pom/app",
+                "projects/maven-extension-manipulating-pom/app-processed");
+        build();
+    }
+
     private void launch() throws IOException {
         launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }

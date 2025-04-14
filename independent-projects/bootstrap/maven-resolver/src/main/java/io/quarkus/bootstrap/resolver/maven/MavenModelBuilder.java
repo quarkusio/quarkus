@@ -2,8 +2,11 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.maven.model.Model;
@@ -17,6 +20,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -29,10 +33,23 @@ public class MavenModelBuilder implements ModelBuilder {
 
     private final ModelBuilder builder;
     private final BootstrapMavenContext ctx;
+    // This mapping is particularly useful when POM files do not exactly match the Model present in the LocalWorkspace.
+    // This may happen when Maven extensions manipulate the original POMs by changing versions, etc.
+    private final Map<File, Model> poms;
 
     public MavenModelBuilder(BootstrapMavenContext ctx) {
         builder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
         this.ctx = ctx;
+        if (ctx != null && ctx.getWorkspace() != null) {
+            final Collection<LocalProject> projects = ctx.getWorkspace().getProjects().values();
+            final Map<File, Model> tmp = new HashMap<>(projects.size());
+            for (var p : projects) {
+                tmp.put(p.getRawModel().getPomFile(), p.getRawModel());
+            }
+            poms = tmp;
+        } else {
+            poms = Map.of();
+        }
     }
 
     @Override
@@ -65,17 +82,25 @@ public class MavenModelBuilder implements ModelBuilder {
 
     private Model getModel(ModelBuildingRequest request) {
         Model requestModel = request.getRawModel();
-        if (requestModel == null) {
-            if (request.getModelSource() != null) {
-                try {
-                    requestModel = ModelUtils.readModel(request.getModelSource().getInputStream());
-                    request.setRawModel(requestModel);
-                    if (request.getPomFile() != null) {
-                        requestModel.setPomFile(request.getPomFile());
-                    }
-                } catch (IOException e) {
-                    // ignore
+        if (requestModel != null) {
+            return requestModel;
+        }
+        if (request.getPomFile() != null) {
+            requestModel = poms.get(request.getPomFile());
+            if (requestModel != null) {
+                request.setRawModel(requestModel);
+                return requestModel;
+            }
+        }
+        if (request.getModelSource() != null) {
+            try {
+                requestModel = ModelUtils.readModel(request.getModelSource().getInputStream());
+                request.setRawModel(requestModel);
+                if (request.getPomFile() != null) {
+                    requestModel.setPomFile(request.getPomFile());
                 }
+            } catch (IOException e) {
+                // ignore
             }
         }
         return requestModel;

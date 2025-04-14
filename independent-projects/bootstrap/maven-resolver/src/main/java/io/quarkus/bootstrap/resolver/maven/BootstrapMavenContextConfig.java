@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-import java.util.function.Function;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.settings.crypto.SettingsDecrypter;
@@ -58,7 +58,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T
     protected boolean preferPomsFromWorkspace;
     protected Boolean effectiveModelBuilder;
     protected Boolean wsModuleParentHierarchy;
-    protected Function<Path, Model> modelProvider;
+    protected Map<Path, Model> modelProvider;
     protected List<String> excludeSisuBeanPackages;
     protected List<String> includeSisuBeanPackages;
     protected Boolean warnOnFailedWorkspaceModules;
@@ -374,7 +374,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T
      * @return this instance
      */
     @SuppressWarnings("unchecked")
-    public T setProjectModelProvider(Function<Path, Model> modelProvider) {
+    public T setProjectModelProvider(Map<Path, Model> modelProvider) {
         this.modelProvider = modelProvider;
         return (T) this;
     }

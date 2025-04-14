@@ -192,6 +192,9 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     private static Map<ArtifactKey, ArtifactCoords> readByKey(QuarkusProject project) throws IOException {
+        // re-create the QuarkusProject to re-read the POM Model from the disk
+        project = QuarkusProjectHelper.getProject(project.getProjectDirPath(), project.getExtensionsCatalog(),
+                project.getBuildTool(), project.getJavaVersion(), project.log());
         return project.getExtensionManager().getInstalled().stream()
                 .collect(toMap(ArtifactCoords::getKey, Function.identity()));
     }

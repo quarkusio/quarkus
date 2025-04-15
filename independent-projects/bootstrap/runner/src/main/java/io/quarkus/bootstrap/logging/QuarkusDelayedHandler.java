@@ -146,15 +146,36 @@ public class QuarkusDelayedHandler extends ExtHandler {
         synchronized (this) {
             if (!logRecords.isEmpty()) {
                 Formatter formatter = getFormatter();
+                Formatter defaultFormatter = new PatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n");
+                boolean usingDefaultFormatter = false;
                 if (formatter == null) {
-                    formatter = new PatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n");
+                    usingDefaultFormatter = true;
+                    formatter = defaultFormatter;
                 }
                 StandardOutputStreams.printError("The DelayedHandler was closed before any children handlers were " +
                         "configured. Messages will be written to stderr.");
                 // Always attempt to drain the queue
                 ExtLogRecord record;
+                Exception formattingException = null;
                 while ((record = logRecords.pollFirst()) != null) {
-                    StandardOutputStreams.printError(formatter.format(record));
+                    String value = null;
+                    try {
+                        value = formatter.format(record);
+                    } catch (Exception e) {
+                        if (!usingDefaultFormatter) {
+                            // try once more using the default formatter
+                            value = defaultFormatter.format(record);
+                        } else {
+                            formattingException = e;
+                        }
+                    }
+                    if (value != null) {
+                        StandardOutputStreams.printError(value);
+                    }
+                }
+                if (formattingException != null) {
+                    // let's just log the last formatting exception as there is not much more we can do
+                    formattingException.printStackTrace();
                 }
             }
         }

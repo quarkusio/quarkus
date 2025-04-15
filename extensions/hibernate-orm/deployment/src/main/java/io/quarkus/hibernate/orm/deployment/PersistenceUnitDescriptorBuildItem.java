@@ -58,10 +58,6 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
-    public String getConfigurationName() {
-        return descriptor.getConfigurationName();
-    }
-
     public RecordedConfig getConfig() {
         return config;
     }

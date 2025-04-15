@@ -159,7 +159,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate Reactive persistence unit");

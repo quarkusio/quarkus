@@ -3,6 +3,8 @@ package io.quarkus.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 
+import jakarta.interceptor.Interceptor;
+
 import org.jboss.logging.Logger;
 
 /**
@@ -12,10 +14,21 @@ import org.jboss.logging.Logger;
  */
 public interface ShutdownContext {
 
-    void addShutdownTask(Runnable runnable);
+    int DEFAULT_PRIORITY = Interceptor.Priority.LIBRARY_AFTER;
+    int SHUTDOWN_EVENT_PRIORITY = DEFAULT_PRIORITY + 100_000;
 
-    // these are executed after all the ones add via addShutdownTask in the reverse order from which they were added
-    void addLastShutdownTask(Runnable runnable);
+    default void addShutdownTask(Runnable runnable) {
+        addShutdownTask(DEFAULT_PRIORITY, runnable);
+    }
+
+    void addShutdownTask(int priority, Runnable runnable);
+
+    // these are executed after all the ones added via addShutdownTask in the reverse order from which they were added
+    default void addLastShutdownTask(Runnable runnable) {
+        addLastShutdownTask(DEFAULT_PRIORITY, runnable);
+    }
+
+    void addLastShutdownTask(int priority, Runnable runnable);
 
     class CloseRunnable implements Runnable {
 

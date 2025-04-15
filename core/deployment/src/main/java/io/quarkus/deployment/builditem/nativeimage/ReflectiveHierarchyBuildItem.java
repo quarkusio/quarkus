@@ -22,15 +22,16 @@ import io.quarkus.builder.item.MultiBuildItem;
  * <p>
  * This will do 'smart discovery' and in addition to registering the type itself it will also attempt to
  * register the following:
- * <p>
- * - Superclasses
- * - Subclasses
- * - Component types of collections
- * - Types used in bean properties (if method reflection is enabled)
- * - Field types (if field reflection is enabled)
+ *
+ * <ul>
+ * <li>Superclasses</li>
+ * <li>Component types of collections</li>
+ * <li>Types used in bean properties (if method reflection is enabled)</li>
+ * <li>Field types (if field reflection is enabled)</li>
+ * </ul>
  * <p>
  * This discovery is applied recursively, so any additional types that are registered will also have their dependencies
- * discovered
+ * discovered.
  */
 public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 

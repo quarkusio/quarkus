@@ -30,7 +30,7 @@ public class EntitiesInDefaultPUWithImplicitDatasourceConfigUrlMissingTest {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "The default datasource must be configured for Hibernate Reactive",
+                            "The datasource must be configured for Hibernate Reactive",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

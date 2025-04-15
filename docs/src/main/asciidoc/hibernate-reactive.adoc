@@ -354,6 +354,28 @@ public class SomeTest {
 ----
 ====
 
+[[hr-named-datasource]]
+==== Named data sources
+
+Hibernate Reactive supports having named data sources
+
+[source,properties]
+.Example `{config-file}`
+----
+# datasource configuration
+quarkus.hibernate-orm.datasource = named-datasource
+quarkus.datasource."named-datasource".db-kind" = postgresql
+
+# drop and create the database at startup (use `update` to only update the schema)
+%prod.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+%prod.quarkus.datasource."named-datasource".reactive" = true
+%prod.quarkus.datasource."named-datasource".username" = quarkus_test
+%prod.quarkus.datasource."named-datasource".password" = quarkus_test
+%prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
+----
+
+When using a named data source, you need to set the `quarkus.hibernate-orm.datasource` property to the name of the data source.
+
 [[hr-limitations]]
 == Limitations and other things you should know
 

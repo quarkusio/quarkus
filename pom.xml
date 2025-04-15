@@ -185,7 +185,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.9.9</version>
+                <version>3.9.10</version>
             </extension>
         </extensions>
     </build>

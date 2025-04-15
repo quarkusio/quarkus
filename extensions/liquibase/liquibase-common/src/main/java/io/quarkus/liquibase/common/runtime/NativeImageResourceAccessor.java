@@ -1,4 +1,4 @@
-package io.quarkus.liquibase.runtime;
+package io.quarkus.liquibase.common.runtime;
 
 import java.io.IOException;
 import java.net.URI;

@@ -201,6 +201,10 @@ public class Endpoint {
 }
 ----
 
+Quarkus also extends the JAX-RS spec to allow you to use static methods. If the static method is on a class annotated with
+`@Path`, it will be treated the same as a non-static endpoint. If there is no `@Path` annotation on the class then the path
+is assumed to be a root path. This is especially useful for Kotlin as it allows you to define endpoints without creating a class.
+
 === Declaring endpoints: representation / content types
 
 Each endpoint method may consume or produce specific resource representations, which are indicated by

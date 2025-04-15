@@ -465,7 +465,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
 
                     tasks.withType(Test.class).configureEach(t -> {
-                        t.setSystemProperties(extractQuarkusSystemProperties());
+                        t.setSystemProperties(extractQuarkusTestSystemProperties());
 
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Quarkus test configuration action which should be executed before any Quarkus test
@@ -732,11 +732,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
     }
 
-    private static Map<String, Object> extractQuarkusSystemProperties() {
+    private static Map<String, Object> extractQuarkusTestSystemProperties() {
         Properties systemProperties = System.getProperties();
         Map<String, Object> quarkusSystemProperties = new HashMap<>();
         for (String propertyName : systemProperties.stringPropertyNames()) {
-            if (!propertyName.startsWith("quarkus.")) {
+            if (!propertyName.startsWith("quarkus.test.")) {
                 continue;
             }
 

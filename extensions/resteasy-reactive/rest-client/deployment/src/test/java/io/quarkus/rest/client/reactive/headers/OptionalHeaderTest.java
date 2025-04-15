@@ -22,29 +22,52 @@ public class OptionalHeaderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Resource.class,
+                    Client.class, OtherClient.class, OtherSubClient.class));
 
     @TestHTTPResource
     URI baseUri;
 
     @Test
-    void test() {
+    void normalClient() {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         String result = client.send(Optional.empty(), "q", Optional.of("h2"), Optional.of(3));
         assertThat(result).isEqualTo("query=q/Header2=h2,Header3=3");
     }
 
-    @Path("test")
+    @Test
+    void subresourceClient() {
+        OtherClient client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(OtherClient.class);
+        String result = client.send(Optional.empty(), "q").send(Optional.of("h2"), Optional.of(3));
+        assertThat(result).isEqualTo("query=q/Header2=h2,Header3=3");
+    }
+
+    @Path("resource")
     public interface Client {
 
+        @Path("test")
         @GET
         String send(@HeaderParam("header1") Optional<String> header1, @RestQuery String query,
                 @RestHeader Optional<String> header2, @RestHeader Optional<Integer> header3);
     }
 
-    @Path("test")
+    @Path("resource")
+    public interface OtherClient {
+
+        @Path("test")
+        OtherSubClient send(@HeaderParam("header1") Optional<String> header1, @RestQuery String query);
+    }
+
+    public interface OtherSubClient {
+
+        @GET
+        String send(@RestHeader Optional<String> header2, @RestHeader Optional<Integer> header3);
+    }
+
+    @Path("resource")
     public static class Resource {
 
+        @Path("test")
         @GET
         public String test(@RestQuery String query, @RestHeader String header1,
                 @RestHeader String header2,

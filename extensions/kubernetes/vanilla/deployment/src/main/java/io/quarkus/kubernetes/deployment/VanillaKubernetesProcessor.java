@@ -12,6 +12,7 @@ import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPo
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +71,6 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class VanillaKubernetesProcessor {
 
     @BuildStep
@@ -246,13 +246,16 @@ public class VanillaKubernetesProcessor {
         result.add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
         result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
-        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES))
-                .forEach(e -> result.add(new DecoratorBuildItem(KUBERNETES,
-                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
-                                new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
-                                        .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
-                                        .withPrefix(e.getPrefix())
-                                        .build()))));
+        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES));
+        if (config.idempotent()) {
+            stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
+        }
+        stream.forEach(e -> result.add(new DecoratorBuildItem(KUBERNETES,
+                new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                        new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
+                                .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
+                                .withPrefix(e.getPrefix())
+                                .build()))));
 
         config.containerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(KUBERNETES, new ChangeContainerNameDecorator(containerName))));

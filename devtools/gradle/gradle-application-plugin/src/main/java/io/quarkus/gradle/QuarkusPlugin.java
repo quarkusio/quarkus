@@ -6,8 +6,11 @@ import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -462,6 +465,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
 
                     tasks.withType(Test.class).configureEach(t -> {
+                        t.setSystemProperties(extractQuarkusSystemProperties());
+
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Quarkus test configuration action which should be executed before any Quarkus test
                         t.doFirst(new BeforeTestAction(
@@ -725,5 +730,18 @@ public class QuarkusPlugin implements Plugin<Project> {
         } catch (UnknownTaskException e) {
             return Optional.empty();
         }
+    }
+
+    private static Map<String, Object> extractQuarkusSystemProperties() {
+        Properties systemProperties = System.getProperties();
+        Map<String, Object> quarkusSystemProperties = new HashMap<>();
+        for (String propertyName : systemProperties.stringPropertyNames()) {
+            if (!propertyName.startsWith("quarkus.")) {
+                continue;
+            }
+
+            quarkusSystemProperties.put(propertyName, systemProperties.get(propertyName));
+        }
+        return quarkusSystemProperties;
     }
 }

@@ -29,7 +29,6 @@ import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
-import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassType;
 import org.junit.jupiter.api.Test;
@@ -150,7 +149,7 @@ public class BeanInjectionPointsTest {
         assertTrue(found);
     }
 
-    @Singleton
+    @Dependent
     static class MyBean {
         @Inject
         @ExtraAnnotation("a")

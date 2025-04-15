@@ -72,7 +72,6 @@ COPY --from=BUILD \
    /lib64/libpng16.so.16 \
    /lib64/libm.so.6 \
    /lib64/libbz2.so.1 \
-   /lib64/libexpat.so.1 \
    /lib64/libuuid.so.1 \
    /lib64/
 

@@ -290,6 +290,7 @@ public class JaxrsClientReactiveProcessor {
             RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<JaxrsClientReactiveInfoBuildItem> jaxrsClientReactiveInfoBuildItemProducer,
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
@@ -319,6 +320,7 @@ public class JaxrsClientReactiveProcessor {
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
             recorder.setupClientProxies(new HashMap<>(), Collections.emptyMap());
+            jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(new HashSet<>()));
             return;
         }
         ResourceScanningResult result = resourceScanningResultBuildItem.get().getResult();
@@ -439,6 +441,7 @@ public class JaxrsClientReactiveProcessor {
         }
 
         recorder.setupClientProxies(clientImplementations, failures);
+        jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(clientImplementations.keySet()));
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
             String readerClass = additionalReader.getHandlerClass();

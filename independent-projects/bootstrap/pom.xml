@@ -55,7 +55,7 @@
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <commons-codec.version>1.18.0</commons-codec.version>
-        <commons-io.version>2.18.0</commons-io.version>
+        <commons-io.version>2.19.0</commons-io.version>
         <commons-lang.version>3.17.0</commons-lang.version>
         <guava.version>33.4.8-jre</guava.version>
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->

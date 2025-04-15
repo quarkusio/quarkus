@@ -125,7 +125,7 @@ public class HibernateOrmRecorder {
             @Override
             public SessionFactory apply(SyntheticCreationalContext<SessionFactory> context) {
                 SessionFactory sessionFactory = context.getInjectedReference(JPAConfig.class)
-                        .getEntityManagerFactory(persistenceUnitName)
+                        .getEntityManagerFactory(persistenceUnitName, false)
                         .unwrap(SessionFactory.class);
 
                 return sessionFactory;

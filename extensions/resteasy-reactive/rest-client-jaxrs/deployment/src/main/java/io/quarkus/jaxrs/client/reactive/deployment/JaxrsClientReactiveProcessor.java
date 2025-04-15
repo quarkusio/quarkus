@@ -1138,6 +1138,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterIdx = paramIdx;
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexMethod.parameterType(paramIdx);
+                            String effectiveParamTypeStr = paramType.name().toString();
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamTypeStr = DotNames.OBJECT.toString();
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamTypeStr = objectType.name().toString();
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(name,
                                     method.getName() + "$$" + methodIndex + "$$handleHeader$$" + paramIdx,
@@ -1149,8 +1162,15 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1), param.type,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamTypeStr,
                                     handleHeaderMethod.getThis(),
                                     getGenericTypeFromArray(handleHeaderMethod, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleHeaderMethod, methodParamAnnotationsField, paramIdx));
@@ -3123,22 +3143,22 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
-            String paramName, ResultHandle headerParamHandle, String paramType, ResultHandle client,
+            String headerName, ResultHandle headerValueHandle, String paramType, ResultHandle client,
             ResultHandle genericType, ResultHandle annotations) {
 
-        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerParamHandle).falseBranch();
+        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerValueHandle).falseBranch();
 
-        headerParamHandle = notNullValue.invokeVirtualMethod(
+        headerValueHandle = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
                         Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                client, headerParamHandle,
+                client, headerValueHandle,
                 notNullValue.loadClassFromTCCL(paramType), genericType, annotations);
 
         notNullValue.assign(invocationBuilder,
                 notNullValue.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
                                 String.class, Object.class),
-                        invocationBuilder, notNullValue.load(paramName), headerParamHandle));
+                        invocationBuilder, notNullValue.load(headerName), headerValueHandle));
     }
 
     private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,

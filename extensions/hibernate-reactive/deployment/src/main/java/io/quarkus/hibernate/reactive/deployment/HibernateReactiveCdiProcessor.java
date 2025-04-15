@@ -41,8 +41,7 @@ public class HibernateReactiveCdiProcessor {
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
-            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
+            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             boolean isReactive = persistenceUnitDescriptor.isReactive();
 
             if (isReactive) {

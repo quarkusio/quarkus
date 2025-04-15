@@ -3,7 +3,7 @@ package io.quarkus.bootstrap.resolver.maven;
 /**
  * Task runner
  */
-interface ModelResolutionTaskRunner {
+public interface ModelResolutionTaskRunner {
 
     /**
      * Returns an instance of a non-blocking task runner.

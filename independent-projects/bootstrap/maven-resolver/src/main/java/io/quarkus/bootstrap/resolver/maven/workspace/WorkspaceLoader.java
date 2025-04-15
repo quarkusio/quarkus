@@ -12,11 +12,8 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.apache.maven.model.Model;
@@ -35,6 +32,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.BootstrapModelBuilderFactory;
 import io.quarkus.bootstrap.resolver.maven.BootstrapModelResolver;
+import io.quarkus.bootstrap.resolver.maven.ModelResolutionTaskRunner;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.GAV;
@@ -61,19 +59,12 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private final Deque<RawModule> moduleQueue = new ConcurrentLinkedDeque<>();
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
-
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
+    private final Consumer<Model> modelProcessor;
 
     private final LocalWorkspace workspace = new LocalWorkspace();
     private final Path currentProjectPom;
-    private boolean warnOnFailingWsModules;
-
-    private ModelBuilder modelBuilder;
-    private BootstrapModelResolver modelResolver;
-    private ModelCache modelCache;
-    private List<String> activeProfileIds;
-    private List<String> inactiveProfileIds;
-    private List<Profile> profiles;
+    private volatile LocalProject currentProject;
 
     WorkspaceLoader(BootstrapMavenContext ctx, Path currentProjectPom, Map<Path, Model> modelProvider)
             throws BootstrapMavenException {
@@ -95,21 +86,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             addModulePom(this.currentProjectPom);
         }
 
-        if (ctx != null && ctx.isEffectiveModelBuilder()) {
-            modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
-            modelResolver = BootstrapModelResolver.newInstance(ctx, this);
-            modelCache = new BootstrapModelCache(modelResolver.getSession());
-
-            profiles = ctx.getActiveSettingsProfiles();
-            final BootstrapMavenOptions cliOptions = ctx.getCliOptions();
-            activeProfileIds = new ArrayList<>(profiles.size() + cliOptions.getActiveProfileIds().size());
-            for (Profile p : profiles) {
-                activeProfileIds.add(p.getId());
-            }
-            activeProfileIds.addAll(cliOptions.getActiveProfileIds());
-            inactiveProfileIds = cliOptions.getInactiveProfileIds();
-            warnOnFailingWsModules = ctx.isWarnOnFailingWorkspaceModules();
-        }
+        modelProcessor = getModelProcessor(ctx);
         workspace.setBootstrapMavenContext(ctx);
     }
 
@@ -124,50 +101,50 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     LocalProject load() throws BootstrapMavenException {
-        final ConcurrentLinkedDeque<Exception> errors = new ConcurrentLinkedDeque<>();
-        final AtomicReference<LocalProject> currentProjectRef = new AtomicReference<>();
-        final Consumer<Model> modelProcessor = getModelProcessor(currentProjectRef);
+        final ModelResolutionTaskRunner taskRunner = ModelResolutionTaskRunner.getNonBlockingTaskRunner();
         while (!moduleQueue.isEmpty()) {
             final ConcurrentLinkedDeque<RawModule> newModules = new ConcurrentLinkedDeque<>();
             while (!moduleQueue.isEmpty()) {
-                final Phaser phaser = new Phaser(1);
                 while (!moduleQueue.isEmpty()) {
-                    phaser.register();
                     final RawModule module = moduleQueue.removeLast();
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            loadModule(module, newModules);
-                        } catch (Exception e) {
-                            errors.add(e);
-                        } finally {
-                            phaser.arriveAndDeregister();
-                        }
-                    });
+                    taskRunner.run(() -> loadModule(module, newModules));
                 }
-                phaser.arriveAndAwaitAdvance();
-                assertNoErrors(errors);
+                taskRunner.waitForCompletion();
             }
             for (var newModule : newModules) {
                 newModule.process(modelProcessor);
             }
         }
 
-        final LocalProject result = currentProjectRef.get();
-        if (result == null) {
+        if (currentProject == null) {
             throw new BootstrapMavenException("Failed to load project " + currentProjectPom);
         }
-        return result;
+        return currentProject;
     }
 
-    private Consumer<Model> getModelProcessor(AtomicReference<LocalProject> currentProjectRef) {
-        if (modelBuilder == null) {
+    private Consumer<Model> getModelProcessor(BootstrapMavenContext ctx) throws BootstrapMavenException {
+        if (ctx == null || !ctx.isEffectiveModelBuilder()) {
             return rawModel -> {
                 var project = new LocalProject(rawModel, workspace);
-                if (currentProjectRef.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
-                    currentProjectRef.set(project);
+                if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
+                    currentProject = project;
                 }
             };
         }
+
+        final ModelBuilder modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
+        final BootstrapModelResolver modelResolver = BootstrapModelResolver.newInstance(ctx, this);
+        final ModelCache modelCache = new BootstrapModelCache(modelResolver.getSession());
+        final List<Profile> profiles = ctx.getActiveSettingsProfiles();
+        final BootstrapMavenOptions cliOptions = ctx.getCliOptions();
+        final List<String> activeProfileIds = new ArrayList<>(profiles.size() + cliOptions.getActiveProfileIds().size());
+        for (Profile p : profiles) {
+            activeProfileIds.add(p.getId());
+        }
+        activeProfileIds.addAll(cliOptions.getActiveProfileIds());
+        final List<String> inactiveProfileIds = cliOptions.getInactiveProfileIds();
+        final boolean warnOnFailingWsModules = ctx.isWarnOnFailingWorkspaceModules();
+
         return rawModel -> {
             var req = new DefaultModelBuildingRequest();
             req.setPomFile(rawModel.getPomFile());
@@ -190,8 +167,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 }
                 throw new RuntimeException("Failed to resolve the effective model for " + rawModel.getPomFile(), e);
             }
-            if (currentProjectRef.get() == null && project.getDir().equals(currentProjectPom.getParent())) {
-                currentProjectRef.set(project);
+            if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
+                currentProject = project;
             }
             for (var module : project.getModelBuildingResult().getEffectiveModel().getModules()) {
                 addModulePom(project.getDir().resolve(module).resolve(POM_XML));
@@ -291,35 +268,6 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     public List<String> findVersions(Artifact artifact) {
         var model = loadedModules.get(new GAV(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
         return model == null ? List.of() : List.of(ModelUtils.getVersion(model));
-    }
-
-    private void assertNoErrors(Collection<Exception> errors) throws BootstrapMavenException {
-        if (!errors.isEmpty()) {
-            var sb = new StringBuilder("The following errors were encountered while loading the workspace:");
-            log.error(sb);
-            var i = 1;
-            for (var error : errors) {
-                var prefix = i++ + ")";
-                log.error(prefix, error);
-                sb.append(System.lineSeparator()).append(prefix).append(" ").append(error.getLocalizedMessage());
-                for (var e : error.getStackTrace()) {
-                    sb.append(System.lineSeparator());
-                    for (int j = 0; j < prefix.length(); ++j) {
-                        sb.append(" ");
-                    }
-                    sb.append("at ").append(e);
-                    if (e.getClassName().contains("io.quarkus")) {
-                        sb.append(System.lineSeparator());
-                        for (int j = 0; j < prefix.length(); ++j) {
-                            sb.append(" ");
-                        }
-                        sb.append("...");
-                        break;
-                    }
-                }
-            }
-            throw new BootstrapMavenException(sb.toString());
-        }
     }
 
     private static Model readModel(Path pom) {

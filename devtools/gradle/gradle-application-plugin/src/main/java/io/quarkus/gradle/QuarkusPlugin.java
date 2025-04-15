@@ -464,7 +464,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.notCompatibleWithConfigurationCache(
                                 "The quarkus-plugin isn't compatible with the configuration cache");
 
-                        t.setSystemProperties(extractQuarkusSystemProperties());
+                        t.setSystemProperties(extractQuarkusTestSystemProperties());
 
                         // Quarkus test configuration action which should be executed before any Quarkus test
                         // Use anonymous classes in order to leverage task avoidance.
@@ -724,11 +724,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
     }
 
-    private static Map<String, Object> extractQuarkusSystemProperties() {
+    private static Map<String, Object> extractQuarkusTestSystemProperties() {
         Properties systemProperties = System.getProperties();
         Map<String, Object> quarkusSystemProperties = new HashMap<>();
         for (String propertyName : systemProperties.stringPropertyNames()) {
-            if (!propertyName.startsWith("quarkus.")) {
+            if (!propertyName.startsWith("quarkus.test.")) {
                 continue;
             }
 

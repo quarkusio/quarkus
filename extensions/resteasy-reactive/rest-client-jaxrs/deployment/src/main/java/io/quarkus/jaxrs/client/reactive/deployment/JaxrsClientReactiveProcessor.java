@@ -1548,10 +1548,10 @@ public class JaxrsClientReactiveProcessor {
             for (int i = 0; i < method.getParameters().length; i++) {
                 MethodParameter param = method.getParameters()[i];
                 if (param.parameterType != ParameterType.PATH) {
-                    FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.type)
+                    FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.declaredType)
                             .setModifiers(Modifier.PUBLIC)
                             .getFieldDescriptor();
-                    subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.type,
+                    subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.declaredType,
                             jandexMethod.parameterType(i), paramField, methodParamAnnotationsField,
                             methodGenericParametersField,
                             i));
@@ -1690,6 +1690,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexSubMethod.parameterType(subParamField.paramIndex);
+                            String effectiveParamTypeStr = paramType.name().toString();
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamTypeStr = DotNames.OBJECT.toString();
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamTypeStr = objectType.name().toString();
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$param"
@@ -1702,9 +1715,15 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1),
-                                    param.type,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamTypeStr,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
                                     getGenericTypeFromArray(handleHeaderMethod, subParamField.genericsParametersField,
                                             subParamField.paramIndex),
@@ -1816,6 +1835,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = subMethodCreator.getMethodParam(paramIdx);
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexSubMethod.parameterType(paramIdx);
+                            String effectiveParamTypeStr = paramType.name().toString();
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamTypeStr = DotNames.OBJECT.toString();
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamTypeStr = objectType.name().toString();
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
@@ -1826,9 +1858,16 @@ public class JaxrsClientReactiveProcessor {
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
                             addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1), param.type,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamTypeStr,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
                                     getGenericTypeFromArray(handleHeaderMethod, subMethodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleHeaderMethod, subMethodParamAnnotationsField, paramIdx));
@@ -2018,7 +2057,7 @@ public class JaxrsClientReactiveProcessor {
         for (int i = 0; i < method.getParameters().length; i++) {
             MethodParameter param = method.getParameters()[i];
             if (param.parameterType != ParameterType.PATH) {
-                FieldDescriptor paramField = FieldDescriptor.of(subName, "param" + i, param.type);
+                FieldDescriptor paramField = FieldDescriptor.of(subName, "param" + i, param.declaredType);
                 ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
             }
 

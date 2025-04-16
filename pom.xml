@@ -81,11 +81,11 @@
         <hibernate-search.version>7.2.3.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.71.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>3.25.5</protoc.version>
+        <protoc.version>4.30.2</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <protobuf-kotlin.version>4.29.3</protobuf-kotlin.version>
+        <protobuf-kotlin.version>${protobuf-java.version}</protobuf-kotlin.version>
         <proto-google-common-protos.version>2.54.1</proto-google-common-protos.version>
 
         <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->

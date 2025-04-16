@@ -84,6 +84,11 @@ public class ExpiryTrustOptions implements TrustOptions {
     }
 
     private TrustManager[] getWrappedTrustManagers(TrustManager[] tms) {
+        // If we do not find any trust managers (for example in the SNI case, where we do not have a trust manager for
+        // a given name), return `null` and not an empty array.
+        if (tms == null) {
+            return null;
+        }
         var wrapped = new TrustManager[tms.length];
         for (int i = 0; i < tms.length; i++) {
             var manager = tms[i];
@@ -160,5 +165,11 @@ public class ExpiryTrustOptions implements TrustOptions {
                     Objects.equals(policy, that.policy);
         }
         return false;
+    }
+
+    public String toString() {
+        return "ExpiryTrustOptions[" +
+                "delegate=" + delegate + ", " +
+                "policy=" + policy + ']';
     }
 }

@@ -725,6 +725,10 @@ public class QuteProcessor {
                     // We need to find out whether the parsed template represents a checked template
                     String path = templatePathWithoutSuffix(templateId, config);
                     for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+                        if (checkedTemplate.isFragment()) {
+                            // Ignore fragments
+                            continue;
+                        }
                         if (checkedTemplate.templateId.equals(path)) {
                             for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
                                 parserHelper.addParameter(entry.getKey(), entry.getValue());
@@ -888,8 +892,10 @@ public class QuteProcessor {
                     String paramName = e.getKey();
                     MethodInfo methodOrConstructor = null;
                     if (validation.checkedTemplate.isRecord()) {
-                        Type[] componentTypes = validation.checkedTemplate.recordClass.recordComponents().stream()
-                                .map(RecordComponentInfo::type).toArray(Type[]::new);
+                        Type[] componentTypes = validation.checkedTemplate.recordClass.recordComponentsInDeclarationOrder()
+                                .stream()
+                                .map(RecordComponentInfo::type)
+                                .toArray(Type[]::new);
                         methodOrConstructor = validation.checkedTemplate.recordClass
                                 .method(MethodDescriptor.INIT, componentTypes);
                     } else {

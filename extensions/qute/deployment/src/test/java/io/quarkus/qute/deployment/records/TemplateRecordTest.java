@@ -34,7 +34,7 @@ public class TemplateRecordTest {
                             "templates/TemplateRecordTest/HelloInt.txt")
                     .addAsResource(new StringAsset("Hello {name}!"),
                             "templates/hello_world.txt")
-                    .addAsResource(new StringAsset("Hello {#fragment id=name}{name}{/fragment}!"),
+                    .addAsResource(new StringAsset("Hello {#fragment name}{name}{/fragment} and {foo}!"),
                             "templates/hello.txt")
                     .addAsResource(new StringAsset("{alpha}:{bravo}:{charlie}"),
                             "templates/TemplateRecordTest/multiParams.txt"));
@@ -71,7 +71,14 @@ public class TemplateRecordTest {
         assertFalse(helloInt.getTemplate().isFragment());
 
         assertEquals("Hello Lu!", new helloWorld("Lu").render());
-        assertEquals("Lu", new hello$name("Lu").render());
+
+        hello hello = new hello("Ma", "bar");
+        assertFalse(hello.getTemplate().isFragment());
+        assertEquals("Hello Ma and bar!", hello.render());
+
+        hello$name hello$name = new hello$name("Lu");
+        assertTrue(hello$name.getTemplate().isFragment());
+        assertEquals("Lu", hello$name.render());
 
         assertEquals("15:true:foo", new multiParams(true, 15, "foo").render());
         assertThrows(IllegalArgumentException.class, () -> new multiParams(false, 50, null));
@@ -82,6 +89,10 @@ public class TemplateRecordTest {
 
     @CheckedTemplate(basePath = "", defaultName = CheckedTemplate.UNDERSCORED_ELEMENT_NAME)
     record helloWorld(String name) implements TemplateInstance {
+    }
+
+    @CheckedTemplate(basePath = "")
+    record hello(String name, String foo) implements TemplateInstance {
     }
 
     @CheckedTemplate(basePath = "")

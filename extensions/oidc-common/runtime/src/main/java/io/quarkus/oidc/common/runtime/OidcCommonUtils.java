@@ -66,6 +66,7 @@ import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
@@ -787,9 +788,18 @@ public class OidcCommonUtils {
     }
 
     public static JsonObject decodeAsJsonObject(String encodedContent) {
+        String json = null;
         try {
-            return new JsonObject(base64UrlDecode(encodedContent));
+            json = base64UrlDecode(encodedContent);
         } catch (IllegalArgumentException ex) {
+            LOG.debugf("Invalid Base64URL content: %s", encodedContent);
+            return null;
+        }
+
+        try {
+            return new JsonObject(json);
+        } catch (DecodeException ex) {
+            LOG.debugf("Invalid JSON content: %s", json);
             return null;
         }
     }

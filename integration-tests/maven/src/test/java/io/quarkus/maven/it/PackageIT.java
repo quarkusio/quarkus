@@ -74,6 +74,43 @@ public class PackageIT extends MojoTestBase {
     }
 
     @Test
+    public void testConfigTrackingCustomFile() throws Exception {
+        testDir = initProject("projects/config-tracking-custom-file");
+        running = new RunningInvoker(testDir, false);
+        var configDump = new File(new File(testDir, ".quarkus"), "quarkus-prod-used-config-options");
+        var configCheck = new File(new File(testDir, "target"), "quarkus-prod-config-check");
+
+        // initial build that generates .quarkus/quarkus-prod-config-dump
+        var result = running.execute(List.of("clean package -DskipTests"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(configDump).exists();
+        assertThat(configCheck).doesNotExist();
+
+        // rebuild and compare the files
+        result = running.execute(List.of("clean package -DskipTests"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(configDump).exists();
+        assertThat(configCheck).exists();
+        assertThat(configDump).hasSameTextualContentAs(configCheck);
+
+        var props = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(configDump.toPath())) {
+            props.load(reader);
+        }
+        assertThat(props).containsEntry("quarkus.application.name", HashUtil.sha512("code-with-quarkus"));
+
+        assertThat(props).doesNotContainKey("quarkus.platform.group-id");
+        for (var name : props.stringPropertyNames()) {
+            assertThat(name).doesNotStartWith("quarkus.test.");
+        }
+
+        result = running.execute(List.of("package -DskipTests -Dquarkus.package.jar.type=uber-jar"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(running.log())
+                .contains("Option quarkus.package.jar.type has changed since the last build from fast-jar to uber-jar");
+    }
+
+    @Test
     public void testPluginClasspathConfig() throws Exception {
         testDir = initProject("projects/test-plugin-classpath-config");
         running = new RunningInvoker(testDir, false);

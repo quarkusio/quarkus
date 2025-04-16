@@ -21,7 +21,9 @@ public interface HeaderConfig {
     String value();
 
     /**
-     * The HTTP methods for this header configuration
+     * The HTTP methods for this header configuration.
+     * <p>
+     * If no HTTP methods are specified, the header will be always added.
      */
     Optional<List<String>> methods();
 }

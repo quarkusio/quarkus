@@ -96,7 +96,7 @@ quarkus.infinispan-client.hosts=localhost:11222 <1>
 quarkus.infinispan-client.username=admin <2>
 quarkus.infinispan-client.password=password <3>
 ----
-<1> Sets Infinispan Server address list, separated with commas
+<1> Sets Infinispan Server address list, separated with semicolons
 <2> Sets the authentication username
 <3> Sets the authentication password
 
@@ -112,25 +112,6 @@ quarkus.infinispan-client.uri=hotrod://admin:password@localhost:11222 <1>
 Use Infinispan Dev Services to run a server and connect without configuration.
 ====
 
-=== Client intelligence
-Infinispan client uses intelligence mechanisms to efficiently send requests to Infinispan Server clusters.
-By default, the *HASH_DISTRIBUTION_AWARE* intelligence mechanism is enabled.
-However, locally with Docker for Mac, you might experience connectivity issues.
-In this case, configure the client intelligence to *BASIC*.
-
-Learn more in the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod-client-intelligence_hotrod-java-client[Infinispan documentation].
-
-[source,properties]
-----
-quarkus.infinispan-client.client-intelligence=BASIC <1>
-----
-<1> Docker for Mac workaround.
-
-[IMPORTANT]
-====
-Don't use *BASIC* in production environments by default, performance might be impacted.
-====
-
 === Configuring backup clusters in Cross-Site Replication
 In High Availability production deployments, it is common to have multiple Infinispan Clusters that are
 distributed across various Data Centers worldwide. Infinispan offers the capability to connect these clusters and
@@ -140,17 +121,15 @@ clusters.
 
 [source,properties]
 ----
-quarkus.infinispan-client.hosts=host1:11222,host2:3122 <1>
+quarkus.infinispan-client.hosts=host1:11222;host2:3122 <1>
 quarkus.infinispan-client.username=admin
 quarkus.infinispan-client.password=password
-quarkus.infinispan-client.backup-cluster.nyc-site.hosts=nyc1:11222,nyc2:21222,nyc3:31222 <2>
-quarkus.infinispan-client.backup-cluster.nyc-site.client-intelligence=BASIC <3>
-quarkus.infinispan-client.backup-cluster.lon-site.hosts=lon1:11222,lon2:21222,lon3:31222 <4>
+quarkus.infinispan-client.backup-cluster.nyc-site.hosts=nyc1:11222;nyc2:21222;nyc3:31222 <2>
+quarkus.infinispan-client.backup-cluster.lon-site.hosts=lon1:11222;lon2:21222;lon3:31222 <3>
 ----
-<1> Sets Infinispan Server address list, separated with commas. This is the default cluster.
+<1> Sets Infinispan Server address list, separated with semicolons. This is the default cluster.
 <2> Configures a backup site 'nyc-site' with the provided address list
-<3> Configures a backup site 'nyc-site' with the provided client intelligence
-<4> Configures an additional backup site 'lon-site' with the provided address list
+<3> Configures an additional backup site 'lon-site' with the provided address list
 
 Based on the provided configuration, in the event of the default cluster becoming unavailable, the client will
 seamlessly transition to one of the accessible backup clusters.

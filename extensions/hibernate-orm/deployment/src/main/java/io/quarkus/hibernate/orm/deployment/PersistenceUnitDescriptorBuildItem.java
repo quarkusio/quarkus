@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
@@ -37,16 +35,17 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
             RecordedConfig config,
             String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml, Capabilities capabilities) {
+            boolean isReactive, boolean fromPersistenceXml,
+            boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper) {
         this.descriptor = descriptor;
         this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
-        this.isHibernateValidatorPresent = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
-        this.jsonMapper = json(capabilities);
-        this.xmlMapper = xml(capabilities);
+        this.isHibernateValidatorPresent = isHibernateValidatorPresent;
+        this.jsonMapper = jsonMapper;
+        this.xmlMapper = xmlMapper;
     }
 
     public Collection<String> getManagedClassNames() {
@@ -90,22 +89,5 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
                 xmlMappings, isReactive, fromPersistenceXml, isHibernateValidatorPresent,
                 jsonMapper, xmlMapper, integrationStaticDescriptors);
-    }
-
-    private Optional<FormatMapperKind> json(Capabilities capabilities) {
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            return Optional.of(FormatMapperKind.JACKSON);
-        }
-        if (capabilities.isPresent(Capability.JSONB)) {
-            return Optional.of(FormatMapperKind.JSONB);
-        }
-        return Optional.empty();
-    }
-
-    private Optional<FormatMapperKind> xml(Capabilities capabilities) {
-        if (capabilities.isPresent(Capability.JAXB)) {
-            return Optional.of(FormatMapperKind.JAXB);
-        }
-        return Optional.empty();
     }
 }

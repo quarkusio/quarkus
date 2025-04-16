@@ -218,7 +218,7 @@ public final class OidcUtils {
     }
 
     public static boolean isOpaqueToken(String token) {
-        return new StringTokenizer(token, ".").countTokens() != 3;
+        return OidcCommonUtils.decodeJwtContent(token) == null;
     }
 
     public static String decodeJwtContentAsString(String jwt) {
@@ -803,16 +803,17 @@ public final class OidcUtils {
     }
 
     public static boolean isJwtTokenExpired(String token) {
-        if (!isOpaqueToken(token)) {
-            JsonObject claims = OidcCommonUtils.decodeJwtContent(token);
-            Long expiresAt = getJwtExpiresAtClaim(claims);
-            if (expiresAt == null) {
-                return false;
-            }
-            final long nowSecs = System.currentTimeMillis() / 1000;
-            return nowSecs > expiresAt;
+        JsonObject claims = OidcCommonUtils.decodeJwtContent(token);
+        if (claims == null) {
+            // It must be an opaque token
+            return false;
         }
-        return false;
+        Long expiresAt = getJwtExpiresAtClaim(claims);
+        if (expiresAt == null) {
+            return false;
+        }
+        final long nowSecs = System.currentTimeMillis() / 1000;
+        return nowSecs > expiresAt;
     }
 
     static Long getJwtExpiresAtClaim(JsonObject claims) {

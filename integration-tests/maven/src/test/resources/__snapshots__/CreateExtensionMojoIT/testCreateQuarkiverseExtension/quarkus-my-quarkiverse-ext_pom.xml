@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkiverse</groupId>
         <artifactId>quarkiverse-parent</artifactId>
-        <version>18</version>
+        <version>19</version>
     </parent>
     <groupId>io.quarkiverse.my-quarkiverse-ext</groupId>
     <artifactId>quarkus-my-quarkiverse-ext-parent</artifactId>

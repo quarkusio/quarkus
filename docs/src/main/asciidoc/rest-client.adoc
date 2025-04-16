@@ -180,7 +180,7 @@ public interface ExtensionsService {
 
 }
 ----
-<1> Request query will include parameter with key `name`
+<1> @RestQuery will include parameter with key `name`
 <2> Each `Map` entry represents exactly one query parameter
 <3> `MultivaluedMap` allows you to send array values
 

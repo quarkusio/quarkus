@@ -31,6 +31,7 @@
                         <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
                         <quarkus.smallrye-openapi.auto-add-tags>false</quarkus.smallrye-openapi.auto-add-tags>
                         <quarkus.smallrye-openapi.auto-add-bad-request-response>false</quarkus.smallrye-openapi.auto-add-bad-request-response>
+                        <quarkus.smallrye-openapi.merge-schema-examples>true</quarkus.smallrye-openapi.merge-schema-examples>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

@@ -94,11 +94,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
-import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
-import io.quarkus.smallrye.openapi.deployment.filter.ClassAndMethod;
-import io.quarkus.smallrye.openapi.deployment.filter.DefaultInfoFilter;
-import io.quarkus.smallrye.openapi.deployment.filter.OperationFilter;
-import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.*;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
@@ -384,6 +380,15 @@ public class SmallRyeOpenApiProcessor {
         };
 
         return new OpenApiFilteredIndexViewBuildItem(indexView);
+    }
+
+    @BuildStep
+    void addAutoOpenApiEndpointFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
+            SmallRyeOpenApiConfig config) {
+        if (config.autoAddOpenApiEndpoint()) {
+            addToOpenAPIDefinitionProducer
+                    .produce(new AddToOpenAPIDefinitionBuildItem(new AutoAddOpenApiEndpointFilter(config.path())));
+        }
     }
 
     @BuildStep

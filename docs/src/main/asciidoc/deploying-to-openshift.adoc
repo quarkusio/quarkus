@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="deploy-openshift"]
+[id="deploying-to-openshift"]
 = Deploying {project-name} applications to {openshift}
 include::_attributes.adoc[]
 :categories: cloud, native
@@ -107,9 +107,10 @@ However, if you want to continue to use `DeploymentConfig`, it is still possible
 quarkus extension add 'quarkus-openshift'
 ----
 
-== Logging in to an OpenShift cluster
+== Logging in to an {openshift} cluster
 
-You can log in to an OpenShift cluster by using the https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI]:
+You can log in to an {openshift} cluster by using the OpenShift CLI (`oc`).
+For more information, see link:https://docs.openshift.com/container-platform/4.18/cli_reference/openshift_cli/getting-started-cli.html[Getting started with the OpenShift CLI]:
 
 .Example: Log in by using the OpenShift CLI
 [source,bash]
@@ -120,7 +121,7 @@ oc login -u myUsername <1>
 
 Alternatively, you can log in by using the API token:
 
-.Example: Log in by using the OpenShift command-line interface (CLI) with API token
+.Example: Log in by using the OpenShift CLI with API token
 [source,bash]
 ----
 oc login --token=myToken --server=myServerUrl
@@ -326,12 +327,12 @@ quarkus.openshift.annotations.foo=bar
 [[env-vars]]
 === Environment variables
 
-OpenShift provides multiple ways of defining environment variables:
+{openshift} provides multiple ways of defining environment variables:
 
-- key/value pairs
-- import all values from a Secret or ConfigMap
-- interpolate a single value identified by a given field in a Secret or ConfigMap
-- interpolate a value from a field within the same resource
+- Key/value pairs
+- Import all values from a Secret or ConfigMap
+- Interpolate a single value identified by a given field in a Secret or ConfigMap
+- Interpolate a value from a field within the same resource
 
 ==== Environment variables from key/value pairs
 
@@ -467,7 +468,8 @@ For example, adding the property `quarkus.openshift.arguments=A,B`.
 Finally, the Kubernetes job will be launched every time that it is installed in OpenShift.
 For more information about how to run Kubernetes jobs, see https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[Running an example job].
 
-You can configure the rest of the Kubernetes Job configuration by using the properties under `quarkus.openshift.job.xxx` (for more information, see xref:deploying-to-openshift.adoc#quarkus-kubernetes_quarkus-openshift-job-parallelism[quarkus.openshift.job.parallelism).
+You can configure the rest of the Kubernetes Job configuration by using the properties under `quarkus.openshift.job.xxx`.
+For more information, see xref:deploying-to-openshift.adoc#quarkus-kubernetes_quarkus-openshift-job-parallelism[quarkus.openshift.job.parallelism].
 
 ===== Generating CronJob resources
 
@@ -513,13 +515,13 @@ The older syntax is still supported but is deprecated, and it is advised that yo
 
 [NOTE]
 ====
- If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version is kept, and a warning will be issued to alert you of the problem.
+ If you redefine the same variable by using the new syntax while keeping the old syntax, only the new version is kept, and a warning will be issued to alert you of the problem.
  For example, if you define both `quarkus.openshift.env-vars.my-env-var.value=foobar` and `quarkus.openshift.env.vars.my-env-var=newValue`, the extension generates an environment variable `MY_ENV_VAR=newValue` and issues a warning.
 ====
 
 === Mounting volumes
 
-The OpenShift extension allows the user to configure both volumes and mounts for the application.
+The OpenShift extension allows you to configure both volumes and mounts for the application.
 You can mount any volume with a simple configuration:
 
 [source,properties]

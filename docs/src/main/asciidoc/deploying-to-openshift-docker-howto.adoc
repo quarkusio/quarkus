@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-docker-howto"]
-= Deploy {project-name} Java applications to {openshift} by using a Docker build strategy
+= Deploying {project-name} Java applications to {openshift} by using a Docker build strategy
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native

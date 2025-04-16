@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.rest.client.main.ClientWithExceptionMapper;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.restassured.RestAssured;
 
 @QuarkusTest

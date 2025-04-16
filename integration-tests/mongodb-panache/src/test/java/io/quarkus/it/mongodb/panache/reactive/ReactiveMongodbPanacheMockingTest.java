@@ -14,8 +14,8 @@ import org.mockito.Mockito;
 import io.quarkus.it.mongodb.panache.reactive.person.MockableReactivePersonRepository;
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonEntity;
 import io.quarkus.panache.mock.PanacheMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.Uni;
 
 @QuarkusTest

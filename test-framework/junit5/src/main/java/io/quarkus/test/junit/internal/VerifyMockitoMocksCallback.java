@@ -16,8 +16,8 @@ public class VerifyMockitoMocksCallback implements QuarkusTestAfterConstructCall
 
     @Override
     public void afterConstruct(Object testInstance) {
-        Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
-        if (deprecatedInjectMock == null) {
+        Class<? extends Annotation> mockitoConfig = loadMockitoConfig();
+        if (mockitoConfig == null) { // this means that the quarkus-junit5-mockito dependency was not added
             List<Field> injectMockFields = new ArrayList<>();
             Class<?> current = testInstance.getClass();
             while (current != null) {
@@ -37,10 +37,10 @@ public class VerifyMockitoMocksCallback implements QuarkusTestAfterConstructCall
     }
 
     @SuppressWarnings("unchecked")
-    private Class<? extends Annotation> loadDeprecatedInjectMock() {
+    private Class<? extends Annotation> loadMockitoConfig() {
         try {
-            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectMock");
-        } catch (Throwable e) {
+            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.MockitoConfig");
+        } catch (ClassNotFoundException ignored) {
             return null;
         }
     }

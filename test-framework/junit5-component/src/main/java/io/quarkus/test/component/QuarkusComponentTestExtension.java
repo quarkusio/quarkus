@@ -1064,13 +1064,7 @@ public class QuarkusComponentTestExtension
     }
 
     private List<Field> findInjectFields(Class<?> testClass, boolean scanEnclosingClasses) {
-        List<Class<? extends Annotation>> injectAnnotations;
-        Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
-        if (deprecatedInjectMock != null) {
-            injectAnnotations = List.of(Inject.class, InjectMock.class, deprecatedInjectMock);
-        } else {
-            injectAnnotations = List.of(Inject.class, InjectMock.class);
-        }
+        List<Class<? extends Annotation>> injectAnnotations = List.of(Inject.class, InjectMock.class);
         List<Field> found = findFields(testClass, injectAnnotations);
         if (scanEnclosingClasses) {
             Class<?> enclosing = testClass.getEnclosingClass();
@@ -1248,15 +1242,6 @@ public class QuarkusComponentTestExtension
         unsetHandles.addAll(handles);
         return isTypeArgumentInstanceHandle(requiredType) ? handles
                 : handles.stream().map(InstanceHandle::get).collect(Collectors.toUnmodifiableList());
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<? extends Annotation> loadDeprecatedInjectMock() {
-        try {
-            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectMock");
-        } catch (Throwable e) {
-            return null;
-        }
     }
 
     private static boolean isListRequiredType(java.lang.reflect.Type type) {

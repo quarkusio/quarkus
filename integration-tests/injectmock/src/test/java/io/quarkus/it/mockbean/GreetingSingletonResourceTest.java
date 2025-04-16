@@ -10,21 +10,23 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.junit.mockito.MockitoConfig;
 
 @QuarkusTest
 class GreetingSingletonResourceTest {
 
-    @InjectMock(convertScopes = true)
+    @InjectMock
+    @MockitoConfig(convertScopes = true)
     MessageServiceSingleton messageService;
 
-    @io.quarkus.test.InjectMock
+    @InjectMock
     @MockitoConfig(convertScopes = true)
     SuffixServiceSingleton suffixService;
 
-    @InjectMock(convertScopes = true)
+    @InjectMock
+    @MockitoConfig(convertScopes = true)
     CapitalizerServiceSingleton capitalizerService;
 
     @Test

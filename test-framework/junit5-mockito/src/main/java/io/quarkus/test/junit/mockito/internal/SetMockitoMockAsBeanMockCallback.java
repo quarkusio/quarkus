@@ -22,7 +22,7 @@ public class SetMockitoMockAsBeanMockCallback implements QuarkusTestBeforeEachCa
         } catch (Exception e) {
             throw new RuntimeException(mocked.beanInstance()
                     + " is not a normal scoped CDI bean, make sure the bean is a normal scope like @ApplicationScoped or @RequestScoped."
-                    + " Alternatively you can use '@InjectMock(convertScopes=true)' instead of '@InjectMock' if you would like"
+                    + " Alternatively you can use '@MockitoConfig(convertScopes = true)' in addition to '@InjectMock' if you would like"
                     + " Quarkus to automatically make that conversion (you should only use this if you understand the implications).");
         }
     }

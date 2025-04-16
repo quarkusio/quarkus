@@ -10,7 +10,7 @@ import io.quarkus.arc.Subclass;
  * <br />
  * This can have more than one level of hierarchy, for example:
  * <ul>
- * <li>When using @{@link io.quarkus.test.junit.mockito.InjectMock} or @{@link io.quarkus.test.junit.mockito.InjectSpy}</li>
+ * <li>When using {@code io.quarkus.test.InjectMock} or {@code io.quarkus.test.junit.mockito.InjectSpy}</li>
  * </ul>
  */
 public class ArcProxyBeanMetaDataClassNormalizer implements BeanMetaDataClassNormalizer {

@@ -328,8 +328,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             }
 
             if (isQuarkusTest && !isIntegrationTest) {
-
-                preloadTestResourceClasses(inspectionClass);
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
                 Class<?> clazz = runtimeClassLoader.loadClass(name);
 
@@ -381,42 +379,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         // This toString looks sloppy, but we cannot do an equals() because there might be multiple JUnit extensions, and getting the annotation value would need a reflective call, which may not be any cheaper or prettier than doing the string
         return (a.isPresent() && a.get().toString().contains(QuarkusTestExtension.class.getName()));
 
-    }
-
-    /*
-     * What's this for?
-     * It's a bit like detecting the location in a privacy test or detecting the lab environment in an emissions test and then
-     * deciding how to behave.
-     * We're special-casing behaviour for a hard-coded selection of test packages. Yuck!
-     * TODO Hopefully, once https://github.com/quarkusio/quarkus/issues/45785 is done, it will not be needed.
-     * Some tests, especially in kubernetes-client and openshift-client, check config to decide whether to start a dev service.
-     * That happens at augmentation, which happens before test execution.
-     * In the old model, the test class would have already been loaded by JUnit first, and it would have had a chance to write
-     * config to the system properties.
-     * That config would influence whether dev services were started.
-     * TODO even without 45785 it might be nice to find a better way, perhaps rewriting the AbstractKubernetesTestResource test
-     * resource to work differently?
-     *
-     */
-    private void preloadTestResourceClasses(Class<?> fromCanary) {
-        try {
-            Class<Annotation> ca = (Class<Annotation>) peekingClassLoader
-                    .loadClass("io.quarkus.test.common.QuarkusTestResource");
-            List<Annotation> ans = AnnotationSupport.findRepeatableAnnotations(fromCanary, ca);
-            for (Annotation a : ans) {
-                Method m = a
-                        .getClass()
-                        .getMethod(VALUE);
-                Class<?> resourceClass = (Class<?>) m.invoke(a);
-                // Only do this hack for the resources we know need it, since it can cause failures in other areas
-                if (resourceClass.getName().contains("Kubernetes")) {
-                    getParent().loadClass(resourceClass.getName());
-                }
-            }
-        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            // In some projects, these classes are not on the canary classpath. That's fine, we know there's nothing to preload.
-            log.debug("Canary classloader could not preload test resources:" + e);
-        }
     }
 
     private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {

@@ -12,6 +12,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
@@ -53,6 +54,11 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
             SmallRyeConfig config = configs.computeIfAbsent(mode, new Function<LaunchMode, SmallRyeConfig>() {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
+                    System.out.println((("HOLLY wull build, iam " + this.getClass()
+                            .getClassLoader() + " tccl"
+                            + Thread.currentThread()
+                                    .getContextClassLoader()
+                            + " condi" + SmallRyeConfigBuilderCustomizer.class.getClassLoader())));
                     return ConfigUtils.configBuilder(false, true, mode)
                             .withProfile(mode.getDefaultProfile())
                             .withMapping(TestConfig.class, "quarkus.test")

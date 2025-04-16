@@ -158,12 +158,12 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance()
                             .get()::isDisplayTestOutput);
-            // TODO do we want to do this setting of the TCCL? I think it just makes problems?
-            Thread.currentThread().setContextClassLoader(tcl);
 
+            System.out.println("HOLLY TCCL watch 1 " + Thread.currentThread().getContextClassLoader());
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
             Set<UniqueId> dynamicIds = new HashSet<>();
             DiscoveryResult quarkusTestClasses = discoverTestClasses();
+            System.out.println("HOLLY TCCL watch 2 " + Thread.currentThread().getContextClassLoader());
 
             Launcher launcher = LauncherFactory.create(LauncherConfig.builder().build());
             LauncherDiscoveryRequestBuilder launchBuilder = LauncherDiscoveryRequestBuilder.request()
@@ -211,7 +211,12 @@ public class JunitTestRunner {
 
             LauncherDiscoveryRequest request = launchBuilder
                     .build();
+            System.out.println("HOLLY TCCL watch 2a " + Thread.currentThread().getContextClassLoader());
+            Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
             TestPlan testPlan = launcher.discover(request);
+            System.out.println("HOLLY TCCL watch 3 " + Thread.currentThread().getContextClassLoader());
+            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
+            System.out.println("HOLLY TCCL watch 4 " + Thread.currentThread().getContextClassLoader());
             long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
             for (TestRunListener listener : listeners) {
                 listener.runStarted(toRun);

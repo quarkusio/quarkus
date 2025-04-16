@@ -35,13 +35,13 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
         // and causes some problems with config being set on the wrong classloader.
 
         // It's unclear if it's better to special-case gradle to reduce the impact, or be generic to make things consistent
-        if (System.getProperty("org.gradle.test.worker") != null) {
-            // This gets called several times; some for creation of LauncherSessionListener instances registered via the ServiceLoader mechanism,
-            // some for creation of Launcher instances, and some for calls to Launcher.discover(LauncherDiscoveryRequest), Launcher.execute(TestPlan, TestExecutionListener...), and Launcher.execute(LauncherDiscoveryRequest, TestExecutionListener...)
-            // We only know why it was called *after* calling invocation.proceed, sadly
-            // The Gradle classloading seems to happen immediately after the ConfigSessionListener is triggered, but before the next launch invocation
-            adjustContextClassLoader();
-        }
+        //   if (System.getProperty("org.gradle.test.worker") != null) {
+        // This gets called several times; some for creation of LauncherSessionListener instances registered via the ServiceLoader mechanism,
+        // some for creation of Launcher instances, and some for calls to Launcher.discover(LauncherDiscoveryRequest), Launcher.execute(TestPlan, TestExecutionListener...), and Launcher.execute(LauncherDiscoveryRequest, TestExecutionListener...)
+        // We only know why it was called *after* calling invocation.proceed, sadly
+        // The Gradle classloading seems to happen immediately after the ConfigSessionListener is triggered, but before the next launch invocation
+        //adjustContextClassLoader();
+        //    }
 
         return answer;
 

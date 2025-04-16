@@ -21,7 +21,13 @@ public class ConfigLauncherSession implements LauncherSessionListener {
         // before the formal loading phase. To make that work, the TCCL has to be
         // set to the FCL by the time this is called, even though we want config to live on the app classloader
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+        System.out.println("HOLLY creating config launcher, I am  " + this.getClass().getClassLoader());
+        System.out.println("HOLLY creating config launcher, TCCL is " + Thread.currentThread().getContextClassLoader());
+        if (old.toString().contains("Facade")) {
+            Thread.currentThread()
+                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+        }
+        System.out.println("HOLLY creating config launcher, second TCCL is " + Thread.currentThread().getContextClassLoader());
         try {
             TestConfigProviderResolver resolver = new TestConfigProviderResolver();
             ConfigProviderResolver.setInstance(resolver);

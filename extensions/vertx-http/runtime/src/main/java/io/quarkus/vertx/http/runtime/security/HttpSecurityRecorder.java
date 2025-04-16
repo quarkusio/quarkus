@@ -38,6 +38,7 @@ import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
@@ -48,6 +49,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -88,37 +90,38 @@ public class HttpSecurityRecorder {
      * This handler resolves the identity, and will be mapped to the post location. Otherwise,
      * for lazy auth the post will not be evaluated if there is no security rule for the post location.
      */
-    public Handler<RoutingContext> formAuthPostHandler() {
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
-                user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+    public void formAuthPostHandler(RuntimeValue<Router> httpRouter, VertxHttpConfig httpConfiguration) {
+        httpRouter.getValue().post(httpConfiguration.auth().form().postLocation())
+                .handler(new Handler<RoutingContext>() {
                     @Override
-                    public void onSubscribe(UniSubscription uniSubscription) {
+                    public void handle(RoutingContext event) {
+                        Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
+                        user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                            @Override
+                            public void onSubscribe(UniSubscription uniSubscription) {
 
-                    }
+                            }
 
-                    @Override
-                    public void onItem(SecurityIdentity securityIdentity) {
-                        // we expect that form-based authentication mechanism to recognize the post-location,
-                        // authenticate and if user provided credentials in form attribute, response will be ended
-                        if (!event.response().ended()) {
-                            event.response().end();
-                        }
-                    }
+                            @Override
+                            public void onItem(SecurityIdentity securityIdentity) {
+                                // we expect that form-based authentication mechanism to recognize the post-location,
+                                // authenticate and if user provided credentials in form attribute, response will be ended
+                                if (!event.response().ended()) {
+                                    event.response().end();
+                                }
+                            }
 
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        // with current builtin implementation if only form-based authentication mechanism the event here
-                        // won't be ended or failed, but we check in case there is custom implementation that differs
-                        if (!event.response().ended() && !event.failed()) {
-                            event.fail(throwable);
-                        }
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                                // with current builtin implementation if only form-based authentication mechanism the event here
+                                // won't be ended or failed, but we check in case there is custom implementation that differs
+                                if (!event.response().ended() && !event.failed()) {
+                                    event.fail(throwable);
+                                }
+                            }
+                        });
                     }
                 });
-            }
-        };
     }
 
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
@@ -160,6 +163,15 @@ public class HttpSecurityRecorder {
                 return Map.of();
             }
         };
+    }
+
+    public void validateOneTimeAuthToken(boolean tokenSenderNotFound, VertxHttpConfig httpConfig) {
+        if (tokenSenderNotFound && httpConfig.auth().form().authenticationToken().enabled()) {
+            throw new ConfigurationException(
+                    "One-time authentication token feature is enabled, but no '%s' interface has been found"
+                            .formatted(OneTimeAuthenticationTokenSender.class.getName()),
+                    Set.of("quarkus.http.auth.form.authentication-token.enabled"));
+        }
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

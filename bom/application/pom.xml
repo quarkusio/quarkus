@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.10.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.4</quarkus-http.version>
-        <micrometer.version>1.14.5</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.14.6</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -46,7 +46,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
-        <smallrye-common.version>2.10.0</smallrye-common.version>
+        <smallrye-common.version>2.12.0</smallrye-common.version>
         <smallrye-config.version>3.12.4</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
@@ -54,9 +54,9 @@
         <smallrye-graphql.version>2.12.2</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
-        <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>2.2.1</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
-        <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
+        <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.18.1</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.27.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
@@ -128,7 +128,7 @@
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>5.12.1</junit.jupiter.version>
+        <junit.jupiter.version>5.12.2</junit.jupiter.version>
         <infinispan.version>15.0.14.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.2.0</caffeine.version>
@@ -187,7 +187,7 @@
         <picocli.version>4.7.6</picocli.version>
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
         <commons-compress.version>1.27.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
-        <commons-text.version>1.13.0</commons-text.version>
+        <commons-text.version>1.13.1</commons-text.version>
         <gson.version>2.12.1</gson.version>
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.24.3</log4j2-api.version>
@@ -3292,6 +3292,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-observability-devservices</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-observability-devservices-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

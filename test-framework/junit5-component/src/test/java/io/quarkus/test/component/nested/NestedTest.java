@@ -13,6 +13,7 @@ import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.component.TestConfigProperty;
 import io.quarkus.test.component.beans.Charlie;
 import io.quarkus.test.component.beans.MyComponent;
+import io.quarkus.test.component.beans.MySimpleComponent;
 
 @QuarkusComponentTest
 @TestConfigProperty(key = "foo", value = "BAR")
@@ -21,6 +22,9 @@ public class NestedTest {
     @Inject
     MyComponent myComponent;
 
+    @Inject
+    MySimpleComponent mySimpleComponent;
+
     @InjectMock
     Charlie charlie;
 
@@ -28,6 +32,7 @@ public class NestedTest {
     public void testPing() {
         Mockito.when(charlie.ping()).thenReturn("foo");
         assertEquals("foo and BAR", myComponent.ping());
+        assertEquals("foo", mySimpleComponent.ping());
     }
 
     @TestConfigProperty(key = "foo", value = "BANG") // declared on nested test class -> ignored
@@ -41,6 +46,7 @@ public class NestedTest {
         public void testPing1() {
             Mockito.when(charlie.ping()).thenReturn("baz");
             assertEquals("baz and BAR", myComponent.ping());
+            assertEquals("foo", mySimpleComponent.ping());
         }
     }
 
@@ -55,6 +61,33 @@ public class NestedTest {
         public void testPing2() {
             Mockito.when(charlie.ping()).thenReturn("baz");
             assertEquals("baz and RAB", myComponent.ping());
+            assertEquals("foo", mySimpleComponent.ping());
+        }
+
+        @Nested
+        class Nested3 {
+
+            @Test
+            @TestConfigProperty(key = "foo", value = "AJAJ")
+            public void testPing3() {
+                Mockito.when(charlie.ping()).thenReturn("bazinga");
+                assertEquals("bazinga and AJAJ", myComponent.ping());
+                assertEquals("foo", mySimpleComponent.ping());
+            }
+
+            @Nested
+            class Nested4 {
+
+                @Test
+                @TestConfigProperty(key = "foo", value = "JAJA")
+                public void testPing3() {
+                    Mockito.when(charlie.ping()).thenReturn("BAZINGA");
+                    assertEquals("BAZINGA and JAJA", myComponent.ping());
+                    assertEquals("foo", mySimpleComponent.ping());
+                }
+
+            }
+
         }
     }
 }

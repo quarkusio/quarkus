@@ -182,7 +182,23 @@ class BuildIT extends MojoTestBase {
                 assertThat(section.getValue("visibility")).isEqualTo("private");
             }
         }
+    }
 
+    @Test
+    void testIdeDevModeBuildPropsPropagation() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/ide-dev-mode-build-props");
+        build();
+    }
+
+    @Test
+    void testMavenExtensionManipulatingPom()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/maven-extension-manipulating-pom/mvn-ext",
+                "projects/maven-extension-manipulating-pom/mvn-ext-processed");
+        build("install");
+        testDir = initProject("projects/maven-extension-manipulating-pom/app",
+                "projects/maven-extension-manipulating-pom/app-processed");
+        build();
     }
 
     private void launch() throws IOException {

@@ -41,7 +41,7 @@
         <assertj.version>3.27.3</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <junit5.version>5.12.1</junit5.version>
+        <junit5.version>5.12.2</junit5.version>
         <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M3</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
@@ -57,7 +57,7 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <commons-io.version>2.18.0</commons-io.version>
         <commons-lang.version>3.17.0</commons-lang.version>
-        <guava.version>33.4.6-jre</guava.version>
+        <guava.version>33.4.8-jre</guava.version>
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
@@ -70,7 +70,7 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.10.0</smallrye-common.version>
+        <smallrye-common.version>2.12.0</smallrye-common.version>
         <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
         <gradle-tooling.version>8.13</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.10</quarkus-fs-util.version>

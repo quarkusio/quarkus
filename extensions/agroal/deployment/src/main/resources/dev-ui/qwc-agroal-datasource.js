@@ -156,7 +156,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         _tables: {state: true},
         _selectedTable: {state: true},
         _selectedTableIndex:{state: true},
-        _selectedTableCols:{state: false},
+        _selectedTableCols:{state: true},
         _currentSQL: {state: true},
         _currentDataSet: {state: true},
         _isWatching: {state: true},
@@ -524,33 +524,50 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
         const value = item[columnName];
         if(value){
             let colDef = this._selectedTableCols.get(columnName);
-            let colType = colDef.columnType.toLowerCase();
+            if(colDef){
+                let colType = colDef.columnType.toLowerCase();
             
-            if(colDef.binary){
-                const byteCharacters = atob(value);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-
-                const blob = new Blob([byteArray], { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
-                
-                return html`<a class="download" href="${url}" download="download">download</span>`;
-            }else if(colType === "bool" || colType === "boolean"){ // TODO: Can we do int(1) and asume this will be a boolean ?
-                if(value && value === "true"){
-                    return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square-check"></vaadin-icon>`;
+                if(colDef.binary){
+                    return this._renderBinaryCell(value, colType);
                 }else {
-                    return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square"></vaadin-icon>`;
-                }
-            } else {
-                if(value.startsWith("http://") || value.startsWith("https://")){
-                    return html`<a href="${value}" target="_blank">${value}</a>`;
-                }else{
-                    return html`<span>${value}</span>`;
+                    return this._renderTextCell(value, colType);
                 }
             }
+        }
+    }
+    
+    _renderTextCell(value, colType){
+        if(colType === "bool" || colType === "boolean"){ // TODO: Can we do int(1) and asume this will be a boolean ?
+            if(value && value === "true"){
+                return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square-check"></vaadin-icon>`;
+            }else {
+                return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square"></vaadin-icon>`;
+            }
+        } else {
+            if(value.startsWith("http://") || value.startsWith("https://")){
+                return html`<a href="${value}" target="_blank">${value}</a>`;
+            }else{
+                return html`<span>${value}</span>`;
+            }
+        }
+    }
+    
+    _renderBinaryCell(value, colType){
+        try {
+            const byteCharacters = atob(value);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+
+            const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+
+            return html`<a class="download" href="${url}" download="download">download</span>`;
+        } catch (e) {
+            // Here try a normal render. Sometimes Java objects can render in String format (eg. UUID)
+            return this._renderTextCell(value, colType);
         }
     }
     
@@ -579,6 +596,7 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
     }
     
     _onTableChanged(event){
+        this._fetchTableDefinitions();
         this._selectedTableIndex = event.detail.value;
         this._selectedTable = this._tables[this._selectedTableIndex];
         this._clearSqlInput();

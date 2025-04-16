@@ -91,14 +91,14 @@ public class QuarkusBootstrapProvider implements Closeable {
             model.setPomFile(mp.getFile());
             // activated profiles or custom extensions may have overridden the build defaults
             model.setBuild(mp.getModel().getBuild());
-            projectModels.put(mp.getBasedir().toPath(), model);
+            projectModels.put(mp.getFile().toPath(), model);
             // The Maven Model API determines the project directory as the directory containing the POM file.
             // However, in case when plugins manipulating POMs store their results elsewhere
             // (such as the flatten plugin storing the flattened POM under the target directory),
             // both the base directory and the directory containing the POM file should be added to the map.
             var pomDir = mp.getFile().getParentFile();
             if (!pomDir.equals(mp.getBasedir())) {
-                projectModels.put(pomDir.toPath(), model);
+                projectModels.put(mp.getBasedir().toPath().resolve("pom.xml"), model);
             }
         }
         return projectModels;
@@ -210,7 +210,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                                     .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
                                     .setCurrentProject(mojo.mavenProject().getFile().toString())
                                     .setPreferPomsFromWorkspace(true)
-                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get)
+                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession()))
                                     // pass the repositories since Maven extensions could manipulate repository configs
                                     .setRemoteRepositories(mojo.remoteRepositories())
                                     .setEffectiveModelBuilder(BootstrapMavenContextConfig

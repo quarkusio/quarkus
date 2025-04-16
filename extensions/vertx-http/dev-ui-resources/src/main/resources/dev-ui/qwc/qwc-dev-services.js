@@ -155,6 +155,7 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
             let ports = devService.containerInfo.exposedPorts;
             
             const p = ports
+                .filter(p => p.publicPort != null)
                 .map(p => p.ip + ":" + p.publicPort + "->" + p.privatePort + "/" + p.type)
                 .join(', ');
 

@@ -22,4 +22,12 @@ public interface GrpcServerBuildTimeConfig {
     @WithName("grpc-health.enabled")
     @WithDefault("true")
     boolean grpcHealthEnabled();
+
+    /**
+     * Do we allow incomplete classpath for native build.
+     * This is useful for some legacy stuff that doesn't yet fully support Protobuf v4,
+     * only v3, which is missing some classes from v4, but can still work at runtime.
+     */
+    @WithDefault("false")
+    boolean allowIncompleteClasspath();
 }

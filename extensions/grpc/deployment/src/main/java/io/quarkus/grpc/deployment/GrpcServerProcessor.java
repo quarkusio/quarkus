@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
@@ -113,6 +115,26 @@ public class GrpcServerProcessor {
     private static final String KEY = SSL_PREFIX + "key";
     private static final String KEY_STORE = SSL_PREFIX + "key-store";
     private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
+
+    public static class V3Protobuf implements BooleanSupplier {
+
+        private final GrpcServerBuildTimeConfig configuration;
+
+        public V3Protobuf(GrpcServerBuildTimeConfig configuration) {
+            this.configuration = configuration;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return configuration.allowIncompleteClasspath();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    @BuildStep(onlyIf = V3Protobuf.class) // workaround some protobuf v3 vs v4 issues; e.g. Pulsar
+    NativeImageAllowIncompleteClasspathBuildItem legacyStuff() {
+        return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-grpc");
+    }
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {

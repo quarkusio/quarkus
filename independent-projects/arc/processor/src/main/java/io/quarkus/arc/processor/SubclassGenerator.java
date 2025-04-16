@@ -2,10 +2,13 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static io.quarkus.arc.processor.KotlinUtils.isKotlinMethod;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +25,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.InterceptionType;
@@ -33,6 +38,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -63,6 +69,17 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.InstanceFieldVar;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * A subclass is generated for any intercepted/decorated bean.
@@ -555,6 +572,64 @@ public class SubclassGenerator extends AbstractGenerator {
         };
     }
 
+    static Function<Set<AnnotationInstanceEquivalenceProxy>, String> createBindingsFun_2(IntegerHolder bindingIdx,
+            BlockCreator bc, Expr bindingsMap, Map<AnnotationInstanceEquivalenceProxy, Expr> bindingsLiterals,
+            BeanInfo bean, AnnotationLiteralProcessor annotationLiterals) {
+        Function<AnnotationInstanceEquivalenceProxy, Expr> bindingsLiteralFun = binding -> {
+            // Create annotation literal if needed
+            ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.get().name());
+            Expr result = annotationLiterals.create(bc, bindingClass, binding.get());
+            return bc.localVar("literal", result);
+        };
+
+        return bindings -> {
+            String key = "b" + bindingIdx.i++;
+            Expr value;
+            if (bindings.size() == 1) {
+                value = bc.invokeStatic(MethodDescs.COLLECTIONS_SINGLETON,
+                        bindingsLiterals.computeIfAbsent(bindings.iterator().next(), bindingsLiteralFun));
+            } else {
+                LocalVar bindingsArray = bc.localVar("bindings", bc.newEmptyArray(Object.class, bindings.size()));
+                int bindingsIndex = 0;
+                for (AnnotationInstanceEquivalenceProxy binding : bindings) {
+                    bc.set(bindingsArray.elem(bindingsIndex), bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
+                    bindingsIndex++;
+                }
+                value = bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray);
+            }
+            bc.withMap(bindingsMap).put(Const.of(key), value);
+            return key;
+        };
+    }
+
+    static Function<List<InterceptorInfo>, String> createInterceptorChainKeysFun_2(IntegerHolder chainIdx,
+            BlockCreator bc, Expr interceptorChainMap, Map<String, LocalVar> interceptorInstanceToLocalVar,
+            Map<String, LocalVar> interceptorBeanToLocalVar) {
+        return interceptors -> {
+            String key = "i" + chainIdx.i++;
+            if (interceptors.size() == 1) {
+                // List<InvocationContextImpl.InterceptorInvocation> chain = Collections.singletonList(...);
+                InterceptorInfo interceptor = interceptors.get(0);
+                LocalVar interceptorInstance = interceptorInstanceToLocalVar.get(interceptor.getIdentifier());
+                Expr interceptionInvocation = bc.invokeStatic(MethodDescs.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                        interceptorBeanToLocalVar.get(interceptor.getIdentifier()), interceptorInstance);
+                bc.withMap(interceptorChainMap).put(Const.of(key), bc.listOf(interceptionInvocation));
+            } else {
+                // List<InvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
+                LocalVar chain = bc.localVar("chain", bc.new_(ConstructorDesc.of(ArrayList.class)));
+                for (InterceptorInfo interceptor : interceptors) {
+                    // chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                    LocalVar interceptorInstance = interceptorInstanceToLocalVar.get(interceptor.getIdentifier());
+                    Expr interceptionInvocation = bc.invokeStatic(MethodDescs.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                            interceptorBeanToLocalVar.get(interceptor.getIdentifier()), interceptorInstance);
+                    bc.withList(chain).add(interceptionInvocation);
+                }
+                bc.withMap(interceptorChainMap).put(Const.of(key), chain);
+            }
+            return key;
+        };
+    }
+
     private ResultHandle invokeInterceptorMethod(BytecodeCreator creator, MethodInfo interceptorMethod,
             boolean isApplicationClass, ResultHandle invocationContext, ResultHandle targetInstance) {
         ResultHandle ret;
@@ -861,6 +936,31 @@ public class SubclassGenerator extends AbstractGenerator {
         return forwardDescriptor;
     }
 
+    // Gizmo 2 variant of createForwardingMethod()
+    static MethodDesc createForwardingMethod_2(io.quarkus.gizmo2.creator.ClassCreator subclass, ClassDesc providerType,
+            MethodInfo method, boolean implementingInterface) {
+        return subclass.method(method.name() + "$$superforward", mc -> {
+            mc.returning(classDescOf(method.returnType()));
+            List<ParamVar> params = new ArrayList<>(method.parametersCount());
+            for (MethodParameterInfo param : method.parameters()) {
+                params.add(mc.parameter(param.nameOrDefault(), classDescOf(param.type())));
+            }
+            mc.body(bc -> {
+                // `invokespecial` requires the descriptor to point to a method on a _direct_ supertype
+                // if we're extending a class, we have to always create a `ClassMethodDesc`
+                // if we're implementing an interface, we have to always create an `InterfaceMethodDesc`
+                // in both cases, the direct supertype is `providerType`
+                MethodDesc methodDesc = methodDescOf(method);
+                MethodDesc superMethod = implementingInterface
+                        ? InterfaceMethodDesc.of(providerType, methodDesc.name(), methodDesc.type())
+                        : ClassMethodDesc.of(providerType, methodDesc.name(), methodDesc.type());
+                Expr result = bc.invokeSpecial(superMethod, subclass.this_(), params);
+                // TODO need to cast explicitly due to Gizmo 2 not casting automatically
+                bc.return_(bc.cast(result, classDescOf(method.returnType())));
+            });
+        });
+    }
+
     static void createInterceptedMethod(MethodInfo method, ClassCreator subclass, FieldDescriptor metadataField,
             FieldDescriptor constructedField, MethodDescriptor forwardMethod,
             Function<BytecodeCreator, ResultHandle> getTarget) {
@@ -938,6 +1038,80 @@ public class SubclassGenerator extends AbstractGenerator {
         ResultHandle ret = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE,
                 getTarget.apply(tryCatch), paramsHandle, methodMetadataHandle);
         tryCatch.returnValue(ret);
+    }
+
+    static void createInterceptedMethod_2(MethodInfo method, io.quarkus.gizmo2.creator.ClassCreator subclass,
+            FieldDesc metadataField, FieldDesc constructedField, MethodDesc forwardMethod,
+            Supplier<Expr> getTarget) {
+
+        subclass.method(methodDescOf(method), mc -> {
+            mc.public_();
+            List<ParamVar> params = IntStream.range(0, method.parametersCount())
+                    .mapToObj(i -> mc.parameter("param" + i, i))
+                    .toList();
+            for (Type exception : method.exceptions()) {
+                mc.throws_(classDescOf(exception));
+            }
+            mc.body(b0 -> {
+                // Delegate to super class if not constructed yet
+                b0.ifNot(subclass.this_().field(constructedField), b1 -> {
+                    if (Modifier.isAbstract(method.flags())) {
+                        b1.throw_(IllegalStateException.class, "Cannot delegate to an abstract method");
+                    } else {
+                        b1.return_(b1.invokeVirtual(forwardMethod, subclass.this_(), params));
+                    }
+                });
+
+                // Object[] args = new Object[] {p1}
+                LocalVar args = b0.localVar("args", Const.ofNull(Object[].class));
+                if (method.parametersCount() > 0) {
+                    int paramsCount = method.parametersCount();
+                    b0.set(args, b0.newEmptyArray(Object.class, paramsCount));
+                    for (int i = 0; i < paramsCount; i++) {
+                        b0.set(args.elem(i), params.get(i));
+                    }
+                }
+
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        // InvocationContexts.performAroundInvoke(...)
+                        InstanceFieldVar methodMetadata = subclass.this_().field(metadataField);
+                        Expr result = b1.invokeStatic(MethodDescs.INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE,
+                                getTarget.get(), args, methodMetadata);
+                        // TODO need to cast explicitly due to Gizmo 2 not casting automatically
+                        b1.return_(b1.cast(result, classDescOf(method.returnType())));
+                    });
+
+                    // catch exceptions declared on the original method
+                    boolean addCatchRuntimeException = true;
+                    boolean addCatchException = true;
+                    for (Type declaredException : method.exceptions()) {
+                        tc.catch_(classDescOf(declaredException), "e", BlockCreator::throw_);
+
+                        DotName exName = declaredException.name();
+                        if (JAVA_LANG_RUNTIME_EXCEPTION.equals(exName) || JAVA_LANG_THROWABLE.equals(exName)) {
+                            addCatchRuntimeException = false;
+                        }
+                        if (JAVA_LANG_EXCEPTION.equals(exName) || JAVA_LANG_THROWABLE.equals(exName)) {
+                            addCatchException = false;
+                        }
+                    }
+                    // catch (RuntimeException e) if not already caught
+                    if (addCatchRuntimeException) {
+                        tc.catch_(RuntimeException.class, "e", BlockCreator::throw_);
+                    }
+                    // now catch the rest (Exception e) if not already caught
+                    // this catch is _not_ included for Kotlin methods because Kotlin has no checked exceptions contract
+                    if (addCatchException && !isKotlinMethod(method)) {
+                        tc.catch_(Exception.class, "e", (b1, e) -> {
+                            // and wrap them in ArcUndeclaredThrowableException
+                            b1.throw_(b1.new_(ArcUndeclaredThrowableException.class,
+                                    Const.of("Error invoking subclass method"), e));
+                        });
+                    }
+                });
+            });
+        });
     }
 
     /**

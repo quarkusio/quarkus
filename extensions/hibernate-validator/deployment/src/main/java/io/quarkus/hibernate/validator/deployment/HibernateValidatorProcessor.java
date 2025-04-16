@@ -574,22 +574,11 @@ class HibernateValidatorProcessor {
             classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
 
-        // Prevent the removal of ValueExtractor beans
-        // and collect all classes implementing ValueExtractor (for use in HibernateValidatorRecorder)
-        Set<DotName> valueExtractorClassNames = new HashSet<>();
-        for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(VALUE_EXTRACTOR)) {
-            valueExtractorClassNames.add(valueExtractorType.name());
-        }
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(valueExtractorClassNames));
-        Set<Class<?>> valueExtractorClassProxies = new HashSet<>();
-        for (DotName className : valueExtractorClassNames) {
-            valueExtractorClassProxies.add(recorderContext.classProxy(className.toString()));
-        }
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypesIncludingParameterized(Set.of(VALUE_EXTRACTOR), indexView));
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
-                                valueExtractorClassProxies,
                                 hasXmlConfiguration(),
                                 capabilities.isPresent(Capability.HIBERNATE_ORM),
                                 shutdownContext,

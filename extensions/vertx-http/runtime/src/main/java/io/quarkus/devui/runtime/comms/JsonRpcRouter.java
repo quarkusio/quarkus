@@ -77,7 +77,7 @@ public class JsonRpcRouter {
                     }
                     ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
                             params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
-                    String jsonRpcMethodName = extensionName + DOT + methodName;
+                    String jsonRpcMethodName = extensionName + SLASH + methodName;
                     jsonRpcToRuntimeClassPathJava.put(jsonRpcMethodName, reflectionInfo);
                 } catch (NoSuchMethodException | SecurityException ex) {
                     throw new RuntimeException(ex);
@@ -352,7 +352,7 @@ public class JsonRpcRouter {
         return codec.getJsonMapper();
     }
 
-    private static final String DOT = ".";
+    private static final String SLASH = "/";
     private static final String UNSUBSCRIBE = "unsubscribe";
 
 }

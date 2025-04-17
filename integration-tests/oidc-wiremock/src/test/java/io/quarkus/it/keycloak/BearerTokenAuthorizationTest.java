@@ -154,6 +154,22 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBearerTokenEncrypted() {
+        // we can pass encrypted ID token as if it were an encrypted access token
+        String encryptedToken = OidcWiremockTestResource.getEncryptedIdToken("admin", Set.of("admin"));
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-without-decryption-key")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given().auth().oauth2(encryptedToken)
+                .when().get("/api/admin/bearer-encrypted-with-decryption-key")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
     public void testAccessAdminResourceWithCertThumbprint() {
         RestAssured.given().auth().oauth2(getAccessTokenWithThumbprint("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer-no-introspection")

@@ -715,7 +715,7 @@ Token properties cover a lot of requirements related to the token verification, 
 [[token-preprocessing]]
 === Token preprocessing
 
-Some tokens may have to decrypted or their headers preprocessed for the verification process to start and succeed.
+ID and access tokens may have to decrypted or their headers preprocessed for the verification process to start and succeed.
 
 .Token preprocessing properties
 [options="header"]
@@ -723,10 +723,14 @@ Some tokens may have to decrypted or their headers preprocessed for the verifica
 |Property | Default |Description
 
 |quarkus.oidc.token.decryption-key-location || Decryption key location
+|quarkus.oidc.token.decrypt-id-token |true| Decrypt ID token
+|quarkus.oidc.token.decrypt-access-token |false| Decryption access token
 |quarkus.oidc.token.customizer-name || Customizer name
 |====
 
-OIDC providers usually issue signed ID tokens but they may also issue encrypted ID tokens which Quarkus needs to decrypt. Use the `quarkus.oidc.token.decryption-key-location` property to point to a JWK or PEM decryption key file in this case.
+OIDC providers usually issue signed ID and access tokens but may also additionally encrypt these tokens which Quarkus needs to decrypt to verify them. Use the `quarkus.oidc.token.decryption-key-location` property to point to a JWK or PEM decryption key file and choose which token types must be decrypted, the ID token with `quarkus.oidc.token.decrypt-id-token`, or the access token with `quarkus.oidc.token.decrypt-access-token`.
+
+ID token decryption is enabled by default when the decryption key location is configured and the ID token sequence contains 5 parts separated by dot character. Access token decryption is not enabled by default because opaque access tokens which do not contain inner-signed JWT tokens may have 5 parts separated by dot character by chance.
 
 `quarkus.oidc.token.customizer-name` is an advanced property that may be used to select a specific `io.quarkus.oidc.TokenCustomizer` implementation which can pre-process JWT token headers before its signature can be verified. The main use-case is to support verifying legacy Azure JWT tokens which must have their `nonce` header recalculated for the signature verification to succeed.
 

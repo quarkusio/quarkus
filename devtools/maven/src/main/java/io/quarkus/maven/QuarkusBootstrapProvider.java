@@ -6,8 +6,6 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +19,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -80,25 +77,25 @@ public class QuarkusBootstrapProvider implements Closeable {
         return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());
     }
 
-    static Map<Path, Model> getProjectMap(MavenSession session) {
-        final List<MavenProject> allProjects = session.getAllProjects();
-        if (allProjects == null) {
-            return Map.of();
-        }
-        final Map<Path, Model> projectModels = new HashMap<>(allProjects.size());
-        for (MavenProject mp : allProjects) {
-            final Model model = getRawModel(mp);
-            projectModels.put(mp.getFile().toPath(), model);
-            // The Maven Model API determines the project directory as the directory containing the POM file.
-            // However, in case when plugins manipulating POMs store their results elsewhere
-            // (such as the flatten plugin storing the flattened POM under the target directory),
-            // both the base directory and the directory containing the POM file should be added to the map.
-            var pomDir = mp.getFile().getParentFile();
-            if (!pomDir.equals(mp.getBasedir())) {
-                projectModels.put(mp.getBasedir().toPath().resolve("pom.xml"), model);
+    static void setProjectModels(QuarkusBootstrapMojo mojo, BootstrapMavenContextConfig<?> config) {
+        final List<MavenProject> allProjects = mojo.mavenSession().getAllProjects();
+        if (allProjects != null) {
+            for (MavenProject mp : allProjects) {
+                if (mojo.reloadPoms.contains(mp.getFile())) {
+                    continue;
+                }
+                final Model model = getRawModel(mp);
+                config.addProvidedModule(mp.getFile().toPath(), model, mp.getModel());
+                // The Maven Model API determines the project directory as the directory containing the POM file.
+                // However, in case when plugins manipulating POMs store their results elsewhere
+                // (such as the flatten plugin storing the flattened POM under the target directory),
+                // both the base directory and the directory containing the POM file should be added to the map.
+                var pomDir = mp.getFile().getParentFile();
+                if (!pomDir.equals(mp.getBasedir())) {
+                    config.addProvidedModule(mp.getBasedir().toPath().resolve("pom.xml"), model, mp.getModel());
+                }
             }
         }
-        return projectModels;
     }
 
     /**
@@ -123,8 +120,6 @@ public class QuarkusBootstrapProvider implements Closeable {
             model.setDependencies(mp.getDependencies());
         }
         model.setPomFile(mp.getFile());
-        // activated profiles or custom extensions may have overridden the build defaults
-        model.setBuild(mp.getModel().getBuild());
         return model;
     }
 
@@ -227,18 +222,18 @@ public class QuarkusBootstrapProvider implements Closeable {
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode) {
             try {
                 if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    var resolver = workspaceProvider.createArtifactResolver(
-                            BootstrapMavenContext.config()
-                                    // it's important to pass user settings in case the process was not launched using the original mvn script
-                                    // for example using org.codehaus.plexus.classworlds.launcher.Launcher
-                                    .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
-                                    .setCurrentProject(mojo.mavenProject().getFile().toString())
-                                    .setPreferPomsFromWorkspace(true)
-                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession()))
-                                    // pass the repositories since Maven extensions could manipulate repository configs
-                                    .setRemoteRepositories(mojo.remoteRepositories())
-                                    .setEffectiveModelBuilder(BootstrapMavenContextConfig
-                                            .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties())));
+                    final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config()
+                            // it's important to pass user settings in case the process was not launched using the original mvn script,
+                            // for example, using org.codehaus.plexus.classworlds.launcher.Launcher
+                            .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
+                            .setCurrentProject(mojo.mavenProject().getFile().toString())
+                            .setPreferPomsFromWorkspace(true)
+                            // pass the repositories since Maven extensions could manipulate repository configs
+                            .setRemoteRepositories(mojo.remoteRepositories())
+                            .setEffectiveModelBuilder(BootstrapMavenContextConfig
+                                    .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties()));
+                    setProjectModels(mojo, config);
+                    var resolver = workspaceProvider.createArtifactResolver(config);
                     final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
                     if (currentProject != null && workspaceId == 0) {
                         workspaceId = currentProject.getWorkspace().getId();

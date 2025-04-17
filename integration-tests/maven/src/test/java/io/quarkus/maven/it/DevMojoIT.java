@@ -20,9 +20,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -509,7 +512,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         }
         Files.copy(pom.toPath(), alternatePom.toPath());
         // Now edit the pom.xml to trigger the dev mode restart
-        filter(alternatePom, Collections.singletonMap("<!-- insert test dependencies here -->",
+        filter(alternatePom, Map.of("<!-- insert test dependencies here -->",
                 "        <dependency>\n" +
                         "            <groupId>io.quarkus</groupId>\n" +
                         "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
@@ -573,6 +576,68 @@ public class DevMojoIT extends LaunchMojoTestBase {
             }
         }
         return artifacts;
+    }
+
+    @Test
+    public void testPomReload() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/project-with-extension", "projects/pom-reload");
+
+        // add the extra dependency to the application module
+        filter(new File(testDir, "runner/pom.xml"), Map.of(
+                "<!-- begin comment", "<!-- begin comment -->",
+                "end comment -->", "<!-- end comment -->"));
+
+        // launch the application
+        run(false);
+
+        var localDeps = parseArtifactCoords(devModeClient.getHttpResponse("/app/hello/local-modules"));
+        assertThat(localDeps).containsExactlyInAnyOrder(
+                ArtifactCoords.jar("org.acme.extra", "acme-extra", "1.0-SNAPSHOT"),
+                ArtifactCoords.jar("org.acme", "acme-common-transitive", "1.0-SNAPSHOT"),
+                ArtifactCoords.jar("org.acme", "acme-common", "1.0-SNAPSHOT"),
+                ArtifactCoords.jar("org.acme", "acme-library", "1.0-SNAPSHOT"),
+                ArtifactCoords.jar("org.acme", "acme-quarkus-ext-deployment", "1.0-SNAPSHOT"),
+                ArtifactCoords.jar("org.acme", "acme-quarkus-ext", "1.0-SNAPSHOT"));
+
+        // remove the extra dependency from the application module
+        filter(new File(testDir, "runner/pom.xml"), Map.of(
+                "<!-- begin comment -->", "<!-- begin comment",
+                "<!-- end comment -->", "end comment -->"));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> {
+                    final String response = devModeClient.getHttpResponse("/app/hello/local-modules");
+                    System.out.println("local-modules: " + response);
+                    return !response.contains("acme-extra");
+                });
+
+        // add the extra dependency to a dependency module
+        filter(new File(testDir, "library/pom.xml"), Map.of(
+                "<!-- begin comment", "<!-- begin comment -->",
+                "end comment -->", "<!-- end comment -->"));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> {
+                    final String response = devModeClient.getHttpResponse("/app/hello/local-modules");
+                    System.out.println("local-modules: " + response);
+                    return response.contains("acme-extra");
+                });
+    }
+
+    private static Set<ArtifactCoords> parseArtifactCoords(String s) {
+        if (s.charAt(0) == '[' && s.charAt(s.length() - 1) == ']') {
+            s = s.substring(1, s.length() - 1);
+        }
+        var arr = s.split(",");
+        final Set<ArtifactCoords> result = new HashSet<>(arr.length);
+        for (var i : arr) {
+            result.add(ArtifactCoords.fromString(i.trim()));
+        }
+        return result;
     }
 
     @Test

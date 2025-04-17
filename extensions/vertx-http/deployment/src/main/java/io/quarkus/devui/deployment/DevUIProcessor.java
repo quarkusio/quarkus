@@ -159,7 +159,7 @@ public class DevUIProcessor {
         routeProducer.produce(
                 nonApplicationRootPathBuildItem
                         .routeBuilder().route(DEVUI + SLASH + JSONRPC)
-                        .handler(recorder.communicationHandler())
+                        .handler(recorder.webSocketHandler())
                         .build());
 
         // Static handler for components

@@ -21,13 +21,12 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     private Object mock;
 
     public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation,
-            String configKey, boolean requestScope) {
+            String configKey, boolean lazyDelegate) {
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;
-        if (!requestScope) {
-            // when not using the Request scope, we eagerly create the delegate
-            delegate();
+        if (!lazyDelegate) {
+            constructDelegate();
         }
     }
 
@@ -55,7 +54,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     @SuppressWarnings("unused")
     @NoClassInterceptors
     public Object getDelegate() {
-        return mock == null ? delegate() : mock;
+        return mock == null ? constructDelegate() : mock;
     }
 
     @Override
@@ -71,7 +70,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     }
 
     @NoClassInterceptors
-    private T delegate() {
+    private T constructDelegate() {
         if (delegate == null) {
             delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, configKey);
         }

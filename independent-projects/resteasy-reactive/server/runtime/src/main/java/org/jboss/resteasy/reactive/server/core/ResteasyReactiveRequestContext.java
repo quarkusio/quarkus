@@ -890,14 +890,14 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public Object getQueryParameter(String name, boolean single, boolean encoded) {
-        return getQueryParameter(name, single, encoded, null);
+        return getQueryParameter(name, single, encoded, false, null);
     }
 
     @Override
-    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
+    public Object getQueryParameter(String name, boolean single, boolean encoded, boolean allowEmpty, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
-            if (val != null && val.isEmpty()) {
+            if (!allowEmpty && val != null && val.isEmpty()) {
                 return null;
             }
             if (encoded && val != null) {
@@ -907,7 +907,8 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         // empty collections must not be turned to null
-        List<String> strings = filterEmpty(serverRequest().getAllQueryParams(name));
+        List<String> allQueryParams = serverRequest().getAllQueryParams(name);
+        List<String> strings = allowEmpty ? allQueryParams : filterEmpty(allQueryParams);
         if (encoded) {
             List<String> newStrings = new ArrayList<>();
             for (String i : strings) {
@@ -967,13 +968,13 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     @Override
-    public Object getFormParameter(String name, boolean single, boolean encoded) {
+    public Object getFormParameter(String name, boolean single, boolean encoded, boolean allowEmpty) {
         if (formData == null) {
             return null;
         }
         if (single) {
             FormValue val = formData.getFirst(name);
-            if (val == null || val.isFileItem() || val.getValue().isEmpty()) {
+            if (val == null || val.isFileItem() || (!allowEmpty && val.getValue().isEmpty())) {
                 return null;
             }
             if (encoded) {
@@ -985,7 +986,7 @@ public abstract class ResteasyReactiveRequestContext
         List<String> strings = new ArrayList<>();
         if (val != null) {
             for (FormValue i : val) {
-                if (i.getValue().isEmpty()) {
+                if (!allowEmpty && i.getValue().isEmpty()) {
                     continue;
                 }
                 if (encoded) {

@@ -17,6 +17,10 @@ import io.vertx.core.Vertx;
 public class SmallRyeStorkRecorder {
 
     public void initialize(ShutdownContext shutdown, RuntimeValue<Vertx> vertx, StorkConfiguration configuration) {
+        if (configuration.serviceConfiguration().isEmpty()) {
+            return;
+        }
+
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         StorkConfigProvider.init(serviceConfigs);
         Instance<ObservationCollector> instance = CDI.current().select(ObservationCollector.class);

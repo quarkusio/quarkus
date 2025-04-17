@@ -19,6 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <modules>
+        <module>extra</module>
         <module>common</module>
         <module>common-transitive</module>
         <module>quarkus-ext</module>

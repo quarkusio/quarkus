@@ -77,6 +77,7 @@ import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.resolver.maven.workspace.WorkspaceModulePom;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.smallrye.beanbag.maven.MavenFactory;
@@ -194,7 +195,7 @@ public class BootstrapMavenContext {
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
             this.workspace = config.currentProject.getWorkspace();
         } else if (config.workspaceDiscovery) {
-            currentProject = resolveCurrentProject(config.modelProvider);
+            currentProject = resolveCurrentProject(config.providedModules);
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
             if (workspace != null) {
                 if (config.repoSession == null && repoSession != null && repoSession.getWorkspaceReader() == null) {
@@ -377,9 +378,9 @@ public class BootstrapMavenContext {
                 : localRepoTailIgnoreAvailability;
     }
 
-    private LocalProject resolveCurrentProject(Map<Path, Model> modelProvider) throws BootstrapMavenException {
+    private LocalProject resolveCurrentProject(List<WorkspaceModulePom> providedModules) throws BootstrapMavenException {
         try {
-            return LocalProject.loadWorkspace(this, modelProvider);
+            return LocalProject.loadWorkspace(this, providedModules);
         } catch (Exception e) {
             throw new BootstrapMavenException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }

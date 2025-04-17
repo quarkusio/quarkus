@@ -7,8 +7,8 @@ import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CL
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_ENDPOINT_COUNT_ERRORS;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_BYTES;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_CLOSED;
+import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_ON_OPEN_ERROR;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_OPENED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_OPENED_ERROR;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_COUNT;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_ENDPOINT_COUNT_ERRORS;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction.INBOUND;
@@ -120,7 +120,7 @@ public final class MetricsAsserter {
     }
 
     static Matcher<String> assertServerConnectionOpeningFailedTotal(String path, int serverConnectionOpeningFailedCount) {
-        return assertTotal(SERVER_CONNECTION_OPENED_ERROR, serverConnectionOpeningFailedCount, path, null);
+        return assertTotal(SERVER_CONNECTION_ON_OPEN_ERROR, serverConnectionOpeningFailedCount, path, null);
     }
 
     static Matcher<String> assertServerConnectionOpenedTotal(int serverConnectionOpenedCount) {

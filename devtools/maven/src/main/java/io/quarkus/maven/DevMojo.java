@@ -1,6 +1,8 @@
 package io.quarkus.maven;
 
 import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
+import static io.quarkus.maven.QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP_PARAM;
+import static io.quarkus.maven.QuarkusBootstrapMojo.MODE_PARAM;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import static java.util.Collections.emptyMap;
@@ -557,16 +559,20 @@ public class DevMojo extends AbstractMojo {
                         }
                         return;
                     }
-                    final Set<Path> changed = new HashSet<>();
+                    List<String> changedPoms = List.of();
                     for (Map.Entry<Path, Long> e : pomFiles.entrySet()) {
                         long t = Files.getLastModifiedTime(e.getKey()).toMillis();
                         if (t > e.getValue()) {
-                            changed.add(e.getKey());
+                            if (changedPoms.isEmpty()) {
+                                // unless it's a git or some other command, there won't be many POMs modified in 100 milliseconds
+                                changedPoms = new ArrayList<>(1);
+                            }
+                            changedPoms.add(e.getKey().toString());
                             pomFiles.put(e.getKey(), t);
                         }
                     }
-                    if (!changed.isEmpty()) {
-                        getLog().info("Changes detected to " + changed + ", restarting dev mode");
+                    if (!changedPoms.isEmpty()) {
+                        logPomChanges(changedPoms);
 
                         // stop the runner before we build the new one as the debug port being free
                         // is tested when building the runner
@@ -574,10 +580,10 @@ public class DevMojo extends AbstractMojo {
 
                         final DevModeRunner newRunner;
                         try {
-                            bootstrapId = handleAutoCompile();
+                            bootstrapId = handleAutoCompile(changedPoms);
                             newRunner = new DevModeRunner(runner.commandLine.getDebugPort(), bootstrapId);
                         } catch (Exception e) {
-                            getLog().info("Could not load changed pom.xml file, changes not applied", e);
+                            getLog().info("Could not load changedPoms pom.xml file, changes not applied", e);
                             continue;
                         }
                         newRunner.run();
@@ -588,6 +594,15 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private void logPomChanges(List<String> changedPoms) {
+        final StringBuilder sb = new StringBuilder().append("Restarting dev mode following changes in ");
+        sb.append(changedPoms.get(0));
+        for (int i = 1; i < changedPoms.size(); ++i) {
+            sb.append(", ").append(changedPoms.get(i));
+        }
+        getLog().info(sb.toString());
     }
 
     /**
@@ -649,7 +664,18 @@ public class DevMojo extends AbstractMojo {
     }
 
     private String handleAutoCompile() throws MojoExecutionException {
+        return handleAutoCompile(List.of());
+    }
 
+    /**
+     * Invokes Maven project goals that are meant to be executed before quarkus:dev,
+     * unless they have already been executed.
+     *
+     * @param reloadPoms a list of POM files that should be reloaded from disk instead of read from the reactor
+     * @return bootstrap id
+     * @throws MojoExecutionException in case of an error
+     */
+    private String handleAutoCompile(List<String> reloadPoms) throws MojoExecutionException {
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
         // see also org.apache.maven.lifecycle.internal.DefaultLifecycleTaskSegmentCalculator
@@ -761,10 +787,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        final Map<String, String> quarkusGoalParams = Map.of(
-                "mode", LaunchMode.DEVELOPMENT.name(),
-                QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false",
-                "bootstrapId", bootstrapId);
+        Map<String, String> quarkusGoalParams = null;
         for (int phaseIndex = latestHandledPhaseIndex + 1; phaseIndex < PRE_DEV_MODE_PHASES.size(); ++phaseIndex) {
             var executions = phaseExecutions.get(PRE_DEV_MODE_PHASES.get(phaseIndex));
             if (executions == null) {
@@ -774,6 +797,9 @@ public class DevMojo extends AbstractMojo {
                 var executedGoals = executedPluginGoals.getOrDefault(pe.plugin.getId(), List.of());
                 for (String goal : pe.execution.getGoals()) {
                     if (!executedGoals.contains(goal)) {
+                        if (quarkusGoalParams == null) {
+                            quarkusGoalParams = getQuarkusGoalParams(bootstrapId, reloadPoms);
+                        }
                         try {
                             executeGoal(pe, goal,
                                     pe.getPluginId().equals(quarkusPluginId) ? quarkusGoalParams : Map.of());
@@ -791,6 +817,35 @@ public class DevMojo extends AbstractMojo {
             }
         }
         return bootstrapId;
+    }
+
+    /**
+     * Returns a map of parameters for the Quarkus plugin goals to be invoked.
+     *
+     * @param bootstrapId bootstrap id
+     * @param reloadPoms POM files to be reloaded from disk instead of taken from the reactor
+     * @return map of parameters for the Quarkus plugin goals
+     */
+    private static Map<String, String> getQuarkusGoalParams(String bootstrapId, List<String> reloadPoms) {
+        final Map<String, String> result = new HashMap<>(4);
+        result.put(QuarkusBootstrapMojo.MODE_PARAM, LaunchMode.DEVELOPMENT.name());
+        result.put(QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP_PARAM, "false");
+        result.put(QuarkusBootstrapMojo.BOOTSTRAP_ID_PARAM, bootstrapId);
+        if (reloadPoms != null && !reloadPoms.isEmpty()) {
+            String reloadPomsStr;
+            if (reloadPoms.size() == 1) {
+                reloadPomsStr = reloadPoms.get(0);
+            } else {
+                final StringBuilder sb = new StringBuilder();
+                sb.append(reloadPoms.get(0));
+                for (int i = 1; i < reloadPoms.size(); ++i) {
+                    sb.append(",").append(reloadPoms.get(i));
+                }
+                reloadPomsStr = sb.toString();
+            }
+            result.put(QuarkusBootstrapMojo.RELOAD_POMS_PARAM, reloadPomsStr);
+        }
+        return result;
     }
 
     private String getCurrentGoal() {
@@ -1004,7 +1059,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        if ((Xpp3Dom) plugin.getConfiguration() != null) {
+        if (plugin.getConfiguration() != null) {
             mergedConfig = mergedConfig == null ? (Xpp3Dom) plugin.getConfiguration()
                     : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) plugin.getConfiguration(), true);
         }
@@ -1300,17 +1355,15 @@ public class DevMojo extends AbstractMojo {
             process = processBuilder.start();
 
             //https://github.com/quarkusio/quarkus/issues/232
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    process.destroy();
-                    try {
-                        process.waitFor();
-                    } catch (InterruptedException e) {
-                        getLog().warn("Unable to properly wait for dev-mode end", e);
-                    }
-                }
-            }, "Development Mode Shutdown Hook"));
+            Runtime.getRuntime().addShutdownHook(new Thread(this::safeStop, "Development Mode Shutdown Hook"));
+        }
+
+        private void safeStop() {
+            try {
+                stop();
+            } catch (InterruptedException e) {
+                getLog().warn("Unable to properly wait for dev-mode end", e);
+            }
         }
 
         void stop() throws InterruptedException {
@@ -1467,7 +1520,7 @@ public class DevMojo extends AbstractMojo {
                     .setRootProjectDir(rootProjectDir);
 
             // There are a couple of reasons we don't want to use the original Maven session:
-            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;
+            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync anymore with the effective POM;
             // 2) in case there is a local module that has a snapshot version, which is also available in a remote snapshot repository,
             // the Maven resolver will be checking for newer snapshots in the remote repository and might end up resolving the artifact from there.
             final BootstrapMavenContext mvnCtx = workspaceProvider.createMavenContext(mvnConfig);

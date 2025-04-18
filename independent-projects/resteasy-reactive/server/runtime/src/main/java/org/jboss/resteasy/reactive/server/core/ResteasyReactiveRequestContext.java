@@ -51,6 +51,7 @@ import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
@@ -62,6 +63,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.multipart.FormValue;
@@ -156,6 +158,9 @@ public abstract class ResteasyReactiveRequestContext
     private FormData formData;
     private boolean producesChecked;
 
+    private List<RequestMapper.RequestMatch<RestInitialHandler.InitialMatch>> initialMatches;
+    private int initialMatchIdx = 0;
+
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
@@ -201,6 +206,31 @@ public abstract class ResteasyReactiveRequestContext
                     (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
         }
         this.target = target;
+    }
+
+    /**
+     * Restarts handler chain processing if another initial match exists. Initial matches are determined in RestInitialHandler.
+     *
+     * @return true if a restart occurred
+     */
+    public boolean restartWithNextInitialMatch() {
+        if (initialMatches == null || initialMatchIdx >= initialMatches.size()) {
+            return false;
+        }
+        RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch = initialMatches
+                .get(initialMatchIdx);
+        restart(initialMatch.value.handlers);
+        setMaxPathParams(initialMatch.value.maxPathParams);
+        setRemaining(initialMatch.remaining);
+        for (int i = 0; i < initialMatch.pathParamValues.length; ++i) {
+            String pathParamValue = initialMatch.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            setPathParamValue(i, initialMatch.pathParamValues[i]);
+        }
+        initialMatchIdx++;
+        return true;
     }
 
     /**
@@ -1253,6 +1283,14 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public abstract boolean resumeExternalProcessing();
+
+    public List<RequestMapper.RequestMatch<RestInitialHandler.InitialMatch>> getInitialMatches() {
+        return initialMatches;
+    }
+
+    public void setInitialMatches(List<RequestMapper.RequestMatch<RestInitialHandler.InitialMatch>> initialMatches) {
+        this.initialMatches = initialMatches;
+    }
 
     static class PreviousResource {
 

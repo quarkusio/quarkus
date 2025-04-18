@@ -42,105 +42,160 @@ public class RequestMapper<T> {
         requestPaths = pathMatcherBuilder.build();
     }
 
+    @SuppressWarnings("unchecked")
     public RequestMatch<T> map(String path) {
-        var result = mapFromPathMatcher(path, requestPaths.match(path));
+        var result = mapBestMatchFromPathMatcher(path, requestPaths.match(path));
         if (result != null) {
             return result;
         }
 
         // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
-        return mapFromPathMatcher(path, requestPaths.defaultMatch(path));
+        return mapBestMatchFromPathMatcher(path, requestPaths.defaultMatch(path));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private RequestMatch<T> mapFromPathMatcher(String path, PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch) {
+    /**
+     * Retrieve all UriTemplate matches for a given path, ordered by how much of the path is remaining
+     *
+     * @param path path to search UriTemplate for
+     * @return list, never null, may be empty
+     */
+    @SuppressWarnings("unchecked")
+    public List<RequestMatch<T>> allMatches(String path) {
+        var result = mapAllMatchesFromPathMatcher(path, requestPaths.match(path));
+        if (result != null) {
+            return (List<RequestMatch<T>>) result;
+        }
+
+        // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
+        result = mapAllMatchesFromPathMatcher(path, requestPaths.defaultMatch(path));
+        if (result != null) {
+            return (List<RequestMatch<T>>) result;
+        }
+        return null;
+    }
+
+    private RequestMatch<T> mapBestMatchFromPathMatcher(String path,
+            PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch) {
         var value = initialMatch.getValue();
         if (initialMatch.getValue() == null) {
             return null;
         }
         int pathLength = path.length();
-        for (int index = 0; index < ((List<RequestPath<T>>) value).size(); index++) {
-            RequestPath<T> potentialMatch = ((List<RequestPath<T>>) value).get(index);
-            String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
-            int paramCount = 0;
-            boolean matched = true;
-            boolean prefixAllowed = potentialMatch.prefixTemplate;
-            int matchPos = initialMatch.getMatched().length();
-            for (int i = 1; i < potentialMatch.template.components.length; ++i) {
-                URITemplate.TemplateComponent segment = potentialMatch.template.components[i];
-                if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
-                    // exclude any path end slash when matching a subdir, but include it in the matched length
-                    boolean endSlash = matchPos < path.length() && path.charAt(path.length() - 1) == '/';
-                    Matcher matcher = segment.pattern.matcher(
-                            endSlash ? path.substring(0, path.length() - 1) : path);
-                    matched = matcher.find(matchPos);
-                    if (!matched || matcher.start() != matchPos) {
-                        break;
-                    }
-                    matchPos = matcher.end();
-                    if (endSlash) {
-                        matchPos++;
-                    }
-                    for (String group : segment.groups) {
-                        params[paramCount++] = matcher.group(group);
-                    }
-                } else if (segment.type == URITemplate.Type.LITERAL) {
-                    //make sure the literal text is the same
-                    if (matchPos + segment.literalText.length() > pathLength) {
-                        matched = false;
-                        break; //too long
-                    }
-                    for (int pos = 0; pos < segment.literalText.length(); ++pos) {
-                        if (path.charAt(matchPos++) != segment.literalText.charAt(pos)) {
-                            matched = false;
-                            break;
-                        }
-                    }
-                    if (!matched) {
-                        break;
-                    }
-                } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
-                    if (matchPos == pathLength) {
-                        matched = false;
-                        break;
-                    }
-                    int start = matchPos;
-                    while (matchPos < pathLength && path.charAt(matchPos) != '/') {
-                        matchPos++;
-                    }
-                    params[paramCount++] = path.substring(start, matchPos);
-                }
-            }
-            if (!matched) {
-                continue;
-            }
-            if (paramCount < params.length) {
-                params[paramCount] = null;
-            }
-            boolean fullMatch = matchPos == pathLength;
-            boolean doPrefixMatch = false;
-            if (!fullMatch) {
-                //according to the spec every template ends with (/.*)?
-                if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
-                    doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
-                } else if (path.charAt(matchPos) == '/') {
-                    doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
-                }
-            }
-            if (fullMatch || doPrefixMatch) {
-                String remaining;
-                if (fullMatch) {
-                    remaining = "";
-                } else {
-                    if (matchPos == 1) {
-                        remaining = path;
-                    } else {
-                        remaining = path.substring(matchPos);
-                    }
-                }
-                return new RequestMatch(potentialMatch.template, potentialMatch.value, params, remaining);
+        int matchPos = initialMatch.getMatched().length();
+        for (int index = 0; index < value.size(); index++) {
+            RequestPath<T> potentialMatch = value.get(index);
+            RequestMatch<T> result = mapFromPotentialMatch(path, potentialMatch, pathLength, matchPos);
+            if (result != null) {
+                return result;
             }
         }
+
+        return null;
+    }
+
+    private List<RequestMatch<T>> mapAllMatchesFromPathMatcher(String path,
+            PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch) {
+        var value = initialMatch.getValue();
+        if (initialMatch.getValue() == null) {
+            return Collections.emptyList();
+        }
+        int pathLength = path.length();
+        int matchPos = initialMatch.getMatched().length();
+        List<RequestMatch<T>> matches = new ArrayList<>();
+        for (int index = 0; index < value.size(); index++) {
+            RequestPath<T> potentialMatch = value.get(index);
+            RequestMatch<T> result = mapFromPotentialMatch(path, potentialMatch, pathLength, matchPos);
+            if (result != null) {
+                matches.add(result);
+            }
+        }
+
+        // already sorted, since the list of RequestPath is sorted by path length descending
+        return matches;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private RequestMatch<T> mapFromPotentialMatch(String path,
+            RequestPath<T> potentialMatch, int pathLength, int matchPos) {
+        String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
+        int paramCount = 0;
+        boolean matched = true;
+        boolean prefixAllowed = potentialMatch.prefixTemplate;
+        for (int i = 1; i < potentialMatch.template.components.length; ++i) {
+            URITemplate.TemplateComponent segment = potentialMatch.template.components[i];
+            if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
+                // exclude any path end slash when matching a subdir, but include it in the matched length
+                boolean endSlash = matchPos < path.length() && path.charAt(path.length() - 1) == '/';
+                Matcher matcher = segment.pattern.matcher(
+                        endSlash ? path.substring(0, path.length() - 1) : path);
+                matched = matcher.find(matchPos);
+                if (!matched || matcher.start() != matchPos) {
+                    break;
+                }
+                matchPos = matcher.end();
+                if (endSlash) {
+                    matchPos++;
+                }
+                for (String group : segment.groups) {
+                    params[paramCount++] = matcher.group(group);
+                }
+            } else if (segment.type == URITemplate.Type.LITERAL) {
+                //make sure the literal text is the same
+                if (matchPos + segment.literalText.length() > pathLength) {
+                    matched = false;
+                    break; //too long
+                }
+                for (int pos = 0; pos < segment.literalText.length(); ++pos) {
+                    if (path.charAt(matchPos++) != segment.literalText.charAt(pos)) {
+                        matched = false;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    break;
+                }
+            } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
+                if (matchPos == pathLength) {
+                    matched = false;
+                    break;
+                }
+                int start = matchPos;
+                while (matchPos < pathLength && path.charAt(matchPos) != '/') {
+                    matchPos++;
+                }
+                params[paramCount++] = path.substring(start, matchPos);
+            }
+        }
+        if (!matched) {
+            return null;
+        }
+        if (paramCount < params.length) {
+            params[paramCount] = null;
+        }
+        boolean fullMatch = matchPos == pathLength;
+        boolean doPrefixMatch = false;
+        if (!fullMatch) {
+            //according to the spec every template ends with (/.*)?
+            if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
+                doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
+            } else if (path.charAt(matchPos) == '/') {
+                doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
+            }
+        }
+        if (fullMatch || doPrefixMatch) {
+            String remaining;
+            if (fullMatch) {
+                remaining = "";
+            } else {
+                if (matchPos == 1) {
+                    remaining = path;
+                } else {
+                    remaining = path.substring(matchPos);
+                }
+            }
+            return new RequestMatch(potentialMatch.template, potentialMatch.value, params, remaining);
+        }
+
         return null;
     }
 

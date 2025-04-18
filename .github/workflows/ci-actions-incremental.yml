@@ -150,6 +150,9 @@ jobs:
       m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
       quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
       quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
+      maven-disable-gib: ${{ steps.gib-status.outputs.maven-disable-gib }}
+      maven-disable-develocity-cache: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
+      common-maven-args: ${{ steps.configure-maven-args.outputs.common-maven-args }}
     steps:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -177,16 +180,36 @@ jobs:
           main-repository: quarkusio/quarkus
           runs-on: true
           magic-cache: true
+      - name: Determines if GIB should be disabled
+        id: gib-status
+        run: |
+          echo "maven-disable-gib=${{ contains( github.event.pull_request.labels.*.name, 'ci/disable-gib') }}" >> $GITHUB_OUTPUT
+      - name: Determines if Develocity cache should be disabled
+        id: develocity-cache-status
+        run: |
+          echo "maven-disable-develocity-cache=${{ contains( github.event.pull_request.labels.*.name, 'ci/disable-develocity-cache') }}" >> $GITHUB_OUTPUT
+      - name: Adjust Maven args
+        id: configure-maven-args
+        env:
+          DEVELOCITY_CACHE_DISABLED: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
+        run: |
+          if [ "$DEVELOCITY_CACHE_DISABLED" == "true" ]; then
+            echo "common-maven-args=${COMMON_MAVEN_ARGS} -Dno-build-cache" >> $GITHUB_OUTPUT
+          else
+            echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
+          fi
+
 
   build-jdk17:
     name: "Initial JDK 17 Build"
     needs: [ configure ]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     outputs:
-      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
-      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+      gib_args: ${{ steps.get-gib-config.outputs.gib_args }}
+      gib_impacted: ${{ steps.get-gib-config.outputs.impacted_modules }}
     steps:
       - uses: runs-on/action@v1
       - name: Gradle Enterprise environment
@@ -256,40 +279,45 @@ jobs:
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-      - name: Get GIB arguments
-        id: get-gib-args
+      - name: Configure GIB
+        id: get-gib-config
         env:
           PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
+          GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
         run: |
-          # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
-          # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
-          # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
-          # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
-          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
-          if [ -n "$PULL_REQUEST_BASE" ]
-          then
-            # The PR defines a clear merge target so just use that branch for reference, *unless*:
-            # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
-          else
-            # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
-            # - the current branch is main or some released branch like 1.10
-            # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
-          fi
-          echo "GIB_ARGS: $GIB_ARGS"
-          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
-      - name: Get GIB impacted modules
-        id: get-gib-impacted
-        # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
-        run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          if [ -f gib-impacted.log ]
-          then
-            GIB_IMPACTED=$(cat gib-impacted.log)
-          else
+          if [ "$GIB_DISABLED" == "true" ]; then
+            GIB_ARGS=''
             GIB_IMPACTED='_all_'
+          else
+            # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
+            # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
+            # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
+            # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
+            GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+            if [ -n "$PULL_REQUEST_BASE" ]
+            then
+              # The PR defines a clear merge target so just use that branch for reference, *unless*:
+              # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
+              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
+            else
+              # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
+              # - the current branch is main or some released branch like 1.10
+              # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
+              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+            fi
+            echo "GIB_ARGS: $GIB_ARGS"
+
+            # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
+            ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted.log validate
+            if [ -f gib-impacted.log ]
+            then
+              GIB_IMPACTED=$(cat gib-impacted.log)
+            else
+              GIB_IMPACTED='_all_'
+            fi
           fi
+
+          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
@@ -297,7 +325,12 @@ jobs:
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2 content pushed to subsequent jobs
-        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+        run: |
+          if [ -d .m2/.develocity/build-cache ]; then
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+          else
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
+          fi
       - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v4
         with:
@@ -395,6 +428,7 @@ jobs:
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       JAVA_VERSION_GRADLE: ${{ matrix.java.java-version-gradle || matrix.java.java-version }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     strategy:
@@ -552,6 +586,7 @@ jobs:
     needs: [configure, build-jdk17, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_maven == 'true'
@@ -661,6 +696,7 @@ jobs:
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_gradle == 'true'
@@ -753,6 +789,7 @@ jobs:
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 60
     strategy:
@@ -852,6 +889,7 @@ jobs:
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 40
     strategy:
@@ -951,6 +989,7 @@ jobs:
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: 90
     strategy:
@@ -1047,6 +1086,7 @@ jobs:
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     timeout-minutes: ${{matrix.timeout}}
     strategy:
@@ -1127,6 +1167,7 @@ jobs:
     if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
     env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     timeout-minutes: 150
     steps:
@@ -1215,6 +1256,7 @@ jobs:
     env:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.native_matrix != '{}'

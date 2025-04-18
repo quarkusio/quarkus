@@ -10,7 +10,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -30,18 +29,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SubResourceGenericsTest {
+public class ParameterizedParentInterfaceTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(Resource.class)
                     .addClass(ClientLocator.class)
+                    .addClass(ClientLocatorBase.class)
                     .addClass(TranslationSubResource.class)
                     .addClass(EnglishSubResource.class)
                     .addClass(ShortsSubResource.class)
                     .addClass(HelloSubResource.class)
-                    .addClass(EachCellAsListElementClientMessageBodyReader.class)
-                    .addClass(CellsAsMapEntryClientMessageBodyReader.class));
+                    .addClass(EachCellAsListElementClientMessageBodyReader.class));
 
     @RestClient
     ClientLocator client;
@@ -62,43 +61,12 @@ public class SubResourceGenericsTest {
             List<String> result = client.testListOnRoot();
             assertThat(result).contains("Hello", "World");
         }
-
-        {
-            List<String> result = client.list().subResource().subResource().subResource().get();
-            assertThat(result).contains("Hello", "World");
-        }
-
-        {
-            Map<String, String> result = client.map().subResource().subResource().subResource().get();
-            assertThat(result).containsEntry("Hello", "World");
-        }
     }
 
     @Test
-    void testFailureSubResourceLocatorMethodWithUnresolvedTypeVariable() {
-
-        try {
-            QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081"))
-                    .build(TranslationSubResource.class);
-        } catch (Exception e) {
-            assertThat(e.getMessage()).endsWith(
-                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$TranslationSubResource : Type variable R of method io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$EnglishSubResource<R> subResource() in class io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$TranslationSubResource could not be resolved.");
-            return;
-        }
-        Assertions.fail("Should have thrown an exception");
-    }
-
-    @Test
-    void testFailureRestClientMethodWithUnresolvedTypeVariable() {
-
-        try {
-            QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081")).build(HelloSubResource.class);
-        } catch (Exception e) {
-            assertThat(e.getMessage()).endsWith(
-                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource : Type variable V of method V get() in class io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource could not be resolved.");
-            return;
-        }
-        Assertions.fail("Should have thrown an exception");
+    void testParameterizedTypeWithSameTypeArgumentsAllowed() {
+        Assertions.assertDoesNotThrow(() -> QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081"))
+                .build(SameTypeArgumentInherit.class));
     }
 
     @Path("")
@@ -116,30 +84,32 @@ public class SubResourceGenericsTest {
         }
     }
 
-    @RegisterRestClient(baseUri = "http://localhost:8081")
-    @Path("")
-    public interface ClientLocator {
-
+    public interface ClientLocatorBase<T, V> {
         @Path("greetings/translations")
-        TranslationSubResource<String> string();
+        TranslationSubResource<T> string();
 
         @Path("greetings-count/translations")
-        TranslationSubResource<Long> number();
+        TranslationSubResource<V> number();
+    }
 
-        @Path("greetings/translations")
-        TranslationSubResource<List<String>> list();
-
-        @Path("greetings/translations")
-        TranslationSubResource<Map<String, String>> map();
+    @RegisterRestClient(baseUri = "http://localhost:8081")
+    @Path("")
+    public interface ClientLocator extends ClientLocatorBase<String, Long> {
 
         @Path("greetings/translations/english/shorts/hello")
         @GET
         List<String> testListOnRoot();
     }
 
-    public interface TranslationSubResource<R> {
+    public interface TranslationSubResourceBaseBase<T> {
         @Path("english")
-        EnglishSubResource<R> subResource();
+        EnglishSubResource<T> subResource();
+    }
+
+    public interface TranslationSubResourceBase<U> extends TranslationSubResourceBaseBase<U> {
+    }
+
+    public interface TranslationSubResource<R> extends TranslationSubResourceBase<R> {
     }
 
     public interface EnglishSubResource<Z> {
@@ -155,6 +125,21 @@ public class SubResourceGenericsTest {
     public interface HelloSubResource<V> {
         @GET
         V get();
+    }
+
+    public interface Z<S> {
+        @GET
+        @Path("something")
+        S get();
+    }
+
+    public interface Y<L> extends Z<L> {
+
+    }
+
+    @Path("")
+    public interface SameTypeArgumentInherit extends Y<Long>, Z<Long> {
+
     }
 
     @Provider
@@ -178,31 +163,6 @@ public class SubResourceGenericsTest {
                 throws IOException, WebApplicationException {
             String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
             return Arrays.asList(body.split(","));
-        }
-    }
-
-    @Provider
-    public static class CellsAsMapEntryClientMessageBodyReader implements ClientMessageBodyReader<Map<String, String>> {
-
-        @Override
-        public Map<String, String> readFrom(Class<Map<String, String>> type, Type genericType, Annotation[] annotations,
-                MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream,
-                RestClientRequestContext context) throws IOException, WebApplicationException {
-            return readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
-        }
-
-        @Override
-        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return genericType.getTypeName().equals("java.util.Map<java.lang.String, java.lang.String>");
-        }
-
-        @Override
-        public Map<String, String> readFrom(Class<Map<String, String>> type, Type genericType, Annotation[] annotations,
-                MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
-                throws IOException, WebApplicationException {
-            String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
-            String[] split = body.split(",");
-            return Map.of(split[0], split[1]);
         }
     }
 }

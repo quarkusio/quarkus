@@ -246,7 +246,7 @@ public class HibernateOrmCdiProcessor {
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            true, true,
+                            isDefaultPU, isNamedPU,
                             StatelessSession.class, STATELESS_SESSION_EXPOSED_TYPES, false)
                             .createWith(recorder.statelessSessionSupplier(persistenceUnitName))
                             .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))

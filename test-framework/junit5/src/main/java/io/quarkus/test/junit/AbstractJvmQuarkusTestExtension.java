@@ -242,12 +242,12 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.
 
         // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
-        boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
+        boolean isFlatClasspath = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
 
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
         // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
-        if (!isRunningOnSystem) {
+        if (!isFlatClasspath) {
             Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         }
 
@@ -266,7 +266,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             throw new IllegalStateException("Non-viable test classloader, " + Thread.currentThread().getContextClassLoader()
                     + ". Is this a re-run of a failing test?");
         } finally {
-            if (!isRunningOnSystem) {
+            if (!isFlatClasspath) {
                 Thread.currentThread().setContextClassLoader(original);
             }
         }

@@ -16,9 +16,26 @@ import io.quarkus.runtime.LaunchMode;
 public class ConfigLauncherSession implements LauncherSessionListener {
     @Override
     public void launcherSessionOpened(final LauncherSession session) {
-        TestConfigProviderResolver resolver = new TestConfigProviderResolver();
-        ConfigProviderResolver.setInstance(resolver);
-        resolver.getConfig(LaunchMode.TEST);
+        // Ideally the classloader would be correct when this is launched,
+        // but for gradle, test class loading happens faierly shortly after this is called,
+        // before the formal loading phase. To make that work, the TCCL has to be
+        // set to the FCL by the time this is called, even though we want config to live on the app classloader
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        System.out.println("HOLLY creating config launcher, I am  " + this.getClass().getClassLoader());
+        System.out.println("HOLLY creating config launcher, TCCL is " + Thread.currentThread().getContextClassLoader());
+        if (old.toString().contains("Facade")) {
+            Thread.currentThread()
+                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+        }
+        System.out.println("HOLLY creating config launcher, second TCCL is " + Thread.currentThread().getContextClassLoader());
+        try {
+            TestConfigProviderResolver resolver = new TestConfigProviderResolver();
+            ConfigProviderResolver.setInstance(resolver);
+            resolver.getConfig(LaunchMode.TEST);
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+
     }
 
     @Override

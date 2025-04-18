@@ -1426,3 +1426,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           build-reports-artifacts-path: build-reports-artifacts
+          develocity-url: https://ge.quarkus.io/

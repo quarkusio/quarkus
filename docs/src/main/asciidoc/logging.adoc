@@ -143,7 +143,9 @@ For extension development, use `org.jboss.logging.Logger.getLogger(String)` inst
 
 The injection of a configured `org.jboss.logging.Logger` logger instance with the `@Inject` annotation is another alternative to adding an application logger, but is applicable only to CDI beans.
 
-You can use `@Inject Logger log`, where the logger gets named after the class you inject it to, or `@Inject @LoggerName("...") Logger log`, where the logger will receive the specified name.
+You can use `@Inject Logger log`, where the logger gets named after the class you inject it to, or `@LoggerName("...") Logger log`, where the logger will receive the specified name. Notice, that `@Inject` 
+is not required if you already annotated your `Logger` with `@LoggerName("...")`.
+ 
 Once injected, you can use the `log` object to invoke logging methods.
 
 .An example of two different types of logger injection:

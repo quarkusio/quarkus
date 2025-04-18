@@ -1079,6 +1079,103 @@ jobs:
             build-reports.zip
           retention-days: 7
 
+  platform-tests:
+    name: Platform Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    needs: [configure, build-jdk17, calculate-test-jobs]
+    # Skip main in forks
+    if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
+    env:
+      MAVEN_OPTS: -Xmx4096m
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+      RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+    steps:
+      - uses: runs-on/action@v1
+      - name: Gradle Enterprise environment
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Platform Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@v1.3
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "Platform Tests - JDK ${{matrix.java.name}}"
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - uses: actions/github-script@v7
+        id: get-platform-branch
+        with:
+          result-encoding: string
+          script: |
+            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
+              return 'main'
+            }
+
+            const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
+            if (branch == 'main') {
+              return 'main'
+            } else {
+              return branch
+            }
+      - name: Get Quarkus version
+        id: get-quarkus-version
+        run: |
+          echo "quarkus-version=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+      - name: Test Platform
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          git clone --depth=1 -b ${{ steps.get-platform-branch.outputs.result }} https://github.com/quarkusio/quarkus-platform.git && cd quarkus-platform
+          QUARKUS_VERSION_ARGS="-Dquarkus.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
+          export LANG=en_US && ./mvnw ${COMMON_MAVEN_ARGS} ${QUARKUS_VERSION_ARGS} clean install
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'quarkus-platform/**/target/*-reports/TEST-*.xml' \
+              'quarkus-platform/target/build-report.json' \
+              'quarkus-platform/LICENSE.txt' \
+      - name: Upload build reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Platform Tests - JDK ${{matrix.java.name}}"
+          path: |
+            build-reports.zip
+          retention-days: 7
+
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn || matrix.os-name }}
@@ -1451,7 +1548,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
+    needs: [build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
       - uses: runs-on/action@v1

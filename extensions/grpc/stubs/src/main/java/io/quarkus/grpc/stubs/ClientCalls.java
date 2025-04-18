@@ -48,7 +48,8 @@ public class ClientCalls {
                     }
                 }));
                 StreamObserver<I> request = delegate.apply(observer);
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
+                StreamObserverFlowHandler<I> flowHandler = new StreamObserverFlowHandler<>(request);
+                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, flowHandler);
             }
 
         }));
@@ -96,13 +97,15 @@ public class ClientCalls {
             @Override
             public void accept(MultiEmitter<? super O> emitter) {
                 AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter.onTermination(() -> {
+                MultiStreamObserver<O> observer = new MultiStreamObserver<>(emitter.onTermination(() -> {
                     var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
                     if (subscription != null) {
                         subscription.cancel();
                     }
-                })));
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
+                }));
+                StreamObserver<I> request = delegate.apply(observer);
+                StreamObserverFlowHandler<I> flowHandler = new StreamObserverFlowHandler<>(request);
+                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, flowHandler);
             }
         }));
 

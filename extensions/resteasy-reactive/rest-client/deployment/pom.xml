@@ -26,10 +26,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-config-deployment</artifactId>
         </dependency>
         <dependency>
@@ -99,6 +95,11 @@
         <dependency>
             <groupId>io.smallrye.stork</groupId>
             <artifactId>stork-load-balancer-least-response-time</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

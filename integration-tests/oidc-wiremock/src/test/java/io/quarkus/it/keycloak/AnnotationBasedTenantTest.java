@@ -494,7 +494,12 @@ public class AnnotationBasedTenantTest {
     }
 
     private void callWebSocketEndpoint(URI uri, String expectedResponsePrefix, String token, boolean expectFailure)
-            throws InterruptedException, ExecutionException, TimeoutException {
+            throws ExecutionException, InterruptedException, TimeoutException {
+        callWebSocketEndpoint(uri, expectedResponsePrefix, token, expectFailure, vertx);
+    }
+
+    static void callWebSocketEndpoint(URI uri, String expectedResponsePrefix, String token, boolean expectFailure,
+            Vertx vertx) throws InterruptedException, ExecutionException, TimeoutException {
         CountDownLatch connectedLatch = new CountDownLatch(1);
         CountDownLatch messagesLatch = new CountDownLatch(2);
         List<String> messages = new CopyOnWriteArrayList<>();

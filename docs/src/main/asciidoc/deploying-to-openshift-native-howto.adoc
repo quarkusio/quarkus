@@ -4,8 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-native-howto"]
-= Deploy {project-name} applications compiled to native executables
-
+= Deploying {project-name} applications compiled to native executables
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native
@@ -26,6 +25,7 @@ Additionally, set the path to your Dockerfile by using the `quarkus.openshift.na
 
 * You have a Linux AMD64 system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
 * You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
+* You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.
 
 == Procedure

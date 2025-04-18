@@ -183,7 +183,7 @@ For more information, see the link:https://docs.openshift.com/container-platform
 For information about this image, see link:https://catalog.redhat.com/software/containers/ubi9/openjdk-21/653fb7e21b2ec10f7dfc10d0[{runtimes-openjdk-long} 21].
 ====
 
-. To build the project, create the application, and deploy the {openshift} service, enter the following command:
+. Build the project, create the application, and deploy the {openshift} service:
 +
 [source,xml,subs="attributes+,+quotes"]
 ----

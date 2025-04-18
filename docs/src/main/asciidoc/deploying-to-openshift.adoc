@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="deploy-openshift"]
+[id="deploying-to-openshift"]
 = Deploying {project-name} applications to {openshift}
 include::_attributes.adoc[]
 :categories: cloud, native
@@ -107,9 +107,10 @@ However, if you want to continue to use `DeploymentConfig`, it is still possible
 quarkus extension add 'quarkus-openshift'
 ----
 
-== Logging in to an OpenShift cluster
+== Logging in to an {openshift} cluster
 
-You can log in to an OpenShift cluster by using the https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI]:
+You can log in to an {openshift} cluster by using the OpenShift CLI (`oc`).
+For more information, see link:https://docs.openshift.com/container-platform/4.18/cli_reference/openshift_cli/getting-started-cli.html[Getting started with the OpenShift CLI]:
 
 .Example: Log in by using the OpenShift CLI
 [source,bash]
@@ -120,7 +121,7 @@ oc login -u myUsername <1>
 
 Alternatively, you can log in by using the API token:
 
-.Example: Log in by using the OpenShift command-line interface (CLI) with API token
+.Example: Log in by using the OpenShift CLI with API token
 [source,bash]
 ----
 oc login --token=myToken --server=myServerUrl
@@ -261,6 +262,7 @@ or
 quarkus.container-image.builder=jib
 ----
 
+ifndef::no-customizing-options[]
 == Customizing
 
 All available customization options are available in the xref:deploying-to-kubernetes.adoc#openshift[OpenShift configuration options].
@@ -467,7 +469,8 @@ For example, adding the property `quarkus.openshift.arguments=A,B`.
 Finally, the Kubernetes job will be launched every time that it is installed in OpenShift.
 For more information about how to run Kubernetes jobs, see https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[Running an example job].
 
-You can configure the rest of the Kubernetes Job configuration by using the properties under `quarkus.openshift.job.xxx` (for more information, see xref:deploying-to-openshift.adoc#quarkus-kubernetes_quarkus-openshift-job-parallelism[quarkus.openshift.job.parallelism).
+You can configure the rest of the Kubernetes Job configuration by using the properties under `quarkus.openshift.job.xxx`.
+For more information, see xref:deploying-to-openshift.adoc#quarkus-kubernetes_quarkus-openshift-job-parallelism[quarkus.openshift.job.parallelism].
 
 ===== Generating CronJob resources
 
@@ -550,6 +553,8 @@ quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-config-map
 ----
 quarkus.openshift.pvc-volumes.my-pvc.claim-name=my-pvc
 ----
+
+endif::no-customizing-options[]
 
 ifndef::no-knative-serverless-deployment[]
 == Knative - OpenShift Serverless

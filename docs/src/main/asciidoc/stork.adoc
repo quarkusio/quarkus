@@ -70,10 +70,10 @@ image::stork-process.png[Discovery and Selection of services,width=50%, align=ce
 
 == Bootstrapping the project
 
-Create a Quarkus project importing the quarkus-rest-client and quarkus-rest extensions using your favorite approach:
+Create a Quarkus project importing the quarkus-rest-client, quarkus-rest, and quarkus-smallrye-stork extensions using your favorite approach:
 
 :create-app-artifact-id: stork-quickstart
-:create-app-extensions: quarkus-rest-client,quarkus-rest
+:create-app-extensions: quarkus-rest-client,quarkus-rest,quarkus-smallrye-stork
 include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:

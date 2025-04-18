@@ -32,6 +32,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     Optional<Boolean> active();
 
     /**
+     * Schema management configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitSchemaManagement schemaManagement();
+
+    /**
      * Database related configuration.
      */
     @ConfigDocSection
@@ -84,6 +90,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         /**
          * Schema generation configuration.
          */
+        @Deprecated(forRemoval = true, since = "3.22")
         HibernateOrmConfigPersistenceUnitDatabaseGeneration generation();
 
         /**
@@ -126,6 +133,41 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitSchemaManagement {
+
+        /**
+         * Select whether the database schema is generated or not.
+         *
+         * `drop-and-create` is awesome in development mode.
+         *
+         * This defaults to 'none'.
+         *
+         * However if Dev Services is in use and no other extensions that manage the schema are present
+         * the value will be automatically overridden to 'drop-and-create'.
+         *
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
+         *
+         * @asciidoclet
+         */
+        @WithConverter(TrimmedStringConverter.class)
+        @WithDefault("none")
+        String strategy();
+
+        /**
+         * If Hibernate ORM should create the schemas automatically (for databases supporting them).
+         */
+        @WithDefault("false")
+        boolean createSchemas();
+
+        /**
+         * Whether we should stop on the first error when applying the schema.
+         */
+        @WithDefault("false")
+        boolean haltOnError();
+    }
+
+    @ConfigGroup
+    @Deprecated(forRemoval = true, since = "3.22")
     interface HibernateOrmConfigPersistenceUnitDatabaseGeneration {
 
         /**
@@ -139,22 +181,20 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @WithParentName
-        @WithDefault("none")
-        @WithConverter(TrimmedStringConverter.class)
-        String generation();
+        @Deprecated(forRemoval = true, since = "3.22")
+        Optional<@WithConverter(TrimmedStringConverter.class) String> generation();
 
         /**
          * If Hibernate ORM should create the schemas automatically (for databases supporting them).
          */
-        @WithDefault("false")
-        boolean createSchemas();
+        @Deprecated(forRemoval = true, since = "3.22")
+        Optional<Boolean> createSchemas();
 
         /**
          * Whether we should stop on the first error when applying the schema.
          */
-        @WithDefault("false")
-        boolean haltOnError();
-
+        @Deprecated(forRemoval = true, since = "3.22")
+        Optional<Boolean> haltOnError();
     }
 
     @ConfigGroup

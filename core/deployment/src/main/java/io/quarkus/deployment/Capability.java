@@ -127,6 +127,7 @@ public interface Capability {
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + ".smallrye.openapi";
     String SMALLRYE_GRAPHQL = QUARKUS_PREFIX + ".smallrye.graphql";
     String SMALLRYE_FAULT_TOLERANCE = QUARKUS_PREFIX + ".smallrye.faulttolerance";
+    String SMALLRYE_STORK = QUARKUS_PREFIX + ".smallrye.stork";
 
     String SPRING_WEB = QUARKUS_PREFIX + ".spring.web";
 

@@ -20,7 +20,24 @@ import io.smallrye.stork.Stork;
 @Priority(Priorities.AUTHENTICATION)
 @Provider
 public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFilter {
+
     private static final Logger log = Logger.getLogger(StorkClientRequestFilter.class);
+
+    private final Stork stork;
+
+    public StorkClientRequestFilter() {
+        try {
+            stork = Stork.getInstance();
+
+            if (stork == null) {
+                throw new IllegalStateException(
+                        "Trying to use a StorkClientRequestFilter but the quarkus-smallrye-stork extension is missing, please add the extension.");
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Trying to use a StorkClientRequestFilter but the quarkus-smallrye-stork extension is missing, please add the extension.");
+        }
+    }
 
     @Override
     public void filter(ResteasyReactiveClientRequestContext requestContext) {
@@ -34,8 +51,7 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
             requestContext.suspend();
             boolean measureTime = shouldMeasureTime(requestContext.getResponseType());
             try {
-                Stork.getInstance()
-                        .getService(serviceName)
+                stork.getService(serviceName)
                         .selectInstanceAndRecordStart(measureTime)
                         .subscribe()
                         .with(instance -> {

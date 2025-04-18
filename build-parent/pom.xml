@@ -96,7 +96,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.1.3</keycloak.server.version>
+        <keycloak.server.version>26.2.0</keycloak.server.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>

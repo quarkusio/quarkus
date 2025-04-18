@@ -41,6 +41,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
+import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -158,6 +159,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
+            unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
 
             var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
@@ -222,6 +224,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
         log.debug("Found no matching persistence units");
         return null;
+    }
+
+    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
+        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                (String) runtimeSettingsBuilder.get(AvailableSettings.HBM2DDL_IMPORT_FILES));
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_IMPORT_FILES, newValue);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,

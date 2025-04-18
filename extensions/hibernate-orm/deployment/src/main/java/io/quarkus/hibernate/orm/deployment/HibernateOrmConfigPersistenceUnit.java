@@ -74,7 +74,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * [NOTE]
      * ====
-     * Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+     * Quarkus supports files with SQL statements or comments spread over multiple lines,
+     * or `.zip` files containing those files.
      * Each SQL statement must be terminated by a semicolon.
      * ====
      *

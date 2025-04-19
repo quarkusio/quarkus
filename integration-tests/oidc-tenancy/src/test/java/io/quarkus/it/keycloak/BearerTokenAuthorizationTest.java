@@ -748,6 +748,40 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testMultipleTokenIntrospectionRequiredClaims() {
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+
+        // Expected to fail now because its introspection does include the expected required claim, but value is "1"
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Expected to fail now because its introspection does include the expected required claim, but value is ["1"]
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Expected to fail now because its introspection does not include the expected required claim
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Successful request with opaque token 3 because the required claim is ["1","2"]
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice, required_claim:1,2"));
+
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+    }
+
+    @Test
     public void testResolveStaticTenantsByPathPatterns() {
         // default tenant path pattern is more specific, therefore it wins over tenant-b pattern that is also matched
         assertStaticTenantSuccess("a", "default", "tenant-b/default");
@@ -926,6 +960,15 @@ public class BearerTokenAuthorizationTest {
         String json = RestAssured
                 .when()
                 .post("/oidc/opaque-token2")
+                .body().asString();
+        JsonObject object = new JsonObject(json);
+        return object.getString("access_token");
+    }
+
+    private String getOpaqueAccessToken3FromSimpleOidc() {
+        String json = RestAssured
+                .when()
+                .post("/oidc/opaque-token3")
                 .body().asString();
         JsonObject object = new JsonObject(json);
         return object.getString("access_token");

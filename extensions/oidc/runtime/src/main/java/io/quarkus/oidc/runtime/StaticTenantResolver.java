@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
@@ -19,6 +20,7 @@ import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -246,9 +248,41 @@ final class StaticTenantResolver {
             return null;
         }
 
-        private static boolean requiredClaimsMatch(Map<String, String> requiredClaims, JsonObject tokenJson) {
-            for (Map.Entry<String, String> entry : requiredClaims.entrySet()) {
-                if (!entry.getValue().equals(tokenJson.getString(entry.getKey()))) {
+        private static boolean requiredClaimsMatch(Map<String, Set<String>> requiredClaims, JsonObject tokenJson) {
+            for (Map.Entry<String, Set<String>> entry : requiredClaims.entrySet()) {
+                Set<String> requiredClaimSet = entry.getValue();
+                String claimName = entry.getKey();
+                if (requiredClaimSet.size() == 1) {
+                    String actualClaimValueAsStr;
+                    try {
+                        actualClaimValueAsStr = tokenJson.getString(claimName);
+                    } catch (Exception ex) {
+                        actualClaimValueAsStr = null;
+                    }
+                    if (actualClaimValueAsStr != null && requiredClaimSet.contains(actualClaimValueAsStr)) {
+                        continue;
+                    }
+                }
+                final JsonArray actualClaimValues;
+                try {
+                    actualClaimValues = tokenJson.getJsonArray(claimName);
+                } catch (Exception e) {
+                    return false;
+                }
+                if (actualClaimValues == null) {
+                    return false;
+                }
+                outer: for (String requiredClaimValue : requiredClaimSet) {
+                    for (int i = 0; i < actualClaimValues.size(); i++) {
+                        try {
+                            String actualClaimValue = actualClaimValues.getString(i);
+                            if (requiredClaimValue.equals(actualClaimValue)) {
+                                continue outer;
+                            }
+                        } catch (Exception ignored) {
+                            // try next actual claim value
+                        }
+                    }
                     return false;
                 }
             }

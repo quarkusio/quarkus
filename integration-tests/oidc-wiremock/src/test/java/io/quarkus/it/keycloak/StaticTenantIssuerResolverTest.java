@@ -28,12 +28,14 @@ public class StaticTenantIssuerResolverTest {
                     .body(Matchers.is("static.tenant.id=bearer-issuer-resolver-a"));
             requestAdminRoles("https://correct-issuer.edu", "b").statusCode(200)
                     .body(Matchers.is("static.tenant.id=bearer-issuer-resolver-b"));
+            requestAdminRoles("https://correct-issuer.edu", Set.of("a", "b", "c")).statusCode(200)
+                    .body(Matchers.is("static.tenant.id=bearer-issuer-resolver-abc"));
         } finally {
             server.stop();
         }
     }
 
-    private static ValidatableResponse requestAdminRoles(String issuer, String clientName) {
+    private static ValidatableResponse requestAdminRoles(String issuer, Object clientName) {
         return RestAssured.given().auth().oauth2(getAdminTokenWithRole(issuer, clientName))
                 .when().get("/api/admin/bearer-issuer-resolver/issuer").then();
     }
@@ -45,7 +47,7 @@ public class StaticTenantIssuerResolverTest {
         }
     }
 
-    private static String getAdminTokenWithRole(String issuer, String clientName) {
+    private static String getAdminTokenWithRole(String issuer, Object clientName) {
         return Jwt.preferredUserName("alice")
                 .groups(Set.of("admin"))
                 .issuer(issuer)

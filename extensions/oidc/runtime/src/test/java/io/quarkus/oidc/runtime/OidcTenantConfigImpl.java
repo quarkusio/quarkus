@@ -337,7 +337,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Map<String, String> requiredClaims() {
+            public Map<String, Set<String>> requiredClaims() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_REQUIRED_CLAIMS, true);
                 return Map.of();
             }

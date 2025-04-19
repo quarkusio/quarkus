@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import jakarta.enterprise.inject.Instance;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -236,7 +237,10 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 if (policy.name().isBlank()) {
                     throw new ConfigurationException("HTTP Security policy '" + policy + "' name must not be blank");
                 }
-                namedPolicies.put(policy.name(), policy);
+                var previousPolicy = namedPolicies.put(policy.name(), policy);
+                if (previousPolicy != null) {
+                    throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, policy);
+                }
             }
         }
 
@@ -271,12 +275,26 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                     roleToPermissions.put(role, Set.copyOf(permissions));
                 }
             }
-            namedPolicies.put(e.getKey(),
-                    new RolesAllowedHttpSecurityPolicy(policyConfig.rolesAllowed(), roleToPermissions, policyConfig.roles()));
+            var rolesAllowedPolicy = new RolesAllowedHttpSecurityPolicy(policyConfig.rolesAllowed(), roleToPermissions,
+                    policyConfig.roles());
+            var previousPolicy = namedPolicies.put(e.getKey(), rolesAllowedPolicy);
+            if (previousPolicy != null) {
+                throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, rolesAllowedPolicy);
+            }
         }
-        namedPolicies.put("deny", new DenySecurityPolicy());
-        namedPolicies.put("permit", new PermitSecurityPolicy());
-        namedPolicies.put("authenticated", new AuthenticatedHttpSecurityPolicy());
+
+        var previousPolicy = namedPolicies.put("deny", DenySecurityPolicy.INSTANCE);
+        if (previousPolicy != null) {
+            throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, DenySecurityPolicy.INSTANCE);
+        }
+        previousPolicy = namedPolicies.put("permit", new PermitSecurityPolicy());
+        if (previousPolicy != null) {
+            throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, new PermitSecurityPolicy());
+        }
+        previousPolicy = namedPolicies.put("authenticated", new AuthenticatedHttpSecurityPolicy());
+        if (previousPolicy != null) {
+            throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, new AuthenticatedHttpSecurityPolicy());
+        }
         return namedPolicies;
     }
 
@@ -384,6 +402,13 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 this.actions.add(action);
             }
         }
+    }
+
+    static ConfigurationException duplicateNamedPoliciesNotAllowedEx(HttpSecurityPolicy policy1, HttpSecurityPolicy policy2) {
+        String policyClassName1 = ClientProxy.unwrap(policy1).getClass().getName();
+        String policyClassName2 = ClientProxy.unwrap(policy2).getClass().getName();
+        return new ConfigurationException("Only one HttpSecurityPolicy with the name '"
+                + policy1.name() + "' is allowed, but found: " + policyClassName1 + " and " + policyClassName2);
     }
 
     record HttpMatcher(String authMechanism, Set<String> methods, HttpSecurityPolicy checker) {

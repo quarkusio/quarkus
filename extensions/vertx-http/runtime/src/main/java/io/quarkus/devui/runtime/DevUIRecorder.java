@@ -77,8 +77,12 @@ public class DevUIRecorder {
                 }));
     }
 
-    public Handler<RoutingContext> communicationHandler() {
+    public Handler<RoutingContext> webSocketHandler() {
         return new DevUIWebSocket();
+    }
+
+    public Handler<RoutingContext> serverSendEventHandler() {
+        return new DevUIServerSentEvents();
     }
 
     public Handler<RoutingContext> uiHandler(String finalDestination,

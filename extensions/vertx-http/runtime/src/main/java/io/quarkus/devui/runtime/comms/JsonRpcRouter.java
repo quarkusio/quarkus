@@ -28,6 +28,7 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Route JsonRPC message to the correct method
@@ -46,7 +47,7 @@ public class JsonRpcRouter {
     // Map json-rpc methods responses that is recorded
     private final Map<String, RuntimeValue> recordedValues = new HashMap<>();
 
-    private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
+    private static final List<JsonRpcResponseWriter> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
 
     /**
@@ -77,7 +78,7 @@ public class JsonRpcRouter {
                     }
                     ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
                             params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
-                    String jsonRpcMethodName = extensionName + DOT + methodName;
+                    String jsonRpcMethodName = extensionName + SLASH + methodName;
                     jsonRpcToRuntimeClassPathJava.put(jsonRpcMethodName, reflectionInfo);
                 } catch (NoSuchMethodException | SecurityException ex) {
                     throw new RuntimeException(ex);
@@ -103,75 +104,105 @@ public class JsonRpcRouter {
     }
 
     public void addSocket(ServerWebSocket socket) {
-        SESSIONS.add(socket);
+        WsResponseWriter writer = new WsResponseWriter(socket);
+        SESSIONS.add(writer);
         socket.textMessageHandler((e) -> {
             JsonRpcRequest jsonRpcRequest = codec.readRequest(e);
-            route(jsonRpcRequest, socket);
+            route(jsonRpcRequest, writer);
         }).closeHandler((e) -> {
             purge();
         });
         purge();
     }
 
+    public void addSseSession(RoutingContext ctx) {
+        SseResponseWriter writer = new SseResponseWriter(ctx.response());
+        SESSIONS.add(writer);
+
+        ctx.request().handler(buffer -> {
+            JsonRpcRequest jsonRpcRequest = codec.readRequest(buffer.toString());
+            route(jsonRpcRequest, writer);
+        });
+
+        ctx.request().connection().closeHandler(v -> purge());
+
+        purge();
+    }
+
+    public Set<String> getRuntimeMethods() {
+        return this.jsonRpcToRuntimeClassPathJava.keySet();
+    }
+
+    public Set<String> getDeploymentMethods() {
+        return Set.copyOf(jsonRpcMethodToDeploymentClassPathJava);
+    }
+
+    public Set<String> getRecordedMethods() {
+        return recordedValues.keySet();
+    }
+
     void onStart(@Observes StartupEvent ev) {
         purge();
-        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
-            if (!s.isClosed()) {
-                codec.writeResponse(s, -1, LocalDateTime.now().toString(), MessageType.HotReload);
+        for (JsonRpcResponseWriter jrrw : new ArrayList<>(SESSIONS)) {
+            if (!jrrw.isClosed()) {
+                codec.writeResponse(jrrw, -1, LocalDateTime.now().toString(), MessageType.HotReload);
             }
         }
     }
 
     private void purge() {
-        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
-            if (s.isClosed()) {
-                SESSIONS.remove(s);
-            }
-        }
+        SESSIONS.removeIf(JsonRpcResponseWriter::isClosed);
     }
 
     @Inject
     Logger logger;
 
     @SuppressWarnings("unchecked")
-    private void route(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void route(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
-        if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) {// First check some internal methods
-            this.routeUnsubscribe(jsonRpcRequest, s);
-        } else if (this.jsonRpcToRuntimeClassPathJava.containsKey(jsonRpcMethodName)) { // Route to extension (runtime)
-            this.routeToRuntime(jsonRpcRequest, s);
+        if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) {
+            // This is a Dev UI subscription that terminated
+            this.routeUnsubscribe(jsonRpcRequest, jrrw);
+        } else if (jsonRpcMethodName.equalsIgnoreCase(INITIALIZE)) {
+            // This is a MCP server that connects
+            jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":\"ok\"}");
+            //codec.writeResponse(jrrw, jsonRpcRequest.getId(), "ok", null);
+        } else if (this.jsonRpcToRuntimeClassPathJava.containsKey(jsonRpcMethodName)) {
+            // This is a Runtime method that needs to route to the extension
+            this.routeToRuntime(jsonRpcRequest, jrrw);
         } else if (this.jsonRpcMethodToDeploymentClassPathJava.contains(jsonRpcMethodName)
-                || this.jsonRpcSubscriptionToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to extension (deployment)
-            this.routeToDeployment(jsonRpcRequest, s);
+                || this.jsonRpcSubscriptionToDeploymentClassPathJava.contains(jsonRpcMethodName)) {
+            // This is Deployment method that needs to route to the extension
+            this.routeToDeployment(jsonRpcRequest, jrrw);
         } else {
-            // Method not found
-            codec.writeMethodNotFoundResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName);
+            // This is an error. Method not found
+            codec.writeMethodNotFoundResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName);
         }
     }
 
-    private void routeUnsubscribe(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void routeUnsubscribe(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
             Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
             cancellable.cancel();
         }
-        codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
+        codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
     }
 
-    private void routeToRuntime(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void routeToRuntime(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
         ReflectionInfo reflectionInfo = this.jsonRpcToRuntimeClassPathJava.get(jsonRpcMethodName);
         Object target = Arc.container().select(reflectionInfo.bean).get();
 
         if (reflectionInfo.isReturningMulti()) {
-            this.routeToRuntimeSubscription(jsonRpcRequest, s, jsonRpcMethodName, reflectionInfo, target);
+            this.routeToRuntimeSubscription(jsonRpcRequest, jrrw, jsonRpcMethodName, reflectionInfo, target);
         } else {
             // The invocation will return a Uni<JsonObject>
-            this.routeToRuntimeMethod(jsonRpcRequest, s, jsonRpcMethodName, reflectionInfo, target);
+            this.routeToRuntimeMethod(jsonRpcRequest, jrrw, jsonRpcMethodName, reflectionInfo, target);
         }
     }
 
-    private void routeToRuntimeSubscription(JsonRpcRequest jsonRpcRequest, ServerWebSocket s, String jsonRpcMethodName,
+    private void routeToRuntimeSubscription(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw, String jsonRpcMethodName,
             ReflectionInfo reflectionInfo, Object target) {
 
         if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
@@ -191,26 +222,26 @@ public class JsonRpcRouter {
         } catch (Exception e) {
             logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
                     jsonRpcRequest);
-            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
+            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, e);
             return;
         }
 
         Cancellable cancellable = multi.subscribe()
                 .with(
                         item -> {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
                         },
                         failure -> {
-                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+                            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
                             this.subscriptions.remove(jsonRpcRequest.getId());
                         },
                         () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
         this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-        codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
+        codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
     }
 
-    private void routeToRuntimeMethod(JsonRpcRequest jsonRpcRequest, ServerWebSocket s, String jsonRpcMethodName,
+    private void routeToRuntimeMethod(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw, String jsonRpcMethodName,
             ReflectionInfo reflectionInfo, Object target) {
         Uni<?> uni;
         try {
@@ -223,7 +254,7 @@ public class JsonRpcRouter {
         } catch (Exception e) {
             logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
                     jsonRpcRequest);
-            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
+            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, e);
             return;
         }
         uni.subscribe()
@@ -233,13 +264,13 @@ public class JsonRpcRouter {
                         Object response = jsonRpcMessage.getResponse();
                         if (jsonRpcMessage.isAlreadySerialized()) {
                             // The message response was already serialized, write text directly to socket
-                            s.writeTextMessage("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
+                            jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
                                     + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
                         } else {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
+                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
                         }
                     } else {
-                        codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.Response);
+                        codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.Response);
                     }
                 }, failure -> {
                     Throwable actualFailure;
@@ -254,11 +285,11 @@ public class JsonRpcRouter {
                     } else {
                         actualFailure = failure;
                     }
-                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
+                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
                 });
     }
 
-    private void routeToDeployment(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void routeToDeployment(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
         if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
@@ -282,27 +313,27 @@ public class JsonRpcRouter {
                 Cancellable cancellable = Multi.createFrom().publisher(publisher).subscribe()
                         .with(
                                 item -> {
-                                    codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+                                    codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
                                 },
                                 failure -> {
-                                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+                                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
                                     this.subscriptions.remove(jsonRpcRequest.getId());
                                 },
                                 () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
                 this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-                codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
+                codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
             } else if (returnedObject instanceof CompletionStage) {
                 CompletionStage<?> future = (CompletionStage) returnedObject;
                 future.thenAccept(r -> {
-                    codec.writeResponse(s, jsonRpcRequest.getId(), r,
+                    codec.writeResponse(jrrw, jsonRpcRequest.getId(), r,
                             MessageType.Response);
                 }).exceptionally(throwable -> {
-                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
+                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
                     return null;
                 });
             } else {
-                codec.writeResponse(s, jsonRpcRequest.getId(), returnedObject,
+                codec.writeResponse(jrrw, jsonRpcRequest.getId(), returnedObject,
                         MessageType.Response);
             }
         }
@@ -352,7 +383,8 @@ public class JsonRpcRouter {
         return codec.getJsonMapper();
     }
 
-    private static final String DOT = ".";
+    private static final String SLASH = "/";
     private static final String UNSUBSCRIBE = "unsubscribe";
+    private static final String INITIALIZE = "initialize";
 
 }

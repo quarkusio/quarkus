@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.runtime;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.addAuthenticationFailureToEvent;
+
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.Priorities;
@@ -35,6 +37,7 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
         if (context != null) {
             HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
+                addAuthenticationFailureToEvent(exception, currentVertxRequest.getCurrent());
                 ChallengeData challengeData = authenticator.getChallenge(context)
                         .await().indefinitely();
                 int statusCode = challengeData == null ? 401 : challengeData.status;

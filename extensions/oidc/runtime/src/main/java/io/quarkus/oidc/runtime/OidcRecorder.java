@@ -40,6 +40,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class OidcRecorder {
 
+    public static final String ACR_VALUES_TO_MAX_AGE_SEPARATOR = "@#$%@";
     static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
@@ -130,6 +131,38 @@ public class OidcRecorder {
             @Override
             public TenantIdentityProvider get() {
                 return new TenantSpecificOidcIdentityProvider(tenantName);
+            }
+        };
+    }
+
+    public Function<String, Consumer<RoutingContext>> authCtxInterceptorCreator() {
+        return new Function<String, Consumer<RoutingContext>>() {
+            @Override
+            public Consumer<RoutingContext> apply(String annotationBinding) {
+                int separatorIndex = annotationBinding.indexOf(ACR_VALUES_TO_MAX_AGE_SEPARATOR);
+                String acrValues = annotationBinding.substring(0, separatorIndex);
+                String maxAge = annotationBinding.substring(separatorIndex + ACR_VALUES_TO_MAX_AGE_SEPARATOR.length());
+                StepUpAuthenticationPolicy policy = new StepUpAuthenticationPolicy(acrValues, maxAge);
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        String requestPath = routingContext.request().path();
+                        OidcTenantConfig tenantConfig = routingContext.get(OidcTenantConfig.class.getName());
+                        if (tenantConfig != null || routingContext.user() != null) {
+                            throw new AuthenticationFailedException("""
+                                    Authentication has happened before the '@AuthenticationContext' annotation was
+                                    matched with the HTTP request path '%s'. It can happen when the authentication
+                                    is required by an HTTP Security Policy before the JAX-RS chain is run. In such
+                                    cases, please set the 'quarkus.http.auth.permission."permissions".applies-to=JAXRS'
+                                    to all HTTP Security Policies which secure the same REST endpoints as the ones
+                                    annotated with the '@AuthenticationContext' annotation.
+                                    """.formatted(requestPath));
+                        }
+                        LOG.debugf("The '@AuthenticationContext' annotation set required 'acr' values '%s' "
+                                + "and max age '%s' for the request path '%s'", acrValues, maxAge, requestPath);
+                        policy.storeSelfOnContext(routingContext);
+                    }
+                };
             }
         };
     }

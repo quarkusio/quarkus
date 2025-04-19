@@ -6,7 +6,13 @@ import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.arc.processor.DotNames.NAMED;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
+import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
+import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectMethodsWithoutRbacAnnotation;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
@@ -15,18 +21,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -63,6 +73,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
@@ -90,11 +101,17 @@ import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.runtime.SecurityConfig;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
+import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -112,6 +129,7 @@ public class OidcBuildStep {
             DotNames.INJECTABLE_INSTANCE);
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
+    private static final DotName AUTHENTICATION_CONTEXT_NAME = DotName.createSimple(AuthenticationContext.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
     private static final DotName USER_INFO_NAME = DotName.createSimple(UserInfo.class);
@@ -397,6 +415,80 @@ public class OidcBuildStep {
     @BuildStep
     RunTimeConfigBuilderBuildItem useOidcTenantDefaultIdConfigBuilder() {
         return new RunTimeConfigBuilderBuildItem(OidcTenantDefaultIdConfigBuilder.class);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public void registerAuthenticationContextInterceptor(Capabilities capabilities, OidcRecorder recorder,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
+        var authCtxAnnotations = combinedIndexBuildItem.getIndex().getAnnotations(AUTHENTICATION_CONTEXT_NAME);
+        if (authCtxAnnotations.isEmpty() || !areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
+            return;
+        }
+        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authCtxInterceptorCreator(),
+                ai -> {
+                    AnnotationValue maxAgeValue = ai.value("maxAge");
+                    final long maxAge = maxAgeValue != null ? maxAgeValue.asInt() : AuthenticationContext.NO_MAX_AGE;
+
+                    String acrValues = "";
+                    AnnotationValue annotationValue = ai.value();
+                    String[] annotationValues = annotationValue == null ? null : annotationValue.asStringArray();
+                    if ((annotationValues == null || annotationValues.length == 0)
+                            && maxAge == AuthenticationContext.NO_MAX_AGE) {
+                        // no acr values and no max age
+                        throw new ConfigurationException("Annotation '" + AUTHENTICATION_CONTEXT_NAME + "' placed on '"
+                                + toTargetName(ai.target()) + "' specifies neither 'maxAge' or 'acr' values");
+                    } else if (annotationValues != null && annotationValues.length > 0) {
+                        acrValues = String.join(",", annotationValues);
+                    }
+
+                    return acrValues + ACR_VALUES_TO_MAX_AGE_SEPARATOR + maxAge;
+                }, true, AUTHENTICATION_CONTEXT_NAME));
+
+        // @AuthenticationContext -> authentication required
+        // register @Authenticated for annotated methods
+        Set<MethodInfo> annotatedMethods = collectMethodsWithoutRbacAnnotation(authCtxAnnotations
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(at -> at.kind() == METHOD)
+                .map(AnnotationTarget::asMethod)
+                .toList());
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedMethods, Optional.of(List.of("**"))));
+        // method-level security; this registers @Authenticated if no RBAC is explicitly declared
+        Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+        Set<MethodInfo> annotatedClassMethods = collectClassMethodsWithoutRbacAnnotation(
+                collectAnnotatedClasses(authCtxAnnotations, Predicate.not(useClassLevelSecurity)));
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedClassMethods, Optional.of(List.of("**"))));
+        // class-level security; this registers @Authenticated if no RBAC is explicitly declared
+        collectAnnotatedClasses(authCtxAnnotations, useClassLevelSecurity).stream()
+                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                .forEach(c -> registerClassSecurityCheckProducer.produce(
+                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                                .builder(Authenticated.class).buildWithTarget(c))));
+    }
+
+    private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (httpBuildTimeConfig.auth().proactive()) {
+            // TODO: this is ugly workaround for a situation where a test profile has disabled proactive auth, just
+            //  move tests to more suited modules
+            if ("quarkus-integration-test-oidc-wiremock".equals(
+                    ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).orElse(null))) {
+                return false;
+            }
+            throw new RuntimeException("The '%s' annotation is only supported when proactive authentication is disabled"
+                    .formatted(AUTHENTICATION_CONTEXT_NAME));
+        } else if (capabilities.isMissing(Capability.WEBSOCKETS_NEXT) && capabilities.isMissing(Capability.RESTEASY_REACTIVE)
+                && capabilities.isMissing(Capability.RESTEASY)) {
+            throw new RuntimeException("The '%s' can only be used on Jakarta REST or WebSockets Next endpoints");
+        }
+        return true;
     }
 
     private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, DotName requiredType,

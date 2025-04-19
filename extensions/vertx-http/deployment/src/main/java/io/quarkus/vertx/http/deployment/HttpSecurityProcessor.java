@@ -659,7 +659,7 @@ public class HttpSecurityProcessor {
         return !ClientAuth.NONE.equals(httpBuildTimeConfig.tlsClientAuth());
     }
 
-    private static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
+    public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
         return classes
                 .stream()
                 .filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c))
@@ -670,14 +670,14 @@ public class HttpSecurityProcessor {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
+    public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
         return methods
                 .stream()
                 .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 
-    private static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
+    public static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
             Predicate<ClassInfo> filter) {
         return instances
                 .stream()

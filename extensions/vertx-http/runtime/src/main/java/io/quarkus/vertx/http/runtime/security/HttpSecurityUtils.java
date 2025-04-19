@@ -7,6 +7,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -16,6 +17,7 @@ public final class HttpSecurityUtils {
     public final static String ROUTING_CONTEXT_ATTRIBUTE = "quarkus.http.routing.context";
     static final String SECURITY_IDENTITIES_ATTRIBUTE = "io.quarkus.security.identities";
     static final String COMMON_NAME = "CN";
+    private static final String AUTHENTICATION_FAILURE_KEY = "io.quarkus.vertx.http.runtime.security#authentication-failure";
 
     private HttpSecurityUtils() {
 
@@ -85,6 +87,23 @@ public final class HttpSecurityUtils {
         } catch (InvalidNameException ex) {
             // Failing the augmentation process because of this exception seems unnecessary
             // The RDN my include some characters unexpected by the legacy LdapName API specification.
+        }
+        return null;
+    }
+
+    /**
+     * Adds {@link AuthenticationFailedException} failure to the current {@link RoutingContext}.
+     * Main motivation is to have {@link AuthenticationFailedException#getAttributes()} available during challenge.
+     */
+    public static void addAuthenticationFailureToEvent(AuthenticationFailedException exception, RoutingContext routingContext) {
+        if (routingContext != null && exception != null) {
+            routingContext.put(AUTHENTICATION_FAILURE_KEY, exception);
+        }
+    }
+
+    public static AuthenticationFailedException getAuthenticationFailureFromEvent(RoutingContext routingContext) {
+        if (routingContext != null) {
+            return routingContext.get(AUTHENTICATION_FAILURE_KEY);
         }
         return null;
     }

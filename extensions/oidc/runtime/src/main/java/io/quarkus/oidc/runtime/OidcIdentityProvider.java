@@ -197,14 +197,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<TokenVerificationResult> verifyPrimaryTokenUni(Map<String, Object> requestData,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, UserInfo userInfo) {
+        final Uni<TokenVerificationResult> tokenVerificationResult;
         if (isInternalIdToken(request)) {
             if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
                 // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
-                return Uni.createFrom()
+                tokenVerificationResult = Uni.createFrom()
                         .item(new TokenVerificationResult(OidcCommonUtils.decodeJwtContent(request.getToken().getToken()),
                                 null));
             } else {
-                return verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+                tokenVerificationResult = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
             }
         } else {
             final boolean idToken = isIdToken(request);
@@ -323,8 +324,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
             }
 
-            return result;
+            tokenVerificationResult = result;
         }
+
+        StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
+        if (stepUpAuthPolicy != null) {
+            return tokenVerificationResult.invoke(stepUpAuthPolicy);
+        }
+        return tokenVerificationResult;
     }
 
     private static String getTokenCertThumbprint(Map<String, Object> requestData, TokenVerificationResult t) {

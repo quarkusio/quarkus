@@ -8,6 +8,7 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +29,9 @@ public class MethodSourceTest {
     public void testParameterResolver(UnusedBean.DummyInput dummyInput, Matcher<String> matcher) {
         UnusedBean.DummyResult dummyResult = unusedBean.dummy(dummyInput);
         assertThat(dummyResult.getResult(), matcher);
+
+        // Can we get config?
+        ConfigProvider.getConfig();
     }
 
     private static Collection<Arguments> provideDummyInput() {

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
@@ -20,7 +21,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Binding;
 public final class TokenConfigBuilder {
 
     private record TokenImpl(Optional<String> issuer, Optional<List<String>> audience, boolean subjectRequired,
-            Map<String, String> requiredClaims, Optional<String> tokenType, OptionalInt lifespanGrace,
+            Map<String, Set<String>> requiredClaims, Optional<String> tokenType, OptionalInt lifespanGrace,
             Optional<Duration> age, boolean issuedAtRequired, Optional<String> principalClaim, boolean refreshExpired,
             Optional<Duration> refreshTokenTimeSkew, Duration forcedJwkRefreshInterval, Optional<String> header,
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
@@ -30,7 +31,7 @@ public final class TokenConfigBuilder {
     }
 
     private final OidcTenantConfigBuilder builder;
-    private final Map<String, String> requiredClaims = new HashMap<>();
+    private final Map<String, Set<String>> requiredClaims = new HashMap<>();
     private final List<String> audience = new ArrayList<>();
     private Optional<String> issuer;
     private boolean subjectRequired;
@@ -103,7 +104,19 @@ public final class TokenConfigBuilder {
     public TokenConfigBuilder requiredClaims(String requiredClaimName, String requiredClaimValue) {
         Objects.requireNonNull(requiredClaimName);
         Objects.requireNonNull(requiredClaimValue);
-        this.requiredClaims.put(requiredClaimName, requiredClaimValue);
+        this.requiredClaims.put(requiredClaimName, Set.of(requiredClaimValue));
+        return this;
+    }
+
+    /**
+     * @param requiredClaimName {@link OidcTenantConfig.Token#requiredClaims()} name
+     * @param requiredClaimValues {@link OidcTenantConfig.Token#requiredClaims()} value
+     * @return this builder
+     */
+    public TokenConfigBuilder requiredClaims(String requiredClaimName, Set<String> requiredClaimValues) {
+        Objects.requireNonNull(requiredClaimName);
+        Objects.requireNonNull(requiredClaimValues);
+        this.requiredClaims.put(requiredClaimName, Set.copyOf(requiredClaimValues));
         return this;
     }
 
@@ -111,7 +124,7 @@ public final class TokenConfigBuilder {
      * @param requiredClaims {@link OidcTenantConfig.Token#requiredClaims()}
      * @return this builder
      */
-    public TokenConfigBuilder requiredClaims(Map<String, String> requiredClaims) {
+    public TokenConfigBuilder requiredClaims(Map<String, Set<String>> requiredClaims) {
         if (requiredClaims != null) {
             this.requiredClaims.putAll(requiredClaims);
         }

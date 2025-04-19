@@ -2,28 +2,26 @@ package io.quarkus.websockets.next.runtime.telemetry;
 
 import java.nio.charset.StandardCharsets;
 
-import io.micrometer.core.instrument.Counter;
+import io.quarkus.websockets.next.runtime.spi.telemetry.WebSocketMetricsInterceptorProducer.WebSocketMetricsInterceptor;
 import io.vertx.core.buffer.Buffer;
 
 final class MetricsSendingInterceptor implements SendingInterceptor {
 
-    private final Counter onMessageSentCounter;
-    private final Counter onMessageSentBytesCounter;
+    private final WebSocketMetricsInterceptor interceptor;
+    private final String path;
 
-    MetricsSendingInterceptor(Counter onMessageSentCounter, Counter onMessageSentBytesCounter) {
-        this.onMessageSentCounter = onMessageSentCounter;
-        this.onMessageSentBytesCounter = onMessageSentBytesCounter;
+    MetricsSendingInterceptor(WebSocketMetricsInterceptor interceptor, String path) {
+        this.interceptor = interceptor;
+        this.path = path;
     }
 
     @Override
     public void onSend(String text) {
-        onMessageSentCounter.increment();
-        onMessageSentBytesCounter.increment(text.getBytes(StandardCharsets.UTF_8).length);
+        interceptor.onMessageSent(text.getBytes(StandardCharsets.UTF_8), path);
     }
 
     @Override
     public void onSend(Buffer message) {
-        onMessageSentCounter.increment();
-        onMessageSentBytesCounter.increment(message.getBytes().length);
+        interceptor.onMessageSent(message.getBytes(), path);
     }
 }

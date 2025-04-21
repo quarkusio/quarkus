@@ -127,7 +127,9 @@ class ObservabilityDevServiceProcessor {
                     new ExtensionsCatalog(
                             QuarkusClassLoader::isResourcePresentAtRuntime,
                             QuarkusClassLoader::isClassPresentAtRuntime,
-                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
+                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                                    capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
+                                    capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
                             hasMicrometerOtlp(metricsConfiguration)));
 
             if (devService != null) {

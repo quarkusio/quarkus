@@ -232,6 +232,14 @@
                             <positive>io.quarkus.opentelemetry.deployment.tracing.TracerEnabled</positive>
                             <name>io.quarkus.opentelemetry.tracer</name>
                         </providesIf>
+                        <providesIf>
+                            <positive>io.quarkus.opentelemetry.deployment.metric.MetricsEnabled</positive>
+                            <name>io.quarkus.opentelemetry.metrics</name>
+                        </providesIf>
+                        <providesIf>
+                            <positive>io.quarkus.opentelemetry.deployment.logging.LogsEnabled</positive>
+                            <name>io.quarkus.opentelemetry.logs</name>
+                        </providesIf>
                     </capabilities>
                 </configuration>
             </plugin>

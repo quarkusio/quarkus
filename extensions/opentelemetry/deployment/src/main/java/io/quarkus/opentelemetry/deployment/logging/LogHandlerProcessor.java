@@ -1,8 +1,5 @@
 package io.quarkus.opentelemetry.deployment.logging;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.Function;
-
 import org.jboss.jandex.DotName;
 
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
@@ -19,11 +16,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogRecorder;
 import io.quarkus.opentelemetry.runtime.logs.spi.LogsExporterCDIProvider;
 
-@BuildSteps(onlyIf = LogHandlerProcessor.LogsEnabled.class)
+@BuildSteps(onlyIf = LogsEnabled.class)
 class LogHandlerProcessor {
 
     private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
@@ -48,20 +44,5 @@ class LogHandlerProcessor {
     LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem) {
         return new LogHandlerBuildItem(recorder.initializeHandler(beanContainerBuildItem.getValue()));
-    }
-
-    public static class LogsEnabled implements BooleanSupplier {
-        OTelBuildConfig otelBuildConfig;
-
-        public boolean getAsBoolean() {
-            return otelBuildConfig.logs().enabled()
-                    .map(new Function<Boolean, Boolean>() {
-                        @Override
-                        public Boolean apply(Boolean enabled) {
-                            return otelBuildConfig.enabled() && enabled;
-                        }
-                    })
-                    .orElseGet(() -> otelBuildConfig.enabled());
-        }
     }
 }

@@ -17,7 +17,12 @@ public class OidcClientRegistrationConfigBuilderTest {
     @Test
     public void testDefaultValues() {
         var config = OidcClientRegistrationConfig.builder().build();
+        testDefaultValues(config);
+        config = new OidcClientRegistrationConfigBuilder().build();
+        testDefaultValues(config);
+    }
 
+    private static void testDefaultValues(OidcClientRegistrationConfig config) {
         // OidcClientRegistrationConfig methods
         assertTrue(config.id().isEmpty());
         assertTrue(config.registrationEnabled());
@@ -264,5 +269,14 @@ public class OidcClientRegistrationConfigBuilderTest {
                 .build();
         assertEquals("registration-path", config.registrationPath().orElse(null));
         assertEquals("redirect-uri", config.metadata().redirectUri().orElse(null));
+    }
+
+    @Test
+    public void testMetadataBuilderDefaults() {
+        var metadata = new MetadataBuilder().build();
+        assertTrue(metadata.clientName().isEmpty());
+        assertTrue(metadata.postLogoutUri().isEmpty());
+        assertTrue(metadata.redirectUri().isEmpty());
+        assertTrue(metadata.extraProps().isEmpty());
     }
 }

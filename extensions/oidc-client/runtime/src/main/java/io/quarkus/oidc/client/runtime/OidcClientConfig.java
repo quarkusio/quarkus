@@ -10,7 +10,6 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.WithDefault;
 
 public interface OidcClientConfig extends OidcClientCommonConfig {
@@ -179,12 +178,7 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
      * @return OidcClientConfigBuilder builder
      */
     static OidcClientConfigBuilder builder() {
-        var clientsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(OidcClientsConfig.class)
-                .build()
-                .getConfigMapping(OidcClientsConfig.class);
-        return builder(OidcClientsConfig.getDefaultClient(clientsConfig));
+        return new OidcClientConfigBuilder();
     }
 
     /**

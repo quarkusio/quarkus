@@ -41,6 +41,7 @@ public class OidcResource {
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
     private volatile int opaqueToken2UsageCount;
+    private volatile int opaqueToken3UsageCount;
     private volatile int revokeEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
     private volatile boolean enableDiscovery = true;
@@ -121,6 +122,13 @@ public class OidcResource {
     }
 
     @POST
+    @Path("opaque-token-3-call-count")
+    public int resetOpaqueToken3CallCount() {
+        opaqueToken3UsageCount = 0;
+        return opaqueToken3UsageCount;
+    }
+
+    @POST
     @Produces("application/json")
     @Path("introspect")
     public String introspect(@FormParam("client_id") String clientId, @FormParam("client_secret") String clientSecret,
@@ -128,11 +136,26 @@ public class OidcResource {
         introspectionEndpointCallCount++;
 
         boolean activeStatus = introspection && !token.endsWith("-invalid");
-        boolean requiredClaim = true;
+        String requiredClaim = "\"required_claim\": \"1\",";
         if (token.endsWith("_2") && ++opaqueToken2UsageCount == 2) {
             // This is to confirm that the same opaque token_2 works well when its introspection response
             // includes `required_claim` with value "1" but fails when the required claim is not included
-            requiredClaim = false;
+            requiredClaim = "";
+        }
+        if (token.endsWith("_3")) {
+            ++opaqueToken3UsageCount;
+            // This is to confirm that the same opaque token_3 works well when its introspection response
+            // includes `required_claim` with values "1,2" but fails when the required claim is not included
+            // or when required claim value is just "1"
+            if (opaqueToken3UsageCount == 2) {
+                requiredClaim = "\"required_claim\": [\"1\"],";
+            }
+            if (opaqueToken3UsageCount == 3) {
+                requiredClaim = "";
+            }
+            if (opaqueToken3UsageCount == 4) {
+                requiredClaim = "\"required_claim\": [\"1\", \"2\"],";
+            }
         }
         String introspectionClientId = "none";
         String introspectionClientSecret = "none";
@@ -159,7 +182,7 @@ public class OidcResource {
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"," +
-                (requiredClaim ? "\"required_claim\": \"1\"," : "") +
+                requiredClaim +
                 "   \"introspection_client_id\": \"" + introspectionClientId + "\"," +
                 "   \"introspection_client_secret\": \"" + introspectionClientSecret + "\"," +
                 "   \"client_id\": \"" + clientId + "\"" +
@@ -277,6 +300,16 @@ public class OidcResource {
     @Produces("application/json")
     public String testOpaqueToken2() {
         return "{\"access_token\": \"987654321_2\"," +
+                "   \"token_type\": \"Bearer\"," +
+                "   \"refresh_token\": \"123456789\"," +
+                "   \"expires_in\": 300 }";
+    }
+
+    @POST
+    @Path("opaque-token3")
+    @Produces("application/json")
+    public String testOpaqueToken3() {
+        return "{\"access_token\": \"987654321_3\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";

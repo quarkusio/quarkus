@@ -709,8 +709,46 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(403);
     }
 
+    @Test
+    public void testMultipleRequiredClaimValues() {
+        // required claim values "one", "two", and "three" are missing
+        RestAssured.given().auth().oauth2(getAccessToken(null))
+                .when().get("/api/admin/bearer-required-claims")
+                .then()
+                .statusCode(401);
+        // required claim values "one" and "two" is missing
+        RestAssured.given().auth().oauth2(getAccessToken(Set.of("three")))
+                .when().get("/api/admin/bearer-required-claims")
+                .then()
+                .statusCode(401);
+        // required claim value "two" is missing
+        RestAssured.given().auth().oauth2(getAccessToken(Set.of("one", "three")))
+                .when().get("/api/admin/bearer-required-claims")
+                .then()
+                .statusCode(401);
+        // all required claim values are there
+        RestAssured.given().auth().oauth2(getAccessToken(Set.of("one", "two", "three")))
+                .when().get("/api/admin/bearer-required-claims")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
     private String getAccessToken(String userName, Set<String> groups) {
         return getAccessToken(userName, groups, SignatureAlgorithm.RS256);
+    }
+
+    private String getAccessToken(Set<String> claimValues) {
+        var jwtBuilder = Jwt.preferredUserName("admin")
+                .groups(Set.of("admin"))
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com");
+        if (claimValues != null) {
+            jwtBuilder.claim("my-claim", claimValues);
+        }
+        return jwtBuilder
+                .jws().algorithm(SignatureAlgorithm.PS256)
+                .sign();
     }
 
     private String getAccessToken(String userName, Set<String> groups, SignatureAlgorithm alg) {

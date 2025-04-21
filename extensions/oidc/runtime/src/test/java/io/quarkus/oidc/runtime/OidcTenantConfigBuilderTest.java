@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -294,6 +295,7 @@ public class OidcTenantConfigBuilderTest {
                 .lifespanGrace(99)
                 .tokenType("McGonagall")
                 .requiredClaims("req-claim-name", "req-claim-val")
+                .requiredClaims("req-array-claim-name", Set.of("item-1", "item-2"))
                 .subjectRequired()
                 .audience("professor hagrid")
                 .issuer("issuer-3")
@@ -464,8 +466,9 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(1, token.audience().get().size());
         assertTrue(token.audience().get().contains("professor hagrid"));
         assertTrue(token.subjectRequired());
-        assertEquals(1, token.requiredClaims().size());
-        assertEquals("req-claim-val", token.requiredClaims().get("req-claim-name"));
+        assertEquals(2, token.requiredClaims().size());
+        assertEquals("req-claim-val", token.requiredClaims().get("req-claim-name").iterator().next());
+        assertEquals(Set.of("item-1", "item-2"), token.requiredClaims().get("req-array-claim-name"));
         assertEquals("McGonagall", token.tokenType().get());
         assertEquals(99, token.lifespanGrace().getAsInt());
         assertEquals(68, token.age().get().toMinutes());
@@ -1080,7 +1083,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(builtFirst.refreshExpired());
         assertTrue(builtFirst.subjectRequired());
         assertEquals(1, builtFirst.requiredClaims().size());
-        assertEquals("II", builtFirst.requiredClaims().get("I"));
+        assertEquals("II", builtFirst.requiredClaims().get("I").iterator().next());
         assertEquals(2, builtFirst.audience().orElseThrow().size());
         assertTrue(builtFirst.audience().orElseThrow().contains("one"));
         assertTrue(builtFirst.audience().orElseThrow().contains("two"));
@@ -1099,8 +1102,8 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(builtSecond.refreshExpired());
         assertTrue(builtSecond.subjectRequired());
         assertEquals(2, builtSecond.requiredClaims().size());
-        assertEquals("II", builtSecond.requiredClaims().get("I"));
-        assertEquals("IV", builtSecond.requiredClaims().get("III"));
+        assertEquals("II", builtSecond.requiredClaims().get("I").iterator().next());
+        assertEquals("IV", builtSecond.requiredClaims().get("III").iterator().next());
         assertEquals(3, builtSecond.audience().orElseThrow().size());
         assertTrue(builtSecond.audience().orElseThrow().contains("one"));
         assertTrue(builtSecond.audience().orElseThrow().contains("two"));

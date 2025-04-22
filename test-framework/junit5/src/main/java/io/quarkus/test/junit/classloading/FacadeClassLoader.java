@@ -480,9 +480,12 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             runtimeClassLoaders.put(key, startupAction);
 
             return startupAction.getClassLoader();
+        } catch (RuntimeException e) {
+            // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
+            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
-            // TODO what's the best way to do this?
             e.printStackTrace();
             throw new RuntimeException(e);
         }

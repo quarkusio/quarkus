@@ -302,11 +302,9 @@ public class ResteasyReactiveScanner {
             }
         }
 
-        Map<DotName, String> clientInterfaceSubtypes = new HashMap<>();
-        for (DotName interfaceName : clientInterfaces.keySet()) {
-            addClientSubInterfaces(interfaceName, index, clientInterfaceSubtypes, clientInterfaces);
+        for (DotName interfaceName : new ArrayList<>(clientInterfaces.keySet())) {
+            addClientSubInterfaces(interfaceName, index, clientInterfaces);
         }
-        clientInterfaces.putAll(clientInterfaceSubtypes);
 
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
@@ -402,13 +400,13 @@ public class ResteasyReactiveScanner {
     }
 
     private static void addClientSubInterfaces(DotName interfaceName, IndexView index,
-            Map<DotName, String> clientInterfaceSubtypes, Map<DotName, String> clientInterfaces) {
+            Map<DotName, String> clientInterfaces) {
+
         Collection<ClassInfo> subclasses = index.getKnownDirectImplementors(interfaceName);
         for (ClassInfo subclass : subclasses) {
-            if (!clientInterfaces.containsKey(subclass.name()) && Modifier.isInterface(subclass.flags())
-                    && !clientInterfaceSubtypes.containsKey(subclass.name())) {
-                clientInterfaceSubtypes.put(subclass.name(), clientInterfaces.get(interfaceName));
-                addClientSubInterfaces(subclass.name(), index, clientInterfaceSubtypes, clientInterfaces);
+            if (!clientInterfaces.containsKey(subclass.name()) && Modifier.isInterface(subclass.flags())) {
+                clientInterfaces.put(subclass.name(), clientInterfaces.get(interfaceName));
+                addClientSubInterfaces(subclass.name(), index, clientInterfaces);
             }
         }
 

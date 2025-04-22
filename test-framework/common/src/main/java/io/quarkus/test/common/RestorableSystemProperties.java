@@ -20,7 +20,9 @@ public class RestorableSystemProperties implements Closeable {
             sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
         }
         for (Map.Entry<String, String> i : props.entrySet()) {
-            System.setProperty(i.getKey(), i.getValue());
+            if (i.getKey() != null && i.getValue() != null) {
+                System.setProperty(i.getKey(), i.getValue());
+            }
         }
         return new RestorableSystemProperties(sysPropRestore);
     }

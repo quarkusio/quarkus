@@ -142,7 +142,7 @@ public class ClientEndpointIndexer
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
-        throw new RuntimeException("Injectable beans not supported in client");
+        throw new RuntimeException("Injectable beans are not supported in client");
     }
 
     @Override

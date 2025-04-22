@@ -457,9 +457,6 @@ org.acme.getting.started.testing.MyQuarkusTestBeforeEachCallback
 
 TIP: It is possible to read annotations from the test class or method to control what the callback shall be doing.
 
-WARNING: While it is possible to use JUnit Jupiter callback interfaces like `BeforeEachCallback`, you might run into classloading issues because Quarkus has
-         to run tests in a custom classloader which JUnit is not aware of.
-
 [[testing_different_profiles]]
 == Testing Different Profiles
 
@@ -704,6 +701,11 @@ match the value of `quarkus.test.profile.tags`.
 * `quarkus.test.profile.tags=test1,test3`: This case results in the same tests being executed as the previous case.
 * `quarkus.test.profile.tags=test2,test3`: In this case only `MultipleTagsTest` will be run because `MultipleTagsTest` is the only `QuarkusTestProfile` implementation whose `tags` method
 matches the value of `quarkus.test.profile.tags`.
+
+== Nested Tests
+
+JUnit 5 https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested[@Nested tests] are useful for structuring more complex test scenarios.
+However, note that it is not possible to assign different test profiles or resources to nested tests within the same parent class.
 
 == Mock Support
 

@@ -260,9 +260,14 @@ public class JaxrsClientReactiveProcessor {
     }
 
     @BuildStep
-    void initializeStorkFilter(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void initializeStorkFilter(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
+        if (!capabilities.isPresent(Capability.SMALLRYE_STORK)) {
+            return;
+        }
+
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));

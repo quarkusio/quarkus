@@ -1029,6 +1029,8 @@ public class ProductEndpoint {
 <1> The `getProduct` callback method can only be invoked if the current security identity has an `admin` role or the user is allowed to get the product detail.
 <2> The error handler is invoked in case of the authorization failure.
 
+More information about permission checkers can be found on the JavaDoc of link:https://javadoc.io/doc/io.quarkus.security/quarkus-security/latest/io.quarkus.security.api/io/quarkus/security/PermissionChecker.html[`@PermissionChecker`].
+
 ==== Bearer token authentication
 
 The xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] expects that the bearer token is passed in the `Authorization` header during the initial HTTP handshake.

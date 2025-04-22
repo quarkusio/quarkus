@@ -10,6 +10,7 @@ import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
 
 @WebSocket(path = "/product")
 public class ProductEndpoint {
@@ -32,8 +33,8 @@ public class ProductEndpoint {
     }
 
     @OnError
-    String error(ForbiddenException t) {
-        return "forbidden:" + currentIdentity.getPrincipal().getName();
+    String error(ForbiddenException t, WebSocketConnection conn) {
+        return "forbidden:" + currentIdentity.getPrincipal().getName() + ",endpointId:" + conn.endpointId();
     }
 
     @PermissionChecker("product:get")

@@ -113,6 +113,9 @@ class Endpoints {
                             });
                         }
                     } else {
+                        if (telemetrySupport != null) {
+                            telemetrySupport.connectionOpeningFailed(r.cause());
+                        }
                         handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnOpen callback", connection);
                     }
                 });

@@ -197,7 +197,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<TokenVerificationResult> verifyPrimaryTokenUni(Map<String, Object> requestData,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, UserInfo userInfo) {
+        StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
         if (isInternalIdToken(request)) {
+            if (stepUpAuthPolicy != null) {
+                return Uni.createFrom().failure(new OIDCException(
+                        "The @AuthenticationContext annotation cannot be used with an internal ID token"));
+            }
             if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
                 // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
                 return Uni.createFrom()
@@ -321,6 +326,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                     });
                 }
+            }
+
+            if (stepUpAuthPolicy != null) {
+                result = result.invoke(stepUpAuthPolicy);
             }
 
             return result;
@@ -768,6 +777,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         try {
             TokenVerificationResult result = resolvedContext.provider().verifyJwtToken(request.getToken().getToken(),
                     resolvedContext.oidcConfig().token().subjectRequired(), false, null);
+            StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
+            if (stepUpAuthPolicy != null) {
+                stepUpAuthPolicy.accept(result);
+            }
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,
                             result.localVerificationResult, result.localVerificationResult, null, null, request));

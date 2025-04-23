@@ -98,4 +98,8 @@ public final class OidcConstants {
     public static final String DPOP_ACCESS_TOKEN_THUMBPRINT = "ath";
     public static final String DPOP_HTTP_METHOD = "htm";
     public static final String DPOP_HTTP_REQUEST_URI = "htu";
+
+    public static final String ACR = "acr";
+    public static final String ACR_VALUES = "acr_values";
+    public static final String MAX_AGE = "max_age";
 }

@@ -1,6 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.it.keycloak.BearerTokenStepUpAuthenticationTest.getAccessTokenWithAcr;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -907,6 +910,76 @@ public class BearerTokenAuthorizationTest {
             Assertions.fail(
                     "Endpoint 'bearer-auth-mech-annotation' is annotated with the @Bearer annotation, code flow auth should fail");
         }
+    }
+
+    @Test
+    public void testStepUpAuthUsingRequiredClaimsConfigProperty() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
+
+        // for this tenant, 3 'acr' values are required: alpha, beta, gamma
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("alpha"))
+                .header("www-authenticate", containsString("beta"))
+                .header("www-authenticate", containsString("gamma"));
+        // 'gamma' acr value is missing -> 401
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta")))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("alpha"))
+                .header("www-authenticate", containsString("beta"))
+                .header("www-authenticate", containsString("gamma"));
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta", "gamma")))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice:service"));
+    }
+
+    @Test
+    public void testStepUpAuthUsingCustomValidatorRequiringAcrValues() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
+
+        // for this tenant, 3 'acr' values are required: delta, epsilon, zeta
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("delta"))
+                .header("www-authenticate", containsString("epsilon"))
+                .header("www-authenticate", containsString("zeta"));
+        // 'gamma' acr value is missing -> 401
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta")))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("delta"))
+                .header("www-authenticate", containsString("epsilon"))
+                .header("www-authenticate", containsString("zeta"));
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("delta", "epsilon", "zeta")))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice:service"));
     }
 
     private String getAccessToken(String userName, String clientId) {

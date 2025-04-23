@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.addAuthenticationFailureToEvent;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
 import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
 
@@ -186,6 +187,7 @@ public class HttpSecurityRecorder {
             }
             //auth failed
             if (throwable instanceof AuthenticationFailedException authenticationFailedException) {
+                addAuthenticationFailureToEvent(authenticationFailedException, event);
                 getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean aBoolean) {

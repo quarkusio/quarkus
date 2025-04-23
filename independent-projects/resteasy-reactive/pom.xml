@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.21.4</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <groupId>io.quarkus.resteasy.reactive</groupId>
@@ -16,7 +16,7 @@
     <name>RESTEasy Reactive - Parent pom</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>3.21.4</version>
 
     <licenses>
         <license>

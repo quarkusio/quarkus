@@ -25,14 +25,12 @@ public class ExecutionListener implements TestExecutionListener {
         Optional<TestSource> oSource = testIdentifier.getSource();
         if (oSource.isPresent()) {
             TestSource source = oSource.get();
-            if (source instanceof ClassSource) {
-                ClassSource cs = (ClassSource) source;
+            if (source instanceof ClassSource cs) {
                 ClassLoader classLoader = cs.getJavaClass().getClassLoader();
                 // Only adjust the TCCL in cases where we know the QuarkusTestExtension would be about to do it anyway
                 // We could check annotations, but that would be slow, and the assumption that only Quarkus Tests are loaded with the quarkus classloader should be a fair one
                 if (classLoader instanceof QuarkusClassLoader) {
-                    origCl = Thread.currentThread()
-                            .getContextClassLoader();
+                    origCl = Thread.currentThread().getContextClassLoader();
                     Thread.currentThread().setContextClassLoader(classLoader);
                 } else {
                     origCl = null;
@@ -43,9 +41,15 @@ public class ExecutionListener implements TestExecutionListener {
 
     @Override
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
-        if (origCl != null) {
-            // If execution is parallel this could be odd, but if execution is parallel any kind of TCCL manipulation will be ill-fated
-            Thread.currentThread().setContextClassLoader(origCl);
+        Optional<TestSource> oSource = testIdentifier.getSource();
+        if (oSource.isPresent()) {
+            TestSource source = oSource.get();
+            if (source instanceof ClassSource) {
+                if (origCl != null) {
+                    // If execution is parallel this could produce odd results, but if execution is parallel any kind of TCCL manipulation will be ill-fated
+                    Thread.currentThread().setContextClassLoader(origCl);
+                }
+            }
         }
     }
 }

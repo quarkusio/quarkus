@@ -33,6 +33,8 @@ import io.opentelemetry.api.logs.Severity;
 public class OpenTelemetryLogHandler extends ExtHandler {
 
     private static final AttributeKey<String> NAMESPACE_ATTRIBUTE_KEY = AttributeKey.stringKey("log.logger.namespace");
+    // See: https://github.com/open-telemetry/semantic-conventions/issues/1550
+    public static final AttributeKey<String> BRIDGE_NAME = AttributeKey.stringKey("bridge.name");
 
     private final OpenTelemetry openTelemetry;
     private final boolean logFileEnabled;
@@ -83,6 +85,7 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         attributes.put(THREAD_NAME, record.getThreadName());
         attributes.put(THREAD_ID, record.getLongThreadID());
         attributes.put(NAMESPACE_ATTRIBUTE_KEY, record.getLoggerClassName());
+        attributes.put(BRIDGE_NAME, record.getLoggerName());
 
         final Map<String, String> mdcCopy = record.getMdcCopy();
         if (mdcCopy != null) {

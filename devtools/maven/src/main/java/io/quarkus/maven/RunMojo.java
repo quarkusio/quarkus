@@ -43,6 +43,10 @@ public class RunMojo extends QuarkusBootstrapMojo {
         // Add the system properties of the plugin to the system properties
         // if and only if they are not already set.
         for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+
             String key = entry.getKey();
             if (System.getProperty(key) == null) {
                 System.setProperty(key, entry.getValue());

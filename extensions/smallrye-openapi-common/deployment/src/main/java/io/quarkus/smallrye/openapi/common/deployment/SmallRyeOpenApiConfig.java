@@ -110,7 +110,6 @@ public interface SmallRyeOpenApiConfig {
      * Setting it to `true` will automatically add a default server to the schema if none is provided,
      * using the current running server host and port.
      */
-
     Optional<Boolean> autoAddServer();
 
     /**
@@ -122,13 +121,11 @@ public interface SmallRyeOpenApiConfig {
     /**
      * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
      */
-
     Optional<String> apiKeyParameterIn();
 
     /**
      * Required when using `apiKey` security. The name of the header, query or cookie parameter to be used.
      */
-
     Optional<String> apiKeyParameterName();
 
     /**
@@ -235,6 +232,15 @@ public interface SmallRyeOpenApiConfig {
      * Set the strategy to automatically create an operation Id
      */
     Optional<OperationIdStrategy> operationIdStrategy();
+
+    /**
+     * Set this boolean value to enable the merging of the deprecated `@Schema`
+     * `example` property into the `examples` array introduced in OAS 3.1.0. If
+     * not set, it will default to `false` and the deprecated `example` will be
+     * kept as a separate annotation on the schema in the OpenAPI model.
+     */
+    @WithDefault("false")
+    boolean mergeSchemaExamples();
 
     public enum SecurityScheme {
         apiKey,

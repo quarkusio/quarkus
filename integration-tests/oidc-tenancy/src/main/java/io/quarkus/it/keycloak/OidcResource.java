@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.security.PublicKey;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Set;
 
@@ -266,6 +267,17 @@ public class OidcResource {
     }
 
     @POST
+    @Path("accesstoken-with-acr")
+    @Produces("application/json")
+    public String testAccessTokenWithAcr(@QueryParam("acr") String acr, @QueryParam("auth_time") String authTime) {
+        return "{\"access_token\": \"" + jwt(null, "123456789", "1", false, acr, authTime)
+                + "\"," +
+                "   \"token_type\": \"Bearer\"," +
+                "   \"refresh_token\": \"123456789\"," +
+                "   \"expires_in\": 300 }";
+    }
+
+    @POST
     @Path("accesstoken")
     @Produces("application/json")
     public String testAccessToken(@QueryParam("kid") String kid, @QueryParam("sub") String subject) {
@@ -362,6 +374,10 @@ public class OidcResource {
     }
 
     private String jwt(String audience, String subject, String kid, boolean withEmptyScope) {
+        return jwt(audience, subject, kid, withEmptyScope, null, null);
+    }
+
+    private String jwt(String audience, String subject, String kid, boolean withEmptyScope, String acr, String authTime) {
         JwtClaimsBuilder builder = Jwt.claim("typ", "Bearer")
                 .upn("alice")
                 .preferredUserName("alice")
@@ -376,6 +392,14 @@ public class OidcResource {
 
         if (withEmptyScope) {
             builder.claim("scope", "");
+        }
+
+        if (acr != null && !acr.isEmpty()) {
+            builder.claim("acr", Arrays.asList(acr.split(",")));
+        }
+
+        if (authTime != null && !authTime.isEmpty()) {
+            builder.claim("auth_time", Long.parseLong(authTime));
         }
 
         return builder.jws().keyId(kid)

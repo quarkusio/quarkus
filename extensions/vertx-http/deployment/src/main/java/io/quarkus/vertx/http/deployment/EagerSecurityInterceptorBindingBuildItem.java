@@ -31,6 +31,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
      * For example, we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
      */
     private final boolean requiresSecurityCheck;
+    private final Function<AnnotationInstance, String> bindingValueExtractor;
 
     /**
      *
@@ -39,10 +40,17 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
      */
     public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
             DotName... interceptorBindings) {
+        this(interceptorCreator, null, false, interceptorBindings);
+    }
+
+    public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
+            Function<AnnotationInstance, String> bindingValueExtractor,
+            boolean requiresSecurityCheck, DotName... interceptorBindings) {
         this.annotationBindings = interceptorBindings;
         this.interceptorCreator = interceptorCreator;
         this.bindingToValue = Map.of();
-        this.requiresSecurityCheck = false;
+        this.requiresSecurityCheck = requiresSecurityCheck;
+        this.bindingValueExtractor = bindingValueExtractor;
     }
 
     EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
@@ -51,6 +59,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         this.interceptorCreator = interceptorCreator;
         this.bindingToValue = bindingToValue;
         this.requiresSecurityCheck = true;
+        this.bindingValueExtractor = null;
     }
 
     public DotName[] getAnnotationBindings() {
@@ -63,6 +72,9 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
 
     public String getBindingValue(AnnotationInstance annotationInstance, DotName annotation,
             AnnotationTarget annotationTarget) {
+        if (bindingValueExtractor != null) {
+            return bindingValueExtractor.apply(annotationInstance);
+        }
         if (bindingToValue.containsKey(annotation.toString())) {
             return bindingToValue.get(annotation.toString());
         }
@@ -73,7 +85,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         return annotationInstance.value().asString();
     }
 
-    private static String toTargetName(AnnotationTarget target) {
+    public static String toTargetName(AnnotationTarget target) {
         if (target.kind() == AnnotationTarget.Kind.METHOD) {
             return target.asMethod().declaringClass().name().toString() + "#" + target.asMethod().name();
         } else {

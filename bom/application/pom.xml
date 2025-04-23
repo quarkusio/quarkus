@@ -50,7 +50,7 @@
         <smallrye-config.version>3.12.4</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.8</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.2</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
@@ -184,7 +184,7 @@
         <jib-core.version>0.27.3</jib-core.version>
         <google-http-client.version>1.46.3</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <picocli.version>4.7.6</picocli.version>
+        <picocli.version>4.7.7</picocli.version>
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
         <commons-compress.version>1.27.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.13.1</commons-text.version>

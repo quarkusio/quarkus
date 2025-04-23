@@ -171,9 +171,9 @@ public class BootstrapAppModelFactory {
                 .setDevMode(devMode);
         var project = artifactResolver.getMavenContext().getCurrentProject();
         if (project != null) {
-            final Properties modelProps = project.getModelBuildingResult() == null
+            final Properties modelProps = project.getEffectiveModel() == null
                     ? project.getRawModel().getProperties()
-                    : project.getModelBuildingResult().getEffectiveModel().getProperties();
+                    : project.getEffectiveModel().getProperties();
             appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(modelProps));
         }
         return appModelResolver;

@@ -201,6 +201,15 @@ class BuildIT extends MojoTestBase {
         build();
     }
 
+    @Test
+    void testFlattenMavenPlugin()
+            throws MavenInvocationException, IOException, InterruptedException {
+        // in this case the flatten plugin is expected to strip down dependencyManagement and test scoped dependencies
+        // which would break Quarkus bootstrap
+        testDir = initProject("projects/flatten-maven-plugin", "projects/flatten-maven-plugin-processed");
+        build();
+    }
+
     private void launch() throws IOException {
         launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }
@@ -239,11 +248,7 @@ class BuildIT extends MojoTestBase {
 
         final List<String> args = new ArrayList<>(2);
         args.add("package");
-        if (arg.length > 0) {
-            for (String a : arg) {
-                args.add(a);
-            }
-        }
+        Collections.addAll(args, arg);
         MavenProcessInvocationResult result = running.execute(args, Collections.emptyMap());
         int exitCode = result.getProcess().waitFor();
         if (exitCode != 0) {

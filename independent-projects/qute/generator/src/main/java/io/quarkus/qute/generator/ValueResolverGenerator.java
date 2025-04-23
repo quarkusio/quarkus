@@ -371,7 +371,10 @@ public class ValueResolverGenerator extends AbstractGenerator {
                     matchingNames.add(method.name());
                 }
                 String propertyName = isGetterName(method.name(), method.returnType()) ? getPropertyName(method.name()) : null;
-                if (propertyName != null && matchedNames.add(propertyName)) {
+                if (propertyName != null
+                        // No method with exact name match exists
+                        && noParamMethods.stream().noneMatch(mk -> mk.name.equals(propertyName))
+                        && matchedNames.add(propertyName)) {
                     matchingNames.add(propertyName);
                 }
                 if (matchingNames.isEmpty()) {
@@ -1107,7 +1110,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         return (mod & 0x00001000) != 0;
     }
 
-    static boolean isGetterName(String name, Type returnType) {
+    public static boolean isGetterName(String name, Type returnType) {
         if (name.startsWith(GET_PREFIX)) {
             return true;
         }

@@ -1334,6 +1334,7 @@ jobs:
         run: |
           7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
+              '**/target/*-reports-*/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
               LICENSE

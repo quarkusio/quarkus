@@ -3123,9 +3123,9 @@ public class QuteProcessor {
                 if (method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
                         && config.filter().test(method)
                         && (method.name().equals(name)
-                                || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
+                                || isMatchingGetter(method, name, clazz, config))) {
                     // Skip void, non-public, static and synthetic methods
-                    // Method name must match (exact or getter)
+                    // Method name must match (exact or getter if no exact match exists)
                     return method;
                 }
             }
@@ -3154,7 +3154,7 @@ public class QuteProcessor {
                     for (MethodInfo method : interfaceClassInfo.methods()) {
                         if (config.filter().test(method)
                                 && (method.name().equals(name)
-                                        || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
+                                        || isMatchingGetter(method, name, clazz, config))) {
                             return method;
                         }
                     }
@@ -3163,6 +3163,55 @@ public class QuteProcessor {
         }
         // No matching method found
         return null;
+    }
+
+    private static boolean isMatchingGetter(MethodInfo method, String name, ClassInfo clazz, JavaMemberLookupConfig config) {
+        if (ValueResolverGenerator.isGetterName(method.name(), method.returnType())) {
+            // isActive -> active, hasImage -> image
+            String propertyName = ValueResolverGenerator.getPropertyName(method.name());
+            if (propertyName.equals(name)) {
+                if (config.declaredMembersOnly()) {
+                    return clazz.methods().stream().noneMatch(m -> m.name().equals(name));
+                } else {
+                    Set<DotName> interfaceNames = new HashSet<>();
+                    while (clazz != null) {
+                        if (interfaceNames != null) {
+                            addInterfaces(clazz, config.index(), interfaceNames);
+                        }
+                        for (MethodInfo m : clazz.methods()) {
+                            if (m.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                                    && config.filter().test(m)
+                                    && m.name().equals(name)) {
+                                // Exact match exists
+                                return false;
+                            }
+                        }
+                        DotName superName = clazz.superName();
+                        if (superName == null) {
+                            clazz = null;
+                        } else {
+                            clazz = config.index().getClassByName(clazz.superName());
+                        }
+                    }
+                    for (DotName interfaceName : interfaceNames) {
+                        ClassInfo interfaceClassInfo = config.index().getClassByName(interfaceName);
+                        if (interfaceClassInfo != null) {
+                            for (MethodInfo m : interfaceClassInfo.methods()) {
+                                if (m.isDefault()
+                                        && m.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                                        && config.filter().test(m)
+                                        && (m.name().equals(name))) {
+                                    // Exact default method match exists
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void addInterfaces(ClassInfo clazz, IndexView index, Set<DotName> interfaceNames) {

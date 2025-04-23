@@ -321,6 +321,17 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         + requiredTestClass.getClassLoader()
                         + " This should not happen, but changing directory names or class layout may help work around the issue.");
             } else {
+                boolean isSurefire = System.getProperty("surefire.real.class.path") != null;
+                if (isSurefire) {
+                    boolean isSurefire3 = System.getProperty("surefire.real.class.path").contains("_3.jar");
+                    if (!isSurefire3) {
+                        throw new RuntimeException("The test class " + requiredTestClass
+                                + " should have been loaded with a QuarkusClassLoader, but instead it was loaded with "
+                                + requiredTestClass.getClassLoader()
+                                + ". Is the version of the Surefire plugin at least 3.x?");
+                    }
+                }
+
                 throw new RuntimeException("Internal error. The test class " + requiredTestClass
                         + " should have been loaded with a QuarkusClassLoader, but instead it was loaded with "
                         + requiredTestClass.getClassLoader()

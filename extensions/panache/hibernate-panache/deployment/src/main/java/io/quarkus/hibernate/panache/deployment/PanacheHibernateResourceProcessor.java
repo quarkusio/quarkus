@@ -36,6 +36,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.panache.PanacheEntityMarker;
 import io.quarkus.hibernate.panache.PanacheRepositoryQueries;
@@ -112,6 +113,7 @@ public final class PanacheHibernateResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
@@ -136,8 +138,8 @@ public final class PanacheHibernateResourceProcessor {
 
         panacheEntities.addAll(modelClasses);
 
-        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, panacheEntities, "Panache")
-                .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
+        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, descriptors, panacheEntities, "Panache", (e, pu,
+                reactivePU) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu, reactivePU)));
     }
 
     @BuildStep
@@ -147,6 +149,7 @@ public final class PanacheHibernateResourceProcessor {
             CombinedIndexBuildItem index,
             PanacheHibernateRecorder recorder) throws ClassNotFoundException {
         // PU
+        // FIXME: for now, this ignores the reactive PUs, but reactive PUs are not supported yet by Panache Reactive
         Map<String, String> map = new HashMap<>();
         for (EntityToPersistenceUnitBuildItem item : items) {
             map.put(item.getEntityClass(), item.getPersistenceUnitName());

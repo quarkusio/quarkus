@@ -795,7 +795,7 @@ After a `TlsConfiguration` has been reloaded, servers and clients using this con
 The recommended approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
 To do so, inject a CDI event of this type and fire it when a reload occurs.
 
-.Manually triggering a reload and firing a `CertificateUpdatedEvent`:
+.An example of manually reloading a TLS configuration and notifying components by firing a `CertificateUpdatedEvent` and reacting to it:
 [source,java]
 ----
 // in the class that performs the reload

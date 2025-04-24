@@ -189,7 +189,7 @@
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
         <commons-compress.version>1.27.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.13.1</commons-text.version>
-        <gson.version>2.13.0</gson.version>
+        <gson.version>2.13.1</gson.version>
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.24.3</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.1.Final</log4j-jboss-logmanager.version>

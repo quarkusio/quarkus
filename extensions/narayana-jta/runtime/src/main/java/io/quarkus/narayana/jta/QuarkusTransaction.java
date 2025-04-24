@@ -81,6 +81,19 @@ public interface QuarkusTransaction {
     }
 
     /**
+     * Returns the status of the current transaction.
+     *
+     * @return The status of the current transaction based on the {@link Status} constants.
+     */
+    static int getStatus() {
+        try {
+            return UserTransaction.userTransaction().getStatus();
+        } catch (SystemException e) {
+            throw new QuarkusTransactionException(e);
+        }
+    }
+
+    /**
      * If the transaction is rollback only
      *
      * @return If the transaction has been marked for rollback

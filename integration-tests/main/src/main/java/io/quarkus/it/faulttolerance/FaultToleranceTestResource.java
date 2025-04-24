@@ -12,6 +12,9 @@ public class FaultToleranceTestResource {
     @Inject
     Service service;
 
+    @Inject
+    SecondService secondService;
+
     @GET
     public String getName() {
         AtomicInteger counter = new AtomicInteger();
@@ -33,5 +36,11 @@ public class FaultToleranceTestResource {
         AtomicInteger counter = new AtomicInteger();
         String name = service.fallbackMethod(counter);
         return counter + ":" + name;
+    }
+
+    @GET
+    @Path("/hello")
+    public String hello() {
+        return secondService.publicHello();
     }
 }

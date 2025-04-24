@@ -893,7 +893,7 @@ a|* JDBC: `org.h2.Driver`
 |`quarkus-jdbc-mariadb`
 a|* JDBC: `org.mariadb.jdbc.Driver`
 
-* XA: `org.mariadb.jdbc.MySQLDataSource`
+* XA: `org.mariadb.jdbc.MariaDbDataSource`
 
 |`mssql`
 |`quarkus-jdbc-mssql`

@@ -5425,6 +5425,11 @@
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-vector</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.hibernate.reactive</groupId>
                 <artifactId>hibernate-reactive-core</artifactId>
                 <version>${hibernate-reactive.version}</version>

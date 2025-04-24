@@ -68,14 +68,17 @@ public interface QuarkusTransaction {
     }
 
     /**
-     * If a transaction is active.
-     * A transaction is considered active after it has been started and prior to a Coordinator issuing any prepares, unless the
-     * transaction has been marked for rollback
+     * Returns whether a transaction is associated to the current request scope. The name of this method is misleading. Don't
+     * use it.
      *
-     * @return {@code true} if the transaction is in the {@link Status#STATUS_ACTIVE} state.
+     * @return {@code true} if a transaction is associated to the current request scope.
+     *
+     * @deprecated the name of this method was misleading and it shouldn't be used anymore. Use {@link #getStatus()} for a
+     *             better semantic instead.
      */
+    @Deprecated(forRemoval = true, since = "3.22")
     static boolean isActive() {
-        return getStatus() == Status.STATUS_ACTIVE;
+        return getStatus() != Status.STATUS_NO_TRANSACTION;
     }
 
     /**

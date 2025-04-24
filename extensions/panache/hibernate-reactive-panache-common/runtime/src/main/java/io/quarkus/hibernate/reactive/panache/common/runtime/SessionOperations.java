@@ -92,7 +92,7 @@ public final class SessionOperations {
     }
 
     /**
-     * Performs the work in the scope of a reactive transaction. An existing session is reused if possible.
+     * Performs the work in the scope of a reactive transaction. An existing managed session is reused if possible.
      *
      * @param <T>
      * @param work
@@ -100,6 +100,17 @@ public final class SessionOperations {
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
         return withSession(s -> s.withTransaction(t -> work.get()));
+    }
+
+    /**
+     * Performs the work in the scope of a reactive transaction. An existing stateless session is reused if possible.
+     *
+     * @param <T>
+     * @param work
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withStatelessTransaction(Supplier<Uni<T>> work) {
+        return withStatelessSession(s -> s.withTransaction(t -> work.get()));
     }
 
     /**
@@ -241,7 +252,7 @@ public final class SessionOperations {
                 throw new IllegalStateException("No current Mutiny.StatelessSession found"
                         + "\n\t- no reactive stateless session was found in the Vert.x context and the context was not marked to open a new stateless session lazily"
                         + "\n\t- a stateless session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
-                        + "\n\t- you may need to annotate the business method with @WithSession or @WithTransaction");
+                        + "\n\t- you may need to annotate the business method with @WithSession(stateless = true) or @WithTransaction(stateless = true)");
             }
         }
     }

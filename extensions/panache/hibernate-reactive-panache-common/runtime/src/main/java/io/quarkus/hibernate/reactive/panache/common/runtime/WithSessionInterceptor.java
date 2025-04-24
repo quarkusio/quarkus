@@ -17,7 +17,12 @@ public class WithSessionInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
-            return SessionOperations.withSession(s -> proceedUni(context));
+            WithSession withSession = context.getMethod().getAnnotation(WithSession.class);
+            if (withSession.stateless()) {
+                return SessionOperations.withStatelessSession(s -> proceedUni(context));
+            } else {
+                return SessionOperations.withSession(s -> proceedUni(context));
+            }
         }
         return context.proceed();
     }

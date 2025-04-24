@@ -17,7 +17,12 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
-            return SessionOperations.withTransaction(() -> proceedUni(context));
+            WithTransaction withTransaction = context.getMethod().getAnnotation(WithTransaction.class);
+            if (withTransaction.stateless()) {
+                return SessionOperations.withStatelessTransaction(() -> proceedUni(context));
+            } else {
+                return SessionOperations.withTransaction(() -> proceedUni(context));
+            }
         }
         return context.proceed();
     }

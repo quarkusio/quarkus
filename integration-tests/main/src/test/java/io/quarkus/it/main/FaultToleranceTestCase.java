@@ -35,5 +35,10 @@ public class FaultToleranceTestCase {
                 .given().baseUri(uri.toString() + "/fallback")
                 .when().get()
                 .then().body(is("1:fallback"));
+
+        RestAssured
+                .given().baseUri(uri.toString() + "/hello")
+                .when().get()
+                .then().body(is("hello"));
     }
 }

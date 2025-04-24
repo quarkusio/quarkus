@@ -30,6 +30,10 @@ class SecureRandomAccessor {
         return result;
     }
 
+    static void set(SecureRandom value) {
+        RANDOM = value;
+    }
+
     private static synchronized SecureRandom initializeOnce() {
         SecureRandom result = RANDOM;
         if (result != null) {

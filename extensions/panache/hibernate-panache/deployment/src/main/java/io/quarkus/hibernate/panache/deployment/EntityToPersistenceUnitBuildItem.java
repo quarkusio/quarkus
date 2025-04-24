@@ -10,10 +10,13 @@ public final class EntityToPersistenceUnitBuildItem extends MultiBuildItem {
 
     private final String entityClass;
     private final String persistenceUnitName;
+    private final String reactivePersistenceUnitName;
 
-    public EntityToPersistenceUnitBuildItem(String entityClass, String persistenceUnitName) {
+    public EntityToPersistenceUnitBuildItem(String entityClass, String persistenceUnitName,
+            String reactivePersistenceUnitName) {
         this.entityClass = entityClass;
         this.persistenceUnitName = persistenceUnitName;
+        this.reactivePersistenceUnitName = reactivePersistenceUnitName;
     }
 
     public String getEntityClass() {
@@ -22,5 +25,9 @@ public final class EntityToPersistenceUnitBuildItem extends MultiBuildItem {
 
     public String getPersistenceUnitName() {
         return persistenceUnitName;
+    }
+
+    public String getReactivePersistenceUnitName() {
+        return reactivePersistenceUnitName;
     }
 }

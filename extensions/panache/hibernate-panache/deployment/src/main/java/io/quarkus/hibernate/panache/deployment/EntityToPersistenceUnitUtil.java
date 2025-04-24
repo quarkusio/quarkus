@@ -1,16 +1,23 @@
 package io.quarkus.hibernate.panache.deployment;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 
 //FIXME: duplicate with ORM and probably HR
 public final class EntityToPersistenceUnitUtil {
+
+    @FunctionalInterface
+    public interface TriConsumer {
+        void consume(String entity, String persistenceUnit, String reactivePersistenceUnit);
+    }
 
     private EntityToPersistenceUnitUtil() {
     }
@@ -19,15 +26,23 @@ public final class EntityToPersistenceUnitUtil {
      * Given the candidate entities, return a map with the persistence unit that single contains them
      * or throw an exception if any of the candidates is part of more than one persistence unit
      */
-    public static Map<String, String> determineEntityPersistenceUnits(
+    public static void determineEntityPersistenceUnits(
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            Set<String> candidates, String source) {
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            Set<String> candidates, String source,
+            TriConsumer consumer) {
         if (jpaModelPersistenceUnitMapping.isEmpty()) {
-            return Collections.emptyMap();
+            return;
         }
         Map<String, String> result = new HashMap<>();
         Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
                 .getEntityToPersistenceUnits();
+
+        Map<String, List<PersistenceUnitDescriptorBuildItem>> descriptorsMap = new HashMap<>();
+        for (PersistenceUnitDescriptorBuildItem descriptor : descriptors) {
+            descriptorsMap.computeIfAbsent(descriptor.getPersistenceUnitName(), k -> new ArrayList<>());
+            descriptorsMap.get(descriptor.getPersistenceUnitName()).add(descriptor);
+        }
 
         Map<String, Set<String>> violatingEntities = new TreeMap<>();
 
@@ -40,10 +55,41 @@ public final class EntityToPersistenceUnitUtil {
                 continue;
             }
 
-            if (selectedPersistenceUnits.size() == 1) {
-                result.put(entityName, selectedPersistenceUnits.iterator().next());
-            } else {
-                violatingEntities.put(entityName, selectedPersistenceUnits);
+            String persistenceUnit = null;
+            String reactivePersistenceUnit = null;
+            if (selectedPersistenceUnits.size() > 0) {
+                boolean error = false;
+                // collect at most one of blocking/reactive PU
+                for (String selectedPersistenceUnit : selectedPersistenceUnits) {
+                    List<PersistenceUnitDescriptorBuildItem> matchingDescriptors = descriptorsMap.get(selectedPersistenceUnit);
+                    if (matchingDescriptors == null) {
+                        throw new IllegalStateException(String.format("Cannot find descriptor unit named %s for entity %s",
+                                selectedPersistenceUnit, entityName));
+                    }
+                    for (PersistenceUnitDescriptorBuildItem descriptor : matchingDescriptors) {
+                        if (descriptor.isReactive()) {
+                            if (reactivePersistenceUnit != null) {
+                                error = true;
+                                break;
+                            } else {
+                                reactivePersistenceUnit = selectedPersistenceUnit;
+                            }
+                        } else {
+                            if (persistenceUnit != null) {
+                                error = true;
+                                break;
+                            } else {
+                                persistenceUnit = selectedPersistenceUnit;
+                            }
+                        }
+                    }
+                }
+                if (error) {
+                    violatingEntities.put(entityName, selectedPersistenceUnits);
+                } else if (persistenceUnit != null || reactivePersistenceUnit != null) {
+                    // ignore the entity if it belongs to no PU, though I doubt that happens
+                    consumer.consume(entityName, persistenceUnit, reactivePersistenceUnit);
+                }
             }
         }
 
@@ -57,7 +103,5 @@ public final class EntityToPersistenceUnitUtil {
                 throw new IllegalStateException(message.toString());
             }
         }
-
-        return result;
     }
 }

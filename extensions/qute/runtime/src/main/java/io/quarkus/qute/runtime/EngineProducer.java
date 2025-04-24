@@ -82,7 +82,6 @@ public class EngineProducer {
 
     private final Engine engine;
     private final ContentTypes contentTypes;
-    private final List<String> tags;
     private final List<String> suffixes;
     private final Set<String> templateRoots;
     private final Map<String, String> templateContents;
@@ -100,7 +99,6 @@ public class EngineProducer {
         this.suffixes = config.suffixes();
         this.templateRoots = context.getTemplateRoots();
         this.templateContents = Map.copyOf(context.getTemplateContents());
-        this.tags = context.getTags();
         this.defaultLocale = locales.defaultLocale().orElse(Locale.getDefault());
         this.defaultCharset = config.defaultCharset();
         this.container = Arc.container();
@@ -112,7 +110,8 @@ public class EngineProducer {
         }
         this.templatePathExcludes = excludesBuilder.build();
 
-        LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
+        LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(),
+                context.getTags(),
                 context.getResolverClasses());
 
         EngineBuilder builder = Engine.builder();
@@ -219,7 +218,7 @@ public class EngineProducer {
             LOGGER.debugf("Added generated value resolver: %s", resolverClass);
         }
         // Add tags
-        for (String tag : tags) {
+        for (String tag : context.getTags()) {
             // Strip suffix, item.html -> item
             String tagName = tag.contains(".") ? tag.substring(0, tag.indexOf('.')) : tag;
             String tagTemplateId = TAGS + tagName;
@@ -375,7 +374,27 @@ public class EngineProducer {
         if (isExcluded(path)) {
             return Optional.empty();
         }
-        // First try to locate file-based templates
+        // First try the template contents, i.e. templates not backed by files
+        LOGGER.debugf("Locate template contents for %s", path);
+        String content = templateContents.get(path);
+        if (content == null) {
+            // Try path with suffixes
+            for (String suffix : suffixes) {
+                String pathWithSuffix = path + "." + suffix;
+                if (isExcluded(pathWithSuffix)) {
+                    continue;
+                }
+                content = templateContents.get(pathWithSuffix);
+                if (content != null) {
+                    break;
+                }
+            }
+        }
+        if (content != null) {
+            return Optional.of(new ContentTemplateLocation(content, createVariant(path)));
+        }
+
+        // Then try to locate file-based templates
         for (String templateRoot : templateRoots) {
             URL resource = null;
             String templatePath = templateRoot + path;
@@ -399,25 +418,7 @@ public class EngineProducer {
                 return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
             }
         }
-        // Then try the template contents
-        LOGGER.debugf("Locate template contents for %s", path);
-        String content = templateContents.get(path);
-        if (content == null) {
-            // Try path with suffixes
-            for (String suffix : suffixes) {
-                String pathWithSuffix = path + "." + suffix;
-                if (isExcluded(pathWithSuffix)) {
-                    continue;
-                }
-                content = templateContents.get(pathWithSuffix);
-                if (content != null) {
-                    break;
-                }
-            }
-        }
-        if (content != null) {
-            return Optional.of(new ContentTemplateLocation(content, createVariant(path)));
-        }
+
         return Optional.empty();
     }
 

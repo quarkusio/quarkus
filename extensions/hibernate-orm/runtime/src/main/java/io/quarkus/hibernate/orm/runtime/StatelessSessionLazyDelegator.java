@@ -100,11 +100,6 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
-        return delegate.get().getMultiple(entityClass, ids);
-    }
-
-    @Override
     public Object get(String entityName, Object id, LockMode lockMode) {
         return delegate.get().get(entityName, id, lockMode);
     }
@@ -112,6 +107,36 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(Class<T> entityClass, Object id, LockMode lockMode) {
         return delegate.get().get(entityClass, id, lockMode);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, Object id) {
+        return delegate.get().get(graph, id);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, Object id, LockMode lockMode) {
+        return delegate.get().get(graph, id, lockMode);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids) {
+        return delegate.get().getMultiple(entityClass, ids);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids, LockMode lockMode) {
+        return delegate.get().getMultiple(entityClass, ids, lockMode);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, List<?> ids) {
+        return delegate.get().getMultiple(entityGraph, ids);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, GraphSemantic graphSemantic, List<?> ids) {
+        return delegate.get().getMultiple(entityGraph, graphSemantic, ids);
     }
 
     @Override
@@ -337,6 +362,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <R> SelectionQuery<R> createSelectionQuery(CriteriaQuery<R> criteria) {
         return delegate.get().createSelectionQuery(criteria);
+    }
+
+    @Override
+    public <R> SelectionQuery<R> createSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
+        return delegate.get().createSelectionQuery(hqlString, resultGraph);
     }
 
     @Override

@@ -15,10 +15,8 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,8 +72,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     // JUnit discovery is single threaded, so no need for concurrency on this map
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
-
-    private final AppMakerHelper appMakerHelper = new AppMakerHelper();
 
     /*
      * A 'disposable' loader for holding temporary instances of the classes to allow us to inspect them.
@@ -531,13 +527,10 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
-            Collection<Runnable> shutdownTasks = new HashSet<>();
-
             String displayName = DISPLAY_NAME_PREFIX + key;
             // TODO should we use clonedBuilder here, like TestSupport does?
-            curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
-                    isAuxiliaryApplication,
-                    shutdownTasks);
+            curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
+                    isAuxiliaryApplication);
             curatedApplications.put(key, curatedApplication);
 
         }
@@ -555,8 +548,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
-        StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
-                curatedApplication, isAuxiliaryApplication, profile);
+        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
+                curatedApplication, profile);
 
         QuarkusClassLoader loader = startupAction.getClassLoader();
 

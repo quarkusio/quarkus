@@ -277,9 +277,14 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Response.ResponseBuilder header(String name, Object value) {
         if (value == null) {
             metadata.remove(name);
+            return this;
+        }
+        if (value instanceof List values) {
+            metadata.addAll(name, values);
             return this;
         }
         metadata.add(name, value);

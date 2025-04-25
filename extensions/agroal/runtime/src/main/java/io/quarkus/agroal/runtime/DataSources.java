@@ -367,7 +367,13 @@ public class DataSources {
 
     /**
      * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
-     * of the current {@link Thread#getContextClassLoader() TCCL}
+     * of the current {@link Thread#getContextClassLoader() TCCL}.
+     * <p>
+     * This is necessary to have JDBC URLs work properly, in particular when using custom drivers,
+     * and in particular when the app gets "restarted" in a single system (?) classloader,
+     * because DriverManager's list of available drivers would get cleared on shutdown.
+     * <p>
+     * See also https://github.com/quarkusio/quarkus/issues/46324#issuecomment-2687615191
      */
     private static void loadDriversInTCCL() {
         // load JDBC drivers in the current TCCL

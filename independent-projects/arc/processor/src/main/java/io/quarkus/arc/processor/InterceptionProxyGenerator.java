@@ -209,7 +209,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
             for (InterceptedMethod interceptedMethod : info.interceptedMethods()) {
                 MethodInfo method = interceptedMethod.method();
-                MethodDesc forwardDesc = SubclassGenerator.createForwardingMethod_2(cc, pseudoBeanClass, method,
+                MethodDesc forwardDesc = SubclassGenerator.createForwardingMethod(cc, pseudoBeanClass, method,
                         implementingInterface);
                 forwardingMethods.put(methodDescOf(method), forwardDesc);
             }
@@ -248,9 +248,9 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                     IntegerHolder chainIdx = new IntegerHolder();
                     IntegerHolder bindingIdx = new IntegerHolder();
                     Map<AnnotationInstanceEquivalenceProxy, Expr> bindingsLiterals = new HashMap<>();
-                    var bindingsFun = SubclassGenerator.createBindingsFun_2(bindingIdx, bc, bindingsMap, bindingsLiterals,
+                    var bindingsFun = SubclassGenerator.createBindingsFun(bindingIdx, bc, bindingsMap, bindingsLiterals,
                             pseudoBean, annotationLiterals);
-                    var interceptorChainKeysFun = SubclassGenerator.createInterceptorChainKeysFun_2(chainIdx, bc,
+                    var interceptorChainKeysFun = SubclassGenerator.createInterceptorChainKeysFun(chainIdx, bc,
                             interceptorChainMap, interceptorInstanceToLocalVar, interceptorBeanToLocalVar);
 
                     for (InterceptedMethod interceptedMethod : info.interceptedMethods()) {
@@ -414,7 +414,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
                     // Finally create the intercepted method
                     MethodDesc forwardDescriptor = forwardingMethods.get(methodDesc);
-                    SubclassGenerator.createInterceptedMethod_2(method, cc, metadataField, constructedField,
+                    SubclassGenerator.createInterceptedMethod(method, cc, metadataField, constructedField,
                             forwardDescriptor, () -> cc.this_().field(delegateField));
                 }
 

@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.Methods.SubclassSkipPredicate;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * Represents a CDI bean at build time.
@@ -417,6 +419,29 @@ public class BeanInfo implements InjectionTargetInfo {
             if (index != -1) {
                 if (index != (decoratorMethods.size() - 1)) {
                     next.put(MethodDescriptor.of(entry.getKey()), decoratorMethods.get(index + 1));
+                }
+            }
+        }
+        return next;
+    }
+
+    // Returns a map of method descriptor -> next decorator in the chain
+    // e.g. foo() -> BravoDecorator
+    Map<MethodDesc, DecoratorMethod> getNextDecorators_2(DecoratorInfo decorator) {
+        Map<MethodDesc, DecoratorMethod> next = new HashMap<>();
+        for (Entry<MethodInfo, DecorationInfo> entry : decoratedMethods.entrySet()) {
+            List<DecoratorMethod> decoratorMethods = entry.getValue().decoratorMethods;
+            int index = -1;
+            for (ListIterator<DecoratorMethod> it = decoratorMethods.listIterator(); it.hasNext();) {
+                DecoratorMethod dm = it.next();
+                if (dm.decorator.equals(decorator)) {
+                    index = it.previousIndex();
+                    break;
+                }
+            }
+            if (index != -1) {
+                if (index != (decoratorMethods.size() - 1)) {
+                    next.put(methodDescOf(entry.getKey()), decoratorMethods.get(index + 1));
                 }
             }
         }

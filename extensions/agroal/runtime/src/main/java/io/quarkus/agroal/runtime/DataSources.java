@@ -1,9 +1,12 @@
 package io.quarkus.agroal.runtime;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -153,6 +156,9 @@ public class DataSources {
             throw new IllegalArgumentException(
                     "Datasource " + dataSourceName + " does not have a JDBC URL and should not be created");
         }
+
+        // we first make sure that all available JDBC drivers are loaded in the current TCCL
+        loadDriversInTCCL();
 
         AgroalDataSourceSupport.Entry matchingSupportEntry = agroalDataSourceSupport.entries.get(dataSourceName);
         String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
@@ -359,4 +365,21 @@ public class DataSources {
         poolConfiguration.recoveryEnable(dataSourceJdbcRuntimeConfig.enableRecovery());
     }
 
+    /**
+     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
+     * of the current {@link Thread#getContextClassLoader() TCCL}
+     */
+    private static void loadDriversInTCCL() {
+        // load JDBC drivers in the current TCCL
+        final ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
+        final Iterator<Driver> iterator = drivers.iterator();
+        while (iterator.hasNext()) {
+            try {
+                // load the driver
+                iterator.next();
+            } catch (Throwable t) {
+                // ignore
+            }
+        }
+    }
 }

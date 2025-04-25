@@ -274,7 +274,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         String primitiveMethodName = writeMethodForPrimitiveFields(typeName);
 
         if (primitiveMethodName != null) {
-            BytecodeCreator primitiveBytecode = isBoxedPrimitive(typeName) ? bytecode.ifNotNull(arg).trueBranch() : bytecode;
+            BytecodeCreator primitiveBytecode = JacksonSerializationUtils.isBoxedPrimitive(typeName)
+                    ? bytecode.ifNotNull(arg).trueBranch()
+                    : bytecode;
             writeFieldName(fieldSpecs, primitiveBytecode, ctx.jsonGenerator, pkgName);
             MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
                     fieldSpecs.writtenType());
@@ -317,13 +319,6 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             case "boolean", "java.lang.Boolean" -> "writeBoolean";
             default -> null;
         };
-    }
-
-    private boolean isBoxedPrimitive(String typeName) {
-        return "java.lang.Character".equals(typeName) || "java.lang.Short".equals(typeName)
-                || "java.lang.Integer".equals(typeName) || "java.lang.Long".equals(typeName)
-                || "java.lang.Float".equals(typeName) || "java.lang.Double".equals(typeName)
-                || "java.lang.Boolean".equals(typeName);
     }
 
     private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs) {

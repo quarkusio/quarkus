@@ -15,7 +15,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JacksonException;
@@ -35,9 +43,11 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -257,6 +267,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle fieldValue = deserData.methodCreator.invokeVirtualMethod(
                     ofMethod(JsonNode.class, "get", JsonNode.class, String.class), deserData.jsonNode,
                     deserData.methodCreator.load(fieldSpecs.jsonName));
+
             params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
         }
@@ -391,9 +402,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle valueNode) {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
-        MethodDescriptor readMethod = readMethodForPrimitiveFields(fieldTypeName);
-        if (readMethod != null) {
-            return bytecode.invokeVirtualMethod(readMethod, valueNode);
+        if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
+            return readValueForPrimitiveFields(bytecode, fieldType, valueNode);
         }
 
         FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
@@ -467,17 +477,51 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return setter;
     }
 
-    private MethodDescriptor readMethodForPrimitiveFields(String typeName) {
-        return switch (typeName) {
-            case "java.lang.String", "char", "java.lang.Character" -> ofMethod(JsonNode.class, "asText", String.class);
-            case "short", "java.lang.Short", "int", "java.lang.Integer" ->
-                ofMethod(JsonNode.class, "asInt", int.class);
-            case "long", "java.lang.Long" -> ofMethod(JsonNode.class, "asLong", long.class);
-            case "float", "java.lang.Float", "double", "java.lang.Double" ->
-                ofMethod(JsonNode.class, "asDouble", double.class);
-            case "boolean", "java.lang.Boolean" -> ofMethod(JsonNode.class, "asBoolean", boolean.class);
-            default -> null;
+    private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, Type fieldType,
+            ResultHandle valueNode) {
+        AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
+
+        BranchResult isValueNull = bytecode.ifNull(valueNode);
+        BytecodeCreator isValueNullTrue = isValueNull.trueBranch();
+        isValueNullTrue.assign(result, JacksonSerializationUtils.getDefaultValue(isValueNullTrue, fieldType));
+
+        BytecodeCreator isValueNullFalse = isValueNull.falseBranch();
+
+        ResultHandle convertedValue = switch (fieldType.name().toString()) {
+            case "java.lang.String" -> isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asText", String.class),
+                    valueNode);
+            case "char", "java.lang.Character" -> isValueNullFalse.invokeVirtualMethod(
+                    ofMethod(String.class, "charAt", char.class, int.class),
+                    isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asText", String.class), valueNode),
+                    isValueNullFalse.load(0));
+            case "short", "java.lang.Short" -> isValueNullFalse
+                    .convertPrimitive(
+                            isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asInt", int.class), valueNode),
+                            short.class);
+            case "int" ->
+                isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asInt", int.class),
+                        valueNode);
+            case "java.lang.Integer" ->
+                isValueNullFalse.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class),
+                        isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asInt", int.class),
+                                valueNode));
+            case "long", "java.lang.Long" ->
+                isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asLong", long.class),
+                        valueNode);
+            case "float", "java.lang.Float" -> isValueNullFalse
+                    .convertPrimitive(
+                            isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asDouble", double.class), valueNode),
+                            float.class);
+            case "double", "java.lang.Double" -> isValueNullFalse
+                    .invokeVirtualMethod(ofMethod(JsonNode.class, "asDouble", double.class), valueNode);
+            case "boolean", "java.lang.Boolean" -> isValueNullFalse
+                    .invokeVirtualMethod(ofMethod(JsonNode.class, "asBoolean", boolean.class), valueNode);
+            default -> throw new IllegalStateException("Type " + fieldType + " should be handled by the switch");
         };
+
+        isValueNullFalse.assign(result, convertedValue);
+
+        return result;
     }
 
     @Override

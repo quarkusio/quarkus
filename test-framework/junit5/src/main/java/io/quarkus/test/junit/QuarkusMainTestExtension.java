@@ -7,6 +7,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,6 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -53,7 +53,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
         AfterAllCallback, ExecutionCondition {
 
-    QuarkusTestPrepareResult prepareResult;
+    PrepareResult prepareResult;
     LinkedBlockingDeque<Runnable> shutdownTasks;
 
     /**
@@ -96,17 +96,31 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
         if (prepareResult == null) {
             shutdownTasks = new LinkedBlockingDeque<>();
-            prepareResult = createAugmentor(extensionContext, profile, shutdownTasks);
+            prepareResult = prepare(extensionContext, profile, shutdownTasks);
         }
     }
 
+    protected PrepareResult prepare(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
+            Collection<Runnable> shutdownTasks) throws Exception {
+
+        originalCl = Thread.currentThread().getContextClassLoader();
+        quarkusTestProfile = profile;
+        final Class<?> requiredTestClass = context.getRequiredTestClass();
+        final CuratedApplication curatedApplication = getCuratedApplication(requiredTestClass, context.getDisplayName());
+
+        var result = AppMakerHelper.prepare(requiredTestClass, curatedApplication, profile);
+        if (result.profileInstance() != null) {
+            shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, result.profileInstance()));
+        }
+        return result;
+    }
+
     // Override, because in main tests the quarkus classloader isn't used for tests
-    @Override
     protected CuratedApplication getCuratedApplication(Class<?> requiredTestClass, String displayName)
             throws AppModelResolverException, IOException, BootstrapException {
-        return CurrentTestApplication.curatedApplication != null
-                ? CurrentTestApplication.curatedApplication
-                : AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName, false, shutdownTasks);
+        var curatedApp = AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName, false);
+        shutdownTasks.add(curatedApp::close);
+        return curatedApp;
     }
 
     private LaunchResult doLaunch(ExtensionContext context, Class<? extends QuarkusTestProfile> selectedProfile,

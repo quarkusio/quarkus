@@ -192,7 +192,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             // clear the test.url system property as the value leaks into the run when using different profiles
             System.clearProperty("test.url");
-            QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile, shutdownTasks);
+            QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile);
+            if (profileInstance != null) {
+                shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, profileInstance));
+            }
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
 
             // TODO this might be a good idea, but if so, we'd need to undo it

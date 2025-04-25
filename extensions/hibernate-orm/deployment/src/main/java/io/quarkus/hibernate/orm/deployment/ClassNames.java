@@ -412,7 +412,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.Struct"),
             createConstant("org.hibernate.annotations.Subselect"),
             createConstant("org.hibernate.annotations.Synchronize"),
-            createConstant("org.hibernate.annotations.Target"),
+            createConstant("org.hibernate.annotations.TargetEmbeddable"),
             createConstant("org.hibernate.annotations.TenantId"),
             createConstant("org.hibernate.annotations.TimeZoneColumn"),
             createConstant("org.hibernate.annotations.TimeZoneStorage"),

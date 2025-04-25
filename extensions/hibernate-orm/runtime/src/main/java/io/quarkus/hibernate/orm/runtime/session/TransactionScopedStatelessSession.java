@@ -450,10 +450,50 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
+    public <T> T get(EntityGraph<T> graph, Object id) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, id);
+        }
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, Object id, LockMode lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, id, lockMode);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getMultiple(entityClass, ids);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids, LockMode lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMultiple(entityClass, ids, lockMode);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, List<?> ids) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMultiple(entityGraph, ids);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, GraphSemantic graphSemantic, List<?> ids) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMultiple(entityGraph, graphSemantic, ids);
         }
     }
 
@@ -628,6 +668,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createSelectionQuery(criteria);
+        }
+    }
+
+    @Override
+    public <R> SelectionQuery<R> createSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createSelectionQuery(hqlString, resultGraph);
         }
     }
 

@@ -41,11 +41,12 @@ body:
     attributes:
       label: How to Reproduce?
       description: >-
-        Link to a small reproducer (preferably a Maven project if the issue is not Gradle-specific) or attach an archive containing the reproducer to the issue.
+        Link to a small reproducer (preferably a Maven project if the issue is not Gradle-specific) or attach an archive containing the reproducer to the issue. It is extremely important that we can reproduce the issue easily.
       placeholder: |
         Reproducer:
+        (Please either attach a small self-contained project reproducing the issue as a zip file (preferably a Maven project if the issue is not Gradle-specific) or point to a GitHub repository containing the project)
 
-        Steps to reproduce the behavior:
+        Steps to reproduce the behavior with the provided reproducer:
         1.
         2.
         3.

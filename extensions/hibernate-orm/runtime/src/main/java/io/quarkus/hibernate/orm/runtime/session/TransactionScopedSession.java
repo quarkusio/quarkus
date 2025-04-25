@@ -255,10 +255,18 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
-    public <E> List<E> findMultiple(Class<E> entityType, List<Object> ids, FindOption... options) {
+    public <E> List<E> findMultiple(Class<E> entityType, List<?> ids, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.findMultiple(entityType, ids, options);
+        }
+    }
+
+    @Override
+    public <E> List<E> findMultiple(EntityGraph<E> entityGraph, List<?> ids, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.findMultiple(entityGraph, ids, options);
         }
     }
 
@@ -1271,6 +1279,14 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.createSelectionQuery(criteria);
+        }
+    }
+
+    @Override
+    public <R> SelectionQuery<R> createSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.createSelectionQuery(hqlString, resultGraph);
         }
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.it.jpa.postgresql.defaultpu;
 
+import static org.hibernate.type.SqlTypes.INTERVAL_SECOND;
+
 import java.time.Duration;
 
 import jakarta.persistence.CascadeType;
@@ -13,8 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.JdbcType;
-import org.hibernate.dialect.PostgreSQLIntervalSecondJdbcType;
+import org.hibernate.annotations.JdbcTypeCode;
 
 @Entity
 @Table(schema = "myschema")
@@ -78,9 +79,7 @@ public class Person {
      * @see org.hibernate.type.descriptor.sql.internal.Scale6IntervalSecondDdlType
      */
     @Column(precision = 5, scale = 5)
-    //NOTE: while https://hibernate.atlassian.net/browse/HHH-16591 is open we cannot replace the currently used @JdbcType annotation
-    // with a @JdbcTypeCode( INTERVAL_SECOND )
-    @JdbcType(PostgreSQLIntervalSecondJdbcType.class)
+    @JdbcTypeCode(INTERVAL_SECOND)
     public Duration getLatestLunchBreakDuration() {
         return latestLunchBreakDuration;
     }

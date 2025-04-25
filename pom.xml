@@ -71,14 +71,14 @@
         <jacoco.version>0.8.13</jacoco.version>
         <kubernetes-client.version>7.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.5</rest-assured.version>
-        <hibernate-orm.version>7.0.0.Beta5</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.0.0.CR1</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-models.version>0.9.3</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>3.0.0.Beta3</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-models.version>1.0.0.CR1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-reactive.version>3.0.0.CR1</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
-        <hibernate-search.version>8.0.0.Alpha3</hibernate-search.version>
+        <hibernate-search.version>8.0.0.Beta1</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

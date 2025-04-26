@@ -1684,6 +1684,26 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    public void testResteasyReactiveExternalArtifact() throws Exception {
+        final String rootProjectPath = "projects/rr-external-artifacts";
+
+        // Set up the external project
+        final File externalJarDir = initProject(rootProjectPath + "/external-lib");
+
+        // Clean and install the external JAR in local repository (.m2)
+        install(externalJarDir, true);
+
+        // Set up the main project that uses the external dependency
+        this.testDir = initProject(rootProjectPath + "/app");
+
+        // Run quarkus:dev process
+        run(true);
+
+        Assertions.assertEquals("Quarkus", devModeClient.getHttpResponse("/hello/Quarkus"));
+        Assertions.assertEquals("OK", devModeClient.getHttpResponse("/hello/parameterized-type-external"));
+    }
+
+    @Test
     public void testThatAptInClasspathWorks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/apt-in-classpath", "projects/project-apt-in-classpath");
         run(true);

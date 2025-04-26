@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.logging.Log;
+import io.quarkus.test.junit.classloading.FacadeClassLoader;
 import io.smallrye.config.SmallRyeConfig;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
@@ -149,7 +150,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
         // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
-        if (!isRunningOnSystem) {
+        if (!isRunningOnSystem && !(original instanceof FacadeClassLoader)) {
             Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         }
 

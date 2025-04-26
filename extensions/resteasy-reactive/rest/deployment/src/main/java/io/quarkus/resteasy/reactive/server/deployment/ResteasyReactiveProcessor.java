@@ -560,7 +560,8 @@ public class ResteasyReactiveProcessor {
                                         initConverters.getMethodParam(0));
                             }))
                     .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
-                            (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true)))
+                            (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                                    applicationClassPredicate.test(name))))
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()

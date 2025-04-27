@@ -47,12 +47,24 @@ class BuildIT extends MojoTestBase {
 
     @Test
     void testCustomTestSourceSets()
-            throws MavenInvocationException, IOException, InterruptedException {
+            throws MavenInvocationException, InterruptedException {
         testDir = initProject("projects/test-source-sets");
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
                 Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
+    }
+
+    @Test
+    void testQuarkusMainTest()
+            throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/basic-command-mode", "projects/basic-command-mode-test");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "test"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+        final String log = running.log();
+        assertThat(log).contains("ARGS: [one]");
     }
 
     @Test

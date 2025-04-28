@@ -209,8 +209,9 @@ public class VertxHttpClientMetricsTest {
         private WebClient client;
 
         public void init() {
+            // http-client name would collide with the built-in Quarkus metric
             client = WebClient.create(vertx, new WebClientOptions()
-                    .setMetricsName("http-client|my-client"));
+                    .setMetricsName("http-my-client|my-client"));
         }
 
         public String get(String fooHeaderValue) {

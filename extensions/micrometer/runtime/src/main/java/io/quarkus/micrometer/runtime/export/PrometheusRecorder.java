@@ -1,8 +1,9 @@
 package io.quarkus.micrometer.runtime.export;
 
+import static io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler.CONTENT_TYPE_OPENMETRICS_100;
+
 import java.util.function.Consumer;
 
-import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -13,6 +14,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class PrometheusRecorder {
+
     PrometheusHandler handler;
 
     private final VertxHttpBuildTimeConfig vertxHttpBuildTimeConfig;
@@ -35,7 +37,7 @@ public class PrometheusRecorder {
             @Override
             public void accept(Route route) {
                 route.order(1).produces("text/plain");
-                route.order(2).produces(TextFormat.CONTENT_TYPE_OPENMETRICS_100);
+                route.order(2).produces(CONTENT_TYPE_OPENMETRICS_100);
             }
         };
     }

@@ -1,16 +1,20 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.oidc.runtime.OidcUtils.TENANT_ID_ATTRIBUTE;
+
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.it.keycloak.model.User;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -20,6 +24,8 @@ public class UsersResource {
 
     @Inject
     SecurityIdentity identity;
+    @Inject
+    private RoutingContext context;
 
     @GET
     @Path("/me/bearer")
@@ -41,8 +47,23 @@ public class UsersResource {
     @Path("/preferredUserName/bearer")
     @RolesAllowed("user")
     @Produces(MediaType.APPLICATION_JSON)
-    public User preferredUserName() {
-        return new User(((JsonWebToken) identity.getPrincipal()).getClaim("preferred_username"));
+    public User preferredUserName(@QueryParam("includeTenantId") boolean includeTenantId) {
+        String preferredUsername = ((JsonWebToken) identity.getPrincipal()).getClaim("preferred_username");
+        if (includeTenantId) {
+            String tenantId = context.get(TENANT_ID_ATTRIBUTE);
+            return new User(preferredUsername, tenantId);
+        }
+        return new User(preferredUsername);
+    }
+
+    @GET
+    @Path("/preferredUserName/bearer/token")
+    @RolesAllowed("user")
+    @Produces(MediaType.APPLICATION_JSON)
+    public User preferredUserNameWithExtendedPath() {
+        String preferredUsername = ((JsonWebToken) identity.getPrincipal()).getClaim("preferred_username");
+        String tenantId = context.get(TENANT_ID_ATTRIBUTE);
+        return new User(preferredUsername, tenantId);
     }
 
     @GET

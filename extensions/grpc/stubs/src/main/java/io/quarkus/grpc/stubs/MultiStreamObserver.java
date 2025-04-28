@@ -40,7 +40,6 @@ public class MultiStreamObserver<I, O> implements ClientResponseObserver<I, O> {
     @Override
     public void onNext(O item) {
         emitter.emit(item);
-        requestStreamObserver.get().disableAutoRequestWithInitial(0);
     }
 
     @Override

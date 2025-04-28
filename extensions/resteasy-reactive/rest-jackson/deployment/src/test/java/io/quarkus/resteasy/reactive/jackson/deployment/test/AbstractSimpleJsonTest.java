@@ -807,4 +807,146 @@ public abstract class AbstractSimpleJsonTest {
                 .body("author", Matchers.is("Mario Fusco"))
                 .body("title", Matchers.is("Lombok must die"));
     }
+
+    @Test
+    public void testPrimitiveTypesBean() {
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "charPrimitive":"b",
+                        "characterPrimitive":"c",
+                        "shortPrimitive":4,
+                        "shortInstance":5,
+                        "intPrimitive":6,
+                        "integerInstance":7,
+                        "longPrimitive":8,
+                        "longInstance":9,
+                        "floatPrimitive":10.3,
+                        "floatInstance":11.4,
+                        "doublePrimitive":12.5,
+                        "doubleInstance":13.6,
+                        "booleanPrimitive":true,
+                        "booleanInstance":false
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("charPrimitive", Matchers.is("b"))
+                .body("characterPrimitive", Matchers.is("c"))
+                .body("shortPrimitive", Matchers.equalTo(4))
+                .body("shortInstance", Matchers.equalTo(5))
+                .body("intPrimitive", Matchers.equalTo(6))
+                .body("integerInstance", Matchers.equalTo(7))
+                .body("longPrimitive", Matchers.equalTo(8))
+                .body("longInstance", Matchers.equalTo(9))
+                .body("floatPrimitive", Matchers.equalTo(10.3F))
+                .body("floatInstance", Matchers.equalTo(11.4F))
+                .body("doublePrimitive", Matchers.equalTo(12.5F))
+                .body("doubleInstance", Matchers.equalTo(13.6F))
+                .body("booleanPrimitive", Matchers.equalTo(true))
+                .body("booleanInstance", Matchers.equalTo(false));
+
+        // Note: characters are handled weirdly on the Jackson side, we cannot fully test them.
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                //.body("charPrimitive", Matchers.is(""))
+                .body("characterPrimitive", Matchers.is("c"))
+                .body("shortPrimitive", Matchers.equalTo(0))
+                .body("shortInstance", Matchers.nullValue())
+                .body("intPrimitive", Matchers.equalTo(0))
+                .body("integerInstance", nullValue())
+                .body("longPrimitive", Matchers.equalTo(0))
+                .body("longInstance", nullValue())
+                .body("floatPrimitive", Matchers.equalTo(0F))
+                .body("floatInstance", nullValue())
+                .body("doublePrimitive", Matchers.equalTo(0F))
+                .body("doubleInstance", Matchers.nullValue())
+                .body("booleanPrimitive", Matchers.equalTo(false))
+                .body("booleanInstance", Matchers.nullValue());
+    }
+
+    @Test
+    public void testPrimitiveTypesRecord() {
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "charPrimitive":"b",
+                        "characterPrimitive":"c",
+                        "shortPrimitive":4,
+                        "shortInstance":5,
+                        "intPrimitive":6,
+                        "integerInstance":7,
+                        "longPrimitive":8,
+                        "longInstance":9,
+                        "floatPrimitive":10.3,
+                        "floatInstance":11.4,
+                        "doublePrimitive":12.5,
+                        "doubleInstance":13.6,
+                        "booleanPrimitive":true,
+                        "booleanInstance":false
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("charPrimitive", Matchers.is("b"))
+                .body("characterPrimitive", Matchers.is("c"))
+                .body("shortPrimitive", Matchers.equalTo(4))
+                .body("shortInstance", Matchers.equalTo(5))
+                .body("intPrimitive", Matchers.equalTo(6))
+                .body("integerInstance", Matchers.equalTo(7))
+                .body("longPrimitive", Matchers.equalTo(8))
+                .body("longInstance", Matchers.equalTo(9))
+                .body("floatPrimitive", Matchers.equalTo(10.3F))
+                .body("floatInstance", Matchers.equalTo(11.4F))
+                .body("doublePrimitive", Matchers.equalTo(12.5F))
+                .body("doubleInstance", Matchers.equalTo(13.6F))
+                .body("booleanPrimitive", Matchers.equalTo(true))
+                .body("booleanInstance", Matchers.equalTo(false));
+
+        // Note: characters are handled weirdly on the Jackson side, we cannot fully test them.
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                //.body("charPrimitive", Matchers.is(""))
+                .body("characterPrimitive", Matchers.is("c"))
+                .body("shortPrimitive", Matchers.equalTo(0))
+                .body("shortInstance", Matchers.nullValue())
+                .body("intPrimitive", Matchers.equalTo(0))
+                .body("integerInstance", nullValue())
+                .body("longPrimitive", Matchers.equalTo(0))
+                .body("longInstance", nullValue())
+                .body("floatPrimitive", Matchers.equalTo(0F))
+                .body("floatInstance", nullValue())
+                .body("doublePrimitive", Matchers.equalTo(0F))
+                .body("doubleInstance", Matchers.nullValue())
+                .body("booleanPrimitive", Matchers.equalTo(false))
+                .body("booleanInstance", Matchers.nullValue());
+    }
 }

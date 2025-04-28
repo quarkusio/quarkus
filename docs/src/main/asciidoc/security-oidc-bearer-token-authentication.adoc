@@ -359,7 +359,7 @@ public class IssuerValidator implements ContainerRequestFilter {
 Consider using the `quarkus.oidc.token.audience` property to verify the token `aud` (`audience`) claim value.
 ====
 
-[[jose4j-validator]]
+[[jose4j-validator-bearer]]
 === Jose4j Validator
 
 You can register a custom https://www.javadoc.io/doc/org.bitbucket.b_c/jose4j/latest/org/jose4j/jwt/consumer/class-use/Validator.html[Jose4j Validator] to customize the JWT claim verification process, before `org.eclipse.microprofile.jwt.JsonWebToken` is initialized.
@@ -1315,7 +1315,7 @@ Quarkus `web-app` applications always require the `quarkus.oidc.client-id` prope
 
 https://datatracker.ietf.org/doc/html/rfc9449[RFC9449] describes a Demonstrating Proof of Possession (DPoP) mechanism for cryprographically binding an access token to the current client, preventing the access token loss and replay.
 
-Single page application (SPA) public clients generate DPoP proof tokens and use them to acquire and submit access tokens which are cryptograhically bound to DPoP proofs. 
+Single page application (SPA) public clients generate DPoP proof tokens and use them to acquire and submit access tokens which are cryptograhically bound to DPoP proofs.
 
 Enabling DPoP support in Quarkus requires a single property.
 
@@ -1672,7 +1672,7 @@ It is also possible to enforce the required authentication level for an OIDC ten
 quarkus.oidc.hr.token.required-claims.acr=myACR
 ----
 
-Or, if you need more flexibility, write a <<jose4j-validator>>:
+Or, if you need more flexibility, write a <<jose4j-validator-bearer>>:
 
 [source,java]
 ----

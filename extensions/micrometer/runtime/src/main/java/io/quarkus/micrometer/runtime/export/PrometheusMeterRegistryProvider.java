@@ -5,10 +5,10 @@ import java.util.Map;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusDurationNamingConvention;
-import io.micrometer.prometheus.PrometheusNamingConvention;
-import io.prometheus.client.CollectorRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusDurationNamingConvention;
+import io.micrometer.prometheusmetrics.PrometheusNamingConvention;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.micrometer.runtime.config.runtime.PrometheusRuntimeConfig;
 
@@ -39,8 +39,8 @@ public class PrometheusMeterRegistryProvider {
 
     @Produces
     @DefaultBean
-    public CollectorRegistry collectorRegistry() {
-        return new CollectorRegistry(true);
+    public PrometheusRegistry collectorRegistry() {
+        return new PrometheusRegistry();
     }
 
 }

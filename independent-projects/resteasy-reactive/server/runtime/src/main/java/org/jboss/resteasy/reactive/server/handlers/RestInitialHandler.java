@@ -73,16 +73,7 @@ public class RestInitialHandler implements ServerRestHandler {
                 return;
             }
         }
-        requestContext.restart(target.value.handlers);
-        requestContext.setMaxPathParams(target.value.maxPathParams);
-        requestContext.setRemaining(target.remaining);
-        for (int i = 0; i < target.pathParamValues.length; ++i) {
-            String pathParamValue = target.pathParamValues[i];
-            if (pathParamValue == null) {
-                break;
-            }
-            requestContext.setPathParamValue(i, target.pathParamValues[i]);
-        }
+        requestContext.setupInitialMatchAndRestart(target);
     }
 
     public static class InitialMatch {

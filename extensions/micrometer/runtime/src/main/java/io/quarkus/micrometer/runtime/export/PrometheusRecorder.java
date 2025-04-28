@@ -2,7 +2,6 @@ package io.quarkus.micrometer.runtime.export;
 
 import java.util.function.Consumer;
 
-import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -12,6 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class PrometheusRecorder {
+
     PrometheusHandler handler;
 
     public PrometheusHandler getHandler() {
@@ -27,7 +27,7 @@ public class PrometheusRecorder {
             @Override
             public void accept(Route route) {
                 route.order(1).produces("text/plain");
-                route.order(2).produces(TextFormat.CONTENT_TYPE_OPENMETRICS_100);
+                route.order(2).produces("application/openmetrics-text; version=1.0.0; charset=utf-8");
             }
         };
     }

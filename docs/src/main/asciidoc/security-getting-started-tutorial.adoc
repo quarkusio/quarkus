@@ -333,7 +333,7 @@ quarkus.http.auth.basic=true
 %prod.quarkus.datasource.password=quarkus
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus
 
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 By adding the `%prod.` profile prefix, you ensure that the data source properties are only observed by an application running in production mode.

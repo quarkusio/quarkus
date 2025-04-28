@@ -104,7 +104,7 @@ quarkus.datasource.password = quarkus_test
 quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 <1> The only different property from a Hibernate ORM configuration

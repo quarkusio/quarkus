@@ -637,7 +637,7 @@ quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <4>
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test
 %prod.quarkus.datasource.username=quarkus_test
 %prod.quarkus.datasource.password=quarkus_test
-%prod.quarkus.hibernate-orm.database.generation=create
+%prod.quarkus.hibernate-orm.schema-management.strategy=create
 %prod.quarkus.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <5>
 ----
 <1> Let's create a PostgreSQL datasource.
@@ -667,7 +667,7 @@ you will have to set the following properties to get similar behavior:
 
 [source,properties]
 ----
-%dev,test.quarkus.hibernate-orm.database.generation=drop-and-create
+%dev,test.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 %dev,test.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create
 ----
 

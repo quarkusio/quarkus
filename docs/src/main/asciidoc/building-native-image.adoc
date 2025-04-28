@@ -307,7 +307,7 @@ such as importing test data into the database.
 ----
 quarkus.native.resources.includes=version.txt
 %test.quarkus.native.resources.includes=version.txt,import-dev.sql
-%test.quarkus.hibernate-orm.database.generation=drop-and-create
+%test.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 %test.quarkus.hibernate-orm.sql-load-script=import-dev.sql
 ----
 

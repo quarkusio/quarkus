@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-howto"]
-= Deploy {project-name} applications to {openshift} in a single step
+= Deploying {project-name} applications to {openshift} in a single step
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native
@@ -35,7 +35,7 @@ The generated resources use a Kubernetes `Deployment`, but still make use of Ope
 To run this deployment, it is not necessary to have the `quarkus-openshift` extension included in your {project-name} project.
 ====
 
-== Build and deploy in a single step
+== Procedure
 
 . Trigger a build and deployment in a single step:
 

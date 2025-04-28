@@ -92,7 +92,7 @@ See the <<multi-tenancy>> section for more details.
 
 You can disable metadata discovery with `quarkus.oidc.discovery-enabled=false` when the provider does not support it (most OAuth2 providers do not), when you would like to optimize start up time by skipping a remote discovery call and configure individual OIDC provider endpoint URLs instead.
 
-Individual OIDC endpoint URLs such as `quarkus.oidc.authorization-path` can also be set when you need to override one of the discovered OIDC endpoint URLs or when the discovered OIDC metadata does not include a required endpoint URL. 
+Individual OIDC endpoint URLs such as `quarkus.oidc.authorization-path` can also be set when you need to override one of the discovered OIDC endpoint URLs or when the discovered OIDC metadata does not include a required endpoint URL.
 
 These URLs can be either relative to the base `quarkus.oidc.auth-server-url` URL or absolute.
 
@@ -111,7 +111,7 @@ Requesting `UserInfo` is also possible for the bearer access token flow.
 
 When you work with OAuth2 providers which issue binary access tokens but do not support the remote introspection, and do not have standard `UserInfo` support, `quarkus.oidc.user-info-path` must point to the OAuth2 provider specific endpoint returning information about the current user, in order to support an indirect access token verification. See the xref:security-oidc-code-flow-authentication.adoc#oauth2[OAuth2 providers] section for more details.
 
-`quarkus.oidc.revoke-path` and `quarkus.oidc.registration-path` are currently not used directly by Quarkus OIDC. 
+`quarkus.oidc.revoke-path` and `quarkus.oidc.registration-path` are currently not used directly by Quarkus OIDC.
 Applications xref:security-openid-connect-client-reference.adoc#revoke-access-tokens[can revoke tokens] on logout, and other security events.
 Applications that already work with `quarkus-oidc` can use `quarkus.oidc.registration-path` to xref:security-openid-connect-client-registration.adoc[dynamically register OIDC clients].
 
@@ -249,7 +249,7 @@ See also the <<jwt-authentication-headers-claims>> section below for details abo
 [[jwt-authentication-headers-claims]]
 ==== JWT authentication headers and claims
 
-https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Standard OIDC client authentication text] describes the claims that the generated token must contain but the values of these claims may have to be overridden. 
+https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Standard OIDC client authentication text] describes the claims that the generated token must contain but the values of these claims may have to be overridden.
 
 .JWT header and claim properties
 [options="header"]
@@ -437,7 +437,7 @@ Note though that the `code` is a one time token that can only be exchanged by Qu
 
 `quarkus.oidc.authentication.pkce-required` can be used to enable https://www.rfc-editor.org/rfc/rfc7636[Proof Key for Code Exchange (PKCE)]. PKCE is of primary interest to public SPA OIDC clients running in a browser. Typically, Quarkus OIDC acts as a confidential OIDC client which can prove to the OIDC provider that it knows the client secret, when PKCE is not strictly necessary. However you may have to enable it when your provider enforces PKCE for all authorization code flow clients.
 
-When the authorization code flow is completed, Quarkus gets access to the `ID token` which can provide sufficient information about the currently authenticated user. However, quite often, an additional remote request to the OIDC provider's https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] endpoint is required to get more details about the user. 
+When the authorization code flow is completed, Quarkus gets access to the `ID token` which can provide sufficient information about the currently authenticated user. However, quite often, an additional remote request to the OIDC provider's https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] endpoint is required to get more details about the user.
 
 `quarkus.oidc.authentication.user-info-required` can be used to enable an additional remote `UserInfo` request.
 
@@ -619,7 +619,7 @@ The encrypted session cookie with up to three tokens may exceed a 4096 bytes coo
 
 `quarkus.oidc.token-state-manager.strategy` can be used to optimize the token storage by not storing the tokens your application does not intend to use.
 
-For example, you can do `quarkus.oidc.token-state-manager.strategy=id-refresh-tokens` which means that your application is not intending to use an access token directly or propagate it to downstream services, all it wants is to use ID token to interact with the user and keep refreshing the session. 
+For example, you can do `quarkus.oidc.token-state-manager.strategy=id-refresh-tokens` which means that your application is not intending to use an access token directly or propagate it to downstream services, all it wants is to use ID token to interact with the user and keep refreshing the session.
 
 If your application does not need to use access tokens but only interact with the authenticated user who must always re-authenticate when the session expires, consider `quarkus.oidc.token-state-manager.strategy=idtoken` - which retains ID token only, ignoring both access and refresh tokens.
 
@@ -658,7 +658,7 @@ For the post logout redirect to work, OIDC providers usually require registering
 Back-channel logout should be used for complex Quarkus applications involving several services, possibly on different hosts or ports, when supporting a global logout is required. The user, by choosing to logout from one of the services, also gets logged out from all other services.
 The OIDC provider detects the logout request (for example, an RP-initiated one) from one of the services and sends back-channel notifications to all other Quarkus OIDC applications. See the xref:security-oidc-code-flow-authentication.adoc#back-channel-logout[OIDC Back-channel logout] section for more details.
 
-PLease be aware that supporting the back-channel logout option requires managing a cache of pending back-channel notifications. It may take awhile to clear them as it requires a user whose back-channel logout is pending to access Quarkus. The more users your application deals with, the larger the cache size can be.  
+PLease be aware that supporting the back-channel logout option requires managing a cache of pending back-channel notifications. It may take awhile to clear them as it requires a user whose back-channel logout is pending to access Quarkus. The more users your application deals with, the larger the cache size can be.
 
 .Back-channel logout properties
 [options="header"]
@@ -733,7 +733,7 @@ OIDC providers usually issue signed ID tokens but they may also issue encrypted 
 [[token-claims]]
 === Token claims
 
-Token verification claim properties impact the core token verification process, where the token claims or introspection properties must meet specific issuer, audience, age and other restrictions. 
+Token verification claim properties impact the core token verification process, where the token claims or introspection properties must meet specific issuer, audience, age and other restrictions.
 
 .Token claims properties
 [options="header"]
@@ -768,7 +768,7 @@ Enforcing that a token is intended for a specific audience is RECOMMENDED. ID to
 
 `quarkus.oidc.token.principal-claim` can be used to customize which token claim should be used to support Java Security `Principal` and MicroProfile JWT  `JsonWebToken` APIs for getting the principal name. The `upn`, `preferred_username`, `sub` are some of the claims that are used to find the principal name by default, but some tokens may have it in the `name` or some other claim, which is when you can set `quarkus.oidc.token.principal-claim=name`, etc.
 
-`quarkus.oidc.token.required-claims` map property can be used to provide an additional simple check that the token contains specific string claim values. 
+`quarkus.oidc.token.required-claims` map property can be used to provide an additional simple check that the token contains specific string claim values.
 
 See also the <<custom-jose4j-validator>> section for details about customizing the JWT token verification.
 
@@ -806,7 +806,7 @@ However, if you have designed your application with an expectation that the code
 
 When the incoming bearer access token is in binary format or when you login users with OAuth2 providers which give Quarkus only a binary access token, with no remote introspection endpoint available in both cases, how to verify this binary token ?
 
-The only option is an indirect access token verification by attempting to use this binary token to access an OIDC standard or OAuth2 provider specific UserInfo endpoint, when a valid access token must be forwarded to the UserInfo endpoint. Set `quarkus.oidc.token.verify-access-token-with-user-info=true` if it is what is necessary in your case. 
+The only option is an indirect access token verification by attempting to use this binary token to access an OIDC standard or OAuth2 provider specific UserInfo endpoint, when a valid access token must be forwarded to the UserInfo endpoint. Set `quarkus.oidc.token.verify-access-token-with-user-info=true` if it is what is necessary in your case.
 
 See also the xref:security-oidc-code-flow-authentication.adoc#oauth2[OAuth2 providers] section for more information.
 
@@ -864,7 +864,7 @@ If you would like to treat a `scope` claim as a source of roles, then each space
 Primary token is a source of roles by default: ID token is checked for roles in the authorization code flow and the access token is checked for roles in the bearer token flow.
 If the application uses the authorization code flow, and you need to check the access token, as opposed to the primary ID token, then you can do `quarkus.oidc.roles.source=access_token` - you do not need to set this property if you deal with bearer access tokens.
 
-Sometimes the roles are contained in the UserInfo response - do `quarkus.oidc.roles.source=userinfo` in this case. 
+Sometimes the roles are contained in the UserInfo response - do `quarkus.oidc.roles.source=userinfo` in this case.
 
 [[token-binding]]
 === Token binding
@@ -926,10 +926,10 @@ See also the <<token-binding>> section.
 |quarkus.oidc.cache-user-info-in-idtoken |false| Allow caching UserInfo in the internal ID token
 |====
 
-Remote token introspection and UserInfo results can be shared across multiple requests to avoid doing remote introspection and/or UserInfo calls for every token all the time. 
+Remote token introspection and UserInfo results can be shared across multiple requests to avoid doing remote introspection and/or UserInfo calls for every token all the time.
 By doing so the application may miss out on the immediate token status changes, for example, the token could have been revoked or de-activated, or the current user may not be actually working for the organization which issued this token any longer, making the cached token introspection or `UserInfo` information stale. Therefore, the properties related to caching token introspection and UserInfo results must be enabled by users after carefully evaluating the risks.
 
-Quarkus OIDC provides a default token introspection and `UserInfo` cache for `all` OIDC tenants. For example, if you support GitHub and Strava OAuth2 authentication, the GitHib and Strava UserInfo responses can be stored in the same default cache, keyed by either GitHib or Strava access tokens. 
+Quarkus OIDC provides a default token introspection and `UserInfo` cache for `all` OIDC tenants. For example, if you support GitHub and Strava OAuth2 authentication, the GitHib and Strava UserInfo responses can be stored in the same default cache, keyed by either GitHib or Strava access tokens.
 This cache is enabled by default with the `quarkus.oidc.default-token-cache-enabled` build-time property, but no entries are added to it unless you choose to cache either the token introspection or UserInfo or both in this cache.
 
 `quarkus.oidc.allow-token-introspection-cache` and `quarkus.oidc.allow-user-info-cache` can be used to enable caching token introspection and UserInfo results respectively on a `per OIDC tenant` basis.
@@ -948,7 +948,7 @@ These tokens only have an `x5c` claim which contains a certificate chain with a 
 For example, SCIM provisioning agents, WebAuthn systems might produce such tokens.
 
 Quarkus OIDC can not use the public key inlined in the token until it proves that the applications trusts the token certificate chain which contains this public key.
- 
+
 .Tokens with certificate chains
 [options="header"]
 |====
@@ -961,7 +961,7 @@ Quarkus OIDC can not use the public key inlined in the token until it proves tha
 |quarkus.oidc.certificate-chain.leaf-certificate-name || Leaf certificate name
 |====
 
-`quarkus.oidc.certificate-chain.trust-store-file` must be available and point to the file containing `at least` a root certificate. `quarkus.oidc.certificate-chain.trust-store-password` and `quarkus.oidc.certificate-chain.trust-store-file-type` can be used to facilitate access to this truststore. 
+`quarkus.oidc.certificate-chain.trust-store-file` must be available and point to the file containing `at least` a root certificate. `quarkus.oidc.certificate-chain.trust-store-password` and `quarkus.oidc.certificate-chain.trust-store-file-type` can be used to facilitate access to this truststore.
 
 `quarkus.oidc.certificate-chain.trust-store-cert-alias` can be used to select a specific certificate to match the token's certificate chain root certificate.
 
@@ -969,7 +969,7 @@ Quarkus OIDC can not use the public key inlined in the token until it proves tha
 
 Quarkus OIDC enforces the root certificate match, and also runs other certificate chain checks to confirm that each certificate in the chain is not expired, and correctly signed by the next certificate in the chain (except the root certificate).
 
-See also the <<custom-certificate-validator>> section for details about providing additional certificate chain checks. 
+See also the <<custom-certificate-validator>> section for details about providing additional certificate chain checks.
 
 [[local-verification-properties]]
 === Local verification
@@ -1001,8 +1001,8 @@ See also the <<custom-certificate-validator>> section for details about providin
 
 Token JWK verification keys are resolved at the application start-up by default and perodically refreshed when no matching key is available to verify the current token.
 
-However, some applications require access to the current JWT token in order to formulate a correct JWK key request. 
-`quarkus.oidc.jwks.resolve-early=false` delays the JWK key retrieval until the moment the first JWT token arrives. 
+However, some applications require access to the current JWT token in order to formulate a correct JWK key request.
+`quarkus.oidc.jwks.resolve-early=false` delays the JWK key retrieval until the moment the first JWT token arrives.
 And since the token content determines which JWK keys should be used to verify it, a number of verification keys can be potentially large, therefore, when the JWKs have to be retrieved at the request time,  `quarkus.oidc.jwks.cache-size`, `quarkus.oidc.jwks.cache-time-to-live` and `quarkus.oidc.jwks.clean-up-timer-interval` properties can be used to control the JWK cache.
 
 In most cases, when the token arrives, its key identifier `kid` header value is used to find a matching JWK verification key. However, some providers do not set a token `kid` header but provide a JWK key set which may contain more than one verification key. Set `quarkus.oidc.jwks.try-all=true` only to support such cases, letting Quarkus OIDC iterate over all the keys in the JWK set and find the key that can be used to verify the current token's signature.
@@ -1019,7 +1019,7 @@ In most cases, when the token arrives, its key identifier `kid` header value is 
 
 Quarkus OIDC simplifies working with many xref:security-openid-connect-providers.adoc[well known OIDC and OAuth2 providers] by offering a `quarkus.oidc.provider` configuration option.
 
-`quarkus.oidc.provider` is a composite property. For example, when you do `quarkus.oidc.provider=github`, it is expanded into many more properties that are required to have Quarkus OIDC successfully working with the GitHub OAuth2 provider. 
+`quarkus.oidc.provider` is a composite property. For example, when you do `quarkus.oidc.provider=github`, it is expanded into many more properties that are required to have Quarkus OIDC successfully working with the GitHub OAuth2 provider.
 
 Everything that can be covered by a provider declaration such as `quarkus.oidc.provider=github` can be directly supported by individual configuration properties. Each property set internally by the `quarkus.oidc.provider` declarations can be overridden, for example, see the xref:security-openid-connect-providers.adoc#provider-scope[Provider scopes] section.
 
@@ -1160,7 +1160,7 @@ In this section we will look at how your real world OIDC requirements can be sup
 [[custom-jose4j-validator]]
 ==== Jose4 Validator
 
-You can register a custom xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j Validator] to verify the JWT token content, in addition to the checks described in the <<token-verification>> section above.
+You can register a custom xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator-bearer[Jose4j Validator] to verify the JWT token content, in addition to the checks described in the <<token-verification>> section above.
 
 [[custom-certificate-validator]]
 ==== Certificate chain validation
@@ -1256,4 +1256,3 @@ See the xref:security-oidc-code-flow-authentication#oidc-token-revocation[Token 
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-oidc-code-flow-authentication.adoc[OIDC Authorization code flow authentication]
 * xref:security-oidc-configuration-properties-reference.adoc[Generated OIDC Configuration]
-

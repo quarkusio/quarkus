@@ -794,10 +794,10 @@ For more information about using the default token cache or registering a custom
 For information about the claim verification, including the `iss` (issuer) claim, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-jwt-claim-verification[JSON Web Token claim verification] section.
 It applies to ID tokens and also to access tokens in a JWT format, if the `web-app` application has requested the access token verification.
 
-[[jose4j-validator]]
+[[jose4j-validator-code]]
 ==== Jose4j Validator
 
-You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
+You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator-bearer[Jose4j] section for more information.
 
 === Proof Key for Code Exchange (PKCE)
 

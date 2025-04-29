@@ -84,7 +84,7 @@ final class StaticTenantResolver {
     }
 
     private static final class DefaultStaticTenantResolver implements TenantResolver {
-
+        private static final String PATH_SEPARATOR = "/";
         private final TenantConfigBean tenantConfigBean;
 
         private DefaultStaticTenantResolver(TenantConfigBean tenantConfigBean) {
@@ -93,13 +93,12 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String[] pathSegments = context.request().path().split("/");
-            if (pathSegments.length > 0) {
-                String lastPathSegment = pathSegments[pathSegments.length - 1];
-                if (tenantConfigBean.getStaticTenant(lastPathSegment) != null) {
+            String[] pathSegments = context.request().path().split(PATH_SEPARATOR);
+            for (String segment : pathSegments) {
+                if (tenantConfigBean.getStaticTenant(segment) != null) {
                     LOG.debugf(
-                            "Tenant id '%s' is selected on the '%s' request path", lastPathSegment, context.normalizedPath());
-                    return lastPathSegment;
+                            "Tenant id '%s' is selected on the '%s' request path", segment, context.normalizedPath());
+                    return segment;
                 }
             }
             return null;

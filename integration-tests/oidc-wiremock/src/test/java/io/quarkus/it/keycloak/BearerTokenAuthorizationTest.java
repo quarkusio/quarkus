@@ -59,6 +59,28 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testTenantIdFromRoutingContextDefaultTenantResolver() {
+        String username = "alice";
+        String tenantId = "bearer";
+        String accessToken = getAccessToken(username, Set.of("user"));
+
+        RestAssured.given().auth().oauth2(accessToken)
+                .queryParam("includeTenantId", Boolean.TRUE)
+                .when().get("/api/users/preferredUserName/bearer")
+                .then()
+                .statusCode(200)
+                .body("userName", equalTo(username))
+                .body("tenantId", equalTo(tenantId));
+
+        RestAssured.given().auth().oauth2(getAccessToken(username, Set.of("user", "admin")))
+                .when().get("/api/users/preferredUserName/bearer/token")
+                .then()
+                .statusCode(200)
+                .body("userName", equalTo(username))
+                .body("tenantId", equalTo(tenantId));
+    }
+
+    @Test
     public void testAccessResourceAzure() throws Exception {
         String azureToken = readFile("token.txt");
         String azureJwk = readFile("jwks.json");

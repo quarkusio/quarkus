@@ -14,9 +14,6 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 In this guide, we will develop a very simple chat application using web sockets to receive and send messages to the other connected users.
 
-include::{includes}/extension-status.adoc[]
-
-
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]

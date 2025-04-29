@@ -82,24 +82,25 @@ public class WebSocketServerRecorder {
 
             @Override
             public void handle(RoutingContext ctx) {
-                if (!ctx.request().headers().contains(HandshakeRequest.SEC_WEBSOCKET_KEY)) {
+                if (ctx.request().headers().contains(HandshakeRequest.SEC_WEBSOCKET_KEY)) {
+                    if (httpUpgradeChecks != null) {
+                        checkHttpUpgrade(ctx, endpointId).subscribe().with(result -> {
+                            if (!result.getResponseHeaders().isEmpty()) {
+                                result.getResponseHeaders().forEach((k, v) -> ctx.response().putHeader(k, v));
+                            }
+
+                            if (result.isUpgradePermitted()) {
+                                httpUpgrade(ctx);
+                            } else {
+                                ctx.response().setStatusCode(result.getHttpResponseCode()).end();
+                            }
+                        }, ctx::fail);
+                    } else {
+                        httpUpgrade(ctx);
+                    }
+                } else {
                     LOG.debugf("Non-websocket client request ignored:\n%s", ctx.request().headers());
                     ctx.next();
-                }
-                if (httpUpgradeChecks != null) {
-                    checkHttpUpgrade(ctx, endpointId).subscribe().with(result -> {
-                        if (!result.getResponseHeaders().isEmpty()) {
-                            result.getResponseHeaders().forEach((k, v) -> ctx.response().putHeader(k, v));
-                        }
-
-                        if (result.isUpgradePermitted()) {
-                            httpUpgrade(ctx);
-                        } else {
-                            ctx.response().setStatusCode(result.getHttpResponseCode()).end();
-                        }
-                    }, ctx::fail);
-                } else {
-                    httpUpgrade(ctx);
                 }
             }
 

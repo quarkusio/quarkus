@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.MutableOidcTenantConfig.recreateIfNecessary;
 import static io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.SERVICE;
 import static io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP;
 
@@ -17,24 +18,25 @@ final class OidcImpl implements Oidc {
     private OidcTenantConfig defaultTenantConfig;
 
     OidcImpl(OidcConfig config) {
-        this.defaultTenantConfig = OidcTenantConfig.of(OidcConfig.getDefaultTenant(config));
+        this.defaultTenantConfig = recreateIfNecessary(OidcConfig.getDefaultTenant(config));
         this.staticTenantConfigs = getStaticTenants(config);
     }
 
     @Override
     public void create(OidcTenantConfig tenantConfig) {
         Objects.requireNonNull(tenantConfig);
-        putStaticTenantConfig(tenantConfig);
+        // TODO: drop 'rebuildIfNecessary' when OidcTenantConfig setters and fields are removed
+        putStaticTenantConfig(recreateIfNecessary(tenantConfig));
     }
 
     @Override
     public void createServiceApp(String authServerUrl) {
-        create(OidcTenantConfig.authServerUrl(authServerUrl).applicationType(SERVICE).build());
+        putStaticTenantConfig(OidcTenantConfig.authServerUrl(authServerUrl).applicationType(SERVICE).build());
     }
 
     @Override
     public void createWebApp(String authServerUrl, String clientId, String clientSecret) {
-        create(OidcTenantConfig.authServerUrl(authServerUrl).clientId(clientId).applicationType(WEB_APP)
+        putStaticTenantConfig(OidcTenantConfig.authServerUrl(authServerUrl).clientId(clientId).applicationType(WEB_APP)
                 .credentials(clientSecret).build());
     }
 
@@ -56,14 +58,16 @@ final class OidcImpl implements Oidc {
     }
 
     private static Map<String, OidcTenantConfig> getStaticTenants(OidcConfig config) {
+        if (config.namedTenants().isEmpty()) {
+            return Map.of();
+        }
         Map<String, OidcTenantConfig> tenantConfigs = new HashMap<>();
         for (var tenant : config.namedTenants().entrySet()) {
             String tenantKey = tenant.getKey();
             if (OidcConfig.DEFAULT_TENANT_KEY.equals(tenantKey)) {
                 continue;
             }
-            var namedTenantConfig = OidcTenantConfig.of(tenant.getValue());
-            tenantConfigs.put(tenantKey, namedTenantConfig);
+            tenantConfigs.put(tenantKey, recreateIfNecessary(tenant.getValue()));
         }
         return tenantConfigs;
     }

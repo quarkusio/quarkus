@@ -29,7 +29,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
     }
 
-    private OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
+    /**
+     * This constructor is not part of a public API and can change or be removed at any time.
+     */
+    protected OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         super(mapping);
         tenantId = mapping.tenantId();
         tenantEnabled = mapping.tenantEnabled();
@@ -3021,17 +3024,6 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     public static OidcTenantConfigBuilder builder(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         return new OidcTenantConfigBuilder(mapping);
-    }
-
-    /**
-     * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
-     * the {@link #builder()} method if you don't need to modify the {@code mapping}.
-     *
-     * @param mapping tenant config as returned from the SmallRye Config; must not be null
-     * @return OidcTenantConfig
-     */
-    public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
-        return new OidcTenantConfig(mapping);
     }
 
     /**

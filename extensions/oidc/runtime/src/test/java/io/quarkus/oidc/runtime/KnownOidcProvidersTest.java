@@ -11,9 +11,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
+import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
-import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class KnownOidcProvidersTest {
@@ -22,7 +21,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptGitHubProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
+        tenant.setProvider(Provider.GITHUB);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -57,7 +57,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setScopes(List.of("write"));
         tenant.token.setPrincipalClaim("firstname");
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
+        tenant.setProvider(Provider.GITHUB);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -78,7 +79,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptTwitterProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITTER));
+        tenant.setProvider(Provider.TWITTER);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -113,7 +115,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setPkceRequired(false);
         tenant.authentication.setScopes(List.of("write"));
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITTER));
+        tenant.setProvider(Provider.TWITTER);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -134,7 +137,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptMastodonProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
+        tenant.setProvider(Provider.MASTODON);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -167,7 +171,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setAddOpenidScope(true);
         tenant.authentication.setScopes(List.of("write"));
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
+        tenant.setProvider(Provider.MASTODON);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -187,7 +192,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptXProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
+        tenant.setProvider(Provider.X);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -222,7 +228,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setPkceRequired(false);
         tenant.authentication.setScopes(List.of("write"));
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
+        tenant.setProvider(Provider.X);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -243,7 +250,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptFacebookProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+        tenant.setProvider(Provider.FACEBOOK);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -272,7 +280,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setScopes(List.of("write"));
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+        tenant.setProvider(Provider.FACEBOOK);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -290,7 +299,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptGoogleProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
+        tenant.setProvider(Provider.GOOGLE);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -311,7 +321,8 @@ public class KnownOidcProvidersTest {
         tenant.token.setPrincipalClaim("firstname");
         tenant.token.setVerifyAccessTokenWithUserInfo(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
+        tenant.setProvider(Provider.GOOGLE);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -325,7 +336,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptMicrosoftProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
+        tenant.setProvider(Provider.MICROSOFT);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -345,7 +357,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setScopes(List.of("write"));
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
+        tenant.setProvider(Provider.MICROSOFT);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -359,7 +372,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptAppleProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
+        tenant.setProvider(Provider.APPLE);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -385,7 +399,8 @@ public class KnownOidcProvidersTest {
         tenant.credentials.jwt.setAudience("http://localhost/audience");
         tenant.credentials.jwt.setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
+        tenant.setProvider(Provider.APPLE);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -401,7 +416,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptSpotifyProperties() {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
+        tenant.setProvider(Provider.SPOTIFY);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -424,7 +440,8 @@ public class KnownOidcProvidersTest {
         tenant.token.setPrincipalClaim("firstname");
         tenant.token.setVerifyAccessTokenWithUserInfo(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
+        tenant.setProvider(Provider.SPOTIFY);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -440,7 +457,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptStravaProperties() {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.STRAVA));
+        tenant.setProvider(Provider.STRAVA);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -475,7 +493,8 @@ public class KnownOidcProvidersTest {
         tenant.authentication.setRedirectPath("/fitness-app");
         tenant.authentication.setScopeSeparator(" ");
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.STRAVA));
+        tenant.setProvider(Provider.STRAVA);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -494,7 +513,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptTwitchProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITCH));
+        tenant.setProvider(Provider.TWITCH);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -513,7 +533,8 @@ public class KnownOidcProvidersTest {
         tenant.credentials.clientSecret.setMethod(Method.BASIC);
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+        tenant.setProvider(Provider.TWITCH);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -526,7 +547,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptDiscordProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
+        tenant.setProvider(Provider.DISCORD);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -550,7 +572,8 @@ public class KnownOidcProvidersTest {
         tenant.credentials.clientSecret.setMethod(Method.BASIC);
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
+        tenant.setProvider(Provider.DISCORD);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -563,7 +586,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptLinkedInProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
+        tenant.setProvider(Provider.LINKEDIN);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals("https://www.linkedin.com/oauth", config.getAuthServerUrl().get());
@@ -580,7 +604,8 @@ public class KnownOidcProvidersTest {
         tenant.credentials.clientSecret.setMethod(Method.BASIC);
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
+        tenant.setProvider(Provider.LINKEDIN);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
@@ -593,7 +618,8 @@ public class KnownOidcProvidersTest {
     public void testAcceptSlackProperties() {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
+        tenant.setProvider(Provider.SLACK);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
@@ -615,7 +641,8 @@ public class KnownOidcProvidersTest {
         tenant.getToken().setPrincipalClaim("I you my own principal");
         tenant.getAuthentication().setForceRedirectHttpsScheme(false);
         tenant.getAuthentication().setScopes(List.of("profile"));
-        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
+        tenant.setProvider(Provider.SLACK);
+        OidcTenantConfig config = MutableOidcTenantConfig.recreateIfNecessary(tenant);
 
         assertEquals("PattiSmith", config.getTenantId().get());
         assertEquals(ApplicationType.SERVICE, config.getApplicationType().get());
@@ -626,4 +653,5 @@ public class KnownOidcProvidersTest {
         assertFalse(config.authentication.forceRedirectHttpsScheme.orElse(false));
         assertEquals(List.of("profile"), config.authentication.scopes.get());
     }
+
 }

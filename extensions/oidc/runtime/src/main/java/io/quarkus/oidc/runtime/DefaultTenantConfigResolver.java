@@ -246,7 +246,7 @@ public class DefaultTenantConfigResolver {
                     //shouldn't happen, but guard against it anyway
                     oidcConfig = Uni.createFrom().nullItem();
                 } else {
-                    oidcConfig = oidcConfig.onItem().transform(cfg -> OidcUtils.resolveProviderConfig(cfg));
+                    oidcConfig = oidcConfig.map(MutableOidcTenantConfig::recreateIfNecessary);
                 }
                 context.put(CURRENT_DYNAMIC_TENANT_CONFIG, oidcConfig);
             }
@@ -267,7 +267,10 @@ public class DefaultTenantConfigResolver {
                     if (tenantContext == null) {
                         return tenantConfigBean.createDynamicTenantContext(tenantConfig);
                     } else {
-                        return Uni.createFrom().item(tenantContext);
+                        // tenant config resolver can return OidcTenantConfig based on current request context
+                        // and if somewhere in the code we use config from the tenant context, we need to use it
+                        var contextWithUpdatedConfig = new TenantConfigContextImpl(tenantContext, tenantConfig);
+                        return Uni.createFrom().item(contextWithUpdatedConfig);
                     }
                 } else {
                     final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);

@@ -1,5 +1,10 @@
 package io.quarkus.oidc;
 
+import static io.quarkus.oidc.runtime.OidcUtils.createMutableTenantConfig;
+import static io.quarkus.oidc.runtime.OidcUtils.needsToSetDefaults;
+import static io.quarkus.oidc.runtime.OidcUtils.shouldEnableUserInfo;
+import static io.quarkus.oidc.runtime.OidcUtils.shouldSetRefreshExpired;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,6 +36,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -666,8 +672,22 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         if (tenantId.isEmpty()) {
             tenantId(OidcUtils.DEFAULT_TENANT_ID);
         }
-        var mapping = new OidcTenantConfigImpl(this);
-        return io.quarkus.oidc.OidcTenantConfig.of(mapping);
+
+        // keep 'needsToSetDefaults' even though it duplicates nested 'if' conditions so that we share logic that
+        // determines when to set defaults between this builder and the mutable tenant class
+        if (needsToSetDefaults(provider, applicationType, token, roles, authentication)) {
+            if (provider.isPresent()) {
+                mergeProvider(KnownOidcProviders.provider(provider.get()));
+            }
+            if (shouldSetRefreshExpired(applicationType, token)) {
+                token().refreshExpired().end();
+            }
+            if (shouldEnableUserInfo(roles, token, authentication, applicationType)) {
+                authentication().userInfoRequired().end();
+            }
+        }
+
+        return createMutableTenantConfig(new OidcTenantConfigImpl(this));
     }
 
     /**
@@ -1238,5 +1258,100 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public Logout getLogout() {
         return logout;
+    }
+
+    /**
+     * Merge the current tenant (represented by this builder) and well-known OpenId Connect provider configurations.
+     * Initialized properties take priority over uninitialized properties.
+     *
+     * Initialized properties in the current tenant configuration take priority
+     * over the same initialized properties in the well-known OpenId Connect provider configuration.
+     *
+     * @param provider well-known OpenId Connect provider configuration
+     */
+    private void mergeProvider(io.quarkus.oidc.OidcTenantConfig provider) {
+        // root properties
+        if (authServerUrl.isEmpty() && provider.authServerUrl().isPresent()) {
+            authServerUrl(provider.authServerUrl().get());
+        }
+        if (applicationType.isEmpty() && provider.applicationType().isPresent()) {
+            applicationType(provider.applicationType().get());
+        }
+        if (discoveryEnabled.isEmpty() && provider.discoveryEnabled().isPresent()) {
+            discoveryEnabled(provider.discoveryEnabled().get());
+        }
+        if (authorizationPath.isEmpty() && provider.authorizationPath().isPresent()) {
+            authorizationPath(provider.authorizationPath().get());
+        }
+        if (jwksPath.isEmpty() && provider.jwksPath().isPresent()) {
+            jwksPath(provider.jwksPath().get());
+        }
+        if (tokenPath.isEmpty() && provider.tokenPath().isPresent()) {
+            tokenPath(provider.tokenPath().get());
+        }
+        if (userInfoPath.isEmpty() && provider.userInfoPath().isPresent()) {
+            userInfoPath(provider.userInfoPath().get());
+        }
+
+        // authentication
+        var providerAuth = provider.authentication();
+        var authBuilder = authentication();
+        if (authentication.idTokenRequired().isEmpty() && providerAuth.idTokenRequired().isPresent()) {
+            authBuilder.idTokenRequired(providerAuth.idTokenRequired().get());
+        }
+        if (authentication.userInfoRequired().isEmpty() && providerAuth.userInfoRequired().isPresent()) {
+            authBuilder.userInfoRequired(providerAuth.userInfoRequired().get());
+        }
+        if (authentication.pkceRequired().isEmpty() && providerAuth.pkceRequired().isPresent()) {
+            authBuilder.pkceRequired(providerAuth.pkceRequired().get());
+        }
+        if (authentication.scopes().isEmpty() && providerAuth.scopes().isPresent()) {
+            authBuilder.scopes(providerAuth.scopes().get());
+        }
+        if (authentication.scopeSeparator().isEmpty() && providerAuth.scopeSeparator().isPresent()) {
+            authBuilder.scopeSeparator(providerAuth.scopeSeparator().get());
+        }
+        if (authentication.addOpenidScope().isEmpty() && providerAuth.addOpenidScope().isPresent()) {
+            authBuilder.addOpenidScope(providerAuth.addOpenidScope().get());
+        }
+        if (authentication.forceRedirectHttpsScheme().isEmpty() && providerAuth.forceRedirectHttpsScheme().isPresent()) {
+            authBuilder.forceRedirectHttpsScheme(providerAuth.forceRedirectHttpsScheme().get());
+        }
+        if (authentication.responseMode().isEmpty() && providerAuth.responseMode().isPresent()) {
+            authBuilder.responseMode(providerAuth.responseMode().get());
+        }
+        if (authentication.redirectPath().isEmpty() && providerAuth.redirectPath().isPresent()) {
+            authBuilder.redirectPath(providerAuth.redirectPath().get());
+        }
+        authBuilder.end();
+
+        // credentials
+        var credentialsBuilder = credentials();
+        if (credentials.clientSecret().method().isEmpty()
+                && provider.credentials().clientSecret().method().isPresent()) {
+            credentialsBuilder.clientSecret().method(provider.credentials().clientSecret().method().get()).end();
+        }
+        if (credentials.jwt().audience().isEmpty() && provider.credentials().jwt().audience().isPresent()) {
+            credentialsBuilder.jwt().audience(provider.credentials().jwt().audience().get()).end();
+        }
+        if (credentials.jwt().signatureAlgorithm().isEmpty()
+                && provider.credentials().jwt().signatureAlgorithm().isPresent()) {
+            credentialsBuilder.jwt().signatureAlgorithm(provider.credentials().jwt().signatureAlgorithm().get()).end();
+        }
+        credentialsBuilder.end();
+
+        // token
+        var tokenBuilder = token();
+        if (token.issuer().isEmpty() && provider.token().issuer().isPresent()) {
+            tokenBuilder.issuer(provider.token().issuer().get());
+        }
+        if (token.principalClaim().isEmpty() && provider.token().principalClaim().isPresent()) {
+            tokenBuilder.principalClaim(provider.token().principalClaim().get());
+        }
+        if (token.verifyAccessTokenWithUserInfo().isEmpty()
+                && provider.token().verifyAccessTokenWithUserInfo().isPresent()) {
+            tokenBuilder.verifyAccessTokenWithUserInfo(provider.token().verifyAccessTokenWithUserInfo().get());
+        }
+        tokenBuilder.end();
     }
 }

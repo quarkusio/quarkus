@@ -107,8 +107,8 @@ public abstract class OidcCommonConfigBuilder<T> {
         }
     }
 
-    private Optional<String> authServerUrl;
-    private Optional<Boolean> discoveryEnabled;
+    protected Optional<String> authServerUrl;
+    protected Optional<Boolean> discoveryEnabled;
     private Optional<String> registrationPath;
     private Optional<Duration> connectionDelay;
     private int connectionRetryCount;

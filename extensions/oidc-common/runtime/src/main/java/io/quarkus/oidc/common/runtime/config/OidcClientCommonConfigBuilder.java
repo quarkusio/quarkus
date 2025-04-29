@@ -60,11 +60,11 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
     }
 
-    private Optional<String> tokenPath;
+    protected Optional<String> tokenPath;
     private Optional<String> revokePath;
     private Optional<String> clientId;
     private Optional<String> clientName;
-    private Credentials credentials;
+    protected Credentials credentials;
 
     protected OidcClientCommonConfigBuilder(OidcClientCommonConfig oidcClientCommonConfig) {
         super(oidcClientCommonConfig);

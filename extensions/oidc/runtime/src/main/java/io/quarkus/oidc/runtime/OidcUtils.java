@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
@@ -54,7 +55,6 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
-import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -208,12 +208,40 @@ public final class OidcUtils {
                 : tenantIdSuffix;
     }
 
+    public static boolean isServiceApp(Optional<ApplicationType> applicationType) {
+        return ApplicationType.SERVICE.equals(applicationType.orElse(ApplicationType.SERVICE));
+    }
+
     public static boolean isServiceApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.SERVICE.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
+        return isServiceApp(oidcConfig.applicationType());
+    }
+
+    public static boolean shouldSetRefreshExpired(Optional<ApplicationType> applicationType, Token token) {
+        return !OidcUtils.isServiceApp(applicationType) && token.refreshTokenTimeSkew().isPresent();
+    }
+
+    public static boolean shouldEnableUserInfo(Roles roles, Token token, Authentication authentication,
+            Optional<ApplicationType> applicationType) {
+        if (authentication.userInfoRequired().isEmpty()) {
+            if (roles.source().orElse(null) == io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source.userinfo) {
+                return true;
+            }
+            if (token.verifyAccessTokenWithUserInfo().orElse(false) && !OidcUtils.isWebApp(applicationType)) {
+                return true;
+            }
+            if (!authentication.idTokenRequired().orElse(true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isWebApp(Optional<ApplicationType> applicationType) {
+        return ApplicationType.WEB_APP.equals(applicationType.orElse(ApplicationType.SERVICE));
     }
 
     public static boolean isWebApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
+        return isWebApp(oidcConfig.applicationType());
     }
 
     public static boolean isEncryptedToken(String token) {
@@ -474,111 +502,6 @@ public final class OidcUtils {
         } else {
             cookie.setPath(auth.cookiePath());
         }
-    }
-
-    /**
-     * Merge the current tenant and well-known OpenId Connect provider configurations.
-     * Initialized properties take priority over uninitialized properties.
-     *
-     * Initialized properties in the current tenant configuration take priority
-     * over the same initialized properties in the well-known OpenId Connect provider configuration.
-     *
-     * Tenant id property of the current tenant must be set before the merge operation.
-     *
-     * @param tenant current tenant configuration
-     * @param provider well-known OpenId Connect provider configuration
-     * @return merged configuration
-     */
-    static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
-        if (tenant.tenantId().isEmpty()) {
-            // OidcRecorder sets it before the merge operation
-            throw new IllegalStateException();
-        }
-        // root properties
-        if (tenant.authServerUrl().isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl();
-        }
-        if (tenant.applicationType().isEmpty()) {
-            tenant.applicationType = provider.applicationType;
-        }
-        if (tenant.discoveryEnabled().isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled();
-        }
-        if (tenant.authorizationPath().isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath();
-        }
-        if (tenant.jwksPath().isEmpty()) {
-            tenant.jwksPath = provider.jwksPath();
-        }
-        if (tenant.tokenPath().isEmpty()) {
-            tenant.tokenPath = provider.tokenPath();
-        }
-        if (tenant.userInfoPath().isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath();
-        }
-
-        // authentication
-        if (tenant.authentication().idTokenRequired().isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
-        }
-        if (tenant.authentication().userInfoRequired().isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
-        }
-        if (tenant.authentication().pkceRequired().isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
-        }
-        if (tenant.authentication().scopes().isEmpty()) {
-            tenant.authentication.scopes = provider.authentication().scopes();
-        }
-        if (tenant.authentication().scopeSeparator().isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
-        }
-        if (tenant.authentication().addOpenidScope().isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
-        }
-        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
-        }
-        if (tenant.authentication().responseMode().isEmpty()) {
-            tenant.authentication.responseMode = provider.authentication.responseMode;
-        }
-        if (tenant.authentication().redirectPath().isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication().redirectPath();
-        }
-
-        // credentials
-        if (tenant.credentials().clientSecret().method().isEmpty()) {
-            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
-        }
-        if (tenant.credentials().jwt().audience().isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
-        }
-        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
-        }
-
-        // token
-        if (tenant.token().issuer().isEmpty()) {
-            tenant.token.issuer = provider.token().issuer();
-        }
-        if (tenant.token().principalClaim().isEmpty()) {
-            tenant.token.principalClaim = provider.token().principalClaim();
-        }
-        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
-        }
-
-        return tenant;
-    }
-
-    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
-            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
-                    KnownOidcProviders.provider(oidcTenantConfig.provider().get()));
-        } else {
-            return oidcTenantConfig;
-        }
-
     }
 
     public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {
@@ -858,5 +781,20 @@ public final class OidcUtils {
             }
             context.response().putHeader(CLEAR_SITE_DATA_HEADER, builder.toString());
         }
+    }
+
+    /**
+     * This internal method should only be called by {@link io.quarkus.oidc.OidcTenantConfigBuilder}.
+     * Use the {@link io.quarkus.oidc.OidcTenantConfigBuilder} builder instead.
+     */
+    public static OidcTenantConfig createMutableTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
+        // this method exists because we don't want MutableOidcTenantConfig public
+        return new MutableOidcTenantConfig(mapping);
+    }
+
+    public static boolean needsToSetDefaults(Optional<io.quarkus.oidc.runtime.OidcTenantConfig.Provider> provider,
+            Optional<ApplicationType> applicationType, Token token, Roles roles, Authentication authentication) {
+        return provider.isPresent() || shouldSetRefreshExpired(applicationType, token)
+                || shouldEnableUserInfo(roles, token, authentication, applicationType);
     }
 }

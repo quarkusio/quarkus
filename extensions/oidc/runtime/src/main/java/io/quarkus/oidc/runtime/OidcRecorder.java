@@ -1,7 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import static io.quarkus.oidc.runtime.OidcConfig.getDefaultTenant;
-import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
@@ -186,12 +184,7 @@ public class OidcRecorder {
             super(Arc.container().instance(DefaultTenantConfigResolver.class).get(),
                     Arc.container().instance(BlockingSecurityExecutor.class).get());
             this.blockingExecutor = Arc.container().instance(BlockingSecurityExecutor.class).get();
-            if (tenantId.equals(DEFAULT_TENANT_ID)) {
-                OidcConfig config = Arc.container().instance(OidcConfig.class).get();
-                this.tenantId = getDefaultTenant(config).tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
-            } else {
-                this.tenantId = tenantId;
-            }
+            this.tenantId = tenantId;
         }
 
         @Override

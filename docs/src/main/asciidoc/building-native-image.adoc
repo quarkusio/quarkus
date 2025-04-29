@@ -75,10 +75,10 @@ This is particularly important when it comes to conformance and security.
 
 * Mandrel is recommended for building native executables that target Linux containerized environments.
 This means that Mandrel users are encouraged to use containers to build their native executables.
-If you are building native executables for macOS,
+If you are building native executables for macOS on amd64/x86,
 you should consider using Oracle GraalVM instead,
 because Mandrel does not currently target this platform.
-Building native executables directly on bare metal Linux or Windows is possible,
+Building native executables directly on bare metal Linux, macOS (on M processors), or Windows is possible,
 with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
@@ -111,7 +111,7 @@ We recommend the _community edition_ of GraalVM. For example, install it with `s
 export GRAALVM_HOME=$HOME/Development/mandrel/
 ----
 +
-On macOS (not supported by Mandrel), point the variable to the `Home` sub-directory:
+On macOS (amd64/x86 based Macs not supported), point the variable to the `Home` sub-directory:
 +
 [source,bash]
 ----

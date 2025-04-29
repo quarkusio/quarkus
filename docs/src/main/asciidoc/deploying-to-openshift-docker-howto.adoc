@@ -145,7 +145,7 @@ openshift-helloworld   openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1
 Be aware that the route is now listening on port 80 and is no longer on port 8080.
 ====
 +
-You can test the application demonstrated in this example with a web browser or a terminal by using `curl` and the complete URL output from `oc get routes`, that is, "\http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com".
+You can test the application demonstrated in this example with a web browser or a terminal by using `curl` and the complete URL output from `oc get routes`, that is, `\http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com`.
 +
 For example: `curl \http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com`.
 

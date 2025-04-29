@@ -332,8 +332,6 @@
                 <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
-                <module>redis-client</module>
-                <module>redis-cache</module>
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>qute</module>
@@ -394,7 +392,7 @@
                 <module>logging-panache</module>
                 <module>logging-panache-kotlin</module>
                 <module>locales</module>
-                <module>redis-devservices</module>
+                <module>redis</module>
                 <module>jfr-reactive</module>
                 <module>jfr-blocking</module>
                 <module>jfr-opentelemetry</module>

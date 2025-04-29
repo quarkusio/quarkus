@@ -492,9 +492,16 @@ public class GrpcServerProcessor {
                     }
 
                     @Override
+                    public int priority() {
+                        // Must run after the SpringDIProcessor annotation transformer, which has default priority 1000
+                        return 500;
+                    }
+
+                    @Override
                     public void transform(TransformationContext context) {
                         ClassInfo clazz = context.getTarget().asClass();
-                        if (userDefinedServices.contains(clazz.name()) && !customScopes.isScopeDeclaredOn(clazz)) {
+                        if (userDefinedServices.contains(clazz.name())
+                                && !customScopes.isScopeIn(context.getAnnotations())) {
                             // Add @Singleton to make it a bean
                             context.transform()
                                     .add(BuiltinScope.SINGLETON.getName())

@@ -20,8 +20,9 @@ public interface TracesBuildConfig {
      * <p>
      * This property is not available in the Open Telemetry SDK. It's Quarkus specific.
      * <p>
-     * Support for tracing will be enabled if OpenTelemetry support is enabled
-     * and either this value is true, or this value is unset.
+     * Support for OpenTelemetry Tracing will be enabled if this value is true.
+     * The OpenTelemetry SDK ( {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} )
+     * is enabled by default and if disabled, OpenTelemetry Tracing will also be disabled.
      */
     @Deprecated
     @WithDefault("true")

@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.h2.runtime.graalvm;
+package io.quarkus.jdbc.hsqldb.runtime.graalvm;
 
 import java.lang.reflect.Method;
 
@@ -9,7 +9,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @Substitute
-@TargetClass(className = "org.h2.util.SourceCompiler")
+@TargetClass(className = "org.hsqldb.util.SourceCompiler")
 public final class DisableSourceCompiler {
 
     private static final String ERR = "It's not possible to compile H2 triggers when embedding the engine in GraalVM native images";

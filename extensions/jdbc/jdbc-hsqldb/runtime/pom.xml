@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-h2</artifactId>
+    <artifactId>quarkus-jdbc-hsqldb</artifactId>
     <name>Quarkus - JDBC - HSQLDB - Runtime</name>
     <description>Connect to the HSQLDB database via JDBC</description>
     <dependencies>

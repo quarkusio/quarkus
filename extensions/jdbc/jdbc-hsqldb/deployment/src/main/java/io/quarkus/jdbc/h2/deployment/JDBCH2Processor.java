@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.h2.deployment;
+package io.quarkus.jdbc.hsqldb.deployment;
 
 import java.util.Set;
 
@@ -18,33 +18,33 @@ import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jdbc.h2.runtime.H2AgroalConnectionConfigurer;
+import io.quarkus.jdbc.hsqldb.runtime.HSQLDBAgroalConnectionConfigurer;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-public class JDBCH2Processor {
+public class JDBCHSQLDBProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.JDBC_H2);
+        return new FeatureBuildItem(Feature.JDBC_HSQLDB);
     }
 
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver
-                .produce(new JdbcDriverBuildItem(DatabaseKind.H2, "org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"));
+                .produce(new JdbcDriverBuildItem(DatabaseKind.HSQLDB, "org.hsqldb.Driver", "org.hsqldb.jdbcx.JdbcDataSource"));
     }
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.H2);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.HSQLDB);
     }
 
     @BuildStep
     void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(H2AgroalConnectionConfigurer.class)
+            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(HSQLDBAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
                     .setUnremovable()
                     .build());
@@ -53,12 +53,12 @@ public class JDBCH2Processor {
 
     @BuildStep
     void registerDefaultDbType(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
-        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.H2));
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.HSQLDB));
     }
 
     @BuildStep
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
-        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.h2.store.fs.niomem.FileNioMemData"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.hsqldb.store.fs.niomem.FileNioMemData"));
     }
 
     @BuildStep
@@ -69,7 +69,7 @@ public class JDBCH2Processor {
 
     @BuildStep
     void excludeNativeImageDirectives(BuildProducer<RemovedResourceBuildItem> removedResources) {
-        removedResources.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("com.h2database:h2"),
+        removedResources.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("com.hsqldbdatabase:hsqldb"),
                 Set.of("META-INF/native-image/reflect-config.json")));
     }
 }

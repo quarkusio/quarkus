@@ -1,12 +1,12 @@
-package io.quarkus.jdbc.h2.deployment;
+package io.quarkus.jdbc.hsqldb.deployment;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.h2.mvstore.type.DataType;
-import org.h2.mvstore.type.StatefulDataType;
+import org.hsqldb.mvstore.type.DataType;
+import org.hsqldb.mvstore.type.StatefulDataType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -19,37 +19,37 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.jdbc.h2.runtime.H2Reflections;
+import io.quarkus.jdbc.hsqldb.runtime.HSQLDBReflections;
 
 /**
- * Registers the {@code org.h2.Driver} so that it can be loaded
+ * Registers the {@code org.hsqldb.Driver} so that it can be loaded
  * by reflection, as commonly expected.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
-public final class H2JDBCReflections {
+public final class HSQLDBJDBCReflections {
 
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.
-        final String driverName = "org.h2.Driver";
+        final String driverName = "org.hsqldb.Driver";
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
     }
 
     @BuildStep
-    NativeImageFeatureBuildItem enableH2Feature() {
-        return new NativeImageFeatureBuildItem("io.quarkus.jdbc.h2.runtime.H2Reflections");
+    NativeImageFeatureBuildItem enableHSQLDBFeature() {
+        return new NativeImageFeatureBuildItem("io.quarkus.jdbc.hsqldb.runtime.HSQLDBReflections");
     }
 
     /**
-     * We need to index the H2 database core jar so to include custom extension types it's
+     * We need to index the HSQLDB database core jar so to include custom extension types it's
      * loading via reflection.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    IndexDependencyBuildItem indexH2Library() {
-        return new IndexDependencyBuildItem("com.h2database", "h2");
+    IndexDependencyBuildItem indexHSQLDBLibrary() {
+        return new IndexDependencyBuildItem("com.hsqldbdatabase", "hsqldb");
     }
 
     /**
@@ -59,7 +59,7 @@ public final class H2JDBCReflections {
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listStatefulDataTypeFactories(CombinedIndexBuildItem index) {
-        return generateListBy(H2Reflections.REZ_NAME_STATEFUL_DATATYPES, index,
+        return generateListBy(HSQLDBReflections.REZ_NAME_STATEFUL_DATATYPES, index,
                 i -> i.getAllKnownImplementors(StatefulDataType.Factory.class).stream());
     }
 
@@ -71,7 +71,7 @@ public final class H2JDBCReflections {
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listBasicDataTypes(CombinedIndexBuildItem index) {
-        return generateListBy(H2Reflections.REZ_NAME_DATA_TYPE_SINGLETONS, index,
+        return generateListBy(HSQLDBReflections.REZ_NAME_DATA_TYPE_SINGLETONS, index,
                 i -> i.getAllKnownImplementors(DataType.class)
                         .stream().filter(classInfo -> classInfo.field("INSTANCE") != null));
     }

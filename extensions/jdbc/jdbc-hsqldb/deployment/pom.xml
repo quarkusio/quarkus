@@ -13,11 +13,14 @@
     <name>Quarkus - JDBC - HSQLDB - Deployment</name>
 
     <dependencies>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal-spi</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc-deployment</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-datasource-deployment-spi</artifactId></dependency>
-        <!--<dependency><groupId>io.quarkus</groupId><artifactId>quarkus-devservices-hsqldb</artifactId></dependency>-->
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal-spi</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-devservices-hsqldb</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-hsqldb</artifactId></dependency>
+
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5-internal</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.assertj</groupId><artifactId>assertj-core</artifactId><scope>test</scope></dependency>
     </dependencies>
 
     <build>

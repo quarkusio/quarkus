@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.h2.runtime.graalvm;
+package io.quarkus.jdbc.hsqldb.runtime.graalvm;
 
 import java.lang.reflect.Method;
 

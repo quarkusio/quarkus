@@ -19,7 +19,7 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.jdbc.h2.runtime.H2Reflections;
+import io.quarkus.jdbc.hsqldb.runtime.H2Reflections;
 
 /**
  * Registers the {@code org.h2.Driver} so that it can be loaded

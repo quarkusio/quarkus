@@ -4,7 +4,7 @@ import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @Delete
-@TargetClass(className = "org.hsqldb.fulltext.FullTextLucene")
+@TargetClass(className = "org.h2.fulltext.FullTextLucene")
 public final class DeleteFullTextLucene {
 
 }

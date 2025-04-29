@@ -16,6 +16,7 @@ public final class DatabaseKind {
     public static final String DB2 = "db2";
     public static final String DERBY = "derby";
     public static final String H2 = "h2";
+    public static final String HSQLDB = "hsqldb";
     public static final String MARIADB = "mariadb";
     public static final String MSSQL = "mssql";
     public static final String MYSQL = "mysql";
@@ -64,6 +65,10 @@ public final class DatabaseKind {
         return is(value, H2);
     }
 
+    public static boolean isHsqldb(String value) {
+        return is(value, HSQLDB);
+    }
+
     public static boolean isMariaDB(String value) {
         return is(value, MARIADB);
     }
@@ -101,6 +106,7 @@ public final class DatabaseKind {
         DB2(DatabaseKind.DB2),
         DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),
+        HSQLDB(DatabaseKind.HSQLDB),
         MARIADB(DatabaseKind.MARIADB),
         MSSQL(DatabaseKind.MSSQL),
         MYSQL(DatabaseKind.MYSQL),

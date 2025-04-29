@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jdbc.h2.runtime.H2AgroalConnectionConfigurer;
+import io.quarkus.jdbc.hsqldb.runtime.H2AgroalConnectionConfigurer;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class JDBCH2Processor {

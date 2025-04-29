@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.h2.runtime.graalvm;
+package io.quarkus.jdbc.hsqldb.runtime.graalvm;
 
 import org.h2.engine.Database;
 import org.h2.util.SourceCompiler;

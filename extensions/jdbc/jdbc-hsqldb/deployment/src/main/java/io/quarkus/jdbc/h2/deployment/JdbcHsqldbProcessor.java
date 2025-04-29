@@ -18,10 +18,10 @@ import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jdbc.hsqldb.runtime.HSQLDBAgroalConnectionConfigurer;
+import io.quarkus.jdbc.hsqldb.runtime.HsqldbAgroalConnectionConfigurer;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-public class JDBCHSQLDBProcessor {
+public class JdbcHsqldbProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -32,7 +32,7 @@ public class JDBCHSQLDBProcessor {
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver
-                .produce(new JdbcDriverBuildItem(DatabaseKind.HSQLDB, "org.hsqldb.Driver", "org.hsqldb.jdbcx.JdbcDataSource"));
+                .produce(new JdbcDriverBuildItem(DatabaseKind.HSQLDB, "org.hsqldb.jdbc.JDBCDriver"));
     }
 
     @BuildStep
@@ -44,7 +44,7 @@ public class JDBCHSQLDBProcessor {
     void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(HSQLDBAgroalConnectionConfigurer.class)
+            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(HsqldbAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
                     .setUnremovable()
                     .build());
@@ -56,9 +56,12 @@ public class JDBCHSQLDBProcessor {
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.HSQLDB));
     }
 
+    /*
+    TODO: These need analysis of the HSQLDB sources.
+
     @BuildStep
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
-        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.hsqldb.store.fs.niomem.FileNioMemData"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.h2.store.fs.niomem.FileNioMemData"));
     }
 
     @BuildStep
@@ -69,7 +72,9 @@ public class JDBCHSQLDBProcessor {
 
     @BuildStep
     void excludeNativeImageDirectives(BuildProducer<RemovedResourceBuildItem> removedResources) {
-        removedResources.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("com.hsqldbdatabase:hsqldb"),
+        removedResources.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("org.hsqldb:hsqldb"),
                 Set.of("META-INF/native-image/reflect-config.json")));
     }
+    */
+
 }

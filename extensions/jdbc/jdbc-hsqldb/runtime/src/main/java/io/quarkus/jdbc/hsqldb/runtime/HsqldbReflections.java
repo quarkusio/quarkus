@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.h2.runtime;
+package io.quarkus.jdbc.hsqldb.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,26 +11,26 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 /**
- * Custom GraalVM feature to automatically register DataType and StatefulDataType
- * implementors for reflective access.
- * These are identified using Jandex, looking both into the H2 core jar and in
- * user's indexed code.
+ * Custom GraalVM feature to automatically register DataType and StatefulDataType implementors for reflective access.
+ * These are identified using Jandex, looking both into the HSQLDB core jar and in user's indexed code.
  */
-public final class H2Reflections implements Feature {
+public final class HsqldbReflections implements Feature {
 
-    public static final String REZ_NAME_DATA_TYPE_SINGLETONS = "h2BasicDataTypeSingletons.classlist";
-    public static final String REZ_NAME_STATEFUL_DATATYPES = "h2StatefulDataType.classlist";
+    // TODO: These likely come from Jandex. Not sure where to set this up.
+
+    public static final String REZ_NAME_DATA_TYPE_SINGLETONS = "hsqldbBasicDataTypeSingletons.classlist";
+    public static final String REZ_NAME_STATEFUL_DATATYPES = "hsqldbStatefulDataType.classlist";
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        Class<?> metaType = access.findClassByName("org.h2.mvstore.type.MetaType");
+        Class<?> metaType = access.findClassByName("org.hsqldb.mvstore.type.MetaType");
         access.registerReachabilityHandler(this::metaTypeReachable, metaType);
     }
 
     private void metaTypeReachable(DuringAnalysisAccess access) {
         //Register some common metatypes - these are dynamically loaded depending on the data content.
         register(REZ_NAME_DATA_TYPE_SINGLETONS, this::registerSingletonAccess, access);
-        //Now register implementors of org.h2.mvstore.type.StatefulDataType.Factory
+        //Now register implementors of org.hsqldb.mvstore.type.StatefulDataType.Factory
         register(REZ_NAME_STATEFUL_DATATYPES, this::registerForReflection, access);
     }
 
@@ -67,7 +67,7 @@ public final class H2Reflections implements Feature {
 
     @Override
     public String getDescription() {
-        return "Support for H2 Database's extended data types";
+        return "Support for HSQLDB Database's extended data types";
     }
 
 }

@@ -45,6 +45,7 @@ public enum Feature {
     JDBC_DB2,
     JDBC_DERBY,
     JDBC_H2,
+    JDBC_HSQLDB,
     JDBC_POSTGRESQL,
     JDBC_MARIADB,
     JDBC_MSSQL,

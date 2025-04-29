@@ -7,12 +7,13 @@ import static io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP;
 import static io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode.FORM_POST;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class KnownOidcProviders {
 
-    public static OidcTenantConfig provider(OidcTenantConfig.Provider provider) {
+    public static OidcTenantConfig provider(Provider provider) {
         return switch (provider) {
             case APPLE -> apple();
             case DISCORD -> discord();

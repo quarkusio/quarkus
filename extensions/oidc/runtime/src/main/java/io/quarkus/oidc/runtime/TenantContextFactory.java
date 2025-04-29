@@ -220,8 +220,8 @@ final class TenantContextFactory {
         }
         if (oidcConfig.token().verifyAccessTokenWithUserInfo().orElse(false) && !OidcUtils.isWebApp(oidcConfig)
                 && !enableUserInfo(oidcConfig)) {
-            throw new ConfigurationException(
-                    "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
+            String propertyName = getConfigPropertyForTenant(tenantId, "token.verify-access-token-with-user-info");
+            throw new ConfigurationException("UserInfo is not required but '%s' is enabled".formatted(propertyName));
         }
         if (!oidcConfig.authentication().idTokenRequired().orElse(true) && OidcUtils.isWebApp(oidcConfig)
                 && StepUpAuthenticationPolicy.isEnabled()) {
@@ -234,7 +234,8 @@ final class TenantContextFactory {
         }
         if (!oidcConfig.authentication().idTokenRequired().orElse(true) && !enableUserInfo(oidcConfig)) {
             throw new ConfigurationException(
-                    "UserInfo is not required but it will be needed to verify a code flow access token");
+                    "UserInfo is not required for OIDC tenant '%s' but it will be needed to verify a code flow access token"
+                            .formatted(tenantId));
         }
 
         if (!oidcConfig.discoveryEnabled().orElse(true)) {

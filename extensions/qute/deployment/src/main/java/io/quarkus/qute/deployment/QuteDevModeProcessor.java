@@ -2,7 +2,6 @@ package io.quarkus.qute.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -27,10 +26,10 @@ import io.quarkus.qute.runtime.devmode.QuteErrorPageSetup;
 public class QuteDevModeProcessor {
 
     @BuildStep
-    void collectGeneratedContents(List<TemplatePathBuildItem> templatePaths,
+    void collectGeneratedContents(EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
             BuildProducer<ValidationErrorBuildItem> errors) {
         Map<String, String> contents = new HashMap<>();
-        for (TemplatePathBuildItem template : templatePaths) {
+        for (TemplatePathBuildItem template : effectiveTemplatePaths.getTemplatePaths()) {
             if (!template.isFileBased()) {
                 contents.put(template.getPath(), template.getContent());
             }

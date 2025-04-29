@@ -342,11 +342,16 @@ public final class DatabaseInspector {
         try {
             AgroalDataSourceConfiguration configuration = ads.getConfiguration();
             String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
-            if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
+            if (
+                    jdbcUrl.startsWith("jdbc:h2:mem:")
+                    || jdbcUrl.startsWith("jdbc:h2:file:")
                     || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
                     || (allowedHost != null && !allowedHost.isBlank()
                             && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))
-                    || jdbcUrl.startsWith("jdbc:derby:memory:")) {
+                    || jdbcUrl.startsWith("jdbc:hsqldb:mem:")
+                    || jdbcUrl.startsWith("jdbc:hsqldb:file:")
+                    || jdbcUrl.startsWith("jdbc:derby:memory:")
+            ) {
                 return true;
             }
 

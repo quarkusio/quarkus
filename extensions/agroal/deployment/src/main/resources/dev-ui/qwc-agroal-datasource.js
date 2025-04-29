@@ -716,6 +716,10 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                 return true;
             }
 
+            if (jdbcUrl.startsWith("jdbc:hsqldb:mem:") || jdbcUrl.startsWith("jdbc:hsqldb:file:")) {
+                return true;
+            }
+
             if (jdbcUrl.startsWith("jdbc:derby:memory:")) {
                 return true;
             }

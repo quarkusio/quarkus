@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JDBC Driver - HSQLDB"
+metadata:
+  keywords:
+  - "jdbc-hsqldb"
+  - "jdbc"
+  - "hsqldb"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"

@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
@@ -25,12 +24,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcDevUiRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
-
-    private final RuntimeValue<OidcConfig> oidcConfigRuntimeValue;
-
-    public OidcDevUiRecorder(RuntimeValue<OidcConfig> oidcConfigRuntimeValue) {
-        this.oidcConfigRuntimeValue = oidcConfigRuntimeValue;
-    }
 
     public void createJsonRPCService(BeanContainer beanContainer,
             RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, VertxHttpConfig httpConfig) {
@@ -62,7 +55,7 @@ public class OidcDevUiRecorder {
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {
-        return new OidcDevSessionCookieReaderHandler(oidcConfigRuntimeValue.getValue());
+        return new OidcDevSessionCookieReaderHandler();
     }
 
     public Handler<RoutingContext> logoutHandler() {

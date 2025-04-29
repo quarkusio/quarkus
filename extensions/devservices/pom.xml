@@ -22,6 +22,7 @@
         <module>mysql</module>
         <module>mariadb</module>
         <module>h2</module>
+        <module>hsqldb</module>
         <module>derby</module>
         <module>mssql</module>
         <module>db2</module>

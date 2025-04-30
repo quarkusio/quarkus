@@ -32,7 +32,7 @@ public class DevServicesHsqldbDatasourceTestCase {
             .assertLogRecords(records -> assertThat(records)
                     // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
                     .extracting(LogRecord::getMessage)
-                    .isEmpty());;
+                    .isEmpty());
 
     @Inject
     AgroalDataSource dataSource;

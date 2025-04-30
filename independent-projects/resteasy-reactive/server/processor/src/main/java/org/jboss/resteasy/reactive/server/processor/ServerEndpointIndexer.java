@@ -300,9 +300,18 @@ public class ServerEndpointIndexer
                 actualEndpointInfo,
                 existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
         if ((injectableBean.getFieldExtractorsCount() == 0) && !injectableBean.isInjectionRequired()) {
-            throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
-                    + "Annotations like `@QueryParam` should be used in fields, not in methods.",
-                    beanParamClassInfo.name()));
+            long declaredMethodsCount = beanParamClassInfo.methods().stream()
+                    .filter(m -> !m.name().equals("<init>") && !m.name().equals("<clinit>")).count();
+            if (declaredMethodsCount == 0) {
+                throw new DeploymentException(String.format(
+                        "Class %s has no fields. Parameters containers are only supported if they have at least one annotated field.",
+                        beanParamClassInfo.name()));
+            } else {
+                throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
+                        + "Annotations like `@QueryParam` should be used in fields, not in methods.",
+                        beanParamClassInfo.name()));
+            }
+
         }
         fileFormNames.addAll(injectableBean.getFileFormNames());
         return injectableBean.isFormParamRequired();

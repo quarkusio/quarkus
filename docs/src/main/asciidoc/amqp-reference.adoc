@@ -74,7 +74,7 @@ quarkus.messaging.auto-connector-attachment=false
 
 == Configuring the AMQP Broker access
 
-The AMQP connector connects to AMQP 1.0 brokers such as Apache ActiveMQ or Artemis.
+The AMQP connector connects to AMQP 1.0 brokers such as Apache's ActiveMQ Classic or ActiveMQ Artemis.
 To configure the location and credentials of the broker, add the following properties in the `application.properties`:
 
 [source, properties]
@@ -318,17 +318,19 @@ mp.messaging.outgoing.orders.address=my-order-queue
 If the `address` attribute is not set, the connector uses the channel name.
 
 To use an existing queue, you need to configure the `address`, `container-id` and, optionally, the `link-name` attributes.
-For example, if you have an Apache Artemis broker configured with:
+For example, if you have an Apache ActiveMQ Artemis broker configured with:
 
 [source, xml]
 ----
-<queues>
-    <queue name="people">
-        <address>people</address>
-        <durable>true</durable>
-        <user>artemis</user>
-    </queue>
-</queues>
+<addresses>
+    <address name="people">
+        <anycast>
+            <queue name="people">
+                <user>artemis</user>
+            </queue>
+        </anycast>
+    </address>
+</addresses>
 ----
 
 You need the following configuration:
@@ -367,7 +369,7 @@ mp.messaging.incoming.people-out.container-id=bar
 mp.messaging.incoming.people-out.link-name=people
 ----
 
-More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/2.0.0/address-model.html[Artemis documentation].
+More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/latest/address-model.html[ActiveMQ Artemis documentation].
 
 [[blocking-processing]]
 === Execution model and Blocking processing

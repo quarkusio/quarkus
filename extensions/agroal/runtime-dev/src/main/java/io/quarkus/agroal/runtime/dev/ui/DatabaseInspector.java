@@ -223,7 +223,10 @@ public final class DatabaseInspector {
                         }
                     }
                 } else {
-                    return new DataSet(null, null, "Only supported for Local Databases", null, -1);
+                    return new DataSet(null, null,
+                            "Datasource access not allowed. By default only local databases are enabled; you can use the"
+                                    + " 'quarkus.datasource.dev-ui.allowed-db-host' configuration property to configure allowed hosts ('*' to allow all).",
+                            null, -1);
                 }
             } catch (SQLException ex) {
                 return new DataSet(null, null, ex.getMessage(), null, -1);
@@ -325,14 +328,20 @@ public final class DatabaseInspector {
     }
 
     private boolean isAllowedDatabase(AgroalDataSource ads) {
+        final String allowedHost = this.allowedHost == null ? null : this.allowedHost.trim();
+        if (allowedHost != null && allowedHost.equals("*")) {
+            // special value indicating to allow any host
+            return true;
+        }
+
         AgroalDataSourceConfiguration configuration = ads.getConfiguration();
         String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
 
         try {
             if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
                     || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
-                    || (this.allowedHost != null && !this.allowedHost.isBlank()
-                            && jdbcUrl.startsWith("jdbc:h2:tcp://" + this.allowedHost))
+                    || (allowedHost != null && !allowedHost.isBlank()
+                            && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))
                     || jdbcUrl.startsWith("jdbc:derby:memory:")) {
                 return true;
             }
@@ -343,7 +352,7 @@ public final class DatabaseInspector {
             String host = uri.getHost();
 
             return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1")) ||
-                    (this.allowedHost != null && !this.allowedHost.isBlank() && host.equalsIgnoreCase(this.allowedHost)));
+                    (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 
         } catch (URISyntaxException e) {
             Log.warn(e.getMessage());

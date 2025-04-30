@@ -292,7 +292,7 @@ The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
 @Record(STATIC_INIT)
 SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
    return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
-                .runtimeValue(recorder.createFoo("parameters are recorder in the bytecode")) <1>
+                .runtimeValue(recorder.createFoo("parameters are recorded in the bytecode")) <1>
                 .done();
 }
 ----
@@ -305,7 +305,7 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 @Record(STATIC_INIT)
 SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
    return SyntheticBeanBuildItem.configure(TestContext.class).scope(Singleton.class)
-                .runtimeValue(recorder.createContext("parameters are recorder in the bytecode")) <1>
+                .runtimeValue(recorder.createContext("parameters are recorded in the bytecode")) <1>
                 .done();
 }
 ----

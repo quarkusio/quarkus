@@ -102,7 +102,7 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.0.2.Final</narayana.version>
-        <agroal.version>2.5</agroal.version>
+        <agroal.version>2.6</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.15.0</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -115,7 +115,7 @@
         <wildfly-elytron.version>2.5.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.1.Final</jboss-marshalling.version>
         <jboss-threads.version>3.6.1.Final</jboss-threads.version>
-        <vertx.version>4.5.13</vertx.version>
+        <vertx.version>4.5.14</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -134,10 +134,10 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
-        <infinispan.version>15.0.11.Final</infinispan.version>
-        <infinispan.protostream.version>5.0.8.Final</infinispan.protostream.version>
+        <infinispan.version>15.0.14.Final</infinispan.version>
+        <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.118.Final</netty.version>
+        <netty.version>4.1.119.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.0.Final</jboss-logging.version>
@@ -174,7 +174,7 @@
         <mongo-crypt.version>1.11.0</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.1</javaparser.version>
-        <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
+        <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.16.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.1.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>

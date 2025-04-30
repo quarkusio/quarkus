@@ -94,12 +94,12 @@ public class MongodbConfig {
      * @deprecated this property has been deprecated in favor of {@link #dnsServerPort}
      */
     @Deprecated
-    @ConfigItem(name = NATIVE_DNS_SERVER_PORT, defaultValue = "53")
+    @ConfigItem(name = NATIVE_DNS_SERVER_PORT)
     public OptionalInt dnsServerPortInNativeMode;
     /**
      * This property configures the DNS server port.
      */
-    @ConfigItem(name = DNS_SERVER_PORT, defaultValue = "53")
+    @ConfigItem(name = DNS_SERVER_PORT)
     public OptionalInt dnsServerPort;
 
     /**

@@ -155,6 +155,7 @@ import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.ObjectsTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.OrOperatorTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.StringTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
@@ -285,7 +286,8 @@ public class QuteProcessor {
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, Template.class,
                         TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class,
-                        TimeTemplateExtensions.class, StringTemplateExtensions.class, OrOperatorTemplateExtensions.class)
+                        TimeTemplateExtensions.class, StringTemplateExtensions.class, OrOperatorTemplateExtensions.class,
+                        ObjectsTemplateExtensions.class)
                 .build();
     }
 
@@ -422,7 +424,7 @@ public class QuteProcessor {
                 }
                 reservedNames.add(method.name());
             }
-            for (ClassInfo recordClass : index.getIndex().getAllKnownImplementors(recordInterfaceName)) {
+            for (ClassInfo recordClass : index.getIndex().getAllKnownImplementations(recordInterfaceName)) {
                 if (!recordClass.isRecord()) {
                     continue;
                 }

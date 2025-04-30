@@ -6,6 +6,17 @@ import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * A build item representing the successfully built native image.
+ * <p>
+ * This item is produced after the native image build process completes. It contains:
+ * <ul>
+ * <li>The {@link #path} to the generated native executable.</li>
+ * <li>Information about the GraalVM instance used via {@link #graalVMVersion}.</li>
+ * <li>A flag {@link #reused} indicating if an existing image was reused instead of performing a full build.</li>
+ * </ul>
+ * The {@link GraalVMVersion} inner class provides details about the GraalVM distribution, version, and Java version.
+ */
 public final class NativeImageBuildItem extends SimpleBuildItem {
 
     private final Path path;

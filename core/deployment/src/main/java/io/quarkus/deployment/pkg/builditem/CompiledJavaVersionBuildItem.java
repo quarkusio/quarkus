@@ -2,6 +2,11 @@ package io.quarkus.deployment.pkg.builditem;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * Represents the Java version used during compilation based on the first Class file's version
+ * You can use this during the build process to adapt your logic based on the
+ * {@link JavaVersion.Known} or {@link JavaVersion.Unknown} Java version
+ */
 public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
     private final JavaVersion javaVersion;

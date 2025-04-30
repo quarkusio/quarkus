@@ -501,6 +501,18 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item;
     }
 
+    @POST
+    @Path("/primitive-types-bean")
+    public PrimitiveTypesBean echoPrimitiveTypesBean(PrimitiveTypesBean bean) {
+        return bean;
+    }
+
+    @POST
+    @Path("/primitive-types-record")
+    public PrimitiveTypesRecord echoPrimitiveTypesRecord(PrimitiveTypesRecord record) {
+        return record;
+    }
+
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

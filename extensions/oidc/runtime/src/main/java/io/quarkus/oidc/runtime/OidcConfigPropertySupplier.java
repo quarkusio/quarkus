@@ -9,10 +9,9 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -99,7 +98,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
                 if (END_SESSION_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
                     value = providerConfig.endSessionPath();
                 } else if (TOKEN_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.tokenPath;
+                    value = providerConfig.tokenPath();
                 } else if (AUTH_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
                     value = providerConfig.authorizationPath();
                 }

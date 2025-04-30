@@ -13,7 +13,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 
 final class OidcImpl implements Oidc {
 
-    private Map<String, OidcTenantConfig> staticTenantConfigs;
+    private final Map<String, OidcTenantConfig> staticTenantConfigs;
     private OidcTenantConfig defaultTenantConfig;
 
     OidcImpl(OidcConfig config) {

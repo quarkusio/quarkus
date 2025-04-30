@@ -34,6 +34,10 @@ public class GlobalDevServicesConfig {
     @ConfigItem(generateDocumentation = false)
     public Optional<Duration> timeout;
 
+    /**
+     * @deprecated Please, use {@link DevServicesConfig.Enabled} instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.18")
     public static class Enabled implements BooleanSupplier {
 
         final GlobalDevServicesConfig config;

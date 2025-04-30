@@ -47,7 +47,7 @@ public class DevServicesHsqldbDatasourceTestCase {
             // we catch the NPE here as we have a proxycd and we can't test dataSource directly
             fail("Datasource should not be null");
         }
-        assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:derby:"));
+        assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:hsqldb:"));
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 

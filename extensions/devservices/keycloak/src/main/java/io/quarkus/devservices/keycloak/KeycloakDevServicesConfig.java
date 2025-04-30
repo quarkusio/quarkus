@@ -162,6 +162,11 @@ public interface KeycloakDevServicesConfig {
      */
     @WithDefault("true")
     boolean createClient();
+    
+    /**
+     * If a client is created, the set of roles to give the client, as determined by {@linkplain #createClient()}
+     */
+    Optional<Set<String>> clientRoles();
 
     /**
      * Specifies whether to start the container even if the default OIDC tenant is disabled.

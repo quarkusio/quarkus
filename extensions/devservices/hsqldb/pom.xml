@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-datasource-deployment-spi</artifactId></dependency>
-        <dependency><groupId>org.hsqldb</groupId><artifactId>hsqldb</artifactId><version>2.7.4</version></dependency>
+        <dependency><groupId>org.hsqldb</groupId><artifactId>hsqldb</artifactId></dependency>
 
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.jboss.logmanager</groupId><artifactId>jboss-logmanager</artifactId><scope>test</scope></dependency>

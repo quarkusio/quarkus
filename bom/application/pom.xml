@@ -119,6 +119,7 @@
         <quartz.version>2.5.0</quartz.version>
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
+        <hsqldb.version>2.7.4</hsqldb.version>
         <postgresql-jdbc.version>42.7.5</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
@@ -3762,6 +3763,11 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hsqldb</groupId>
+                <artifactId>hsqldb</artifactId>
+                <version>${hsqldb.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.agroal</groupId>

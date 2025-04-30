@@ -89,7 +89,7 @@ public class ArcDevModeApiProcessor {
                 // id -> [dep1Id, dep2Id]
                 beanDependenciesMap.put(bean.getIdentifier(),
                         dependencyGraph.filterLinks(link -> link.type.equals("directDependency")).nodes.stream()
-                                .map(DevBeanInfo::getId).filter(id -> !id.equals(bean.getIdentifier()))
+                                .map(Node::getId).filter(id -> !id.equals(bean.getIdentifier()))
                                 .collect(Collectors.toList()));
             }
         }
@@ -111,7 +111,7 @@ public class ArcDevModeApiProcessor {
         addNodesDependencies(0, bean, nodes, links, bean, devBeanInfos);
         addNodesDependents(0, bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver, devBeanInfos,
                 directDependents);
-        return new DependencyGraph(nodes, links);
+        return new DependencyGraph(nodes.stream().map(Node::from).collect(Collectors.toSet()), links);
     }
 
     private void addNodesDependencies(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,

@@ -162,9 +162,9 @@ public interface KeycloakDevServicesConfig {
      */
     @WithDefault("true")
     boolean createClient();
-    
+
     /**
-     * If a client is created, the set of roles to give the client, as determined by {@linkplain #createClient()}
+     * If a client is created, as determined by {@linkplain #createClient()}, the set of roles to give the client
      */
     Optional<Set<String>> clientRoles();
 

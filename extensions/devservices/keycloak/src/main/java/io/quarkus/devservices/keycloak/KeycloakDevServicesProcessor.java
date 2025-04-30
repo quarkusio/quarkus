@@ -318,14 +318,13 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static Map<String, String> prepareConfiguration(
-        BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-        String internalURL,
-        String hostURL,
-        List<RealmRepresentation> realmReps,
-        List<String> errors,
-        KeycloakDevServicesConfigurator devServicesConfigurator,
-        String internalBaseUrl
-    ) {
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+            String internalURL,
+            String hostURL,
+            List<RealmRepresentation> realmReps,
+            List<String> errors,
+            KeycloakDevServicesConfigurator devServicesConfigurator,
+            String internalBaseUrl) {
         final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
@@ -338,7 +337,7 @@ public class KeycloakDevServicesProcessor {
 
         String oidcClientId = getOidcClientId();
         String oidcClientSecret = getOidcClientSecret();
-        Optional<List<String>> oidcClientRoles = getOidcClientRoles();
+        Optional<Set<String>> oidcClientRoles = capturedDevServicesConfiguration.clientRoles();
 
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users(), createDefaultRealm);
 
@@ -357,16 +356,15 @@ public class KeycloakDevServicesProcessor {
                 String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
                 if (createDefaultRealm) {
                     createDefaultRealm(
-                        client,
-                        adminToken,
-                        clientAuthServerBaseUrl,
-                        users,
-                        oidcClientId,
-                        oidcClientSecret,
-                        oidcClientRoles,
-                        errors,
-                        devServicesConfigurator
-                    );
+                            client,
+                            adminToken,
+                            clientAuthServerBaseUrl,
+                            users,
+                            oidcClientId,
+                            oidcClientSecret,
+                            oidcClientRoles,
+                            errors,
+                            devServicesConfigurator);
                     realmNames.add(realmName);
                 } else if (realmReps != null) {
                     for (RealmRepresentation realmRep : realmReps) {
@@ -750,34 +748,31 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static void createDefaultRealm(
-        WebClient client,
-        String token,
-        String keycloakUrl,
-        Map<String, String> users,
-        String oidcClientId,
-        String oidcClientSecret,
-        Optional<List<String>> roles,
-        List<String> errors,
-        KeycloakDevServicesConfigurator devServicesConfigurator
-    ) {
+            WebClient client,
+            String token,
+            String keycloakUrl,
+            Map<String, String> users,
+            String oidcClientId,
+            String oidcClientSecret,
+            Optional<Set<String>> clientRoles,
+            List<String> errors,
+            KeycloakDevServicesConfigurator devServicesConfigurator) {
         RealmRepresentation realm = createDefaultRealmRep();
 
         if (capturedDevServicesConfiguration.createClient()) {
             ClientRepresentation clientRep = createClient(oidcClientId, oidcClientSecret);
-            
             realm.getClients().add(clientRep);
-            
-            if(roles.isPresent() && !roles.get().isEmpty()) {
-                List<RoleRepresentation> clientRoles = realm.getRoles().getClient().get(clientRep.getId());
-                clientRoles.addAll(
-                    roles.get().stream()
-                        .map((String roleStr)->{
-                            RoleRepresentation role = new RoleRepresentation();
-                            role.setName(roleStr);
-                            return role;
-                        })
-                        .toList()
-                );
+
+            if (clientRoles.isPresent()) {
+                List<RoleRepresentation> clientRolesReps = realm.getRoles().getClient().get(clientRep.getId());
+                clientRolesReps.addAll(
+                        clientRoles.get().stream()
+                                .map((String roleStr) -> {
+                                    RoleRepresentation role = new RoleRepresentation();
+                                    role.setName(roleStr);
+                                    return role;
+                                })
+                                .toList());
             }
         }
         for (Map.Entry<String, String> entry : users.entrySet()) {
@@ -961,15 +956,11 @@ public class KeycloakDevServicesProcessor {
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
                 .orElse(capturedDevServicesConfiguration.createClient() ? "quarkus-app" : "");
     }
-    
+
     private static String getOidcClientSecret() {
         // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
-                   .orElse(capturedDevServicesConfiguration.createClient() ? "secret" : "");
-    }
-    
-    private static Optional<List<String>> getOidcClientRoles() {
-        return ConfigProvider.getConfig().getOptionalValues("quarkus.keycloak.devservices.clientRoles", String.class);
+                .orElse(capturedDevServicesConfiguration.createClient() ? "secret" : "");
     }
 
 }

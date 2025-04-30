@@ -2,26 +2,28 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>quarkus-jdbc-hsqldb-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
-
     <artifactId>quarkus-jdbc-hsqldb</artifactId>
     <name>Quarkus - JDBC - HSQLDB - Runtime</name>
     <description>Connect to the HSQLDB database via JDBC</description>
+
     <dependencies>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
-        <dependency><groupId>org.hsqldb</groupId><artifactId>hsqldb</artifactId><version>2.7.4</version></dependency>
-        <!--<dependency><groupId>org.locationtech.jts</groupId><artifactId>jts-core</artifactId><version>1.19.0</version></dependency>-->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal</artifactId><optional>true</optional></dependency>
         <dependency><groupId>org.graalvm.sdk</groupId><artifactId>nativeimage</artifactId><scope>provided</scope></dependency>
+
+        <dependency><groupId>org.hsqldb</groupId><artifactId>hsqldb</artifactId><version>2.7.4</version></dependency>
     </dependencies>
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
@@ -34,6 +36,7 @@
                     </capabilities>
                 </configuration>
             </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -51,6 +54,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 

@@ -111,7 +111,7 @@ final class Target_org_bouncycastle_math_ec_ECPoint {
     private static SecureRandom testRandom;
 }
 
-// TODO: this should be removed when Quarkus is bumped to Netty 4.1.119.Final as it contains fix (see https://github.com/netty/netty/pull/14855)
+// TODO: this should be removed when https://github.com/netty/netty/issues/14826 is addressed
 // this substitution can be removed when io.quarkus.it.bouncycastle.BouncyCastleITCase#loadNettySslContext passes
 @com.oracle.svm.core.annotate.TargetClass(className = "io.netty.handler.ssl.BouncyCastlePemReader", onlyWith = NettySslBountyCastleSupportRequired.class)
 final class Target_io_netty_handler_ssl_BouncyCastlePemReader {
@@ -154,8 +154,6 @@ class NettySslBountyCastleSupportRequired implements BooleanSupplier {
         if (BouncyCastlePackages.PACKAGES.contains(BouncyCastlePackages.ORG_BOUNCYCASTLE_OPENSSL_PACKAGE)) {
             try {
                 Class.forName("io.netty.handler.ssl.BouncyCastlePemReader", false,
-                        Thread.currentThread().getContextClassLoader());
-                Class.forName("org.bouncycastle.openssl.PEMParser", false,
                         Thread.currentThread().getContextClassLoader());
                 return true;
             } catch (Throwable e) {

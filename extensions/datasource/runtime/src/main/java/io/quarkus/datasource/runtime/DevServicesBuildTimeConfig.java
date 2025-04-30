@@ -27,7 +27,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * The container image name for container-based Dev Service providers.
      * <p>
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * This has no effect if the provider is not a container-based database, such as H2, HSQLDB or Derby.
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> imageName();
 
@@ -62,7 +62,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * The container start command to use for container-based Dev Service providers.
      * <p>
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * This has no effect if the provider is not a container-based database, such as H2, HSQLDB or Derby.
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> command();
 
@@ -84,7 +84,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * The paths to SQL scripts to be loaded from the classpath and applied to the Dev Service database.
      * <p>
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * This has no effect if the provider is not a container-based database, such as H2, HSQLDB or Derby.
      */
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptPath();
 
@@ -98,7 +98,7 @@ public interface DevServicesBuildTimeConfig {
      * When using a file system location, the volume will be generated with read-write permission,
      * potentially leading to data loss or modification in your file system.
      * <p>
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * This has no effect if the provider is not a container-based database, such as H2, HSQLDB or Derby.
      */
     @ConfigDocMapKey("host-path")
     Map<String, String> volumes();
@@ -131,7 +131,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * Whether the logs should be consumed by the JBoss logger.
      * <p>
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * This has no effect if the provider is not a container-based database, such as H2, HSQLDB or Derby.
      */
     @WithDefault("false")
     boolean showLogs();

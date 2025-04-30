@@ -15,28 +15,10 @@
 
     <dependencies>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal</artifactId><optional>true</optional></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal</artifactId></dependency>
         <dependency><groupId>org.graalvm.sdk</groupId><artifactId>nativeimage</artifactId><scope>provided</scope></dependency>
 
         <dependency><groupId>org.hsqldb</groupId><artifactId>hsqldb</artifactId><version>2.7.4</version></dependency>
-
-        <!--
-        The deployment artifact io.quarkus:quarkus-jdbc-hsqldb-deployment::jar
-        depends on the following Quarkus extension deployment artifacts
-        whose corresponding runtime artifacts were not found
-        among the dependencies of io.quarkus:quarkus-jdbc-hsqldb:jar:999-SNAPSHOT:
-
-        io.quarkus:quarkus-agroal-deployment::jar
-        io.quarkus:quarkus-mutiny-deployment::jar
-        io.quarkus:quarkus-smallrye-context-propagation-deployment::jar
-        io.quarkus:quarkus-datasource-deployment::jar
-        io.quarkus:quarkus-narayana-jta-deployment::jar -> [Help 1]
-        -->
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-agroal-runtime</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-mutiny-runtime</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-context-propagation-runtime</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-datasource-runtime</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-narayana-jta-runtime</artifactId></dependency>
     </dependencies>
 
     <build>

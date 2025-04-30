@@ -1431,7 +1431,7 @@ An example use of this could be the following Maven command, that forces `@Quark
 ./mvnw verify -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
 ----
 
-To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true`.
+To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true` and `quarkus.http.test-ssl-port` to the target HTTPS port.
 
 == Mixing `@QuarkusTest` with other type of tests
 

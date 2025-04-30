@@ -21,6 +21,7 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.*;
 
@@ -41,24 +42,21 @@ public class HsqldbDevServicesProcessor {
                     Optional<Duration> startupTimeout
             ) {
                 try {
-                    // TODO: Start a HSQLDB instance
+                    // HSQLDB configuration.
                     ServerProperties fileProps = ServerConfiguration.newDefaultProperties(ServerConstants.SC_PROTOCOL_HSQL);
 
-                    String port = String.valueOf(
-                        containerConfig.getFixedExposedPort().isPresent()
-                            ? containerConfig.getFixedExposedPort().getAsInt() : 0
-                    );
+                    OptionalInt port = containerConfig.getFixedExposedPort();
+                    String portS = String.valueOf(port.isPresent() ? port.getAsInt() : 0);
                     String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
                     String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
                     String effectiveDbName = containerConfig.getDbName().orElse(
                             DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
-
+                    // Start the HSQLDB instance.
+                    LOG.info("Starting HSQLDB at port " + port + "...");
                     org.hsqldb.server.Server server = new org.hsqldb.server.Server();
 
-                    LOG.info("Dev Services for HSQLDB started.");
-
-
+                    // Format the JDBC URL.
                     StringBuilder additionalArgs = new StringBuilder();
                     for (Map.Entry<String, String> i : containerConfig.getAdditionalJdbcUrlProperties().entrySet()) {
                         additionalArgs.append(";");
@@ -67,15 +65,14 @@ public class HsqldbDevServicesProcessor {
                         additionalArgs.append(i.getValue());
                     }
 
-                    String connectionUrl = "jdbc:hsqldb:hsql://localhost:" + server.getPort() + "/mem:" + effectiveDbName + "" + additionalArgs.toString();
+                    String jdbcUrl = "jdbc:hsqldb:hsql://localhost:" + server.getPort() + "/mem:" + effectiveDbName + "" + additionalArgs.toString();
                     // In-memory would only work if something kept the connection the whole time. Not sure if Quarkus does it.
-                    //String connectionUrl = "jdbc:hsqldb:mem:" + effectiveDbName + "" + additionalArgs.toString();
+                    //String jdbcUrl = "jdbc:hsqldb:mem:" + effectiveDbName + "" + additionalArgs.toString();
 
-                    return new RunningDevServicesDatasource(null,
-                            connectionUrl,
-                            null,
-                            effectiveUsername,
-                            effectivePassword,
+                    LOG.info("Dev Services for HSQLDB started. Use JDBC URL: " + jdbcUrl);
+
+
+                    return new RunningDevServicesDatasource(null, jdbcUrl, null, effectiveUsername, effectivePassword,
                             new Closeable() {
 
                                 @Override
@@ -87,7 +84,7 @@ public class HsqldbDevServicesProcessor {
                                     }
 
                                     // Make sure the DB is removed on close.
-                                    try (Connection connection = DriverManager.getConnection(connectionUrl, effectiveUsername, effectivePassword)) {
+                                    try (Connection connection = DriverManager.getConnection(jdbcUrl, effectiveUsername, effectivePassword)) {
                                         try (Statement statement = connection.createStatement()) {
                                             statement.execute("DROP SCHEMA " + effectiveDbName + " CASCADE");
                                         }
@@ -106,8 +103,8 @@ public class HsqldbDevServicesProcessor {
                                     LOG.info("Dev Services for HSQLDB shut down; server status: " + server.getStateDescriptor());
                                 }
                             });
-                } catch (SQLException throwables) {
-                    throw new RuntimeException(throwables);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
                 }
             }
 

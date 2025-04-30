@@ -44,7 +44,7 @@ public class DevServicesHsqldbDatasourceTestCase {
         try {
             configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         } catch (NullPointerException e) {
-            // we catch the NPE here as we have a proxycd and we can't test dataSource directly
+            // We catch the NPE here as we have a proxycd and we can't test dataSource directly
             fail("Datasource should not be null");
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:hsqldb:"));

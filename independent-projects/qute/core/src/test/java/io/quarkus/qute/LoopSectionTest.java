@@ -79,7 +79,7 @@ public class LoopSectionTest {
                 .addValueResolver(new ValueResolver() {
 
                     public boolean appliesTo(EvalContext context) {
-                        return ValueResolver.matchClass(context, String.class);
+                        return ValueResolvers.matchClass(context, String.class);
                     }
 
                     @Override
@@ -109,6 +109,14 @@ public class LoopSectionTest {
 
         assertEquals("1:2:3:",
                 engine.parse("{#for i in total}{i}:{/for}").data("total", 3).render());
+    }
+
+    @Test
+    public void testLongStream() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        assertEquals("1:2:3:",
+                engine.parse("{#for i in total}{i}:{/for}").data("total", 3L).render());
     }
 
     @Test

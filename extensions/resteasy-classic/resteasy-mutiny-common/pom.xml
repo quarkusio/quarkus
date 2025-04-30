@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny-common-parent</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Common</name>
+    <name>Quarkus - RESTEasy Classic - Mutiny - Common</name>
     <packaging>pom</packaging>
 
     <modules>

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -26,7 +27,7 @@ import org.jboss.jandex.MethodInfo;
  *
  * @see Builder
  */
-public interface AnnotationsTransformer extends BuildExtension {
+public interface AnnotationsTransformer extends AnnotationTransformation, BuildExtension {
 
     /**
      * By default, the transformation is applied to all kinds of targets.
@@ -47,6 +48,56 @@ public interface AnnotationsTransformer extends BuildExtension {
      * @param transformationContext
      */
     void transform(TransformationContext transformationContext);
+
+    // ---
+    // implementation of `AnnotationTransformation` methods
+
+    @Override
+    default int priority() {
+        return getPriority();
+    }
+
+    @Override
+    default boolean supports(Kind kind) {
+        return appliesTo(kind);
+    }
+
+    @Override
+    default void apply(AnnotationTransformation.TransformationContext context) {
+        transform(new TransformationContext() {
+            @Override
+            public AnnotationTarget getTarget() {
+                return context.declaration();
+            }
+
+            @Override
+            public Collection<AnnotationInstance> getAnnotations() {
+                return context.annotations();
+            }
+
+            @Override
+            public Transformation transform() {
+                return new Transformation(context);
+            }
+
+            @Override
+            public <V> V get(Key<V> key) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <V> V put(Key<V> key, V value) {
+                throw new UnsupportedOperationException();
+            }
+        });
+    }
+
+    @Override
+    default boolean requiresCompatibleMode() {
+        return true;
+    }
+
+    // ---
 
     /**
      *

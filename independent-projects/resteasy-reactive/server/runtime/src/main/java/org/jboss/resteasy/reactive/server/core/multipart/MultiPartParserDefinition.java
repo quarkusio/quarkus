@@ -23,11 +23,13 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -53,6 +55,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     private long fileSizeThreshold;
 
     private long maxAttributeSize = 2048;
+    private int maxParameters = 1000;
     private long maxEntitySize = -1;
     private List<String> fileContentTypes;
 
@@ -68,7 +71,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     @Override
     public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
-        String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
+        String mimeType = exchange.getHttpHeaders().getHeaderString(HttpHeaders.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
             String boundary = HeaderUtil.extractQuotedValueFromHeader(mimeType, "boundary");
             if (boundary == null) {
@@ -78,7 +81,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, fileFormNames);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -154,6 +157,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public int getMaxParameters() {
+        return maxParameters;
+    }
+
+    public MultiPartParserDefinition setMaxParameters(int maxParameters) {
+        this.maxParameters = maxParameters;
+        return this;
+    }
+
     public List<String> getFileContentTypes() {
         return fileContentTypes;
     }
@@ -172,6 +184,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private final long fileSizeThreshold;
         private final long maxAttributeSize;
         private final long maxEntitySize;
+        private final int maxParameters;
         private final Set<String> fileFormNames;
         private String defaultEncoding;
 
@@ -187,7 +200,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
-                String contentType, long maxAttributeSize, long maxEntitySize,
+                String contentType, long maxAttributeSize, long maxEntitySize, int maxParameters,
                 Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
@@ -195,8 +208,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             this.fileSizeThreshold = fileSizeThreshold;
             this.maxAttributeSize = maxAttributeSize;
             this.maxEntitySize = maxEntitySize;
+            this.maxParameters = maxParameters;
             this.fileFormNames = fileFormNames;
-            int maxParameters = 1000;
             this.data = new FormData(maxParameters);
             String charset = defaultEncoding;
             if (contentType != null) {
@@ -339,22 +352,33 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 contentBytes.reset();
             } else {
 
-                try {
-                    String charset = defaultEncoding;
-                    String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-                    if (contentType != null) {
-                        String cs = HeaderUtil.extractQuotedValueFromHeader(contentType, "charset");
+                String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+                if (isText(contentType)) {
+                    try {
+                        String charset = defaultEncoding;
+                        String cs = contentType != null ? HeaderUtil.extractQuotedValueFromHeader(contentType, "charset")
+                                : null;
                         if (cs != null) {
                             charset = cs;
                         }
-                    }
 
-                    data.add(currentName, contentBytes.toString(charset), charset, headers);
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
+                        data.add(currentName, contentBytes.toString(charset), charset, headers);
+                    } catch (UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), null, headers);
                 }
+
                 contentBytes.reset();
             }
+        }
+
+        private boolean isText(String contentType) {
+            if (contentType == null || contentType.isEmpty()) { // https://www.rfc-editor.org/rfc/rfc7578.html#section-4.4 says the default content-type if missing is text/plain
+                return true;
+            }
+            return MediaTypeHelper.isTextLike(MediaType.valueOf(contentType));
         }
 
         public List<Path> getCreatedFiles() {

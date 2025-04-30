@@ -1,9 +1,9 @@
 package io.quarkus.devtools.commands;
 
 import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.*;
-import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_GRADLE_PLUGIN_VERSION;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_MAVEN_PLUGIN_VERSION;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Collections;
@@ -20,6 +20,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.platform.tools.ToolsUtils;
 
 /**

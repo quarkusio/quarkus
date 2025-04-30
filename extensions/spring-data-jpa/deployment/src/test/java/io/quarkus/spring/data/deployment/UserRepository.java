@@ -1,5 +1,7 @@
 package io.quarkus.spring.data.deployment;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -28,4 +30,9 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     // purposely with compiled parameter name not matching the query to also test that @Param takes precedence
     User getUserByFullNameUsingNamedQueries(@Param("name") String arg);
+
+    // issue 34395: This method is used to test the MethodNameParser class. See MethodNameParserTest class
+    long countUsersByLoginEvents_Id(long id);
+
+    List<User> findAllByLoginEvents_Id(long id);
 }

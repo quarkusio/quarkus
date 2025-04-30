@@ -1,0 +1,14 @@
+name: My Quarkiverse extension
+#description: My Quarkiverse extension description
+metadata:
+#  keywords:
+#    - my-quarkiverse-ext
+#  guide: https://docs.quarkiverse.io/my-quarkiverse-ext/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+#  categories:
+#    - "miscellaneous"
+#  status: "preview"
+  codestart:
+    name: my-quarkiverse-ext
+    languages:
+      - "java"
+    artifact: "io.quarkiverse.my-quarkiverse-ext:quarkus-my-quarkiverse-ext:codestarts:jar:${project.version}"

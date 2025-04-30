@@ -49,6 +49,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-classloader-commons</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -395,9 +400,19 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.sonatype.plexus</groupId>
+                <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-cipher</artifactId>
                 <version>${plexus-cipher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-interpolation</artifactId>
+                <version>${plexus-interpolation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-sec-dispatcher</artifactId>
+                <version>${plexus-sec-dispatcher.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>
@@ -406,13 +421,23 @@
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
-                <artifactId>graal-sdk</artifactId>
+                <artifactId>nativeimage</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager-embedded</artifactId>
-                <version>${jboss-logmanager-embedded.version}</version>
+                <artifactId>jboss-logmanager</artifactId>
+                <version>${jboss-logmanager.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.modules</groupId>
+                        <artifactId>jboss-modules</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.eclipse.parsson</groupId>
+                        <artifactId>jakarta.json</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>

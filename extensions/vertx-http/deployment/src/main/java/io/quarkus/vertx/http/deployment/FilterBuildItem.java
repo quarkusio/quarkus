@@ -35,6 +35,15 @@ public final class FilterBuildItem extends MultiBuildItem {
         this.isFailureHandler = false;
     }
 
+    private FilterBuildItem(Handler<RoutingContext> handler, int priority, boolean checkPriority, boolean isFailureHandler) {
+        this.handler = handler;
+        if (checkPriority) {
+            checkPriority(priority);
+        }
+        this.priority = priority;
+        this.isFailureHandler = isFailureHandler;
+    }
+
     /**
      * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
      *
@@ -52,6 +61,15 @@ public final class FilterBuildItem extends MultiBuildItem {
      */
     public static FilterBuildItem ofAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
         return new FilterBuildItem(authFailureHandler);
+    }
+
+    /**
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
+     * The handler will be added right before any handlers added by
+     * {@link FilterBuildItem#ofAuthenticationFailureHandler(Handler)}
+     */
+    public static FilterBuildItem ofPreAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
+        return new FilterBuildItem(authFailureHandler, AUTH_FAILURE_HANDLER + 1, false, true);
     }
 
     private void checkPriority(int priority) {

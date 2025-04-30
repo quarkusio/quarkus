@@ -14,6 +14,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLAgroalConnectionConfigurer;
@@ -32,11 +34,19 @@ public class JDBCPostgreSQLProcessor {
         return new NativeImageFeatureBuildItem(SQLXMLFeature.class);
     }
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    RuntimeReinitializedClassBuildItem runtimeReinitialize() {
+        return new RuntimeReinitializedClassBuildItem("org.postgresql.util.PasswordUtil$SecureRandomHolder");
+    }
+
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
+            BuildProducer<NativeImageResourceBuildItem> resources,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.POSTGRESQL, "org.postgresql.Driver",
                 "org.postgresql.xa.PGXADataSource"));
+        // Accessed in org.postgresql.Driver.loadDefaultProperties
+        resources.produce(new NativeImageResourceBuildItem("org/postgresql/driverconfig.properties"));
     }
 
     @BuildStep

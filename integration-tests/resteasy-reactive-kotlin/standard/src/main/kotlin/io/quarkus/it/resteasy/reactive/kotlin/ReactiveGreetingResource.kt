@@ -30,7 +30,7 @@ class ReactiveGreetingResource @Inject constructor(val req: RequestScopedKotlinC
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{name}")
-    suspend fun hello(name: String): String {
+    suspend fun namedHello(name: String): String {
         delay(50)
         return "Hello $name"
     }

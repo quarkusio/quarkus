@@ -7,13 +7,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: observability
 :summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Health extension.
+:topics: health,observability
+:extensions: io.quarkus:quarkus-smallrye-health
 
 This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-health/[SmallRye Health]
 an implementation of the https://github.com/eclipse/microprofile-health/[MicroProfile Health] specification.
 
 SmallRye Health allows applications to provide information about their state
-to external viewers which is typically useful in cloud environments where automated 
-processes must be able to determine whether the application should be discarded 
+to external viewers which is typically useful in cloud environments where automated
+processes must be able to determine whether the application should be discarded
 or restarted.
 
 == Prerequisites
@@ -22,13 +24,13 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this guide, we build a simple REST application that exposes MicroProfile Health 
+In this guide, we build a simple REST application that exposes MicroProfile Health
 functionalities at the `/q/health/live` and `/q/health/ready` endpoints according to the
 specification.
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the 
+We recommend that you follow the instructions in the next sections and create the
 application step by step. However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an
@@ -78,7 +80,7 @@ Importing the `smallrye-health` extension directly exposes three REST endpoints:
 - `/q/health/ready` - The application is ready to serve requests.
 - `/q/health/started` - The application is started.
 - `/q/health` - Accumulating all health check procedures in the application.
- 
+
 To check that the `smallrye-health` extension is working as expected:
 
 :devtools-wrapped:
@@ -96,8 +98,8 @@ All `health` REST endpoints return a simple JSON object with two fields:
 * `status` -- the overall result of all the health check procedures
 * `checks` -- an array of individual checks
 
-The general `status` of the health check is computed as a logical AND of all the 
-declared health check procedures. The `checks` array is empty as we have not specified 
+The general `status` of the health check is computed as a logical AND of all the
+declared health check procedures. The `checks` array is empty as we have not specified
 any health check procedure yet so let's define some.
 
 [NOTE]
@@ -135,36 +137,36 @@ public class SimpleHealthCheck implements HealthCheck {
     }
 }
 ----
-<1> It's recommended to annotate the health check class with `@ApplicationScoped` or the `@Singleton` scope so that a single bean instance is used for all health check requests. 
+<1> It's recommended to annotate the health check class with `@ApplicationScoped` or the `@Singleton` scope so that a single bean instance is used for all health check requests.
 <2> If a bean class annotated with one of the health check annotations declares no scope then the `@Singleton` scope is used automatically.
 
-As you can see, the health check procedures are defined as CDI beans that implement the `HealthCheck` interface and are annotated with one of the health check qualifiers, such as: 
+As you can see, the health check procedures are defined as CDI beans that implement the `HealthCheck` interface and are annotated with one of the health check qualifiers, such as:
 
 - `@Liveness` - the liveness check accessible at `/q/health/live`
 - `@Readiness` - the readiness check accessible at `/q/health/ready`
 
-`HealthCheck` is a functional interface whose single method `call` returns a 
-`HealthCheckResponse` object which can be easily constructed by the fluent builder 
+`HealthCheck` is a functional interface whose single method `call` returns a
+`HealthCheckResponse` object which can be easily constructed by the fluent builder
 API shown in the example.
 
-As we have started our Quarkus application in dev mode simply repeat the request 
+As we have started our Quarkus application in dev mode simply repeat the request
 to `http://localhost:8080/q/health/live` by refreshing your browser window or by
 using `curl http://localhost:8080/q/health/live`. Because we defined our health check
-to be a liveness procedure (with `@Liveness` qualifier) the new health check procedure 
+to be a liveness procedure (with `@Liveness` qualifier) the new health check procedure
 is now present in the `checks` array.
 
-Congratulations! You've created your first Quarkus health check procedure. Let's 
+Congratulations! You've created your first Quarkus health check procedure. Let's
 continue by exploring what else can be done with SmallRye Health.
 
 == Adding a readiness health check procedure
 
-In the previous section, we created a simple liveness health check procedure which states 
-whether our application is running or not. In this section, we will create a readiness 
-health check which will be able to state whether our application is able to process 
+In the previous section, we created a simple liveness health check procedure which states
+whether our application is running or not. In this section, we will create a readiness
+health check which will be able to state whether our application is able to process
 requests.
 
-We will create another health check procedure that simulates a connection to 
-an external service provider such as a database. For starters, we will always return 
+We will create another health check procedure that simulates a connection to
+an external service provider such as a database. For starters, we will always return
 the response indicating the application is ready.
 
 Create `org.acme.microprofile.health.DatabaseConnectionHealthCheck` class:
@@ -192,18 +194,18 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 ----
 
 If you now rerun the health check at `http://localhost:8080/q/health/live` the `checks`
-array will contain only the previously defined `SimpleHealthCheck` as it is the only 
-check defined with the `@Liveness` qualifier. However, if you access 
+array will contain only the previously defined `SimpleHealthCheck` as it is the only
+check defined with the `@Liveness` qualifier. However, if you access
 `http://localhost:8080/q/health/ready` (in the browser or with
 `curl http://localhost:8080/q/health/ready`) you will see only the
-`Database connection health check` as it is the only health check defined with the 
+`Database connection health check` as it is the only health check defined with the
 `@Readiness` qualifier as the readiness health check procedure.
 
 NOTE: If you access `http://localhost:8080/q/health` you will get back both checks.
 
-More information about which health check procedures should be used in which situation 
-is detailed in the MicroProfile Health specification. Generally, the liveness 
-procedures determine whether the application should be restarted while readiness 
+More information about which health check procedures should be used in which situation
+is detailed in the MicroProfile Health specification. Generally, the liveness
+procedures determine whether the application should be restarted while readiness
 procedures determine whether it makes sense to contact the application with requests.
 
 == Adding a startup health check procedure
@@ -239,9 +241,9 @@ The startup health check will be available either at `http://localhost:8080/q/he
 
 == Negative health check procedures
 
-In this section, we extend our `Database connection health check` with the option of 
-stating that our application is not ready to process requests as the underlying 
-database connection cannot be established. For simplicity reasons, we only determine 
+In this section, we extend our `Database connection health check` with the option of
+stating that our application is not ready to process requests as the underlying
+database connection cannot be established. For simplicity reasons, we only determine
 whether the database is accessible or not by a configuration property.
 
 Update the `org.acme.microprofile.health.DatabaseConnectionHealthCheck` class:
@@ -296,23 +298,23 @@ From now on, we utilize the full builder capabilities provided by the
 `HealthCheckResponseBuilder` class.
 
 If you now rerun the readiness health check (at `http://localhost:8080/q/health/ready`)
-the overall `status` should be DOWN. You can also check the liveness check at 
+the overall `status` should be DOWN. You can also check the liveness check at
 `http://localhost:8080/q/health/live` which will return the overall `status` UP because
 it isn't influenced by the readiness checks.
 
-As we shouldn't leave this application with a readiness check in a DOWN state and 
-because we are running Quarkus in dev mode you can add `database.up=true` in 
-`src/main/resources/application.properties` and rerun the readiness health check again 
+As we shouldn't leave this application with a readiness check in a DOWN state and
+because we are running Quarkus in dev mode you can add `database.up=true` in
+`src/main/resources/application.properties` and rerun the readiness health check again
 -- it should be up again.
 
 
 == Adding user-specific data to the health check response
 
-In previous sections, we saw how to create simple health checks with only the minimal 
-attributes, namely, the health check name and its status (UP or DOWN). However, the 
+In previous sections, we saw how to create simple health checks with only the minimal
+attributes, namely, the health check name and its status (UP or DOWN). However, the
 MicroProfile Health specification also provides a way for the applications to supply
-arbitrary data in the form of key-value pairs sent to the consuming end. This can be 
-done by using the `withData(key, value)` method of the health check response 
+arbitrary data in the form of key-value pairs sent to the consuming end. This can be
+done by using the `withData(key, value)` method of the health check response
 builder API.
 
 Let's create a new health check procedure `org.acme.microprofile.health.DataHealthCheck`:
@@ -343,11 +345,11 @@ public class DataHealthCheck implements HealthCheck {
 ----
 
 If you rerun the liveness health check procedure by accessing the `/q/health/live`
-endpoint you can see that the new health check `Health check with data` is present 
-in the `checks` array. This check contains a new attribute called `data` which is a 
+endpoint you can see that the new health check `Health check with data` is present
+in the `checks` array. This check contains a new attribute called `data` which is a
 JSON object consisting of the properties we have defined in our health check procedure.
 
-This functionality is specifically useful in failure scenarios where you can pass the 
+This functionality is specifically useful in failure scenarios where you can pass the
 error along with the health check response.
 
 
@@ -397,6 +399,37 @@ public class LivenessAsync implements AsyncHealthCheck {
 }
 ----
 
+== Health status change observers
+
+If you need to react to change of the health status of your application, the Smallrye Health
+extension provides a CDI event that can notify you about the individual health status changes.
+
+To observe the health status change, you can observe the `io.smallrye.health.api.event.HealthStatusChangeEvent`
+with the standard CDI observation mechanism. Since we cannot guarantee that the observer method
+runs all the time on the worker thread (meaning it can run on the event loop thread), it's
+recommended that you never block in the in observer method.
+
+[source,java]
+----
+import io.smallrye.health.api.event.HealthStatusChangeEvent;
+
+@ApplicationScoped
+public class HealthObserver {
+
+    public void observeHealthChange(@Observes @Default HealthStatusChangeEvent event) {
+        ...
+    }
+
+    public void observeReadinessChange(@Observes @Readiness HealthStatusChangeEvent event) {
+        ...
+    }
+
+    public void observeLivenessChange(@Observes @Liveness HealthStatusChangeEvent event) {
+        ...
+    }
+}
+----
+
 == Extension health checks
 
 Some extension may provide default health checks, including the extension will automatically register its health checks.
@@ -407,7 +440,7 @@ that will validate each datasource: xref:datasource.adoc#datasource-health-check
 You can disable extension health checks via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
 [[ui]]
-== Health UI 
+== Health UI
 
 NOTE: Experimental - not included in the MicroProfile specification
 
@@ -435,13 +468,13 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 
 SmallRye Health provides a way for your application to distribute information
 about its healthiness state to state whether it is able to function properly.
-Liveness checks are utilized to tell whether the application should be restarted and 
-readiness checks are used to tell whether the application is able to process requests. 
+Liveness checks are utilized to tell whether the application should be restarted and
+readiness checks are used to tell whether the application is able to process requests.
 
 All that is needed to enable the SmallRye Health features in Quarkus is:
 
 :devtools-wrapped:
-* adding the `smallrye-health` Quarkus extension to your project using the 
+* adding the `smallrye-health` Quarkus extension to your project using the
 `quarkus-maven-plugin`:
 +
 include::{includes}/devtools/extension-add.adoc[]
@@ -466,4 +499,4 @@ implementation("io.quarkus:quarkus-smallrye-health")
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-smallrye-health.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-smallrye-health_quarkus.smallrye-health.adoc[opts=optional, leveloffset=+1]

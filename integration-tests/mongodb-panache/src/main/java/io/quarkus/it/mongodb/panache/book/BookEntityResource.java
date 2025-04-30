@@ -115,6 +115,13 @@ public class BookEntityResource {
                 Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))).firstResult();
     }
 
+    @PUT
+    @Path("/update-categories/{id}")
+    public Response updateCategories(@PathParam("id") String id) {
+        BookEntity.update("categories = ?1", List.of("novel", "fiction")).where("_id", new ObjectId(id));
+        return Response.accepted().build();
+    }
+
     @DELETE
     public void deleteAll() {
         BookEntity.deleteAll();

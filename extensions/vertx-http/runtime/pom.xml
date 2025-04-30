@@ -23,6 +23,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-credentials</artifactId>
         </dependency>
         <dependency>
@@ -32,10 +36,6 @@
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-vertx-context</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.security</groupId>
@@ -66,13 +66,18 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>io.github.crac</groupId>
             <artifactId>org-crac</artifactId>
+        </dependency>
+        <!-- needed when quarkus.http.compressors contains "br" see https://github.com/quarkusio/quarkus/issues/43556 -->
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>brotli4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -115,15 +120,24 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
             </plugin>
         </plugins>
     </build>

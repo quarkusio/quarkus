@@ -3,6 +3,9 @@ package io.quarkus.it.management;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
+import io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+
 @Path("/service")
 public class GreetingResource {
 
@@ -28,5 +31,19 @@ public class GreetingResource {
     @Path("/goodevening")
     public String goodevening() {
         return "goodevening";
+    }
+
+    @BearerTokenAuthentication
+    @GET
+    @Path("/goodforenoon")
+    public String goodforenoon() {
+        return "goodforenoon";
+    }
+
+    @BasicAuthentication
+    @GET
+    @Path("/goodafternoon")
+    public String goodafternoon() {
+        return "goodafternoon";
     }
 }

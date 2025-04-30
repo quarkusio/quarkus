@@ -5,6 +5,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.concurrent.Callable;
 
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.mutiny.core.eventbus.Message;
@@ -94,6 +95,10 @@ public @interface ConsumeEvent {
     /**
      * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
      * assumed.
+     * <p>
+     * The value can be a config property expression. In this case, the configured value is used instead:
+     * {@code @ConsumeEvent("${my.consumer.address}")}. Additionally, the property expression can specify a default value:
+     * {@code @ConsumeEvent("${my.consumer.address:defaultAddress}")}.
      *
      * @return the address
      */
@@ -109,7 +114,7 @@ public @interface ConsumeEvent {
     /**
      *
      * @return {@code true} if the consumer should be invoked as a blocking operation using a worker thread
-     * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
+     * @see io.vertx.core.Vertx#executeBlocking(Callable, boolean)
      */
     boolean blocking() default false;
 
@@ -117,7 +122,7 @@ public @interface ConsumeEvent {
      * @return {@code true} if the <em>blocking</em> consumption of the event must be ordered, meaning that the method
      *         won't be called concurrently. Instead, it serializes all the invocations based on the event order.
      *         {@code ordered} must be used in conjunction with {@code blocking=true} or {@code @Blocking}.
-     * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
+     * @see io.vertx.core.Vertx#executeBlocking(Callable, boolean)
      */
     boolean ordered() default false;
 

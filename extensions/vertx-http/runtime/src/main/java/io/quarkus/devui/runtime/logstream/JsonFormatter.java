@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -68,9 +71,16 @@ public class JsonFormatter extends ExtFormatter {
         jsonObject.put(THREAD_NAME, logRecord.getThreadName());
         jsonObject.put(PROCESS_ID, logRecord.getProcessId());
         jsonObject.put(PROCESS_NAME, logRecord.getProcessName());
-        jsonObject.put(TIMESTAMP, Instant.ofEpochMilli(logRecord.getMillis()).toString());
+
+        jsonObject.put(TIMESTAMP, getTimeStampInCurrentZone(logRecord.getMillis()));
         jsonObject.put(SEQUENCE_NUMBER, logRecord.getSequenceNumber());
         return jsonObject;
+    }
+
+    private String getTimeStampInCurrentZone(long epochMilli) {
+        Instant instant = Instant.ofEpochMilli(epochMilli);
+        ZonedDateTime dateTime = instant.atZone(ZoneId.systemDefault());
+        return dateTime.format(formatter);
     }
 
     private JsonArray getStacktraces(Throwable t) {
@@ -148,4 +158,6 @@ public class JsonFormatter extends ExtFormatter {
     private static final String SEQUENCE_NUMBER = "sequenceNumber";
     private static final String DOT = ".";
     private static final String LOG_LINE = "logLine";
+
+    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 }

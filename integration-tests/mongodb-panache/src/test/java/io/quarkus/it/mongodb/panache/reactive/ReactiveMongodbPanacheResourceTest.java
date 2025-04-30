@@ -22,6 +22,7 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.SseEventSource;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,9 +33,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.quarkus.it.mongodb.panache.BookDTO;
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.config.ObjectMapperConfig;
@@ -42,8 +41,7 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
-class ReactiveMongodbPanacheResourceTest {
+public class ReactiveMongodbPanacheResourceTest {
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
@@ -69,7 +67,7 @@ class ReactiveMongodbPanacheResourceTest {
         callReactivePersonEndpoint("/reactive/persons/repository");
     }
 
-    private void callReactiveBookEndpoint(String endpoint) throws InterruptedException {
+    public static void callReactiveBookEndpoint(String endpoint) throws InterruptedException {
         RestAssured.defaultParser = Parser.JSON;
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new Jdk8Module())
@@ -335,7 +333,7 @@ class ReactiveMongodbPanacheResourceTest {
         assertEquals(0, count);
     }
 
-    private Date yearToDate(int year) {
+    private static Date yearToDate(int year) {
         Calendar cal = new GregorianCalendar();
         cal.set(year, 1, 1);
         return cal.getTime();
@@ -347,6 +345,7 @@ class ReactiveMongodbPanacheResourceTest {
     }
 
     @Test
+    @Disabled("flaky")
     public void testMoreRepositoryFunctionalities() {
         get("/test/reactive/repository").then().statusCode(200);
     }

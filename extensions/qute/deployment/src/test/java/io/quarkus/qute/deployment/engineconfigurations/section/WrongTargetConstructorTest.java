@@ -22,7 +22,7 @@ public class WrongTargetConstructorTest {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof TemplateException) {
                     assertTrue(rootCause.getMessage().contains(
-                            "A class annotated with @EngineConfiguration that also implements io.quarkus.qute.SectionHelperFactory must declare a no-args constructor:"),
+                            "A class annotated with @EngineConfiguration that also implements SectionHelperFactory or ParserHelper must be public and declare a no-args constructor"),
                             rootCause.toString());
                 } else {
                     fail("No TemplateException thrown: " + t);

@@ -15,16 +15,10 @@ class FieldAccessor implements ValueAccessor, AccessorCandidate {
         this.field = field;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Object> getValue(Object instance) {
         try {
-            Object ret = field.get(instance);
-            if (ret instanceof CompletionStage) {
-                return (CompletionStage<Object>) ret;
-            } else {
-                return CompletedStage.of(ret);
-            }
+            return CompletionStageSupport.toCompletionStage(field.get(instance));
         } catch (Exception e) {
             throw new IllegalStateException("Reflection invocation error", e);
         }

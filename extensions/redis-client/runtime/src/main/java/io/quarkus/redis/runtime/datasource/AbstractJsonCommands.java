@@ -4,6 +4,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ import io.vertx.mutiny.redis.client.Response;
 public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     private static final JsonSetArgs JSON_SET_DEFAULT = new JsonSetArgs();
 
-    public AbstractJsonCommands(RedisCommandExecutor api, Class<K> k) {
+    public AbstractJsonCommands(RedisCommandExecutor api, Type k) {
         super(api, new Marshaller(k));
     }
 
@@ -196,12 +197,12 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         notNullOrBlank(path, "path");
         doesNotContainNull(keys, "keys");
 
-        RedisCommand cmd = RedisCommand.of(Command.JSON_MGET)
-                .put(path);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_MGET);
 
         for (K key : keys) {
             cmd.put(marshaller.encode(key));
         }
+        cmd.put(path);
 
         return execute(cmd);
     }

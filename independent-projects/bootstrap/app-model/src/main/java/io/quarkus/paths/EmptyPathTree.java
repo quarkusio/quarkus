@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public class EmptyPathTree implements OpenPathTree {
 
@@ -17,17 +16,26 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return false;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return Collections.emptyList();
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         return null;
     }
 
     @Override
     public void walk(PathVisitor visitor) {
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
     }
 
     @Override
@@ -67,5 +75,10 @@ public class EmptyPathTree implements OpenPathTree {
     @Override
     public PathTree getOriginalTree() {
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "<empty>";
     }
 }

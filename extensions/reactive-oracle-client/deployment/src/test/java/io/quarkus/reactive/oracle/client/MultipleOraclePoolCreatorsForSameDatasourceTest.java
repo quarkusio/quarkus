@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.oracleclient.OraclePool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleOraclePoolCreatorsForSameDatasourceTest {
 
@@ -32,8 +32,8 @@ public class MultipleOraclePoolCreatorsForSameDatasourceTest {
     public static class AnotherOraclePoolCreator implements OraclePoolCreator {
 
         @Override
-        public OraclePool create(Input input) {
-            return OraclePool.pool(input.vertx(), input.oracleConnectOptions(), input.poolOptions());
+        public Pool create(Input input) {
+            return Pool.pool(input.vertx(), input.oracleConnectOptions(), input.poolOptions());
         }
     }
 

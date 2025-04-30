@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: integration
 :summary: This guide covers the systems integration with Apache Camel
+:topics: camel,integration
 
 https://camel.apache.org/[Apache Camel] is the Swiss knife of integrating heterogeneous systems with more than a decade
 of history and a lively community of users and developers.

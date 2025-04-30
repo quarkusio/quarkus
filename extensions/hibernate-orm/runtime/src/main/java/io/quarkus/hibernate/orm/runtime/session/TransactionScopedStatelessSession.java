@@ -1,7 +1,10 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -10,11 +13,14 @@ import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.jdbc.ReturningWork;
 import org.hibernate.jdbc.Work;
 import org.hibernate.procedure.ProcedureCall;
@@ -23,9 +29,11 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
@@ -40,12 +48,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     private final JTAStatelessSessionOpener jtaSessionOpener;
     private final String unitName;
     private final String sessionKey;
+    private final boolean requestScopedSessionEnabled;
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             SessionFactory sessionFactory,
             String unitName,
+            boolean requestScopedSessionEnabled,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -53,6 +63,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         this.jtaSessionOpener = JTAStatelessSessionOpener.create(sessionFactory);
         this.unitName = unitName;
         this.sessionKey = this.getClass().getSimpleName() + "-" + unitName;
+        this.requestScopedSessionEnabled = requestScopedSessionEnabled;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -67,15 +78,23 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             // The session has automatically joined the JTA transaction when it was constructed.
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
             return new SessionResult(newSession, false, true);
-        } else if (Arc.container().requestContext().isActive()) {
-            RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
-            return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
-                    false, false);
+        } else if (requestScopedSessionEnabled) {
+            if (Arc.container().requestContext().isActive()) {
+                RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
+                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
+                        false, false);
+            } else {
+                throw new ContextNotActiveException(
+                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
+                                + " Consider adding @Transactional to your method to automatically activate a transaction,"
+                                + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
+            }
         } else {
             throw new ContextNotActiveException(
-                    "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
+                    "Cannot use the StatelessSession because no transaction is active."
                             + " Consider adding @Transactional to your method to automatically activate a transaction,"
-                            + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
+                            + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
+                            + "' to 'true' if you have valid reasons not to use transactions.");
         }
     }
 
@@ -353,7 +372,15 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     public void fetch(Object o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(o);
+            emr.statelessSession.fetch(o);
+        }
+    }
+
+    @Override
+    public Object getIdentifier(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getIdentifier(entity);
         }
     }
 
@@ -390,9 +417,40 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Filter enableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.enableFilter(filterName);
+        }
+    }
+
+    @Override
+    public Filter getEnabledFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEnabledFilter(filterName);
+        }
+    }
+
+    @Override
+    public void disableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.disableFilter(filterName);
+        }
+    }
+
+    @Override
     public String getTenantIdentifier() {
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getTenantIdentifier();
+        }
+    }
+
+    @Override
+    public Object getTenantIdentifierValue() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getTenantIdentifierValue();
         }
     }
 
@@ -565,6 +623,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createMutationQuery(insertSelect);
+        }
+    }
+
+    @Override
     public MutationQuery createNativeMutationQuery(String sqlString) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -622,6 +688,86 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             if (closeOnEnd) {
                 statelessSession.close();
             }
+        }
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(rootType);
+        }
+    }
+
+    @Override
+    public RootGraph<?> createEntityGraph(String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(graphName);
+        }
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(rootType, graphName);
+        }
+    }
+
+    @Override
+    public RootGraph<?> getEntityGraph(String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEntityGraph(graphName);
+        }
+    }
+
+    @Override
+    public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEntityGraphs(entityClass);
+        }
+    }
+
+    @Override
+    public SessionFactory getFactory() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getFactory();
+        }
+    }
+
+    @Override
+    public void upsert(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsert(entity);
+        }
+    }
+
+    @Override
+    public void upsert(String entityName, Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsert(entityName, entity);
+        }
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, graphSemantic, id);
+        }
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, graphSemantic, id, lockMode);
         }
     }
 }

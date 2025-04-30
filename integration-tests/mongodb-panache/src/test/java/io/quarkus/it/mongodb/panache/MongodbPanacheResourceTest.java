@@ -23,9 +23,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.config.ObjectMapperConfig;
@@ -33,7 +31,6 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
 class MongodbPanacheResourceTest {
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
@@ -185,6 +182,21 @@ class MongodbPanacheResourceTest {
         //test findByIdOptional
         book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
         Assertions.assertNotNull(book);
+
+        // update categories list using HQL
+        response = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .put(endpoint + "/update-categories/" + book.getId())
+                .andReturn();
+        Assertions.assertEquals(202, response.statusCode());
+
+        //check that the title and categories have been updated and the transient description ignored
+        book = get(endpoint + "/" + book.getId().toString()).as(BookDTO.class);
+        Assertions.assertNotNull(book);
+        Assertions.assertEquals("Notre-Dame de Paris 2", book.getTitle());
+        Assertions.assertNull(book.getTransientDescription());
+        Assertions.assertEquals(List.of("novel", "fiction"), book.getCategories());
 
         //delete a book
         response = RestAssured
@@ -345,6 +357,7 @@ class MongodbPanacheResourceTest {
                 .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
+                .body(CoreMatchers.containsString("mongodb_driver_commands_seconds_max"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_checkedout"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_size"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_waitqueuesize"));

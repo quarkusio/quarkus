@@ -5,9 +5,11 @@ import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +40,14 @@ public class OpenTelemetryWithSpanAtStartupTest {
 
     @Test
     void testGeneratedSpansUsingRestClientReactive() {
+
+        // There's a bit of asynchronousness in recording and exporting the spans, so to avoid issues, give the startup spans a (small) moment to arrive
+        await().atMost(Duration.ofSeconds(5L)).pollDelay(Duration.ofMillis(50)).until(() -> {
+            // make sure incoming spans are processed
+            List<Map<String, Object>> spans = getSpans();
+            return spans.size() >= 1;
+        });
+
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
 
@@ -47,7 +57,7 @@ public class OpenTelemetryWithSpanAtStartupTest {
 
         // We should get one client span, from the internal method.
         Map<String, Object> server = getSpanByKindAndParentId(spans, CLIENT, client.get("spanId"));
-        assertEquals("GET", server.get("name"));
+        assertEquals("GET /stub", server.get("name"));
     }
 
     @Startup

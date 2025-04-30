@@ -128,4 +128,28 @@ public final class VertxContextSafetyToggle {
         }
     }
 
+    public static boolean isExplicitlyMarkedAsSafe(final Context context) {
+        if (!VertxContext.isDuplicatedContext(context)) {
+            throw new IllegalStateException(
+                    "Can't get the context safety flag: the current context is not a duplicated context");
+        }
+        final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
+        if (safeFlag == Boolean.TRUE) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isExplicitlyMarkedAsUnsafe(final Context context) {
+        if (!VertxContext.isDuplicatedContext(context)) {
+            throw new IllegalStateException(
+                    "Can't get the context safety flag: the current context is not a duplicated context");
+        }
+        final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
+        if (safeFlag == Boolean.FALSE) {
+            return true;
+        }
+        return false;
+    }
+
 }

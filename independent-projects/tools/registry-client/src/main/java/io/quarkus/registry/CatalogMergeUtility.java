@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -57,7 +58,6 @@ public class CatalogMergeUtility {
             if (combined.getBom() == null) {
                 combined.setBom(catalog.getBom());
             }
-
             if (catalog.getId() != null) {
                 derivedFrom.putIfAbsent(catalog.getId(), catalog);
             }
@@ -73,7 +73,9 @@ public class CatalogMergeUtility {
                 }
             });
 
-            catalog.getMetadata().forEach(metadata::putIfAbsent);
+            for (var e : catalog.getMetadata().entrySet()) {
+                putIfAbscentRecursively(e.getKey(), e.getValue(), metadata);
+            }
 
             if (combined.getQuarkusCoreVersion() == null && catalog.getQuarkusCoreVersion() != null) {
                 combined.setQuarkusCoreVersion(catalog.getQuarkusCoreVersion());
@@ -91,6 +93,41 @@ public class CatalogMergeUtility {
                 .setMetadata(metadata);
 
         return combined.build();
+    }
+
+    /**
+     * Adds missing key-value pairs to the target map recursively, meaning
+     * if the current {@code value} is a map and the target map contains the corresponding {@code key}
+     * with a value that is also a map, {@link #putIfAbscentRecursively(Object, Object, Map)}
+     * will be called for each key-value pair of the current {@code value}.
+     *
+     * @param key key to put
+     * @param value value to put
+     * @param target target map
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void putIfAbscentRecursively(Object key, Object value, Map target) {
+        target.compute(key, (k, currentValue) -> {
+            if (currentValue == null) {
+                return value;
+            }
+            if (Objects.equals(currentValue, value)
+                    || !(value instanceof Map)
+                    || !(currentValue instanceof Map currentMap)) {
+                return currentValue;
+            }
+            for (var e : ((Map<?, ?>) value).entrySet()) {
+                if (e.getKey() instanceof String) {
+                    try {
+                        putIfAbscentRecursively(e.getKey().toString(), e.getValue(), currentMap);
+                    } catch (UnsupportedOperationException ex) {
+                        currentMap = new HashMap(currentMap);
+                        putIfAbscentRecursively(e.getKey().toString(), e.getValue(), currentMap);
+                    }
+                }
+            }
+            return currentMap;
+        });
     }
 
     // Package private.

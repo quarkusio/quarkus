@@ -31,7 +31,8 @@ class QuarkusExtensionCodestartGenerationTest {
                 .putData(QuarkusExtensionData.EXTENSION_NAME, "My Extension")
                 .putData(QuarkusExtensionData.VERSION, "1.0.0-SNAPSHOT")
                 .putData(QuarkusExtensionData.PACKAGE_NAME, "org.extension")
-                .putData(QuarkusExtensionData.CLASS_NAME_BASE, "MyExtension");
+                .putData(QuarkusExtensionData.CLASS_NAME_BASE, "MyExtension")
+                .putData(QuarkusExtensionData.JAVA_VERSION, "11");
     }
 
     @Test

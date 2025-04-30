@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.DurationConverter;
@@ -34,6 +35,13 @@ public interface SpringCloudConfigClientConfig {
      */
     @WithDefault("http://localhost:8888")
     String url();
+
+    /**
+     * Name of the application on Spring Cloud Config server.
+     * Could be a list of names to load multiple files (value separated by a comma)
+     */
+    @WithDefault("${quarkus.application.name:}")
+    String name();
 
     /**
      * The label to be used to pull remote configuration properties.
@@ -74,8 +82,7 @@ public interface SpringCloudConfigClientConfig {
      * TrustStore to be used containing the SSL certificate used by the Config server
      * Can be either a classpath resource or a file system path
      */
-    @WithConverter(PathConverter.class)
-    Optional<Path> trustStore();
+    Optional<@WithConverter(PathConverter.class) Path> trustStore();
 
     /**
      * Password of TrustStore to be used containing the SSL certificate used by the Config server
@@ -86,8 +93,7 @@ public interface SpringCloudConfigClientConfig {
      * KeyStore to be used containing the SSL certificate for authentication with the Config server
      * Can be either a classpath resource or a file system path
      */
-    @WithConverter(PathConverter.class)
-    Optional<Path> keyStore();
+    Optional<@WithConverter(PathConverter.class) Path> keyStore();
 
     /**
      * Password of KeyStore to be used containing the SSL certificate for authentication with the Config server
@@ -109,12 +115,19 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Custom headers to pass the Spring Cloud Config Server when performing the HTTP request
      */
+    @ConfigDocMapKey("header-name")
     Map<String, String> headers();
 
     /**
      * The profiles to use for lookup
      */
     Optional<List<String>> profiles();
+
+    /**
+     * Microprofile Config ordinal.
+     */
+    @WithDefault("450")
+    int ordinal();
 
     /** */
     default boolean usernameAndPasswordSet() {

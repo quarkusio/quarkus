@@ -19,7 +19,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class DispatchedThreadTest {
+class DispatchedThreadTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -28,7 +28,7 @@ public class DispatchedThreadTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void check() {
+    void check() {
         RestAssured.when().get("/q/health/live").then()
                 .body("status", is("UP"),
                         "checks.status", contains("UP"),

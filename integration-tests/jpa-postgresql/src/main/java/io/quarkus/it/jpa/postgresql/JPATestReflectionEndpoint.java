@@ -2,34 +2,52 @@ package io.quarkus.it.jpa.postgresql;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.xml.transform.TransformerException;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import io.quarkus.it.jpa.postgresql.defaultpu.Address;
+import io.quarkus.it.jpa.postgresql.defaultpu.Customer;
+import io.quarkus.it.jpa.postgresql.defaultpu.NotAnEntityNotReferenced;
+import io.quarkus.it.jpa.postgresql.defaultpu.WorkAddress;
 
 /**
  * Various tests for the JPA integration.
  * WARNING: these tests will ONLY pass in native mode, as it also verifies reflection non-functionality.
  */
-@WebServlet(name = "JPATestReflectionEndpoint", urlPatterns = "/jpa/testreflection")
-public class JPATestReflectionEndpoint extends HttpServlet {
+@Path("/jpa/testreflection")
+@Produces(MediaType.TEXT_PLAIN)
+public class JPATestReflectionEndpoint {
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        makeSureNonEntityAreDCE(resp);
-        makeSureEntitiesAreAccessibleViaReflection(resp);
-        makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(resp);
-        makeSureAnnotatedEmbeddableAreAccessibleViaReflection(resp);
+    @GET
+    public String test() throws SQLException, TransformerException, IOException {
+        List<String> errors = new ArrayList<>();
+        makeSureNonEntityAreDCE(errors);
+        makeSureEntitiesAreAccessibleViaReflection(errors);
+        makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(errors);
+        makeSureAnnotatedEmbeddableAreAccessibleViaReflection(errors);
         String packageName = this.getClass().getPackage().getName();
-        makeSureClassAreAccessibleViaReflection(packageName + ".Human", "Unable to enlist @MappedSuperclass", resp);
-        makeSureClassAreAccessibleViaReflection(packageName + ".Animal", "Unable to enlist entity superclass", resp);
-        resp.getWriter().write("OK");
+        makeSureClassAreAccessibleViaReflection(packageName + ".defaultpu.Human", "Unable to enlist @MappedSuperclass", errors);
+        makeSureClassAreAccessibleViaReflection(packageName + ".defaultpu.Animal", "Unable to enlist entity superclass",
+                errors);
+        if (errors.isEmpty()) {
+            return "OK";
+        } else {
+            return String.join("\n", errors);
+        }
     }
 
-    private void makeSureClassAreAccessibleViaReflection(String className, String errorMessage, HttpServletResponse resp)
+    private void makeSureClassAreAccessibleViaReflection(String className, String errorMessage, List<String> errors)
             throws IOException {
         try {
             className = getTrickedClassName(className);
@@ -37,11 +55,11 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Class<?> custClass = Class.forName(className);
             Object instance = custClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            reportException(errorMessage, e, resp);
+            reportException(errorMessage, e, errors);
         }
     }
 
-    private void makeSureEntitiesAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
+    private void makeSureEntitiesAreAccessibleViaReflection(List<String> errors) throws IOException {
         try {
             String className = getTrickedClassName(Customer.class.getName());
 
@@ -50,20 +68,20 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Field id = custClass.getDeclaredField("id");
             id.setAccessible(true);
             if (id.get(instance) != null) {
-                resp.getWriter().write("id should be reachable and null");
+                errors.add("id should be reachable and null");
             }
             Method setter = custClass.getDeclaredMethod("setName", String.class);
             Method getter = custClass.getDeclaredMethod("getName");
             setter.invoke(instance, "Emmanuel");
             if (!"Emmanuel".equals(getter.invoke(instance))) {
-                resp.getWriter().write("getter / setter should be reachable and usable");
+                errors.add("getter / setter should be reachable and usable");
             }
         } catch (Exception e) {
-            reportException(e, resp);
+            reportException(e, errors);
         }
     }
 
-    private void makeSureAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
+    private void makeSureAnnotatedEmbeddableAreAccessibleViaReflection(List<String> errors) throws IOException {
         try {
             String className = getTrickedClassName(WorkAddress.class.getName());
 
@@ -73,14 +91,14 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Method getter = custClass.getDeclaredMethod("getCompany");
             setter.invoke(instance, "Red Hat");
             if (!"Red Hat".equals(getter.invoke(instance))) {
-                resp.getWriter().write("@Embeddable embeddable should be reachable and usable");
+                errors.add("@Embeddable embeddable should be reachable and usable");
             }
         } catch (Exception e) {
-            reportException(e, resp);
+            reportException(e, errors);
         }
     }
 
-    private void makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
+    private void makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(List<String> errors) throws IOException {
         try {
             String className = getTrickedClassName(Address.class.getName());
 
@@ -90,19 +108,19 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Method getter = custClass.getDeclaredMethod("getStreet1");
             setter.invoke(instance, "1 rue du General Leclerc");
             if (!"1 rue du General Leclerc".equals(getter.invoke(instance))) {
-                resp.getWriter().write("Non @Embeddable embeddable getter / setter should be reachable and usable");
+                errors.add("Non @Embeddable embeddable getter / setter should be reachable and usable");
             }
         } catch (Exception e) {
-            reportException(e, resp);
+            reportException(e, errors);
         }
     }
 
-    private void makeSureNonEntityAreDCE(HttpServletResponse resp) {
+    private void makeSureNonEntityAreDCE(List<String> errors) {
         try {
             String className = getTrickedClassName(NotAnEntityNotReferenced.class.getName());
 
             Class<?> custClass = Class.forName(className);
-            resp.getWriter().write("Should not be able to find a non referenced non entity class");
+            errors.add("Should not be able to find a non referenced non entity class");
             Object instance = custClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             // Expected outcome
@@ -118,20 +136,24 @@ public class JPATestReflectionEndpoint extends HttpServlet {
         return className;
     }
 
-    private void reportException(final Exception e, final HttpServletResponse resp) throws IOException {
-        reportException(null, e, resp);
+    private void reportException(final Exception e, final List<String> errors) throws IOException {
+        reportException(null, e, errors);
     }
 
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
+    private void reportException(String errorMessage, final Exception e, final List<String> errors) throws IOException {
+        StringWriter stringWriter = new StringWriter();
+        final PrintWriter writer = new PrintWriter(stringWriter);
         if (errorMessage != null) {
             writer.write(errorMessage);
             writer.write(" ");
         }
-        writer.write(e.toString());
+        if (e.getMessage() != null) {
+            writer.write(e.getMessage());
+        }
         writer.append("\n\t");
         e.printStackTrace(writer);
         writer.append("\n\t");
+        errors.add(stringWriter.toString());
     }
 
 }

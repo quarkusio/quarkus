@@ -4,6 +4,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,10 +14,23 @@ public class GeneratedBeanGizmoAdaptor implements ClassOutput {
 
     private final BuildProducer<GeneratedBeanBuildItem> classOutput;
     private final Map<String, StringWriter> sources;
+    private final Predicate<String> applicationClassPredicate;
 
     public GeneratedBeanGizmoAdaptor(BuildProducer<GeneratedBeanBuildItem> classOutput) {
+        this(classOutput, new Predicate<String>() {
+
+            @Override
+            public boolean test(String t) {
+                return true;
+            }
+        });
+    }
+
+    public GeneratedBeanGizmoAdaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
+            Predicate<String> applicationClassPredicate) {
         this.classOutput = classOutput;
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
+        this.applicationClassPredicate = applicationClassPredicate;
     }
 
     @Override
@@ -28,7 +42,7 @@ public class GeneratedBeanGizmoAdaptor implements ClassOutput {
                 source = sw.toString();
             }
         }
-        classOutput.produce(new GeneratedBeanBuildItem(className, bytes, source));
+        classOutput.produce(new GeneratedBeanBuildItem(className, bytes, source, applicationClassPredicate.test(className)));
     }
 
     @Override

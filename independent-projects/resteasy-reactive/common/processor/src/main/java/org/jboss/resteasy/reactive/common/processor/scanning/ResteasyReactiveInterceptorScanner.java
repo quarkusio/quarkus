@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 
@@ -24,6 +25,7 @@ import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 /**
@@ -221,6 +223,18 @@ public class ResteasyReactiveInterceptorScanner {
                     interceptorContainer.addNameRequestInterceptor(interceptor);
                 }
             }
+
+            RuntimeType runtimeType = null;
+            if (keepProviderResult == ApplicationScanningResult.KeepProviderResult.SERVER_ONLY) {
+                runtimeType = RuntimeType.SERVER;
+            }
+            AnnotationInstance constrainedToInstance = filterClass
+                    .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+            if (constrainedToInstance != null) {
+                runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
+            }
+            interceptor.setRuntimeType(runtimeType);
+
             return interceptor;
         }
 

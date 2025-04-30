@@ -6,46 +6,55 @@ import static io.quarkus.qute.generator.ValueResolverGenerator.simpleName;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Modifier;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.Switch.StringSwitch;
+import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.TemplateGlobal;
+import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
 
 /**
  * Generates {@link TemplateInstance.Initializer}s for {@link TemplateGlobal} annotations.
  */
-public class TemplateGlobalGenerator {
+public class TemplateGlobalGenerator extends AbstractGenerator {
 
     public static final DotName TEMPLATE_GLOBAL = DotName.createSimple(TemplateGlobal.class.getName());
     public static final String NAME = "name";
 
     public static final String SUFFIX = "_Globals";
 
-    private final Set<String> generatedTypes;
-    private final ClassOutput classOutput;
+    private final String namespace;
+    private int priority;
 
-    public TemplateGlobalGenerator(ClassOutput classOutput) {
-        this.generatedTypes = new HashSet<>();
-        this.classOutput = classOutput;
+    public TemplateGlobalGenerator(ClassOutput classOutput, String namespace, int initialPriority, IndexView index) {
+        super(index, classOutput);
+        this.namespace = namespace;
+        this.priority = initialPriority;
     }
 
-    public void generate(ClassInfo declaringClass, Map<String, AnnotationTarget> targets) {
+    public String generate(ClassInfo declaringClass, Map<String, AnnotationTarget> targets) {
 
         String baseName;
         if (declaringClass.enclosingClass() != null) {
@@ -56,35 +65,84 @@ public class TemplateGlobalGenerator {
         }
         String targetPackage = packageName(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, SUFFIX);
-        generatedTypes.add(generatedName.replace('/', '.'));
+        String generatedClassName = generatedName.replace('/', '.');
+        generatedTypes.add(generatedClassName);
 
-        ClassCreator initializer = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(TemplateInstance.Initializer.class).build();
+        ClassCreator provider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .interfaces(TemplateGlobalProvider.class).build();
 
-        MethodCreator accept = initializer.getMethodCreator("accept", void.class, Object.class)
+        // TemplateInstance.Initializer#accept()
+        MethodCreator accept = provider.getMethodCreator("accept", void.class, Object.class)
                 .setModifiers(ACC_PUBLIC);
 
         for (Entry<String, AnnotationTarget> entry : targets.entrySet()) {
             ResultHandle name = accept.load(entry.getKey());
+            FunctionCreator fun = accept.createFunction(Function.class);
+            BytecodeCreator funBytecode = fun.getBytecode();
             ResultHandle global;
             switch (entry.getValue().kind()) {
                 case FIELD:
                     FieldInfo field = entry.getValue().asField();
                     validate(field);
-                    global = accept.readStaticField(FieldDescriptor.of(field));
+                    global = funBytecode.readStaticField(FieldDescriptor.of(field));
                     break;
                 case METHOD:
                     MethodInfo method = entry.getValue().asMethod();
                     validate(method);
-                    global = accept.invokeStaticMethod(MethodDescriptor.of(method));
+                    global = funBytecode.invokeStaticMethod(MethodDescriptor.of(method));
                     break;
                 default:
                     throw new IllegalStateException("Unsupported target: " + entry.getValue());
             }
-            accept.invokeInterfaceMethod(Descriptors.TEMPLATE_INSTANCE_DATA, accept.getMethodParam(0), name, global);
+            funBytecode.returnValue(global);
+            // Global variables are computed lazily
+            accept.invokeInterfaceMethod(Descriptors.TEMPLATE_INSTANCE_COMPUTED_DATA, accept.getMethodParam(0), name,
+                    fun.getInstance());
         }
         accept.returnValue(null);
-        initializer.close();
+
+        // NamespaceResolver#getNamespace()
+        MethodCreator getNamespace = provider.getMethodCreator("getNamespace", String.class);
+        getNamespace.returnValue(getNamespace.load(namespace));
+
+        // WithPriority#getPriority()
+        MethodCreator getPriority = provider.getMethodCreator("getPriority", int.class);
+        // Namespace resolvers for the same namespace may not share the same priority
+        // So we increase the initial priority for each provider
+        getPriority.returnValue(getPriority.load(priority++));
+
+        // Resolver#resolve()
+        MethodCreator resolve = provider.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
+                .setModifiers(ACC_PUBLIC);
+        ResultHandle evalContext = resolve.getMethodParam(0);
+        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
+        StringSwitch nameSwitch = resolve.stringSwitch(name);
+        for (Entry<String, AnnotationTarget> e : targets.entrySet()) {
+            Consumer<BytecodeCreator> readGlobal = new Consumer<BytecodeCreator>() {
+                @Override
+                public void accept(BytecodeCreator bc) {
+                    switch (e.getValue().kind()) {
+                        case FIELD:
+                            FieldInfo field = e.getValue().asField();
+                            processReturnVal(bc, field.type(), bc.readStaticField(FieldDescriptor.of(field)), provider);
+                            break;
+                        case METHOD:
+                            MethodInfo method = e.getValue().asMethod();
+                            processReturnVal(bc, method.returnType(), bc.invokeStaticMethod(MethodDescriptor.of(method)),
+                                    provider);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unsupported target: " + e.getValue());
+                    }
+
+                }
+            };
+            nameSwitch.caseOf(e.getKey(), readGlobal);
+        }
+        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+
+        provider.close();
+        return generatedClassName;
     }
 
     public Set<String> getGeneratedTypes() {

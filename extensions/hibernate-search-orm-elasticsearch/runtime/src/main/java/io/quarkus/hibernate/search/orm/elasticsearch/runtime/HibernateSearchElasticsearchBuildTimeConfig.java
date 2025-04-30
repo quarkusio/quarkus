@@ -4,6 +4,7 @@ import java.util.Map;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -35,4 +36,9 @@ public interface HibernateSearchElasticsearchBuildTimeConfig {
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit> persistenceUnits();
 
+    /**
+     * Management interface.
+     */
+    @ConfigDocSection
+    HibernateSearchElasticsearchBuildTimeConfigManagement management();
 }

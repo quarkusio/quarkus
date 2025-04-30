@@ -6,40 +6,24 @@ import io.quarkus.arc.InjectableReferenceProvider;
 
 public class DecoratorDelegateProvider implements InjectableReferenceProvider<Object> {
 
-    private static final ThreadLocal<Object> CURRENT = new ThreadLocal<>();
-
     @Override
     public Object get(CreationalContext<Object> creationalContext) {
-        return CURRENT.get();
+        return getCurrent(creationalContext);
+    }
+
+    public static Object getCurrent(CreationalContext<?> ctx) {
+        return CreationalContextImpl.getCurrentDecoratorDelegate(ctx);
     }
 
     /**
-     * Set the current delegate for a non-null parameter, remove the threadlocal for null parameter.
+     * Set the current delegate for a non-null parameter, or remove it for null parameter.
      *
-     * @param delegate
      * @return the previous delegate or {@code null}
      */
-    public static Object set(Object delegate) {
-        if (delegate != null) {
-            Object prev = CURRENT.get();
-            if (delegate.equals(prev)) {
-                return delegate;
-            } else {
-                CURRENT.set(delegate);
-                return prev;
-            }
-        } else {
-            CURRENT.remove();
-            return null;
-        }
-    }
-
-    public static void unset() {
-        set(null);
-    }
-
-    public static Object get() {
-        return CURRENT.get();
+    public static Object setCurrent(CreationalContext<?> ctx, Object delegate) {
+        // it wouldn't be necessary to reset this, but we do that as a safeguard,
+        // to prevent accidental references from keeping these objects alive
+        return CreationalContextImpl.setCurrentDecoratorDelegate(ctx, delegate);
     }
 
 }

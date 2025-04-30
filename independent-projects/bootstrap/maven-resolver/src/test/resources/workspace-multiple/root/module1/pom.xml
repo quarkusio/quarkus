@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>root-module1</artifactId>
-    
+
     <build>
         <resources>
             <resource>

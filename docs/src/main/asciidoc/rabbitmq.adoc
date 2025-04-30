@@ -3,11 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started to SmallRye Reactive Messaging with RabbitMQ
+= Getting Started to Quarkus Messaging with RabbitMQ
 :extension-status: preview
 include::_attributes.adoc[]
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
-This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with RabbitMQ.
+This guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with RabbitMQ.
 
 include::{includes}/extension-status.adoc[]
 
@@ -42,7 +45,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `rabbitmq-quickstart` {quickstarts-tree-url}/rabbitmq-quickstart[directory].
+The solution is located in the `rabbitmq-quickstart` link:{quickstarts-tree-url}/rabbitmq-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -51,19 +54,45 @@ First, we need to create two projects: the _producer_ and the _processor_.
 To create the _producer_ project, in a terminal run:
 
 :create-app-artifact-id: rabbitmq-quickstart-producer
-:create-app-extensions: smallrye-reactive-messaging-rabbitmq,resteasy-reactive-jackson
+:create-app-extensions: messaging-rabbitmq,rest-jackson
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
 This command creates the project structure and select the two Quarkus extensions we will be using:
 
 1. The Reactive Messaging RabbitMQ connector
-2. RESTEasy Reactive and it's Jackson support to handle JSON payloads
+2. Quarkus REST (formerly RESTEasy Reactive) and its Jackson support to handle JSON payloads
+
+[TIP]
+====
+If you already have your Quarkus project configured, you can add the `messaging-rabbitmq` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: messaging-rabbitmq
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your `pom.xml`:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-messaging-rabbitmq</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-messaging-rabbitmq")
+----
+====
 
 To create the _processor_ project, from the same directory, run:
 
 :create-app-artifact-id: rabbitmq-quickstart-processor
-:create-app-extensions: smallrye-reactive-messaging-rabbitmq
+:create-app-extensions: messaging-rabbitmq
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -144,9 +173,10 @@ Quarkus has built-in capabilities to deal with JSON RabbitMQ messages.
 [NOTE]
 .@RegisterForReflection
 ====
-The `@RegisterForReflection` annotation instructs Quarkus to include the class (including fields and methods) when building the native executable.
-This will be useful later when we run the applications as native executables inside containers.
-Without, the native compilation would remove the fields and methods during the dead-code elimination phase.
+The `@RegisterForReflection` annotation instructs Quarkus to keep the class, its fields, and methods when creating a native executable.
+This is crucial when we later run our applications as native executables within containers.
+Without this annotation, the native compilation process would discard the fields and methods during the dead-code elimination phase, which would lead to runtime errors.
+More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 ====
 
 == Sending quote request
@@ -266,7 +296,7 @@ mp.messaging.outgoing.quotes.exchange.name=quotes
 ----
 
 Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
@@ -368,14 +398,14 @@ You just need to run both applications using:
 
 [source,bash]
 ----
-> mvn -f rabbitmq-quickstart-producer quarkus:dev
+mvn -f rabbitmq-quickstart-producer quarkus:dev
 ----
 
 And, in a separate terminal:
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-processor quarkus:dev
+mvn -f rabbitmq-quickstart-processor quarkus:dev
 ----
 
 Quarkus starts a RabbitMQ broker automatically, configures the application and shares the broker instance between different applications.
@@ -396,7 +426,7 @@ version: '2'
 services:
 
   rabbit:
-    image: rabbitmq:3.9-management
+    image: rabbitmq:3.12-management
     ports:
       - "5672:5672"
     networks:
@@ -439,8 +469,8 @@ First, make sure you stopped the applications, and build both applications in JV
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-producer clean package
-> mvn -f rabbitmq-quickstart-processor clean package
+mvn -f rabbitmq-quickstart-producer clean package
+mvn -f rabbitmq-quickstart-processor clean package
 ----
 
 Once packaged, run `docker compose up --build`.
@@ -450,8 +480,8 @@ To run your applications as native, first we need to build the native executable
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-producer package -Dnative  -Dquarkus.native.container-build=true
-> mvn -f rabbitmq-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
+mvn -f rabbitmq-quickstart-producer package -Dnative  -Dquarkus.native.container-build=true
+mvn -f rabbitmq-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
 ----
 
 The `-Dquarkus.native.container-build=true` instructs Quarkus to build Linux 64bits native executables, who can run inside containers.
@@ -459,8 +489,8 @@ Then, run the system using:
 
 [source, bash]
 ----
-> export QUARKUS_MODE=native
-> docker compose up --build
+export QUARKUS_MODE=native
+docker compose up --build
 ----
 
 As before, the UI is exposed on http://localhost:8080/quotes.html

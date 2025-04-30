@@ -101,7 +101,7 @@ public class BuildConfigurationTest extends QuarkusGradleWrapperTestBase {
     private void verifyBuild(String override) throws IOException, InterruptedException, URISyntaxException {
         File rootDir = getProjectDir(ROOT_PROJECT_NAME);
         BuildResult buildResult = runGradleWrapper(rootDir, "clean", "quarkusBuild",
-                override != null ? "-Dquarkus.package.type=" + override : "-Dfoo=bar");
+                override != null ? "-Dquarkus.package.jar.type=" + override : "-Dfoo=bar");
         soft.assertThat(buildResult.unsuccessfulTasks()).isEmpty();
 
         // Sub project 'with-application-properties

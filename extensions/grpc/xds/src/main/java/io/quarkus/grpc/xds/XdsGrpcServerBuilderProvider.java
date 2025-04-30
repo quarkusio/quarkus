@@ -20,11 +20,9 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.xds.XdsChannelCredentials;
 import io.grpc.xds.XdsServerBuilder;
 import io.grpc.xds.XdsServerCredentials;
-import io.quarkus.grpc.runtime.config.ClientXds;
 import io.quarkus.grpc.runtime.config.Enabled;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
-import io.quarkus.grpc.runtime.config.Xds;
 import io.quarkus.grpc.runtime.devmode.DevModeInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
@@ -32,29 +30,29 @@ import io.quarkus.grpc.xds.devmode.XdsServerReloader;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.EventLoopContext;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 
 public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServerBuilder> {
     @Override
     public boolean providesServer(GrpcServerConfiguration configuration) {
-        return Enabled.isEnabled(configuration.xds);
+        return Enabled.isEnabled(configuration.xds());
     }
 
     @Override
     public ServerBuilder<XdsServerBuilder> createServerBuilder(Vertx vertx, GrpcServerConfiguration configuration,
             LaunchMode launchMode) {
-        Xds xds = configuration.xds;
-        int port = launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port;
+        GrpcServerConfiguration.Xds xds = configuration.xds();
+        int port = launchMode == LaunchMode.TEST ? configuration.testPort() : configuration.port();
         ServerCredentials credentials = InsecureServerCredentials.create();
-        if (xds.secure) {
+        if (xds.secure()) {
             credentials = XdsServerCredentials.create(credentials);
         }
         ServerBuilder<XdsServerBuilder> builder = XdsServerBuilder.forPort(port, credentials);
         // wrap with Vert.x context, so that the context interceptors work
         VertxInternal vxi = (VertxInternal) vertx;
         Executor delegate = vertx.nettyEventLoopGroup();
-        EventLoopContext context = vxi.createEventLoopContext();
+        ContextInternal context = vxi.createEventLoopContext();
         Executor executor = command -> delegate.execute(() -> context.dispatch(command));
         builder.executor(executor);
         // custom XDS interceptors
@@ -96,7 +94,7 @@ public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServ
 
     @Override
     public boolean providesChannel(GrpcClientConfiguration configuration) {
-        return Enabled.isEnabled(configuration.xds) || XDS.equalsIgnoreCase(configuration.nameResolver);
+        return Enabled.isEnabled(configuration.xds()) || XDS.equalsIgnoreCase(configuration.nameResolver());
     }
 
     @Override
@@ -111,12 +109,12 @@ public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServ
 
     @Override
     public ManagedChannelBuilder<?> createChannelBuilder(GrpcClientConfiguration configuration, String target) {
-        ClientXds xds = configuration.xds;
+        GrpcClientConfiguration.ClientXds xds = configuration.xds();
         ChannelCredentials credentials = InsecureChannelCredentials.create();
-        if (xds.secure) {
+        if (xds.secure()) {
             credentials = XdsChannelCredentials.create(credentials);
         }
-        target = xds.target.orElse(target); // use xds's target, if explicitly set
+        target = xds.target().orElse(target); // use xds's target, if explicitly set
         return Grpc.newChannelBuilder(target, credentials);
     }
 

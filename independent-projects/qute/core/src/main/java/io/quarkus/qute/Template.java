@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -146,14 +147,19 @@ public interface Template {
     String getId();
 
     /**
+     * If invoked upon a fragment instance then delegate to the defining template.
      *
      * @return the template variant
      */
     Optional<Variant> getVariant();
 
     /**
+     * Returns all type parameter declarations of the template, including the declarations added by a
+     * {@link io.quarkus.qute.ParserHook}.
+     * <p>
+     * If invoked upon a fragment instance then delegate to the defining template.
      *
-     * @return an immutable list of all parameter declarations defined in the template
+     * @return an immutable list of all type parameter declarations defined in the template
      */
     List<ParameterDeclaration> getParameterDeclarations();
 
@@ -184,6 +190,27 @@ public interface Template {
     default boolean isFragment() {
         return false;
     }
+
+    /**
+     * Returns the child nodes of the root node.
+     *
+     * @return the child nodes of the root node
+     */
+    List<TemplateNode> getNodes();
+
+    /**
+     * Returns all nodes of this template that match the given predicate.
+     *
+     * @param predicate
+     * @return the collection of nodes that match the given predicate
+     */
+    Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate);
+
+    /**
+     *
+     * @return the root section node
+     */
+    SectionNode getRootNode();
 
     /**
      * A fragment represents a part of the template that can be treated as a separate template.

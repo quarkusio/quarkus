@@ -21,6 +21,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 
 /**
  * This endpoint allow to test central logging solution by generating a log event when
@@ -33,6 +34,8 @@ public class GelfLogHandlerResource {
 
     @GET
     public void log() {
+        MDC.put("field3", 99);
+        MDC.put("field4", 98);
         LOG.info("Some useful log message");
     }
 

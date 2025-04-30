@@ -72,11 +72,14 @@ CSVs
 Ctrl
 customizer
 Cygmon
+datasource
+datasources
 DaemonSet
 Datadog
 declaratively
 decompiler
 deserialization
+deserialized
 Dev
 dev
 devfile
@@ -117,9 +120,11 @@ Failsafe
 Fernflower
 findability
 Findability
+Fluentd
 Fortran
 Funqy
 Gbps
+Graylog
 gRPC
 GCC
 getters
@@ -154,6 +159,7 @@ Infinispan
 Inode
 Intelephense
 IntelliJ
+Istio
 Itanium
 Item
 Jakarta
@@ -189,6 +195,7 @@ libvirt
 Libvirt
 Licensor
 Liveness
+Logstash
 Lombok
 Loopback
 Makefile
@@ -238,9 +245,9 @@ Onboarding
 OpenID
 OpenJDK
 OpenShift
-OpenTracing
 Operator
 osd
+OTel
 overridable
 PHP
 Podman
@@ -262,7 +269,6 @@ Pytorch
 qeth
 Quarkiverse
 Quarkus
-Quiltflower
 Qute
 Readonly
 Rebalance
@@ -330,6 +336,8 @@ Subusers
 Subvolume
 Subvolumes
 Suchow
+Syslog
+syslog
 Symfony
 SVG
 Systemd
@@ -366,6 +374,7 @@ Valgrind
 validator
 Velero
 Vert.x
+Vineflower
 vsix
 WebAuthn
 WebSocket

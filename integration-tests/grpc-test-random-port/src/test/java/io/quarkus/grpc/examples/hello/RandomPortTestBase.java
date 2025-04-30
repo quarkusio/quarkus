@@ -12,6 +12,7 @@ import examples.HelloRequest;
 import examples.MutinyGreeterGrpc.MutinyGreeterStub;
 import io.grpc.Channel;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 
 abstract class RandomPortTestBase {
     @GrpcClient("hello")
@@ -21,6 +22,7 @@ abstract class RandomPortTestBase {
     Channel channel;
 
     @Test
+    @DisabledOnIntegrationTest
     void testRandomPort() {
         assertSoftly(softly -> {
             HelloRequest request = HelloRequest.newBuilder().setName("neo").build();

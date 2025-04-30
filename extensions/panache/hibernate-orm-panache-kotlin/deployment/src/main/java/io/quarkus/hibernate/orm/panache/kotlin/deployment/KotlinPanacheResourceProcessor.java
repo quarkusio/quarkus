@@ -15,9 +15,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -43,7 +43,6 @@ import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.ByteCodeType;
-import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.KotlinPanacheCompanionEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheRepositoryEnhancer;
@@ -52,11 +51,12 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 
 public final class KotlinPanacheResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
-    private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(EntityManager.class.getName()));
+    private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(Session.class.getName()));
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

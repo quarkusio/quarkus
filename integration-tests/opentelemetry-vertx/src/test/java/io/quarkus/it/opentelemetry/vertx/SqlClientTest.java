@@ -1,11 +1,11 @@
 package io.quarkus.it.opentelemetry.vertx;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_CONNECTION_STRING;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_OPERATION;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_STATEMENT;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_USER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.SemanticAttributes.DB_CONNECTION_STRING;
+import static io.opentelemetry.semconv.SemanticAttributes.DB_OPERATION;
+import static io.opentelemetry.semconv.SemanticAttributes.DB_STATEMENT;
+import static io.opentelemetry.semconv.SemanticAttributes.DB_USER;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.awaitility.Awaitility.await;
@@ -26,7 +26,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.ext.web.Router;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @QuarkusTest
 public class SqlClientTest {
@@ -34,7 +34,7 @@ public class SqlClientTest {
     Router router;
 
     @Inject
-    PgPool pool;
+    Pool pool;
 
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
@@ -66,7 +66,7 @@ public class SqlClientTest {
 
         // We cannot rely on the order, we must identify the spans.
         SpanData tableCreation = inMemorySpanExporter.getFinishedSpanItems().stream()
-                .filter(sd -> sd.getName().contains("DB Query")).findFirst().orElseThrow();
+                .filter(sd -> sd.getName().contains("CREATE TABLE USERS")).findFirst().orElseThrow();
         SpanData httpSpan = inMemorySpanExporter.getFinishedSpanItems().stream()
                 .filter(sd -> sd.getName().contains("GET /sqlClient")).findFirst().orElseThrow();
         SpanData querySpan = inMemorySpanExporter.getFinishedSpanItems().stream()
@@ -77,7 +77,7 @@ public class SqlClientTest {
         assertEquals(httpSpan.getSpanId(), querySpan.getParentSpanId());
 
         assertEquals("GET /sqlClient", httpSpan.getName());
-        assertEquals(HTTP_OK, httpSpan.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HTTP_OK, httpSpan.getAttributes().get(HTTP_RESPONSE_STATUS_CODE));
 
         assertEquals("SELECT USERS", querySpan.getName());
         assertEquals(CLIENT, querySpan.getKind());

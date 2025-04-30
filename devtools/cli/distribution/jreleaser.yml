@@ -11,14 +11,14 @@ project:
   java:
     groupId: io.quarkus
     artifactId: quarkus-cli
-    version : 11
+    version : 17
   tags:
     - cli
     - quarkus
     - java
   links:
     homepage: https://quarkus.io
-    license: https://github.com/quarkusio/quarkus/blob/main/LICENSE.txt
+    license: https://github.com/quarkusio/quarkus/blob/main/LICENSE
 
 release:
   github:

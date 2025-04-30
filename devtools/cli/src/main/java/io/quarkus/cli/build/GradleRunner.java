@@ -145,7 +145,7 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
                 ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
@@ -156,6 +156,7 @@ public class GradleRunner implements BuildSystemRunner {
         args.add("-PquarkusPluginVersion=" + ToolsUtils.getGradlePluginVersion(props));
         args.add("--console");
         args.add("plain");
+        args.add("--no-daemon");
         args.add("--stacktrace");
         args.add("quarkusUpdate");
         if (!StringUtil.isNullOrEmpty(targetQuarkusVersion.platformVersion)) {
@@ -169,17 +170,22 @@ public class GradleRunner implements BuildSystemRunner {
         if (rewrite.pluginVersion != null) {
             args.add("--rewritePluginVersion=" + rewrite.pluginVersion);
         }
-        if (rewrite.updateRecipesVersion != null) {
-            args.add("--updateRecipesVersion=" + rewrite.updateRecipesVersion);
+        if (rewrite.quarkusUpdateRecipes != null) {
+            args.add("--quarkusUpdateRecipes=" + rewrite.quarkusUpdateRecipes);
         }
-        if (rewrite.noRewrite) {
-            args.add("--noRewrite");
+        if (rewrite.additionalUpdateRecipes != null) {
+            args.add("--additionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
-        if (perModule) {
-            args.add("--perModule");
-        }
-        if (rewrite.dryRun) {
-            args.add("--rewriteDryRun");
+        if (rewrite.run != null) {
+            if (rewrite.run.yes) {
+                args.add("--rewrite");
+            }
+            if (rewrite.run.no) {
+                args.add("--rewrite=false");
+            }
+            if (rewrite.run.dryRun) {
+                args.add("--rewriteDryRun");
+            }
         }
         return run(prependExecutable(args));
 
@@ -202,7 +208,8 @@ public class GradleRunner implements BuildSystemRunner {
         args.add(action);
 
         if (buildOptions.buildNative) {
-            args.add("-Dquarkus.package.type=native");
+            args.add("-Dquarkus.native.enabled=true");
+            args.add("-Dquarkus.package.jar.enabled=false");
         }
         if (buildOptions.skipTests()) {
             setSkipTests(args);
@@ -218,12 +225,20 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        if (filter != null) {
+            params.add("--tests " + filter);
+        }
+        return prepareAction("test", buildOptions, runMode, params);
+    }
+
+    @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
-        setGradleProperties(args, false);
+        setGradleProperties(args, commonOptions.isBatchMode());
 
         if (commonOptions.clean) {
             args.add("clean");

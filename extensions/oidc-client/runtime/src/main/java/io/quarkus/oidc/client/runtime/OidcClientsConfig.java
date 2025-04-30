@@ -2,27 +2,30 @@ package io.quarkus.oidc.client.runtime;
 
 import java.util.Map;
 
-import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "oidc-client", phase = ConfigPhase.RUN_TIME)
-public class OidcClientsConfig {
+@ConfigMapping(prefix = "quarkus.oidc-client")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface OidcClientsConfig {
 
-    /**
-     * The default client.
-     */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public OidcClientConfig defaultClient;
+    String DEFAULT_CLIENT_KEY = "<default>";
 
     /**
      * Additional named clients.
      */
-    @ConfigDocSection
     @ConfigDocMapKey("id")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, OidcClientConfig> namedClients;
+    @WithParentName
+    @WithUnnamedKey(DEFAULT_CLIENT_KEY)
+    @WithDefaults
+    Map<String, OidcClientConfig> namedClients();
+
+    static OidcClientConfig getDefaultClient(OidcClientsConfig config) {
+        return config.namedClients().get(DEFAULT_CLIENT_KEY);
+    }
 }

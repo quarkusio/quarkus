@@ -12,27 +12,13 @@
 
     <artifactId>quarkus-integration-test-oidc-client-reactive</artifactId>
     <name>Quarkus - Integration Tests - OpenID Connect Client Reactive</name>
-    <description>Module that contains OpenID Connect Client tests using RESTEasy Reactive</description>
+    <description>Module that contains OpenID Connect Client tests using Quarkus REST</description>
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>jakarta.activation</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
@@ -72,11 +58,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+            <artifactId>quarkus-rest-client-oidc-filter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+            <artifactId>quarkus-rest-client-oidc-filter-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -89,11 +75,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -106,11 +92,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive</artifactId>
+            <artifactId>quarkus-rest-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -147,30 +133,6 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization combine.children="append">
-                                <runtimeClassPath>
-                                    <propertiesNormalizations>
-                                        <propertiesNormalization>
-                                            <path>application.properties</path>
-                                            <ignoredProperties>
-                                                <ignore>quarkus.keycloak.devservices.realm-path</ignore>
-                                            </ignoredProperties>
-                                        </propertiesNormalization>
-                                    </propertiesNormalizations>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

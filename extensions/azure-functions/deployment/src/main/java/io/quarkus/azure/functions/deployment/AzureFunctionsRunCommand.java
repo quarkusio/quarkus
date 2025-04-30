@@ -1,5 +1,7 @@
 package io.quarkus.azure.functions.deployment;
 
+import static io.quarkus.azure.functions.deployment.AzureFunctionsDeployCommand.AZURE_FUNCTIONS;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -27,10 +29,8 @@ public class AzureFunctionsRunCommand {
     private static final Logger log = Logger.getLogger(AzureFunctionsRunCommand.class);
     protected static final String FUNC_CMD = "func -v";
     protected static final String FUNC_HOST_START_CMD = "func host start -p %s";
-    protected static final String RUN_FUNCTIONS_FAILURE = "Failed to run Azure Functions. Please checkout console output.";
     protected static final String RUNTIME_NOT_FOUND = "Azure Functions Core Tools not found. " +
             "Please go to https://aka.ms/azfunc-install to install Azure Functions Core Tools first.";
-    private static final String STAGE_DIR_NOT_FOUND = "Stage directory not found. Please run mvn package first.";
     private static final String FUNC_HOST_START_WITH_DEBUG_CMD = "func host start -p %s --language-worker -- " +
             "\"-agentlib:jdwp=%s\"";
     private static final String STARTED_EXPRESSION = "Host lock lease acquired";
@@ -52,14 +52,14 @@ public class AzureFunctionsRunCommand {
         String cmd = getStartFunctionHostCommand(config);
         List<String> args = new LinkedList<>();
         Arrays.stream(cmd.split(" ")).forEach(s -> args.add(s));
-        RunCommandActionBuildItem launcher = new RunCommandActionBuildItem("azure-functions", args, stagingDir,
+        RunCommandActionBuildItem launcher = new RunCommandActionBuildItem(AZURE_FUNCTIONS, args, stagingDir,
                 STARTED_EXPRESSION, null,
                 true);
         return launcher;
     }
 
     protected Path getDeploymentStagingDirectoryPath(OutputTargetBuildItem target, String appName) {
-        return target.getOutputDirectory().resolve("azure-functions").resolve(appName);
+        return target.getOutputDirectory().resolve(AZURE_FUNCTIONS).resolve(appName);
     }
 
     protected void checkRuntimeExistence(final CommandHandler handler) throws AzureExecutionException {
@@ -77,15 +77,15 @@ public class AzureFunctionsRunCommand {
 
     protected String getStartFunctionHostCommand(AzureFunctionsConfig azureConfig) {
         int funcPort;
-        if (azureConfig.funcPort.isPresent()) {
-            funcPort = azureConfig.funcPort.get();
+        if (azureConfig.funcPort().isPresent()) {
+            funcPort = azureConfig.funcPort().get();
         } else {
             Config config = ConfigProviderResolver.instance().getConfig();
             funcPort = config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
         }
         final String enableDebug = System.getProperty("enableDebug");
         if (StringUtils.isNotEmpty(enableDebug) && enableDebug.equalsIgnoreCase("true")) {
-            return String.format(FUNC_HOST_START_WITH_DEBUG_CMD, funcPort, azureConfig.localDebugConfig);
+            return String.format(FUNC_HOST_START_WITH_DEBUG_CMD, funcPort, azureConfig.localDebugConfig());
         } else {
             return String.format(FUNC_HOST_START_CMD, funcPort);
         }

@@ -4,8 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Pulsar
+include::_attributes.adoc[]
+:categories: messaging
+:topics: messaging,reactive-messaging,pulsar,dev-services,testing,dev-mode
+:extensions: io.quarkus:quarkus-messaging-pulsar
 
-With Quarkus Smallrye Reactive Messaging Pulsar extension (`quarkus-smallrye-reactive-messaging-pulsar`)
+With Quarkus Messaging Pulsar extension (`quarkus-messaging-pulsar`)
 Dev Services for Pulsar automatically starts a Pulsar broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
 The application is configured automatically.
@@ -62,6 +66,11 @@ The following example enables transaction support:
 
 [source, properties]
 ----
-quarkus.pulsar.devservices.broker-config.transactionCoordinatorEnabled=true
-quarkus.pulsar.devservices.broker-config.systemTopicEnabled=true
+quarkus.pulsar.devservices.broker-config.transaction-coordinator-enabled=true
+quarkus.pulsar.devservices.broker-config.system-topic-enabled=true
 ----
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-pulsar_quarkus.pulsar.devservices.adoc[opts=optional, leveloffset=+1]

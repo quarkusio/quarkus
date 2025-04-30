@@ -21,7 +21,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * Copied from {@code io.vertx.core.json.jackson.JsonObjectSerializer} as that class is package private
  */
-class JsonObjectSerializer extends JsonSerializer<JsonObject> {
+public class JsonObjectSerializer extends JsonSerializer<JsonObject> {
     @Override
     public void serialize(JsonObject value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         jgen.writeObject(value.getMap());

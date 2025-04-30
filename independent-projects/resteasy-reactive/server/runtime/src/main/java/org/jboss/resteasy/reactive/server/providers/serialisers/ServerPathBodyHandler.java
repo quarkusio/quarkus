@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.PathBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
@@ -36,8 +35,6 @@ public class ServerPathBodyHandler extends PathBodyHandler implements ServerMess
     @Override
     public void writeResponse(java.nio.file.Path o, Type genericType, ServerRequestContext context)
             throws WebApplicationException {
-        ServerHttpResponse serverResponse = context.serverResponse();
-        // sendFile implies end(), even though javadoc doesn't say, if you add end() it will throw
-        serverResponse.sendFile(o.toString(), 0, Long.MAX_VALUE);
+        ServerFileBodyHandler.sendFile(o.toFile(), context);
     }
 }

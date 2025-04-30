@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Google Cloud Platform Functions binding.
+:topics: google,gcp,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http,io.quarkus:quarkus-funqy-google-cloud-functions
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 
@@ -34,7 +36,7 @@ gcloud auth login
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-google-cloud-functions-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-quickstart[directory].
+The solution is located in the `funqy-google-cloud-functions-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-quickstart[directory].
 
 == Creating the Maven Deployment Project
 
@@ -78,8 +80,6 @@ This will compile and package your code.
 In this example, we will create two background functions and a cloud events function.
 Background functions allow you to react to Google Cloud events like PubSub messages, Cloud Storage events, Firestore events, ...
 Cloud events functions allow you to react to supported events using the Cloud Events specification.
-
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must add the `--gen2` parameter.
 
 [source,java]
 ----
@@ -145,7 +145,7 @@ You will have a single JAR inside the `target/deployment` repository that contai
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 The `gcloud` command will be different depending on which event triggers your function.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 21 runtime, but you can switch to the Java 17 runtime by using `--runtime=java17` instead of `--runtime=java21` on the deploy commands.
 
 [WARNING]
 ====
@@ -166,7 +166,7 @@ Use this command to deploy to Google Cloud Functions:
 ----
 gcloud functions deploy quarkus-example-funky-pubsub \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
-  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
+  --runtime=java21 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
   --source=target/deployment
 ----
 
@@ -203,7 +203,7 @@ Then, use this command to deploy to Google Cloud Functions:
 ----
 gcloud functions deploy quarkus-example-funky-storage \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
-  --runtime=java17 --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
+  --runtime=java21 --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
   --source=target/deployment
 ----
 
@@ -229,8 +229,6 @@ You can also simply add a file to Cloud Storage using the command line of the we
 
 === Cloud Events Functions - Cloud Storage
 
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
-
 Before deploying your function, you need to create a bucket.
 
 [source,bash]
@@ -242,9 +240,9 @@ Then, use this command to deploy to Google Cloud Functions:
 
 [source,bash]
 ----
-gcloud functions deploy quarkus-example-cloud-event --gen2 \
+gcloud functions deploy quarkus-example-cloud-event \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction \
-  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
+  --runtime=java21 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -322,8 +320,6 @@ This will call your PubSub background function with a Cloud Storage event `{"nam
 
 === Cloud Events Functions - Cloud Storage
 
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
-
 For cloud events functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction``.
 
 [source,bash,subs="attributes"]
@@ -369,7 +365,7 @@ This will call your cloud events function with an event on the `"MY_FILE.txt` fi
 
 Quarkus provides built-in support for testing your Funqy Google Cloud functions via the `quarkus-test-google-cloud-functions` dependency.
 
-To use it, you must add the following test dependency in your `pom.xml`.
+To use it, you must add the following test dependencies in your `pom.xml`.
 
 [source,xml]
 ----
@@ -378,10 +374,17 @@ To use it, you must add the following test dependency in your `pom.xml`.
     <artifactId>quarkus-test-google-cloud-functions</artifactId>
     <scope>test</scope>
 </dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
 ----
 
 This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
 This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+The default Quarkus test port configuration (`quarkus.http.test-port`) will be honored and if you set it to 0 a random port will be assigned to the function invoker.
 
 === Background Functions - PubSub
 
@@ -447,8 +450,6 @@ class GreetingFunctionsStorageTest {
 3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
 
 === Cloud Events Functions - Cloud Storage
-
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
 
 [source,java]
 ----

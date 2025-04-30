@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus reactive architecture.
+:topics: internals,reactive
 
 Quarkus is reactive.
 It's even more than this: Quarkus unifies reactive and imperative programming.
@@ -146,13 +147,13 @@ Thanks to hints in your code (such as the `@Blocking` and `@NonBlocking` annotat
 If we go back to the HTTP endpoint example from above, the HTTP request is always received on an I/O thread.
 Then, the extension dispatching that request to your code decides whether to call it on the I/O thread, avoiding thread switches, or on a worker thread.
 This decision depends on the extension.
-For example, the RESTEasy Reactive extension uses the `@Blocking` annotation to determine if the method needs to be invoked using a worker thread, or if it can be invoked using the I/O thread.
+For example, the Quarkus REST (formerly RESTEasy Reactive) extension uses the `@Blocking` annotation to determine if the method needs to be invoked using a worker thread, or if it can be invoked using the I/O thread.
 
 Quarkus is pragmatic and versatile.
 You decide how to develop and execute your application.
 You can use the imperative way, the reactive way, or mix them, using reactive on the parts of the application under high concurrency.
 
-[#quarkus-extensions-enabling-reactive]
+[[quarkus-extensions-enabling-reactive]]
 == Quarkus Extensions enabling Reactive
 
 Quarkus offers a large set of reactive APIs and features.
@@ -161,10 +162,10 @@ Quarkus adds new features in every release, and the https://github.com/quarkiver
 
 === HTTP
 
-* RESTEasy Reactive: an implementation of Jakarta REST tailored for the Quarkus architecture.
+* Quarkus REST: an implementation of Jakarta REST tailored for the Quarkus architecture.
 It follows a reactive-first approach but allows imperative code using the `@Blocking` annotation.
 * Reactive Routes: a declarative way to register HTTP routes directly on the Vert.x router used by Quarkus to route HTTP requests to methods.
-* Reactive Rest Client: allows consuming HTTP endpoints.
+* REST Client: allows consuming HTTP endpoints.
 Under the hood, it uses the non-blocking I/O features from Quarkus.
 * Qute - the Qute template engine exposes a reactive API to render templates in a non-blocking manner.
 
@@ -192,7 +193,7 @@ Offer reactive and imperative programming interfaces.
 * GraphQL: implement and query (client) data store using GraphQL. Offers Mutiny APIs and subscriptions as event streams.
 * Fault Tolerance: provide retry, fallback, circuit breakers abilities to your application.It can be used with Mutiny types.
 
-[#engine]
+[[engine]]
 === Engine
 
 * Vert.x : the underlying reactive engine of Quarkus.

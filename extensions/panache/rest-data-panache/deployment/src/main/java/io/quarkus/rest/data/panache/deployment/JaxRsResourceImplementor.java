@@ -26,6 +26,7 @@ import io.quarkus.rest.data.panache.deployment.methods.GetMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.UpdateMethodImplementor;
+import io.quarkus.rest.data.panache.deployment.methods.UserMethodsWithAnnotationsImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.hal.ListHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.runtime.util.HashUtil;
@@ -37,6 +38,7 @@ class JaxRsResourceImplementor {
 
     private static final Logger LOGGER = Logger.getLogger(JaxRsResourceImplementor.class);
     private static final String OPENAPI_TAG_ANNOTATION = "org.eclipse.microprofile.openapi.annotations.tags.Tag";
+    private static final String WITH_SESSION_ON_DEMAND_ANNOTATION = "io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand";
 
     private final List<MethodImplementor> methodImplementors;
 
@@ -47,6 +49,7 @@ class JaxRsResourceImplementor {
                 new AddMethodImplementor(capabilities),
                 new UpdateMethodImplementor(capabilities),
                 new DeleteMethodImplementor(capabilities),
+                new UserMethodsWithAnnotationsImplementor(capabilities),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
                 new ListHalMethodImplementor(capabilities));
@@ -76,7 +79,7 @@ class JaxRsResourceImplementor {
                 .classOutput(classOutput).className(controllerClassName);
 
         if (resourceMetadata.getResourceInterface() != null) {
-            classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface());
+            classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface().name().toString());
         }
 
         ClassCreator classCreator = classCreatorBuilder.build();
@@ -106,6 +109,9 @@ class JaxRsResourceImplementor {
             for (AnnotationInstance classAnnotation : resourceProperties.getClassAnnotations()) {
                 classCreator.addAnnotation(classAnnotation);
             }
+        }
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            classCreator.addAnnotation(WITH_SESSION_ON_DEMAND_ANNOTATION);
         }
     }
 

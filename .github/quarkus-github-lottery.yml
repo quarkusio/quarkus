@@ -7,6 +7,11 @@ buckets:
     delay: PT0S
     timeout: P3D
   maintenance:
+    created:
+      delay: PT0S
+      timeout: P1D
+      expiry: P14D
+      ignoreLabels: ["triage/on-ice"]
     feedback:
       labels: ["triage/needs-reproducer", "triage/needs-feedback"]
       needed:
@@ -18,23 +23,72 @@ buckets:
     stale:
       delay: P60D
       timeout: P14D
+      ignoreLabels: ["triage/on-ice"]
   stewardship:
     delay: P60D
     timeout: P14D
+    ignoreLabels: ["triage/on-ice"]
 participants:
+  - username: "DavideD"
+    timezone: "Europe/Vienna"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/jdbc"]
+      days: ["WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Monday and Tuesday.
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 3
+        provided:
+          maxIssues: 3
+      stale:
+        maxIssues: 1
   - username: "yrodiere"
     timezone: "Europe/Paris"
     triage:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch"]
-      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
+      days: ["MONDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Tuesday.
+      created:
+        maxIssues: 3
       feedback:
         needed:
-          maxIssues: 4
+          maxIssues: 3
         provided:
-          maxIssues: 2
+          maxIssues: 3
+      stale:
+        maxIssues: 1
+  - username: "marko-bekhta"
+    timezone: "Europe/Warsaw"
+    maintenance:
+      labels: ["area/hibernate-search", "area/elasticsearch", "area/hibernate-validator"]
+      days: ["WEDNESDAY"]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 10
+        provided:
+          maxIssues: 10
+      stale:
+        maxIssues: 5
+  - username: "mbladel"
+    timezone: "Europe/Rome"
+    maintenance:
+      labels: [ "area/hibernate-orm", "area/jdbc" ]
+      days: [ "WEDNESDAY" ]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 10
+        provided:
+          maxIssues: 10
       stale:
         maxIssues: 5
   - username: "gsmet"
@@ -45,6 +99,8 @@ participants:
     maintenance:
       labels: ["area/hibernate-validator", "area/jakarta"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4
@@ -61,7 +117,7 @@ participants:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 2
     maintenance:
-      labels: ["area/arc", "area/scheduler", "area/qute"]
+      labels: ["area/arc", "area/scheduler", "area/qute", "area/websockets", "area/picocli", "area/hibernate-reactive", "area/testing", "area/vertx"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       feedback:
         needed:
@@ -106,8 +162,10 @@ participants:
       days: ["WEDNESDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/resteasy-reactive", "area/kubernetes"]
+      labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/rest", "area/kubernetes"]
       days: ["WEDNESDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4
@@ -146,5 +204,109 @@ participants:
           maxIssues: 4
         provided:
           maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "gastaldi"
+    timezone: "America/Sao_Paulo"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/flyway", "area/quarkiverse"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "cescoffier"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/foundation", "area/grpc", "area/kafka", "area/mailer", "area/mutiny", "area/netty", "area/reactive", "area/reactive-messaging", "area/reactive-sql-clients", "area/reactive-streams-operators", "area/redis", "area/stork", "area/vertx", "area/virtual-threads", "area/websockets"]
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3      
+  - username: "jponge"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["WEDNESDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/mutiny", "area/reactive", "area/vertx", "area/core", "env/podman", "area/kotlin"]
+      days: ["WEDNESDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3
+  - username: "aureamunoz"
+    timezone: "Europe/Paris"
+    triage:
+      days: [ "MONDAY", "WEDNESDAY", "THURSDAY" ]
+      maxIssues: 2
+    maintenance:
+      labels: [ "area/stork", "area/spring", "area/kubernetes", "area/devtools", "area/grpc", "area/rest" ]
+      days: [ "MONDAY", "WEDNESDAY", "THURSDAY" ]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3
+  - username: "ozangunalp"
+    timezone: "Europe/Paris"
+    triage:
+      days: [ "MONDAY", "FRIDAY" ]
+      maxIssues: 2
+    maintenance:
+      labels: [ "area/kafka", "area/reactive-messaging", "area/reactive", "area/virtual-threads", "area/mutiny", "area/devtools" ]
+      days: [ "MONDAY", "FRIDAY" ]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3
+  - username: "phillip-kruger"
+    timezone: "Australia/Melbourne"
+    triage:
+      days: ["MONDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/dev-ui", "area/openapi", "area/swagger-ui", "area/graphql"]
+      days: ["FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3
+  - username: "lucamolteni"
+    timezone: "Europe/Rome"
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/jdbc"]
+      days: [ "MONDAY" ]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 5
+        provided:
+          maxIssues: 5
       stale:
         maxIssues: 5

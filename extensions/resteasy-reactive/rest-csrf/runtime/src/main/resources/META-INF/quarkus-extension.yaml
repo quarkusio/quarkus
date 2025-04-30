@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "REST - Cross-Site Request Forgery Prevention Filter"
+metadata:
+  keywords:
+  - "csrf"
+  categories:
+  - "security"
+  status: "preview"
+  config:
+  - "quarkus.rest-csrf."
+  - "quarkus.csrf-reactive."

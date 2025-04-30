@@ -6,14 +6,17 @@ import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
@@ -22,17 +25,18 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
-    private static HttpCredentialTransport OIDC_SERVICE_TRANSPORT = new HttpCredentialTransport(
-            HttpCredentialTransport.Type.AUTHORIZATION, OidcConstants.BEARER_SCHEME);
-    private static HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
+    private static final Logger LOG = Logger.getLogger(OidcAuthenticationMechanism.class);
+
+    private static final HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
             HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
     private final BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
-    private final CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
+    private final CodeAuthenticationMechanism codeAuth;
     private final DefaultTenantConfigResolver resolver;
 
-    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver) {
+    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, BlockingSecurityExecutor blockingExecutor) {
         this.resolver = resolver;
+        this.codeAuth = new CodeAuthenticationMechanism(blockingExecutor);
         this.bearerAuth.init(this, resolver);
         this.codeAuth.init(this, resolver);
     }
@@ -40,11 +44,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        setTenantIdAttribute(context);
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
-                if (!oidcConfig.tenantEnabled) {
+                if (!oidcConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
                 return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
@@ -55,11 +58,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        setTenantIdAttribute(context);
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends ChallengeData> apply(OidcTenantConfig oidcTenantConfig) {
-                if (!oidcTenantConfig.tenantEnabled) {
+                if (!oidcTenantConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
                 return isWebApp(context, oidcTenantConfig) ? codeAuth.getChallenge(context)
@@ -69,11 +71,24 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private Uni<OidcTenantConfig> resolve(RoutingContext context) {
+        OidcTenantConfig resolvedConfig = context.get(OidcTenantConfig.class.getName());
+        if (resolvedConfig != null) {
+            return Uni.createFrom().item(resolvedConfig);
+        }
+
+        setTenantIdAttribute(context);
+
         return resolver.resolveConfig(context).map(new Function<>() {
             @Override
             public OidcTenantConfig apply(OidcTenantConfig oidcTenantConfig) {
                 if (oidcTenantConfig == null) {
                     throw new OIDCException("Tenant configuration has not been resolved");
+                }
+                final String tenantId = oidcTenantConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
+                LOG.debugf("Resolved OIDC tenant id: %s", tenantId);
+                context.put(OidcTenantConfig.class.getName(), oidcTenantConfig);
+                if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
+                    context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
                 }
                 return oidcTenantConfig;
             };
@@ -81,11 +96,11 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private boolean isWebApp(RoutingContext context, OidcTenantConfig oidcConfig) {
-        ApplicationType applicationType = oidcConfig.applicationType.orElse(ApplicationType.SERVICE);
-        if (OidcTenantConfig.ApplicationType.HYBRID == applicationType) {
+        ApplicationType applicationType = oidcConfig.applicationType().orElse(ApplicationType.SERVICE);
+        if (ApplicationType.HYBRID == applicationType) {
             return context.request().getHeader("Authorization") == null;
         }
-        return OidcTenantConfig.ApplicationType.WEB_APP == applicationType;
+        return ApplicationType.WEB_APP == applicationType;
     }
 
     @Override
@@ -95,40 +110,41 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        setTenantIdAttribute(context);
         return resolve(context).onItem().transform(new Function<OidcTenantConfig, HttpCredentialTransport>() {
             @Override
             public HttpCredentialTransport apply(OidcTenantConfig oidcTenantConfig) {
-                if (!oidcTenantConfig.tenantEnabled) {
+                if (!oidcTenantConfig.tenantEnabled()) {
                     return null;
                 }
                 return isWebApp(context, oidcTenantConfig) ? OIDC_WEB_APP_TRANSPORT
-                        : OIDC_SERVICE_TRANSPORT;
+                        : new HttpCredentialTransport(
+                                HttpCredentialTransport.Type.AUTHORIZATION, oidcTenantConfig.token().authorizationScheme());
             }
         });
     }
 
     private static void setTenantIdAttribute(RoutingContext context) {
-        for (String cookieName : context.cookieMap().keySet()) {
-            if (cookieName.startsWith(OidcUtils.SESSION_COOKIE_NAME)) {
-                setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName);
-            } else if (cookieName.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
-                setTenantIdAttribute(context, OidcUtils.STATE_COOKIE_NAME, cookieName);
+        if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
+            for (String cookieName : context.cookieMap().keySet()) {
+                if (OidcUtils.isSessionCookie(cookieName)) {
+                    setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName, true);
+                    break;
+                } else if (cookieName.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+                    setTenantIdAttribute(context, OidcUtils.STATE_COOKIE_NAME, cookieName, false);
+                    break;
+                }
             }
         }
     }
 
-    private static void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName) {
-        // It has already been checked the cookieName starts with the cookiePrefix
-        if (cookieName.length() == cookiePrefix.length()) {
-            context.put(OidcUtils.TENANT_ID_ATTRIBUTE, OidcUtils.DEFAULT_TENANT_ID);
-        } else {
-            String suffix = cookieName.substring(cookiePrefix.length() + 1);
-            // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
-            int index = suffix.indexOf("_");
-            String tenantId = index == -1 ? suffix : suffix.substring(0, index);
-            context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
-        }
+    private static void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName,
+            boolean sessionCookie) {
+        String tenantId = OidcUtils.getTenantIdFromCookie(cookiePrefix, cookieName, sessionCookie);
+
+        context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+        context.put(sessionCookie ? OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE : OidcUtils.TENANT_ID_SET_BY_STATE_COOKIE,
+                tenantId);
+        LOG.debugf("%s cookie set a '%s' tenant id on the %s request path", cookieName, tenantId, context.request().path());
     }
 
     @Override

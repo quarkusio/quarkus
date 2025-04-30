@@ -12,23 +12,23 @@ import jakarta.ws.rs.core.Link;
  * - the JSON-B serializer: {@link HalEntityWrapperJsonbSerializer}
  * - the Jackson serializer: {@link HalEntityWrapperJacksonSerializer}
  */
-public class HalEntityWrapper extends HalWrapper {
+public class HalEntityWrapper<T> extends HalWrapper {
 
-    private final Object entity;
+    private final T entity;
 
-    public HalEntityWrapper(Object entity, Link... links) {
+    public HalEntityWrapper(T entity, Link... links) {
         this(entity, new HashMap<>());
 
         addLinks(links);
     }
 
-    public HalEntityWrapper(Object entity, Map<String, HalLink> links) {
+    public HalEntityWrapper(T entity, Map<String, HalLink> links) {
         super(links);
 
         this.entity = entity;
     }
 
-    public Object getEntity() {
+    public T getEntity() {
         return entity;
     }
 }

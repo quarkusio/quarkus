@@ -3,6 +3,8 @@ package io.quarkus.redis.runtime.datasource;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
+
 import io.quarkus.redis.datasource.bloom.BfInsertArgs;
 import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.smallrye.mutiny.Uni;
@@ -11,7 +13,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractBloomCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractBloomCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 
@@ -41,7 +43,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_MADD)
@@ -58,7 +60,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_MEXISTS)
@@ -89,7 +91,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(args, "args");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         RedisCommand command = RedisCommand.of(Command.BF_INSERT)

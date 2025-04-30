@@ -1,0 +1,20 @@
+services:
+  service1:
+    image: test:1
+    labels:
+      - "label1=value1"
+      - "label2=value2"
+
+  service2:
+    image: test:2
+    labels:
+      key1: value1
+      key2: value2
+
+  service3:
+    image: test:3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

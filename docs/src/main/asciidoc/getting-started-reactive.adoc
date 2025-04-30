@@ -5,8 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started With Reactive
 include::_attributes.adoc[]
-:categories: getting-started
+:categories: getting-started,reactive
 :summary: Learn more about developing reactive applications with Quarkus.
+:topics: getting-started,reactive
 
 _Reactive_ is a set of principles to build robust, efficient, and concurrent applications and systems.
 These principles let you handle more load than traditional approaches while using the resources (CPU and memory) more efficiently while also reacting to failures gracefully.
@@ -26,7 +27,7 @@ This guide will help you with:
 
 * Bootstrapping a reactive CRUD application with Quarkus
 * Using Hibernate Reactive with Panache to interact with a database in a reactive fashion
-* Using RESTEasy Reactive to implement HTTP API while enforcing the reactive principle
+* Using Quarkus REST (formerly RESTEasy Reactive) to implement HTTP API while enforcing the reactive principle
 * Packaging and Running the application
 
 == Prerequisites
@@ -35,7 +36,7 @@ include::{includes}/prerequisites.adoc[]
 
 NOTE: Verify that Maven is using the Java version you expect.
 If you have multiple JDKs installed, make sure Maven is using the expected one.
-You can verify which JDK Maven uses by running `mvn --version.`
+You can verify which JDK Maven uses by running `mvn --version`.
 
 == Imperative vs. Reactive: a question of threads
 
@@ -102,7 +103,7 @@ While we recommend you to follow the step-by-step instructions, you can find the
 
 First, go to https://code.quarkus.io[code.quarkus.io] and select the following extensions:
 
-1. RESTEasy Reactive Jackson
+1. Quarkus REST Jackson
 2. Hibernate Reactive with Panache
 3. Reactive PostgreSQL client
 
@@ -151,7 +152,7 @@ Before going further, open the `src/main/resources/application.properties` file 
 [source, properties]
 ----
 quarkus.datasource.db-kind=postgresql
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 It instructs the application to use PostgreSQL for the database and to handle the database schema generation.
@@ -183,6 +184,10 @@ Create the `src/main/java/org/acme/hibernate/orm/panache/FruitResource.java` fil
 ----
 package org.acme.hibernate.orm.panache;
 
+import java.util.List;
+
+import io.quarkus.panache.common.Sort;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Path;
 
@@ -212,7 +217,7 @@ Open http://localhost:8080/fruits to invoke this method:
 ----
 
 We get the expected JSON array.
-RESTEasy Reactive automatically maps the list into a JSON Array, except if instructed otherwise.
+Quarkus REST automatically maps the list into a JSON Array, except if instructed otherwise.
 
 Look at the return type; it returns a `Uni` of `List<Fruit>`.
 `Uni` is an asynchronous type.

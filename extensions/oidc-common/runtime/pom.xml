@@ -6,7 +6,6 @@
         <artifactId>quarkus-oidc-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,6 +16,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -57,15 +60,34 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify-forbidden-apis</id>
+                        <configuration>
+                            <signaturesFiles>
+                                <signaturesFile>./banned-signatures.txt</signaturesFile>
+                            </signaturesFiles>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

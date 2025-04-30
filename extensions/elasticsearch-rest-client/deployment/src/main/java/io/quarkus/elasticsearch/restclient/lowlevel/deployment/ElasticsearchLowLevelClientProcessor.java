@@ -41,7 +41,7 @@ class ElasticsearchLowLevelClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     @BuildStep

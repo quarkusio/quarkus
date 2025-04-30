@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.aop.MeterTag;
 
 @Path("/all-the-things")
 public class AnnotatedResource {
@@ -74,12 +75,12 @@ public class AnnotatedResource {
     }
 
     @Counted(value = "metric.all", extraTags = { "extra", "tag" })
-    public Object countAllInvocations(boolean fail) {
+    public Object countAllInvocations(@MeterTag boolean fail) {
         return new Response(fail).get();
     }
 
     @Counted(description = "nice description")
-    public Object emptyMetricName(boolean fail) {
+    public Object emptyMetricName(@MeterTag(resolver = PrefixingValueResolver.class) boolean fail) {
         return new Response(fail).get();
     }
 
@@ -89,12 +90,12 @@ public class AnnotatedResource {
     }
 
     @Counted(value = "async.all", extraTags = { "extra", "tag" })
-    public CompletableFuture<?> countAllAsyncInvocations(boolean fail) {
+    public CompletableFuture<?> countAllAsyncInvocations(@MeterTag(key = "do_fail_call") boolean fail) {
         return CompletableFuture.supplyAsync(new Response(fail));
     }
 
     @Counted
-    public CompletableFuture<?> emptyAsyncMetricName(boolean fail) {
+    public CompletableFuture<?> emptyAsyncMetricName(@MeterTag(expression = "expression") boolean fail) {
         return CompletableFuture.supplyAsync(new Response(fail));
     }
 

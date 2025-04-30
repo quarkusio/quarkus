@@ -5,7 +5,6 @@ import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -20,10 +19,12 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.opentelemetry.deployment.tracing.TracerEnabled;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
@@ -32,7 +33,6 @@ import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
-import io.vertx.core.VertxOptions;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class InstrumentationProcessor {
@@ -68,18 +68,32 @@ public class InstrumentationProcessor {
         }
     }
 
+    static class VertxHttpAvailable implements BooleanSupplier {
+        private static final boolean IS_VERTX_HTTP_AVAILABLE = isClassPresentAtRuntime(
+                "io.quarkus.vertx.http.runtime.VertxHttpRecorder");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_VERTX_HTTP_AVAILABLE;
+        }
+    }
+
     @BuildStep(onlyIf = GrpcExtensionAvailable.class)
-    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
+        if (config.instrument().grpc()) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+        }
     }
 
     @BuildStep
     void registerRestClientClassicProvider(
             Capabilities capabilities,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)
+                && config.instrument().resteasyClient()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
         }
@@ -88,59 +102,56 @@ public class InstrumentationProcessor {
     @BuildStep
     void registerReactiveMessagingMessageDecorator(
             Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingDecorator.class));
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.MESSAGING) && config.instrument().messaging()) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
         }
     }
 
-    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class)
+    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER + 1);
+    VertxOptionsConsumerBuildItem vertxHttpMetricsOptions(InstrumentationRecorder recorder) {
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxHttpMetricsOptions(), LIBRARY_AFTER + 1);
+    }
+
+    @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
+    @Record(ExecutionTime.STATIC_INIT)
+    VertxOptionsConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(
             InstrumentationRecorder recorder) {
-        Consumer<VertxOptions> vertxTracingOptions;
-        vertxTracingOptions = recorder.getVertxTracingOptions();
-        return new VertxOptionsConsumerBuildItem(vertxTracingOptions, LIBRARY_AFTER);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
     }
 
     // RESTEasy and Vert.x web
     @BuildStep
-    void registerResteasyClassicAndOrResteasyReactiveProvider(
+    void registerResteasyClassicAndOrResteasyReactiveProvider(OTelBuildConfig config,
             Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer) {
-
-        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY);
-
-        if (!isResteasyClassicAvailable) {
-            // if RestEasy is not available then no need to continue
-            return;
+        if (capabilities.isPresent(Capability.RESTEASY) && config.instrument().resteasy()) {
+            resteasyJaxrsProviderBuildItemBuildProducer
+                    .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
         }
-
-        resteasyJaxrsProviderBuildItemBuildProducer
-                .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
     }
 
     @BuildStep
     void resteasyReactiveIntegration(
             Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
-            BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer) {
-
-        if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
-            // if RESTEasy Reactive is not available then no need to continue
-            return;
+            BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
+            containerRequestFilterBuildItemBuildProducer
+                    .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
+            preExceptionMapperHandlerBuildItemBuildProducer
+                    .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
         }
 
-        containerRequestFilterBuildItemBuildProducer
-                .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
-        preExceptionMapperHandlerBuildItemBuildProducer
-                .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
     }
-
 }

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started, native
 :summary: Build native executables with GraalVM or Mandrel.
+:topics: native,graalvm,mandrel
 
 This guide covers:
 
@@ -97,11 +98,12 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
 ====
 
-Version {graalvm-version} is required.
+GraalVM {graalvm-version} is required.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-** Use platform-specific install tools like https://sdkman.io/jdks#Oracle[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+We recommend the _community edition_ of GraalVM. For example, install it with `sdk install java 21-graalce`.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,bash]
@@ -168,15 +170,21 @@ The native executable for our application will contain the application code, req
 
 image:native-executable-process.png[Creating a native executable]
 
-If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
+If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following Maven profile section:
 
 [source,xml]
 ----
 <profiles>
     <profile>
         <id>native</id>
+        <activation>
+            <property>
+                <name>native</name>
+            </property>
+        </activation>
         <properties>
-            <quarkus.package.type>native</quarkus.package.type>
+            <skipITs>false</skipITs>
+            <quarkus.native.enabled>true</quarkus.native.enabled>
         </properties>
     </profile>
 </profiles>
@@ -193,7 +201,7 @@ You can find more information about how to configure the native image building p
 ====
 
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ minutes. You could
-just pass -Dquarkus.package.type=native as a property on the command line, however it is better to use a profile as
+just pass -Dquarkus.native.enabled=true as a property on the command line, however it is better to use a profile as
 this allows native image tests to also be run.
 
 Create a native executable using:
@@ -204,9 +212,9 @@ include::{includes}/devtools/build-native.adoc[]
 [NOTE]
 .Issues with packaging on Windows
 ====
-The Microsoft Native Tools for Visual Studio must first be initialized before packaging. You can do this by starting
-the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools. At 
-`x64 Native Tools Command Prompt` you can navigate to your project folder and run `./mvnw package -Dnative`.
+The Microsoft Native Tools for Visual Studio must first be initialized before packaging.
+You can do this by starting the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools.
+At the `x64 Native Tools Command Prompt`, you can navigate to your project folder and run `./mvnw package -Dnative`.
 
 Another solution is to write a script to do this for you:
 
@@ -233,7 +241,7 @@ You can do so by prepending the flag with `-J` and passing it as additional nati
 IMPORTANT: Fully static native executables support is experimental.
 
 On Linux it's possible to package a native executable that doesn't depend on any system shared library.
-There are https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
+There are link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
 
 Compiling fully static binaries is done by statically linking https://musl.libc.org/[musl] instead of `glibc` and should not be used in production without rigorous testing.
 
@@ -247,7 +255,7 @@ To see the `GreetingResourceIT` run against the native executable, use `./mvnw v
 $ ./mvnw verify -Dnative
 ...
 Finished generating 'getting-started-1.0.0-SNAPSHOT-runner' in 22.0s.
-[INFO] [io.quarkus.deployment.pkg.steps.NativeImageBuildRunner] docker run --env LANG=C --rm --user 1000:1000 -v /home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-native-image-source-jar:/project:z --entrypoint /bin/bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} -c objcopy --strip-debug getting-started-1.0.0-SNAPSHOT-runner
+[INFO] [io.quarkus.deployment.pkg.steps.NativeImageBuildRunner] docker run --env LANG=C --rm --user 1000:1000 -v /home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-native-image-source-jar:/project:z --entrypoint /bin/bash quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} -c objcopy --strip-debug getting-started-1.0.0-SNAPSHOT-runner
 [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 70686ms
 [INFO]
 [INFO] --- maven-failsafe-plugin:3.0.0-M7:integration-test (default) @ getting-started ---
@@ -264,7 +272,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2023-05-05 10:55:52,068 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT native (powered by Quarkus 3.0.2.Final) started in 0.009s. Listening on: http://0.0.0.0:8081
 2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Profile prod activated.
-2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.99 s - in org.acme.getting.started.GreetingResourceIT
 ...
 ----
@@ -299,7 +307,7 @@ such as importing test data into the database.
 ----
 quarkus.native.resources.includes=version.txt
 %test.quarkus.native.resources.includes=version.txt,import-dev.sql
-%test.quarkus.hibernate-orm.database.generation=drop-and-create
+%test.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 %test.quarkus.hibernate-orm.sql-load-script=import-dev.sql
 ----
 
@@ -377,7 +385,7 @@ It is also possible to re-run the tests against a native executable that has alr
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.
 
-[#container-runtime]
+[[container-runtime]]
 == Creating a Linux executable without GraalVM installed
 
 IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker
@@ -413,7 +421,26 @@ These are regular Quarkus config properties, so if you always want to build in a
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
-[#tip-quarkus-native-remote-container-build]
+Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
+
+[IMPORTANT]
+====
+Starting with Quarkus 3.19+, the _builder_ image used to build the native executable is based on UBI 9.
+It means that the native executable produced by the container build will be based on UBI 9 as well.
+So, if you plan to build a container, make sure that the base image in your `Dockerfile` is compatible with UBI 9.
+The native executable will not run on UBI 8 base images.
+
+You can configure the builder image used for the container build by setting the `quarkus.native.builder-image` property.
+For example to switch back to an UBI8 _builder image_ you can use:
+
+`quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
+
+You can see the available tags for UBI8 https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here]
+and for UBI9 https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)])
+
+====
+
+[[tip-quarkus-native-remote-container-build]]
 [TIP]
 ====
 If you see the following invalid path error for your application JAR when trying to create a native executable using a container build, even though your JAR was built successfully, you're most likely using a remote daemon for your container runtime.
@@ -426,16 +453,6 @@ In this case, use the parameter `-Dquarkus.native.remote-container-build=true` i
 The reason for this is that the local build driver invoked through `-Dquarkus.native.container-build=true` uses volume mounts to make the JAR available in the build container, but volume mounts do not work with remote daemons. The remote container build driver copies the necessary files instead of mounting them. Note that even though the remote driver also works with local daemons, the local driver should be preferred in the local case because mounting is usually more performant than copying.
 ====
 
-[TIP]
-====
-The builder image used by default supports Java 17 as it is the latest LTS version.
-
-If your application uses Java 18 or later, you need to specify a builder image supporting Java 20:
-
-:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
-====
 
 [TIP]
 ====
@@ -449,7 +466,8 @@ Please note that the above command points to a floating tag.
 It is highly recommended to use the floating tag,
 so that your builder image remains up-to-date and secure.
 If you absolutely must, you may hard-code to a specific tag
-(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here] for available tags),
+(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here (UBI 8)]
+and  https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)] for available tags),
 but be aware that you won't get security updates that way and it's unsupported.
 ====
 
@@ -472,7 +490,7 @@ If one of those extensions is present, then creating a container image for the n
 ====
 If you're running a remote Docker daemon, you need to replace `quarkus.native.container-build=true` with `quarkus.native.remote-container-build=true`.
 
-See <<tip-quarkus-native-remote-container-build, Creating a Linux executable without GraalVM installed>> for more details.
+See <<tip-quarkus-native-remote-container-build,Creating a Linux executable without GraalVM installed>> for more details.
 ====
 
 * `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)
@@ -496,25 +514,30 @@ The project generation has provided a `Dockerfile.native-micro` in the `src/main
 
 [source,dockerfile]
 ----
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 WORKDIR /work/
-COPY target/*-runner /work/application
-RUN chmod 775 /work
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+COPY --chown=1001:root --chmod=755 target/*-runner /work/application
+
 EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+USER 1001
+
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
 [NOTE]
 .Quarkus Micro Image?
 ====
 The Quarkus Micro Image is a small container image providing the right set of dependencies to run your native application.
-It is based on https://catalog.redhat.com/software/containers/ubi8-micro/601a84aadd19c7786c47c8ea?container-tabs=overview[UBI Micro].
+It is based on https://catalog.redhat.com/software/containers/ubi9-micro/61832b36dd607bfc82e66399?container-tabs=overview[UBI Micro].
 This base image has been tailored to work perfectly in containers.
 
 You can read more about UBI images on:
 
 * https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Introduction to Universal Base Image]
-* https://catalog.redhat.com/software/container-stacks/detail/5ec53f50ef29fd35586d9a56[Red Hat Universal Base Image 8]
+* https://catalog.redhat.com/software/containers/ubi9/ubi/615bcf606feffc5384e8452e[Red Hat Universal Base Image 9]
 
 UBI images can be used without any limitations.
 
@@ -541,12 +564,12 @@ The project generation has also provided a `Dockerfile.native` in the `src/main/
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
-COPY --chown=1001:root target/*-runner /work/application
+COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
 
 EXPOSE 8080
 USER 1001
@@ -557,7 +580,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 The UBI minimal image is bigger than the micro one mentioned above.
 It contains more utilities such as the `microdnf` package manager.
 
-[#multistage-docker]
+[[multistage-docker]]
 === Using a multi-stage Docker build
 
 The previous section showed you how to build a native executable using Maven or Gradle, but it requires you to have created the native executable first.
@@ -581,18 +604,18 @@ Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
-COPY --chown=quarkus:quarkus mvnw /code/mvnw
+FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
+COPY --chown=quarkus:quarkus --chmod=0755 mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 USER quarkus
 WORKDIR /code
-RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
 COPY src /code/src
 RUN ./mvnw package -Dnative
 
 ## Stage 2 : create the docker final image
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --from=build /code/target/*-runner /work/application
 
@@ -611,7 +634,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 NOTE: This multi-stage Docker build copies the Maven wrapper from the host machine.
 The Maven wrapper (or the Gradle wrapper) is a convenient way to provide a specific version of Maven/Gradle.
 It avoids having to create a base image with Maven and Gradle.
-To provision the Maven Wrapper in your project, use: `mvn -N org.apache.maven.plugins:maven-wrapper-plugin:3.1.1:wrapper`.
+To provision the Maven Wrapper in your project, use: `mvn wrapper:wrapper`.
 
 Save this file in `src/main/docker/Dockerfile.multistage` as it is not included in the getting started quickstart.
 
@@ -619,9 +642,9 @@ Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
+FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
 USER root
-RUN microdnf install findutils
+RUN microdnf install findutils -y
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
 COPY --chown=quarkus:quarkus gradle /code/gradle
 COPY --chown=quarkus:quarkus build.gradle /code/
@@ -630,10 +653,10 @@ COPY --chown=quarkus:quarkus gradle.properties /code/
 USER quarkus
 WORKDIR /code
 COPY src /code/src
-RUN ./gradlew build -Dquarkus.package.type=native
+RUN ./gradlew build -Dquarkus.native.enabled=true
 
 ## Stage 2 : create the docker final image
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --from=build /code/build/*-runner /work/application
 RUN chmod 775 /work
@@ -664,7 +687,7 @@ Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With N
 
 [NOTE,subs=attributes+]
 ====
-To use GraalVM CE instead of Mandrel, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build`.
+To use GraalVM CE instead of Mandrel, update the `FROM` clause to: `FROM quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build`.
 ====
 
 === Using a Distroless base image
@@ -705,16 +728,16 @@ Sample multistage Dockerfile for building an image from `scratch`:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 USER root
-RUN microdnf install make gcc
+RUN microdnf install make gcc -y
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 RUN mkdir /musl && \
     curl -L -o musl.tar.gz https://more.musl.cc/11.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
     tar -xvzf musl.tar.gz -C /musl --strip-components 1 && \
-    curl -L -o zlib.tar.gz https://www.zlib.net/zlib-1.2.13.tar.gz && \
+    curl -L -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz && \
     mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
@@ -722,7 +745,7 @@ RUN mkdir /musl && \
 ENV PATH="/musl/bin:${PATH}"
 USER quarkus
 WORKDIR /code
-RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
 COPY src /code/src
 RUN ./mvnw package -Dnative -DskipTests -Dquarkus.native.additional-build-args="--static","--libc=musl"
 
@@ -746,12 +769,12 @@ More details on xref:./upx.adoc[UPX Compression documentation].
 
 In certain circumstances, you may want to build the native image in a separate step.
 For example, in a CI/CD pipeline, you may want to have one step to generate the source that will be used for the native image generation and another step to use these sources to actually build the native executable.
-For this use case, you can set the `quarkus.package.type=native-sources`.
+For this use case, you can set the additional flag `quarkus.native.sources-only=true`.
 This will execute the java compilation as if you had started native compilation (`-Dnative`), but stops before triggering the actual call to GraalVM's `native-image`.
 
 [source,bash]
 ----
-$ ./mvnw clean package -Dquarkus.package.type=native-sources
+$ ./mvnw clean package -Dnative -Dquarkus.native.sources-only=true
 ----
 
 After compilation has finished, you find the build artifact in `target/native-sources`:
@@ -786,7 +809,7 @@ Running the build process in a container is also possible:
 
 [source,bash]
 ----
-$ ./mvnw clean package -Dquarkus.package.type=native-sources -Dquarkus.native.container-build=true
+$ ./mvnw clean package -Dquarkus.native.enabled=true -Dquarkus.native.sources-only=true -Dquarkus.native.container-build=true
 ----
 
 `-Dquarkus.native.container-build=true` will produce an additional text file named `native-builder.image` holding the docker image name to be used to build the native image.
@@ -899,7 +922,7 @@ For a more detailed guide about debugging native images please refer to the xref
 
 == Using Monitoring Options
 
-Monitoring options such as JDK flight recorder, jvmstat, heap dumps, and remote JMX (experimental in Mandrel 23)
+Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX 
 can be added to the native executable build. Simply supply a comma separated list of the monitoring options you wish to
 include at build time.
 [source,bash]
@@ -930,6 +953,10 @@ include at build time.
 |Adds support for accepting connections from JMX clients.
 |GraalVM for JDK 17/20 Mandrel 23.0 (17.0.7)
 
+|nmt
+|Adds support for native memory tracking.
+|GraalVM for JDK 23 Mandrel 24.1
+
 |all
 |Adds all monitoring options.
 |GraalVM 22.3, GraalVM CE 17.0.7 Mandrel 22.3 Mandrel 23.0 (17.0.7)
@@ -945,7 +972,7 @@ These are provided in `application.properties` the same as any other config prop
 
 The properties are shown below:
 
-include::{generated-dir}/config/quarkus-native-pkg-native-config.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-core_quarkus.native.adoc[opts=optional]
 
 == What's next?
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientUtils;
 
 class KubernetesClientUtilsTest {
 

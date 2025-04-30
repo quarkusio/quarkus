@@ -19,10 +19,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 @EnableForNative
 public class NativeImageIT extends MojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     /**
      * Tests that the {@code java.library.path} can be overridden/configurable by passing the system property
@@ -60,7 +62,7 @@ public class NativeImageIT extends MojoTestBase {
         final Process nativeImageRunWithAdditionalLibPath = runNativeImage(nativeImageRunner,
                 new String[] { "-Djava.library.path=" + tmpDir.toString() });
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello/javaLibraryPath");
+            final String response = devModeClient.getHttpResponse("/hello/javaLibraryPath");
             Assertions.assertTrue(response.contains(tmpDir.toString()),
                     "Response " + response + " for java.library.path was expected to contain the " + tmpDir + ", but didn't");
         } finally {

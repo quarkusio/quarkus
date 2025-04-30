@@ -12,9 +12,8 @@ import java.util.Map;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 
 public class RunCommandProcessor {
     private static final String JAVA_HOME_SYS = "java.home";
@@ -25,31 +24,27 @@ public class RunCommandProcessor {
         return new RunCommandActionResultBuildItem(cmds);
     }
 
+    @SuppressWarnings("deprecation") // legacy jar
     @BuildStep
     public void defaultJavaCommand(PackageConfig packageConfig,
             OutputTargetBuildItem jar,
-            List<UberJarRequiredBuildItem> uberJarRequired,
-            List<LegacyJarRequiredBuildItem> legacyJarRequired,
-            BuildProducer<RunCommandActionBuildItem> cmds) {
+            BuildProducer<RunCommandActionBuildItem> cmds,
+            BuildSystemTargetBuildItem buildSystemTarget) {
 
-        Path jarPath = null;
-        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
-            jarPath = jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
-            jarPath = jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
-        } else {
-            jarPath = jar.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
-
-        }
+        Path jarPath = switch (packageConfig.jar().type()) {
+            case UBER_JAR -> jar.getOutputDirectory()
+                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            // todo: legacy JAR should be using runnerSuffix()
+            case LEGACY_JAR -> jar.getOutputDirectory()
+                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            case FAST_JAR, MUTABLE_JAR -> jar.getOutputDirectory()
+                    .resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
+        };
 
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
 
-        for (Map.Entry e : System.getProperties().entrySet()) {
+        for (Map.Entry<?, ?> e : buildSystemTarget.getBuildSystemProps().entrySet()) {
             args.add("-D" + e.getKey().toString() + "=" + e.getValue().toString());
         }
         args.add("-jar");

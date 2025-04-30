@@ -44,7 +44,6 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -63,16 +62,22 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
         this.providers = new ProvidersImpl(restClientRequestContext);
 
-        // TODO This needs to be challenged:
         // Always create a duplicated context because each REST Client invocation must have its own context
         // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
-        Context ctxt = Vertx.currentContext();
-        if (ctxt != null && VertxContext.isDuplicatedContext(ctxt)) {
-            this.context = ctxt;
-        } else {
-            Context current = client.vertx.getOrCreateContext();
-            this.context = VertxContext.createNewDuplicatedContext(current);
-        }
+        Context current = client.vertx.getOrCreateContext();
+        this.context = VertxContext.createNewDuplicatedContext(current);
+        // If an interceptor wants to access the parent context, it can do so by using the "__PARENT_CONTEXT__" key.
+        // This approach is compatible with the next-to-be nested context support (from SmallRye Common).
+        // The "__PARENT_CONTEXT__" key will continue to reference the _parent_ context.
+        // So, currently, an interceptor needing to read from the original context will need to use:
+        // Context parent = ContextLocals.get("__PARENT_CONTEXT__");
+        // V v = parent.getLocal("some-key");
+        // To write to the original context, it will need to use:
+        // Context parent = ContextLocals.get("__PARENT_CONTEXT__");
+        // parent.putLocal("some-key", someValue);
+        // Note that unlike with nested contexts, multiple child contexts can write to the same parent key, and may
+        // lead to a race condition.
+        this.context.putLocal("__PARENT_CONTEXT__", current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

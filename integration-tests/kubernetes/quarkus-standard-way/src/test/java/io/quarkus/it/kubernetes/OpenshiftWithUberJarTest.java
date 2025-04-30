@@ -27,9 +27,14 @@ public class OpenshiftWithUberJarTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-uberjar").setApplicationVersion("0.1-SNAPSHOT").setRun(true)
-            .setLogFileName("k8s.log").withConfigurationResource("openshift-with-uberjar.properties")
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
+            .setApplicationName("openshift-uberjar")
+            .setApplicationVersion("0.1-SNAPSHOT")
+            .setRun(true)
+            .setLogFileName("k8s.log")
+            .withConfigurationResource("openshift-with-uberjar.properties")
+            .setForcedDependencies(
+                    List.of(
+                            Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -52,7 +57,7 @@ public class OpenshiftWithUberJarTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-uberjar");
             });

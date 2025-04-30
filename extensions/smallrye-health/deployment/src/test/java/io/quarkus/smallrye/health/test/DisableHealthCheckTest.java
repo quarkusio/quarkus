@@ -10,7 +10,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class DisableHealthCheckTest {
+class DisableHealthCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -21,7 +21,7 @@ public class DisableHealthCheckTest {
                     + BasicHealthCheck.class.getName() + "\".enabled", "false");
 
     @Test
-    public void testHealthCheckDisabled() {
+    void testHealthCheckDisabled() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             RestAssured.when().get("/q/health").then()

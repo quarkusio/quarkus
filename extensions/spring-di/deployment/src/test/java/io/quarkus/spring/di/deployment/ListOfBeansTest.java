@@ -5,12 +5,13 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import java.util.List;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
@@ -21,8 +22,9 @@ public class ListOfBeansTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Bar.class, ServiceAlpha.class, ServiceBravo.class, Service.class,
-                            Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class));
+                    .addClasses(Foo.class, Bar.class, CdiBean.class, ServiceAlpha.class, ServiceBravo.class, Service.class,
+                            Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class))
+            .overrideConfigKey("test.value", "foo,bar");
 
     @Inject
     Foo foo;
@@ -33,6 +35,9 @@ public class ListOfBeansTest {
     @Inject
     Baz baz;
 
+    @Inject
+    CdiBean cdiBean;
+
     @Test
     public void testInjection() {
         assertThat(foo.services).hasSize(2).extractingResultOf("ping").containsExactlyInAnyOrder("alpha", "bravo");
@@ -42,6 +47,8 @@ public class ListOfBeansTest {
         assertThat(bar.converters).hasSize(2).extractingResultOf("pong").containsExactlyInAnyOrder("alpha", "bravo");
 
         assertThat(baz.converters).hasSize(2).extractingResultOf("pong").containsExactlyInAnyOrder("alpha", "bravo");
+
+        assertThat(cdiBean.values).containsOnly("foo", "bar");
     }
 
     @org.springframework.stereotype.Service
@@ -73,6 +80,15 @@ public class ListOfBeansTest {
         Bar(List<Converter> converters) {
             this.converters = converters;
         }
+
+    }
+
+    @Singleton
+    public static class CdiBean {
+
+        @Inject
+        @ConfigProperty(name = "test.value")
+        List<String> values;
 
     }
 

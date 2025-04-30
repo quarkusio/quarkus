@@ -9,7 +9,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.kubernetes.client.KubernetesConfigCustomizer;
-import io.quarkus.runtime.TlsConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientUtils;
 
 @Singleton
 public class KubernetesConfigProducer {
@@ -18,9 +19,8 @@ public class KubernetesConfigProducer {
     @Singleton
     @Produces
     public Config config(KubernetesClientBuildConfig buildConfig,
-            TlsConfig tlsConfig,
             @All List<KubernetesConfigCustomizer> customizers) {
-        var result = KubernetesClientUtils.createConfig(buildConfig, tlsConfig);
+        var result = KubernetesClientUtils.createConfig(buildConfig);
         for (KubernetesConfigCustomizer customizer : customizers) {
             customizer.customize(result);
         }

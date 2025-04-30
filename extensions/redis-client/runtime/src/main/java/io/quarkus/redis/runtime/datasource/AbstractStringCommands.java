@@ -6,6 +6,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.string.GetExArgs;
@@ -16,11 +17,9 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractStringCommands<K, V> extends AbstractRedisCommands {
 
-    protected final Class<V> typeOfValue;
+    protected final Type typeOfValue;
 
-    public static final Command LCS = Command.create("lcs");
-
-    AbstractStringCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractStringCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
         this.typeOfValue = v;
     }
@@ -253,13 +252,13 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         nonNull(key1, "key1");
         nonNull(key2, "key2");
 
-        return execute(RedisCommand.of(LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)));
+        return execute(RedisCommand.of(Command.LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)));
     }
 
     Uni<Response> _lcsLength(K key1, K key2) {
         nonNull(key1, "key1");
         nonNull(key2, "key2");
 
-        return execute(RedisCommand.of(LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)).put("LEN"));
+        return execute(RedisCommand.of(Command.LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)).put("LEN"));
     }
 }

@@ -1,9 +1,13 @@
 package io.quarkus.qute.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +19,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.spi.AnnotatedParameter;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -27,11 +32,16 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.ParameterDeclaration;
+import io.quarkus.qute.RenderedResults;
+import io.quarkus.qute.ResultsCollectingTemplateInstance;
+import io.quarkus.qute.SectionNode;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
+import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -44,7 +54,13 @@ public class TemplateProducer {
 
     private final Map<String, TemplateVariants> templateVariants;
 
-    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes) {
+    // In the dev mode, we need to keep track of injected templates so that we can clear the cached values
+    private final List<WeakReference<InjectableTemplate>> injectedTemplates;
+
+    private final RenderedResults renderedResults;
+
+    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes, LaunchMode launchMode,
+            Instance<RenderedResults> renderedResults) {
         this.engine = engine;
         Map<String, TemplateVariants> templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : context.getVariants().entrySet()) {
@@ -53,6 +69,8 @@ public class TemplateProducer {
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
+        this.renderedResults = launchMode == LaunchMode.TEST && renderedResults.isResolvable() ? renderedResults.get() : null;
+        this.injectedTemplates = launchMode == LaunchMode.DEVELOPMENT ? Collections.synchronizedList(new ArrayList<>()) : null;
         LOGGER.debugf("Initializing Qute variant templates: %s", templateVariants);
     }
 
@@ -71,7 +89,7 @@ public class TemplateProducer {
                 LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
             }
         }
-        return new InjectableTemplate(name, templateVariants, engine);
+        return newInjectableTemplate(name);
     }
 
     @Produces
@@ -87,27 +105,57 @@ public class TemplateProducer {
         if (path == null || path.isEmpty()) {
             throw new IllegalStateException("No template location specified");
         }
-        // We inject a delegating template in order to:
-        // 1. Be able to select an appropriate variant if needed
-        // 2. Be able to reload the template when needed, i.e. when the cache is cleared
-        return new InjectableTemplate(path, templateVariants, engine);
+        return newInjectableTemplate(path);
     }
 
     /**
      * Used by NativeCheckedTemplateEnhancer to inject calls to this method in the native type-safe methods.
      */
     public Template getInjectableTemplate(String path) {
-        return new InjectableTemplate(path, templateVariants, engine);
+        return newInjectableTemplate(path);
     }
 
+    public void clearInjectedTemplates() {
+        if (injectedTemplates != null) {
+            synchronized (injectedTemplates) {
+                for (Iterator<WeakReference<InjectableTemplate>> it = injectedTemplates.iterator(); it.hasNext();) {
+                    WeakReference<InjectableTemplate> ref = it.next();
+                    InjectableTemplate template = ref.get();
+                    if (template == null) {
+                        it.remove();
+                    } else if (template.unambiguousTemplate != null) {
+                        template.unambiguousTemplate.clear();
+                    }
+                }
+            }
+        }
+    }
+
+    private Template newInjectableTemplate(String path) {
+        InjectableTemplate template = new InjectableTemplate(path, templateVariants, engine, renderedResults);
+        if (injectedTemplates != null) {
+            injectedTemplates.add(new WeakReference<>(template));
+        }
+        return template;
+    }
+
+    /**
+     * We inject a delegating template in order to:
+     *
+     * 1. Be able to select an appropriate variant if needed
+     * 2. Be able to reload the template when needed, i.e. when the cache is cleared
+     */
     static class InjectableTemplate implements Template {
 
         private final String path;
         private final TemplateVariants variants;
         private final Engine engine;
+        // Some methods may only work if a single template variant is found
         private final LazyValue<Template> unambiguousTemplate;
+        private final RenderedResults renderedResults;
 
-        public InjectableTemplate(String path, Map<String, TemplateVariants> templateVariants, Engine engine) {
+        InjectableTemplate(String path, Map<String, TemplateVariants> templateVariants, Engine engine,
+                RenderedResults renderedResults) {
             this.path = path;
             this.variants = templateVariants.get(path);
             this.engine = engine;
@@ -122,11 +170,21 @@ public class TemplateProducer {
             } else {
                 unambiguousTemplate = null;
             }
+            this.renderedResults = renderedResults;
+        }
+
+        @Override
+        public SectionNode getRootNode() {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getRootNode();
+            }
+            throw ambiguousTemplates("getRootNode()");
         }
 
         @Override
         public TemplateInstance instance() {
-            return new InjectableTemplateInstanceImpl();
+            TemplateInstance instance = new InjectableTemplateInstanceImpl();
+            return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults) : instance;
         }
 
         @Override
@@ -179,10 +237,7 @@ public class TemplateProducer {
 
         @Override
         public Fragment getFragment(String identifier) {
-            if (unambiguousTemplate != null) {
-                return unambiguousTemplate.get().getFragment(identifier);
-            }
-            throw ambiguousTemplates("getFragment()");
+            return new InjectableFragment(identifier);
         }
 
         @Override
@@ -193,6 +248,22 @@ public class TemplateProducer {
             throw ambiguousTemplates("getFragmentIds()");
         }
 
+        @Override
+        public List<TemplateNode> getNodes() {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getNodes();
+            }
+            throw ambiguousTemplates("getNodes()");
+        }
+
+        @Override
+        public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().findNodes(predicate);
+            }
+            throw ambiguousTemplates("findNodes()");
+        }
+
         private UnsupportedOperationException ambiguousTemplates(String method) {
             return new UnsupportedOperationException("Ambiguous injected templates do not support " + method);
         }
@@ -200,6 +271,82 @@ public class TemplateProducer {
         @Override
         public String toString() {
             return "Injectable template [path=" + path + "]";
+        }
+
+        class InjectableFragment implements Fragment {
+
+            private final String identifier;
+
+            InjectableFragment(String identifier) {
+                this.identifier = identifier;
+            }
+
+            @Override
+            public List<Expression> getExpressions() {
+                return InjectableTemplate.this.getExpressions();
+            }
+
+            @Override
+            public Expression findExpression(Predicate<Expression> predicate) {
+                return InjectableTemplate.this.findExpression(predicate);
+            }
+
+            @Override
+            public String getGeneratedId() {
+                return InjectableTemplate.this.getGeneratedId();
+            }
+
+            @Override
+            public Optional<Variant> getVariant() {
+                return InjectableTemplate.this.getVariant();
+            }
+
+            @Override
+            public List<ParameterDeclaration> getParameterDeclarations() {
+                return InjectableTemplate.this.getParameterDeclarations();
+            }
+
+            @Override
+            public String getId() {
+                return identifier;
+            }
+
+            @Override
+            public Template getOriginalTemplate() {
+                return InjectableTemplate.this;
+            }
+
+            @Override
+            public Fragment getFragment(String id) {
+                return InjectableTemplate.this.getFragment(id);
+            }
+
+            @Override
+            public Set<String> getFragmentIds() {
+                return InjectableTemplate.this.getFragmentIds();
+            }
+
+            @Override
+            public List<TemplateNode> getNodes() {
+                return InjectableTemplate.this.getNodes();
+            }
+
+            @Override
+            public SectionNode getRootNode() {
+                return InjectableTemplate.this.getRootNode();
+            }
+
+            @Override
+            public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+                return InjectableTemplate.this.findNodes(predicate);
+            }
+
+            @Override
+            public TemplateInstance instance() {
+                TemplateInstance instance = new InjectableFragmentTemplateInstanceImpl(identifier);
+                return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults) : instance;
+            }
+
         }
 
         class InjectableTemplateInstanceImpl extends TemplateInstanceBase {
@@ -248,7 +395,8 @@ public class TemplateProducer {
             private TemplateInstance templateInstance() {
                 TemplateInstance instance = template().instance();
                 if (dataMap != null) {
-                    dataMap.forEach(instance::data);
+                    dataMap.forEachData(instance::data);
+                    dataMap.forEachComputedData(instance::computedData);
                 } else if (data != null) {
                     instance.data(data);
                 }
@@ -261,7 +409,7 @@ public class TemplateProducer {
                 return instance;
             }
 
-            private Template template() {
+            protected Template template() {
                 if (unambiguousTemplate != null) {
                     return unambiguousTemplate.get();
                 }
@@ -280,6 +428,22 @@ public class TemplateProducer {
             }
 
         }
+
+        class InjectableFragmentTemplateInstanceImpl extends InjectableTemplateInstanceImpl {
+
+            private final String identifier;
+
+            private InjectableFragmentTemplateInstanceImpl(String identifier) {
+                this.identifier = identifier;
+            }
+
+            @Override
+            protected Template template() {
+                return super.template().getFragment(identifier);
+            }
+
+        }
+
     }
 
     static class TemplateVariants {

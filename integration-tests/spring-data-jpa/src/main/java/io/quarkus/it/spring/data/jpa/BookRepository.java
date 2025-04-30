@@ -3,6 +3,9 @@ package io.quarkus.it.spring.data.jpa;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -44,6 +47,12 @@ public interface BookRepository extends Repository<Book, Integer> {
     // issue 9192
     @Query(value = "SELECT b.publicationYear FROM Book b where b.bid = :bid")
     Integer customFindPublicationYearObject(@Param("bid") Integer bid);
+
+    // Related to issue 41292
+    public default Page<Book> findPaged(Pageable pageable) {
+        List<Book> list = findAll();
+        return new PageImpl<>(list, pageable, list.size());
+    }
 
     interface BookCountByYear {
         int getPublicationYear();

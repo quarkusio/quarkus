@@ -8,6 +8,7 @@ import jakarta.ws.rs.PathParam;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.IdToken;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.Authenticated;
 
 @Path("/protected")
@@ -17,6 +18,12 @@ public class ProtectedResource {
     @Inject
     @IdToken
     JsonWebToken idToken;
+
+    @Inject
+    JsonWebToken accessToken;
+
+    @Inject
+    OidcConfig config;
 
     @GET
     public String getName() {
@@ -33,5 +40,14 @@ public class ProtectedResource {
     @Path("logout")
     public void logout() {
         throw new RuntimeException("Logout must be handled by CodeAuthenticationMechanism");
+    }
+
+    @Path("access-token-name")
+    @GET
+    public String accessTokenName() {
+        if (!OidcConfig.getDefaultTenant(config).authentication().verifyAccessToken()) {
+            throw new IllegalStateException("Access token verification should be enabled");
+        }
+        return accessToken.getName();
     }
 }

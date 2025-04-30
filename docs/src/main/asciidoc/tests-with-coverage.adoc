@@ -11,7 +11,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
+:topics: tooling,testing,coverage,jacoco
+:extensions: io.quarkus:quarkus-jacoco
 
 Learn how to measure the test coverage of your application. This guide covers:
 
@@ -37,14 +38,14 @@ The service will be tested with JUnit 5 and the endpoint will be annotated via a
 We recommend that you follow the instructions in the next sections and create the application step by step. However, you can go right to the completed example.
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tree-url}/tests-with-coverage-quickstart[directory].
+The solution is located in the `tests-with-coverage-quickstart` link:{quickstarts-tree-url}/tests-with-coverage-quickstart[directory].
 
 == Starting from a simple project and two tests
 
 Let's start from an empty application created with the Quarkus Maven plugin:
 
 :create-app-artifact-id: tests-with-coverage-quickstart
-:create-app-extensions: resteasy-reactive
+:create-app-extensions: rest
 include::{includes}/devtools/create-app.adoc[]
 
 Now we'll be adding all the elements necessary to have an application that is properly covered with tests.
@@ -170,6 +171,28 @@ config is required.
 WARNING: Using both the extension and the plugin requires special configuration, if you add both you will get lots of errors about classes
 already being instrumented. The configuration needed is detailed below.
 
+== Working with multi-module projects
+
+Up until `3.2`, `data-file` and `report-location` were always relative to the module's build output directory, which prevented from
+working with multi-module projects where you want to aggregate all coverages into a single parent directory. Starting in `3.3`,
+specifying a `data-file` or `report-location` will assume the path as is. Here is an example on how to set up the `surefire` plugin:
+
+[source, xml]
+----
+<plugin>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <configuration>
+    <systemPropertyVariables>
+      <quarkus.jacoco.data-file>${maven.multiModuleProjectDirectory}/target/jacoco.exec</quarkus.jacoco.data-file>
+      <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+      <quarkus.jacoco.report-location>${maven.multiModuleProjectDirectory}/target/coverage</quarkus.jacoco.report-location>
+    </systemPropertyVariables>
+  </configuration>
+</plugin
+----
+
+WARNING: If you need to configure the `argLine` property of the Surefire plugin (e.g. for setting memory parameters), you need to use https://maven.apache.org/surefire/maven-surefire-plugin/faq.html#late-property-evaluation[Maven late property evaluation^], otherwise the Jacoco agent will not be correctly added, and regular JUnit tests and Quarkus `ComponentTest` will not get covered. Example: `<argLine>@{argLine} -your -extra -arguments</argLine>`.
+
 == Running the tests with coverage
 
 Run `mvn verify`, the tests will be run and the results will end up in `target/jacoco-reports`. This is all that is needed,
@@ -177,7 +200,7 @@ the `quarkus-jacoco` extension allows JaCoCo to just work out of the box.
 
 There are some config options that affect this:
 
-include::{generated-dir}/config/quarkus-jacoco-jacoco-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-jacoco.adoc[opts=optional, leveloffset=+1]
 
 [TIP]
 ====
@@ -425,7 +448,7 @@ jacocoTestCoverageVerification {
 check.dependsOn jacocoTestCoverageVerification
 ----
 
-Excluding classes from the verification task can be configured as following: 
+Excluding classes from the verification task can be configured as following:
 
 [source,gradle]
 ----

@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "OpenID Connect Token Propagation Reactive"
+name: "REST Client - OpenID Connect Token Propagation"
 metadata:
   keywords:
   - "oauth2"
@@ -11,6 +11,7 @@ metadata:
   guide: "https://quarkus.io/guides/security-openid-connect-client"
   categories:
   - "security"
-  status: "preview"
+  status: "stable"
   config:
+  - "quarkus.rest-client-oidc-token-propagation."
   - "quarkus.oidc-token-propagation-reactive."

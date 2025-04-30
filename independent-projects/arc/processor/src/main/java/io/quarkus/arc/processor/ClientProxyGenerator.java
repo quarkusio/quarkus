@@ -28,6 +28,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
+import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -58,13 +59,17 @@ public class ClientProxyGenerator extends AbstractGenerator {
     private final Predicate<DotName> applicationClassPredicate;
     private final boolean mockable;
     private final Set<String> existingClasses;
+    // We optimize the access to the delegate if a single context is registered for a given scope
+    private final Set<DotName> singleContextNormalScopes;
 
     public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate, boolean generateSources, boolean mockable,
-            ReflectionRegistration reflectionRegistration, Set<String> existingClasses) {
+            ReflectionRegistration reflectionRegistration, Set<String> existingClasses,
+            Set<DotName> singleContextNormalScopes) {
         super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.mockable = mockable;
         this.existingClasses = existingClasses;
+        this.singleContextNormalScopes = singleContextNormalScopes;
     }
 
     /**
@@ -86,15 +91,16 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
-        String baseName = getBaseName(bean, beanClassName);
+        String baseName = getBaseName(beanClassName);
         String targetPackage = bean.getClientProxyPackageName();
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
 
-        boolean applicationClass = applicationClassPredicate.test(getApplicationClassTestName(bean));
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClass,
+        boolean isApplicationClass = applicationClassPredicate.test(getApplicationClassTestName(bean))
+                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.CLIENT_PROXY : null, generateSources);
 
         // Foo_ClientProxy extends Foo implements ClientProxy
@@ -135,8 +141,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
             clientProxy.getFieldCreator(MOCK_FIELD, providerType.descriptorName()).setModifiers(ACC_PRIVATE | ACC_VOLATILE);
         }
         FieldCreator contextField = null;
-        if (BuiltinScope.APPLICATION.is(bean.getScope())) {
-            // It is safe to store the application context instance on the proxy
+        if (BuiltinScope.APPLICATION.is(bean.getScope())
+                || singleContextNormalScopes.contains(bean.getScope().getDotName())) {
+            // It is safe to store the context instance on the proxy
             contextField = clientProxy.getFieldCreator(CONTEXT_FIELD, InjectableContext.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
@@ -274,11 +281,14 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 beanIdentifierHandle);
         creator.writeInstanceField(beanField, creator.getThis(), beanHandle);
         if (contextField != null) {
-            creator.writeInstanceField(contextField, creator.getThis(), creator.invokeInterfaceMethod(
-                    MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+            // At this point we can be sure there's only one context implementation available
+            ResultHandle contextList = creator.invokeInterfaceMethod(
+                    MethodDescriptors.ARC_CONTAINER_GET_CONTEXTS,
                     containerHandle, creator
                             .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class),
-                                    beanHandle)));
+                                    beanHandle));
+            creator.writeInstanceField(contextField, creator.getThis(),
+                    creator.invokeInterfaceMethod(MethodDescriptors.LIST_GET, contextList, creator.load(0)));
         }
         creator.returnValue(null);
     }
@@ -300,6 +310,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (BuiltinScope.APPLICATION.is(bean.getScope())) {
             // Application context is stored in a field and is always active
             creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE,
+                    creator.readInstanceField(
+                            FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class),
+                            creator.getThis()),
+                    beanHandle));
+        } else if (singleContextNormalScopes.contains(bean.getScope().getDotName())) {
+            creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_SINGLE_CONTEXT_DELEGATE,
                     creator.readInstanceField(
                             FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class),
                             creator.getThis()),
@@ -332,18 +348,18 @@ public class ClientProxyGenerator extends AbstractGenerator {
         IndexView index = bean.getDeployment().getBeanArchiveIndex();
 
         if (bean.isClassBean()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, classInfo);
         } else if (bean.isProducerMethod()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(index, producerMethod.returnType());
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, returnTypeClass);
         } else if (bean.isProducerField()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(index, producerField.type());
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
@@ -359,15 +375,15 @@ public class ClientProxyGenerator extends AbstractGenerator {
     private void addDelegatesAndTrasformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses,
             Map<Methods.MethodKey, MethodInfo> methods, IndexView index,
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal,
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal,
             ClassInfo fieldClass) {
         Methods.addDelegatingMethods(index, fieldClass, methods, methodsFromWhichToRemoveFinal,
                 transformUnproxyableClasses);
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-            for (Map.Entry<String, Set<Methods.NameAndDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+            for (Map.Entry<String, Set<MethodKey>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
                 String className = entry.getKey();
                 bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
-                        new Methods.RemoveFinalFromMethod(className, entry.getValue())));
+                        new Methods.RemoveFinalFromMethod(entry.getValue())));
             }
         }
     }

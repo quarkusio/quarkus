@@ -10,9 +10,8 @@ import io.quarkus.scheduler.ScheduledExecution;
 public interface ScheduledInvoker {
 
     /**
-     *
      * @param execution
-     * @return the result
+     * @return the result, never {@code null}
      * @throws Exception
      */
     CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception;
@@ -25,6 +24,16 @@ public interface ScheduledInvoker {
      */
     default boolean isBlocking() {
         return true;
+    }
+
+    /**
+     * Indicates that the invoker used the virtual thread executor to execute the tasks.
+     * Note that the method must use a synchronous signature.
+     *
+     * @return {@code true} if the scheduled method runs on a virtual thread.
+     */
+    default boolean isRunningOnVirtualThread() {
+        return false;
     }
 
 }

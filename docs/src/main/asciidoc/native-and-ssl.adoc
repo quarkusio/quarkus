@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :categories: core, native, security
 :summary: In this guide, we will discuss how you can get your native images to support SSL, as native images don't support it out of the box.
 :devtools-no-gradle:
+:topics: native,ssl
 
 We are quickly moving to an SSL-everywhere world so being able to use SSL is crucial.
 
@@ -29,7 +30,7 @@ This guide is based on the REST client guide, so you should get this Maven proje
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The project is located in the `rest-client-quickstart` {quickstarts-tree-url}/rest-client-quickstart[directory].
+The project is located in the `resteasy-client-quickstart` link:{quickstarts-tree-url}/resteasy-client-quickstart[directory].
 
 == Looks like it works out of the box?!?
 
@@ -85,7 +86,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Agroal connection pooling extension (`quarkus-agroal`),
  * the Amazon Services extension (`quarkus-amazon-*`),
  * the Consul Config extension (`quarkus-config-consul`),
- * the Elasticsearch client extensions (`quarkus-elasticsearch-rest-client` and `quarkus-elasticsearch-rest-high-level-client`) and thus the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
+ * the Elasticsearch client extensions (`quarkus-elasticsearch-rest-client` and `quarkus-elasticsearch-java-client`) and thus the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
  * the Elytron Security OAuth2 extension (`quarkus-elytron-security-oauth2`),
  * the gRPC extension (`quarkus-grpc`),
  * the Infinispan Client extension (`quarkus-infinispan-client`).
@@ -105,8 +106,8 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`),
  * the Reactive client for Microsoft SQL Server extension (`quarkus-reactive-mssql-client`),
  * the Redis client extension (`quarkus-redis-client`),
+ * the RESTEasy Classic REST Client extension (`quarkus-resteasy-client`),
  * the REST Client extension (`quarkus-rest-client`),
- * the REST Client Reactive extension (`quarkus-rest-client-reactive`),
  * the SmallRye GraphQL Client extension (`quarkus-smallrye-graphql-client`),
  * the Spring Cloud Config client extension (`quarkus-spring-cloud-config-client`),
  * the Vault extension (`quarkus-vault`),
@@ -125,7 +126,7 @@ Now, let's just check the size of our native executable as it will be useful lat
 
 [source,shell]
 ----
-$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+$ ls -lh target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
 -rwxrwxr-x. 1 gandrian gandrian 46M Jun 11 13:01 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
@@ -192,8 +193,8 @@ Let's check again with SSL support entirely disabled:
 
 [source,shell]
 ----
-$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+$ ls -lh target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with an 11 MB overhead in native executable size.
@@ -213,8 +214,12 @@ And let's build the native executable again:
 
 include::{includes}/devtools/build-native.adoc[]
 
-[#the-truststore-path]
+[[the-truststore-path]]
 == The TrustStore path
+
+IMPORTANT: This section explains how to configure the default trust store when building a native executable.
+However, it is **strongly recommended** to use the xref:./tls-registry-reference.adoc[TLS registry] instead.
+The TLS registry ensures a consistent experience and feature set across both JVM and native modes.
 
 [WARNING]
 ====
@@ -232,11 +237,11 @@ However, this comes with a few drawbacks:
 
  * If you use the same executable in all environments, and a certificate expires, the application needs to be rebuilt, and redeployed into production with the new certificate, which is an inconvenience.
  * Even worse, if a certificate gets revoked because of a security breach, all applications that embed this certificate need to be rebuilt and redeployed in a timely manner.
- * This requires also to add into the application all certificates for all environments (e.g. DEV, TEST, PROD), which means that a certificate that is required for DEV but should not be used elsewhere, will make its way anyway in production.
+ * This requires also to add into the application all certificates for all environments (e.g. `dev`, `test`, `prod`), which means that a certificate that is required for dev mode but should not be used elsewhere, will make its way anyway in production.
  * Providing all certificates at build time complicates the CI, specifically in dynamic environments such as Kubernetes where valid certificates are provided by the platform in the `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` PEM file.
  * Lastly, this does not play well with third party software that do not provide a dedicated build for each customer environment.
 
-Creating a native executable using build time certificates essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at build time (which for Quarkus means when you perform a build having `quarkus.package.type=native` set).
+Creating a native executable using build time certificates essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at build time (which for Quarkus means when you perform a build having `quarkus.native.enabled=true` set).
 This avoids shipping a `cacerts` file or requiring a system property be set in order to set up root certificates that are provided by the OS where the binary runs.
 
 In this situation, system properties such as `javax.net.ssl.trustStore` do not have an effect at
@@ -253,9 +258,10 @@ The file containing the custom TrustStore does *not* (and probably should not) h
 
 === Run time configuration
 
-Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode. See the https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/CertificateManagement/#runtime-options[GraalVM documentation] for more information.
+Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode.
+For more information, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/CertificateManagement/#runtime-options[Runtime Options] section of the "GraalVM Certificate Management in Native Image" guide.
 
-[#working-with-containers]
+[[working-with-containers]]
 === Working with containers
 
 No special action needs to be taken when running the native binary in a container. If the native binary was properly built with the custom TrustStore

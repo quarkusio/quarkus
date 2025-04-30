@@ -2,6 +2,7 @@ package io.quarkus.it.bouncycastle;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -88,5 +89,19 @@ public class BouncyCastleTestCase {
                 .then()
                 .statusCode(200)
                 .body(equalTo("success"));
+    }
+
+    @Test
+    public void loadNettySslContext() {
+        // this tests that io.netty.handler.ssl.BouncyCastlePemReader used by Netty SSL context
+        // works in native; it is used when 'org.bouncycastle:bcpkix-jdk18on' dependency is present
+        // even for other standards, not just PKCS1 used by this test, however for these the test could pass
+        // because of Netty SSL context has other strategies, not just BC
+        RestAssured.given()
+                .when()
+                .get("/jca/loadNettySslContext")
+                .then()
+                .statusCode(200)
+                .body(Matchers.notNullValue());
     }
 }

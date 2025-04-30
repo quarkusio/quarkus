@@ -6,8 +6,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -15,27 +17,39 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.quarkus.vertx.utils.NoBoundChecksBuffer;
+import io.quarkus.vertx.utils.VertxJavaIoContext;
+import io.quarkus.vertx.utils.VertxOutputStream;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.Http1xServerResponse;
@@ -191,12 +205,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestHost() {
-        return request.host();
+        return request.authority().toString();
     }
 
     @Override
     public void closeConnection() {
-        response.close();
+        request.connection().close();
     }
 
     @Override
@@ -207,6 +221,34 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public List<String> getAllQueryParams(String name) {
         return context.queryParam(name);
+    }
+
+    /**
+     * Retrieves the parameters from the current HTTP request as a
+     * {@link Map<String, List<String>>}, where the keys are parameter names
+     * and the values are lists of parameter values. This allows parameters
+     * to be extracted from the URL without knowing their names in advance.
+     *
+     * The method is used by {@link ParameterExtractor}, which works with characteristics
+     * such as parameter name, single/multiple values, and encoding. Since it's
+     * not always possible to distinguish between {@link Map} and {@link Multimap},
+     * the method returns a unified {@link Map<String, List<String>>} for handling
+     * both cases downstream by {@link ParameterHandler}.
+     *
+     * @return a {@link Map<String, List<String>>} containing the parameters and
+     *         their corresponding values.
+     */
+    @Override
+    public Map<String, List<String>> getQueryParamsMap() {
+        MultiMap entries = context.request().params();
+        final MultivaluedHashMap<String, String> result = new MultivaluedHashMap<>();
+        if (!entries.isEmpty()) {
+            for (Map.Entry<String, String> entry : entries) {
+                result.add(entry.getKey(), entry.getValue());
+            }
+
+        }
+        return new HashMap<>(result);
     }
 
     @Override
@@ -361,13 +403,17 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end(byte[] data) {
-        response.end(Buffer.buffer(data), null);
+        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(data.length);
+        buffer.writeBytes(data);
+        response.end(new NoBoundChecksBuffer(buffer), null);
         return this;
     }
 
     @Override
     public ServerHttpResponse end(String data) {
-        response.end(Buffer.buffer(data), null);
+        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(ByteBufUtil.utf8MaxBytes(data.length()));
+        buffer.writeCharSequence(data, CharsetUtil.UTF_8);
+        response.end(new NoBoundChecksBuffer(buffer), null);
         return this;
     }
 
@@ -406,7 +452,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public boolean closed() {
-        return response.closed();
+        return response.ended() || response.closed();
     }
 
     @Override
@@ -454,7 +500,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public OutputStream createResponseOutputStream() {
-        return new ResteasyReactiveOutputStream(this);
+        final ResteasyReactiveConfig config = getDeployment().getResteasyReactiveConfig();
+        return new VertxOutputStream(
+                new ResteasyVertxJavaIoContext(
+                        context,
+                        config.getMinChunkSize(),
+                        config.getOutputBufferSize()));
     }
 
     @Override
@@ -497,5 +548,34 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         NONE,
         REQUIRED,
         SENT;
+    }
+
+    final class ResteasyVertxJavaIoContext extends VertxJavaIoContext {
+
+        public ResteasyVertxJavaIoContext(RoutingContext context, int minChunkSize, int outputBufferSize) {
+            super(context, minChunkSize, outputBufferSize);
+        }
+
+        @Override
+        public Optional<String> getContentLength() {
+            if (getRoutingContext().request().response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                return Optional.empty();
+            }
+            final LazyResponse lazyResponse = VertxResteasyReactiveRequestContext.this.getResponse();
+            if (!lazyResponse.isCreated()) {
+                return Optional.empty();
+            }
+            MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
+            if (responseHeaders != null) {
+                // we need to make sure the content-length header is copied to Vert.x headers
+                // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
+                Object contentLength = responseHeaders.getFirst(HttpHeaders.CONTENT_LENGTH);
+                if (contentLength != null) {
+                    return Optional.of(contentLength.toString());
+                }
+            }
+            return Optional.empty();
+        }
+
     }
 }

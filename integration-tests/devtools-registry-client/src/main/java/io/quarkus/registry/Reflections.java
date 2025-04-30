@@ -28,6 +28,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         io.quarkus.registry.json.JsonArtifactCoordsSerializer.class,
         io.quarkus.registry.json.JsonBooleanTrueFilter.class,
         io.quarkus.registry.json.JsonEntityWithAnySupport.class,
-})
+}, ignoreNested = true)
 public class Reflections {
 }

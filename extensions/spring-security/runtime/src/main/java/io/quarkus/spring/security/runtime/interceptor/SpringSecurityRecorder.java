@@ -70,8 +70,9 @@ public class SpringSecurityRecorder {
     }
 
     public SecurityCheck principalNameFromParameterObjectSecurityCheck(int index, String expectedParameterClass,
-            String stringPropertyAccessorClass, String propertyName) {
+            String stringPropertyAccessorClass, String propertyName,
+            PrincipalNameFromParameterObjectSecurityCheck.CheckType checkType) {
         return PrincipalNameFromParameterObjectSecurityCheck.of(index, expectedParameterClass, stringPropertyAccessorClass,
-                propertyName);
+                propertyName, checkType);
     }
 }

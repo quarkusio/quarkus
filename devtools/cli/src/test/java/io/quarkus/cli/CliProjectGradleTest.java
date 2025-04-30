@@ -1,6 +1,7 @@
 package io.quarkus.cli;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import picocli.CommandLine;
  */
 public class CliProjectGradleTest {
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/");
+            .resolve("target/test-classes/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliProjectGradleTest");
     static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 
@@ -106,15 +107,28 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
+        Assertions.assertTrue(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should exist by default");
         String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
         CliDriver.invokeValidateBuild(project);
+    }
+
+    @Test
+    public void testCreateAppWithoutDockerfiles() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--no-dockerfiles", "-e", "-B",
+                "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+        Assertions.assertFalse(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should not exist");
     }
 
     @Test
@@ -130,8 +144,8 @@ public class CliProjectGradleTest {
         String buildGradleContent = validateBasicGradleKotlinIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         Path packagePath = wrapperRoot.resolve("src/main/java/");
         Assertions.assertTrue(packagePath.toFile().isDirectory(),
@@ -154,7 +168,7 @@ public class CliProjectGradleTest {
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x resteasy-reactive",
+                "-x rest",
                 "silly:my-project:0.1.0");
 
         // TODO: would love a test that doesn't use a wrapper, but CI path..
@@ -166,8 +180,8 @@ public class CliProjectGradleTest {
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
         String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, "silly", "my-project", "0.1.0");
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy-reactive"),
-                "build.gradle should contain quarkus-resteasy-reactive:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build.gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
@@ -245,8 +259,8 @@ public class CliProjectGradleTest {
         Assertions.assertFalse(result.stdout.contains("-x test"),
                 "gradle command should not specify '-x test'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dquarkus.package.type=native"),
-                "gradle command should specify -Dquarkus.package.type=native\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.native.enabled=true"),
+                "gradle command should specify -Dquarkus.native.enabled=true\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("--offline"),
                 "gradle command should specify --offline\n" + result);
@@ -334,8 +348,31 @@ public class CliProjectGradleTest {
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "gradle command should not specify '-Dsuspend'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
-                "gradle command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1\" \"arg2\""),
+                "gradle command should not specify -Dquarkus.args=\"arg1\" \"arg2\"\n" + result);
+
+        // 4 TEST MODE: test --clean --debug --suspend --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline", "--filter=FooTest");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in continuous test mode"), result.toString());
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.test.include-pattern=FooTest"), result.toString());
+
+        // 5 TEST MODE - run once: test --once --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--once", "--offline", "--filter=FooTest");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
+        Assertions.assertTrue(result.stdout.contains("--tests FooTest"), result.toString());
+
+        // 6 TEST MODE: Two word argument
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1 arg2");
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1 arg2\""),
+                "mvn command should not specify -Dquarkus.args=\"arg1 arg2\"\n" + result);
     }
 
     @Test
@@ -370,21 +407,6 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgJava11() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
-                "-e", "-B", "--verbose",
-                "--java", "11");
-
-        // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
-
-        Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
-        Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_11"),
-                "Java 11 should be used when specified. Found:\n" + buildGradle);
-    }
-
-    @Test
     public void testCreateArgJava17() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
                 "-e", "-B", "--verbose",
@@ -398,6 +420,22 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_17"),
                 "Java 17 should be used when specified. Found:\n" + buildGradleContent);
+    }
+
+    @Test
+    public void testCreateArgJava21() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
+                "-e", "-B", "--verbose",
+                "--java", "21");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path buildGradle = project.resolve("build.gradle");
+        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
+
+        Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_21"),
+                "Java 21 should be used when specified. Found:\n" + buildGradleContent);
     }
 
     String validateBasicGradleGroovyIdentifiers(Path project, String group, String artifact, String version) throws Exception {

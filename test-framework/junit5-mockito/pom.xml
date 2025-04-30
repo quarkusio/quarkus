@@ -18,6 +18,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+        </dependency>
         <!-- Contains the MockitoConfiguration that adds MutinyAnswer as a default answer.
              The dependency is in this direction so that users don't need to worry about it
              and only have to add this dependency (quarkus-junit5-mockito), but not ...-config. -->
@@ -31,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-subclass</artifactId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

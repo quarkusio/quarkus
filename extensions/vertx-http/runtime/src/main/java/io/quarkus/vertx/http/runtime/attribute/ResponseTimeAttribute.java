@@ -2,13 +2,14 @@ package io.quarkus.vertx.http.runtime.attribute;
 
 import java.util.concurrent.TimeUnit;
 
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The response time
- *
- * This will only work if {@link io.quarkus.vertx.http.runtime.HttpConfiguration#recordRequestStartTime} has been set
+ * <p>
+ * This will only work if {@link VertxHttpConfig#recordRequestStartTime} has been set
  */
 public class ResponseTimeAttribute implements ExchangeAttribute {
 

@@ -1,21 +1,26 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
-@ConfigRoot(name = "reactive-messaging.pulsar", phase = ConfigPhase.BUILD_TIME)
-public class ReactiveMessagingPulsarBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.messaging.pulsar")
+public interface ReactiveMessagingPulsarBuildTimeConfig {
     /**
      * Whether or not Pulsar Schema auto-detection is enabled.
      */
-    @ConfigItem(name = "schema-autodetection.enabled", defaultValue = "true")
-    public boolean schemaAutodetectionEnabled;
+    @WithName("schema-autodetection.enabled")
+    @WithDefault("true")
+    boolean schemaAutodetectionEnabled();
 
     /**
      * Whether Pulsar Schema generation is enabled.
      * When no Schema are found and not set, Quarkus generates a JSON Schema.
      */
-    @ConfigItem(name = "schema-generation.enabled", defaultValue = "true")
-    public boolean schemaGenerationEnabled;
+    @WithName("schema-generation.enabled")
+    @WithDefault("true")
+    boolean schemaGenerationEnabled();
 }

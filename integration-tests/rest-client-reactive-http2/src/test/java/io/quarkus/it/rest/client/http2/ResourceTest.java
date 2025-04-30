@@ -6,7 +6,6 @@ import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +14,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -27,6 +25,9 @@ public class ResourceTest {
 
     @TestHTTPResource(value = "/client/ping")
     URL clientUrl;
+
+    @TestHTTPResource(value = "/client2/ping")
+    URL client2Url;
 
     private WebClient webClient;
 
@@ -56,6 +57,13 @@ public class ResourceTest {
         assertEquals("pong", response.bodyAsString());
     }
 
+    @Test
+    public void shouldReturnPongFromManuallyCreatedClient() throws Exception {
+        HttpResponse<?> response = call(client2Url);
+        // if it's empty, it's because the REST Client is not using the HTTP/2 version
+        assertEquals("pong", response.bodyAsString());
+    }
+
     private HttpResponse<?> call(URL url) throws Exception {
         CompletableFuture<HttpResponse<Buffer>> result = new CompletableFuture<>();
         webClient.get(url.getPort(), url.getHost(), url.getPath())
@@ -71,7 +79,6 @@ public class ResourceTest {
     }
 
     private WebClient createWebClient() {
-        Assumptions.assumeTrue(JdkSSLEngineOptions.isAlpnAvailable()); //don't run on JDK8
         Vertx vertx = Vertx.vertx();
         WebClientOptions options = new WebClientOptions()
                 .setUseAlpn(true)

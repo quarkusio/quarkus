@@ -1,6 +1,5 @@
 package io.quarkus.security.runtime.interceptor.check;
 
-import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 import java.lang.reflect.Method;
@@ -71,10 +70,14 @@ public abstract class PermissionSecurityCheck<T> implements SecurityCheck {
     }
 
     private static void throwException(SecurityIdentity identity) {
+        throw getException(identity);
+    }
+
+    private static RuntimeException getException(SecurityIdentity identity) {
         if (identity.isAnonymous()) {
-            throw new UnauthorizedException();
+            return new UnauthorizedException();
         } else {
-            throw new ForbiddenException();
+            return new ForbiddenException();
         }
     }
 
@@ -101,12 +104,12 @@ public abstract class PermissionSecurityCheck<T> implements SecurityCheck {
                         .transformToUni(new Function<>() {
                             @Override
                             public Uni<?> apply(Boolean hasPermission) {
-                                if (FALSE.equals(hasPermission)) {
-                                    // check failed
-                                    throwException(identity);
+                                if (TRUE.equals(hasPermission)) {
+                                    return SUCCESSFUL_CHECK;
                                 }
 
-                                return SUCCESSFUL_CHECK;
+                                // check failed
+                                return Uni.createFrom().failure(getException(identity));
                             }
                         });
             }
@@ -214,7 +217,7 @@ public abstract class PermissionSecurityCheck<T> implements SecurityCheck {
                             final boolean hasAnotherPermission = i + 1 < permissions.length;
                             if (!hasAnotherPermission) {
                                 // check failed
-                                throwException(identity);
+                                return Uni.createFrom().failure(getException(identity));
                             }
 
                             // check next permission

@@ -107,15 +107,19 @@ public class WiringProcessor {
                         ReactiveMessagingDotNames.INCOMINGS);
                 AnnotationInstance outgoing = transformedAnnotations.getAnnotation(method,
                         ReactiveMessagingDotNames.OUTGOING);
+                AnnotationInstance outgoings = transformedAnnotations.getAnnotation(method,
+                        ReactiveMessagingDotNames.OUTGOINGS);
                 AnnotationInstance blocking = transformedAnnotations.getAnnotation(method,
                         BLOCKING);
-                if (incoming != null || incomings != null || outgoing != null) {
+                if (incoming != null || incomings != null || outgoing != null || outgoings != null) {
                     handleMethodAnnotatedWithIncoming(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, incoming);
                     handleMethodAnnotationWithIncomings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, incomings);
                     handleMethodAnnotationWithOutgoing(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, outgoing);
+                    handleMethodAnnotationWithOutgoings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
+                            method, outgoings);
 
                     if (WiringHelper.isSynthetic(method)) {
                         continue;
@@ -211,10 +215,34 @@ public class WiringProcessor {
         }
         if (outgoing != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.outgoing." + outgoing.value().asString() + ".tls-configuration-name", null,
+                    "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                     "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
 
             produceOutgoingChannel(appChannels, outgoing.value().asString());
+        }
+    }
+
+    private void handleMethodAnnotationWithOutgoings(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
+            MethodInfo method, AnnotationInstance outgoings) {
+        if (outgoings != null) {
+            for (AnnotationInstance instance : outgoings.value().asNestedArray()) {
+                if (instance.value().asString().isEmpty()) {
+                    validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                            new DeploymentException("Empty @Outgoing annotation on method " + method)));
+                }
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.outgoing." + instance.value().asString() + ".tls-configuration-name", null,
+                        "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.outgoing." + instance.value().asString() + ".connector", null,
+                        "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                produceOutgoingChannel(appChannels, instance.value().asString());
+            }
         }
     }
 
@@ -228,6 +256,9 @@ public class WiringProcessor {
                     validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
                             new DeploymentException("Empty @Incoming annotation on method " + method)));
                 }
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.incoming." + instance.value().asString() + ".tls-configuration-name", null,
+                        "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                         "mp.messaging.incoming." + instance.value().asString() + ".connector", null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
@@ -245,6 +276,9 @@ public class WiringProcessor {
                     new DeploymentException("Empty @Incoming annotation on method " + method)));
         }
         if (incoming != null) {
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.incoming." + incoming.value().asString() + ".tls-configuration-name", null,
+                    "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                     "mp.messaging.incoming." + incoming.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
@@ -329,7 +363,7 @@ public class WiringProcessor {
             }
         }
 
-        if (incomingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment) {
+        if (incomingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment()) {
             String connector = incomingConnectors.iterator().next();
             // Single incoming connector, set mp.messaging.incoming.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {
@@ -344,7 +378,7 @@ public class WiringProcessor {
             }
         }
 
-        if (outgoingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment) {
+        if (outgoingConnectors.size() == 1 && buildTimeConfig.autoConnectorAttachment()) {
             String connector = outgoingConnectors.iterator().next();
             // Single outgoing connector, set mp.messaging.outgoing.orphan-channel.connector
             for (OrphanChannelBuildItem orphan : orphans) {

@@ -80,11 +80,19 @@ public class Plugin {
         return catalogLocation;
     }
 
+    public Plugin withName(String name) {
+        return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
+    }
+
     public Plugin withDescription(Optional<String> description) {
         return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
     }
 
     public Plugin withCatalogLocation(Optional<Path> catalogLocation) {
+        return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
+    }
+
+    public Plugin withType(PluginType type) {
         return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
     }
 

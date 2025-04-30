@@ -33,7 +33,7 @@ public class SmallRyeHealthRecorder {
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             SmallRyeHealthRuntimeConfig runtimeConfig, ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.enable) {
+        if (runtimeConfig.enable()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(healthUiFinalDestination, healthUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));
@@ -43,12 +43,15 @@ public class SmallRyeHealthRecorder {
         }
     }
 
-    public void processSmallRyeHealthRuntimeConfiguration(SmallRyeHealthRuntimeConfig runtimeConfig) {
+    public void processSmallRyeHealthRuntimeConfiguration(SmallRyeHealthRuntimeConfig runtimeConfig,
+            SmallRyeHealthBuildFixedConfig buildFixedConfig) {
         SmallRyeHealthReporter reporter = Arc.container().select(SmallRyeHealthReporter.class).get();
-        reporter.setAdditionalProperties(runtimeConfig.additionalProperties);
+        reporter.setAdditionalProperties(runtimeConfig.additionalProperties());
 
-        reporter.setHealthChecksConfigs(runtimeConfig.check.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().enabled)));
+        reporter.setHealthChecksConfigs(runtimeConfig.check().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().enabled())));
+
+        SmallRyeHealthHandlerBase.problemDetails = buildFixedConfig.includeProblemDetails();
     }
 
 }

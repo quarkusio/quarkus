@@ -4,10 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Liquibase MongoDB
-
 include::_attributes.adoc[]
+:categories: data
 :change-log: src/main/resources/db/changeLog.xml
 :config-file: application.properties
+:topics: data,schema-migration,liquibase,mongodb
+:extensions: io.quarkus:quarkus-liquibase-mongodb
 
 https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management,
 it allows managing MongoDB databases via it's https://github.com/liquibase/liquibase-mongodb[MongoDB Extension].
@@ -21,7 +23,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `liquibase-mongodb-quickstart` {quickstarts-tree-url}/liquibase-mongodb-quickstart[directory].
+The solution is located in the `liquibase-mongodb-quickstart` link:{quickstarts-tree-url}/liquibase-mongodb-quickstart[directory].
 
 == Setting up support for Liquibase
 
@@ -31,40 +33,32 @@ To start using the Liquibase MongoDB Extension with your project, you just need 
 * activate the `migrate-at-start` option to migrate the schema automatically or inject the `Liquibase` object and run
 your migration as you normally do.
 
-In your `pom.xml`, add the following dependencies:
+You can add the `liquibase-mongodb` extension
+to your project by running the following command in your project base directory:
 
-* the Liquibase MongoDB extension
-* the MongoDB client extension
+:add-extension-extensions: liquibase-mongodb
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
-<!-- Liquibase MongoDB -->
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-liquibase-mongodb</artifactId>
-</dependency>
-
-<!-- MongoDB client dependency -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-mongodb-client</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-// Liquibase MongoDB
 implementation("io.quarkus:quarkus-liquibase-mongodb")
-
-// MongoDB client dependency
-implementation("io.quarkus:quarkus-mongodb-client")
 ----
 
-Liquibase MongoDB extension support relies on the Quarkus MongoDB client config.
+The Liquibase MongoDB extension support relies on the Quarkus MongoDB client config.
 For the time being, it does not support multiple clients.
-First, you need to add the MongoDB config to the `{config-file}` file
+You need to add the MongoDB config to the `{config-file}` file
 in order to allow Liquibase to manage the schema.
 
 The following is an example for the `{config-file}` file:
@@ -72,7 +66,7 @@ The following is an example for the `{config-file}` file:
 [source,properties]
 ----
 # configure MongoDB
-quarkus.mongodb.connection-string = mongodb://localhost:27017
+quarkus.mongodb.connection-string = mongodb://localhost:27017/mydatabase
 
 # Liquibase MongoDB minimal config properties
 quarkus.liquibase-mongodb.migrate-at-start=true
@@ -86,6 +80,9 @@ quarkus.liquibase-mongodb.migrate-at-start=true
 # quarkus.liquibase-mongodb.default-catalog-name=DefaultCatalog
 # quarkus.liquibase-mongodb.default-schema-name=DefaultSchema
 ----
+NOTE: Liquibase needs a database either in the connection string or with the `quarkus.mongodb.database` property.
+
+NOTE: By default, Liquibase MongoDB is configured to use the default MongoDB client Quarkus creates, but you can configure the extension to use a named client by setting `quarkus.liquibase-mongodb.mongo-client-name`.
 
 Add a changeLog file to the default folder following the Liquibase naming conventions: `{change-log}`
 YAML, JSON and XML formats are supported for the changeLog.
@@ -159,18 +156,37 @@ once and then start the actual application without Liquibase. To support this us
 the generated manifests contain a Kubernetes initialization `Job` for Liquibase.
 The `Job` performs initialization and the actual `Pod`, will starts once the `Job` is successfully completed.
 
+=== Disabling
+
 The feature is enabled by default and can be globally disabled, using:
 
 [source,properties]
 ----
-quarkus.kubernetes.externalize-init=false
+quarkus.kubernetes.init-task-defaults.enabled=false
 ----
 
 or on OpenShift:
 
 [source,properties]
 ----
-quarkus.openshift.externalize-init=false
+quarkus.openshift.init-task-defaults.enabled=false
+----
+
+=== Using a custom image that controls waiting for the Job
+
+To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-root-v1.7` you can use:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
+----
+
+or on OpenShift:
+
+
+[source,properties]
+----
+quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
 **Note**: In this context globally means `for all extensions that support init task externalization`.

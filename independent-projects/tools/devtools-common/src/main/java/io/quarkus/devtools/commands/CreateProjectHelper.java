@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.lang.model.SourceVersion;
@@ -25,19 +21,13 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.PathTree;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class CreateProjectHelper {
-
-    // ordering is important here, so let's keep them ordered
-    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17));
-    public static final int DEFAULT_JAVA_VERSION = 11;
-    private static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 17;
-    public static final String DETECT_JAVA_RUNTIME_VERSION = "<<detect java runtime version>>";
-    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(\\d+)(?:\\..*)?");
 
     public static final String DEFAULT_GROUP_ID = "org.acme";
     public static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
@@ -175,45 +165,6 @@ public class CreateProjectHelper {
             throw new IllegalArgumentException("Could not create directory " + targetDirectory, e);
         }
         return outputPath;
-    }
-
-    public static String computeJavaVersion(SourceType sourceType, String inputJavaVersion) {
-        Integer javaFeatureVersionTarget = null;
-
-        if (inputJavaVersion != null && !DETECT_JAVA_RUNTIME_VERSION.equals(inputJavaVersion)) {
-            // Probably too much as we should push only the feature version but let's be as thorough as we used to be
-            Matcher matcher = JAVA_VERSION_PATTERN.matcher(inputJavaVersion);
-            if (matcher.matches()) {
-                javaFeatureVersionTarget = Integer.valueOf(matcher.group(1));
-            }
-        }
-
-        if (javaFeatureVersionTarget == null) {
-            javaFeatureVersionTarget = Runtime.version().feature();
-        }
-
-        int bestJavaLtsVersion = determineBestJavaLtsVersion(javaFeatureVersionTarget);
-
-        if (SourceType.KOTLIN.equals(sourceType)
-                && bestJavaLtsVersion > MAX_LTS_SUPPORTED_BY_KOTLIN) {
-            bestJavaLtsVersion = MAX_LTS_SUPPORTED_BY_KOTLIN;
-        }
-        return String.valueOf(bestJavaLtsVersion);
-    }
-
-    public static int determineBestJavaLtsVersion() {
-        return determineBestJavaLtsVersion(Runtime.version().feature());
-    }
-
-    public static int determineBestJavaLtsVersion(int runtimeVersion) {
-        int bestLtsVersion = DEFAULT_JAVA_VERSION;
-        for (int ltsVersion : JAVA_VERSIONS_LTS) {
-            if (ltsVersion > runtimeVersion) {
-                break;
-            }
-            bestLtsVersion = ltsVersion;
-        }
-        return bestLtsVersion;
     }
 
     public static Set<String> sanitizeExtensions(Set<String> extensions) {

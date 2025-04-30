@@ -21,16 +21,16 @@
 # docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/rest-client-quickstart-jvm
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 
-ARG JAVA_PACKAGE=java-11-openjdk-headless
+ARG JAVA_PACKAGE=java-17-openjdk-headless
 ARG RUN_JAVA_VERSION=1.3.8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 # Install java and the run-java script
 # Also set up permissions for user `1001`
-RUN microdnf install curl ca-certificates ${JAVA_PACKAGE} \
-    && microdnf update \
-    && microdnf clean all \
+RUN microdnf -y install ca-certificates ${JAVA_PACKAGE} \
+    && microdnf -y update \
+    && microdnf -y clean all \
     && mkdir /deployments \
     && chown 1001 /deployments \
     && chmod "g+rwX" /deployments \

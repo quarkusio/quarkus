@@ -19,15 +19,27 @@ public class ContextsImpl implements Contexts<Context> {
 
     @Override
     public void setActive(Context context) {
-        // remove the context state we potentially stored, else use null to initiate fresh context
-        ((ManagedContext) context).activate(contextStateMap.remove(context));
+        if (context.isActive()) {
+            return;
+        }
+        if (context instanceof ManagedContext) {
+            ManagedContext managed = (ManagedContext) context;
+            // remove the context state we potentially stored, else use null to initiate fresh context
+            managed.activate(contextStateMap.remove(context));
+        }
     }
 
     @Override
     public void setInactive(Context context) {
-        // save the state of the context
-        contextStateMap.put(context, ((ManagedContext) context).getState());
-        ((ManagedContext) context).deactivate();
+        if (!context.isActive()) {
+            return;
+        }
+        if (context instanceof ManagedContext) {
+            ManagedContext managed = (ManagedContext) context;
+            // save the state of the context
+            contextStateMap.put(context, (managed.getState()));
+            managed.deactivate();
+        }
     }
 
     @Override

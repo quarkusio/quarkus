@@ -102,7 +102,8 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                     }
                     try {
                         Files.createDirectories(classesDir);
-                        createdDirs.add(topDirToCreate);
+                        // We keep the root target dir because it is used to store the update recipes
+                        //createdDirs.add(topDirToCreate);
                     } catch (IOException e) {
                         throw new MojoExecutionException("Failed to create " + classesDir, e);
                     }
@@ -140,7 +141,8 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
     @Override
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
         return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
-                .setRemoteRepositoryManager(remoteRepositoryManager)
+                .setUserSettings(session.getRequest().getUserSettingsFile())
+                .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
                 // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
                 // e.g. -Dquarkus.platform.version=xxx
                 //.setRepositorySystem(workspaceProvider.getRepositorySystem())

@@ -31,48 +31,48 @@ public class HibernateEnversRecorder {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            var puConfig = buildTimeConfig.getAllPersistenceUnitConfigsAsMap().get(puName);
+            var puConfig = buildTimeConfig.persistenceUnits().get(puName);
             if (puConfig == null) {
                 // Leave Envers unconfigured, but still activate it.
                 return;
             }
-            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+            if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 propertyCollector.accept(EnversService.INTEGRATION_ENABLED, "false");
                 // Do not process other properties: Hibernate Envers is inactive anyway.
                 return;
             }
 
-            addConfig(propertyCollector, EnversSettings.STORE_DATA_AT_DELETE, puConfig.storeDataAtDelete);
-            addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_SUFFIX, puConfig.auditTableSuffix);
-            addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_PREFIX, puConfig.auditTablePrefix);
-            addConfig(propertyCollector, EnversSettings.REVISION_FIELD_NAME, puConfig.revisionFieldName);
-            addConfig(propertyCollector, EnversSettings.REVISION_TYPE_FIELD_NAME, puConfig.revisionTypeFieldName);
+            addConfig(propertyCollector, EnversSettings.STORE_DATA_AT_DELETE, puConfig.storeDataAtDelete());
+            addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_SUFFIX, puConfig.auditTableSuffix());
+            addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_PREFIX, puConfig.auditTablePrefix());
+            addConfig(propertyCollector, EnversSettings.REVISION_FIELD_NAME, puConfig.revisionFieldName());
+            addConfig(propertyCollector, EnversSettings.REVISION_TYPE_FIELD_NAME, puConfig.revisionTypeFieldName());
             addConfig(propertyCollector, EnversSettings.REVISION_ON_COLLECTION_CHANGE,
-                    puConfig.revisionOnCollectionChange);
+                    puConfig.revisionOnCollectionChange());
             addConfig(propertyCollector, EnversSettings.DO_NOT_AUDIT_OPTIMISTIC_LOCKING_FIELD,
-                    puConfig.doNotAuditOptimisticLockingField);
-            addConfig(propertyCollector, EnversSettings.DEFAULT_SCHEMA, puConfig.defaultSchema);
-            addConfig(propertyCollector, EnversSettings.DEFAULT_CATALOG, puConfig.defaultCatalog);
+                    puConfig.doNotAuditOptimisticLockingField());
+            addConfig(propertyCollector, EnversSettings.DEFAULT_SCHEMA, puConfig.defaultSchema());
+            addConfig(propertyCollector, EnversSettings.DEFAULT_CATALOG, puConfig.defaultCatalog());
             addConfig(propertyCollector, EnversSettings.TRACK_ENTITIES_CHANGED_IN_REVISION,
-                    puConfig.trackEntitiesChangedInRevision);
+                    puConfig.trackEntitiesChangedInRevision());
             addConfig(propertyCollector, EnversSettings.USE_REVISION_ENTITY_WITH_NATIVE_ID,
-                    puConfig.useRevisionEntityWithNativeId);
-            addConfig(propertyCollector, EnversSettings.GLOBAL_WITH_MODIFIED_FLAG, puConfig.globalWithModifiedFlag);
-            addConfig(propertyCollector, EnversSettings.MODIFIED_FLAG_SUFFIX, puConfig.modifiedFlagSuffix);
-            addConfigIfPresent(propertyCollector, EnversSettings.REVISION_LISTENER, puConfig.revisionListener);
-            addConfigIfPresent(propertyCollector, EnversSettings.AUDIT_STRATEGY, puConfig.auditStrategy);
-            addConfigIfPresent(propertyCollector, EnversSettings.ORIGINAL_ID_PROP_NAME, puConfig.originalIdPropName);
+                    puConfig.useRevisionEntityWithNativeId());
+            addConfig(propertyCollector, EnversSettings.GLOBAL_WITH_MODIFIED_FLAG, puConfig.globalWithModifiedFlag());
+            addConfig(propertyCollector, EnversSettings.MODIFIED_FLAG_SUFFIX, puConfig.modifiedFlagSuffix());
+            addConfigIfPresent(propertyCollector, EnversSettings.REVISION_LISTENER, puConfig.revisionListener());
+            addConfigIfPresent(propertyCollector, EnversSettings.AUDIT_STRATEGY, puConfig.auditStrategy());
+            addConfigIfPresent(propertyCollector, EnversSettings.ORIGINAL_ID_PROP_NAME, puConfig.originalIdPropName());
             addConfigIfPresent(propertyCollector, EnversSettings.AUDIT_STRATEGY_VALIDITY_END_REV_FIELD_NAME,
-                    puConfig.auditStrategyValidityEndRevFieldName);
+                    puConfig.auditStrategyValidityEndRevFieldName());
             addConfig(propertyCollector, EnversSettings.AUDIT_STRATEGY_VALIDITY_STORE_REVEND_TIMESTAMP,
-                    puConfig.auditStrategyValidityStoreRevendTimestamp);
+                    puConfig.auditStrategyValidityStoreRevendTimestamp());
             addConfigIfPresent(propertyCollector, EnversSettings.AUDIT_STRATEGY_VALIDITY_REVEND_TIMESTAMP_FIELD_NAME,
-                    puConfig.auditStrategyValidityRevendTimestampFieldName);
+                    puConfig.auditStrategyValidityRevendTimestampFieldName());
             addConfigIfPresent(propertyCollector, EnversSettings.EMBEDDABLE_SET_ORDINAL_FIELD_NAME,
-                    puConfig.embeddableSetOrdinalFieldName);
-            addConfig(propertyCollector, EnversSettings.ALLOW_IDENTIFIER_REUSE, puConfig.allowIdentifierReuse);
+                    puConfig.embeddableSetOrdinalFieldName());
+            addConfig(propertyCollector, EnversSettings.ALLOW_IDENTIFIER_REUSE, puConfig.allowIdentifierReuse());
             addConfigIfPresent(propertyCollector, EnversSettings.MODIFIED_COLUMN_NAMING_STRATEGY,
-                    puConfig.modifiedColumnNamingStrategy);
+                    puConfig.modifiedColumnNamingStrategy());
         }
 
         public static <T> void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, T value) {

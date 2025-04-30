@@ -4,15 +4,19 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_GRPC_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SYSTEM;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_GRPC_STATUS_CODE;
+import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_METHOD;
+import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_SERVICE;
+import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_SYSTEM;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -56,8 +60,10 @@ import io.quarkus.opentelemetry.deployment.StreamingBean;
 import io.quarkus.opentelemetry.deployment.StreamingClient;
 import io.quarkus.opentelemetry.deployment.StreamingGrpc;
 import io.quarkus.opentelemetry.deployment.StreamingProto;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -66,7 +72,7 @@ public class GrpcOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addPackage(TestSpanExporter.class.getPackage())
                     .addClasses(HelloService.class)
                     .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
                             Greeter.class, GreeterBean.class, GreeterClient.class,
@@ -77,7 +83,11 @@ public class GrpcOpenTelemetryTest {
                             Streaming.class, StreamingBean.class, StreamingClient.class,
                             StreamingProto.class, Item.class, ItemOrBuilder.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")
@@ -122,9 +132,10 @@ public class GrpcOpenTelemetryTest {
         assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
         assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(SERVER_PORT));
+        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
+        assertNotNull(server.getAttributes().get(NETWORK_PEER_PORT));
+        assertNotNull(server.getAttributes().get(NETWORK_PEER_ADDRESS));
 
         final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("span.internal", internal.getName());
@@ -161,9 +172,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
         assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(SERVER_PORT));
+        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
         assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
         assertEquals(server.getTraceId(), client.getTraceId());
@@ -213,9 +223,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
         assertEquals("Pipe", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(SERVER_PORT));
+        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
         assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated")));
 
         assertEquals(server.getTraceId(), client.getTraceId());
@@ -250,9 +259,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
         assertEquals("PipeBlocking", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));//now shows up on net.sock.peer.addr. Not available on attributes yet. FIXME
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT)); // same for port. FIXME
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(SERVER_PORT));
+        assertNotNull(server.getAttributes().get(SERVER_ADDRESS));
         assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated.blocking")));
 
         assertEquals(server.getTraceId(), client.getTraceId());

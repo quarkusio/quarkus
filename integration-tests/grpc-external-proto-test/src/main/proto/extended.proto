@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_package = "org.acme.protos.extended";
+option java_outer_classname = "ExtendedProtos";
+
+option optimize_for = CODE_SIZE;
+
+package org.acme.proto.extended;
+
+// Import the base proto file
+import "protobuf/base.proto";
+
+// A message representing detailed user information
+message DetailedUser {
+    org.acme.protos.base.User user = 1;             // Use the User message from base.proto
+    org.acme.protos.base.Address address = 2;      // Use the Address message from base.proto
+    string phone_number = 3;
+}
+
+// Another message using the base Address message
+message Company {
+    string name = 1;
+    org.acme.protos.base.Address company_address = 2;
+}
+

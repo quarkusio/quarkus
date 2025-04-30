@@ -51,6 +51,16 @@ public class SecurityTest {
     }
 
     @Test
+    public void preAuthorizeOnControllerWithArgs() {
+        String path = "/api/preAuthorizeOnControllerWithArgs/";
+        assertForAnonymous(path + "correct-name", 401, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("stuart", "test"), path + "wrong-name", 403,
+                Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("aurea", "auri"), path + "correct-name", 200,
+                Optional.of("Hello correct-name!"));
+    }
+
+    @Test
     public void shouldAccessAllowed() {
         assertForAnonymous("/api/accessibleForAllMethod", 200, Optional.of("accessibleForAll"));
         assertForUsers("/api/accessibleForAllMethod", 200, Optional.of("accessibleForAll"));

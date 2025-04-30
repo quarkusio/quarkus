@@ -90,13 +90,13 @@ public class MetricRegistryAdapter implements MetricRegistry {
 
     Counter interceptorCounter(Metadata metadata, String... tags) {
         return internalCounter(internalGetMetadata(metadata, MetricType.COUNTER),
-                new MetricDescriptor(metadata.getName(), tags));
+                new MetricDescriptor(metadata.getName(), scopeTags(tags)));
     }
 
     Counter injectedCounter(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalCounter(
                 internalGetMetadata(annotation.name(), MetricType.COUNTER).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     CounterAdapter internalCounter(MpMetadata metadata, MetricDescriptor id) {
@@ -138,13 +138,13 @@ public class MetricRegistryAdapter implements MetricRegistry {
 
     ConcurrentGaugeImpl interceptorConcurrentGauge(Metadata metadata, String... tags) {
         return internalConcurrentGauge(internalGetMetadata(metadata, MetricType.CONCURRENT_GAUGE),
-                new MetricDescriptor(metadata.getName(), tags));
+                new MetricDescriptor(metadata.getName(), scopeTags(tags)));
     }
 
     ConcurrentGaugeImpl injectedConcurrentGauge(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalConcurrentGauge(
                 internalGetMetadata(annotation.name(), MetricType.CONCURRENT_GAUGE).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     ConcurrentGaugeImpl internalConcurrentGauge(MpMetadata metadata, MetricDescriptor id) {
@@ -276,7 +276,7 @@ public class MetricRegistryAdapter implements MetricRegistry {
     HistogramAdapter injectedHistogram(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalHistogram(
                 internalGetMetadata(annotation.name(), MetricType.HISTOGRAM).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     HistogramAdapter internalHistogram(MpMetadata metadata, MetricDescriptor id) {
@@ -319,7 +319,7 @@ public class MetricRegistryAdapter implements MetricRegistry {
     MeterAdapter injectedMeter(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalMeter(
                 internalGetMetadata(annotation.name(), MetricType.METERED).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     MeterAdapter internalMeter(MpMetadata metadata, MetricDescriptor id) {
@@ -363,12 +363,12 @@ public class MetricRegistryAdapter implements MetricRegistry {
     TimerAdapter injectedTimer(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalTimer(
                 internalGetMetadata(annotation.name(), MetricType.TIMER).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     TimerAdapter interceptorTimer(Metadata metadata, String... tags) {
         return internalTimer(internalGetMetadata(metadata, MetricType.TIMER),
-                new MetricDescriptor(metadata.getName(), tags));
+                new MetricDescriptor(metadata.getName(), scopeTags(tags)));
     }
 
     TimerAdapter internalTimer(MpMetadata metadata, MetricDescriptor id) {
@@ -465,7 +465,7 @@ public class MetricRegistryAdapter implements MetricRegistry {
     TimerAdapter injectedSimpleTimer(org.eclipse.microprofile.metrics.annotation.Metric annotation) {
         return internalSimpleTimer(
                 internalGetMetadata(annotation.name(), MetricType.SIMPLE_TIMER).merge(annotation),
-                new MetricDescriptor(annotation.name(), annotation.tags()));
+                new MetricDescriptor(annotation.name(), scopeTags(annotation.tags())));
     }
 
     TimerAdapter internalSimpleTimer(MpMetadata metadata, MetricDescriptor id) {
@@ -657,12 +657,21 @@ public class MetricRegistryAdapter implements MetricRegistry {
         return null;
     }
 
+    Tags scopeTags() {
+        return Tags.of("scope", this.type.getName());
+    }
+
     Tags scopeTags(Tag... tags) {
-        Tags out = Tags.of("scope", this.type.getName());
+        Tags out = scopeTags();
         for (Tag t : tags) {
             out = out.and(t.getTagName(), t.getTagValue());
         }
         return out;
+    }
+
+    Tags scopeTags(String... tags) {
+        Tags in = Tags.of(tags);
+        return scopeTags().and(in);
     }
 
     private MpMetadata internalGetMetadata(String name, MetricType type) {

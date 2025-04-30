@@ -3,14 +3,14 @@ package io.quarkus.bootstrap.classloading;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
-import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 
@@ -28,6 +28,18 @@ public interface ClassPathElement extends Closeable {
      *         this element does not represent any Maven artifact
      */
     default ArtifactKey getDependencyKey() {
+        ResolvedDependency resolvedDependency = getResolvedDependency();
+        return resolvedDependency != null ? resolvedDependency.getKey() : null;
+    }
+
+    /**
+     * If this classpath element represents a Maven artifact, the method will return it,
+     * otherwise - null.
+     *
+     * @return the Maven artifact this classpath element represents or null, in case
+     *         this element does not represent any Maven artifact
+     */
+    default ResolvedDependency getResolvedDependency() {
         return null;
     }
 
@@ -62,12 +74,17 @@ public interface ClassPathElement extends Closeable {
     Set<String> getProvidedResources();
 
     /**
+     * Whether this class path element contains resources that can be reloaded in dev mode.
+     */
+    boolean containsReloadableResources();
+
+    /**
      *
      * @return The protection domain that should be used to define classes from this element
      */
-    ProtectionDomain getProtectionDomain(ClassLoader classLoader);
+    ProtectionDomain getProtectionDomain();
 
-    Manifest getManifest();
+    ManifestAttributes getManifestAttributes();
 
     /**
      * Checks whether this is a runtime classpath element
@@ -85,10 +102,15 @@ public interface ClassPathElement extends Closeable {
     }
 
     static ClassPathElement fromDependency(ResolvedDependency dep) {
-        return new PathTreeClassPathElement(dep.getContentTree(), dep.isRuntimeCp(), dep.getKey());
+        return fromDependency(dep.getContentTree(), dep);
     }
 
-    static ClassPathElement EMPTY = new ClassPathElement() {
+    static ClassPathElement fromDependency(PathTree contentTree, ResolvedDependency dep) {
+        return new PathTreeClassPathElement(contentTree, dep.isRuntimeCp(), dep);
+    }
+
+    ClassPathElement EMPTY = new ClassPathElement() {
+
         @Override
         public Path getRoot() {
             return null;
@@ -111,16 +133,21 @@ public interface ClassPathElement extends Closeable {
 
         @Override
         public Set<String> getProvidedResources() {
-            return Collections.emptySet();
+            return Set.of();
         }
 
         @Override
-        public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+        public boolean containsReloadableResources() {
+            return false;
+        }
+
+        @Override
+        public ProtectionDomain getProtectionDomain() {
             return null;
         }
 
         @Override
-        public Manifest getManifest() {
+        public ManifestAttributes getManifestAttributes() {
             return null;
         }
 
@@ -129,4 +156,9 @@ public interface ClassPathElement extends Closeable {
 
         }
     };
+
+    default List<ClassPathResource> getResources(String name) {
+        ClassPathResource resource = getResource(name);
+        return resource == null ? List.of() : List.of(resource);
+    }
 }

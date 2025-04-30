@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
 :config-file: application.properties
+:topics: data,hibernate-orm,panache,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm
 
 Hibernate ORM is the de facto Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
@@ -71,38 +73,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-orm-panache-quickstart` {quickstarts-tree-url}/hibernate-orm-panache-quickstart[directory].
-
-[NOTE]
-====
-If your project is already configured to use other annotation processors, you will need to additionally add the Panache annotation processor:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-        <parameters>${maven.compiler.parameters}</parameters>
-        <annotationProcessorPaths>
-            <!-- Your existing annotation processor(s)... -->
-            <path>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-common</artifactId>
-                <version>${quarkus.platform.version}</version>
-            </path>
-        </annotationProcessorPaths>
-    </configuration>
-</plugin>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-annotationProcessor("io.quarkus:quarkus-panache-common")
-----
-====
+The solution is located in the `hibernate-orm-panache-quickstart` link:{quickstarts-tree-url}/hibernate-orm-panache-quickstart[directory].
 
 == Setting up and configuring Hibernate ORM with Panache
 
@@ -520,7 +491,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a Jakarta REST resource
 
-First, include one of the RESTEasy Reactive extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for Jakarta REST and JSON support.
+First, include one of the Quarkus REST (formerly RESTEasy Reactive) extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-rest-jackson` dependency for Jakarta REST and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -616,7 +587,7 @@ INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Bro
 ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
-NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.database.generation=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
 
 After that, you can see the people list and add new person as followings:
 
@@ -631,14 +602,14 @@ $ curl -w "\n" http://localhost:8080/persons
 [{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}, {"id":2,"name":"William Davis","birth":"1988-07-04","status":"Alive"}]
 ----
 
-NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-resteasy-reactive-jackson` in `pom.xml`.
+NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-rest-jackson` in `pom.xml`.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
@@ -744,22 +715,23 @@ The `Sort` class has plenty of methods for adding columns and specifying sort di
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
 at the end.
 
-If your select query does not start with `from`, we support the following additional forms:
+If your select query does not start with `from`, `select` or `with`, we support the following additional forms:
 
 - `order by ...` which will expand to `from EntityName order by ...`
-- `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `from EntityName where <singleAttribute> = ?`
+- `where <query>` will expand to `from EntityName where <query>`
 - `<query>` will expand to `from EntityName where <query>`
 
 If your update query does not start with `update`, we support the following additional forms:
 
 - `from EntityName ...` which will expand to `update EntityName ...`
-- `set? <singleColumnName>` (and single parameter) which will expand to `update EntityName set <singleColumnName> = ?`
+- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?`
 - `set? <update-query>` will expand to `update EntityName set <update-query>`
 
 If your delete query does not start with `delete`, we support the following additional forms:
 
 - `from EntityName ...` which will expand to `delete from EntityName ...`
-- `<singleColumnName>` (and single parameter) which will expand to `delete from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
 - `<query>` will expand to `delete from EntityName where <query>`
 
 NOTE: You can also write your queries in plain
@@ -820,8 +792,8 @@ public class Person extends PanacheEntity {
 
 [WARNING]
 ====
-Named queries can only be defined inside your Jakarta Persistence entity classes (being the Panache entity class, or the repository parameterized type),
-or on one of its super classes.
+Named queries can only be defined inside your Jakarta Persistence entity classes,
+or on one of their super classes.
 ====
 
 === Query parameters
@@ -937,6 +909,36 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+In case you want to project an entity in a class with nested classes, you can use the `@NestedProjectedClass` annotation on those nested classes.
+
+[source,java]
+----
+@RegisterForReflection
+public class DogDto {
+    public String name;
+    public PersonDto owner;
+
+    public DogDto(String name, PersonDto owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
+    @NestedProjectedClass // <1>
+    public static class PersonDto {
+        public String name;
+
+        public PersonDto(String name) {
+            this.name = name;
+        }
+    }
+}
+
+PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
+----
+
+<1> This annotation can be used when you want to project `@Embedded` entity or `@ManyToOne`, `@OneToOne` relation.
+It does not support `@OneToMany` or `@ManyToMany` relation.
+
 It is also possible to specify a HQL query with a select clause. In this case, the projection class must have a constructor
 matching the values returned by the select clause:
 
@@ -944,7 +946,7 @@ matching the values returned by the select clause:
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection 
+@RegisterForReflection
 public class RaceWeight {
     public final String race;
     public final Double weight;
@@ -1198,7 +1200,7 @@ public class PanacheFunctionalityTest {
         // We can even mock your custom methods
         Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
         Assertions.assertTrue(Person.findOrdered().isEmpty());
-        
+
         // Mocking a void method
         Person.voidMethod();
 
@@ -1240,10 +1242,10 @@ If you need to mock entity instance methods, such as `persist()` you can do it b
 
 [source,java]
 ----
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
+import org.hibernate.query.SelectionQuery;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1257,9 +1259,9 @@ public class PanacheMockingTest {
 
     @BeforeEach
     public void setup() {
-        Query mockQuery = Mockito.mock(Query.class);
+        SelectionQuery mockQuery = Mockito.mock(SelectionQuery.class);
         Mockito.doNothing().when(session).persist(Mockito.any());
-        Mockito.when(session.createQuery(Mockito.anyString())).thenReturn(mockQuery);
+        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.any())).thenReturn(mockQuery);
         Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
     }
 
@@ -1320,8 +1322,8 @@ You can write your mocking test like this:
 
 [source,java]
 ----
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -1410,36 +1412,10 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 
 == Defining entities in external projects or jars
 
-Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
+Hibernate ORM with Panache in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine.
 
-It attempts to identify archives with Panache entities (and consumers of Panache entities)
-by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
-annotation processor that will automatically create this file in archives that depend on
-Panache (even indirectly). If you have disabled annotation processors you may need to create
-this file manually in some cases.
+If the entities come from external projects
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
 
-WARNING: If you include the jpa-modelgen annotation processor this will exclude the Panache
-annotation processor by default. If you do this you should either create the marker file
-yourself, or add the `quarkus-panache-common` as well, as shown below:
-
-[source,xml]
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-      <annotationProcessorPaths>
-        <annotationProcessorPath>
-          <groupId>org.hibernate</groupId>
-          <artifactId>hibernate-jpamodelgen</artifactId>
-          <version>${hibernate.version}</version>
-        </annotationProcessorPath>
-        <annotationProcessorPath>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-panache-common</artifactId>
-          <version>${quarkus.platform.version}</version>
-        </annotationProcessorPath>
-      </annotationProcessorPaths>
-    </configuration>
-</plugin>
-----
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.

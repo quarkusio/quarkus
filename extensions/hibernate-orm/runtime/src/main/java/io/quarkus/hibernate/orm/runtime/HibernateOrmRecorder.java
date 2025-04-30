@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
@@ -83,12 +82,11 @@ public class HibernateOrmRecorder {
 
     public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
             Optional<String> dataSourceName,
-            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+            MultiTenancyStrategy multiTenancyStrategy) {
         return new Supplier<DataSourceTenantConnectionResolver>() {
             @Override
             public DataSourceTenantConnectionResolver get() {
-                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy,
-                        multiTenancySchemaDataSourceName);
+                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy);
             }
         };
     }
@@ -148,16 +146,14 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public void doValidation(String puName) {
-        Optional<String> val;
-        if (puName.equals(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)) {
-            val = ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class);
-        } else {
-            val = ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.\"" + puName + "\".database.generation",
-                    String.class);
-        }
+    public void doValidation(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, String puName) {
+        HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = hibernateOrmRuntimeConfig
+                .persistenceUnits().get(puName);
+        String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
+                .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
+
         //if hibernate is already managing the schema we don't do this
-        if (val.isPresent() && !val.get().equals("none")) {
+        if (!"none".equals(schemaManagementStrategy)) {
             return;
         }
         new Thread(new Runnable() {
@@ -166,6 +162,5 @@ public class HibernateOrmRecorder {
                 SchemaManagementIntegrator.runPostBootValidation(puName);
             }
         }, "Hibernate post-boot validation thread for " + puName).start();
-
     }
 }

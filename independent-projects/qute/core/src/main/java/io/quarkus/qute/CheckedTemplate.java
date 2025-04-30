@@ -7,7 +7,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * If you place this annotation on a class, all its <code>native static</code> methods will be used to declare
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
+ * It aims to configure type-safe templates.
+ * You can annotate a class or a Java record that implements {@link TemplateInstance}.
+ *
+ * <h2>&#64;CheckedTemplate on a class</h2>
+ * If you place this annotation on a class, then all its <code>static native</code> methods will be used to declare
  * templates and the list of parameters they require.
  * <p>
  * The name of a method and the base path are used to locate the template contents.
@@ -50,17 +58,22 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  *
- * <h2>Type-safe Fragments</h2>
+ * <h2>&#64;CheckedTemplate on a template record</h2>
  *
- * By default, a <code>native static</code> method with the name that contains a dollar sign {@code $} denotes a method that
- * represents a fragment of a type-safe template. It's possible to ignore the fragments and effectively disable this
- * feature via {@link CheckedTemplate#ignoreFragments()}.
+ * If you place this annotation on a Java record that implements {@link TemplateInstance}, then attributes of this annotation
+ * are used to configure the non-default values of the type-safe template denoted by this record.
+ *
+ * <h2>Type-safe fragments</h2>
+ *
+ * By default, a <code>native static</code> method or a template record with the name that contains a dollar sign {@code $}
+ * denotes a fragment of a type-safe template.
+ * It's possible to ignore the fragments and effectively disable this feature via {@link CheckedTemplate#ignoreFragments()}.
  * <p>
- * The name of the fragment is derived from the annotated method name. The part before the last occurence of a dollar sign
+ * The name of the fragment is derived from the annotated element name. The part before the last occurence of a dollar sign
  * {@code $} is the method name of the related type-safe template. The part after the last occurence of a dollar sign is the
  * fragment identifier - the strategy defined by the relevant {@link CheckedTemplate#defaultName()} is used.
  * <p>
- * Parameters of the annotated method are validated. The required names and types are derived from the relevant fragment
+ * Parameters of the annotated element are validated. The required names and types are derived from the relevant fragment
  * template.
  *
  * <pre>
@@ -84,7 +97,7 @@ public @interface CheckedTemplate {
 
     /**
      * Constant value for {@link #basePath()} indicating that the default strategy should be used, i.e. the simple name of the
-     * declaring class for a nested static class or an empty string for a top level class.
+     * enclosing class for a nested static class or an empty string for a top level class.
      */
     String DEFAULTED = "<<defaulted>>";
 

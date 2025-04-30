@@ -19,6 +19,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -27,6 +28,7 @@ import jakarta.enterprise.event.NotificationOptions;
 import jakarta.enterprise.event.ObserverException;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -68,10 +70,7 @@ class EventImpl<T> implements Event<T> {
     EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
         this.eventType = initEventType(eventType);
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
-        Set<Annotation> eventQualifiers = new HashSet<>();
-        eventQualifiers.addAll(qualifiers);
-        eventQualifiers.add(Any.Literal.INSTANCE);
-        this.qualifiers = Set.copyOf(eventQualifiers);
+        this.qualifiers = Set.copyOf(qualifiers);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
         this.injectionPoint = injectionPoint;
     }
@@ -124,7 +123,13 @@ class EventImpl<T> implements Event<T> {
         if (notifier != null && notifier.runtimeType.equals(runtimeType)) {
             return notifier;
         }
-        return this.lastNotifier = notifiers.computeIfAbsent(runtimeType, this::createNotifier);
+        return this.lastNotifier = notifiers.computeIfAbsent(runtimeType,
+                new Function<>() {
+                    @Override
+                    public Notifier<? super T> apply(Class<?> clazz) {
+                        return createNotifier(clazz);
+                    }
+                });
     }
 
     @Override
@@ -172,9 +177,16 @@ class EventImpl<T> implements Event<T> {
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType, injectionPoint);
+        // all events should have `@Any` qualifiers
+        // if there was no other explicit qualifier added, also add @Default
+        Set<Annotation> normalizedQualifiers = new HashSet<>(qualifiers);
+        if (normalizedQualifiers.isEmpty()) {
+            normalizedQualifiers.add(Default.Literal.INSTANCE);
+        }
+        normalizedQualifiers.add(Any.Literal.INSTANCE);
+        EventMetadata metadata = new EventMetadataImpl(normalizedQualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
-                container.resolveObservers(eventType, qualifiers));
+                container.resolveObserverMethods(eventType, normalizedQualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 
@@ -255,7 +267,14 @@ class EventImpl<T> implements Event<T> {
             this.runtimeType = runtimeType;
             this.observerMethods = observerMethods;
             this.eventMetadata = eventMetadata;
-            this.hasTxObservers = observerMethods.stream().anyMatch(this::isTxObserver);
+            boolean hasTxObservers = false;
+            for (var method : observerMethods) {
+                if (isTxObserver(method)) {
+                    hasTxObservers = true;
+                    break;
+                }
+            }
+            this.hasTxObservers = hasTxObservers;
             this.activateRequestContext = activateRequestContext;
         }
 
@@ -267,8 +286,8 @@ class EventImpl<T> implements Event<T> {
         void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
             if (!isEmpty()) {
 
-                Predicate<ObserverMethod<? super T>> predicate = async ? ObserverMethod::isAsync
-                        : Predicate.not(ObserverMethod::isAsync);
+                Predicate<ObserverMethod<?>> predicate = async ? ObserverMethodIsAsync.INSTANCE
+                        : ObserverMethodIsNotAsync.INSTANCE;
 
                 if (!async && hasTxObservers) {
                     // Note that tx observers are never async
@@ -298,13 +317,13 @@ class EventImpl<T> implements Event<T> {
                                 // See for instance discussions on https://github.com/eclipse-ee4j/cdi/issues/467
                                 txManager.getTransaction().registerSynchronization(sync);
                                 // registration succeeded, notify all non-tx observers synchronously
-                                predicate = predicate.and(this::isNotTxObserver);
+                                predicate = predicate.and(ObserverMethodIsNotTxObserver.INSTANCE);
                             } catch (Exception e) {
                                 if (e.getCause() instanceof RollbackException
                                         || e.getCause() instanceof IllegalStateException
                                         || e.getCause() instanceof SystemException) {
                                     // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
-                                    predicate = predicate.and(this::isNotAfterSuccess);
+                                    predicate = predicate.and(ObserverMethodIsNotAfterSuccessTxObserver.INSTANCE);
                                 }
                             }
                         }
@@ -338,9 +357,9 @@ class EventImpl<T> implements Event<T> {
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
         private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler,
-                Predicate<ObserverMethod<? super T>> predicate) {
+                Predicate<ObserverMethod<?>> predicate) {
             EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
-            for (ObserverMethod<? super T> observerMethod : observerMethods) {
+            for (ObserverMethod<?> observerMethod : observerMethods) {
                 if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);
@@ -355,16 +374,8 @@ class EventImpl<T> implements Event<T> {
             return observerMethods.isEmpty();
         }
 
-        private boolean isTxObserver(ObserverMethod<?> observer) {
+        private static boolean isTxObserver(ObserverMethod<?> observer) {
             return !observer.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS);
-        }
-
-        private boolean isNotAfterSuccess(ObserverMethod<?> observer) {
-            return !observer.getTransactionPhase().equals(TransactionPhase.AFTER_SUCCESS);
-        }
-
-        private boolean isNotTxObserver(ObserverMethod<?> observer) {
-            return !isTxObserver(observer);
         }
 
     }
@@ -394,6 +405,48 @@ class EventImpl<T> implements Event<T> {
                 }
             }
         }
+    }
+
+    private static class ObserverMethodIsAsync implements Predicate<ObserverMethod<?>> {
+
+        private static final Predicate<ObserverMethod<?>> INSTANCE = new ObserverMethodIsAsync();
+
+        @Override
+        public boolean test(ObserverMethod<?> observerMethod) {
+            return observerMethod.isAsync();
+        }
+    }
+
+    private static class ObserverMethodIsNotAsync implements Predicate<ObserverMethod<?>> {
+
+        private static final Predicate<ObserverMethod<?>> INSTANCE = new ObserverMethodIsNotAsync();
+
+        @Override
+        public boolean test(ObserverMethod<?> observerMethod) {
+            return !observerMethod.isAsync();
+        }
+    }
+
+    private static class ObserverMethodIsNotTxObserver implements Predicate<ObserverMethod<?>> {
+
+        private static final Predicate<ObserverMethod<?>> INSTANCE = new ObserverMethodIsNotTxObserver();
+
+        @Override
+        public boolean test(ObserverMethod<?> observerMethod) {
+            return !EventImpl.Notifier.isTxObserver(observerMethod);
+        }
+
+    }
+
+    private static class ObserverMethodIsNotAfterSuccessTxObserver implements Predicate<ObserverMethod<?>> {
+
+        private static final Predicate<ObserverMethod<?>> INSTANCE = new ObserverMethodIsNotAfterSuccessTxObserver();
+
+        @Override
+        public boolean test(ObserverMethod<?> observerMethod) {
+            return !observerMethod.getTransactionPhase().equals(TransactionPhase.AFTER_SUCCESS);
+        }
+
     }
 
     @SuppressWarnings("rawtypes")

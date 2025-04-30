@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
@@ -332,9 +333,10 @@ class ReflectiveClassForValueSerializerPayloadTest {
     private static IndexView index(Class<?>... classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
+            final String resourceName = fromClassNameToResourceName(clazz.getName());
             try {
                 try (InputStream stream = DefaultSerdeConfigTest.class.getClassLoader()
-                        .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                        .getResourceAsStream(resourceName)) {
                     indexer.index(stream);
                 }
             } catch (IOException e) {

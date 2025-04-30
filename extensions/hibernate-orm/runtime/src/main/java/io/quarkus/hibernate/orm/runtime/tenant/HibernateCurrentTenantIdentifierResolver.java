@@ -15,7 +15,8 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
  * @author Michael Schnell
  *
  */
-public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver {
+// TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
+public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
     private static final Logger LOG = Logger.getLogger(HibernateCurrentTenantIdentifierResolver.class);
 
@@ -48,6 +49,19 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
     @Override
     public boolean validateExistingCurrentSessions() {
         return false;
+    }
+
+    @Override
+    public boolean isRoot(String tenantId) {
+        // Make sure that we're in a request
+        if (!Arc.container().requestContext().isActive()) {
+            return false;
+        }
+        TenantResolver resolver = tenantResolver(persistenceUnitName);
+        if (resolver == null) {
+            return false;
+        }
+        return resolver.isRoot(tenantId);
     }
 
     private static TenantResolver tenantResolver(String persistenceUnitName) {

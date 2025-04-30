@@ -10,8 +10,8 @@
    </parent>
 
    <modelVersion>4.0.0</modelVersion>
-   <artifactId>quarkus-smallrye-reactive-messaging-mqtt-parent</artifactId>
-   <name>Quarkus - SmallRye Reactive Messaging - MQTT</name>
+   <artifactId>quarkus-messaging-mqtt-parent</artifactId>
+   <name>Quarkus - Messaging - MQTT</name>
    <packaging>pom</packaging>
 
    <modules>

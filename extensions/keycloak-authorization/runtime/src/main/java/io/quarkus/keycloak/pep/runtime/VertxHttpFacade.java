@@ -1,69 +1,112 @@
 package io.quarkus.keycloak.pep.runtime;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
 import java.util.List;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.security.cert.X509Certificate;
-
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.adapters.OIDCHttpFacade;
-import org.keycloak.adapters.spi.AuthenticationError;
-import org.keycloak.adapters.spi.LogoutError;
-import org.keycloak.jose.jws.JWSInput;
-import org.keycloak.jose.jws.JWSInputException;
-import org.keycloak.representations.AccessToken;
+import org.keycloak.adapters.authorization.TokenPrincipal;
+import org.keycloak.adapters.authorization.spi.HttpRequest;
+import org.keycloak.adapters.authorization.spi.HttpResponse;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
-import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
 
-public class VertxHttpFacade implements OIDCHttpFacade {
+public class VertxHttpFacade implements HttpRequest, HttpResponse {
 
-    private final Response response;
-    private final RoutingContext routingContext;
-    private final Request request;
-    private final String token;
     private final long readTimeout;
+    private final HttpRequest request;
+    private final HttpResponse response;
+    private final TokenPrincipal tokenPrincipal;
 
     public VertxHttpFacade(RoutingContext routingContext, String token, long readTimeout) {
-        this.routingContext = routingContext;
-        this.token = token;
         this.readTimeout = readTimeout;
         this.request = createRequest(routingContext);
         this.response = createResponse(routingContext);
+        tokenPrincipal = new TokenPrincipal() {
+            @Override
+            public String getRawToken() {
+                return token;
+            }
+        };
     }
 
     @Override
-    public Request getRequest() {
-        return request;
+    public String getRelativePath() {
+        return request.getRelativePath();
     }
 
     @Override
-    public Response getResponse() {
-        return response;
+    public String getMethod() {
+        return request.getMethod();
     }
 
     @Override
-    public X509Certificate[] getCertificateChain() {
-        try {
-            return routingContext.request().peerCertificateChain();
-        } catch (SSLPeerUnverifiedException e) {
-            throw new RuntimeException("Failed to fetch certificates from request", e);
-        }
+    public String getURI() {
+        return request.getURI();
     }
 
-    private Request createRequest(RoutingContext routingContext) {
+    @Override
+    public List<String> getHeaders(String name) {
+        return request.getHeaders(name);
+    }
+
+    @Override
+    public String getFirstParam(String name) {
+        return request.getFirstParam(name);
+    }
+
+    @Override
+    public String getCookieValue(String name) {
+        return request.getCookieValue(name);
+    }
+
+    @Override
+    public String getRemoteAddr() {
+        return request.getRemoteAddr();
+    }
+
+    @Override
+    public boolean isSecure() {
+        return request.isSecure();
+    }
+
+    @Override
+    public String getHeader(String name) {
+        return request.getHeader(name);
+    }
+
+    @Override
+    public InputStream getInputStream(boolean buffered) {
+        return request.getInputStream(buffered);
+    }
+
+    @Override
+    public TokenPrincipal getPrincipal() {
+        return request.getPrincipal();
+    }
+
+    @Override
+    public void sendError(int statusCode) {
+        response.sendError(statusCode);
+    }
+
+    @Override
+    public void sendError(int statusCode, String reason) {
+        response.sendError(statusCode, reason);
+    }
+
+    @Override
+    public void setHeader(String name, String value) {
+        response.setHeader(name, value);
+    }
+
+    private HttpRequest createRequest(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
-        return new Request() {
+        return new HttpRequest() {
             @Override
             public String getMethod() {
                 return request.method().name();
@@ -76,7 +119,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getRelativePath() {
-                return URI.create(request.uri()).getPath();
+                return routingContext.normalizedPath();
             }
 
             @Override
@@ -90,19 +133,14 @@ public class VertxHttpFacade implements OIDCHttpFacade {
             }
 
             @Override
-            public String getQueryParamValue(String param) {
-                return request.getParam(param);
-            }
+            public String getCookieValue(String name) {
+                Cookie cookie = request.getCookie(name);
 
-            @Override
-            public Cookie getCookie(String cookieName) {
-                io.vertx.core.http.Cookie c = request.getCookie(cookieName);
-
-                if (c == null) {
+                if (cookie == null) {
                     return null;
                 }
 
-                return new Cookie(c.getName(), c.getValue(), 1, c.getDomain(), c.getPath());
+                return cookie.getValue();
             }
 
             @Override
@@ -113,11 +151,6 @@ public class VertxHttpFacade implements OIDCHttpFacade {
             @Override
             public List<String> getHeaders(String name) {
                 return request.headers().getAll(name);
-            }
-
-            @Override
-            public InputStream getInputStream() {
-                return getInputStream(false);
             }
 
             @Override
@@ -136,67 +169,25 @@ public class VertxHttpFacade implements OIDCHttpFacade {
             }
 
             @Override
+            public TokenPrincipal getPrincipal() {
+                return tokenPrincipal;
+            }
+
+            @Override
             public String getRemoteAddr() {
                 return request.remoteAddress().host();
-            }
-
-            @Override
-            public void setError(AuthenticationError error) {
-                // no-op
-            }
-
-            @Override
-            public void setError(LogoutError error) {
-                // no-op
             }
         };
     }
 
-    private Response createResponse(RoutingContext routingContext) {
+    private HttpResponse createResponse(RoutingContext routingContext) {
         HttpServerResponse response = routingContext.response();
 
-        return new Response() {
-            @Override
-            public void setStatus(int status) {
-                response.setStatusCode(status);
-            }
-
-            @Override
-            public void addHeader(String name, String value) {
-                response.headers().add(name, value);
-            }
+        return new HttpResponse() {
 
             @Override
             public void setHeader(String name, String value) {
                 response.headers().set(name, value);
-            }
-
-            @Override
-            public void resetCookie(String name, String path) {
-                response.removeCookie(name, true);
-            }
-
-            @Override
-            public void setCookie(String name, String value, String path, String domain, int maxAge, boolean secure,
-                    boolean httpOnly) {
-                CookieImpl cookie = new CookieImpl(name, value);
-
-                cookie.setPath(path);
-                cookie.setDomain(domain);
-                cookie.setMaxAge(maxAge);
-                cookie.setSecure(secure);
-                cookie.setHttpOnly(httpOnly);
-
-                response.addCookie(cookie);
-            }
-
-            @Override
-            public OutputStream getOutputStream() {
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-                response.headersEndHandler(event -> response.write(Buffer.buffer().appendBytes(os.toByteArray())));
-
-                return os;
             }
 
             @Override
@@ -210,20 +201,6 @@ public class VertxHttpFacade implements OIDCHttpFacade {
                 response.setStatusCode(code);
                 response.setStatusMessage(message);
             }
-
-            @Override
-            public void end() {
-                response.end();
-            }
         };
-    }
-
-    @Override
-    public KeycloakSecurityContext getSecurityContext() {
-        try {
-            return new KeycloakSecurityContext(token, new JWSInput(token).readJsonContent(AccessToken.class), null, null);
-        } catch (JWSInputException e) {
-            throw new RuntimeException("Failed to create access token", e);
-        }
     }
 }

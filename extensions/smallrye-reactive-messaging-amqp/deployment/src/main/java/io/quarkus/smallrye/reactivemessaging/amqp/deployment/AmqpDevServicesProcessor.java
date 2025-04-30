@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.HashMap;
@@ -21,6 +24,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -28,19 +32,22 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * Starts a AMQP 1.0 broker as dev service if needed.
- * It uses https://quay.io/repository/artemiscloud/activemq-artemis-broker as image.
- * See https://artemiscloud.io/ for details.
+ * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
+ * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class AmqpDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(AmqpDevServicesProcessor.class);
@@ -54,11 +61,11 @@ public class AmqpDevServicesProcessor {
     private static final int AMQP_PORT = 5672;
     private static final int AMQP_CONSOLE_PORT = 8161;
 
-    private static final ContainerLocator amqpContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, AMQP_PORT);
+    private static final ContainerLocator amqpContainerLocator = locateContainerWithLabels(AMQP_PORT, DEV_SERVICE_LABEL);
     private static final String AMQP_HOST_PROP = "amqp-host";
     private static final String AMQP_PORT_PROP = "amqp-port";
     private static final String AMQP_MAPPED_PORT_PROP = "amqp-mapped-port";
-    private static final String AMQP_USER_PROP = "amqp-user";
+    private static final String AMQP_USER_PROP = "amqp-username";
     private static final String AMQP_PASSWORD_PROP = "amqp-password";
 
     private static final String DEFAULT_USER = "admin";
@@ -71,17 +78,18 @@ public class AmqpDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem startAmqpDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
             AmqpBuildTimeConfig amqpClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig,
+            DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
 
-        if (devService != null) {
+        if (devService != null && devService.isOwner()) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
                 return devService.toBuildItem();
@@ -94,8 +102,9 @@ public class AmqpDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "AMQP Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService newDevService = startAmqpBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout, !devServicesSharedNetworkBuildItem.isEmpty());
+            RunningDevService newDevService = startAmqpBroker(dockerStatusBuildItem, composeProjectBuildItem, configuration,
+                    launchMode,
+                    devServicesConfig.timeout(), !devServicesSharedNetworkBuildItem.isEmpty());
             if (newDevService != null) {
                 devService = newDevService;
             }
@@ -134,7 +143,7 @@ public class AmqpDevServicesProcessor {
             Map<String, String> config = devService.getConfig();
             log.infof("Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
                     + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                    + " this by starting your application with -Damqp.host=%s -Damqp.port=%s -Damqp.user=%s -Damqp.password=%s",
+                    + " this by starting your application with -Damqp.host=%s -Damqp.port=%s -Damqp.username=%s -Damqp.password=%s",
                     config.get(AMQP_HOST_PROP), config.get(AMQP_PORT_PROP), config.get(AMQP_USER_PROP),
                     config.get(AMQP_PASSWORD_PROP));
         }
@@ -154,7 +163,9 @@ public class AmqpDevServicesProcessor {
         }
     }
 
-    private RunningDevService startAmqpBroker(DockerStatusBuildItem dockerStatusBuildItem, AmqpDevServiceCfg config,
+    private RunningDevService startAmqpBroker(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            AmqpDevServiceCfg config,
             LaunchModeBuildItem launchMode, Optional<Duration> timeout, boolean useSharedNetwork) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -163,7 +174,7 @@ public class AmqpDevServicesProcessor {
         }
 
         // Check if amqp.port or amqp.host are set
-        if (ConfigUtils.isPropertyPresent(AMQP_HOST_PROP) || ConfigUtils.isPropertyPresent(AMQP_PORT_PROP)) {
+        if (ConfigUtils.isPropertyNonEmpty(AMQP_HOST_PROP) || ConfigUtils.isPropertyNonEmpty(AMQP_PORT_PROP)) {
             log.debug("Not starting Dev Services for AMQP, the amqp.host and/or amqp.port are configured.");
             return null;
         }
@@ -174,7 +185,7 @@ public class AmqpDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the AMQP broker location.");
             return null;
         }
@@ -186,6 +197,7 @@ public class AmqpDevServicesProcessor {
                     config.extra,
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                    composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork);
 
             timeout.ifPresent(container::withStartupTimeout);
@@ -193,24 +205,52 @@ public class AmqpDevServicesProcessor {
             container.start();
 
             return getRunningService(container.getContainerId(), container::close, container.getEffectiveHost(),
-                    container.getPort(), container.getMappedPort());
+                    container.getPort(), container.getMappedPort(), DEFAULT_USER, DEFAULT_PASSWORD);
         };
 
         return amqpContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> getRunningService(containerAddress.getId(), null, containerAddress.getHost(),
-                        containerAddress.getPort(), 0))
+                .map(containerAddress -> getRunningService(config, launchMode, containerAddress))
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(config.imageName, "amqp", "activemq-artemis", "rabbitmq"),
+                        AMQP_PORT,
+                        launchMode.getLaunchMode(), useSharedNetwork)
+                        .map(this::getRunningService))
                 .orElseGet(defaultAmqpBrokerSupplier);
     }
 
+    private RunningDevService getRunningService(ContainerAddress address) {
+        RunningContainer container = address.getRunningContainer();
+        if (container == null) {
+            return null;
+        }
+        return getRunningService(address.getId(),
+                null,
+                address.getHost(),
+                address.getPort(),
+                container.getPortMapping(AMQP_CONSOLE_PORT).orElse(0),
+                container.tryGetEnv("AMQP_USER", "ARTEMIS_USER", "RABBITMQ_DEFAULT_USER").orElse(DEFAULT_USER),
+                container.tryGetEnv("AMQP_PASSWORD", "ARTEMIS_PASSWORD", "RABBITMQ_DEFAULT_PASS").orElse(DEFAULT_PASSWORD));
+    }
+
+    private RunningDevService getRunningService(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode,
+            ContainerAddress address) {
+        Integer httpPort = amqpContainerLocator
+                .locatePublicPort(config.serviceName, config.shared, launchMode.getLaunchMode(), AMQP_CONSOLE_PORT)
+                .orElse(0);
+        return getRunningService(address.getId(),
+                null, address.getHost(),
+                address.getPort(), httpPort, DEFAULT_USER, DEFAULT_PASSWORD);
+    }
+
     private RunningDevService getRunningService(String containerId, Closeable closeable, String host, int port,
-            int mappedPort) {
+            int httpPort, String username, String password) {
         Map<String, String> configMap = new HashMap<>();
         configMap.put(AMQP_HOST_PROP, host);
         configMap.put(AMQP_PORT_PROP, String.valueOf(port));
-        configMap.put(AMQP_MAPPED_PORT_PROP, String.valueOf(mappedPort));
-        configMap.put(AMQP_USER_PROP, DEFAULT_USER);
-        configMap.put(AMQP_PASSWORD_PROP, DEFAULT_PASSWORD);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_AMQP.getName(), containerId, closeable, configMap);
+        configMap.put(AMQP_MAPPED_PORT_PROP, String.valueOf(httpPort));
+        configMap.put(AMQP_USER_PROP, username);
+        configMap.put(AMQP_PASSWORD_PROP, password);
+        return new RunningDevService(Feature.MESSAGING_AMQP.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasAmqpChannelWithoutHostAndPort() {
@@ -223,8 +263,8 @@ public class AmqpDevServicesProcessor {
             if ((isIncoming || isOutgoing) && isConnector) {
                 String connectorValue = config.getValue(name, String.class);
                 boolean isAmqp = connectorValue.equalsIgnoreCase("smallrye-amqp");
-                boolean hasHost = ConfigUtils.isPropertyPresent(name.replace(".connector", ".host"));
-                boolean hasPort = ConfigUtils.isPropertyPresent(name.replace(".connector", ".port"));
+                boolean hasHost = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".host"));
+                boolean hasPort = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".port"));
                 isConfigured = isAmqp && (hasHost || hasPort);
             }
 
@@ -236,7 +276,7 @@ public class AmqpDevServicesProcessor {
     }
 
     private AmqpDevServiceCfg getConfiguration(AmqpBuildTimeConfig cfg) {
-        AmqpDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        AmqpDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new AmqpDevServiceCfg(devServicesConfig);
     }
 
@@ -250,13 +290,13 @@ public class AmqpDevServicesProcessor {
         private final Map<String, String> containerEnv;
 
         public AmqpDevServiceCfg(AmqpDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
-            this.imageName = devServicesConfig.imageName;
-            this.fixedExposedPort = devServicesConfig.port.orElse(0);
-            this.extra = devServicesConfig.extraArgs;
-            this.shared = devServicesConfig.shared;
-            this.serviceName = devServicesConfig.serviceName;
-            this.containerEnv = devServicesConfig.containerEnv;
+            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
+            this.imageName = devServicesConfig.imageName();
+            this.fixedExposedPort = devServicesConfig.port().orElse(0);
+            this.extra = devServicesConfig.extraArgs();
+            this.shared = devServicesConfig.shared();
+            this.serviceName = devServicesConfig.serviceName();
+            this.containerEnv = devServicesConfig.containerEnv();
         }
 
         @Override
@@ -287,10 +327,10 @@ public class AmqpDevServicesProcessor {
         private final int port;
         private final boolean useSharedNetwork;
 
-        private String hostName;
+        private final String hostName;
 
         private ArtemisContainer(DockerImageName dockerImageName, String extra, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -301,12 +341,19 @@ public class AmqpDevServicesProcessor {
             withEnv("AMQ_EXTRA_ARGS", extra);
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             if (dockerImageName.getRepository().endsWith("artemiscloud/activemq-artemis-broker")) {
                 waitingFor(Wait.forLogMessage(".*AMQ241004.*", 1)); // Artemis console available.
             } else {
-                throw new IllegalArgumentException("Only artemiscloud/activemq-artemis-broker images are supported");
+                log.infof(
+                        "Detected a different image (%s) for the Dev Service for AMQP. Ensure it's compatible with artemiscloud/activemq-artemis-broker. "
+                                +
+                                "Refer to https://quarkus.io/guides/amqp-dev-services#configuring-the-image for details.",
+                        dockerImageName);
+                log.info("Skipping startup probe for the Dev Service for AMQP as it does not use the default image.");
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "artemis");
         }
 
         @Override
@@ -314,12 +361,6 @@ public class AmqpDevServicesProcessor {
             super.configure();
             if (port > 0) {
                 addFixedExposedPort(port, AMQP_PORT);
-            }
-
-            if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "artemis");
-            } else {
-                hostName = super.getHost();
             }
         }
 
@@ -336,7 +377,7 @@ public class AmqpDevServicesProcessor {
         }
 
         public int getMappedPort() {
-            return getMappedPort(AMQP_PORT);
+            return getMappedPort(AMQP_CONSOLE_PORT);
         }
     }
 }

@@ -33,7 +33,7 @@ public interface ArcContainer {
     /**
      *
      * @param scopeType
-     * @return the matching context objects, never null
+     * @return immutable list of the matching context objects, never null
      */
     List<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 
@@ -88,33 +88,12 @@ public interface ArcContainer {
     /**
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
-     * Note that if there are multiple sub classes of the given type this will return the exact match. This means
-     * that this can be used to directly instantiate superclasses of other beans without causing problems. This behavior differs
-     * to standard CDI rules where an ambiguous dependency would exist.
-     *
-     * see https://github.com/quarkusio/quarkus/issues/3369
-     *
      * @param type
      * @param qualifiers
      * @param <T>
      * @return
      */
     <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers);
-
-    /**
-     * This method is deprecated and will be removed in future versions.
-     * Use {@link #beanInstanceSupplier(Class, Annotation...)} instead.
-     * </p>
-     * As opposed to {@link #beanInstanceSupplier(Class, Annotation...)}, this method does <b>NOT</b> follow CDI
-     * resolution rules and in case of ambiguous resolution performs a choice based on the class type parameter.
-     *
-     * @param type
-     * @param qualifiers
-     * @return
-     * @param <T>
-     */
-    @Deprecated
-    <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers);
 
     /**
      *
@@ -226,6 +205,13 @@ public interface ArcContainer {
     ManagedContext requestContext();
 
     /**
+     * This method never throws {@link ContextNotActiveException}.
+     *
+     * @return the built-in context for {@link jakarta.enterprise.context.SessionScoped}
+     */
+    ManagedContext sessionContext();
+
+    /**
      * NOTE: Not all methods are supported!
      *
      * @return the bean manager
@@ -251,4 +237,12 @@ public interface ArcContainer {
      * @return true is strict mode is enabled, false otherwise.
      */
     boolean strictCompatibility();
+
+    /**
+     *
+     * @param eventType
+     * @param eventQualifiers
+     * @return an ordered list of observer methods
+     */
+    <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType, Annotation... eventQualifiers);
 }

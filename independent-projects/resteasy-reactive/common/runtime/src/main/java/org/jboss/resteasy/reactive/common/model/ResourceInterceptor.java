@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
 
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -25,7 +26,9 @@ public class ResourceInterceptor<T>
 
     private String className;
 
-    public transient Map<String, Object> metadata; // by using 'public transient' we ensure that this field will not be populated at runtime
+    public transient Map<String, Object> metadata; // by using 'public transient' we ensure that this field will not be populated at runtime  \
+
+    private RuntimeType runtimeType;
 
     public void setFactory(BeanFactory<T> factory) {
         this.factory = factory;
@@ -84,7 +87,14 @@ public class ResourceInterceptor<T>
         this.withFormRead = withFormRead;
     }
 
-    // spec says that writer interceptors are sorted in ascending order
+    public RuntimeType getRuntimeType() {
+        return runtimeType;
+    }
+
+    public void setRuntimeType(RuntimeType runtimeType) {
+        this.runtimeType = runtimeType;
+    }
+
     @Override
     public int compareTo(ResourceInterceptor<T> o) {
         return this.priority().compareTo(o.priority());
@@ -94,12 +104,8 @@ public class ResourceInterceptor<T>
     public static class Reversed<T> extends ResourceInterceptor<T> {
 
         @Override
-        public Integer priority() {
-            Integer p = super.priority();
-            if (p == null) {
-                return null;
-            }
-            return -p;
+        public int compareTo(ResourceInterceptor<T> o) {
+            return o.priority().compareTo(this.priority());
         }
     }
 }

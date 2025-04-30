@@ -15,8 +15,10 @@ import io.quarkus.arc.InstanceHandle;
 public final class Interceptors {
 
     public static final int DUPLICATE_CONTEXT = Integer.MAX_VALUE - 5;
-    public static final int EXCEPTION_HANDLER = Integer.MAX_VALUE - 10;
     public static final int REQUEST_CONTEXT = Integer.MAX_VALUE - 50;
+    public static final int ROUTING_CONTEXT = Integer.MAX_VALUE - 55;
+    public static final int BLOCKING_HANDLER = Integer.MAX_VALUE - 60;
+    public static final int EXCEPTION_HANDLER = Integer.MAX_VALUE - 70;
 
     static <T> List<T> getSortedPerServiceInterceptors(String name, Set<Class<?>> interceptorClasses) {
         if (interceptorClasses.isEmpty()) {

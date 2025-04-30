@@ -7,10 +7,10 @@
   <version>0.1-SNAPSHOT</version>
   <properties>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <surefire-plugin.version>3.0.0</surefire-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
+    <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.target>17</maven.compiler.target>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -68,7 +68,7 @@
         </property>
       </activation>
       <properties>
-        <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
       </properties>
       <build>
         <plugins>

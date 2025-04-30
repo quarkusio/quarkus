@@ -2,34 +2,28 @@ package io.quarkus.arc.processor.bcextensions;
 
 import java.util.List;
 
-import org.jboss.jandex.DotName;
-
 class ExtensionPhaseSynthesis extends ExtensionPhaseBase {
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
     private final List<SyntheticBeanBuilderImpl<?>> syntheticBeans;
     private final List<SyntheticObserverBuilderImpl<?>> syntheticObservers;
 
     ExtensionPhaseSynthesis(ExtensionInvoker invoker, org.jboss.jandex.IndexView beanArchiveIndex, SharedErrors errors,
-            AllAnnotationOverlays annotationOverlays, List<SyntheticBeanBuilderImpl<?>> syntheticBeans,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay, List<SyntheticBeanBuilderImpl<?>> syntheticBeans,
             List<SyntheticObserverBuilderImpl<?>> syntheticObservers) {
         super(ExtensionPhase.SYNTHESIS, invoker, beanArchiveIndex, errors);
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.syntheticBeans = syntheticBeans;
         this.syntheticObservers = syntheticObservers;
     }
 
     @Override
     Object argumentForExtensionMethod(ExtensionMethodParameter type, ExtensionMethod method) {
-        switch (type) {
-            case SYNTHETIC_COMPONENTS:
-                DotName extensionClass = method.extensionClass.name();
-                return new SyntheticComponentsImpl(syntheticBeans, syntheticObservers, extensionClass);
-            case TYPES:
-                return new TypesImpl(index, annotationOverlays);
-
-            default:
-                return super.argumentForExtensionMethod(type, method);
-        }
+        return switch (type) {
+            case SYNTHETIC_COMPONENTS -> new SyntheticComponentsImpl(syntheticBeans, syntheticObservers,
+                    method.extensionClass.name());
+            case TYPES -> new TypesImpl(index, annotationOverlay);
+            default -> super.argumentForExtensionMethod(type, method);
+        };
     }
 }

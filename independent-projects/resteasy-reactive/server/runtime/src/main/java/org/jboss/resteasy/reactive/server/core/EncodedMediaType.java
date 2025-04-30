@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.spi.ContentType;
 
 /**
@@ -21,7 +22,7 @@ public class EncodedMediaType implements ContentType {
         MediaType effectiveMediaType = mediaType;
         String effectiveCharset;
         String originalCharset = mediaType.getParameters().get("charset");
-        if (isStringMediaType(mediaType)) {
+        if (MediaTypeHelper.isTextLike(mediaType)) {
             effectiveCharset = originalCharset;
             if (effectiveCharset == null) {
                 effectiveCharset = StandardCharsets.UTF_8.name();
@@ -38,12 +39,6 @@ public class EncodedMediaType implements ContentType {
     }
 
     // TODO: does this need to be more complex?
-    private boolean isStringMediaType(MediaType mediaType) {
-        String type = mediaType.getType();
-        String subtype = mediaType.getSubtype();
-        return (type.equals("application") && (subtype.contains("json") || subtype.contains("xml") || subtype.contains("yaml")))
-                || type.equals("text");
-    }
 
     @Override
     public String toString() {
@@ -58,7 +53,7 @@ public class EncodedMediaType implements ContentType {
     @Override
     public String getEncoded() {
         if (encoded == null) {
-            return encoded = mediaType.toString();
+            return encoded = MediaTypeHelper.toString(mediaType);
         }
         return encoded;
     }

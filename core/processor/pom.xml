@@ -32,6 +32,24 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-app-model</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!-- Test -->
         <dependency>
@@ -46,8 +64,19 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.logmanager</groupId> 
-            <artifactId>jboss-logmanager-embedded</artifactId> 
+            <artifactId>jboss-logmanager</artifactId>
             <scope>test</scope> 
+        </dependency>
+        <dependency>
+            <groupId>com.karuslabs</groupId>
+            <artifactId>elementary</artifactId>
+            <version>3.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-builder</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -58,6 +87,10 @@
                 <configuration>
                     <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jboss.bridger</groupId>
+                <artifactId>bridger</artifactId>
             </plugin>
         </plugins>
     </build>

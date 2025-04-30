@@ -17,10 +17,20 @@ public class JavaInfoContributor implements InfoContributor {
         //TODO: should we add more information like 'java.runtime.*' and 'java.vm.*' ?
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("version", getVersion());
+        result.put("vendor", getVendor());
+        result.put("vendorVersion", getVendorVersion());
         return result;
     }
 
     static String getVersion() {
         return System.getProperty("java.version");
+    }
+
+    static String getVendor() {
+        return System.getProperty("java.vendor");
+    }
+
+    static String getVendorVersion() {
+        return System.getProperty("java.vendor.version");
     }
 }

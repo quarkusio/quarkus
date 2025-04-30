@@ -4,6 +4,7 @@ buildscript {
         mavenLocal {
             content {
                 includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
             }
         }
         mavenCentral()
@@ -25,8 +26,8 @@ subprojects {
     apply(plugin = "java")
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     tasks {
@@ -42,6 +43,7 @@ subprojects {
         mavenLocal {
             content {
                 includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
             }
         }
         mavenCentral()

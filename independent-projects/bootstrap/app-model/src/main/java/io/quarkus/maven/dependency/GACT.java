@@ -11,6 +11,15 @@ public class GACT implements ArtifactKey, Serializable {
         return new GACT(split(str, new String[4], str.length()));
     }
 
+    /**
+     * Parse method for configuration.
+     *
+     * @see #fromString(String)
+     */
+    public static GACT parse(String str) {
+        return fromString(str);
+    }
+
     protected final String groupId;
     protected final String artifactId;
     protected final String classifier;

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-junit5-component</artifactId>
     <name>Quarkus - Test Framework - JUnit 5 Component Test Framework</name>
-    <description>This feature is experimental and the API may change in the future</description>
+    <description>Makes it easy to test Quarkus components and mock their dependencies.</description>
 
     <dependencies>
         <dependency>
@@ -61,12 +61,22 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-mockito</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

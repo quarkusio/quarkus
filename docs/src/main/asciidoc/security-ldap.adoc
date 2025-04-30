@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use a LDAP directory to store your user identities.
+:topics: security,identity-providers,ldap
+:extensions: io.quarkus:quarkus-elytron-security-ldap
 
 This guide demonstrates how your Quarkus application can use an LDAP server to authenticate and authorize your user identities.
 
@@ -37,14 +39,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}/security-ldap-quickstart[directory].
+The solution is located in the `security-ldap-quickstart` link:{quickstarts-tree-url}/security-ldap-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-ldap-quickstart
-:create-app-extensions: elytron-security-ldap,resteasy-reactive
+:create-app-extensions: elytron-security-ldap,rest
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project, importing the `elytron-security-ldap` extension
@@ -158,22 +160,48 @@ quarkus.security.ldap.enabled=true
 
 quarkus.security.ldap.dir-context.principal=uid=admin,ou=system
 quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local <1>
+%test.quarkus.security.ldap.dir-context.url=ldap://127.0.0.1:10389 <2>
 quarkus.security.ldap.dir-context.password=secret
 
 quarkus.security.ldap.identity-mapping.rdn-identifier=uid
 quarkus.security.ldap.identity-mapping.search-base-dn=ou=Users,dc=quarkus,dc=io
 
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".from=cn
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <2>
+quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <3>
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=Roles,dc=quarkus,dc=io
-
-%test.quarkus.security.ldap.dir-context.url=ldap://127.0.0.1:10389 <3>
 ----
-<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported {quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
-<2> `{0}` is substituted by the `uid`.
-<3> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as {quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
+<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported link:{quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
+<2> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as link:{quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
+<3> `{0}` is substituted by the `uid`.
 
-The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
+The `quarkus-elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
+
+[TIP]
+====
+By default, Quarkus doesn't cache the credentials obtained from the LDAP directory.
+Every request to your service will cause an additional roundtrip to the LDAP server.
+
+It is a common practice to cache these results to improve performance, but the tradeoff is that there will be a delay before the changes in the LDAP get effective in your service.
+
+To enable the cache, set `quarkus.security.ldap.cache.enabled=true` in your configuration file.
+
+The default cache max-age is `60s`.
+It can be configured by setting `quarkus.security.ldap.cache.max-age`.
+
+The number of cache entries is limited by `quarkus.security.ldap.cache.size`, which defaults to `100`.
+====
+
+=== Map LDAP groups to `SecurityIdentity` roles
+
+Previously described application configuration showed how to map `CN` attribute of the LDAP Distinguished Name group to a Quarkus `SecurityIdentity` role.
+More specifically, the `standardRole` CN was mapped to a `SecurityIdentity` role and thus allowed access to the `UserResource#me` endpoint.
+However, required `SecurityIdentity` roles may differ between applications and you may need to map LDAP groups to local `SecurityIdentity` roles like in the example below:
+
+[source,properties]
+----
+quarkus.http.auth.roles-mapping."standardRole"=user <1>
+----
+<1> Map the `standardRole` role to the application-specific `SecurityIdentity` role `user`.
 
 == Testing the Application
 

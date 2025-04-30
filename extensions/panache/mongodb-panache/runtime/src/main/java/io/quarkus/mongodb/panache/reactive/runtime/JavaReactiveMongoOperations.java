@@ -2,7 +2,7 @@ package io.quarkus.mongodb.panache.reactive.runtime;
 
 import java.util.List;
 
-import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.panache.common.reactive.runtime.ReactiveMongoOperations;
@@ -17,13 +17,13 @@ public class JavaReactiveMongoOperations extends ReactiveMongoOperations<Reactiv
     public static final JavaReactiveMongoOperations INSTANCE = new JavaReactiveMongoOperations();
 
     @Override
-    protected ReactivePanacheQuery<?> createQuery(ReactiveMongoCollection collection, Document query, Document sortDoc) {
+    protected ReactivePanacheQuery<?> createQuery(ReactiveMongoCollection collection, Bson query, Bson sortDoc) {
         return new ReactivePanacheQueryImpl(collection, query, sortDoc);
     }
 
     @Override
     protected ReactivePanacheUpdate createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass,
-            Document docUpdate) {
+            Bson docUpdate) {
         return new ReactivePanacheUpdateImpl(this, entityClass, docUpdate, collection);
     }
 

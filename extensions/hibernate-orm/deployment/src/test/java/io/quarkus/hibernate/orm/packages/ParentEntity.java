@@ -4,7 +4,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import org.hibernate.annotations.Filter;
+
 @Entity
+@Filter(name = "filter")
 public class ParentEntity {
 
     @Id

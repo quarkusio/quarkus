@@ -3,30 +3,27 @@ package io.quarkus.vertx.http.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * Configuration that allows for setting an HTTP header
  */
-@ConfigGroup
-public class HeaderConfig {
-
+public interface HeaderConfig {
     /**
      * The path this header should be applied
      */
-    @ConfigItem(defaultValue = "/*")
-    public String path;
+    @WithDefault("/*")
+    String path();
 
     /**
      * The value for this header configuration
      */
-    @ConfigItem
-    public String value;
+    String value();
 
     /**
-     * The HTTP methods for this header configuration
+     * The HTTP methods for this header configuration.
+     * <p>
+     * If no HTTP methods are specified, the header will be always added.
      */
-    @ConfigItem
-    public Optional<List<String>> methods;
+    Optional<List<String>> methods();
 }

@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.config;
 
-import static io.smallrye.common.constraint.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +26,7 @@ public class ConfigPropertyMapInjectionTest {
                             "root.numbers.1=one\n" +
                                     "root.numbers.2=two\n" +
                                     "root.numbers.3=three\n" +
-                                    "versions.v1=1.The version 1.2.3\n" +
+                                    "versions.v1=1.The version 1.0.3\n" +
                                     "versions.v1.2=1.The version 1.2.0\n" +
                                     "versions.v2=2.The version 2.0.0\n"),
                             "application.properties"));
@@ -73,10 +73,12 @@ public class ConfigPropertyMapInjectionTest {
         assertEquals("two", sNumbers.get().get(2));
         assertEquals("three", sNumbers.get().get(3));
 
-        assertEquals(2, versions.size());
-        assertEquals(new Version(1, "The version 1.2.3"), versions.get("v1"));
+        assertEquals(3, versions.size());
+        assertEquals(new Version(1, "The version 1.0.3"), versions.get("v1"));
+        assertEquals(new Version(1, "The version 1.2.0"), versions.get("v1.2"));
         assertEquals(new Version(2, "The version 2.0.0"), versions.get("v2"));
-        assertEquals(2, versionsDefault.size());
+        assertEquals(3, versionsDefault.size());
+        assertEquals(new Version(0, "The version 0"), versionsDefault.get("v0.1"));
         assertEquals(new Version(1, "The version 1;2;3"), versionsDefault.get("v1=1;2;3"));
         assertEquals(new Version(2, "The version 2;1;0"), versionsDefault.get("v2=2;1;0"));
     }

@@ -17,6 +17,7 @@
   <modules>
     <module>deployment</module>
     <module>api</module>
+    <module>spi</module>
     <module>common</module>
     <module>kotlin</module>
     <module>runtime</module>

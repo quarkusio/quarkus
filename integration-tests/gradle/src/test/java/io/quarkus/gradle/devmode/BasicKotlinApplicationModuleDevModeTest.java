@@ -23,5 +23,10 @@ public class BasicKotlinApplicationModuleDevModeTest extends QuarkusDevGradleTes
                 ImmutableMap.of("return \"hello\"", "return \"" + uuid + "\""));
 
         assertUpdatedResponseContains("/hello", uuid);
+
+        delete("src/main/kotlin/org/acme/GreetingResource.kt");
+
+        assertStatusCode("/hello", 404);
+
     }
 }

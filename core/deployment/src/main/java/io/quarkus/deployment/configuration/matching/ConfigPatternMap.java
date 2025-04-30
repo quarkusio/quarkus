@@ -6,9 +6,8 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.runtime.configuration.NameIterator;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A pattern-matching mapping of configuration key pattern to value.

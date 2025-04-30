@@ -1,0 +1,377 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= gRPC code generation reference guide
+include::_attributes.adoc[]
+:categories: Serialization
+:diataxis-type: Reference
+:summary: Learn how to configure gRPC code generation.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
+
+This reference guide explains how to configure gRPC code generation. It is recommended to read the xref:grpc.adoc[official gRPC guide] first.
+
+== Enabling gRPC code generation
+
+By default, `\*.proto` files located in the `src/main/proto` directory are compiled into Java sources during the build process.
+
+=== Using Maven
+
+To enable gRPC code generation, add the following dependency to your project:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-grpc</artifactId>
+</dependency>
+----
+
+Next, ensure that the `generate-code` phase is enabled in the Quarkus Maven plugin:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <groupId>${quarkus.platform.group-id}</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <version>${quarkus.platform.version}</version>
+    <extensions>true</extensions>
+    <executions>
+        <execution>
+            <goals>
+                <goal>build</goal>
+                <goal>generate-code</goal>
+                <goal>generate-code-tests</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+----
+
+=== Using Gradle
+
+For Gradle, add the following dependency to your project:
+
+[source,gradle,subs=attributes+]
+----
+implementation 'io.quarkus:quarkus-grpc'
+----
+
+== Customizing the _proto_ directory
+
+By default, it is assumed that the `\*.proto` files are located in the `src/main/proto` directory.
+You can configure this location using the `quarkus.grpc.codegen.proto-directory` property in your **build descriptor**.
+
+With Maven, add the following configuration:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <groupId>${quarkus.platform.group-id}</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <version>${quarkus.platform.version}</version>
+    <extensions>true</extensions>
+    <executions>
+        <execution>
+            <goals>
+                <goal>build</goal>
+                <goal>generate-code</goal>
+                <goal>generate-code-tests</goal>
+            </goals>
+            <configuration>
+                <properties>
+                    <quarkus.grpc.codegen.proto-directory>${project.basedir}/ext/proto</quarkus.grpc.codegen.proto-directory>
+                </properties>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+
+With Gradle, use the following configuration:
+
+[source,gradle,subs=attributes+]
+----
+quarkus {
+    quarkusBuildProperties.put("quarkus.grpc.codegen.proto-directory", "${project.projectDir}/ext/proto")
+}
+----
+
+== Generating Descriptor Set
+Protocol Buffers do not contain descriptions of their own types. Thus, given only a raw message without the corresponding .proto file defining its type, it is difficult to extract any useful data. However, the contents of a .proto file can itself be https://protobuf.dev/programming-guides/techniques/#self-description[represented using protocol buffers].
+
+By default, Quarkus does not generate these descriptors. Quarkus does provide several configuration options for generating them. These would be added to your `application.properties` or `application.yml` file:
+
+* `quarkus.generate-code.grpc.descriptor-set.generate`
+** Set to `true` to enable generation
+* `quarkus.generate-code.grpc.descriptor-set.output-dir`
+** Set this to a value relative to the project's build directory (i.e. `target` for Maven, `build` for Gradle)
+** Maven default value: `target/generated-sources/grpc`
+** Gradle default value: `$buildDir/classes/java/quarkus-generated-sources/grpc`
+* `quarkus.generate-code.grpc.descriptor-set.name`
+** Name of the descriptor set file to generate
+** Default value: `descriptor_set.dsc`
+
+== Configuring gRPC code generation for dependencies
+
+You may have dependencies that contain `\*.proto` files you want to compile to Java sources.
+This section explains how to configure code generation to include these `\*.proto` files during code generation.
+
+=== Proto files for imports
+
+The Protocol Buffers specification provides a way to import `proto` files.
+The Quarkus code generation mechanism lets you control the scope of dependencies to scan for possible imports by setting the `quarkus.generate-code.grpc.scan-for-imports` property in your `application.properties`.
+You can set it to one of the following values:
+
+- `all` - scan all dependencies
+- `none` - don't scan dependencies, use only what is defined in `src/main/proto` or `src/test/proto`
+- `groupId1:artifactId1,groupId2:artifactId2` - scan only the specified dependencies by group ID and artifact ID.
+
+If not specified, the property defaults to `com.google.protobuf:protobuf-java`.
+To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property in your `application.properties`.
+For example:
+
+[source,properties]
+----
+quarkus.generate-code.grpc.scan-for-imports=all
+----
+
+[[scan-for-proto]]
+=== Proto files from dependencies
+
+In some cases, you may want to use `proto` files from a different project to generate gRPC stubs.
+To do this:
+
+1. Add a dependency on the artifact that contains the proto file to your project.
+2. In `application.properties`, specify the dependencies you want to scan for proto files.
+
+[source,properties]
+----
+quarkus.generate-code.grpc.scan-for-proto=<groupId>:<artifactId>
+----
+
+The value of the property can be `none`, which is the default, or a comma-separated list of `groupId:artifactId` coordinates.
+
+If the dependency contains many proto files, and you want to generate classes for only a subset of them, you can specify glob patterns per dependency.
+The paths to match are relative to the `src/main/resources` path in the dependency. For example:
+
+[source,properties]
+----
+quarkus.generate-code.grpc.scan-for-proto-include."<groupId>:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-exclude."<groupId>:<artifactId>"=foo/private/**,bar/another-proto.proto
+----
+
+Note that `:` characters in the property keys must be escaped.
+
+== Kotlin code generation
+
+`protoc` also supports https://protobuf.dev/reference/kotlin/kotlin-generated/[generating Kotlin code] in addition to the generated Java code.
+
+By default, the Kotlin code generation is enabled if the dependency `io.quarkus:quarkus-kotlin` is present.
+
+To explicitly en-/disable this feature, set the `quarkus.generate-code.grpc.kotlin.generate` property in your `application.properties` file to `true` or `false`.
+
+
+IMPORTANT: `com.google.protobuf:protobuf-kotlin` needs to be included as dependency in the project.
+
+== Skipping code generation
+
+You can skip gRPC code generation using:
+
+1. The `grpc.codegen.skip` system property: `-Dgrpc.codegen.skip=true`
+2. The `quarkus.grpc.codegen.skip` property in your `application.properties` file: `quarkus.grpc.codegen.skip=true`
+
+[[protobuf-maven-plugin]]
+=== Generating Java files from proto with the protobuf-maven-plugin
+
+Alternatively, to generate stubs for `proto` files, you can use the `protobuf-maven-plugin`.
+However, it's recommended to use Quarkus support unless you have a specific need.
+
+To do this, define the following properties in the `<properties>` section:
+
+[source,xml,subs=attributes+]
+----
+<grpc.version>{grpc-version}</grpc.version>
+<protoc.version>{protoc-version}</protoc.version>
+----
+
+These properties configure the gRPC version and the `protoc` version.
+
+Then, add the `eu.maveniverse.maven.nisse:plugin3` and the `protobuf-maven-plugin` configuration to the `build` section:
+
+[source,xml]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>eu.maveniverse.maven.nisse</groupId>
+            <artifactId>plugin3</artifactId>
+            <version>0.4.0</version>
+            <executions>
+                <execution>
+                    <id>inject-properties</id>
+                    <goals>
+                        <goal>inject-properties</goal>
+                    </goals>
+                    <phase>validate</phase>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.xolstice.maven.plugins</groupId>
+            <artifactId>protobuf-maven-plugin</artifactId>   <!--1-->
+            <version>${protobuf-maven-plugin-version}</version>
+            <configuration>
+                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>  <!--2-->
+                <pluginId>grpc-java</pluginId>
+                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                <protocPlugins>
+                    <protocPlugin>
+                        <id>quarkus-grpc-protoc-plugin</id>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                        <version>{quarkus-version}</version>
+                        <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
+                    </protocPlugin>
+                </protocPlugins>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>compile</id>
+                    <goals>
+                        <goal>compile</goal>
+                        <goal>compile-custom</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>test-compile</id>
+                    <goals>
+                        <goal>test-compile</goal>
+                        <goal>test-compile-custom</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+
+        <!-- ... -->
+    </plugins>
+</build>
+----
+
+<1> The `protobuf-maven-plugin` generates stub classes from your gRPC service definition (`proto` files).
+<2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the Nisse Maven plugin to target the executable compatible with the operating system.
+
+Note: This configuration instructs the `protobuf-maven-plugin` to generate default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
+
+IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plugin`, you need to re-generate classes (using `mvn compile`) every time you update the `proto` files.
+
+In order for the Nisse Maven plugin to generate the correct properties, we need to make sure the `nisse.compat.osDetector` system
+property is set. This can be done by adding the following `.mvn/maven.config` file:
+
+[source]
+----
+-Dnisse.compat.osDetector=true
+----
+
+== Using generated gRPC classes from dependencies
+
+When gRPC classes, which are classes generated from `proto` files, are in a dependency of the application, the dependency needs a Jandex index.
+You can create a Jandex index using the `jandex-maven-plugin`.
+More information on this topic can be found in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex-maven-plugin</artifactId>
+            <version>{jandex-version}</version>
+            <executions>
+                <execution>
+                <id>make-index</id>
+                <goals>
+                    <goal>jandex</goal>
+                </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+If you are using Gradle, you can use the following configuration:
+
+[source, gradle, subs=attributes+]
+----
+plugins {
+    id 'org.kordamp.gradle.jandex' version '1.1.0'
+}
+----
+
+IMPORTANT: It is recommended to package the `proto` files in a dependency instead of the generated classes, so Quarkus can generate optimized classes.
+Refer to the <<scan-for-proto, dedicated section>> for more information.
+
+== Argument files
+
+When the `protoc` command line exceeds the maximum command length, you can ask Quarkus to use an argument file to pass the arguments to the `protoc` command.
+
+To enable this feature, set the `quarkus.generate-code.grpc.use-arg-file` property in your `application.properties` file to `true`.
+
+If you are on Windows, and the command line exceeds 8190 characters, Quarkus automatically uses an argument file to pass the arguments to the `protoc` command.
+
+== Local vs. Downloaded `protoc`
+
+To generate gRPC classes, Quarkus uses the `protoc` artifact from the `com.google.protobuf` group id.
+However, to ensure the support of various platforms, Quarkus automatically downloads _all_ the possible variants of the `protoc` artifact.
+In addition, Quarkus downloads both `protoc` and the plugin used to generate gRPC classes in Java.
+For example, even if you are using Linux, Quarkus downloads the `protoc` and the Java plugin artifacts for Windows and MacOS.
+
+The next table lists the different variants of the `protoc` and plugin artifacts:
+
+[col="1,1, 1"]
+|===
+| *Platform* | *Classifier* | *Dependencies*
+
+| Linux/ARM64 | `linux-aarch_64` | `com.google.protobuf:protoc:VERSION:exe:linux-aarch_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-aarch_64`
+| Linux/Power PC 64 bits | `linux-ppcle_64` | `com.google.protobuf:protoc:VERSION:exe:linux-ppcle_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-ppcle_64`
+| Linux/S390 64 bits | `linux-s390_64` | `com.google.protobuf:protoc:VERSION:exe:linux-s390_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-s390_64`
+| Linux/x86 32bits | `linux-x86_32` | `com.google.protobuf:protoc:VERSION:exe:linux-x86_32` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-x86_32`
+| Linux/x86 64bits | `linux-x86_64` | `com.google.protobuf:protoc:VERSION:exe:linux-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-x86_64`
+| Mac osx/ARM64 | `osx-aarch_64` | `com.google.protobuf:protoc:VERSION:exe:osx-aarch_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:osx-aarch_64`
+| Mac osx/x86 64bits | `osx-x86_64` | `com.google.protobuf:protoc:VERSION:exe:osx-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:osx-x86_64`
+| Windows x86 32 bits | `windows-x86_32` | `com.google.protobuf:protoc:VERSION:exe:windows-x86_32` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:windows-x86_32`
+| Windows x86 64 bits | `windows-x86_64` | `com.google.protobuf:protoc:VERSION:exe:windows-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:windows-x86_64`
+|===
+
+Because of the packaging of `protoc` and the plugin (using classifier), it's not possible to exclude undesired platforms individually.
+
+You can, however, exclude the `protoc` dependency altogether and use the `quarkus.grpc.protoc-path` system property to configure the path to the `protoc` executable installed on your machine.
+Thus, you don't need to download any `protoc` variants:
+
+.Step 1: Exclusion of `protoc`
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-grpc</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
+
+.Step 2: Passing the `quarkus.grpc.protoc-path` property:
+[source, shell]
+----
+mvn clean quarkus:dev -Dquarkus.grpc.protoc-path=/path/to/protoc
+----
+
+IMPORTANT: Using this approach requires to have `protoc` installed locally. It will not download any `protoc` artifact.
+
+WARNING: Unfortunately, this only works for `protoc` and not for the Java plugin. The Java plugin is always downloaded.

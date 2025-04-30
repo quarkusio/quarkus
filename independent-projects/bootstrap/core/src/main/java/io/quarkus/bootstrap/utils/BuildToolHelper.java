@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -22,8 +21,7 @@ public class BuildToolHelper {
 
     private final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
     private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses", "integrationTestClasses" };
-    private final static List<String> ENABLE_JAR_PACKAGING = Collections
-            .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
+    private final static List<String> ENABLE_JAR_PACKAGING = List.of("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public enum BuildTool {
         MAVEN("pom.xml"),
@@ -61,7 +59,7 @@ public class BuildToolHelper {
             }
             currentPath = currentPath.getParent();
         }
-        log.warnv("Unable to find a project directory for {0}.", p.toString());
+        log.warnv("Unable to find a project directory for {0}.", p);
         return null;
     }
 
@@ -76,7 +74,7 @@ public class BuildToolHelper {
             }
             currentPath = currentPath.getParent();
         }
-        log.warnv("Unable to find a build tool in {0} or in any parent.", project.toString());
+        log.warnv("Unable to find a build tool in {0} or in any parent.", project);
         return null;
     }
 
@@ -103,6 +101,11 @@ public class BuildToolHelper {
             throws IOException, AppModelResolverException {
         // We enable jar packaging since we want test-fixtures as jars
         return enableGradleAppModel(projectRoot, "TEST", ENABLE_JAR_PACKAGING, TEST_REQUIRED_TASKS);
+    }
+
+    public static ApplicationModel enableGradleAppModelForProdMode(Path projectRoot)
+            throws IOException, AppModelResolverException {
+        return enableGradleAppModel(projectRoot, "NORMAL", List.of());
     }
 
     public static ApplicationModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)

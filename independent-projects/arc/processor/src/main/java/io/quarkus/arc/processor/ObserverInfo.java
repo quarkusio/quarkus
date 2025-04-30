@@ -87,7 +87,7 @@ public class ObserverInfo implements InjectionTargetInfo {
                 initQualifiers(beanDeployment, observerMethod, eventParameter),
                 reception,
                 initTransactionPhase(isAsync, beanDeployment, observerMethod), isAsync, priority, transformers,
-                buildContext, jtaCapabilities, null, Collections.emptyMap());
+                buildContext, jtaCapabilities, null, Collections.emptyMap(), false);
     }
 
     static ObserverInfo create(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
@@ -95,7 +95,7 @@ public class ObserverInfo implements InjectionTargetInfo {
             MethodParameterInfo eventParameter, Type observedType, Set<AnnotationInstance> qualifiers, Reception reception,
             TransactionPhase transactionPhase, boolean isAsync, int priority,
             List<ObserverTransformer> transformers, BuildContext buildContext, boolean jtaCapabilities,
-            Consumer<MethodCreator> notify, Map<String, Object> params) {
+            Consumer<MethodCreator> notify, Map<String, Object> params, boolean forceApplicationClass) {
 
         if (!transformers.isEmpty()) {
             // Transform attributes if needed
@@ -141,7 +141,8 @@ public class ObserverInfo implements InjectionTargetInfo {
                     info, transactionPhase);
         }
         return new ObserverInfo(id, beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter,
-                isAsync, priority, reception, transactionPhase, observedType, qualifiers, notify, params);
+                isAsync, priority, reception, transactionPhase, observedType, qualifiers, notify, params,
+                forceApplicationClass);
     }
 
     private final String id;
@@ -178,11 +179,15 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     private final Map<String, Object> params;
 
-    ObserverInfo(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean, MethodInfo observerMethod,
+    private final boolean forceApplicationClass;
+
+    private ObserverInfo(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
+            MethodInfo observerMethod,
             Injection injection,
             MethodParameterInfo eventParameter,
             boolean isAsync, int priority, Reception reception, TransactionPhase transactionPhase,
-            Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify, Map<String, Object> params) {
+            Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify,
+            Map<String, Object> params, boolean forceApplicationClass) {
         this.id = id;
         this.beanDeployment = beanDeployment;
         this.beanClass = beanClass;
@@ -199,6 +204,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         this.qualifiers = qualifiers;
         this.notify = notify;
         this.params = params;
+        this.forceApplicationClass = forceApplicationClass;
     }
 
     @Override
@@ -297,6 +303,10 @@ public class ObserverInfo implements InjectionTargetInfo {
         return params;
     }
 
+    boolean isForceApplicationClass() {
+        return forceApplicationClass;
+    }
+
     void init(List<Throwable> errors) {
         if (injection != null) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
@@ -390,7 +400,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         public ObserverTransformationContext(BuildContext buildContext, AnnotationTarget target,
                 Type observedType, Set<AnnotationInstance> qualifiers, Reception reception, TransactionPhase transactionPhase,
                 Integer priority, boolean async) {
-            super(buildContext, target, qualifiers);
+            super(buildContext, target, null, qualifiers);
             this.observedType = observedType;
             this.reception = reception;
             this.transactionPhase = transactionPhase;

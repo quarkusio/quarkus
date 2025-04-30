@@ -6,9 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for a deployer execution.
@@ -24,8 +23,8 @@ public final class BuildExecutionBuilder {
     BuildExecutionBuilder(final BuildChain buildChain, final String buildTargetName) {
         this.buildChain = buildChain;
         this.buildTargetName = buildTargetName;
-        initialSingle = new HashMap<>(buildChain.getInitialSingleCount());
-        initialMulti = new HashMap<>(buildChain.getInitialMultiCount());
+        initialSingle = new HashMap<>();
+        initialMulti = new HashMap<>();
     }
 
     /**

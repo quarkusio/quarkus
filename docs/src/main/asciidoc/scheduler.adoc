@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: Modern applications often need to run specific tasks periodically. In this guide, you learn how to schedule periodic tasks.
+:topics: scheduling,cronjob
+:extensions: io.quarkus:quarkus-scheduler
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.
@@ -31,14 +33,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `scheduler-quickstart` {quickstarts-tree-url}/scheduler-quickstart[directory].
+The solution is located in the `scheduler-quickstart` link:{quickstarts-tree-url}/scheduler-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: scheduler-quickstart
-:create-app-extensions: resteasy-reactive,scheduler
+:create-app-extensions: rest,scheduler
 include::{includes}/devtools/create-app.adoc[]
 
 It generates a new project including:
@@ -47,7 +49,7 @@ It generates a new project including:
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 
-The project also imports the RESTEasy Reactive and scheduler extensions.
+The project also imports the Quarkus REST (formerly RESTEasy Reactive) and scheduler extensions.
 
 If you already have your Quarkus project configured, you can add the `scheduler` extension
 to your project by running the following command in your project base directory:
@@ -72,7 +74,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-scheduler")
 ----
 
-[#standard-scheduling]
+[[standard-scheduling]]
 == Creating a scheduled job
 
 In the `org.acme.scheduler` package, create the `CounterBean` class, with the following content:

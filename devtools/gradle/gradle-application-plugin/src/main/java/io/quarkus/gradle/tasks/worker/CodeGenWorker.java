@@ -86,7 +86,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
             // Gradle "abbreviates" the stacktrace to something human-readable, but here the underlying cause might
             // get lost in the error output, so add 'e' to the message.
-            throw new GradleException("Failed to generate sources in the QuarkusPrepare task for " + gav + " due to " + e, e);
+            throw new GradleException("Failed to generate sources in the QuarkusGenerateCode task for " + gav + " due to " + e,
+                    e);
         }
     }
 }

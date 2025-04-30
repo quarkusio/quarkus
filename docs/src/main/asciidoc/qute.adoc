@@ -6,13 +6,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Qute Templating Engine
 include::_attributes.adoc[]
 :categories: miscellaneous
-:summary: Learn more about how you can use templating in your applications with the Qute template engine. 
+:summary: Learn more about how you can use templating in your applications with the Qute template engine.
+:topics: templating,qute
+:extensions: io.quarkus:quarkus-qute,io.quarkus:quarkus-resteasy-qute,io.quarkus:quarkus-rest-qute
 
-Qute is a templating engine designed specifically to meet the Quarkus needs.
-The usage of reflection is minimized to reduce the size of native images.
+Qute is a templating engine developed specifically for Quarkus.
+Reflection usage is minimized to reduce the size of native images.
 The API combines both the imperative and the non-blocking reactive style of coding.
-In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
-Furthermore, we try to detect most of the template problems at build time.
+In development mode, all files located in `src/main/resources/templates` are monitored for changes, and modifications become visible immediately.
+Furthermore, we aim to detect most template issues at build time.
 In this guide, you will learn how to easily render templates in your application.
 
 == Solution
@@ -22,47 +24,72 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `qute-quickstart` {quickstarts-tree-url}/qute-quickstart[directory].
+The solution is located in the `qute-quickstart` link:{quickstarts-tree-url}/qute-quickstart[directory].
 
-== Hello World with Jakarta REST
+[[serving-templates]]
+== Serving Qute templates via HTTP
 
-If you want to use Qute in your Jakarta REST application, you need to add an extension first:
+If you want to serve your templates via HTTP:
 
-* either `quarkus-resteasy-reactive-qute` if you are using RESTEasy Reactive:
-+
+1. The Qute Web extension allows you to directly serve via HTTP templates located in `src/main/resources/templates/pub/`. In that case you don't need any Java code to "plug" the template, for example, the template `src/main/resources/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
+2. For finer control, you can combine it with Quarkus REST to control how your template will be served. All files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates and can be injected in a REST resource.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkiverse.qute.web</groupId>
+    <artifactId>quarkus-qute-web</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkiverse.qute.web:quarkus-qute-web")
+----
+
+NOTE: The Qute Web extension, while hosted in the Quarkiverse, is part of the Quarkus Platform and its version is defined in the Quarkus Platform BOM.
+
+[[hello-qute-web]]
+=== Serving Hello World with Qute
+
+Let's start with a Hello World template:
+
+.src/main/resources/templates/pub/hello.html
+[source]
+----
+<h1>Hello {http:param('name', 'Quarkus')}!</h1> <1>
+----
+<1> `{http:param('name', 'Quarkus')}` is an expression that is evaluated when the template is rendered (Quarkus is the default value).
+
+NOTE: Templates located in the `pub` directory are served via HTTP. This behavior is built-in, no controllers are needed. For example, the template `src/main/resources/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
+
+Once your application is running, you can open your browser and navigate to: http://localhost:8080/hello?name=Martin
+
+For more information about Qute Web options, see the https://docs.quarkiverse.io/quarkus-qute-web/dev/index.html[Qute Web guide].
+
+[[hello-qute-rest]]
+=== Hello Qute and REST
+
+For finer control, you can combine Qute Web with Quarkus REST or Quarkus RESTEasy to control how your template will be served
+
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
-+
+
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive-qute")
+implementation("io.quarkus:quarkus-rest")
 ----
 
-* or `quarkus-resteasy-qute` if you are using RESTEasy Classic:
-+
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-qute</artifactId>
-</dependency>
-----
-+
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.quarkus:quarkus-resteasy-qute")
-----
-
-We'll start with a very simple template:
+A very simple text template:
 
 .hello.txt
 [source]
@@ -70,8 +97,6 @@ We'll start with a very simple template:
 Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
-
-NOTE: By default, all files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates. Templates are validated during startup and watched for changes in the development mode.
 
 Now let's inject the "compiled" template in the resource class.
 
@@ -84,6 +109,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
@@ -102,7 +129,7 @@ public class HelloResource {
 }
 ----
 <1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
-<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering.
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
 If your application is running, you can request the endpoint:
@@ -117,9 +144,9 @@ Hello Martin!
 
 There's an alternate way to declare your templates in your Java code, which relies on the following convention:
 
-- Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
-  your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
-  and `/src/main/resources/templates/ItemResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+- Organize your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
+  your `FruitResource` class references two templates `apples` and `oranges`, place them at `/src/main/resources/templates/FruitResource/apples.txt`
+  and `/src/main/resources/templates/FruitResource/oranges.txt`. Grouping templates per resource class makes it easier to navigate to them.
 - In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
 - Declare one `public static native TemplateInstance method();` per template file for your resource.
 - Use those static methods to build your template instances.
@@ -135,7 +162,7 @@ Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
-Now let's declare and use those templates in the resource class.
+Now let's declare and use this template in the resource class.
 
 .HelloResource.java
 [source,java]
@@ -146,6 +173,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.CheckedTemplate;
@@ -167,12 +196,12 @@ public class HelloResource {
 ----
 <1> This declares a template with path `templates/HelloResource/hello`.
 <2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
- 
+
 NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
-.HelloResource.java
+.GreetingResource.java
 [source,java]
 ----
 package org.acme.quarkus.sample;
@@ -181,11 +210,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 
-@Path("goodbye")
-public class GoodbyeResource {
+@Path("greeting")
+public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -217,7 +248,7 @@ public class Templates {
 <1> This declares a template with path `templates/hello`.
 
 
-== Template Parameter Declarations 
+== Template Parameter Declarations
 
 If you declare a *parameter declaration* in a template then Qute attempts to validate all expressions that reference this parameter and if an incorrect expression is found the build fails.
 
@@ -247,7 +278,7 @@ Let's start again with the template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> <2> 
+    <div>Price: {item.price}</div> <2>
 </body>
 </html>
 ----
@@ -290,7 +321,7 @@ public class ItemResource {
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
 <2> Make the `Item` object accessible in the template.
 
-NOTE: When the `--parameters` compiler argument is enabled, RESTEasy Reactive may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
+NOTE: When the `--parameters` compiler argument is enabled, Quarkus REST may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
 
 === Template parameter declaration inside the template itself
 
@@ -310,7 +341,7 @@ Let's start again with the template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> 
+    <div>Price: {item.price}</div>
 </body>
 </html>
 ----
@@ -341,7 +372,7 @@ public class ItemResource {
 
     @Inject
     Template item; <1>
-    
+
     @GET
     @Path("{id}")
     @Produces(MediaType.TEXT_HTML)
@@ -358,7 +389,7 @@ public class ItemResource {
 *Template extension methods* are used to extend the set of accessible properties of data objects.
 
 Sometimes, you're not in control of the classes that you want to use in your template, and you cannot add methods
-to them. Template extension methods allows you to declare new method for those classes that will be available
+to them. Template extension methods allow you to declare new methods for those classes that will be available
 from your templates just as if they belonged to the target class.
 
 Let's keep extending on our simple HTML page that contains the item name, price and add a discounted price.
@@ -377,7 +408,7 @@ Let's update our template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> 
+    <div>Price: {item.price}</div>
     {#if item.price > 100} <1>
     <div>Discounted Price: {item.discountedPrice}</div> <2>
     {/if}
@@ -411,7 +442,7 @@ grouped by target type, or in a single `TemplateExtensions` class by convention.
 
 == Rendering Periodic Reports
 
-Templating engine could be also very useful when rendering periodic reports.
+The templating engine can also be very useful for rendering periodic reports.
 You'll need to add the `quarkus-scheduler` and `quarkus-qute` extensions first.
 In your `pom.xml` file, add:
 

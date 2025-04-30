@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
@@ -34,7 +35,8 @@ class NativeImageConfigBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void build(SslContextConfigurationRecorder sslContextConfigurationRecorder,
+    void build(NativeConfig nativeConfig,
+            SslContextConfigurationRecorder sslContextConfigurationRecorder,
             List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
@@ -82,6 +84,12 @@ class NativeImageConfigBuildStep {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
         }
 
+        if (nativeConfig.monitoring().isPresent()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring",
+                    nativeConfig.monitoring().get().stream().map(x -> x.toString().toLowerCase())
+                            .collect(Collectors.joining(","))));
+        }
+
         for (JniBuildItem jniBuildItem : jniBuildItems) {
             if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
                 for (String path : jniBuildItem.getLibraryPaths()) {
@@ -102,6 +110,7 @@ class NativeImageConfigBuildStep {
         // so we reinitialize this to re-compute the field (and other related fields) during native application's
         // runtime
         runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("io.smallrye.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
     <artifactId>quarkus-hibernate-reactive-panache-kotlin-deployment</artifactId>
@@ -50,12 +50,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -104,6 +104,15 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>test-compile</id>
@@ -113,28 +122,10 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
                 <executions>
                     <!-- Replacing default-compile as it is treated specially by maven -->
                     <execution>
@@ -152,6 +143,15 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>java-test-compile</id>
@@ -198,9 +198,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

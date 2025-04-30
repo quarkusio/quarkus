@@ -1,7 +1,5 @@
 package io.quarkus.registry.config;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
 
 public class PropertiesUtil {
@@ -26,32 +24,12 @@ public class PropertiesUtil {
 
     public static String getProperty(final String name, String defValue) {
         assert name != null : "name is null";
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            return AccessController.doPrivileged(new PrivilegedAction<String>() {
-                @Override
-                public String run() {
-                    return System.getProperty(name, defValue);
-                }
-            });
-        } else {
-            return System.getProperty(name, defValue);
-        }
+        return System.getProperty(name, defValue);
     }
 
     public static String getProperty(final String name) {
         assert name != null : "name is null";
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            return AccessController.doPrivileged(new PrivilegedAction<String>() {
-                @Override
-                public String run() {
-                    return System.getProperty(name);
-                }
-            });
-        } else {
-            return System.getProperty(name);
-        }
+        return System.getProperty(name);
     }
 
     public static final Boolean getBooleanOrNull(String name) {

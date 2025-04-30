@@ -33,10 +33,13 @@ In Quarkus, you just need to:
 
 Add the following dependencies to your project:
 
-* the Blaze-Persistence extension: `com.blazebit:blaze-persistence-integration-quarkus`
+* the Blaze-Persistence extension: `com.blazebit:blaze-persistence-integration-quarkus-3`
 * further Blaze-Persistence integrations as needed:
-  - `blaze-persistence-integration-jackson` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
+  - `blaze-persistence-integration-jackson-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
+  - `blaze-persistence-integration-jsonb-jakarta` for link:https://persistence.blazebit.com/documentation/1.6/entity-view/manual/en_US/#jsonb-integration[JSONB]
   - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST]
+  - `blaze-persistence-integration-jaxrs-jackson-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST with Jackson]
+  - `blaze-persistence-integration-jaxrs-jsonb-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST with JSONB]
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
@@ -44,11 +47,11 @@ Add the following dependencies to your project:
 <!-- Blaze-Persistence specific dependencies -->
 <dependency>
     <groupId>com.blazebit</groupId>
-    <artifactId>blaze-persistence-integration-quarkus</artifactId>
+    <artifactId>blaze-persistence-integration-quarkus-3</artifactId>
 </dependency>
 <dependency>
     <groupId>com.blazebit</groupId>
-    <artifactId>blaze-persistence-integration-hibernate-5.6</artifactId>
+    <artifactId>blaze-persistence-integration-hibernate-6.2</artifactId>
     <scope>runtime</scope>
 </dependency>
 ----
@@ -56,8 +59,8 @@ Add the following dependencies to your project:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .Using Gradle
 ----
-implementation("com.blazebit:blaze-persistence-integration-quarkus")
-runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-5.6")
+implementation("com.blazebit:blaze-persistence-integration-quarkus-3")
+runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-6.2")
 ----
 
 The use in native images requires a dependency on the entity view annotation processor that may be extracted into a separate `native` profile:
@@ -70,7 +73,7 @@ The use in native images requires a dependency on the entity view annotation pro
         <dependencies>
             <dependency>
                 <groupId>com.blazebit</groupId>
-                <artifactId>blaze-persistence-entity-view-processor</artifactId>
+                <artifactId>blaze-persistence-entity-view-processor-jakarta</artifactId>
                 <scope>provided</scope>
             </dependency>
         </dependencies>

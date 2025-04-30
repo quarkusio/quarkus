@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor.bcextensions;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.build.compatible.spi.ScopeInfo;
 import jakarta.enterprise.inject.build.compatible.spi.StereotypeInfo;
@@ -9,27 +8,27 @@ import jakarta.enterprise.lang.model.AnnotationInfo;
 
 class StereotypeInfoImpl implements StereotypeInfo {
     private final org.jboss.jandex.IndexView jandexIndex;
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
     private final io.quarkus.arc.processor.StereotypeInfo arcStereotype;
 
-    StereotypeInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    StereotypeInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             io.quarkus.arc.processor.StereotypeInfo arcStereotype) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.arcStereotype = arcStereotype;
     }
 
     @Override
     public ScopeInfo defaultScope() {
-        return new ScopeInfoImpl(jandexIndex, annotationOverlays, arcStereotype.getDefaultScope());
+        return new ScopeInfoImpl(jandexIndex, annotationOverlay, arcStereotype.getDefaultScope());
     }
 
     @Override
     public Collection<AnnotationInfo> interceptorBindings() {
         return arcStereotype.getInterceptorBindings()
                 .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (AnnotationInfo) new AnnotationInfoImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override

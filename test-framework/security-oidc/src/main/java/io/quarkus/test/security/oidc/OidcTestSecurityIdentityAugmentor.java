@@ -1,5 +1,7 @@
 package io.quarkus.test.security.oidc;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.lang.annotation.Annotation;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -8,7 +10,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObjectBuilder;
 
@@ -38,16 +39,19 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
             Claims.auth_time.name(), ClaimType.LONG,
             Claims.email_verified.name(), ClaimType.BOOLEAN);
 
+    private static final PrivateKey privateKey;
     private Optional<String> issuer;
-    private PrivateKey privateKey;
 
-    public OidcTestSecurityIdentityAugmentor(Optional<String> issuer) {
-        this.issuer = issuer;
+    static {
         try {
             privateKey = KeyUtils.generateKeyPair(2048).getPrivate();
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public OidcTestSecurityIdentityAugmentor(Optional<String> issuer) {
+        this.issuer = issuer;
     }
 
     @Override
@@ -60,10 +64,10 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
 
         if (!introspectionRequired) {
             // JsonWebToken
-            JsonObjectBuilder claims = Json.createObjectBuilder();
+            JsonObjectBuilder claims = jsonProvider().createObjectBuilder();
             claims.add(Claims.preferred_username.name(), identity.getPrincipal().getName());
             claims.add(Claims.groups.name(),
-                    Json.createArrayBuilder(identity.getRoles().stream().collect(Collectors.toList())).build());
+                    jsonProvider().createArrayBuilder(identity.getRoles().stream().collect(Collectors.toList())).build());
             if (oidcSecurity != null && oidcSecurity.claims() != null) {
                 for (Claim claim : oidcSecurity.claims()) {
                     Object claimValue = convertClaimValue(claim);
@@ -96,7 +100,7 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
             builder.addCredential(idToken);
             builder.addCredential(accessToken);
         } else {
-            JsonObjectBuilder introspectionBuilder = Json.createObjectBuilder();
+            JsonObjectBuilder introspectionBuilder = jsonProvider().createObjectBuilder();
             introspectionBuilder.add(OidcConstants.INTROSPECTION_TOKEN_ACTIVE, true);
             introspectionBuilder.add(OidcConstants.INTROSPECTION_TOKEN_USERNAME, identity.getPrincipal().getName());
             introspectionBuilder.add(OidcConstants.TOKEN_SCOPE,
@@ -115,7 +119,7 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
 
         // UserInfo
         if (oidcSecurity != null && oidcSecurity.userinfo() != null) {
-            JsonObjectBuilder userInfoBuilder = Json.createObjectBuilder();
+            JsonObjectBuilder userInfoBuilder = jsonProvider().createObjectBuilder();
             for (UserInfo userinfo : oidcSecurity.userinfo()) {
                 userInfoBuilder.add(userinfo.key(), userinfo.value());
             }

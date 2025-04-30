@@ -67,15 +67,14 @@ public final class Instances {
             return Collections.emptyList();
         }
         List<T> list = new ArrayList<>(beans.size());
-        InjectionPoint prev = InjectionPointProvider
-                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean,
-                        annotations, javaMember, position, isTransient));
+        InjectionPoint prev = InjectionPointProvider.setCurrent(creationalContext, new InjectionPointImpl(injectionPointType,
+                requiredType, requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
         try {
             for (InjectableBean<?> bean : beans) {
                 list.add(getBeanInstance(CreationalContextImpl.unwrap(creationalContext), (InjectableBean<T>) bean));
             }
         } finally {
-            InjectionPointProvider.set(prev);
+            InjectionPointProvider.setCurrent(creationalContext, prev);
         }
 
         return List.copyOf(list);
@@ -126,12 +125,11 @@ public final class Instances {
 
             @Override
             public T get() {
-                InjectionPoint prev = InjectionPointProvider
-                        .set(injectionPointSupplier.get());
+                InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, injectionPointSupplier.get());
                 try {
                     return bean.get(ctx);
                 } finally {
-                    InjectionPointProvider.set(prev);
+                    InjectionPointProvider.setCurrent(ctx, prev);
                 }
             }
         }, null);

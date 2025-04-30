@@ -30,7 +30,7 @@ import jakarta.enterprise.inject.Instance;
  *  }
  *
  *  {@literal @ApplicationScoped}
- *  class ServiceBar {
+ *  class ServiceBar implements Service {
  *
  *     public String name() {
  *        return "bar";

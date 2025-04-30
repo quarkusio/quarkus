@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive</artifactId>
+      <artifactId>quarkus-rest</artifactId>
     </dependency>
 
     <!-- made test scope only to force Maven to build these dependencies before running the tests-->
@@ -80,7 +80,7 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+      <artifactId>quarkus-rest-deployment</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>test</scope>

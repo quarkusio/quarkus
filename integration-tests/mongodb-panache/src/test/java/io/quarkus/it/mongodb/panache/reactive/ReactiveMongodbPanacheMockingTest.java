@@ -14,14 +14,11 @@ import org.mockito.Mockito;
 import io.quarkus.it.mongodb.panache.reactive.person.MockableReactivePersonRepository;
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonEntity;
 import io.quarkus.panache.mock.PanacheMock;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
-import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.smallrye.mutiny.Uni;
 
 @QuarkusTest
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
 public class ReactiveMongodbPanacheMockingTest {
 
     private static final Duration timeout = Duration.ofSeconds(2);

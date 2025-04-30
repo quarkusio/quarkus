@@ -32,10 +32,8 @@ public class DisableLoggingFeature implements Feature {
     public void afterAnalysis(AfterAnalysisAccess access) {
         for (String category : CATEGORIES) {
             Level level = categoryMap.remove(category);
-            if (level != null) {
-                Logger logger = Logger.getLogger(category);
-                logger.setLevel(level);
-            }
+            Logger logger = Logger.getLogger(category);
+            logger.setLevel(level);
         }
     }
 

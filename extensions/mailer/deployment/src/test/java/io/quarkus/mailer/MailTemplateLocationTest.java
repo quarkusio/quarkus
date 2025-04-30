@@ -27,7 +27,7 @@ public class MailTemplateLocationTest {
     MailTemplates mailTemplates;
 
     @Test
-    public void testValidationFailed() {
+    public void testLocation() {
         mailTemplates.send().await().atMost(Duration.ofSeconds(5));
     }
 

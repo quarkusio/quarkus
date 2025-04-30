@@ -14,8 +14,6 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.jboss.logging.Logger;
 
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -48,16 +46,16 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named(healthCheckResponseName);
         builder.up();
 
-        for (Map.Entry<String, Pool> pgPoolEntry : pools.entrySet()) {
-            final String dataSourceName = pgPoolEntry.getKey();
-            final Pool pgPool = pgPoolEntry.getValue();
+        for (Map.Entry<String, Pool> poolEntry : pools.entrySet()) {
+            final String dataSourceName = poolEntry.getKey();
+            final Pool pool = poolEntry.getValue();
             try {
                 CompletableFuture<Void> databaseConnectionAttempt = new CompletableFuture<>();
                 Context context = Vertx.currentContext();
                 if (context != null) {
                     log.debug("Run health check on the current Vert.x context");
                     context.runOnContext(v -> {
-                        pgPool.query(healthCheckSQL)
+                        pool.query(healthCheckSQL)
                                 .execute(ar -> {
                                     checkFailure(ar, builder, dataSourceName);
                                     databaseConnectionAttempt.complete(null);
@@ -66,7 +64,7 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 } else {
                     log.warn("Vert.x context unavailable to perform health check of reactive datasource `" + dataSourceName
                             + "`. This is unlikely to work correctly.");
-                    pgPool.query(healthCheckSQL)
+                    pool.query(healthCheckSQL)
                             .execute(ar -> {
                                 checkFailure(ar, builder, dataSourceName);
                                 databaseConnectionAttempt.complete(null);
@@ -76,7 +74,6 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 //20 seconds is rather high, but using just 10 is often not enough on slow CI
                 //systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
-                builder.withData(dataSourceName, "UP");
             } catch (RuntimeException | ExecutionException exception) {
                 operationsError(dataSourceName, exception);
                 builder.down();
@@ -105,16 +102,17 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
             operationsError(dataSourceName, ar.cause());
             builder.down();
             builder.withData(dataSourceName, "down - connection failed: " + ar.cause().getMessage());
+        } else {
+            builder.withData(dataSourceName, "UP");
         }
     }
 
-    protected String getPoolName(Bean<?> bean) {
-        for (Object qualifier : bean.getQualifiers()) {
-            if (qualifier instanceof ReactiveDataSource) {
-                return ((ReactiveDataSource) qualifier).value();
-            }
-        }
-        return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+    /**
+     * @deprecated Use {@link ReactiveDataSourceUtil#dataSourceName(Bean)} instead.
+     */
+    @Deprecated
+    protected String getPoolName(Bean<? extends Pool> bean) {
+        return ReactiveDataSourceUtil.dataSourceName(bean);
     }
 
 }

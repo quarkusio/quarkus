@@ -3,10 +3,10 @@ package io.quarkus.micrometer.deployment.binder;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
@@ -22,14 +22,12 @@ public class GrpcBinderProcessor {
     static final String CLIENT_INTERCEPTOR = "io.grpc.ClientInterceptor";
     static final String SERVER_INTERCEPTOR = "io.grpc.ServerInterceptor";
 
-    static final Class<?> CLIENT_INTERCEPTOR_CLASS = MicrometerRecorder.getClassForName(CLIENT_INTERCEPTOR);
-    static final Class<?> SERVER_INTERCEPTOR_CLASS = MicrometerRecorder.getClassForName(SERVER_INTERCEPTOR);
-
     static class GrpcClientSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return CLIENT_INTERCEPTOR_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.grpcClient);
+            return QuarkusClassLoader.isClassPresentAtRuntime(CLIENT_INTERCEPTOR)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcClient());
         }
     }
 
@@ -37,12 +35,14 @@ public class GrpcBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return SERVER_INTERCEPTOR_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.grpcServer);
+            return QuarkusClassLoader.isClassPresentAtRuntime(SERVER_INTERCEPTOR)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcServer());
         }
     }
 
     @BuildStep(onlyIf = GrpcClientSupportEnabled.class)
-    AdditionalBeanBuildItem addGrpcClientMetricInterceptor() {
+    AdditionalBeanBuildItem addGrpcClientMetricInterceptor(BuildProducer<AdditionalIndexedClassesBuildItem> producer) {
+        producer.produce(new AdditionalIndexedClassesBuildItem(CLIENT_GRPC_METRICS_INTERCEPTOR));
         return AdditionalBeanBuildItem.unremovableOf(CLIENT_GRPC_METRICS_INTERCEPTOR);
     }
 

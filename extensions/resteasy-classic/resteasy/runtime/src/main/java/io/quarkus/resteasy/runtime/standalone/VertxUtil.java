@@ -37,11 +37,12 @@ public class VertxUtil {
         if (uri.startsWith(protocol + "://")) {
             uriString = uri;
         } else {
-            String host = req.host();
-            if (host == null) {
-                host = "unknown";
+            var authority = req.authority();
+            if (authority == null) {
+                uriString = protocol + "//unknown" + uri;
+            } else {
+                uriString = protocol + "://" + authority + uri;
             }
-            uriString = protocol + "://" + host + uri;
         }
 
         // ResteasyUriInfo expects a context path to start with a "/" character

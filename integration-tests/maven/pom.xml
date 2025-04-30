@@ -14,6 +14,12 @@
 
     <name>Quarkus - Integration Tests - Maven tooling</name>
 
+    <properties>
+        <!-- Used in the test projects so let's make sure it's set here -->
+        <maven-resources-plugin.version>${version.resources.plugin}</maven-resources-plugin.version>
+        <dependency-plugin.version>${version.dependency.plugin}</dependency-plugin.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -65,6 +71,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- This one is used by the tested projects so we need to create a dependency
+        to make sure GIB triggers the testing. --> 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-project-core-extension-codestarts</artifactId>
             <type>pom</type>
             <scope>test</scope>
@@ -83,6 +102,9 @@
             <testResource>
                 <directory>src/test/resources-filtered</directory>
                 <filtering>true</filtering>
+                <excludes>
+                   <exclude>**/target/**</exclude>
+                </excludes>
             </testResource>
         </testResources>
         <plugins>
@@ -97,6 +119,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <!-- copy of the default `<includes>` with removed `**/Test*.java`,
+                             because it matches `TestMojoIT`, which is NOT a Surefire test -->
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
+                </configuration>
             </plugin>
 
             <plugin>

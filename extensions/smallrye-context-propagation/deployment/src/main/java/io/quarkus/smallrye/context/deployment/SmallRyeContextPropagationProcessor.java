@@ -3,8 +3,6 @@ package io.quarkus.smallrye.context.deployment;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +20,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -51,6 +50,8 @@ import io.smallrye.context.api.ThreadContextConfig;
  * The deployment processor for MP-CP applications
  */
 class SmallRyeContextPropagationProcessor {
+
+    private static final String NAME_DELIMITER = "/";
 
     @BuildStep
     void registerBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -94,6 +95,7 @@ class SmallRyeContextPropagationProcessor {
     void build(SmallRyeContextPropagationRecorder recorder,
             ExecutorBuildItem executorBuildItem,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            BuildProducer<ContextPropagationInitializedBuildItem> cpInitializedBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
@@ -109,6 +111,8 @@ class SmallRyeContextPropagationProcessor {
                         .unremovable()
                         .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
                         .setRuntimeInit().done());
+
+        cpInitializedBuildItem.produce(new ContextPropagationInitializedBuildItem());
     }
 
     // transform IPs for ManagedExecutor/ThreadContext that use config annotation and don't yet have @NamedInstance
@@ -130,36 +134,37 @@ class SmallRyeContextPropagationProcessor {
                                 && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
                     return;
                 }
-                // create a unique name based on the injection point
-                String mpConfigIpName;
-                AnnotationTarget target = transformationContext.getTarget();
-                final String nameDelimiter = "/";
-                switch (target.kind()) {
-                    case FIELD:
-                        mpConfigIpName = target.asField().declaringClass().name().toString()
-                                + nameDelimiter
-                                + target.asField().name();
-                        break;
-                    case METHOD_PARAMETER:
-                        mpConfigIpName = target.asMethodParameter().method().declaringClass().name().toString()
-                                + nameDelimiter
-                                + target.asMethodParameter().method().name()
-                                + nameDelimiter
-                                + (target.asMethodParameter().position() + 1);
-                        break;
-                    // any other value is unexpected and we skip that
-                    default:
-                        return;
-                }
-                AnnotationInstance meConfigInstance = Annotations.find(transformationContext.getAllAnnotations(),
+                AnnotationTarget target = transformationContext.getAnnotationTarget();
+                AnnotationInstance meConfigInstance = Annotations.find(
+                        transformationContext.getAllTargetAnnotations(),
                         DotNames.MANAGED_EXECUTOR_CONFIG);
-                AnnotationInstance tcConfigInstance = Annotations.find(transformationContext.getAllAnnotations(),
+                AnnotationInstance tcConfigInstance = Annotations.find(
+                        transformationContext.getAllTargetAnnotations(),
                         DotNames.THREAD_CONTEXT_CONFIG);
+                String mpConfigIpName = null;
+                if (target.kind().equals(AnnotationTarget.Kind.FIELD)) {
+                    if (meConfigInstance != null || tcConfigInstance != null) {
+                        // create a unique name based on the injection point
+                        mpConfigIpName = target.asField().declaringClass().name().toString()
+                                + NAME_DELIMITER
+                                + target.asField().name();
+                    }
+                } else if (target.kind().equals(AnnotationTarget.Kind.METHOD_PARAMETER)) {
+                    if (meConfigInstance != null || tcConfigInstance != null) {
+                        // create a unique name based on the injection point
+                        mpConfigIpName = target.asMethodParameter().method().declaringClass().name().toString()
+                                + NAME_DELIMITER
+                                + target.asMethodParameter().method().name()
+                                + NAME_DELIMITER
+                                + (target.asMethodParameter().position() + 1);
+                    }
+                }
 
-                if (meConfigInstance != null || tcConfigInstance != null) {
+                if (mpConfigIpName != null) {
                     // add @NamedInstance with the generated name
                     transformationContext.transform()
-                            .add(DotNames.NAMED_INSTANCE, AnnotationValue.createStringValue("value", mpConfigIpName)).done();
+                            .add(DotNames.NAMED_INSTANCE, AnnotationValue.createStringValue("value", mpConfigIpName))
+                            .done();
                 }
             }
         });
@@ -174,54 +179,111 @@ class SmallRyeContextPropagationProcessor {
         Map<String, ThreadConfig> threadContextMap = new HashMap<>();
         Set<String> unconfiguredContextIPs = new HashSet<>();
         for (InjectionPointInfo ipInfo : bdFinishedBuildItem.getInjectionPoints()) {
-            AnnotationInstance namedAnnotation = ipInfo.getRequiredQualifier(DotNames.NAMED_INSTANCE);
-            // only look for IP with @NamedInstance on it because the IP transformation made sure it's there
-            if (namedAnnotation == null) {
-                continue;
-            }
-            // furthermore, we only look for any IP that doesn't have other custom qualifier
-            if (ipInfo.getRequiredQualifiers().stream()
-                    .anyMatch(ann -> !ann.name().equals(DotNames.NAMED_INSTANCE)
-                            && !ann.name().equals(io.quarkus.arc.processor.DotNames.ANY)
-                            && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
-                continue;
-            }
-
-            AnnotationInstance meConfigInstance = Annotations.find(extractAnnotations(ipInfo.getTarget()),
-                    DotNames.MANAGED_EXECUTOR_CONFIG);
-            AnnotationInstance tcConfigInstance = Annotations.find(extractAnnotations(ipInfo.getTarget()),
-                    DotNames.THREAD_CONTEXT_CONFIG);
-
-            // get the name from @NamedInstance qualifier
-            String nameValue = namedAnnotation.value().asString();
-
-            if (meConfigInstance == null && tcConfigInstance == null) {
-                // injection point with @NamedInstance on it but no configuration
-                if (ipInfo.getType().name().equals(DotNames.MANAGED_EXECUTOR)) {
-                    unconfiguredExecutorIPs.add(nameValue);
-                } else {
-                    unconfiguredContextIPs.add(nameValue);
+            if (AnnotationTarget.Kind.FIELD.equals(ipInfo.getAnnotationTarget().kind())) {
+                AnnotationInstance namedAnnotation = ipInfo.getRequiredQualifier(DotNames.NAMED_INSTANCE);
+                // only look for IP with @NamedInstance on it because the IP transformation made sure it's there
+                if (namedAnnotation == null) {
+                    continue;
                 }
-                continue;
-            }
-            // we are looking for injection points with @ManagedExecutorConfig/@ThreadContextConfig
-            if (meConfigInstance != null || tcConfigInstance != null) {
-                if (meConfigInstance != null) {
-                    // parse ME config annotation and store in a map
-                    executorMap.putIfAbsent(nameValue,
-                            new ExecutorConfig(meConfigInstance.value("cleared"),
-                                    meConfigInstance.value("propagated"),
-                                    meConfigInstance.value("maxAsync"),
-                                    meConfigInstance.value("maxQueued")));
+                // furthermore, we only look for any IP that doesn't have other custom qualifier
+                if (ipInfo.getRequiredQualifiers().stream()
+                        .anyMatch(ann -> !ann.name().equals(DotNames.NAMED_INSTANCE)
+                                && !ann.name().equals(io.quarkus.arc.processor.DotNames.ANY)
+                                && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
+                    continue;
+                }
+                AnnotationInstance meConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
+                        DotNames.MANAGED_EXECUTOR_CONFIG);
+                AnnotationInstance tcConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
+                        DotNames.THREAD_CONTEXT_CONFIG);
 
-                } else if (tcConfigInstance != null) {
-                    // parse TC config annotation
-                    threadContextMap.putIfAbsent(nameValue,
-                            new ThreadConfig(tcConfigInstance.value("cleared"),
-                                    tcConfigInstance.value("propagated"),
-                                    tcConfigInstance.value("unchanged")));
+                // get the name from @NamedInstance qualifier
+                String nameValue = namedAnnotation.value().asString();
+
+                if (meConfigInstance == null && tcConfigInstance == null) {
+                    // injection point with @NamedInstance on it but no configuration
+                    if (ipInfo.getType().name().equals(DotNames.MANAGED_EXECUTOR)) {
+                        unconfiguredExecutorIPs.add(nameValue);
+                    } else {
+                        unconfiguredContextIPs.add(nameValue);
+                    }
+                    continue;
+                }
+                // we are looking for injection points with @ManagedExecutorConfig/@ThreadContextConfig
+                if (meConfigInstance != null || tcConfigInstance != null) {
+                    if (meConfigInstance != null) {
+                        // parse ME config annotation and store in a map
+                        executorMap.putIfAbsent(nameValue,
+                                new ExecutorConfig(meConfigInstance.value("cleared"),
+                                        meConfigInstance.value("propagated"),
+                                        meConfigInstance.value("maxAsync"),
+                                        meConfigInstance.value("maxQueued")));
+
+                    } else if (tcConfigInstance != null) {
+                        // parse TC config annotation
+                        threadContextMap.putIfAbsent(nameValue,
+                                new ThreadConfig(tcConfigInstance.value("cleared"),
+                                        tcConfigInstance.value("propagated"),
+                                        tcConfigInstance.value("unchanged")));
+                    }
+                }
+            } else if (AnnotationTarget.Kind.METHOD_PARAMETER.equals(ipInfo.getAnnotationTarget().kind())) {
+                // for a method, we need to process each parameter as a separate injection point
+                for (AnnotationInstance annotationInstance : ipInfo.getRequiredQualifiers()) {
+                    // just METHOD_PARAMETER and filter to only @NamedInstance
+                    if (annotationInstance.target() == null
+                            || !AnnotationTarget.Kind.METHOD_PARAMETER.equals(annotationInstance.target().kind())
+                            || !annotationInstance.name().equals(DotNames.NAMED_INSTANCE)) {
+                        continue;
+                    }
+                    MethodParameterInfo methodParameterInfo = annotationInstance.target().asMethodParameter();
+                    // there should be no other custom qualifiers in this injection point
+                    // furthermore, we only look for any IP that doesn't have other custom qualifier
+                    if (methodParameterInfo.annotations().stream()
+                            .anyMatch(ann -> ipInfo.getRequiredQualifiers().contains(ann)
+                                    && !ann.name().equals(DotNames.NAMED_INSTANCE)
+                                    && !ann.name().equals(io.quarkus.arc.processor.DotNames.ANY)
+                                    && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
+                        continue;
+                    }
+                    AnnotationInstance meConfigInstance = Annotations.find(methodParameterInfo.annotations(),
+                            DotNames.MANAGED_EXECUTOR_CONFIG);
+                    AnnotationInstance tcConfigInstance = Annotations.find(methodParameterInfo.annotations(),
+                            DotNames.THREAD_CONTEXT_CONFIG);
+
+                    // get the name from @NamedInstance qualifier
+                    String nameValue = annotationInstance.value().asString();
+
+                    if (meConfigInstance == null && tcConfigInstance == null) {
+                        // injection point with @NamedInstance on it but no configuration
+                        if (ipInfo.getType().name().equals(DotNames.MANAGED_EXECUTOR)) {
+                            unconfiguredExecutorIPs.add(nameValue);
+                        } else {
+                            unconfiguredContextIPs.add(nameValue);
+                        }
+                        continue;
+                    }
+                    // we are looking for injection points with @ManagedExecutorConfig/@ThreadContextConfig
+                    if (meConfigInstance != null || tcConfigInstance != null) {
+                        if (meConfigInstance != null) {
+                            // parse ME config annotation and store in a map
+                            executorMap.putIfAbsent(nameValue,
+                                    new ExecutorConfig(meConfigInstance.value("cleared"),
+                                            meConfigInstance.value("propagated"),
+                                            meConfigInstance.value("maxAsync"),
+                                            meConfigInstance.value("maxQueued")));
+
+                        } else if (tcConfigInstance != null) {
+                            // parse TC config annotation
+                            threadContextMap.putIfAbsent(nameValue,
+                                    new ThreadConfig(tcConfigInstance.value("cleared"),
+                                            tcConfigInstance.value("propagated"),
+                                            tcConfigInstance.value("unchanged")));
+                        }
+                    }
                 }
             }
+
         }
         // check all unconfigured IPs, if we also found same name and configured ones, then drop these from the set
         unconfiguredExecutorIPs.removeAll(unconfiguredExecutorIPs.stream()
@@ -294,18 +356,6 @@ class SmallRyeContextPropagationProcessor {
                             ThreadContextConfig.Literal.DEFAULT_INSTANCE.unchanged()))
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
-        }
-    }
-
-    private Collection<AnnotationInstance> extractAnnotations(AnnotationTarget target) {
-        switch (target.kind()) {
-            case FIELD:
-                return target.asField().annotations();
-            case METHOD_PARAMETER:
-                return target.asMethodParameter().method().annotations();
-            // any other value is unexpected and we skip that
-            default:
-                return Collections.EMPTY_SET;
         }
     }
 

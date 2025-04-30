@@ -8,8 +8,12 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :categories: observability
 :diataxis-type: tutorial
 include::_attributes.adoc[]
+:topics: observability,micrometer,prometheus
+:extensions: io.quarkus:quarkus-micrometer-registry-prometheus,io.quarkus:quarkus-micrometer
 
 Create an application that uses the Micrometer metrics library to collect runtime, extension and application metrics and expose them as a Prometheus (OpenMetrics) endpoint.
+
+include::{includes}/observability-include.adoc[]
 
 == Prerequisites
 
@@ -23,7 +27,7 @@ Either:
 * Clone the git repository: `git clone {quickstarts-clone-url}`, or
 * Download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/micrometer-quickstart[directory].
+The solution is located in the `micrometer-quickstart` link:{quickstarts-tree-url}/micrometer-quickstart[directory].
 
 :sectnums:
 :sectnumlevels: 3
@@ -32,11 +36,13 @@ The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/mi
 Create a new project with the following command:
 
 :create-app-artifact-id: micrometer-quickstart
-:create-app-extensions: resteasy-reactive,micrometer-registry-prometheus
+:create-app-extensions: rest,micrometer-registry-prometheus
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
 This extension will load the core `micrometer` extension as well as additional library dependencies required to support prometheus.
+
+NOTE: To maintain backwards compatibility, the extension uses the Prometheus client v0.x from Micrometer 1.13+, instead of their default v1.x client.
 
 == Create a REST endpoint
 
@@ -44,7 +50,7 @@ Let's first add a simple endpoint that calculates prime numbers.
 
 [source,java]
 ----
-include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=example;!ignore;!registry;!gauge;!counted;!timed]
+include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=example;!ignore;!registry;!gauge;!counted;!timed]
 ----
 
 Start your application in dev mode:
@@ -105,7 +111,7 @@ The `MeterRegistry` can be injected into your application as follows:
 
 [source,java]
 ----
-include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=registry;!gauge]
+include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=registry;!gauge]
 ----
 
 == Add a Counter
@@ -117,7 +123,7 @@ We'll add a dimensional label (also called an attribute or a tag) that will allo
 
 [source,java]
 ----
-include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;!ignore;!timed]
+include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;!ignore;!timed]
 ----
 
 <1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
@@ -165,7 +171,7 @@ Let's add a timer to measure how long it takes to determine if a number is prime
 
 [source,java]
 ----
-include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;timed;!ignore;!default]
+include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;timed;!ignore;!default]
 ----
 
 <1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
@@ -210,7 +216,7 @@ Use a gauge to observe the size of a collection, or the value returned from a fu
 
 [source,java]
 ----
-include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=ctor;gauge]
+include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=ctor;gauge]
 ----
 
 <1> Define list that will hold arbitrary numbers.

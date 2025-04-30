@@ -17,6 +17,9 @@
 
     <properties>
         <mapstruct.version>1.4.2.Final</mapstruct.version>
+
+        <!-- Enable Develocity Predictive Test Selection -->
+        <develocity.pts.active>${develocity.pts.enabled}</develocity.pts.active>
     </properties>
 
     <dependencies>
@@ -52,9 +55,9 @@
             <artifactId>quarkus-devmode-test-utils</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
-            <version>${wiremock-jre8.version}</version>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -65,6 +68,16 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.gradle</groupId>
+            <artifactId>gradle-tooling-api</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- The following dependencies are generated in a way that is consistent with other normal IT modules,
@@ -78,6 +91,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-avro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -97,6 +114,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
         </dependency>
         <dependency>
@@ -113,6 +134,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-component</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
         </dependency>
         <dependency>
@@ -125,19 +150,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-pg-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -150,6 +179,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -231,6 +264,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -296,6 +342,45 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -310,32 +395,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -385,31 +444,22 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- END update-dependencies.sh -->
     </dependencies>
     <build>
-        <pluginManagement>
-            <plugins>
-                <!-- https://docs.gradle.com/enterprise/maven-extension/#ignoring_arbitrary_files-->
-                <!-- fixes https://github.com/quarkusio/quarkus/issues/33625 -->
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization combine.children="append">
-                                <runtimeClassPath>
-                                    <ignoredFiles>
-                                        <ignoredFile>.quarkus/config.yml</ignoredFile>
-                                    </ignoredFiles>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>        
-
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -417,6 +467,26 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-generated-gradle-projects</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>target/classes</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -476,4 +546,14 @@
         </profile>
     </profiles>
 
+    <repositories>
+        <repository>
+            <id>gradle-dependencies</id>
+            <name>Gradle releases repository</name>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

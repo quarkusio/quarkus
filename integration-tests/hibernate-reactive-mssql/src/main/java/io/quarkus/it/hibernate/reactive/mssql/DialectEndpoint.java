@@ -1,43 +1,31 @@
 package io.quarkus.it.hibernate.reactive.mssql;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import jakarta.inject.Inject;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
-@WebServlet(name = "DialectEndpoint", urlPatterns = "/dialect/version")
-public class DialectEndpoint extends HttpServlet {
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
+
+@Path("/dialect/version")
+@Produces(MediaType.TEXT_PLAIN)
+public class DialectEndpoint {
     @Inject
-    SessionFactory sessionFactory;
+    Mutiny.SessionFactory sessionFactory;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
-            resp.getWriter().write(DialectVersions.toString(version));
-        } catch (Exception e) {
-            reportException("Failed to retrieve dialect version", e, resp);
-        }
-    }
-
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
+    @GET
+    public String test() throws IOException {
+        var version = ((MutinySessionFactoryImpl) ClientProxy.unwrap(sessionFactory)).getServiceRegistry()
+                .requireService(JdbcServices.class).getDialect().getVersion();
+        return DialectVersions.toString(version);
     }
 
 }

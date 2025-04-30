@@ -10,24 +10,31 @@ import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 
 public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootEntityManagerFactoryBuilder {
 
-    public FastBootReactiveEntityManagerFactoryBuilder(PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
+    public FastBootReactiveEntityManagerFactoryBuilder(QuarkusPersistenceUnitDescriptor puDescriptor,
+            PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy strategy) {
-        super(metadata, persistenceUnitName, standardServiceRegistry, runtimeSettings, validatorFactory,
-                cdiBeanManager, strategy);
+            Object cdiBeanManager, MultiTenancyStrategy strategy,
+            boolean shouldApplySchemaMigration) {
+        super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
+                cdiBeanManager, strategy, shouldApplySchemaMigration);
     }
 
     @Override
     public EntityManagerFactory build() {
-        final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-        optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-        populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
-        SessionFactoryOptions options = optionsBuilder.buildOptions();
-        return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
+        try {
+            final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
+            optionsBuilder.enableCollectionInDefaultFetchGroup(true);
+            populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
+            SessionFactoryOptions options = optionsBuilder.buildOptions();
+            return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
+        } catch (Exception e) {
+            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
+        }
     }
 }

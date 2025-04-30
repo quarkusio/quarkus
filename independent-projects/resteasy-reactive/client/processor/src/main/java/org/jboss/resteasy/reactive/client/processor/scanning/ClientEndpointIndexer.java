@@ -53,26 +53,19 @@ public class ClientEndpointIndexer
     private final String[] defaultProducesNegotiated;
     private final boolean smartDefaultProduces;
 
-    ClientEndpointIndexer(Builder builder, String defaultProduces, boolean smartDefaultProduces) {
+    public ClientEndpointIndexer(AbstractBuilder builder, String defaultProduces, boolean smartDefaultProduces) {
         super(builder);
         this.defaultProduces = new String[] { defaultProduces };
         this.defaultProducesNegotiated = new String[] { defaultProduces, MediaType.WILDCARD };
         this.smartDefaultProduces = smartDefaultProduces;
     }
 
-    public MaybeRestClientInterface createClientProxy(ClassInfo classInfo,
-            String path) {
+    public MaybeRestClientInterface createClientProxy(ClassInfo classInfo, String path) {
         try {
             RestClientInterface clazz = new RestClientInterface();
             clazz.setClassName(classInfo.name().toString());
             clazz.setEncoded(classInfo.hasDeclaredAnnotation(ENCODED));
             if (path != null) {
-                if (!path.startsWith("/")) {
-                    path = "/" + path;
-                }
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
-                }
                 clazz.setPath(path);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
@@ -149,7 +142,7 @@ public class ClientEndpointIndexer
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
-        throw new RuntimeException("Injectable beans not supported in client");
+        throw new RuntimeException("Injectable beans are not supported in client");
     }
 
     @Override
@@ -230,23 +223,26 @@ public class ClientEndpointIndexer
 
     }
 
-    public static final class Builder extends EndpointIndexer.Builder<ClientEndpointIndexer, Builder, ResourceMethod> {
+    public static abstract class AbstractBuilder<B extends EndpointIndexer.Builder<ClientEndpointIndexer, B, ResourceMethod>>
+            extends EndpointIndexer.Builder<ClientEndpointIndexer, B, ResourceMethod> {
+
         private String defaultProduces = MediaType.TEXT_PLAIN;
         private boolean smartDefaultProduces = true;
 
-        public Builder setDefaultProduces(String defaultProduces) {
+        public B setDefaultProduces(String defaultProduces) {
             this.defaultProduces = defaultProduces;
-            return this;
+            return (B) this;
         }
 
-        public Builder setSmartDefaultProduces(boolean smartDefaultProduces) {
+        public B setSmartDefaultProduces(boolean smartDefaultProduces) {
             this.smartDefaultProduces = smartDefaultProduces;
-            return this;
+            return (B) this;
         }
 
         @Override
         public ClientEndpointIndexer build() {
             return new ClientEndpointIndexer(this, defaultProduces, smartDefaultProduces);
         }
+
     }
 }

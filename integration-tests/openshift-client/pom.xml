@@ -13,6 +13,10 @@
     <artifactId>quarkus-integration-test-openshift-client</artifactId>
     <name>Quarkus - Integration Tests - OpenShift Client</name>
 
+    <properties>
+        <quarkus.kubernetes-client.allow-incomplete-model>true</quarkus.kubernetes-client.allow-incomplete-model>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -22,10 +26,28 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-openshift-client</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-hive</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-miscellaneous</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operator</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operatorhub</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-openshift-client</artifactId>
+            <artifactId>quarkus-test-kubernetes-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -89,6 +111,29 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <!-- We override the rules here as Okhttp will be present -->
+                            <rules combine-self="override">
+                                <dependencyConvergence />
+                                <externalRules>
+                                    <location>
+                                        classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

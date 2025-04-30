@@ -11,7 +11,6 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.deployment.devconsole.ArcDevConsoleProcessor;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DecoratorInfo;
@@ -21,12 +20,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ArcDevRecorder;
 
 public class ArcDevProcessor {
+    private static final String BEAN_DEPENDENCIES = "io.quarkus.arc.beanDependencies";
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -72,7 +71,7 @@ public class ArcDevProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(beansPath)
                 .displayOnNotFoundPage("Active CDI Beans")
-                .handler(recorder.createBeansHandler(ArcDevConsoleProcessor.BEAN_DEPENDENCIES)).build());
+                .handler(recorder.createBeansHandler(BEAN_DEPENDENCIES)).build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(removedBeansPath)
@@ -88,31 +87,14 @@ public class ArcDevProcessor {
     // And we can't split the config due to compatibility reasons
     private Map<String, String> getConfigProperties(ArcConfig arcConfig) {
         Map<String, String> props = new HashMap<>();
-        props.put("quarkus.arc.remove-unused-beans", arcConfig.removeUnusedBeans);
-        props.put("quarkus.arc.unremovable-types", arcConfig.unremovableTypes.map(Object::toString).orElse(""));
-        props.put("quarkus.arc.detect-unused-false-positives", "" + arcConfig.detectUnusedFalsePositives);
-        props.put("quarkus.arc.transform-unproxyable-classes", "" + arcConfig.transformUnproxyableClasses);
-        props.put("quarkus.arc.auto-inject-fields", "" + arcConfig.autoInjectFields);
-        props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods);
-        props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives.map(Object::toString).orElse(""));
-        props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes.map(Object::toString).orElse(""));
+        props.put("quarkus.arc.remove-unused-beans", arcConfig.removeUnusedBeans());
+        props.put("quarkus.arc.unremovable-types", arcConfig.unremovableTypes().map(Object::toString).orElse(""));
+        props.put("quarkus.arc.detect-unused-false-positives", "" + arcConfig.detectUnusedFalsePositives());
+        props.put("quarkus.arc.transform-unproxyable-classes", "" + arcConfig.transformUnproxyableClasses());
+        props.put("quarkus.arc.auto-inject-fields", "" + arcConfig.autoInjectFields());
+        props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods());
+        props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives().map(Object::toString).orElse(""));
+        props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes().map(Object::toString).orElse(""));
         return props;
     }
-
-    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
-    @BuildStep
-    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem eventsEndpoint(ArcDevRecorder recorder) {
-        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("events").method("POST")
-                .handler(recorder.events()).build();
-    }
-
-    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
-    @BuildStep
-    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem invocationsEndpoint(ArcDevRecorder recorder) {
-        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("invocations").method("POST")
-                .handler(recorder.invocations()).build();
-    }
-
 }

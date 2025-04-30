@@ -14,9 +14,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -25,14 +22,12 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
-import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.KotlinPanacheCompanionEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheRepositoryEnhancer;
@@ -41,18 +36,12 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 
 public class HibernateReactivePanacheKotlinProcessor {
 
-    private static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
     private static final DotName DOTNAME_REACTIVE_SESSION = DotName.createSimple(Mutiny.Session.class.getName());
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
-    private static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
-    private static final DotName DOTNAME_MULTI = DotName.createSimple(Multi.class.getName());
-    private static final String CHECK_RETURN_VALUE_BINARY_NAME = "io/smallrye/common/annotation/CheckReturnValue";
-    private static final String CHECK_RETURN_VALUE_SIGNATURE = "L" + CHECK_RETURN_VALUE_BINARY_NAME + ";";
     private static final TypeBundle TYPE_BUNDLE = ReactiveKotlinJpaTypeBundle.BUNDLE;
 
     @BuildStep
@@ -70,11 +59,6 @@ public class HibernateReactivePanacheKotlinProcessor {
     @BuildStep
     public UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(DOTNAME_REACTIVE_SESSION);
-    }
-
-    @BuildStep
-    public AdditionalApplicationArchiveMarkerBuildItem marker() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
     }
 
     @BuildStep
@@ -170,18 +154,5 @@ public class HibernateReactivePanacheKotlinProcessor {
             }
         }
         return null;
-    }
-
-    @BuildStep
-    PanacheMethodCustomizerBuildItem mutinyReturnTypes() {
-        return new PanacheMethodCustomizerBuildItem(new PanacheMethodCustomizer() {
-            @Override
-            public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
-                DotName returnType = method.returnType().name();
-                if (returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI)) {
-                    mv.visitAnnotation(CHECK_RETURN_VALUE_SIGNATURE, true);
-                }
-            }
-        });
     }
 }

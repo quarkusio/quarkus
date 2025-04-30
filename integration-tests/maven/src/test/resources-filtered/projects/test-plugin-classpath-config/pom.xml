@@ -7,14 +7,14 @@
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <properties>
-    <compiler-plugin.version>3.8.1</compiler-plugin.version>
-    <maven.compiler.release>11</maven.compiler.release>
+    <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <maven.compiler.release>${maven.compiler.release}</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0</surefire-plugin.version>
+    <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>

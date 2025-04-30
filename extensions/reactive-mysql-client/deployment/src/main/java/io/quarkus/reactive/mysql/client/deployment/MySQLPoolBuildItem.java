@@ -1,17 +1,20 @@
 package io.quarkus.reactive.mysql.client.deployment;
 
+import java.util.function.Function;
+
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.runtime.RuntimeValue;
 import io.vertx.mysqlclient.MySQLPool;
 
+@Deprecated(since = "3.21", forRemoval = true)
 public final class MySQLPoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;
 
-    private final RuntimeValue<MySQLPool> mysqlPool;
+    private final Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> mysqlPool;
 
-    public MySQLPoolBuildItem(String dataSourceName, RuntimeValue<MySQLPool> mysqlPool) {
+    public MySQLPoolBuildItem(String dataSourceName, Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> mysqlPool) {
         this.dataSourceName = dataSourceName;
         this.mysqlPool = mysqlPool;
     }
@@ -20,7 +23,7 @@ public final class MySQLPoolBuildItem extends MultiBuildItem {
         return dataSourceName;
     }
 
-    public RuntimeValue<MySQLPool> getMySQLPool() {
+    public Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> getMySQLPool() {
         return mysqlPool;
     }
 

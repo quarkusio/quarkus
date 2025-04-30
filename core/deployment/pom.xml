@@ -15,6 +15,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-classloader-commons</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.aesh</groupId>
             <artifactId>readline</artifactId>
         </dependency>
@@ -49,6 +53,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-development-mode-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -110,7 +118,7 @@
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
+            <artifactId>nativeimage</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -139,6 +147,17 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap</groupId>
+            <artifactId>shrinkwrap-depchain</artifactId>
+            <scope>test</scope>
+            <type>pom</type>
+        </dependency>
     </dependencies>
 
     <build>
@@ -153,21 +172,31 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-test-deps-junit-scope</id>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
-                    </execution>
-                    <execution>
-                        <id>enforce-quarkus-core-deployment</id>
                         <configuration>
-                            <rules>
+                            <!--
+                                This artifact contains JUnit dependencies so we need to override the rules
+                                to avoid testing it.
+
+                                Also we enforce some additional banned dependencies.
+                            -->
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
+                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
                                 <bannedDependencies>
                                     <excludes>
                                         <!-- findbugs is not required at runtime -->
@@ -180,23 +209,28 @@
                                 </bannedDependencies>
                             </rules>
                         </configuration>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>de.thetaphi</groupId>

@@ -19,8 +19,9 @@ public class ErrorServletTestCase {
     @Test
     public void testHtmlError() {
         RestAssured.when().get("/error").then()
+                .log().all()
                 .statusCode(500)
-                .body(containsString("<h1 class=\"container\">Internal Server Error</h1>"))
+                .body(containsString("<div class=\"callout\">Internal Server Error</div>"))
                 .body(containsString("<div id=\"stacktrace\">"));
     }
 

@@ -1,17 +1,17 @@
 package io.quarkus.it.opentelemetry.grpc;
 
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_GRPC_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SYSTEM;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+import static io.opentelemetry.semconv.SemanticAttributes.RPC_GRPC_STATUS_CODE;
+import static io.opentelemetry.semconv.SemanticAttributes.RPC_METHOD;
+import static io.opentelemetry.semconv.SemanticAttributes.RPC_SERVICE;
+import static io.opentelemetry.semconv.SemanticAttributes.RPC_SYSTEM;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -66,9 +66,9 @@ public class OpenTelemetryGrpcTest {
         assertEquals(SpanKind.SERVER.toString(), rest.get("kind"));
         assertEquals("GET /grpc/{name}", rest.get("name"));
         assertEquals("/grpc/{name}", getAttributes(rest).get(HTTP_ROUTE.getKey()));
-        assertEquals("/grpc/Naruto", getAttributes(rest).get(HTTP_TARGET.getKey()));
-        assertEquals(HTTP_OK, getAttributes(rest).get(HTTP_STATUS_CODE.getKey()));
-        assertEquals(HttpMethod.GET.name(), getAttributes(rest).get(HTTP_METHOD.getKey()));
+        assertEquals("/grpc/Naruto", getAttributes(rest).get(URL_PATH.getKey()));
+        assertEquals(HTTP_OK, getAttributes(rest).get(HTTP_RESPONSE_STATUS_CODE.getKey()));
+        assertEquals(HttpMethod.GET.name(), getAttributes(rest).get(HTTP_REQUEST_METHOD.getKey()));
 
         // Second span is the gRPC client call
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, rest.get("spanId"));
@@ -88,11 +88,8 @@ public class OpenTelemetryGrpcTest {
         assertEquals("helloworld.Greeter", getAttributes(server).get(RPC_SERVICE.getKey()));
         assertEquals("SayHello", getAttributes(server).get(RPC_METHOD.getKey()));
         assertEquals(Status.Code.OK.value(), getAttributes(server).get(RPC_GRPC_STATUS_CODE.getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.peer.addr").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.peer.port").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.host.addr").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.host.port").getKey()));
-        assertEquals("ip_tcp", getAttributes(server).get(NET_TRANSPORT.getKey()));
+        assertNotNull(getAttributes(server).get(SERVER_ADDRESS.getKey()));
+        assertNotNull(getAttributes(server).get(SERVER_PORT.getKey()));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
     }
 

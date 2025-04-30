@@ -14,7 +14,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,7 @@ import io.quarkus.qute.ValueResolver;
  * @see ValueResolver
  * @see NamespaceResolver
  */
-public class ExtensionMethodGenerator {
+public class ExtensionMethodGenerator extends AbstractGenerator {
 
     public static final DotName TEMPLATE_EXTENSION = DotName.createSimple(TemplateExtension.class.getName());
     public static final DotName TEMPLATE_ATTRIBUTE = DotName.createSimple(TemplateExtension.TemplateAttribute.class.getName());
@@ -74,14 +73,8 @@ public class ExtensionMethodGenerator {
     public static final String NAMESPACE = "namespace";
     public static final String PATTERN = "pattern";
 
-    private final Set<String> generatedTypes;
-    private final ClassOutput classOutput;
-    private final IndexView index;
-
     public ExtensionMethodGenerator(IndexView index, ClassOutput classOutput) {
-        this.index = index;
-        this.classOutput = classOutput;
-        this.generatedTypes = new HashSet<>();
+        super(index, classOutput);
     }
 
     public Set<String> getGeneratedTypes() {
@@ -191,7 +184,7 @@ public class ExtensionMethodGenerator {
         if (matchRegex != null && !matchRegex.isEmpty()) {
             patternField = valueResolver.getFieldCreator(PATTERN, Pattern.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
-            MethodCreator constructor = valueResolver.getMethodCreator("<init>", "V");
+            MethodCreator constructor = valueResolver.getMethodCreator(MethodDescriptor.INIT, "V");
             // Invoke super()
             constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             // Compile the regex pattern
@@ -235,8 +228,7 @@ public class ExtensionMethodGenerator {
         ResultHandle evalContext = resolve.getMethodParam(0);
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
         boolean isNameParamRequired = patternField != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY);
-        boolean returnsCompletionStage = method.returnType().kind() != Kind.PRIMITIVE && ValueResolverGenerator
-                .hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+        boolean returnsCompletionStage = hasCompletionStage(method.returnType());
 
         ResultHandle ret;
         if (!params.needsEvaluation()) {
@@ -488,7 +480,7 @@ public class ExtensionMethodGenerator {
                 this.name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
                 this.paramsHandle = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
                 this.paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, paramsHandle);
-                this.constructor = namespaceResolver.getMethodCreator("<init>", "V");
+                this.constructor = namespaceResolver.getMethodCreator(MethodDescriptor.INIT, "V");
                 // Invoke super()
                 this.constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             }

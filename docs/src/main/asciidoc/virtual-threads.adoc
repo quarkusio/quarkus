@@ -3,151 +3,221 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Writing simpler reactive REST services with Quarkus Virtual Thread support
-
+[[virtual-threads]]
+= Virtual Thread support reference
 include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: core
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
-:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html
 :blockingannotation: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/Blocking.html
 :vthreadjep: https://openjdk.org/jeps/425
 :thread: https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/Thread.html
-:mutiny-vertx-sql: https://smallrye.io/smallrye-mutiny-vertx-bindings/2.26.0/apidocs/io/vertx/mutiny/sqlclient/package-summary.html
 :pgsql-driver: https://javadoc.io/doc/org.postgresql/postgresql/latest/index.html
+:topics: virtual-threads
 
-This guide explains how to benefit from Java 19 virtual threads when writing REST services in Quarkus.
+This guide explains how to benefit from Java 21+ virtual threads in Quarkus application.
 
-[TIP]
-====
-This is the reference guide for using virtual threads to write reactive REST services.
-Please refer to the xref:rest-json.adoc[Writing JSON REST services guides] for a lightweight introduction to reactive REST
-services and to the xref:resteasy-reactive.adoc[Writing REST Services with RESTEasy Reactive] guide for a detailed presentation.
-====
-
-== What are virtual threads ?
+== What are virtual threads?
 
 === Terminology
 OS thread::
-A "thread-like" data-structure managed by the Operating System.
+A "thread-like" data structure managed by the Operating System.
 
 Platform thread::
-Up until Java 19, every instance of the link:{thread}[Thread] class was a platform thread, that is, a wrapper around an OS thread.
-Creating a platform threads creates an OS thread, blocking a platform thread blocks an OS thread.
+Until Java 19, every instance of the link:{thread}[Thread] class was a platform thread, a wrapper around an OS thread.
+Creating a platform thread creates an OS thread, and blocking a platform thread blocks an OS thread.
 
 Virtual thread::
 Lightweight, JVM-managed threads. They extend the link:{thread}[Thread] class but are not tied to one specific OS thread.
 Thus, scheduling virtual threads is the responsibility of the JVM.
 
 Carrier thread::
-A platform thread used to execute a virtual thread is called a carrier.
-This isn't a class distinct from link:{Thread}[Thread] or VirtualThread but rather a functional denomination.
+A platform thread used to execute a virtual thread is called a **carrier** thread.
+It isn't a class distinct from link:{Thread}[Thread] or `VirtualThread` but rather a functional denomination.
 
 === Differences between virtual threads and platform threads
-We will give a brief overview of the topic here, please refer to the link:{vthreadjep}[JEP 425] for more information.
+We will give a brief overview of the topic here; please refer to the link:{vthreadjep}[JEP 425] for more information.
 
-Virtual threads are a feature available since Java 19 aiming at providing a cheap alternative to platform threads for I/O-bound workloads.
+Virtual threads are a feature available since Java 19 (Java 21 is the first LTS version including virtual threads),
+aiming at providing a cheap alternative to platform threads for I/O-bound workloads.
 
 Until now, platform threads were the concurrency unit of the JVM.
 They are a wrapper over OS structures.
-This means that creating a Java platform thread actually results in creating a "thread-like" structure in your operating system.
+Creating a Java platform thread creates a "thread-like" structure in your operating system.
 
-Virtual threads on the other hand are managed by the JVM. In order to be executed, they need to be mounted on a platform thread
-(which acts as a carrier to that virtual thread).
+Virtual threads, on the other hand, are managed by the JVM. To be executed, they need to be mounted on a platform thread (which acts as a carrier to that virtual thread).
 As such, they have been designed to offer the following characteristics:
 
 Lightweight :: Virtual threads occupy less space than platform threads in memory.
-Hence, it becomes possible to use more virtual threads than platform threads simultaneously without blowing up the heap.
-By default, platform threads are created with a stack of about 1 MB where virtual threads stack is "pay-as-you-go".
-You can find these numbers along with other motivations for virtual threads in this presentation given by the lead developer of project Loom: https://youtu.be/lIq-x_iI-kc?t=543.
+Hence, it becomes possible to use more virtual threads than platform threads simultaneously without blowing up the memory.
+By default, platform threads are created with a stack of about 1 MB, whereas virtual threads stack is "pay-as-you-go."
+You can find these numbers and other motivations for virtual threads in this https://youtu.be/lIq-x_iI-kc?t=543[presentation] given by the lead developer of project Loom (the project that added the virtual thread support to the JVM).
 
 Cheap to create:: Creating a platform thread in Java takes time.
-Currently, techniques such as pooling where threads are created once then reused are strongly encouraged to minimize the
-time lost in starting them (as well as limiting the maximum number of threads to keep memory consumption low).
+Currently, techniques such as pooling, where threads are created once and then reused, are strongly encouraged to minimize the time lost in starting them (as well as limiting the maximum number of threads to keep memory consumption low).
 Virtual threads are supposed to be disposable entities that we create when we need them,
-it is discouraged to pool them or to reuse them for different tasks.
+it is discouraged to pool them or reuse them for different tasks.
 
-Cheap to block:: When performing blocking I/O, the underlying OS thread wrapped by the Java platform thread is put in a
-wait queue and a context switch occurs to load a new thread context onto the CPU core. This operation takes time.
-Since virtual threads are managed by the JVM, no underlying OS thread is blocked when they perform a blocking operation.
-Their state is simply stored in the heap and another Virtual thread is executed on the same Java platform thread.
+Cheap to block:: When performing blocking I/O, the underlying OS thread wrapped by the Java platform thread is put in a wait queue, and a context switch occurs to load a new thread context onto the CPU core. This operation takes time.
+Since the JVM manages virtual threads, no underlying OS thread is blocked when they perform a blocking operation.
+Their state is stored in the heap, and another virtual thread is executed on the same Java platform (carrier) thread.
 
+=== The Continuation Dance
+As mentioned above, the JVM schedules the virtual threads. These virtual threads are mounted on carrier threads. The scheduling comes with a pinch of magic. When the virtual thread attempts to use blocking I/O, the JVM _transforms_ this call into a non-blocking one, unmounts the virtual thread, and mounts another virtual thread on the carrier thread. When the I/O completes, the _waiting_ virtual thread becomes eligible again and will be re-mounted on a carrier thread to continue its execution. For the user, all this dance is invisible. Your synchronous code is executed asynchronously.
+
+Note that the virtual thread may not be re-mounted on the same carrier thread.
+
+[[cpu-bound]]
 === Virtual threads are useful for I/O-bound workloads only
-We now know that we can create way more virtual threads than platform threads. One could be tempted to use virtual threads
-to perform long computations (CPU-bound workload).
-This is useless if not counterproductive.
-CPU-bound doesn't consist in quickly swapping threads while they need to wait for the completion of an I/O but in leaving
-them attached to a CPU-core to actually compute something.
-In this scenario, it is useless to have thousands of threads if we have tens of CPU-cores, virtual threads won't enhance
-the performance of CPU-bound workloads.
+We now know we can create more virtual threads than platform threads. One could be tempted to use virtual threads to perform long computations (CPU-bound workload).
+It is useless and counterproductive.
+CPU-bound doesn't consist of quickly swapping threads while they need to wait for the completion of an I/O, but in leaving
+them attached to a CPU core to compute something.
+In this scenario, it is worse than useless to have thousands of threads if we have tens of CPU cores, virtual threads won't enhance the performance of CPU-bound workloads.
+Even worse, when running a CPU-bound workload on a virtual thread, the virtual thread monopolizes the carrier thread on which it is mounted.
+It will either reduce the chance for the other virtual thread to run or will start creating new carrier threads, leading to high memory usage.
 
+[[run-code-on-virtual-threads-using-runonvirtualthread]]
+== Run code on virtual threads using @RunOnVirtualThread
 
-== Bringing virtual threads to reactive REST services
-Since virtual threads are disposable entities, the fundamental idea of quarkus-loom is to offload the execution of an
-endpoint handler on a new virtual thread instead of running it on an event-loop (in the case of RESTeasy-reactive) or a
-platform worker thread.
+In Quarkus, the support of virtual thread is implemented using the link:{runonvthread}[@RunOnVirtualThread] annotation.
+This section briefly overviews the rationale and how to use it.
+There are dedicated guides for extensions supporting that annotation, such as:
+
+- xref:./rest-virtual-threads.adoc[Virtual threads in REST applications]
+- xref:./messaging-virtual-threads.adoc[Virtual threads in reactive messaging applications]
+- xref:./grpc-virtual-threads.adoc[Virtual threads in gRPC services]
+- xref:./scheduler-reference.adoc#virtual_threads[Execute periodic tasks on virtual threads]
+
+[[why-not]]
+=== Why not run everything on virtual threads?
+As mentioned above, not everything can run safely on virtual threads.
+The risk of **monopolization** can lead to high-memory usage.
+Also, there are situations where the virtual thread cannot be unmounted from the carrier thread.
+This is called **pinning**.
+Finally, some libraries use `ThreadLocal` to store and reuse objects.
+Using virtual threads with these libraries will lead to massive allocation, as the intentionally pooled objects will be instantiated for every (disposable and generally short-lived) virtual thread.
+
+As of today, it is not possible to use virtual threads in a carefree manner.
+Following such a laissez-faire approach could quickly lead to memory and resource starvation issues.
+Thus, Quarkus uses an explicit model until the aforementioned issues disappear (as the Java ecosystem matures).
+It is also the reason why _reactive_ extensions have the virtual thread support, and rarely the _classic_ ones.
+We need to know when to dispatch on a virtual thread.
+
+It is essential to understand that these issues are not Quarkus limitations or bugs but are due to the current state of the Java ecosystem which needs to evolve to become virtual thread friendly.
+
+NOTE: To learn more about the internal design and choices, check the https://dl.acm.org/doi/10.1145/3583678.3596895[Considerations for integrating virtual threads in a Java framework: a Quarkus example in a resource-constrained environment] paper.
+
+[[monopolization]]
+==== Monopolization cases
+The monopolization has been explained in the xref:cpu-bound[Virtual threads are useful for I/O-bound workloads only] section.
+When running long computations, we do not allow the JVM to unmount and switch to another virtual thread until the virtual thread terminates.
+Indeed, the current scheduler does not support preempting tasks.
+
+This monopolization can lead to the creation of new carrier threads to execute other virtual threads.
+Creating carrier threads results in creating platform threads.
+So, there is a memory cost associated with this creation.
+
+Suppose you run in a constrained environment, such as containers. In that case, monopolization can quickly become a concern, as the high memory usage can lead to out-of-memory issues and container termination.
+The memory usage may be higher than with regular worker threads because of the inherent cost of the scheduling and virtual threads.
+
+[[pinning]]
+==== Pinning cases
+The promise of "cheap blocking" might not always hold: a virtual thread might _pin_ its carrier on certain occasions.
+The platform thread is blocked in this situation, precisely as it would have been in a typical blocking scenario.
+
+According to link:{vthreadjep}[JEP 425] this can happen in two situations:
+
+- when a virtual thread performs a blocking operation inside a `synchronized` block or method
+- when it executes a blocking operation inside a native method or a foreign function
+
+It can be reasonably easy to avoid these situations in your code, but verifying every dependency you use is hard.
+Typically, while experimenting with virtual threads, we realized that versions older than 42.6.0 of the link:{pgsql-driver}[postgresql-JDBC driver] result in frequent pinning.
+Most JDBC drivers still pin the carrier thread.
+Even worse, many libraries require code changes.
+
+For more information, see link:https://quarkus.io/blog/virtual-thread-1/[When Quarkus meets Virtual Threads]
+
+IMPORTANT: This information about pinning cases applies to PostgreSQL JDBC driver 42.5.4 and earlier.
+For PostgreSQL JDBC driver 42.6.0 and later, virtually all synchronized methods have been replaced by reentrant locks.
+For more information, see the link:https://jdbc.postgresql.org/changelogs/2023-03-17-42.6.0-release/[Notable Changes] for PostgreSQL JDBC driver 42.6.0.
+
+[[pooling]]
+==== The pooling case
+Some libraries are using `ThreadLocal` as an object pooling mechanism.
+Extremely popular libraries like https://github.com/FasterXML/jackson-core/issues/919[Jackson] and Netty assume that the application uses a limited number of threads, which are recycled (using a thread pool) to run multiple (unrelated but sequential) tasks.
+
+This pattern has multiple advantages, such as:
+
+- Allocation benefit: heavy objects are only allocated once per thread, but because the number of these threads was intended to be limited, it would not use too much memory.
+- Thread safety: only one thread can access the object stored in the thread local - preventing concurrent accesses.
+
+However, this pattern is counter-productive when using virtual threads.
+Virtual threads are not pooled and generally short-lived.
+So, instead of a few of them, we now have many of them.
+For each of them, the object stored in the `ThreadLocal` is created (often large and expensive) and won't be reused, as the virtual thread is not pooled (and won't be used to run another task once the execution completes).
+This problem leads to high memory usage.
+Unfortunately, it requires sophisticated code changes in the libraries themselves.
+
+=== Use @RunOnVirtualThread with Quarkus REST (formerly RESTEasy Reactive)
+
+This section shows a brief example of using the link:{runonvthread}[@RunOnVirtualThread] annotation.
+It also explains the various development and execution models offered by Quarkus.
+
+The `@RunOnVirtualThread` annotation instructs Quarkus to invoke the annotated method on a **new** virtual thread instead of the current one.
+Quarkus handles the creation of the virtual thread and the offloading.
+
+Since virtual threads are disposable entities, the fundamental idea of `@RunOnVirtualThread` is to offload the execution of an endpoint handler on a new virtual thread instead of running it on an event-loop or worker thread (in the case of Quarkus REST).
 
 To do so, it suffices to add the link:{runonvthread}[@RunOnVirtualThread] annotation to the endpoint.
-If the JDK is compatible (Java 19 or later versions) then the endpoint will be offloaded to a virtual thread.
-It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual
-thread is mounted.
+If the Java Virtual Machine used to **run** the application provides virtual thread support (so Java 21 or later versions), then the endpoint execution is offloaded to a virtual thread.
+It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual thread is mounted.
 
-This annotation can only be used in conjunction with endpoints annotated with link:{blockingannotation}[@Blocking] or
+In the case of Quarkus REST, this annotation can only be used on endpoints annotated with link:{blockingannotation}[@Blocking] or
 considered blocking because of their signature.
-You can visit xref:resteasy-reactive.adoc#execution-model-blocking-non-blocking[Execution model, blocking, non-blocking]
+You can visit xref:rest.adoc#execution-model-blocking-non-blocking[Execution model, blocking, non-blocking]
 for more information.
 
-=== Getting started
+==== Get started with virtual threads with Quarkus REST
 
-Add the following import to your build file:
+Add the following dependency to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
-You also need to make sure that you are using the version 19 of Java, this can be enforced in your pom.xml file with the following:
+Then, you also need to make sure that you are using Java 21+, this can be enforced in your pom.xml file with the following:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <properties>
-    <maven.compiler.source>19</maven.compiler.source>
-    <maven.compiler.target>19</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
 </properties>
 ----
 
-Virtual threads are still an experimental feature, you need to start your application with the `--enable-preview` flag:
+==== Three development and execution models
 
-[source, bash]
-----
-java --enable-preview -jar target/quarkus-app/quarkus-run.jar
-----
-
-The example below shows the differences between three endpoints, all of them querying a fortune in the database then
+The example below shows the differences between three endpoints, all of them querying a _fortune_ in the database then
 returning it to the client.
 
 - the first one uses the traditional blocking style, it is considered blocking due to its signature.
-- the second one uses Mutiny reactive streams in a declarative style, it is considered non-blocking due to its signature.
-- the third one uses Mutiny reactive streams in a synchronous way, since it doesn't return a "reactive type" it is
+- the second one uses Mutiny, it is considered non-blocking due to its signature.
+- the third one uses Mutiny but in a synchronous way, since it doesn't return a "reactive type" it is
 considered blocking and the link:{runonvthread}[@RunOnVirtualThread] annotation can be used.
-
-When using Mutiny, alternative "xAndAwait" methods are provided to be used with virtual threads.
-They ensure that waiting for the completion of the I/O will not "pin" the carrier thread and deteriorate performance.
-Pinning is a phenomenon that we describe in xref:Pinning cases[this section].
-
-
-In other words, the mutiny environment is a safe environment for virtual threads.
-The guarantees offered by Mutiny are detailed later.
 
 [source,java]
 ----
@@ -167,9 +237,12 @@ import java.util.Random;
 @Path("")
 public class FortuneResource {
 
+    @Inject FortuneRepository repository;
+
     @GET
     @Path("/blocking")
     public Fortune blocking() {
+        // Runs on a worker (platform) thread
         var list = repository.findAllBlocking();
         return pickOne(list);
     }
@@ -177,6 +250,7 @@ public class FortuneResource {
     @GET
     @Path("/reactive")
     public Uni<Fortune> reactive() {
+        // Runs on the event loop
         return repository.findAllAsync()
                 .map(this::pickOne);
     }
@@ -185,6 +259,7 @@ public class FortuneResource {
     @Path("/virtual")
     @RunOnVirtualThread
     public Fortune virtualThread() {
+        // Runs on a virtual thread
         var list = repository.findAllAsyncAndAwait();
         return pickOne(list);
     }
@@ -192,329 +267,321 @@ public class FortuneResource {
 }
 ----
 
-=== Simplifying complex logic
-The previous example is trivial and doesn't capture how imperative style can simplify complex reactive operations.
-Below is a more complex example.
-The endpoints must now fetch all the fortunes in the database, then append a quote to each fortune before finally returning
-the result to the client.
+The following table summarizes the options:
 
+|===
+|Model |Example of signature |Pros |Cons
 
+|Synchronous code on worker thread
+|`Fortune blocking()`
+|Simple code
+|Use worker thread (limit concurrency)
 
-[source,java]
-----
-package org.acme.rest;
+|Reactive code on event loop
+|`Uni<Fortune> reactive()`
+|High concurrency and low resource usage
+|More complex code
 
-import org.acme.fortune.model.Fortune;
-import org.acme.fortune.repository.FortuneRepository;
-import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.smallrye.mutiny.Uni;
+|Synchronous code on virtual thread
+|`@RunOnVirtualThread Fortune vt()`
+|Simple code
+|Risk of pinning, monopolization and under-efficient object pooling
+|===
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import java.util.List;
-import java.util.Random;
+Note that all three models can be used in a single application.
 
+== Use virtual thread friendly clients
 
-@Path("")
-public class FortuneResource {
+As mentioned in the xref:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.
+So, you need to be careful, especially when using a libraries doing I/O.
 
-    private final FortuneRepository repository;
+Fortunately, Quarkus provides a massive ecosystem that is ready to be used in virtual threads.
+Mutiny, the reactive programming library used in Quarkus, and the Vert.x Mutiny bindings provides the ability to write blocking code (so, no fear, no learning curve) which do not pin the carrier thread.
 
-    public Uni<List<String>> getQuotesAsync(int size){
-        //...
-        //asynchronously returns a list of quotes from an arbitrary source
-    }
+As a result:
 
-    @GET
-    @Path("/quoted-blocking")
-    public List<Fortune> getAllQuotedBlocking() {
-        // we get the list of fortunes
-        var fortunes = repository.findAllBlocking();
+1. Quarkus extensions providing blocking APIs on top of reactive APIs can be used in virtual threads.
+This includes the REST Client, the Redis client, the mailer...
+2. API returning `Uni` can be used directly using `uni.await().atMost(...)`. It blocks the virtual thread, without blocking the carrier thread, and also improves the resilience of your application with an easy (non-blocking) timeout support.
+3. If you use a https://smallrye.io/smallrye-mutiny-vertx-bindings/latest/[Vert.x client using the Mutiny bindings], use the `andAwait()` methods which block until you get the result without pinning the carrier thread. It includes all the reactive SQL drivers.
 
-        // we get the list of quotes
-        var quotes = getQuotesAsync(fortunes.size()).await().indefinitely();
+== Detect pinned thread in tests
 
-        // we append each quote to each fortune
-        for(int i=0; i  < fortunes.size(); i ++){
-            fortunes.get(i).title += "   -  " + quotes.get(i);
-        }
-        return fortunes;
-    }
+We recommend to use the following configuration when running tests in application using virtual threads.
+If would not fail the tests, but at least dump start traces if the code pins the carrier thread:
 
-    @GET
-    @Path("/quoted-reactive")
-    public Uni<List<Fortune>> getAllQuotedReactive() {
-        // we first fetch the list of resource and we memoize it
-        // to avoid fetching it again everytime need it
-        var fortunes = repository.findAllAsync().memoize().indefinitely();
-
-        // once we get a result for fortunes,
-        // we know its size and can thus query the right number of quotes
-        var quotes = fortunes.onItem().transformToUni(list -> getQuotesAsync(list.size()));
-
-        // we now need to combine the two reactive streams
-        // before returning the result to the user
-        return Uni.combine().all().unis(fortunes, quotes).asTuple().onItem().transform(tuple -> {
-            var todoList = tuple.getItem1();
-            //can await it since it is already resolved
-            var quotesList = tuple.getItem2();
-            for(int i=0; i  < todoList.size(); i ++){
-                todoList.get(i).title += "   -  " + quotesList.get(i);
-            }
-            return todoList;
-        });
-    }
-
-    @GET
-    @RunOnVirtualThread
-    @Path("/quoted-virtual-thread")
-    public List<Fortune> getAllQuotedVirtualThread() {
-        //we get the list of fortunes
-        var fortunes = repository.findAllAsyncAndAwait();
-
-        //we get the list of quotes
-        var quotes = getQuotesAsync(fortunes.size()).await().indefinitely();
-
-        //we append each quote to each fortune
-        for(int i=0; i  < fortunes.size(); i ++){
-            fortunes.get(i).title += "   -  " + quotes.get(i);
-        }
-        return fortunes;
-    }
-}
-----
-
-== Pinning cases
-The notion of "cheap blocking" might not always be true: in certain occasions a virtual thread might "pin" its carrier
-(the platform thread it is mounted upon).
-In this situation, the platform thread is blocked exactly as it would have been in a typical blocking scenario.
-
-According to link:{vthreadjep}[JEP 425] this can happen in two situations:
-
-- when a virtual thread performs a blocking operation inside a `synchronized` block or method
-- when it executes a blocking operation inside a native method or a foreign function
-
-It can be fairly easy to avoid these situations in our own code, but it is hard to verify every dependency we use.
-Typically, while experimenting with virtual-threads, we realized that using the link:{pgsql-driver}[postgresql-JDBC driver]
-results in frequent pinning.
-
-=== The JDBC problem
-Our experiments so far show that when a virtual thread queries a database using the JDBC driver, it will pin its carrier
-thread during the entire operation.
-
-Let's show the code of the `findAllBlocking()` method we used in the first example
-
-[source, java]
-----
-//import ...
-
-@ApplicationScoped
-public class FortuneRepository {
-    // ...
-
-    public List<Fortune> findAllBlocking() {
-        List<Fortune> fortunes = new ArrayList<>();
-        Connection conn = null;
-        try {
-            conn = db.getJdbcConnection();
-            var preparedStatement = conn.prepareStatement(SELECT_ALL);
-            ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()) {
-                fortunes.add(create(rs));
-            }
-            rs.close();
-            preparedStatement.close();
-        } catch (SQLException e) {
-            logger.warn("Unable to retrieve fortunes from the database", e);
-        } finally {
-           close(conn);
-        }
-        return fortunes;
-    }
-
-    //...
-}
-----
-
-The actual query happens at `ResultSet rs = preparedStatement.executeQuery();`, here is how it is implemented in the
-postgresql-jdbc driver 42.5.0:
-
-[source, java]
-----
-class PgPreparedStatement extends PgStatement implements PreparedStatement {
-    // ...
-
-    /*
-    * A Prepared SQL query is executed and its ResultSet is returned
-    *
-    * @return a ResultSet that contains the data produced by the * query - never null
-    *
-    * @exception SQLException if a database access error occurs
-    */
-    @Override
-    public ResultSet executeQuery() throws SQLException {
-        synchronized (this) {
-            if (!executeWithFlags(0)) {
-                throw new PSQLException(GT.tr("No results were returned by the query."), PSQLState.NO_DATA);
-            }
-            return getSingleResultSet();
-        }
-    }
-
-    // ...
-}
-----
-
-This `synchronized` block is the culprit.
-Replacing it with a lock is a good solution, but it won't be enough: `synchronized` blocks are also used in `executeWithFlags(int flag)`.
-A systematic review of the postgresql-jdbc driver is necessary to make sure that it is compliant with virtual threads.
-
-=== Reactive drivers at the rescue
-The vertx-sql-client is a reactive client, hence it is not supposed to block while waiting for the completion of a
-transaction with the database.
-However, when using the link:{mutiny-vertx-sql}[smallrye-mutiny-vertx-sqlclient] it is possible to use a variant method
-that will await for the completion of the transaction, mimicking a blocking behaviour.
-
-Below is the `FortuneRepository` except the blocking we've seen earlier has been replaced by reactive methods.
-
-[source, java]
-----
-//import ...
-
-@ApplicationScoped
-public class FortuneRepository {
-    // ...
-
-    public Uni<List<Fortune>> findAllAsync() {
-        return db.getPool()
-                .preparedQuery(SELECT_ALL).execute()
-                .map(this::createListOfFortunes);
-
-    }
-
-    public List<Fortune> findAllAsyncAndAwait() {
-        var rows = db.getPool().preparedQuery(SELECT_ALL)
-                .executeAndAwait();
-        return createListOfFortunes(rows);
-    }
-
-    //...
-}
-----
-
-Contrary to the link:{pgsql-driver}[postgresql-jdbc driver], no `synchronized` block is used where it shouldn't be, and
-the `await` behaviour is implemented using locks and latches that won't cause pinning.
-
-Using the synchronous methods of the link:{mutiny-vertx-sql}[smallrye-mutiny-vertx-sqlclient] along with virtual threads
-will allow you to use the synchronous blocking style, avoid pinning the carrier thread, and get performance close to a pure
-reactive implementation.
-
-== A point about performance
-
-Our experiments seem to indicate that Quarkus with virtual threads will scale better than Quarkus blocking (offloading
-the computation on a pool of platform worker threads) but not as well as Quarkus reactive.
-The memory consumption especially might be an issue: if your system needs to keep its memory footprint low we would
-advise you stick to using reactive constructs.
-
-This degradation of performance doesn't seem to come from virtual threads themselves but from the interactions between
-Vert.x/Netty (Quarkus underlying reactive engine) and the virtual threads.
-This was illustrated in the issue that we will now describe.
-
-=== The Netty problem
-For JSON serialization, Netty uses their custom implementation of thread locals, `FastThreadLocal` to store buffers.
-When using virtual threads in quarkus, the number of virtual threads simultaneously living in the service is directly
-related to the incoming traffic.
-It is possible to get hundreds of thousands, if not millions, of them.
-
-If they need to serialize some data to JSON they will end up creating as many instances of `FastThreadLocal`, resulting
-on a massive memory consumption as well as exacerbated pressure on the garbage collector.
-This will eventually affect the performance of the application and inhibit its scalability.
-
-This is a perfect example of the mismatch between the reactive stack and the virtual threads.
-The fundamental hypothesis are completely different and result in different optimizations.
-Netty expects a system using few event-loops (as many event-loops as CPU cores by default in Quarkus), but it gets hundreds
-of thousands of threads.
-You can refer to link:https://mail.openjdk.org/pipermail/loom-dev/2022-July/004844.html[this mail] to get more information
-on how we envision our future with virtual threads.
-
-=== Our solution to the Netty problem
-In order to avoid this wasting of resource without modifying Netty upstream, we wrote an extension that modifies the
-bytecode of the class responsible for creating the thread locals at build time.
-Using this extension, performance of virtual threads in Quarkus for the Json Serialization test of the Techempower suite
-increased by nearly 80%, making it almost as good as reactive endpoints.
-
-To use it, it needs to be added as a dependency:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-netty-loom-adaptor</artifactId>
-</dependency>
-----
-
-Furthermore, some operations undertaken by this extension need special access, it is necessary to
-
-- compile the application with the flag `-Dnet.bytebuddy.experimental`
-- open the `java.base.lang` module at runtime with the flag `--add-opens java.base/java.lang=ALL-UNNAMED`
-
-This extension is only intended to improve performance, it is perfectly fine not to use it.
-
-=== Concerning dev mode
-If you want to use quarkus with the dev mode, it won't be possible to manually specify the flags we mentioned along this guide.
-Instead, you want to specify them all in the configuration of the `quarkus-maven-plugin` as presented below.
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
+[source, xml]
 ----
 <plugin>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <version>${quarkus.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build</goal>
-            </goals>
-        </execution>
-    </executions>
-
-    <configuration>
-      <source>19</source>
-      <target>19</target>
-      <compilerArgs>
-        <arg>--enable-preview</arg>
-        <arg>-Dnet.bytebuddy.experimental</arg>
-      </compilerArgs>
-      <jvmArgs>--enable-preview --add-opens java.base/java.lang=ALL-UNNAMED</jvmArgs>
-    </configuration>
-
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>${surefire-plugin.version}</version>
+  <configuration>
+      <systemPropertyVariables>
+        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+        <maven.home>${maven.home}</maven.home>
+      </systemPropertyVariables>
+      <argLine>-Djdk.tracePinnedThreads</argLine>
+  </configuration>
 </plugin>
 ----
 
-If you don't want to specify the opening of the `java.lang` module in your pom.xml file, you can also specify it as an argument
-when you start the dev mode.
+== Run application using virtual threads
 
-The configuration of the quarkus-maven-plugin will be simpler:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-    <configuration>
-      <source>19</source>
-      <target>19</target>
-      <compilerArgs>
-        <arg>--enable-preview</arg>
-        <arg>-Dnet.bytebuddy.experimental</arg>
-      </compilerArgs>
-      <jvmArgs>--enable-preview</jvmArgs>
-    </configuration>
-----
-
-And the command will become:
 
 [source, bash]
 ----
-mvn quarkus:dev -Dopen-lang-package
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+
+TIP: Prior to Java 21, virtual threads were still an experimental feature, you need to start your application with the `--enable-preview` flag.
+
+== Build containers for application using virtual threads
+
+When running your application in JVM mode (so not compiled into native, for native check xref:native[the dedicated section]), you can follow the xref:./container-image.adoc[containerization guide] to build a container.
+
+In this section, we use JIB to build the container.
+Refer to the xref:./container-image.adoc[containerization guide] to learn more about the alternatives.
+
+To containerize your Quarkus application that use `@RunOnVirtualThread`, add the following properties in your `application.properties`:
+
+[source, properties]
+----
+quarkus.container-image.build=true
+quarkus.container-image.group=<your-group-name>
+quarkus.container-image.name=<you-container-name>
+quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi9/openjdk-21-runtime <1>
+quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
+----
+<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21. Quarkus picks an image providing Java 21+ automatically if you do not set one.
+<2> Select the target architecture. You can select more than one to build multi-archs images.
+
+Then, build your container as you would do usually.
+For example, if you are using Maven, run:
+
+[source, bash]
+----
+mvn package
+----
+
+[[native]]
+== Compiling Quarkus application using virtual threads into native executable
+
+=== Using a local GraalVM installation
+
+To compile a Quarkus applications leveraging `@RunOnVirtualThread` into a native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 21.
+
+Build the native executable as indicated on xref:./building-native-image.adoc[the native compilation guide].
+For example, with Maven, run:
+
+[source, bash]
+----
+mvn package -Dnative
+----
+
+=== Using an in-container build
+
+In-container build allows building Linux 64 executables by using a `native-image` compiler running in a container.
+It avoids having to install `native-image` on your machine, and also allows configuring the GraalVM version you need.
+Note that, to use in-container build, you must have Docker or Podman installed on your machine.
+
+Then, add to your `application.properties` file:
+
+[source, properties]
+----
+# In-container build to get a linux 64 executable
+quarkus.native.container-build=true <1>
+----
+<1> Enables the in-container build
+
+[IMPORTANT]
+.From ARM/64 to AMD/64
+====
+If you are using a Mac M1 or M2 (using an ARM64 CPU), you need to be aware that the native executable you will get using an in-container build will be a Linux executable, but using your host (ARM 64) architecture.
+You can use emulation to force the architecture when using Docker with the following property:
+
+[source, properties]
+----
+quarkus.native.container-runtime-options=--platform=linux/amd64
+----
+
+Be aware that it increases the compilation time... a lot (>10 minutes).
+====
+
+=== Containerize native applications using virtual threads
+
+To build a container running a Quarkus application using virtual threads compiled into a native executable, you must
+make sure you have a Linux/AMD64 executable (or ARM64 if you are targeting ARM machines).
+
+Make sure your `application.properties` contains the configuration explained in xref:native[the native compilation section].
+
+Then, build your container as you would do usually.
+For example, if you are using Maven, run:
+
+[source, bash]
+----
+mvn package -Dnative
+----
+
+NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
+
+== Use the duplicated context in virtual threads
+
+Methods annotated with `@RunOnVirtualThread` inherit from the original duplicated context (See the xref:duplicated-context.adoc[duplicated context reference guide] for details).
+So, the data written in the duplicated context (and the request scope, as the request scoped is stored in the duplicated context) by filters and interceptors are available during the method execution (even if the filters and interceptors are not run on the virtual thread).
+
+However, thread locals are not propagated.
+
+== Virtual thread names
+
+Virtual threads are created without a thread name by default, which is not practical to identify the execution for debugging and logging purposes.
+Quarkus managed virtual threads are named and prefixed with `quarkus-virtual-thread-`.
+You can customize this prefix, or disable the naming altogether configuring an empty value:
+
+[source, properties]
+----
+quarkus.virtual-threads.name-prefix=
+
+----
+
+== Inject the virtual thread executor
+
+In order to run tasks on virtual threads Quarkus manages an internal `ThreadPerTaskExecutor`.
+In rare instances where you'd need to access this executor directly you can inject it using the `@VirtualThreads` CDI qualifier:
+
+IMPORTANT: Injecting the Virtual Thread ExecutorService is experimental and may change in future versions.
+
+[source,java]
+----
+package org.acme;
+
+import org.acme.fortune.repository.FortuneRepository;
+
+import java.util.concurrent.ExecutorService;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+import io.quarkus.logging.Log;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.virtual.threads.VirtualThreads;
+
+public class MyApplication {
+
+    @Inject
+    FortuneRepository repository;
+
+    @Inject
+    @VirtualThreads
+    ExecutorService vThreads;
+
+    void onEvent(@Observes StartupEvent event) {
+        vThreads.execute(this::findAll);
+    }
+
+    @Transactional
+    void findAll() {
+        Log.info(repository.findAllBlocking());
+    }
+
+}
+----
+
+== Testing virtual thread applications
+
+As mentioned above, virtual threads have a few limitations that can drastically affect your application performance and memory usage.
+The _junit5-virtual-threads_ extension provides a way to detect pinned carrier threads while running your tests.
+Thus, you can eliminate one of the most prominent limitations or be aware of the problem.
+
+To enable this detection:
+
+* 1) Add the `junit5-virtual-threads` dependency to your project:
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus.junit5</groupId>
+    <artifactId>junit5-virtual-threads</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+* 2) In your test case, add the `io.quarkus.test.junit5.virtual.VirtualThreadUnit`  and `io.quarkus.test.junit.virtual.ShouldNotPin` annotations:
+[source, java]
+----
+@QuarkusTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@VirtualThreadUnit // Use the extension
+@ShouldNotPin // Detect pinned carrier thread
+class TodoResourceTest {
+    // ...
+}
+----
+
+When you run your test (remember to use Java 21+), Quarkus detects pinned carrier threads.
+When it happens, the test fails.
+
+The `@ShouldNotPin` can also be used on methods directly.
+
+The _junit5-virtual-threads_ also provides a `@ShouldPin` annotation for cases where pinning is unavoidable.
+The following snippet demonstrates the `@ShouldPin` annotation usage.
+
+// This is not possible because of a classloading issue - See https://github.com/quarkusio/quarkus/issues/36569 :
+// and the possibility to inject a `ThreadPinnedEvents` instance in your test to verify when the carrier thread was pinned manually.
+
+[source, java]
+----
+@VirtualThreadUnit // Use the extension
+public class LoomUnitExampleTest {
+
+    CodeUnderTest codeUnderTest = new CodeUnderTest();
+
+    @Test
+    @ShouldNotPin
+    public void testThatShouldNotPin() {
+        // ...
+    }
+
+    @Test
+    @ShouldPin(atMost = 1)
+    public void testThatShouldPinAtMostOnce() {
+        codeUnderTest.pin();
+    }
+
+}
+----
+
+== Virtual thread metrics
+
+You can enable the Micrometer Virtual Thread _binder_ by adding the following artifact to your application:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-java21</artifactId>
+</dependency>
+----
+
+This binder keeps track of the number of pinning events and the number of virtual threads failed to be started or un-parked.
+See the https://docs.micrometer.io/micrometer/reference/reference/jvm.html#_java_21_metrics[MicroMeter documentation] for more information.
+
+You can explicitly disable the binder by setting the following property in your `application.properties`:
+
+[source,properties]
+----
+# The binder is automatically enabled if the micrometer-java21 dependency is present
+quarkus.micrometer.binder.virtual-threads.enabled=false
+----
+
+In addition, if the application is running on a JVM that does not support virtual threads (prior to Java 21), the binder is automatically disabled.
+
+You can associate tags to the collected metrics by setting the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.micrometer.binder.virtual-threads.tags=tag_1=value_1, tag_2=value_2
+----
+
+== Additional references
+
+- https://dl.acm.org/doi/10.1145/3583678.3596895[Considerations for integrating virtual threads in a Java framework: a Quarkus example in a resource-constrained environment]

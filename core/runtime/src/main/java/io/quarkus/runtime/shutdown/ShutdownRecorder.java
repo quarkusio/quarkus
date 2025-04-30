@@ -1,6 +1,5 @@
 package io.quarkus.runtime.shutdown;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -16,43 +15,58 @@ public class ShutdownRecorder {
     private static final Logger log = Logger.getLogger(ShutdownRecorder.class);
 
     private static volatile List<ShutdownListener> shutdownListeners;
-    private static volatile Optional<Duration> waitTime;
-
-    final ShutdownConfig shutdownConfig;
+    private static volatile ShutdownConfig shutdownConfig;
+    private static volatile boolean delayEnabled;
 
     public ShutdownRecorder(ShutdownConfig shutdownConfig) {
-        this.shutdownConfig = shutdownConfig;
+        ShutdownRecorder.shutdownConfig = shutdownConfig;
     }
 
-    public void setListeners(List<ShutdownListener> listeners) {
-        shutdownListeners = listeners;
-        waitTime = shutdownConfig.timeout;
+    public void setListeners(List<ShutdownListener> listeners, boolean delayEnabled) {
+        shutdownListeners = Optional.ofNullable(listeners).orElseGet(List::of);
+        ShutdownRecorder.delayEnabled = delayEnabled;
     }
 
     public static void runShutdown() {
-        if (shutdownListeners == null) {
+        if (shutdownListeners == null) { // when QUARKUS_INIT_AND_EXIT is used, ShutdownRecorder#setListeners has not been called
             return;
         }
         log.debug("Attempting to gracefully shutdown.");
         try {
-            CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
-            for (ShutdownListener i : shutdownListeners) {
-                i.preShutdown(new LatchShutdownNotification(preShutdown));
-            }
-
-            preShutdown.await();
-            CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
-            for (ShutdownListener i : shutdownListeners) {
-                i.shutdown(new LatchShutdownNotification(shutdown));
-            }
-            if (waitTime.isPresent()) {
-                if (!shutdown.await(waitTime.get().toMillis(), TimeUnit.MILLISECONDS)) {
-                    log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
-                }
-            }
-
+            executePreShutdown();
+            waitForDelay();
+            executeShutdown();
         } catch (Throwable e) {
             log.error("Graceful shutdown failed", e);
+        }
+    }
+
+    private static void executePreShutdown() throws InterruptedException {
+        CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
+        for (ShutdownListener i : shutdownListeners) {
+            i.preShutdown(new LatchShutdownNotification(preShutdown));
+        }
+        preShutdown.await();
+    }
+
+    private static void waitForDelay() {
+        if (delayEnabled && shutdownConfig.isDelayEnabled()) {
+            try {
+                Thread.sleep(shutdownConfig.delay().get().toMillis());
+            } catch (InterruptedException e) {
+                log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
+            }
+        }
+    }
+
+    private static void executeShutdown() throws InterruptedException {
+        CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
+        for (ShutdownListener i : shutdownListeners) {
+            i.shutdown(new LatchShutdownNotification(shutdown));
+        }
+        if (shutdownConfig.isTimeoutEnabled()
+                && !shutdown.await(shutdownConfig.timeout().get().toMillis(), TimeUnit.MILLISECONDS)) {
+            log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
         }
     }
 

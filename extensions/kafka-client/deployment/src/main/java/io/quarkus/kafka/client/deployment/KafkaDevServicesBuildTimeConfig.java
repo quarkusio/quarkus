@@ -4,11 +4,10 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class KafkaDevServicesBuildTimeConfig {
+public interface KafkaDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for Kafka has been explicitly enabled or disabled. Dev Services are generally enabled
@@ -16,16 +15,14 @@ public class KafkaDevServicesBuildTimeConfig {
      * {@code kafka.bootstrap.servers} is set or if all the Reactive Messaging Kafka channel are configured with a
      * {@code bootstrap.servers}.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled = Optional.empty();
+    Optional<Boolean> enabled();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public Optional<Integer> port;
+    Optional<Integer> port();
 
     /**
      * Kafka dev service container type.
@@ -33,7 +30,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
      * <p>
      * For Redpanda:
-     * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
+     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/redpandadata/redpanda
      * <p>
      * For Strimzi:
      * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
@@ -43,12 +40,12 @@ public class KafkaDevServicesBuildTimeConfig {
      * <p>
      * Note that Strimzi and Kafka Native images are launched in Kraft mode.
      */
-    @ConfigItem(defaultValue = "redpanda")
-    public Provider provider = Provider.REDPANDA;
+    @WithDefault("redpanda")
+    Provider provider();
 
-    public enum Provider {
-        REDPANDA("docker.io/vectorized/redpanda:v22.3.4"),
-        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.2.1"),
+    enum Provider {
+        REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
+        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.7.0"),
         KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
 
         private final String defaultImageName;
@@ -67,8 +64,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * <p>
      * Dependent on the provider.
      */
-    @ConfigItem
-    public Optional<String> imageName;
+    Optional<String> imageName();
 
     /**
      * Indicates if the Kafka broker managed by Quarkus Dev Services is shared.
@@ -81,8 +77,8 @@ public class KafkaDevServicesBuildTimeConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-kafka} label attached to the started container.
@@ -94,8 +90,8 @@ public class KafkaDevServicesBuildTimeConfig {
      * <p>
      * This property is used when you need multiple shared Kafka brokers.
      */
-    @ConfigItem(defaultValue = "kafka")
-    public String serviceName;
+    @WithDefault("kafka")
+    String serviceName();
 
     /**
      * The topic-partition pairs to create in the Dev Services Kafka broker.
@@ -105,27 +101,26 @@ public class KafkaDevServicesBuildTimeConfig {
      * <p>
      * The topic creation will not try to re-partition existing topics with different number of partitions.
      */
-    @ConfigItem
-    public Map<String, Integer> topicPartitions;
+    @ConfigDocMapKey("topic-name")
+    Map<String, Integer> topicPartitions();
 
     /**
      * Timeout for admin client calls used in topic creation.
      * <p>
      * Defaults to 2 seconds.
      */
-    @ConfigItem(defaultValue = "2S")
-    public Duration topicPartitionsTimeout;
+    @WithDefault("2S")
+    Duration topicPartitionsTimeout();
 
     /**
      * Environment variables that are passed to the container.
      */
-    @ConfigItem
-    public Map<String, String> containerEnv;
+    @ConfigDocMapKey("environment-variable-name")
+    Map<String, String> containerEnv();
 
     /**
-     * Allows configuring the Red Panda broker.
+     * Allows configuring the Redpanda broker.
      */
-    @ConfigItem
-    public RedPandaBuildTimeConfig redpanda;
+    RedpandaBuildTimeConfig redpanda();
 
 }

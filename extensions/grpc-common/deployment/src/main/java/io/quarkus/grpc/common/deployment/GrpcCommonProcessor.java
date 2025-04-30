@@ -54,14 +54,14 @@ public class GrpcCommonProcessor {
         }
 
         // Built-In providers:
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DnsNameResolverProvider.class).methods()
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(DnsNameResolverProvider.class, PickFirstLoadBalancerProvider.class, NettyChannelProvider.class)
+                .methods()
+                .reason(getClass().getName() + " built-in provider")
                 .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(PickFirstLoadBalancerProvider.class)
-                .methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider")
+                .reason(getClass().getName() + " built-in provider")
                 .methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(NettyChannelProvider.class).methods()
-                .build());
     }
 
     @BuildStep
@@ -75,7 +75,8 @@ public class GrpcCommonProcessor {
                 .addRuntimeInitializedClass("io.grpc.netty.Utils")
                 .addRuntimeInitializedClass("io.grpc.netty.NettyServerBuilder")
                 .addRuntimeInitializedClass("io.grpc.netty.NettyChannelBuilder")
-                .addRuntimeInitializedClass("io.grpc.internal.RetriableStream");
+                .addRuntimeInitializedClass("io.grpc.internal.RetriableStream")
+                .addRuntimeReinitializedClass("com.google.protobuf.UnsafeUtil");
         return builder.build();
     }
 

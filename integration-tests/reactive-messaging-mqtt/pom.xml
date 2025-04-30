@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
+            <artifactId>quarkus-messaging-mqtt</artifactId>
         </dependency>
 
 
@@ -128,7 +128,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-mqtt-deployment</artifactId>
+            <artifactId>quarkus-messaging-mqtt-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

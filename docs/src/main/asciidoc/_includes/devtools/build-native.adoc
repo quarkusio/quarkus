@@ -1,4 +1,4 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[source,bash,subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
 ifdef::build-additional-parameters[]
@@ -10,7 +10,7 @@ endif::[]
 ----
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+[source,bash,subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
 .Maven
 ----
 ifdef::build-additional-parameters[]
@@ -23,14 +23,14 @@ endif::[]
 endif::[]
 ifndef::devtools-no-gradle[]
 ifdef::devtools-wrapped[+]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+[source,bash,subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
 .Gradle
 ----
 ifdef::build-additional-parameters[]
-./gradlew build -Dquarkus.package.type=native {build-additional-parameters}
+./gradlew build -Dquarkus.native.enabled=true {build-additional-parameters}
 endif::[]
 ifndef::build-additional-parameters[]
-./gradlew build -Dquarkus.package.type=native
+./gradlew build -Dquarkus.native.enabled=true
 endif::[]
 ----
 endif::[]

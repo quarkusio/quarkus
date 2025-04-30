@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import jakarta.enterprise.context.Destroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Any;
@@ -117,12 +119,14 @@ public class ArcContainerImpl implements ArcContainer {
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
         Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
+        Supplier<ContextInstances> applicationContextInstances = null;
+        Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
 
         List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
-            components.add(componentsProvider.getComponents());
+            components.add(componentsProvider.getComponents(this.currentContextFactory));
         }
 
         for (Components c : components) {
@@ -142,6 +146,12 @@ public class ArcContainerImpl implements ArcContainer {
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
+            if (applicationContextInstances == null) {
+                applicationContextInstances = c.getContextInstances().get(ApplicationScoped.class);
+            }
+            if (requestContextInstances == null) {
+                requestContextInstances = c.getContextInstances().get(RequestScoped.class);
+            }
         }
 
         // register built-in beans
@@ -190,12 +200,23 @@ public class ArcContainerImpl implements ArcContainer {
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
         this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
 
+        ApplicationContext applicationContext = applicationContextInstances != null
+                ? new ApplicationContext(applicationContextInstances.get())
+                : new ApplicationContext();
+        RequestContext requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class),
+                notifierOrNull(Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                requestContextInstances != null ? requestContextInstances : ComputingCacheContextInstances::new);
+        SessionContext sessionContext = new SessionContext(this.currentContextFactory.create(SessionScoped.class),
+                notifierOrNull(Set.of(Initialized.Literal.SESSION, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(BeforeDestroyed.Literal.SESSION, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(Destroyed.Literal.SESSION, Any.Literal.INSTANCE)), ComputingCacheContextInstances::new);
+
         Contexts.Builder contextsBuilder = new Contexts.Builder(
-                new RequestContext(this.currentContextFactory.create(RequestScoped.class),
-                        notifierOrNull(Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                        notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                        notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE))),
-                new ApplicationContext(),
+                requestContext,
+                sessionContext,
+                applicationContext,
                 new SingletonContext(),
                 new DependentContext());
 
@@ -291,36 +312,18 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers) {
-        return createInstanceSupplier(false, type, qualifiers);
-    }
-
-    @Override
-    public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
-        return createInstanceSupplier(true, type, qualifiers);
-    }
-
-    private <T> Supplier<InstanceHandle<T>> createInstanceSupplier(boolean resolveAmbiguities, Class<T> type,
-            Annotation... qualifiers) {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
-        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(type, qualifiers));
+        Resolvable resolvable = new Resolvable(type, qualifiers);
+        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(resolvable);
+        if (resolvedBeans.isEmpty()) {
+            scanRemovedBeans(resolvable);
+        }
         Set<InjectableBean<?>> filteredBean = resolvedBeans;
         if (resolvedBeans.size() > 1) {
-            if (resolveAmbiguities) {
-                // this is non-standard CDI behavior that we momentarily keep to retain compatibility
-                // if there are multiple beans we look for an exact match
-                // this method is only called with the exact type required
-                // so ignoring subclasses is the correct behaviour
-                filteredBean = new HashSet<>();
-                for (InjectableBean<?> i : resolvedBeans) {
-                    if (i.getBeanClass().equals(type)) {
-                        filteredBean.add(i);
-                    }
-                }
-            } else {
-                throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
-            }
+            throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
+
         }
         @SuppressWarnings("unchecked")
         InjectableBean<T> bean = filteredBean.size() != 1 ? null
@@ -400,6 +403,11 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public ManagedContext requestContext() {
         return contexts.requestContext;
+    }
+
+    @Override
+    public ManagedContext sessionContext() {
+        return contexts.sessionContext;
     }
 
     @Override
@@ -497,6 +505,11 @@ public class ArcContainerImpl implements ArcContainer {
         return observers;
     }
 
+    @Override
+    public <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType, Annotation... eventQualifiers) {
+        return resolveObserverMethods(eventType, Set.of(eventQualifiers));
+    }
+
     InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {
         for (ResourceReferenceProvider resourceProvider : resourceProviders) {
             InstanceHandle<Object> ret = resourceProvider.get(type, annotations);
@@ -551,14 +564,14 @@ public class ArcContainerImpl implements ArcContainer {
             }
             InjectionPoint prev = null;
             if (resetCurrentInjectionPoint) {
-                prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
+                prev = InjectionPointProvider.setCurrent(creationalContext, CurrentInjectionPointProvider.EMPTY);
             }
             try {
                 return new EagerInstanceHandle<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
-                    InjectionPointProvider.set(prev);
+                    InjectionPointProvider.setCurrent(creationalContext, prev);
                 }
             }
         } else {
@@ -695,17 +708,37 @@ public class ArcContainerImpl implements ArcContainer {
 
         // First remove the default beans
         List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
-        nonDefault.removeIf(InjectableBean::isDefaultBean);
+        for (Iterator<InjectableBean<?>> iterator = nonDefault.iterator(); iterator.hasNext();) {
+            if (iterator.next().isDefaultBean()) {
+                iterator.remove();
+            }
+        }
         if (nonDefault.isEmpty()) {
             // All the matching beans were default
-            return Set.copyOf(matching);
+            // Sort them by priority, uses 0 when no priority was defined
+            List<InjectableBean<?>> priorityDefaultBeans = new ArrayList<>(matching);
+            priorityDefaultBeans.sort(ArcContainerImpl::compareDefaultBeans);
+            Integer highest = priorityDefaultBeans.get(0).getPriority();
+            for (Iterator<InjectableBean<?>> iterator = priorityDefaultBeans.iterator(); iterator.hasNext();) {
+                if (!highest.equals(iterator.next().getPriority())) {
+                    iterator.remove();
+                }
+            }
+            if (priorityDefaultBeans.size() == 1) {
+                return Set.of(priorityDefaultBeans.get(0));
+            }
+            return Set.copyOf(priorityDefaultBeans);
         } else if (nonDefault.size() == 1) {
             return Set.of(nonDefault.get(0));
         }
 
         // More than one non-default bean remains - eliminate beans that don't have a priority
         List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
-        priorityBeans.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
+        for (Iterator<InjectableBean<?>> iterator = priorityBeans.iterator(); iterator.hasNext();) {
+            if (!isAlternativeOrDeclaredOnAlternative(iterator.next())) {
+                iterator.remove();
+            }
+        }
         if (priorityBeans.isEmpty()) {
             // No alternative/priority beans are present
             return Set.copyOf(nonDefault);
@@ -715,7 +748,11 @@ public class ArcContainerImpl implements ArcContainer {
             // Keep only the highest priorities
             priorityBeans.sort(ArcContainerImpl::compareAlternativeBeans);
             Integer highest = getAlternativePriority(priorityBeans.get(0));
-            priorityBeans.removeIf(bean -> !highest.equals(getAlternativePriority(bean)));
+            for (Iterator<InjectableBean<?>> iterator = priorityBeans.iterator(); iterator.hasNext();) {
+                if (!highest.equals(getAlternativePriority(iterator.next()))) {
+                    iterator.remove();
+                }
+            }
             if (priorityBeans.size() == 1) {
                 return Set.of(priorityBeans.get(0));
             }
@@ -841,8 +878,17 @@ public class ArcContainerImpl implements ArcContainer {
         return priority2.compareTo(priority1);
     }
 
+    // Used to compare default beans; disregards alternative, only looks at priority value
+    private static int compareDefaultBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
+        // The highest priority wins
+        Integer priority2 = bean2.getPriority();
+        Integer priority1 = bean1.getPriority();
+        return priority2.compareTo(priority1);
+    }
+
     @SuppressWarnings("unchecked")
-    <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
+    <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType,
+            Set<Annotation> eventQualifiers) {
         registeredQualifiers.verify(eventQualifiers);
         if (observers.isEmpty()) {
             return Collections.emptyList();

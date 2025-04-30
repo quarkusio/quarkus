@@ -5,6 +5,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,10 +17,10 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
 
-    protected final Class<V> typeOfValue;
-    protected final Class<F> typeOfField;
+    protected final Type typeOfValue;
+    protected final Type typeOfField;
 
-    AbstractHashCommands(RedisCommandExecutor redis, Class<K> k, Class<F> f, Class<V> v) {
+    AbstractHashCommands(RedisCommandExecutor redis, Type k, Type f, Type v) {
         super(redis, new Marshaller(k, f, v));
         this.typeOfField = f;
         this.typeOfValue = v;
@@ -81,6 +82,11 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
 
     @SafeVarargs
     final Uni<Response> _hmget(K key, F... fields) {
+        nonNull(key, "key");
+        doesNotContainNull(fields, "fields");
+        if (fields.length == 0) {
+            return Uni.createFrom().failure(new IllegalArgumentException("`fields` must not be empty"));
+        }
         RedisCommand cmd = RedisCommand.of(Command.HMGET);
         cmd.put(marshaller.encode(key));
 
@@ -95,7 +101,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(map, "map");
         if (map.isEmpty()) {
-            throw new IllegalArgumentException("`map` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`map` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.HMSET);
         cmd.put(marshaller.encode(key));
@@ -136,7 +142,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(map, "map");
         if (map.isEmpty()) {
-            throw new IllegalArgumentException("`map` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`map` must not be empty"));
         }
         RedisCommand cmd = RedisCommand.of(Command.HSET);
         cmd.put(marshaller.encode(key));

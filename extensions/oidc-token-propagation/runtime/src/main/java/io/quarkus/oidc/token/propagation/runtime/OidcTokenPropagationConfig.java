@@ -2,12 +2,14 @@ package io.quarkus.oidc.token.propagation.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "oidc-token-propagation", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class OidcTokenPropagationConfig {
+@ConfigMapping(prefix = "quarkus.resteasy-client-oidc-token-propagation")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface OidcTokenPropagationConfig {
     /**
      * Enable either AccessTokenRequestFilter or JsonWebTokenRequestFilter for all the injected MP RestClient implementations.
      *
@@ -20,8 +22,8 @@ public class OidcTokenPropagationConfig {
      * implementations, both filters can be registered as MP RestClient providers with the specific MP RestClient
      * implementations.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean registerFilter;
+    @WithDefault("false")
+    boolean registerFilter();
 
     /**
      * Enable JsonWebTokenRequestFilter instead of AccessTokenRequestFilter for all the injected MP RestClient implementations.
@@ -29,8 +31,8 @@ public class OidcTokenPropagationConfig {
      *
      * Note this property is ignored unless the 'registerFilter' property is enabled.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean jsonWebToken;
+    @WithDefault("false")
+    boolean jsonWebToken();
 
     /**
      * Secure the injected and possibly modified JsonWebToken.
@@ -38,8 +40,8 @@ public class OidcTokenPropagationConfig {
      *
      * Note this property is injected into JsonWebTokenRequestFilter.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean secureJsonWebToken;
+    @WithDefault("false")
+    boolean secureJsonWebToken();
 
     /**
      * Exchange the current token with OpenId Connect Provider for a new token using either
@@ -48,14 +50,13 @@ public class OidcTokenPropagationConfig {
      *
      * Note this property is injected into AccessTokenRequestFilter.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean exchangeToken;
+    @WithDefault("false")
+    boolean exchangeToken();
 
     /**
      * Name of the configured OidcClient.
      *
      * Note this property is injected into AccessTokenRequestFilter and is only used if the `exchangeToken` property is enabled.
      */
-    @ConfigItem
-    public Optional<String> clientName;
+    Optional<String> clientName();
 }

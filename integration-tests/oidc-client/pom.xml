@@ -21,24 +21,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>jakarta.activation</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
         </dependency>
         <!-- test dependencies -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-client-common-synced</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -73,11 +64,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-filter</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-filter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-filter-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-filter-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -192,10 +183,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-                <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -261,7 +248,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${basedir}/../../.github/docker-prune.sh</executable>
+                                    <executable>${docker-prune.location}</executable>
                                 </configuration>
                             </execution>
                         </executions>

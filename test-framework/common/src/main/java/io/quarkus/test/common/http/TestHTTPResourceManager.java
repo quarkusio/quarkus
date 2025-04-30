@@ -1,7 +1,6 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,31 +17,38 @@ public class TestHTTPResourceManager {
 
     public static String getUri() {
         try {
-            return sanitizeUri(ConfigProvider.getConfig().getValue("test.url", String.class));
+            return ConfigProvider.getConfig().getValue("test.url", String.class);
         } catch (IllegalStateException e) {
-            //massive hack for dev mode tests, dev mode has not started yet
-            //so we don't have any way to load this correctly from config
+            // massive hack for dev mode tests, dev mode has not started yet
+            // so we don't have any way to load this correctly from config
             return "http://localhost:8080";
         }
     }
 
-    public static String getSslUri() {
-        return sanitizeUri(ConfigProvider.getConfig().getValue("test.url.ssl", String.class));
+    public static String getManagementUri() {
+        try {
+            return ConfigProvider.getConfig().getValue("test.management.url", String.class);
+        } catch (IllegalStateException e) {
+            // massive hack for dev mode tests, dev mode has not started yet
+            // so we don't have any way to load this correctly from config
+            return "http://localhost:9000";
+        }
     }
 
-    private static String sanitizeUri(String result) {
-        if ((result != null) && result.endsWith("/")) {
-            return result.substring(0, result.length() - 1);
-        }
-        return result;
+    public static String getSslUri() {
+        return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
+    }
+
+    public static String getManagementSslUri() {
+        return ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class);
     }
 
     public static String getUri(RunningQuarkusApplication application) {
-        return sanitizeUri(application.getConfigValue("test.url", String.class).get());
+        return application.getConfigValue("test.url", String.class).get();
     }
 
     public static String getSslUri(RunningQuarkusApplication application) {
-        return sanitizeUri(application.getConfigValue("test.url.ssl", String.class).get());
+        return application.getConfigValue("test.url.ssl", String.class).get();
     }
 
     public static void inject(Object testCase) {
@@ -53,6 +59,7 @@ public class TestHTTPResourceManager {
         Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
+            TestHTTPEndpoint classEndpointAnnotation = c.getAnnotation(TestHTTPEndpoint.class);
             for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
@@ -62,47 +69,60 @@ public class TestHTTPResourceManager {
                                 "Unable to inject TestHTTPResource field " + f + " as no provider exists for the type");
                     }
                     String path = resource.value();
+                    if (path.startsWith("/")) {
+                        path = path.substring(1);
+                    }
                     String endpointPath = null;
-                    TestHTTPEndpoint endpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
-                    if (endpointAnnotation != null) {
-                        for (Function<Class<?>, String> func : endpointProviders) {
-                            endpointPath = func.apply(endpointAnnotation.value());
-                            if (endpointPath != null) {
-                                break;
-                            }
-                        }
-                        if (endpointPath == null) {
-                            throw new RuntimeException(
-                                    "Could not determine the endpoint path for " + endpointAnnotation.value() + " to inject "
-                                            + f);
-                        }
+                    boolean management = resource.management();
+                    TestHTTPEndpoint fieldEndpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
+                    if (fieldEndpointAnnotation != null) {
+                        endpointPath = getEndpointPath(endpointProviders, f, fieldEndpointAnnotation);
+                    } else if (classEndpointAnnotation != null) {
+                        endpointPath = getEndpointPath(endpointProviders, f, classEndpointAnnotation);
                     }
                     if (!path.isEmpty() && endpointPath != null) {
-                        if (!endpointPath.endsWith("/")) {
-                            path = endpointPath + "/" + path;
-                        } else {
+                        if (endpointPath.endsWith("/")) {
                             path = endpointPath + path;
+                        } else {
+                            path = endpointPath + "/" + path;
                         }
                     } else if (endpointPath != null) {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource.ssl()) {
-                        if (path.startsWith("/")) {
-                            val = getSslUri() + path;
+                    if (resource.ssl() || resource.tls() || ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.http.test-ssl-enabled", Boolean.class).orElse(false)) {
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementSslUri() + path;
+                            } else {
+                                val = getManagementSslUri() + "/" + path;
+                            }
                         } else {
-                            val = getSslUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getSslUri() + path;
+                            } else {
+                                val = getSslUri() + "/" + path;
+                            }
                         }
                     } else {
-                        if (path.startsWith("/")) {
-                            val = getUri() + path;
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementUri() + path;
+                            } else {
+                                val = getManagementUri() + "/" + path;
+                            }
                         } else {
-                            val = getUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getUri() + path;
+                            } else {
+                                val = getUri() + "/" + path;
+                            }
                         }
                     }
                     f.setAccessible(true);
                     try {
-                        f.set(testCase, provider.provide(new URI(val), f));
+                        f.set(testCase, provider.provide(val, f));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -120,4 +140,18 @@ public class TestHTTPResourceManager {
         }
         return Collections.unmodifiableMap(map);
     }
+
+    private static String getEndpointPath(List<Function<Class<?>, String>> endpointProviders, Field field,
+            TestHTTPEndpoint endpointAnnotation) {
+        for (Function<Class<?>, String> func : endpointProviders) {
+            String endpointPath = func.apply(endpointAnnotation.value());
+            if (endpointPath != null) {
+                return endpointPath;
+            }
+        }
+        throw new RuntimeException(
+                "Could not determine the endpoint path for " + endpointAnnotation.value()
+                        + " to inject " + field);
+    }
+
 }

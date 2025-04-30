@@ -5,8 +5,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Stork with Kubernetes
 :extension-status: preview
-
 include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery,load-balancing,stork,kubernetes
+:extensions: io.quarkus:quarkus-kubernetes,io.quarkus:quarkus-smallrye-stork
 
 This guide explains how to use Stork with Kubernetes for service discovery and load balancing.
 
@@ -40,7 +42,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `stork-kubernetes-quickstart` {quickstarts-tree-url}/stork-kubernetes-quickstart[directory].
+The solution is located in the `stork-kubernetes-quickstart` link:{quickstarts-tree-url}/stork-kubernetes-quickstart[directory].
 
 == Discovery and selection
 
@@ -59,10 +61,10 @@ The various integrations in Quarkus extract the location of the service from tha
 
 == Bootstrapping the project
 
-Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-resteasy-reactive extensions using your favorite approach:
+Create a Quarkus project importing the quarkus-rest-client, quarkus-rest, and quarkus-smallrye-stork extensions using your favorite approach:
 
 :create-app-artifact-id: stork-kubernetes-quickstart
-:create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
+:create-app-extensions: quarkus-rest-client,quarkus-rest,quarkus-smallrye-stork
 include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
@@ -102,13 +104,13 @@ implementation("io.quarkus:quarkus-kubernetes-client")
 implementation("io.quarkus:quarkus-container-image-jib")
 ----
 
-`stork-service-discovery-kubernetes` provides an implementation of service discovery for Kubernetes. `stork-load-balancer-random` provides an implementation of random load balancer. `quarkus-kubernetes` enables the generation of Kubernetes manifests each time we perform a build. The `quarkuks-kubernetes-client` extension enables the use of the Fabric8 Kubernetes Client in native mode. And `quarkus-container-image-jib` enables the build of a container image using https://github.com/GoogleContainerTools/jib[Jib].
+`stork-service-discovery-kubernetes` provides an implementation of service discovery for Kubernetes. `stork-load-balancer-random` provides an implementation of random load balancer. `quarkus-kubernetes` enables the generation of Kubernetes manifests each time we perform a build. The `quarkus-kubernetes-client` extension enables the use of the Fabric8 Kubernetes Client in native mode. And `quarkus-container-image-jib` enables the build of a container image using https://github.com/GoogleContainerTools/jib[Jib].
 
 == The Blue and Red services
 
 Let's start with the very beginning: the service we will discover, select and call.
 
-The Red and Blue are two simple REST services serving an endpoint responding `Hello from Red!` and `Hello from Blue!` respectively. The code of both applications has been developed following the https://quarkus.io/guides/getting-started[Getting Started Guide].
+The Red and Blue are two simple REST services serving an endpoint responding `Hello from Red!` and `Hello from Blue!` respectively. The code of both applications has been developed following the xref:getting-started.adoc[Getting Started Guide].
 
 As the goal of this guide is to show how to use Stork Kubernetes service discovery, we won't provide the specifics steps for the Red and Blue services. Their container images are already built and available in a public registry:
 
@@ -306,7 +308,7 @@ NOTE: Stork is not limited to Kubernetes and integrates with other service disco
 
 So far, we didn't use Stork; we just deployed the services we will be discovering, selecting, and calling.
 
-We will call the services using the Reactive REST Client.
+We will call the services using the REST Client.
 Create the `src/main/java/org/acme/MyService.java` file with the following content:
 
 [source, java]
@@ -409,7 +411,7 @@ The `quarkus.container-image.registry` contains the container registry to use.
 The `quarkus.kubernetes.ingress.expose` indicates that the service will be accessible from the outside of the cluster.
 The `quarkus.kubernetes.ingress.host` contains the url to access the service. We are using https://nip.io/[nip.io] wildcard for IP address mappings.
 
-For a more customized configuration you can check the https://quarkus.io/guides/deploying-to-kubernetes[Deploying to Kubernetes guide]
+For a more customized configuration you can check the xref:deploying-to-kubernetes.adoc[Deploying to Kubernetes guide]
 
 == Build and push the container image
 

@@ -124,7 +124,7 @@ public abstract class AbstractMethodsAdder {
             if (customResultType == null) {
                 ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
                 ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                         casted);
                 tryBlock.returnValue(optional);
             } else {
@@ -134,7 +134,7 @@ public abstract class AbstractMethodsAdder {
                                 originalResultType),
                         singleResult);
                 ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                         customResult);
                 tryBlock.returnValue(optional);
             }

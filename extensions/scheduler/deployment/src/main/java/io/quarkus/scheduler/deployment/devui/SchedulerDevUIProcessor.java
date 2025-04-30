@@ -35,7 +35,7 @@ public class SchedulerDevUIProcessor {
         footerPages.produce(new FooterPageBuildItem(logPageBuilder));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
     }

@@ -10,10 +10,10 @@ import io.quarkus.builder.item.MultiBuildItem;
  * A Built item for generating init containers.
  * The generated container will have the specified fields
  * and may optionally inherit env vars and volumes from the app container.
- *
+ * <p>
  * Env vars specified through this build item, will take precedence over inherited ones.
  */
-public final class KubernetesJobBuildItem extends MultiBuildItem {
+public final class KubernetesJobBuildItem extends MultiBuildItem implements Targetable {
 
     private final String name;
     private final String target;
@@ -63,6 +63,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
         return image;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesJobBuildItem withImage(String image) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);

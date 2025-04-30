@@ -6,18 +6,18 @@
       "description": "Everything you need for REST endpoints, HTTP and web formats like JSON",
       "metadata": {
         "pinned": [
-          "io.quarkus:quarkus-resteasy-reactive",
-          "io.quarkus:quarkus-resteasy-reactive-jackson",
-          "io.quarkus:quarkus-resteasy-reactive-jsonb",
-          "io.quarkus:quarkus-resteasy-reactive-jaxb",
-          "io.quarkus:quarkus-resteasy-reactive-kotlin-serialization",
-          "io.quarkus:quarkus-resteasy-reactive-qute",
-          "io.quarkus:quarkus-resteasy-reactive-links",
-          "io.quarkus:quarkus-rest-client-reactive",
-          "io.quarkus:quarkus-rest-client-reactive-jackson",
-          "io.quarkus:quarkus-rest-client-reactive-jsonb",
-          "io.quarkus:quarkus-rest-client-reactive-jaxb",
-          "io.quarkus:quarkus-rest-client-reactive-kotlin-serialization",
+          "io.quarkus:quarkus-rest",
+          "io.quarkus:quarkus-rest-jackson",
+          "io.quarkus:quarkus-rest-jsonb",
+          "io.quarkus:quarkus-rest-jaxb",
+          "io.quarkus:quarkus-rest-kotlin-serialization",
+          "io.quarkus:quarkus-rest-qute",
+          "io.quarkus:quarkus-rest-links",
+          "io.quarkus:quarkus-rest-client",
+          "io.quarkus:quarkus-rest-client-jackson",
+          "io.quarkus:quarkus-rest-client-jsonb",
+          "io.quarkus:quarkus-rest-client-jaxb",
+          "io.quarkus:quarkus-rest-client-kotlin-serialization",
           "io.quarkus:quarkus-resteasy",
           "io.quarkus:quarkus-resteasy-jackson",
           "io.quarkus:quarkus-resteasy-jsonb",
@@ -26,9 +26,9 @@
           "io.quarkus:quarkus-resteasy-mutiny",
           "io.quarkus:quarkus-resteasy-qute",
           "io.quarkus:quarkus-resteasy-links",
-          "io.quarkus:quarkus-rest-client-jackson",
-          "io.quarkus:quarkus-rest-client-jsonb",
-          "io.quarkus:quarkus-rest-client-jaxb"
+          "io.quarkus:quarkus-resteasy-client-jackson",
+          "io.quarkus:quarkus-resteasy-client-jsonb",
+          "io.quarkus:quarkus-resteasy-client-jaxb"
         ]
       }
     },
@@ -88,6 +88,11 @@
       }
     },
     {
+      "name": "Artificial Intelligence (AI)",
+      "id": "ai",
+      "description": "Help making Artificial Intgelligence (AI)-infused applications using Large Language Models and more"
+    },
+    {
       "name": "Cloud",
       "id": "cloud",
       "description": "Useful for Cloud Native deployments platforms like Kubernetes and cloud providers",
@@ -139,7 +144,13 @@
   ],
   "metadata":{
     "project": {
-      "default-codestart": "resteasy-reactive",
+      "default-codestart": "rest",
+      "codestart-data": {
+        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.21",
+        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+      },
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "${rest-assured.version}",

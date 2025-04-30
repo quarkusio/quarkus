@@ -1,0 +1,13 @@
+h|[[{configSection.toAnchor(extension, additionalAnchorPrefix)}]] [.section-name.section-level{configSection.adjustedLevel(displayConfigRootDescription)}]##link:#{configSection.toAnchor(extension, additionalAnchorPrefix)}[{configSection.formatTitle.escapeCellContent}]##
+h|Type
+h|Default
+
+{#for item in configSection.nonDeprecatedItems}
+{#if item.isSection}
+{#configSection context=context configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
+
+{#else}
+{#configProperty context=context configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+
+{/if}
+{/for}

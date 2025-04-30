@@ -17,8 +17,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
-import io.quarkus.deployment.cmd.RunCommandHandler;
+import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
+import io.quarkus.runtime.LaunchMode;
 
 @Mojo(name = "run")
 public class RunMojo extends QuarkusBootstrapMojo {
@@ -40,6 +43,10 @@ public class RunMojo extends QuarkusBootstrapMojo {
         // Add the system properties of the plugin to the system properties
         // if and only if they are not already set.
         for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+
             String key = entry.getKey();
             if (System.getProperty(key) == null) {
                 System.setProperty(key, entry.getValue());
@@ -47,12 +54,19 @@ public class RunMojo extends QuarkusBootstrapMojo {
             }
         }
 
-        try (CuratedApplication curatedApplication = bootstrapApplication()) {
+        try (CuratedApplication curatedApplication = bootstrapApplication(LaunchMode.NORMAL,
+                new Consumer<QuarkusBootstrap.Builder>() {
+                    @Override
+                    public void accept(QuarkusBootstrap.Builder builder) {
+                        // we need this for dev services
+                        builder.setMode(QuarkusBootstrap.Mode.TEST);
+                    }
+                })) {
             AugmentAction action = curatedApplication.createAugmentor();
             AtomicReference<Boolean> exists = new AtomicReference<>();
             AtomicReference<String> tooMany = new AtomicReference<>();
             String target = System.getProperty("quarkus.run.target");
-            action.performCustomBuild(RunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
+            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
                 @Override
                 public void accept(Map<String, List> cmds) {
                     List cmd = null;
@@ -78,7 +92,9 @@ public class RunMojo extends QuarkusBootstrapMojo {
                         throw new RuntimeException("Should never reach this!");
                     }
                     List<String> args = (List<String>) cmd.get(0);
-                    System.out.println("Executing \"" + String.join(" ", args) + "\"");
+                    if (getLog().isInfoEnabled()) {
+                        getLog().info("Executing \"" + String.join(" ", args) + "\"");
+                    }
                     Path workingDirectory = (Path) cmd.get(1);
                     try {
                         ProcessBuilder builder = new ProcessBuilder()
@@ -94,7 +110,7 @@ public class RunMojo extends QuarkusBootstrapMojo {
                     }
                 }
             },
-                    RunCommandActionResultBuildItem.class.getName());
+                    RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
                 getLog().error("quarkus.run.target " + target + " is not found");
                 return;

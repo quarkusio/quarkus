@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile REST Client</name>
 
     <properties>
-        <microprofile-rest-client-tck.version>3.0.1</microprofile-rest-client-tck.version>
+        <microprofile-rest-client-tck.version>4.0</microprofile-rest-client-tck.version>
         <!--
         Disabling the enforcer because of:
 
@@ -78,11 +78,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-client-jsonb</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -143,7 +143,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -156,7 +156,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -181,82 +181,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>jdk16-workarounds</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-test</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <configuration>
-                                    <excludes>
-                                        <!-- the following tests are run in a separate surefire execution
-                                        by setting certain JDK system properties during launch -->
-                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</exclude>
-                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</exclude>
-                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</exclude>
-                                        <exclude>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</exclude>
-                                    </excludes>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>jdk16-plain-socket-workaround</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <!-- Temporary workaround to prevent org.eclipse.microprofile.rest.client.tck.timeout.Timeout* tests
-                                        from failing because of a different exception type being thrown in Java 13+
-                                        during socket connections -->
-                                        <jdk.net.usePlainSocketImpl>true</jdk.net.usePlainSocketImpl>
-                                    </systemPropertyVariables>
-                                    <includes>
-                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutBuilderIndependentOfMPConfigTest</include>
-                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutTest</include>
-                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigTest</include>
-                                        <include>org.eclipse.microprofile.rest.client.tck.timeout.TimeoutViaMPConfigWithConfigKeyTest</include>
-                                    </includes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>jdk18-workarounds</id>
-            <activation>
-                <jdk>[18,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <!-- "unbind" the JDK16-17 workaround which is based on jdk.net.usePlainSocketImpl
-                                  because that property has been removed in Java 18: https://bugs.openjdk.java.net/browse/JDK-8253119
-                                  see also: https://github.com/quarkusio/quarkus/pull/19559#issuecomment-932987301 -->
-                            <execution>
-                                <id>jdk16-plain-socket-workaround</id>
-                                <phase>none</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

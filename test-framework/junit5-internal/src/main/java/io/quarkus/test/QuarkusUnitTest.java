@@ -1,18 +1,14 @@
 package io.quarkus.test;
 
+import static io.quarkus.test.ExportUtil.APPLICATION_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +23,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -34,6 +31,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -69,12 +67,12 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -114,11 +112,13 @@ public class QuarkusUnitTest
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private String configResourceName;
     private Map<String, String> customRuntimeApplicationProperties;
     private Runnable beforeAllCustomizer;
     private Runnable afterAllCustomizer;
     private CuratedApplication curatedApplication;
     private RunningQuarkusApplication runningQuarkusApplication;
+    private QuarkusClassLoader quarkusUnitTestClassLoader;
     private ClassLoader originalClassLoader;
     private List<Dependency> forcedDependencies = Collections.emptyList();
 
@@ -135,6 +135,12 @@ public class QuarkusUnitTest
     private List<Object> testMethodInvokers;
 
     private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
+
+    private boolean debugBytecode = false;
+    private List<String> traceCategories = new ArrayList<>();
+
+    private Map<String, String> systemPropertiesToRestore = new HashMap<>();
+    private Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);
@@ -347,9 +353,18 @@ public class QuarkusUnitTest
                 archive.addClass(c);
                 c = c.getSuperclass();
             }
-            if (customApplicationProperties != null) {
-                archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
+
+            if (configResourceName != null) {
+                if (archive.get(APPLICATION_PROPERTIES) != null) {
+                    // Asset added explicitly to the archive must be completely replaced with custom config resource
+                    ExportUtil.deleteApplicationProperties(archive);
+                }
+                archive.addAsResource(configResourceName, APPLICATION_PROPERTIES);
             }
+            if (customApplicationProperties != null) {
+                ExportUtil.mergeCustomApplicationProperties(archive, customApplicationProperties);
+            }
+
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(APP_ROOT).toFile());
 
             for (JavaArchive dependency : additionalDependencies) {
@@ -383,6 +398,14 @@ public class QuarkusUnitTest
             ExtensionContext extensionContext) throws Throwable {
         runExtensionMethod(invocationContext, extensionContext, true);
         invocation.skip();
+    }
+
+    @Override
+    public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
+            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+        T result = (T) runExtensionMethod(invocationContext, extensionContext, false);
+        invocation.skip();
+        return result;
     }
 
     @Override
@@ -423,7 +446,7 @@ public class QuarkusUnitTest
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
+    private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
             boolean testMethodInvokersAllowed) throws Throwable {
         Method newMethod = null;
         Class<?> c = actualTestClass;
@@ -490,12 +513,12 @@ public class QuarkusUnitTest
                         effectiveArguments.add(originalValue);
                     }
                 }
-                testMethodInvokerToUse.getClass()
+                return testMethodInvokerToUse.getClass()
                         .getMethod("invoke", Object.class, Method.class, List.class, String.class)
                         .invoke(testMethodInvokerToUse, actualTestInstance, newMethod, effectiveArguments,
                                 extensionContext.getRequiredTestClass().getName());
             } else {
-                newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+                return newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
             }
         } catch (InvocationTargetException e) {
             throw e.getCause();
@@ -506,11 +529,31 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.TEST);
+        LaunchMode.set(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
+        }
+        if (debugBytecode) {
+            // Use a unique ID to avoid overriding dumps between test classes (and re-execution of flaky tests).
+            var testRunId = extensionContext.getRequiredTestClass().getName() + "/" + UUID.randomUUID();
+            System.out.println("[QuarkusUnitTest] Debug dumps enabled. Test run ID: " + testRunId);
+            // This needs to be set as system properties; see BootstrapDebug.java.
+            // Note these paths are considered standard and may be taken advantage of in Quarkus CI (to collect dumps).
+            overrideSystemProperty("quarkus.debug.transformed-classes-dir",
+                    "target/debug/" + testRunId + "/transformed-classes");
+            overrideSystemProperty("quarkus.debug.generated-classes-dir", "target/debug/" + testRunId + "/generated-classes");
+            overrideSystemProperty("quarkus.debug.generated-sources-dir", "target/debug/" + testRunId + "/generated-sources");
+        }
+        if (!traceCategories.isEmpty()) {
+            // This needs to be set very early (e.g. as system properties) in order to affect the build;
+            // needs to be set programmatically in order to not leak to other tests (for some reason?).
+            // See https://quarkusio.zulipchat.com/#narrow/stream/187038-dev/topic/Build.20logs
+            for (String category : traceCategories) {
+                overrideLoggerLevel(category, Level.TRACE);
+            }
         }
         originalClassLoader = Thread.currentThread().getContextClassLoader();
         originalHandlers = rootLogger.getHandlers();
@@ -593,13 +636,8 @@ public class QuarkusUnitTest
                                 //we need to make sure all hot reloadable classes are application classes
                                 context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
                                     @Override
-                                    public boolean test(String s) {
-                                        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                                .getContextClassLoader();
-                                        //if the class file is present in this (and not the parent) CL then it is an application class
-                                        List<ClassPathElement> res = cl
-                                                .getElementsWithResource(s.replace(".", "/") + ".class", true);
-                                        return !res.isEmpty();
+                                    public boolean test(String className) {
+                                        return QuarkusClassLoader.isApplicationClass(className);
                                     }
                                 }));
                             }
@@ -616,6 +654,7 @@ public class QuarkusUnitTest
                 final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
                 final Path projectDir = Path.of("").normalize().toAbsolutePath();
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                        .setBaseName(extensionContext.getDisplayName() + " (QuarkusUnitTest)")
                         .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
@@ -633,12 +672,12 @@ public class QuarkusUnitTest
                     builder.setDisableClasspathCache(true);
                 }
                 if (!allowTestClassOutsideDeployment) {
-                    builder
-                            .setBaseClassLoader(
-                                    QuarkusClassLoader
-                                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
-                                            .addClassLoaderEventListeners(this.classLoadListeners)
-                                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build());
+                    quarkusUnitTestClassLoader = QuarkusClassLoader
+                            .builder("QuarkusUnitTest ClassLoader for " + extensionContext.getDisplayName(),
+                                    getClass().getClassLoader(), false)
+                            .addClassLoaderEventListeners(this.classLoadListeners)
+                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
+                    builder.setBaseClassLoader(quarkusUnitTestClassLoader);
                 }
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
 
@@ -701,6 +740,8 @@ public class QuarkusUnitTest
                     throw e;
                 }
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -720,6 +761,20 @@ public class QuarkusUnitTest
         return cause;
     }
 
+    private void overrideSystemProperty(String key, String value) {
+        // IMPORTANT: Not logging the value in case it's a secret.
+        System.out.printf("[QuarkusUnitTest] Overriding system property '%s'%n", key);
+        systemPropertiesToRestore.putIfAbsent(key, System.getProperty(key));
+        System.setProperty(key, value);
+    }
+
+    private void overrideLoggerLevel(String category, Level level) {
+        System.out.printf("[QuarkusUnitTest] Overriding logger category '%s'; setting level '%s'%n", category, level);
+        var logger = LogManager.getLogManager().getLogger(category);
+        loggerLevelsToRestore.putIfAbsent(category, logger.getLevel());
+        logger.setLevel(level);
+    }
+
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
@@ -731,6 +786,9 @@ public class QuarkusUnitTest
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
+        if (testMethodInvokers != null) {
+            testMethodInvokers.clear();
+        }
 
         try {
             if (runningQuarkusApplication != null) {
@@ -748,6 +806,10 @@ public class QuarkusUnitTest
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             originalClassLoader = null;
+            if (quarkusUnitTestClassLoader != null) {
+                quarkusUnitTestClassLoader.close();
+                quarkusUnitTestClassLoader = null;
+            }
             timeoutTask.cancel();
             timeoutTask = null;
             timeoutTimer.cancel();
@@ -759,7 +821,18 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
-            ClearCache.clearAnnotationCache();
+            systemPropertiesToRestore.forEach((key, previousValue) -> {
+                if (previousValue == null) {
+                    System.clearProperty(key);
+                } else {
+                    System.setProperty(key, previousValue);
+                }
+            });
+            systemPropertiesToRestore.clear();
+            loggerLevelsToRestore.forEach((category, previousLevel) -> Logger.getLogger(category).setLevel(previousLevel));
+            loggerLevelsToRestore.clear();
+            ClearCache.clearCaches();
+            TestConfigUtil.cleanUp();
         }
         if (records != null) {
             assertLogRecords.accept(records);
@@ -810,24 +883,31 @@ public class QuarkusUnitTest
         return this;
     }
 
+    /**
+     * Add an {@code application.properties} asset loaded from the specified resource file in the test {@link JavaArchive}.
+     * <p>
+     * If an {@code application.properties} asset was already added explicitly to the archive (for instance through
+     * {@link JavaArchive#addAsResource(String)}), this formet asset is removed and completely replaced by the one given here.
+     * <p>
+     * Configuration properties added with {@link #overrideConfigKey(String, String)} take precedence over the properties from
+     * the specified resource file.
+     *
+     * @param resourceName
+     * @return the test configuration
+     */
     public QuarkusUnitTest withConfigurationResource(String resourceName) {
-        if (customApplicationProperties == null) {
-            customApplicationProperties = new Properties();
-        }
-        try {
-            URL systemResource = ClassLoader.getSystemResource(resourceName);
-            if (systemResource == null) {
-                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
-            }
-            try (InputStream in = systemResource.openStream()) {
-                customApplicationProperties.load(in);
-            }
-            return this;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
-        }
+        this.configResourceName = Objects.requireNonNull(resourceName);
+        return this;
     }
 
+    /**
+     * Overriden configuration properties take precedence over an {@code application.properties} asset added in the test
+     * {@link JavaArchive}.
+     *
+     * @param propertyKey
+     * @param propertyValue
+     * @return the test configuration
+     */
     public QuarkusUnitTest overrideConfigKey(final String propertyKey, final String propertyValue) {
         if (customApplicationProperties == null) {
             customApplicationProperties = new Properties();
@@ -841,6 +921,36 @@ public class QuarkusUnitTest
             customRuntimeApplicationProperties = new HashMap<>();
         }
         customRuntimeApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
+    /**
+     * Controls bytecode-related debug dumping.
+     * <p>
+     * When enabled, each Quarkus startup will have configuration properties
+     * such as {@code quarkus.debug.generated-classes-dir} set
+     * so that generated code gets dumped in {@code target/debug},
+     * within a unique subdirectory for each test execution.
+     * <p>
+     * Look at the logs of a particular test to identify the corresponding dump directory.
+     *
+     * @param debugBytecode {@code true} if debug should be enabled
+     * @return {@code this}, for method chaining.
+     */
+    public QuarkusUnitTest debugBytecode(boolean debugBytecode) {
+        this.debugBytecode = debugBytecode;
+        return this;
+    }
+
+    /**
+     * Enables trace logs for the given categories,
+     * during both build and runtime.
+     *
+     * @param categories The categories for which to enable trace logging.
+     * @return {@code this}, for method chaining.
+     */
+    public QuarkusUnitTest traceCategories(String... categories) {
+        Collections.addAll(this.traceCategories, categories);
         return this;
     }
 

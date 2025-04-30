@@ -41,6 +41,10 @@ import java.lang.annotation.Target;
  * </pre>
  *
  * Then the result of {@code override()} will be used as MyBean in all injection points.
+ * <p>
+ * Default beans can optionally declare {@link jakarta.annotation.Priority}.
+ * In case there is no priority defined, {@code @Priority(0)} is assumed.
+ * Priority value is used for bean ordering and during typesafe resolution to disambiguate multiple matching default beans.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })

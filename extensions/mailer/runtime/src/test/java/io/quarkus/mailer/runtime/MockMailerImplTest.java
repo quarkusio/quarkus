@@ -35,7 +35,7 @@ class MockMailerImplTest {
     @BeforeEach
     void init() {
         mockMailbox = new MockMailboxImpl();
-        mailer = new MutinyMailerImpl(vertx, null, mockMailbox, FROM, null, true, List.of(), false);
+        mailer = new MutinyMailerImpl(vertx, null, mockMailbox, FROM, null, true, List.of(), false, false, null);
     }
 
     @Test

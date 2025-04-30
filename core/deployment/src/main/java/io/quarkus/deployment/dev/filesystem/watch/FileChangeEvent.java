@@ -1,6 +1,6 @@
 package io.quarkus.deployment.dev.filesystem.watch;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * The event object that is fired when a file system change is detected.
@@ -10,7 +10,7 @@ import java.io.File;
  */
 public class FileChangeEvent {
 
-    private final File file;
+    private final Path file;
     private final Type type;
 
     /**
@@ -19,7 +19,7 @@ public class FileChangeEvent {
      * @param file the file which is being watched
      * @param type the type of event that was encountered
      */
-    public FileChangeEvent(File file, Type type) {
+    public FileChangeEvent(Path file, Type type) {
         this.file = file;
         this.type = type;
     }
@@ -29,7 +29,7 @@ public class FileChangeEvent {
      *
      * @return the file which was being watched
      */
-    public File getFile() {
+    public Path getFile() {
         return file;
     }
 

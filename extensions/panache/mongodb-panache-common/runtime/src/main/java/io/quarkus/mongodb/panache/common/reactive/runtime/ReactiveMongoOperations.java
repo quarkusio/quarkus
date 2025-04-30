@@ -21,6 +21,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
+import org.bson.conversions.Bson;
 import org.jboss.logging.Logger;
 
 import com.mongodb.ReadPreference;
@@ -56,10 +57,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     private static final Map<String, String> defaultDatabaseName = new ConcurrentHashMap<>();
 
-    protected abstract QueryType createQuery(ReactiveMongoCollection collection, Document query, Document sortDoc);
+    protected abstract QueryType createQuery(ReactiveMongoCollection collection, Bson query, Bson sortDoc);
 
     protected abstract UpdateType createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass,
-            Document docUpdate);
+            Bson docUpdate);
 
     protected abstract Uni<?> list(QueryType query);
 
@@ -284,7 +285,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     private Uni<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
         List<Uni<Void>> unis = entities.stream().map(entity -> update(collection, entity)).collect(Collectors.toList());
-        return Uni.combine().all().unis(unis).combinedWith(u -> null);
+        return Uni.combine().all().unis(unis).with(u -> null);
     }
 
     private Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, Object entity) {
@@ -391,8 +392,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
-        Document docSort = sortToDocument(sort);
+        Bson docQuery = Document.parse(bindQuery);
+        Bson docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, docQuery, docSort);
     }
@@ -490,8 +491,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
-        Document docSort = sortToDocument(sort);
+        Bson docQuery = Document.parse(bindQuery);
+        Bson docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, docQuery, docSort);
     }
@@ -504,19 +505,19 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    public QueryType find(Class<?> entityClass, Document query, Sort sort) {
+    public QueryType find(Class<?> entityClass, Bson query, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        Document sortDoc = sortToDocument(sort);
+        Bson sortDoc = sortToDocument(sort);
         return createQuery(collection, query, sortDoc);
     }
 
-    public QueryType find(Class<?> entityClass, Document query, Document sort) {
+    public QueryType find(Class<?> entityClass, Bson query, Bson sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, query, sort);
     }
 
-    public QueryType find(Class<?> entityClass, Document query) {
-        return find(entityClass, query, (Document) null);
+    public QueryType find(Class<?> entityClass, Bson query) {
+        return find(entityClass, query, (Bson) null);
     }
 
     public Uni<List<?>> list(Class<?> entityClass, String query, Object... params) {
@@ -544,12 +545,12 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public Uni<List<?>> list(Class<?> entityClass, Document query) {
+    public Uni<List<?>> list(Class<?> entityClass, Bson query) {
         return (Uni) list(find(entityClass, query));
     }
 
     //specific Mongo query
-    public Uni<List<?>> list(Class<?> entityClass, Document query, Document sort) {
+    public Uni<List<?>> list(Class<?> entityClass, Bson query, Bson sort) {
         return (Uni) list(find(entityClass, query, sort));
     }
 
@@ -578,12 +579,12 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public Multi<?> stream(Class<?> entityClass, Document query) {
+    public Multi<?> stream(Class<?> entityClass, Bson query) {
         return stream(find(entityClass, query));
     }
 
     //specific Mongo query
-    public Multi<?> stream(Class<?> entityClass, Document query, Document sort) {
+    public Multi<?> stream(Class<?> entityClass, Bson query, Bson sort) {
         return stream(find(entityClass, query, sort));
     }
 
@@ -594,11 +595,11 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        Document sortDoc = sortToDocument(sort);
+        Bson sortDoc = sortToDocument(sort);
         return createQuery(collection, null, sortDoc);
     }
 
-    private Document sortToDocument(Sort sort) {
+    private Bson sortToDocument(Sort sort) {
         if (sort == null) {
             return null;
         }
@@ -662,7 +663,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public Uni<Long> count(Class<?> entityClass, Document query) {
+    public Uni<Long> count(Class<?> entityClass, Bson query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.countDocuments(Panache.getCurrentSession(), query);
@@ -680,7 +681,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Boolean> deleteById(Class<?> entityClass, Object id) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        Document query = new Document().append(ID, id);
+        Bson query = new Document().append(ID, id);
         if (Panache.getCurrentSession() != null) {
             return collection.deleteOne(Panache.getCurrentSession(), query).map(results -> results.getDeletedCount() == 1);
         }
@@ -712,7 +713,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public Uni<Long> delete(Class<?> entityClass, Document query) {
+    public Uni<Long> delete(Class<?> entityClass, Bson query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.deleteMany(Panache.getCurrentSession(), query).map(DeleteResult::getDeletedCount);
@@ -732,20 +733,20 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return executeUpdate(entityClass, update, params);
     }
 
-    public UpdateType update(Class<?> entityClass, Document update) {
+    public UpdateType update(Class<?> entityClass, Bson update) {
         return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {
         String bindUpdate = bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = Document.parse(bindUpdate);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return createUpdate(collection, entityClass, docUpdate);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
         String bindUpdate = bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = Document.parse(bindUpdate);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return createUpdate(collection, entityClass, docUpdate);
     }

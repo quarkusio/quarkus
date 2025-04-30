@@ -91,3 +91,25 @@ INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (1, 'DE-BY', 'Bavar
 INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (2, 'DE-SN', 'Saxony', 'federalState');
 INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (3, 'DE', 'Germany', 'country');
 INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (4, 'FR', 'France', 'country');
+
+INSERT INTO Father (id, name, detail, age, test) VALUES (1, 'John Doe', 'Graphic designer and enjoys cooking', 40, 75.5);
+INSERT INTO Father (id, name, detail, age, test) VALUES (2, 'Jane Smith', 'Software engineer and mother of two', 35, 82.3);
+INSERT INTO Father (id, name, detail, age, test) VALUES (3, 'Sarah Johnson', 'She is a nurse and loves sport', 50, 92.7);
+
+INSERT INTO Child (id, name, detail) VALUES (1, 'Alice', 'Loves drawing and painting');
+INSERT INTO Child (id, name, detail) VALUES (2, 'Bob', 'Plays the violin and loves animals');
+INSERT INTO Child (id, name, detail) VALUES (3, 'Eve', 'Loves drawing and painting');
+INSERT INTO Child (id, name, detail) VALUES (4, 'Diana', 'Plays basketball and chess');
+INSERT INTO Child (id, name, detail) VALUES (5, 'Eve', 'Enjoys building robots and coding');
+INSERT INTO Child (id, name, detail) VALUES (6, 'Frank', 'Writes short stories and poems');
+INSERT INTO Child (id, name, detail) VALUES (7, 'Grace', 'Interested in astronomy and space');
+INSERT INTO Child (id, name, detail) VALUES (8, 'Eve', 'Enjoys skateboarding and video games');
+
+INSERT INTO father_child (father_id, children_id) VALUES (1,1);
+INSERT INTO father_child (father_id, children_id) VALUES (1,2);
+INSERT INTO father_child (father_id, children_id) VALUES (1,3);
+INSERT INTO father_child (father_id, children_id) VALUES (2,4);
+INSERT INTO father_child (father_id, children_id) VALUES (2,5);
+INSERT INTO father_child (father_id, children_id) VALUES (3,6);
+INSERT INTO father_child (father_id, children_id) VALUES (3,7);
+INSERT INTO father_child (father_id, children_id) VALUES (3,8);

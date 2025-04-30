@@ -10,9 +10,14 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
@@ -20,14 +25,9 @@ import io.smallrye.common.expression.ResolveContext;
 /**
  * Utilities class for scheduler extensions.
  */
-public class SchedulerUtils {
-
-    private static final String DELAYED = "delayed";
-    private static final String EVERY = "every";
-    private static final String OVERDUE_GRACE_PERIOD = "overdueGracePeriod";
+public final class SchedulerUtils {
 
     private SchedulerUtils() {
-
     }
 
     /**
@@ -38,7 +38,7 @@ public class SchedulerUtils {
      */
     public static long parseDelayedAsMillis(Scheduled scheduled) {
         String value = lookUpPropertyValue(scheduled.delayed());
-        return parseDurationAsMillis(scheduled, value, DELAYED);
+        return parseDurationAsMillis(scheduled, value, "delayed");
     }
 
     /**
@@ -52,9 +52,24 @@ public class SchedulerUtils {
         String value = lookUpPropertyValue(scheduled.every());
         OptionalLong optionalMillis = OptionalLong.empty();
         if (!isOff(value)) {
-            optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, EVERY));
+            optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, "every"));
         }
         return optionalMillis;
+    }
+
+    /**
+     * Parse the `@Scheduled(executionMaxDelay = "")` value into milliseconds.
+     *
+     * @param scheduled annotation
+     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off" or
+     *         "disabled".
+     */
+    public static OptionalLong parseExecutionMaxDelayAsMillis(Scheduled scheduled) {
+        String value = lookUpPropertyValue(scheduled.executionMaxDelay());
+        if (value.isBlank()) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(parseDurationAsMillis(scheduled, value, "executionMaxDelay"));
     }
 
     /**
@@ -68,7 +83,7 @@ public class SchedulerUtils {
         if (value.isEmpty()) {
             return defaultDuration;
         }
-        return parseDuration(scheduled, value, OVERDUE_GRACE_PERIOD);
+        return parseDuration(scheduled, value, "overdueGracePeriod");
     }
 
     public static boolean isOff(String value) {
@@ -98,6 +113,21 @@ public class SchedulerUtils {
         return timeZone.equals(Scheduled.DEFAULT_TIMEZONE) ? null : ZoneId.of(timeZone);
     }
 
+    public static <T> T instantiateBeanOrClass(Class<T> type) {
+        Instance<T> instance = Arc.container().select(type, Any.Literal.INSTANCE);
+        if (instance.isAmbiguous()) {
+            throw new IllegalArgumentException("Multiple beans match the type: " + type);
+        } else if (instance.isUnsatisfied()) {
+            try {
+                return type.getConstructor().newInstance();
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to instantiate the class: " + type);
+            }
+        } else {
+            return instance.get();
+        }
+    }
+
     private static boolean isSimpleConfigValue(String val) {
         val = val.trim();
         return val.startsWith("{") && val.endsWith("}");
@@ -117,9 +147,7 @@ public class SchedulerUtils {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        // Force the runtime CL in order to make the DEV UI page work
-        final ClassLoader cl = SchedulerUtils.class.getClassLoader();
-        final Config config = ConfigProviderResolver.instance().getConfig(cl);
+        final Config config = ConfigProvider.getConfig();
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
         final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
             @Override
@@ -155,14 +183,9 @@ public class SchedulerUtils {
     }
 
     private static Duration parseDuration(Scheduled scheduled, String value, String memberName) {
-        if (Character.isDigit(value.charAt(0))) {
-            value = "PT" + value;
-        }
-
         try {
-            return Duration.parse(value);
+            return DurationConverter.parseDuration(value);
         } catch (Exception e) {
-            // This could only happen for config-based expressions
             throw new IllegalStateException("Invalid " + memberName + "() expression on: " + scheduled, e);
         }
     }

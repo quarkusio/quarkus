@@ -4,15 +4,34 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
-      - 'jakarta-rewrite'
       - '3.0'
     paths:
-      - 'docs/src/main/asciidoc/**'
+      - 'core/processor/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
+      - 'extensions/**/pom.xml'
+      - 'extensions/**/*Config*.java'
+      - 'extensions/core/runtime/pom.xml'
+      - 'extensions/core/runtime/**/*Config*.java'
+      - 'extensions/core/deployment/pom.xml'
+      - 'extensions/core/deployment/**/*Config*.java'
+      - 'test-framework/jacoco/**/pom.xml'
+      - 'test-framework/jacoco/**/*Config*.java'
       - '.github/workflows/doc-build.yml'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'docs/src/main/asciidoc/**'
+      - 'core/processor/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
+      - 'extensions/**/pom.xml'
+      - 'extensions/**/*Config*.java'
+      - 'extensions/core/runtime/pom.xml'
+      - 'extensions/core/runtime/**/*Config*.java'
+      - 'extensions/core/deployment/pom.xml'
+      - 'extensions/core/deployment/**/*Config*.java'
+      - 'test-framework/jacoco/**/pom.xml'
+      - 'test-framework/jacoco/**/*Config*.java'
       - '.github/workflows/doc-build.yml'
 
 concurrency:
@@ -28,27 +47,35 @@ jobs:
         run: sleep 30
   build-doc:
     name: "Documentation Build"
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
-      - name: Get Date
-        id: get-date
+          java-version: 17
+      - name: Generate cache key
+        id: cache-key
         run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
-      - name: Cache Maven Repository
-        id: cache-maven
-        uses: actions/cache@v3
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every month to avoid unlimited growth
-          key: q2maven-doc-${{ steps.get-date.outputs.date }}
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build
         run: |
           ./mvnw -DquicklyDocs -B --settings .github/mvn-settings.xml
@@ -69,7 +96,7 @@ jobs:
         run: echo ${{ github.event.number }} > pr-id.txt
 
       - name: Persist documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: |
@@ -77,3 +104,19 @@ jobs:
             docs/
             target/asciidoc/generated/config/
           retention-days: 1
+
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Documentation Build"
+          path: |
+            build-reports.zip
+          retention-days: 7

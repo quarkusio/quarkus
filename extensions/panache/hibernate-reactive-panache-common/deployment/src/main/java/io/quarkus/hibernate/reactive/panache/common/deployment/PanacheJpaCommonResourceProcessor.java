@@ -11,8 +11,6 @@ import java.util.Set;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.Interceptor;
-import jakarta.persistence.NamedQueries;
-import jakarta.persistence.NamedQuery;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -46,42 +44,28 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
-import io.quarkus.hibernate.reactive.panache.common.WithSession;
-import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.PanacheHibernateRecorder;
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactionalInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.TestReactiveTransactionalInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.WithSessionInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.WithSessionOnDemandInterceptor;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.hibernate.reactive.panache.common.runtime.WithTransactionInterceptor;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class PanacheJpaCommonResourceProcessor {
 
     private static final Logger LOG = Logger.getLogger(PanacheJpaCommonResourceProcessor.class);
 
-    private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
-    private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
     private static final String TEST_REACTIVE_TRANSACTION = "io.quarkus.test.TestReactiveTransaction";
-
-    private static final DotName REACTIVE_TRANSACTIONAL = DotName.createSimple(ReactiveTransactional.class.getName());
-    private static final DotName WITH_SESSION_ON_DEMAND = DotName.createSimple(WithSessionOnDemand.class.getName());
-    private static final DotName WITH_SESSION = DotName.createSimple(WithSession.class.getName());
-    private static final DotName WITH_TRANSACTION = DotName.createSimple(WithTransaction.class.getName());
-    private static final DotName UNI = DotName.createSimple(Uni.class.getName());
-    private static final DotName PANACHE_ENTITY_BASE = DotName
-            .createSimple("io.quarkus.hibernate.reactive.panache.PanacheEntityBase");
-    private static final DotName PANACHE_ENTITY = DotName.createSimple("io.quarkus.hibernate.reactive.panache.PanacheEntity");
-    private static final DotName PANACHE_KOTLIN_ENTITY_BASE = DotName
-            .createSimple("io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase");
-    private static final DotName PANACHE_KOTLIN_ENTITY = DotName
-            .createSimple("io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity");
 
     @BuildStep(onlyIf = IsTest.class)
     void testTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        if (!testReactiveTransactionOnClassPath()) {
+            return;
+        }
+
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
@@ -97,23 +81,34 @@ public final class PanacheJpaCommonResourceProcessor {
                 .addBeanClass(TEST_REACTIVE_TRANSACTION).build());
     }
 
+    private static boolean testReactiveTransactionOnClassPath() {
+        try {
+            Class.forName(TEST_REACTIVE_TRANSACTION, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
+    }
+
     @BuildStep
     void registerInterceptors(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(WithSessionOnDemandInterceptor.class);
         builder.addBeanClass(WithSessionInterceptor.class);
         builder.addBeanClass(ReactiveTransactionalInterceptor.class);
+        builder.addBeanClass(WithTransactionInterceptor.class);
         additionalBeans.produce(builder.build());
     }
 
     @BuildStep
     void validateInterceptedMethods(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> errors) {
-        List<DotName> bindings = List.of(REACTIVE_TRANSACTIONAL, WITH_SESSION, WITH_SESSION_ON_DEMAND, WITH_TRANSACTION);
+        List<DotName> bindings = List.of(DotNames.REACTIVE_TRANSACTIONAL, DotNames.WITH_SESSION,
+                DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION);
         for (BeanInfo bean : validationPhase.getContext().beans().withAroundInvokeInterceptor()) {
             for (Entry<MethodInfo, Set<AnnotationInstance>> e : bean.getInterceptedMethodsBindings().entrySet()) {
                 DotName returnTypeName = e.getKey().returnType().name();
-                if (returnTypeName.equals(UNI)) {
+                if (returnTypeName.equals(DotNames.UNI)) {
                     // Method returns Uni - no need to iterate over the bindings
                     continue;
                 }
@@ -132,24 +127,41 @@ public final class PanacheJpaCommonResourceProcessor {
                     DotName.createSimple("jakarta.ws.rs.DELETE"), DotName.createSimple("jakarta.ws.rs.OPTIONS"),
                     DotName.createSimple("jakarta.ws.rs.PATCH"), DotName.createSimple("jakarta.ws.rs.POST"),
                     DotName.createSimple("jakarta.ws.rs.PUT"));
-            List<DotName> bindings = List.of(REACTIVE_TRANSACTIONAL, WITH_SESSION, WITH_SESSION_ON_DEMAND, WITH_TRANSACTION);
+            List<DotName> bindings = List.of(DotNames.REACTIVE_TRANSACTIONAL, DotNames.WITH_SESSION,
+                    DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION);
 
-            // Collect all panache entities
+            // Collect all Panache entities and repositories
             Set<DotName> entities = new HashSet<>();
-            for (ClassInfo subclass : index.getIndex().getAllKnownSubclasses(PANACHE_ENTITY_BASE)) {
-                if (!subclass.name().equals(PANACHE_ENTITY)) {
+            for (ClassInfo subclass : index.getIndex().getAllKnownSubclasses(DotNames.PANACHE_ENTITY_BASE)) {
+                if (!subclass.name().equals(DotNames.PANACHE_ENTITY)) {
                     entities.add(subclass.name());
                 }
             }
-            for (ClassInfo subclass : index.getIndex().getAllKnownImplementors(PANACHE_KOTLIN_ENTITY_BASE)) {
-                if (!subclass.name().equals(PANACHE_KOTLIN_ENTITY)) {
-                    entities.add(subclass.name());
+            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_ENTITY_BASE)) {
+                if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_ENTITY)) {
+                    entities.add(implementor.name());
                 }
             }
-            Set<DotName> entityUsers = new HashSet<>();
+            Set<DotName> repos = new HashSet<>();
+            for (ClassInfo subclass : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_REPOSITORY_BASE)) {
+                if (!subclass.name().equals(DotNames.PANACHE_REPOSITORY)) {
+                    repos.add(subclass.name());
+                }
+            }
+            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_REPOSITORY_BASE)) {
+                if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_REPOSITORY)) {
+                    repos.add(implementor.name());
+                }
+            }
+            Set<DotName> entityReposUsers = new HashSet<>();
             for (DotName entity : entities) {
                 for (ClassInfo user : index.getIndex().getKnownUsers(entity)) {
-                    entityUsers.add(user.name());
+                    entityReposUsers.add(user.name());
+                }
+            }
+            for (DotName repo : repos) {
+                for (ClassInfo user : index.getIndex().getKnownUsers(repo)) {
+                    entityReposUsers.add(user.name());
                 }
             }
 
@@ -166,8 +178,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     if (method.isSynthetic()
                             || Modifier.isStatic(method.flags())
                             || method.declaringClass().isInterface()
-                            || !method.returnType().name().equals(UNI)
-                            || !entityUsers.contains(method.declaringClass().name())
+                            || !method.returnType().name().equals(DotNames.UNI)
+                            || !entityReposUsers.contains(method.declaringClass().name())
                             || !Annotations.containsAny(annotations, designators)
                             || Annotations.containsAny(annotations, bindings)) {
                         return;
@@ -176,10 +188,10 @@ public final class PanacheJpaCommonResourceProcessor {
                     // - is not static
                     // - is not synthetic
                     // - returns Uni
-                    // - is declared in a class that uses a panache entity
+                    // - is declared in a class that uses a panache entity/repository
                     // - is annotated with @GET, @POST, @PUT, @DELETE ,@PATCH ,@HEAD or @OPTIONS
                     // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or @WithTransaction
-                    context.transform().add(WITH_SESSION_ON_DEMAND).done();
+                    context.transform().add(DotNames.WITH_SESSION_ON_DEMAND).done();
                 }
             }));
         }
@@ -221,7 +233,7 @@ public final class PanacheJpaCommonResourceProcessor {
             return;
         }
 
-        List<AnnotationInstance> namedQueryInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERY);
+        List<AnnotationInstance> namedQueryInstances = classInfo.annotationsMap().get(DotNames.DOTNAME_NAMED_QUERY);
         if (namedQueryInstances != null) {
             for (AnnotationInstance namedQueryInstance : namedQueryInstances) {
                 namedQueries.put(namedQueryInstance.value("name").asString(),
@@ -229,7 +241,7 @@ public final class PanacheJpaCommonResourceProcessor {
             }
         }
 
-        List<AnnotationInstance> namedQueriesInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERIES);
+        List<AnnotationInstance> namedQueriesInstances = classInfo.annotationsMap().get(DotNames.DOTNAME_NAMED_QUERIES);
         if (namedQueriesInstances != null) {
             for (AnnotationInstance namedQueriesInstance : namedQueriesInstances) {
                 AnnotationValue value = namedQueriesInstance.value();

@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.runtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
@@ -41,6 +43,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 @Recorder
@@ -51,40 +55,31 @@ public class MicrometerRecorder {
     public static String nonApplicationUri = "/q/";
     public static String httpRootUri = "/";
 
-    /* STATIC_INIT */
+    @StaticInit
     public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
-        factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
+
+        CompositeMeterRegistry globalRegistry = Metrics.globalRegistry;
+        factory = new MicrometerMetricsFactory(config, globalRegistry);
         nonApplicationUri = qUri;
         httpRootUri = httpUri;
-        return new RuntimeValue<>(Metrics.globalRegistry);
+        return new RuntimeValue<>(globalRegistry);
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public void configureRegistries(MicrometerConfig config,
             Set<Class<? extends MeterRegistry>> registryClasses,
             ShutdownContext context) {
         BeanManager beanManager = Arc.container().beanManager();
 
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
-
-        // Find global/common registry configuration
         List<MeterFilter> globalFilters = new ArrayList<>();
-        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
-                .select(MeterFilter.class, Default.Literal.INSTANCE);
-        populateListWithMeterFilters(globalFilterInstance, globalFilters);
-        log.debugf("Discovered global MeterFilters : %s", globalFilters);
+        populateMeterFilters(registryClasses, beanManager, classMeterFilters, globalFilters);
 
-        // Find MeterFilters for specific registry classes, i.e.:
-        // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
-        log.debugf("Configuring Micrometer registries : %s", registryClasses);
-        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
-            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
-                    .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
-            List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
-
-            populateListWithMeterFilters(classFilterInstance, classFilters);
-            log.debugf("Discovered MeterFilters for %s: %s", typeClass, classFilters);
-        }
+        Map<Class<? extends MeterRegistry>, List<MeterRegistryCustomizer>> classMeterRegistryCustomizers = new HashMap<>(
+                registryClasses.size());
+        List<MeterRegistryCustomizer> globalMeterRegistryCustomizers = new ArrayList<>();
+        populateMeterRegistryCustomizers(registryClasses, beanManager, classMeterRegistryCustomizers,
+                globalMeterRegistryCustomizers);
 
         // Find and configure MeterRegistry beans (includes runtime config)
         Set<Bean<?>> beans = new HashSet<>(beanManager.getBeans(MeterRegistry.class, Any.Literal.INSTANCE));
@@ -92,6 +87,7 @@ public class MicrometerRecorder {
 
         // Apply global filters to the global registry
         applyMeterFilters(Metrics.globalRegistry, globalFilters);
+        applyMeterRegistryCustomizers(Metrics.globalRegistry, globalMeterRegistryCustomizers);
 
         for (Bean<?> i : beans) {
             MeterRegistry registry = (MeterRegistry) beanManager
@@ -100,26 +96,42 @@ public class MicrometerRecorder {
             // Add & configure non-root registries
             if (registry != Metrics.globalRegistry && registry != null) {
                 applyMeterFilters(registry, globalFilters);
-                applyMeterFilters(registry, classMeterFilters.get(registry.getClass()));
-                log.debugf("Adding configured registry %s", registry.getClass(), registry);
+                Class<?> registryClass = registry.getClass();
+                applyMeterFilters(registry, classMeterFilters.get(registryClass));
+
+                var classSpecificCustomizers = classMeterRegistryCustomizers.getOrDefault(registryClass,
+                        Collections.emptyList());
+                var newList = new ArrayList<MeterRegistryCustomizer>(
+                        globalMeterRegistryCustomizers.size() + classSpecificCustomizers.size());
+                newList.addAll(globalMeterRegistryCustomizers);
+                newList.addAll(classSpecificCustomizers);
+                applyMeterRegistryCustomizers(registry, newList);
+
+                log.debugf("Adding configured registry %s", registryClass, registry);
                 Metrics.globalRegistry.add(registry);
             }
         }
 
+        List<AutoCloseable> autoCloseables = new ArrayList<>();
+
         // Base JVM Metrics
-        if (config.checkBinderEnabledWithDefault(() -> config.binder.jvm)) {
+        if (config.checkBinderEnabledWithDefault(() -> config.binder().jvm())) {
             new ClassLoaderMetrics().bindTo(Metrics.globalRegistry);
-            new JvmHeapPressureMetrics().bindTo(Metrics.globalRegistry);
+            JvmHeapPressureMetrics jvmHeapPressureMetrics = new JvmHeapPressureMetrics();
+            jvmHeapPressureMetrics.bindTo(Metrics.globalRegistry);
+            autoCloseables.add(jvmHeapPressureMetrics);
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
             if (ImageMode.current() == ImageMode.JVM) {
-                new JvmGcMetrics().bindTo(Metrics.globalRegistry);
+                JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
+                jvmGcMetrics.bindTo(Metrics.globalRegistry);
+                autoCloseables.add(jvmGcMetrics);
             }
         }
 
         // System metrics
-        if (config.checkBinderEnabledWithDefault(() -> config.binder.system)) {
+        if (config.checkBinderEnabledWithDefault(() -> config.binder().system())) {
             new UptimeMetrics().bindTo(Metrics.globalRegistry);
             new ProcessorMetrics().bindTo(Metrics.globalRegistry);
             new FileDescriptorMetrics().bindTo(Metrics.globalRegistry);
@@ -148,13 +160,65 @@ public class MicrometerRecorder {
                     meterRegistry.close();
                     Metrics.removeRegistry(meterRegistry);
                 }
+                // iterate over the auto-closeables and close them
+                for (AutoCloseable autoCloseable : autoCloseables) {
+                    try {
+                        autoCloseable.close();
+                    } catch (Exception e) {
+                        log.error("Error closing", e);
+                    }
+                }
             }
         });
     }
 
-    void populateListWithMeterFilters(Instance<MeterFilter> filterInstance, List<MeterFilter> meterFilters) {
+    private void populateMeterFilters(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
+            Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters,
+            List<MeterFilter> globalFilters) {
+        // Find global/common registry configuration
+        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
+                .select(MeterFilter.class, Default.Literal.INSTANCE);
+        populateList(globalFilterInstance, globalFilters);
+        log.debugf("Discovered global MeterFilters : %s", globalFilters);
+
+        // Find MeterFilters for specific registry classes, i.e.:
+        // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
+        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
+            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
+                    .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
+            List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
+
+            populateList(classFilterInstance, classFilters);
+            log.debugf("Discovered MeterFilters for %s: %s", typeClass, classFilters);
+        }
+    }
+
+    private void populateMeterRegistryCustomizers(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
+            Map<Class<? extends MeterRegistry>, List<MeterRegistryCustomizer>> classMeterRegistryCustomizers,
+            List<MeterRegistryCustomizer> globalMeterRegistryCustomizers) {
+        // Find global/common registry configuration
+        Instance<MeterRegistryCustomizer> globalFilterInstance = beanManager.createInstance()
+                .select(MeterRegistryCustomizer.class, Default.Literal.INSTANCE);
+        populateList(globalFilterInstance, globalMeterRegistryCustomizers);
+        log.debugf("Discovered global MeterRegistryCustomizer : %s", globalMeterRegistryCustomizers);
+
+        // Find MeterRegistryCustomizers for specific registry classes, i.e.:
+        // @MeterRegistryCustomizerConstraint(applyTo = DatadogMeterRegistryCustomizer.class) Instance<MeterRegistryCustomizer> customizers
+        log.debugf("Configuring Micrometer registries : %s", registryClasses);
+        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
+            Instance<MeterRegistryCustomizer> classFilterInstance = beanManager.createInstance()
+                    .select(MeterRegistryCustomizer.class, new MeterRegistryCustomizerConstraint.Literal(typeClass));
+            List<MeterRegistryCustomizer> classFilters = classMeterRegistryCustomizers.computeIfAbsent(typeClass,
+                    k -> new ArrayList<>());
+
+            populateList(classFilterInstance, classFilters);
+            log.debugf("Discovered MeterRegistryCustomizer for %s: %s", typeClass, classFilters);
+        }
+    }
+
+    private <T> void populateList(Instance<T> filterInstance, List<T> meterFilters) {
         if (!filterInstance.isUnsatisfied()) {
-            for (MeterFilter filter : filterInstance) {
+            for (T filter : filterInstance) {
                 // @Produces methods can return null, and those will turn up here.
                 if (filter != null) {
                     meterFilters.add(filter);
@@ -163,10 +227,19 @@ public class MicrometerRecorder {
         }
     }
 
-    void applyMeterFilters(MeterRegistry registry, List<MeterFilter> filters) {
+    private void applyMeterFilters(MeterRegistry registry, List<MeterFilter> filters) {
         if (filters != null) {
             for (MeterFilter meterFilter : filters) {
                 registry.config().meterFilter(meterFilter);
+            }
+        }
+    }
+
+    private void applyMeterRegistryCustomizers(MeterRegistry registry, List<MeterRegistryCustomizer> customizers) {
+        if ((customizers != null) && !customizers.isEmpty()) {
+            Collections.sort(customizers);
+            for (MeterRegistryCustomizer customizer : customizers) {
+                customizer.customize(registry);
             }
         }
     }
@@ -195,7 +268,7 @@ public class MicrometerRecorder {
         return throwable.getCause().getClass().getSimpleName();
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
             boolean httpServerMetricsEnabled,
             boolean httpClientMetricsEnabled,

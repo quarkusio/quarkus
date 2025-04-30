@@ -4,15 +4,17 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Security Tips and Tricks
-
 include::_attributes.adoc[]
+:categories: security
+:topics: security
+:extensions: io.quarkus:quarkus-security
 
 == Quarkus Security Dependency
 
 `io.quarkus:quarkus-security` module contains the core Quarkus Security classes.
 
 In most cases, it does not have to be added directly to your project's build file as it is already provided by all the security extensions.
-However, if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom Jakarta REST SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
+However, if you need to write your own custom security code (for example, register a <<jaxrs-security-context,Custom Jakarta REST SecurityContext>>) or use <<bouncy-castle,BouncyCastle>> libraries, then please make sure it is included:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -69,6 +71,12 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 
 }
 ----
+
+TIP: The `HttpAuthenticationMechanism` should transform incoming HTTP request with suitable authentication credentials
+into an `io.quarkus.security.identity.request.AuthenticationRequest` instance and delegate the authentication to the `io.quarkus.security.identity.IdentityProviderManager`.
+Leaving authentication to the ``io.quarkus.security.identity.IdentityProvider``s gives you more options for credentials verifications,
+as well as convenient way to perform blocking tasks.
+Nevertheless, the `io.quarkus.security.identity.IdentityProvider` can be omitted and the `HttpAuthenticationMechanism` is free to authenticate request on its own in trivial use cases.
 
 [[dealing-with-more-than-one-http-auth-mechanisms]]
 == Dealing with more than one HttpAuthenticationMechanism
@@ -175,7 +183,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-TLS-authentication[mutual TLS (mTLS) authentication] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-tls[mutual TLS (mTLS) authentication] request to add more roles:
 
 [source,java]
 ----
@@ -234,56 +242,51 @@ You can enforce the order by implementing a default `SecurityIdentityAugmentor#p
 By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
 that mandates a request context, you will have a `jakarta.enterprise.context.ContextNotActiveException`.
 
+IMPORTANT: Please also review the xref:security-proactive-authentication.adoc#cdi-request-context-activation[Activating the CDI request context] section of the "Proactive authentication" guide.
+
 The solution is to activate the request context, the following example shows how to get the roles from an Hibernate with Panache `UserRoleEntity`.
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.smallrye.mutiny.Uni;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
 @ApplicationScoped
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Inject
-    Instance<SecurityIdentitySupplier> identitySupplierInstance;
+    UserEntityAugmentor userEntityAugmentor;
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        if(identity.isAnonymous()) {
+        if (identity.isAnonymous()) {
             return Uni.createFrom().item(identity);
         }
 
         // Hibernate ORM is blocking
-        SecurityIdentitySupplier identitySupplier = identitySupplierInstance.get();
-        identitySupplier.setIdentity(identity);
-        return context.runBlocking(identitySupplier);
+        return context.runBlocking(() -> userEntityAugmentor.augment(identity));
     }
 }
 ----
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.context.control.ActivateRequestContext;
-import java.util.function.Supplier;
+@ApplicationScoped
+class UserEntityAugmentor {
 
-@Dependent
-class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
-
-    private SecurityIdentity identity;
-
-    @Override
     @ActivateRequestContext
-    public SecurityIdentity get() {
+    public SecurityIdentity augment(SecurityIdentity identity) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
         String user = identity.getPrincipal().getName();
 
@@ -293,12 +296,49 @@ class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
 
         return builder.build();
     }
-
-    public void setIdentity(SecurityIdentity identity) {
-        this.identity = identity;
-    }
 }
 ----
+
+The CDI request context activation shown in the example above does not help you to access the `RoutingContext` when the proactive authentication is enabled.
+The following example illustrates how you can access the `RoutingContext` from the `SecurityIdentityAugmentor`:
+
+[source,java]
+----
+package org.acme.security;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context,
+            Map<String, Object> attributes) {
+        RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(attributes);
+        if (routingContext != null) {
+            // Augment SecurityIdentity using RoutingContext
+        } else {
+            return augment(identity, context); <1>
+        }
+    }
+
+    ...
+}
+----
+<1> The `RoutingContext` is not be available when the `SecurityIdentity` is augmented after HTTP request has completed.
+
+NOTE: If you implemented a custom `HttpAuthenticationMechanism`, then you need to add the `RoutingContext` to the authentication
+request attributes with the `io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute` method call.
+Otherwise, the `RoutingContext` will not be available during augmentation.
 
 [[jaxrs-security-context]]
 == Custom Jakarta REST SecurityContext
@@ -618,9 +658,129 @@ are using an executor that is capable of propagating the identity (e.g. no `Comp
 to make sure that Quarkus can propagate it. For more information see the
 xref:context-propagation.adoc[Context Propagation Guide].
 
+[[observe-security-events]]
+== Observe security events
+
+Quarkus beans can use xref:cdi.adoc#events-and-observers[CDI observers] to consume authentication and authorization security events.
+The observers can be either synchronous or asynchronous.
+
+.List of supported security events
+
+* `io.quarkus.security.spi.runtime.AuthenticationFailureEvent`
+* `io.quarkus.security.spi.runtime.AuthenticationSuccessEvent`
+* `io.quarkus.security.spi.runtime.AuthorizationFailureEvent`
+* `io.quarkus.security.spi.runtime.AuthorizationSuccessEvent`
+* `io.quarkus.oidc.SecurityEvent`
+* `io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent`
+
+[TIP]
+For more information about security events specific to the Quarkus OpenID Connect extension, please see
+the xref:security-oidc-code-flow-authentication.adoc#listen-to-authentication-events[Listening to important authentication events]
+section of the OIDC code flow mechanism for protecting web applications guide.
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
+import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
+import io.quarkus.security.spi.runtime.SecurityEvent;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.ObservesAsync;
+import org.jboss.logging.Logger;
+
+public class SecurityEventObserver {
+
+    private static final Logger LOG = Logger.getLogger(SecurityEventObserver.class.getName());
+
+    void observeAuthenticationSuccess(@ObservesAsync AuthenticationSuccessEvent event) {    <1>
+        LOG.debugf("User '%s' has authenticated successfully", event.getSecurityIdentity().getPrincipal().getName());
+    }
+
+    void observeAuthenticationFailure(@ObservesAsync AuthenticationFailureEvent event) {
+        RoutingContext routingContext = (RoutingContext) event.getEventProperties().get(RoutingContext.class.getName());
+        LOG.debugf("Authentication failed, request path: '%s'", routingContext.request().path());
+    }
+
+    void observeAuthorizationSuccess(@ObservesAsync AuthorizationSuccessEvent event) {
+        String principalName = getPrincipalName(event);
+        if (principalName != null) {
+            LOG.debugf("User '%s' has been authorized successfully", principalName);
+        }
+    }
+
+    void observeAuthorizationFailure(@Observes AuthorizationFailureEvent event) {
+        LOG.debugf(event.getAuthorizationFailure(), "User '%s' authorization failed", event.getSecurityIdentity().getPrincipal().getName());
+    }
+
+    private static String getPrincipalName(SecurityEvent event) {   <2>
+        if (event.getSecurityIdentity() != null) {
+            return event.getSecurityIdentity().getPrincipal().getName();
+        }
+        return null;
+    }
+
+}
+----
+<1> This observer consumes all the `AuthenticationSuccessEvent` events asynchronously, which means that HTTP request processing will continue regardless on the event processing.
+Depending on the application, that can be a lot of the `AuthenticationSuccessEvent` events.
+For that reason, asynchronous processing can have positive effect on performance.
+<2> Common code for all supported security event types is possible because they all implement the `io.quarkus.security.spi.runtime.SecurityEvent` interface.
+
+== `SecurityIdentity` injection in Vert.x route handlers
+
+When you need to inject `SecurityIdentity` in a Vert.x route handler registered directly on the xref:reactive-routes.adoc#using-vertx-web-router[Vert.x Web Router], then requesting the `SecurityIdentity` propagation is required.
+For example:
+
+[source,java]
+----
+package io.quarkus.it.security;
+
+public class RouterObserver {
+
+    public void route(@Observes Router router, UserInformation userInformation) {
+        router.route("/user-info").handler(event -> event.response().end(userInformation.getPrincipalName()));
+    }
+
+}
+----
+
+The `UserInformation` bean in the example can look like this:
+
+[source,java]
+----
+package io.quarkus.it.security;
+
+@ApplicationScoped
+public class UserInformation {
+
+    @Inject
+    SecurityIdentity identity;
+
+    @ActivateRequestContext
+    String getPrincipalName() {
+        return identity.getPrincipal().getName();
+    }
+
+}
+----
+
+For the `SecurityIdentity` injection in this example to work, you must activate the `SecurityIdentity` propagation:
+
+[source,properties]
+----
+quarkus.http.auth.propagate-security-identity=true <1>
+----
+<1> Propagate the `SecurityIdentity` when a Vert.x route handler is registered programmatically on the Vert.x HTTP router.
+It is required because Quarkus cannot detect that the `SecurityIdentity` injection point is used in the programmatically registered Vert.x route handler.
+For the routes registered declaratively with the `@Route` annotation as well as Jakarta REST endpoints, this configuration is not required.
+
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]
-* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-identity-providers.adoc[Identity providers]

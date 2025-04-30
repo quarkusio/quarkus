@@ -10,6 +10,8 @@ You can find our guidelines here regarding our policy and security disclosure.
 
 ## Reporting security issues
 
+:warning: Do NOT report security issues in our public bug tracker.
+
 Please report any security issues you find in Quarkus to:
 
     security at quarkus.io
@@ -32,13 +34,15 @@ We appreciate you following these industry accepted guidelines, which gives time
 
 The community will fix security bugs for the latest major.minor version published at <https://quarkus.io/get-started/>.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest 2.x   | :white_check_mark: |
-| older 2.x | :x:                |
-| < 2.0 | :x:                |
+| Version      | Supported          |
+| ------------ | ------------------ |
+| Latest 3.x   | :white_check_mark: |
+| 3.15 LTS     | :white_check_mark: |
+| 3.8 LTS      | :white_check_mark: |
+| Older 3.x    | :x:                |
+| < 3          | :x:                |
 
-We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the latest version released.
+We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the versions documented above.
 
 ## Handling security issues
 

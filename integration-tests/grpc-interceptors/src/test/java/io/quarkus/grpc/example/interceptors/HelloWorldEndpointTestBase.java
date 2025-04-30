@@ -21,10 +21,17 @@ class HelloWorldEndpointTestBase {
         assertThat(invoked).containsExactlyInAnyOrder(
                 "io.quarkus.grpc.examples.interceptors.ClientInterceptors$TypeTarget",
                 "io.quarkus.grpc.examples.interceptors.ClientInterceptors$MethodTarget",
+                "io.quarkus.grpc.examples.interceptors.PriorityImplInterceptor",
                 "io.quarkus.grpc.examples.interceptors.ServerInterceptors$TypeTarget",
                 "io.quarkus.grpc.examples.interceptors.ServerInterceptors$MethodTarget");
 
         ensureThatMetricsAreProduced();
+
+        String used = response.getHeader("used_cbc");
+        assertThat(Boolean.parseBoolean(used)).isTrue();
+
+        used = response.getHeader("used_sbc");
+        assertThat(Boolean.parseBoolean(used)).isTrue();
     }
 
     @Test

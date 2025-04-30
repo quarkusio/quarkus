@@ -8,11 +8,10 @@ import java.net.UnknownHostException;
 
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
-import org.wildfly.common.net.CidrAddress;
-import org.wildfly.common.net.Inet;
 
-/**
- */
+import io.smallrye.common.net.CidrAddress;
+import io.smallrye.common.net.Inet;
+
 public class ConverterTestCase {
 
     @Test

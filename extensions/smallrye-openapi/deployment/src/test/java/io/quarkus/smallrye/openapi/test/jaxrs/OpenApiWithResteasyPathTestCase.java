@@ -15,7 +15,7 @@ public class OpenApiWithResteasyPathTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.path=/foo/bar"),
+                    .addAsResource(new StringAsset("quarkus.rest.path=/foo/bar"),
                             "application.properties"));
 
     @Test
@@ -24,7 +24,7 @@ public class OpenApiWithResteasyPathTestCase {
                 .when().get(OPEN_API_PATH)
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.0"))
+                .body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/foo/bar/resource"));
     }

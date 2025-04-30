@@ -26,11 +26,13 @@ public abstract class GreetTestBase {
     @Test
     public void testGreetNPE() {
         given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body("[]")
                 .when()
                 .post()
                 .then()
                 .statusCode(500)
-                .body("errorMessage", containsString("end-of-input"));
+                .body("errorMessage", containsString("Could not deserialize the provided message"));
     }
-
 }

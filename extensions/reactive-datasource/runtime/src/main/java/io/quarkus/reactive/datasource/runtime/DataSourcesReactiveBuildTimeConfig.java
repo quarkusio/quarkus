@@ -1,53 +1,73 @@
 package io.quarkus.reactive.datasource.runtime;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class DataSourcesReactiveBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface DataSourcesReactiveBuildTimeConfig {
+
+    /**
+     * Datasources.
+     */
+    @ConfigDocMapKey("datasource-name")
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceReactiveOuterNamedBuildTimeConfig> dataSources();
 
     /**
      * The default datasource.
+     *
+     * @deprecated Use {@code dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME).reactive()} instead.
      */
-    @ConfigItem(name = "reactive")
-    public DataSourceReactiveBuildTimeConfig defaultDataSource;
+    @Deprecated
+    default DataSourceReactiveBuildTimeConfig defaultDataSource() {
+        return dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME).reactive();
+    }
 
     /**
      * Additional named datasources.
+     *
+     * @deprecated Use {@code dataSources()} instead -- this will include the default datasource.
      */
-    @ConfigDocSection
-    @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceReactiveOuterNamedBuildTimeConfig> namedDataSources;
+    @Deprecated
+    default Map<String, DataSourceReactiveOuterNamedBuildTimeConfig> namedDataSources() {
+        Map<String, DataSourceReactiveOuterNamedBuildTimeConfig> withoutDefault = new HashMap<>(dataSources());
+        withoutDefault.remove(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+        return withoutDefault;
+    }
 
-    public DataSourceReactiveBuildTimeConfig getDataSourceReactiveBuildTimeConfig(String dataSourceName) {
+    /**
+     * Additional named datasources.
+     *
+     * @deprecated Use {@code dataSources().get(dataSourceName).reactive()} instead.
+     */
+    @Deprecated
+    default DataSourceReactiveBuildTimeConfig getDataSourceReactiveBuildTimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource;
+            return defaultDataSource();
         }
 
-        DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveOuterNamedBuildTimeConfig = namedDataSources
-                .get(dataSourceName);
-        if (dataSourceReactiveOuterNamedBuildTimeConfig == null) {
-            return new DataSourceReactiveBuildTimeConfig();
-        }
-
-        return dataSourceReactiveOuterNamedBuildTimeConfig.reactive;
+        return namedDataSources().get(dataSourceName).reactive();
     }
 
     @ConfigGroup
-    public static class DataSourceReactiveOuterNamedBuildTimeConfig {
+    public interface DataSourceReactiveOuterNamedBuildTimeConfig {
 
         /**
-         * The JDBC build time configuration.
+         * The Reactive build time configuration.
          */
-        @ConfigItem
-        public DataSourceReactiveBuildTimeConfig reactive;
+        public DataSourceReactiveBuildTimeConfig reactive();
     }
 }

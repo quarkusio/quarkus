@@ -3,9 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Mutiny - Async for bare mortal
-
+= Mutiny - Async for mere mortals
 include::_attributes.adoc[]
+:categories: reactive
+:topics: mutiny,reactive
+:extensions: io.quarkus:quarkus-mutiny
 
 https://smallrye.io/smallrye-mutiny[Mutiny] is an intuitive, reactive programming library.
 It is the primary model to write reactive applications with Quarkus.
@@ -37,7 +39,7 @@ If you want to know more about Mutiny, and the concepts behind it, check https:/
 == Mutiny in Quarkus
 
 Mutiny is the primary API when dealing with the reactive features from Quarkus.
-It means that most extensions support Mutiny either by exposing an API returning Unis and Multis (such as reactive data sources or rest clients) or understanding when your methods return a Uni or a Multi (such as RESTEasy Reactive or Reactive Messaging).
+It means that most extensions support Mutiny either by exposing an API returning Unis and Multis (such as reactive data sources or rest clients) or understanding when your methods return a Uni or a Multi (such as Quarkus REST (formerly RESTEasy Reactive) or Reactive Messaging).
 
 These integrations make Mutiny a prominent and cohesive model for every reactive application developed with Quarkus.
 In addition, Mutiny architecture allows fine-grain dead-code elimination which improves the memory usage when compiled to native (such as with Quarkus native mode or GraalVM native image compiler).
@@ -167,7 +169,7 @@ The subscriber receives item events, a failure event, or a completion event when
 
 Subscribing to a Uni or a Multi is essential, as without it, the operation is never executed.
 In Quarkus some extensions deal with the subscription for you.
-For example, in RESTEasy Reactive your HTTP methods can return a Uni or a Multi, and RESTEasy Reactive handles the subscription.
+For example, in Quarkus REST your HTTP methods can return a Uni or a Multi, and Quarkus REST handles the subscription.
 
 == Mutiny Patterns
 
@@ -209,7 +211,7 @@ Unlike `transform`, the function passed to `transformToUni` returns a Uni.
 ----
 Uni<String> uni1 = …
 uni1
-.onItem().transformtoUni(item -> anotherAsynchronousAction(item));
+.onItem().transformToUni(item -> anotherAsynchronousAction(item));
 ----
 
 More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items-asynchronously/[Mutiny documentation].

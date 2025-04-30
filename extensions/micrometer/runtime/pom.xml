@@ -49,7 +49,7 @@
 
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
+            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
             <optional>true</optional>
         </dependency>
 
@@ -68,16 +68,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
             <optional>true</optional>
         </dependency>
-
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -88,6 +87,12 @@
         <dependency>
             <groupId>org.eclipse.microprofile.metrics</groupId>
             <artifactId>microprofile-metrics-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
             <optional>true</optional>
         </dependency>
 
@@ -111,6 +116,18 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-redis-client</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-client</artifactId>
             <optional>true</optional>
         </dependency>
 
@@ -147,15 +164,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

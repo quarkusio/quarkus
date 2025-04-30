@@ -9,6 +9,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratorUtils.paramHandleFromReqContextMethod;
@@ -39,6 +40,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.exceptionmappers.AsyncExceptionMappingUtil;
@@ -86,7 +88,7 @@ public final class ServerExceptionMapperGenerator {
      * <pre>
      * &#64;Singleton
      * &#64;Unremovable
-     * public class GreetingResource$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$perClassMapper
+     * public class GreetingResource$ExceptionMapper$123456
      *         implements ResteasyReactiveExceptionMapper {
      *
      *     public Response toResponse(IllegalArgumentException e, ServerRequestContext ctx) {
@@ -101,7 +103,7 @@ public final class ServerExceptionMapperGenerator {
      * <pre>
      * &#64;Singleton
      * &#64;Unremovable
-     * public class GreetingResource$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$perClassMapper
+     * public class GreetingResource$ExceptionMapper$123456
      *         implements ResteasyReactiveAsyncExceptionMapper {
      *
      *     public void asyncResponse(IllegalArgumentException e, AsyncExceptionMapperContext ctx) {
@@ -199,12 +201,12 @@ public final class ServerExceptionMapperGenerator {
      *
      * &#64;Singleton
      * &#64;Unremovable
-     * public class CustomExceptionMapper$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$handle
+     * public class CustomExceptionMapper$ExceptionMapper$123456
      *         implements ResteasyReactiveExceptionMapper {
      *     private final CustomExceptionMapper delegate;
      *
      *     &#64;Inject
-     *     public CustomExceptionMapper$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$handle(
+     *     public CustomExceptionMapper$ExceptionMapper$123456(
      *             CustomExceptionMapper var1) {
      *         this.delegate = var1;
      *     }
@@ -222,12 +224,12 @@ public final class ServerExceptionMapperGenerator {
      *
      * &#64;Singleton
      * &#64;Unremovable
-     * public class CustomExceptionMapper$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$handle
+     * public class CustomExceptionMapper$ExceptionMapper$123456
      *         implements ResteasyReactiveAsyncExceptionMapper {
      *     private final CustomExceptionMapper delegate;
      *
      *     &#64;Inject
-     *     public CustomExceptionMapper$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$handle(
+     *     public CustomExceptionMapper$ExceptionMapper$123456(
      *             CustomExceptionMapper var1) {
      *         this.delegate = var1;
      *     }
@@ -568,6 +570,8 @@ public final class ServerExceptionMapperGenerator {
                         ofMethod(ResteasyReactiveRequestContext.class.getName(), "getContainerRequestContext",
                                 ContainerRequestContextImpl.class),
                         contextHandle);
+            } else if (SERVER_REQUEST_CONTEXT.equals(paramDotName)) {
+                targetMethodParamHandles[i] = contextHandle;
             } else if (URI_INFO.equals(paramDotName)) {
                 paramHandleFromReqContextMethod(mc, contextHandle, targetMethodParamHandles, i,
                         "getUriInfo",
@@ -645,9 +649,8 @@ public final class ServerExceptionMapperGenerator {
     }
 
     private static String getGeneratedClassName(MethodInfo targetMethod, Type handledExceptionType) {
-        return targetMethod.declaringClass().name() + "$GeneratedExceptionHandlerFor$"
-                + handledExceptionType.name().withoutPackagePrefix()
-                + "$OfMethod$" + targetMethod.name();
+        return targetMethod.declaringClass().name() + "$ExceptionMapper$"
+                + HashUtil.sha1(targetMethod.name() + handledExceptionType.name().toString());
     }
 
     private enum ReturnType {

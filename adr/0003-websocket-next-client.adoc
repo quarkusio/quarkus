@@ -1,0 +1,195 @@
+= WebSocket Client API
+
+* Status: _accepted__
+* Date: 2024-06-04 by @cescoffier, @geoand, @mkouba
+// * Revised:
+
+== Context and Problem Statement
+
+Currently, Quarkus relies on the https://jakarta.ee/specifications/websocket/[Jakarta WebSocket API] to provide WebSocket client support. This API has several limitations:
+
+- It is blocking and does not adhere to the reactive programming model. While the API is async, it relies on thread pools and do not use an event loop model. It makes building Quarkus application with such a client not as efficient as it could be.
+- The API is not very user-friendly. It is verbose and does not provide a good developer experience. For example, the received message are not mapped to a Java object, and the developer has to manually parse the message.
+- The integration with CDI is not optimal. The API does not provide a good way to inject the WebSocket client in a CDI bean, and the client does not define a lifecycle that can be managed by CDI.
+
+Thus, along the WebSocket Next server effort, we propose to introduce a new WebSocket client API that addresses these limitations.
+
+The main objectives of this proposal are:
+
+- Provide a WebSocket client API that adhere to the reactive model of Quarkus while also providing a good blocking developer experience.
+- Provide a way to map the received messages to Java objects.
+- The definition of a clear CDI-based lifecycle for the WebSocket client.
+- The possibility to inject the WebSocket client in a CDI bean
+- The possibility to instrument the client to handle security, metrics, observability, etc.
+
+It does not replace the existing WebSocket client API but provides an alternative that is more suitable for Quarkus applications.
+
+== Proposed Solution
+
+We propose to introduce a new WebSocket client API based on the Vert.x WebSocket client. Thus is will adhere to the event loop model used by Quarkus. For the end-user, the API is very similar to the WebSocket Next server API.
+
+=== WebSocket Client Endpoints
+
+The main concept is the introduction of WebSocket client endpoints. A client endpoint is a class annotated with `@WebSocketClient(path)`. The path is the URL of the WebSocket server, which can contain path parameters. The class can define methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage, `@OnClose`, and `@OnError`. The methods are called when the corresponding event occurs. The class is automatically considered as a _singleton_ CDI bean.
+
+A client endpoint can also inject the `WebSocketClientConnection` object which is related to the current connection. The `WebSocketClientConnection` object provides methods to send messages, close the connection, etc. The `WebSocketClientConnection` object is also a CDI bean and can be injected in other beans. It is a _session-scoped_
+CDI bean, where the session starts when the connection is established and ends when the connection is closed.
+
+Here is an example of a WebSocket client endpoint:
+
+[source, java]
+----
+@WebSocketClient(path = "/ws/{name}")
+public class ClientEndpoint {
+   @OnTextMessage
+   Echo echo(EchoMessage message, WebSocketClientConnection connection, @PathParam String name) {
+      return Echo.from(message);
+    }
+}
+----
+
+The `message` is automatically mapped to Java object as well as the `Echo` instance returned by the method.
+The deserialization and serialization follows the same rules as the WebSocket Next server API. The `@PathParam` annotation is used to extract the path parameter from the URL.
+
+The execution model of each method depends on the method signature and the presence of the `@Blocking` annotation. If the method returns a `Uni`, `Multi`, `CompletionStage`, or `Publisher`, the method is considered as reactive and executed on the event loop. If the method returns a `void` or an object, the method is considered as blocking and executed on a worker thread. The `@Blocking` annotation can be used to force the method to be executed on a worker thread. The `@NonBlocking` annotation can be used to force the method to be executed on the event loop. Finally, blocking method can also be executed on a virtual thread by using the `@RunOnVirtualThread` annotation.
+
+The client endpoint feature allows to encapsulate the WebSocket client logic in a single class. Because it is a CDI bean, it can be easily injected in other beans, or use CDI events to communicate the received WebSocket messages with the rest of the application.
+
+=== WebSocket Connector
+
+The second concept introduced by the API is the WebSocket _connector_. The connector is used to configure and create new connections.
+While the client endpoint defines the methods to be called when an event occurs (message, connection opened), the connector is used to create the connection and configure it. The connector is a CDI bean and can be injected in other beans:
+
+Let's consider the following client endpoint:
+
+[source, java]
+----
+@WebSocketClient(path = "/endpoint/{name}")
+public static class ClientEndpoint {
+
+
+    @OnTextMessage
+    void onMessage(@PathParam String name, String message, WebSocketClientConnection connection) {
+        // ...
+    }
+
+    @OnClose
+    void close() {
+        // ...
+    }
+
+}
+----
+
+This endpoint is used as follows:
+
+[source, java]
+----
+// <1> Injection of the connector
+@Inject
+WebSocketConnector<ClientEndpoint> connector;
+
+// <2> Create the connection and configure the uri and path parameters (if any)
+WebSocketClientConnection connection = connector
+        .baseUri(uri)
+        .pathParam("name", "Roxanne")
+        .connectAndAwait();
+// <3> Use the connection to send messages if needed (the client endpoint can also retrieve the connection)
+connection.sendTextAndAwait("Hi!");
+----
+
+In this example, the connector is injected in a bean. The connector is used to create a new connection. The connection is configured with the base URI and path parameters. The connection is then established by calling the `connectAndAwait` method (asynchronous methods are also available). The connection can be used to send messages, close the connection, etc.
+
+The duality between the _client endpoint_ and the _connector_ separates the configuration and establishment of the websocket connection from the logic. The _client endpoint_ is used to define the logic of the WebSocket client, while the _connector_ is used to configure and create the connection.
+
+If an application tries to inject a _connector_ for a missing endpoint, an error is thrown.
+
+=== Basic Connector
+
+In the case where the application developer does not need the combination of the _client endpoint_ and the _connector_, a basic connector can be used. The basic connector is a simple way to create a connection and send messages without defining a _client endpoint_:
+
+[source, java]
+----
+@Inject
+BasicWebSocketConnector connector; // <1> Inject the basic connector
+
+// ...
+
+// <2> Configure the connection and create it
+ WebSocketClientConnection connection2 = BasicWebSocketConnector
+    .create()
+    .baseUri(uri)
+    .path("/ws")
+    .executionModel(ExecutionModel.NON_BLOCKING)
+
+// <3> Register callbacks directly on the connection
+    .onTextMessage((c, m) -> {
+           // ...
+    })
+    .connectAndAwait();
+----
+
+The basic connector is closed to a low-level API and is reserved for advanced users.
+However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
+It also provides a way to configure the execution model of the callbacks, ensuring the optimal integration with the rest of Quarkus.
+
+=== Client limitations
+
+While the client endpoint class reuses annotations that can also used on the server side, note that some features are not supported on the client side.
+Typically, it is not possible to _broadcast_ a message from a client, as the client is only connected to a single server.
+
+=== Listing active client connections
+
+It is possible for an application to list the active connections by injecting the `OpenClientConnections` bean.
+This bean provides a method to list the active connections:
+
+[source, java]
+----
+@Inject
+OpenClientConnections connections;
+
+// ...
+
+connections.listAll(); // List all connections
+connections.findByConnectionId("..."); // Find a connection by its id
+connections.findByClientId("..."); // Find a connection by its client id
+----
+
+`OpenClientConnections` allows retrieving connections using the regular connector and the basic connector.
+
+
+== Considered options
+
+=== Using the existing WebSocket API
+
+We could improve the existing WebSocket API by providing a better integration with CDI and a better developer experience. However, the API is blocking and does not adhere to the reactive model of Quarkus. It would be difficult to provide a good developer experience without a complete rewrite of the API.
+
+Also, the current API is specified by the Jakarta EE specification, and we would like to avoid breaking changes in the specification.
+
+=== Only propose a low level client API
+
+We could only propose a low-level client API that allows to create WebSocket connections and send messages. However, this would not provide a good developer experience and would not be very useful for Quarkus applications.
+
+This approach is still possible by instantiating the Vert.x WebClient directly.
+However, we would not be able to implement observability, metrics, CDI lifecycle management, etc.
+
+It is reserved for advanced users.
+
+=== Using a declarative approach receiving callbacks
+
+An alternative has been considered where the WebSocket client would be configured using a declarative approach. The user would define a configuration file that specifies the WebSocket client configuration and the callbacks to be called when an event occurs. This approach has been rejected because it is not very user-friendly and does not provide a good developer experience. Passing callbacks is cumbersome and paves the road to complex execution model mismatches.
+
+== Consequences
+
+=== Positive
+
+* A new WebSocket client API that is more suitable for Quarkus applications.
+* A better developer experience when building WebSocket clients.
+* A better integration with CDI.
+
+=== Negative
+
+* Moving away from standard APIs (which means another API to learn).
+
+
+

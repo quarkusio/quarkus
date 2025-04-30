@@ -52,12 +52,7 @@
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
                         <arg>-explaintypes</arg>
-                        {#if scala.version.startsWith("2.12.")}
-                        <arg>-target:jvm-1.8</arg>
-                        <arg>-Ypartial-unification</arg>
-                        {#else}
-                        <arg>-target:jvm-11</arg>
-                        {/if}
+                        <arg>-release:17</arg>
                     </args>
                 </configuration>
             </plugin>

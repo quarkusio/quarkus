@@ -49,7 +49,8 @@ public class DbVersionInvalidTest {
                             "Consider upgrading your database",
                             "Alternatively, rebuild your application with 'quarkus.datasource.db-version="
                                     + ACTUAL_H2_VERSION_REPORTED + "'",
-                            "this may disable some features and/or impact performance negatively"));
+                            "this may disable some features and/or impact performance negatively",
+                            "disable the check with 'quarkus.hibernate-orm.database.version-check.enabled=false'"));
 
     @Inject
     SessionFactory sessionFactory;

@@ -10,7 +10,7 @@ import io.restassured.RestAssured;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusIntegrationTest
-public class PolicyEnforcerInGraalITCase extends PolicyEnforcerTest {
+public class PolicyEnforcerInGraalITCase extends StaticTenantConfigPolicyEnforcerTest {
 
     @Test
     public void testPartyTokenRequest() {

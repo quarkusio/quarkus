@@ -1,5 +1,6 @@
 package io.quarkus.spring.data.deployment;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -16,6 +17,10 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.spring.data.deployment.nested.fields.generics.ChildBase;
+import io.quarkus.spring.data.deployment.nested.fields.generics.ParentBase;
+import io.quarkus.spring.data.deployment.nested.fields.generics.ParentBaseRepository;
+
 public class MethodNameParserTest {
 
     private final Class<?> repositoryClass = PersonRepository.class;
@@ -28,8 +33,31 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person WHERE address.zipCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.zipCode = ?1");
+    }
+
+    @Test
+    public void testFindAllByNameAndOrder() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameAndOrder", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getParamCount()).isEqualTo(2);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND order = ?2");
+    }
+
+    @Test
+    public void testFindAllByNameOrOrder() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameOrOrder", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getParamCount()).isEqualTo(2);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR order = ?2");
     }
 
     @Test
@@ -38,8 +66,41 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person WHERE addressCountry = ?1");
+        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE addressCountry = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void findAllByNameOrAgeOrActive() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameOrAgeOrActive", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR age = ?2 OR active = ?3");
+        assertThat(result.getParamCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void findAllByNameAndAgeOrActive() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameAndAgeOrActive", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 OR active = ?3");
+        assertThat(result.getParamCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void findAllByNameAndAgeAndActive() throws Exception {
+        MethodNameParser.Result result = parseMethod(repositoryClass, "findAllByNameAndAgeAndActive", entityClass,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), entityClass);
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND age = ?2 AND active = ?3");
+        assertThat(result.getParamCount()).isEqualTo(3);
     }
 
     @Test
@@ -48,7 +109,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person WHERE address.country = ?1");
+        assertThat(result.getQuery())
+                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -65,7 +127,9 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person WHERE address.country.isoCode = ?1");
+        assertThat(result.getQuery())
+                .isEqualTo(
+                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -75,7 +139,9 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery()).isEqualTo("FROM Person WHERE address.country.isoCode = ?1");
+        assertThat(result.getQuery())
+                .isEqualTo(
+                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -92,6 +158,35 @@ public class MethodNameParserTest {
         UnableToParseMethodException exception = assertThrows(UnableToParseMethodException.class,
                 () -> parseMethod(repositoryClass, "findAllBy_", entityClass, additionalClasses));
         assertThat(exception).hasMessageContaining("Person does not contain a field named: _");
+    }
+
+    @Test
+    public void testGenericsWithWildcard() throws Exception {
+        Class[] additionalClasses = new Class[] { ChildBase.class };
+
+        MethodNameParser.Result result = parseMethod(ParentBaseRepository.class, "countParentsByChildren_Nombre",
+                ParentBase.class,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), ParentBase.class);
+        assertThat(result.getQuery())
+                .isEqualTo(
+                        "FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
+        assertThat(result.getParamCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldParseRepositoryMethodOverEntityContainingACollection() throws Exception {
+        Class[] additionalClasses = new Class[] { LoginEvent.class };
+
+        MethodNameParser.Result result = parseMethod(UserRepository.class, "countUsersByLoginEvents_Id",
+                User.class,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), User.class);
+        assertThat(result.getParamCount()).isEqualTo(1);
+        assertThat(result.getQuery()).isEqualTo(
+                "FROM User AS user LEFT JOIN loginEvents loginEvents ON user.userId = loginEvents.user.userId WHERE loginEvents.id = ?1");
     }
 
     private AbstractStringAssert<?> assertSameClass(ClassInfo classInfo, Class<?> aClass) {
@@ -115,7 +210,7 @@ public class MethodNameParserTest {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = MethodNameParserTest.class.getClassLoader()
-                    .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                    .getResourceAsStream(fromClassNameToResourceName(clazz.getName()))) {
                 indexer.index(stream);
             }
         }

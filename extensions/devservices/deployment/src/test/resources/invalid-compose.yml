@@ -1,0 +1,26 @@
+# Invalid YAML structure
+services:
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+  # Invalid indentation
+ redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+  # Missing required field
+  kafka:
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+
+# Invalid YAML mapping
+invalid_service: {
+  image: "test:latest",
+  ports: ["8080:8080"]

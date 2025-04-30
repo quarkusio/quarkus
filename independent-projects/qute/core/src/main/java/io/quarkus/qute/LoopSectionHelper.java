@@ -3,6 +3,8 @@ package io.quarkus.qute;
 import static io.quarkus.qute.Parameter.EMPTY;
 
 import java.lang.reflect.Array;
+import java.util.AbstractCollection;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,8 +12,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
@@ -27,10 +31,11 @@ public class LoopSectionHelper implements SectionHelper {
     private static final String ITERABLE = "iterable";
 
     private final String alias;
-    private final String metadataPrefix;
     private final Expression iterable;
     private final SectionBlock elseBlock;
     private final Engine engine;
+
+    private final String metadataPrefix;
 
     LoopSectionHelper(SectionInitContext context, String metadataPrefix) {
         this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
@@ -71,29 +76,37 @@ public class LoopSectionHelper implements SectionHelper {
     }
 
     private static int extractSize(Object it) {
-        if (it instanceof Collection) {
-            return ((Collection<?>) it).size();
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).size();
+        // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
+        // See https://github.com/RedHatPerf/type-pollution-agent for more information
+        if (it instanceof AbstractCollection<?> collection) {
+            return collection.size();
+        } else if (it instanceof AbstractMap<?, ?> map) {
+            return map.size();
         } else if (it.getClass().isArray()) {
             return Array.getLength(it);
-        } else if (it instanceof Integer) {
-            return ((Integer) it);
+        } else if (it instanceof Integer integer) {
+            return integer;
+        } else if (it instanceof Long longValue) {
+            return longValue.intValue();
+        } else if (it instanceof Collection<?> collection) {
+            return collection.size();
+        } else if (it instanceof Map<?, ?> map) {
+            return map.size();
         }
         return 10;
     }
 
     private Iterator<?> extractIterator(Object it) {
-        if (it instanceof Iterable) {
-            return ((Iterable<?>) it).iterator();
-        } else if (it instanceof Iterator) {
-            return (Iterator<?>) it;
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).entrySet().iterator();
-        } else if (it instanceof Stream) {
-            return ((Stream<?>) it).sequential().iterator();
-        } else if (it instanceof Integer) {
-            return IntStream.rangeClosed(1, (Integer) it).iterator();
+        // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
+        // See https://github.com/RedHatPerf/type-pollution-agent for more information
+        if (it instanceof AbstractCollection<?> col) {
+            return col.iterator();
+        } else if (it instanceof AbstractMap<?, ?> map) {
+            return map.entrySet().iterator();
+        } else if (it instanceof Integer integer) {
+            return IntStream.rangeClosed(1, integer).iterator();
+        } else if (it instanceof Long longValue) {
+            return LongStream.rangeClosed(1, longValue).iterator();
         } else if (it.getClass().isArray()) {
             int length = Array.getLength(it);
             List<Object> elements = new ArrayList<>(length);
@@ -102,6 +115,14 @@ public class LoopSectionHelper implements SectionHelper {
                 elements.add(Array.get(it, i));
             }
             return elements.iterator();
+        } else if (it instanceof Iterable<?> iterable) {
+            return iterable.iterator();
+        } else if (it instanceof Iterator<?> iterator) {
+            return iterator;
+        } else if (it instanceof Map<?, ?> map) {
+            return map.entrySet().iterator();
+        } else if (it instanceof Stream<?> stream) {
+            return stream.sequential().iterator();
         } else {
             TemplateException.Builder builder;
             if (Results.isNotFound(it)) {
@@ -122,7 +143,7 @@ public class LoopSectionHelper implements SectionHelper {
 
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {
         ResolutionContext child = context.resolutionContext().createChild(
-                new IterationElement(alias, metadataPrefix, element, index, hasNext),
+                new IterationElement(element, index, hasNext),
                 null);
         return context.execute(child);
     }
@@ -145,7 +166,6 @@ public class LoopSectionHelper implements SectionHelper {
         public static final String ITERATION_METADATA_PREFIX_NONE = "<none>";
 
         public static final String HINT_ELEMENT = "<loop-element>";
-        public static final String HINT_METADATA = "<loop-metadata>";
         public static final String HINT_PREFIX = "<loop#";
         private static final String IN = "in";
 
@@ -247,20 +267,16 @@ public class LoopSectionHelper implements SectionHelper {
         }
     }
 
-    static class IterationElement implements Mapper {
+    class IterationElement implements Mapper {
 
         static final CompletedStage<Object> EVEN = CompletedStage.of("even");
         static final CompletedStage<Object> ODD = CompletedStage.of("odd");
 
-        final String alias;
-        final String metadataPrefix;
         final CompletedStage<Object> element;
         final int index;
         final boolean hasNext;
 
-        public IterationElement(String alias, String metadataPrefix, Object element, int index, boolean hasNext) {
-            this.alias = alias;
-            this.metadataPrefix = metadataPrefix;
+        public IterationElement(Object element, int index, boolean hasNext) {
             this.element = CompletedStage.of(element);
             this.index = index;
             this.hasNext = hasNext;
@@ -271,36 +287,68 @@ public class LoopSectionHelper implements SectionHelper {
             if (alias.equals(key)) {
                 return element;
             }
-            if (metadataPrefix != null) {
-                if (key.startsWith(metadataPrefix)) {
-                    key = key.substring(metadataPrefix.length(), key.length());
-                } else {
-                    return Results.notFound(key);
-                }
+            if (metadataPrefix != null && !key.startsWith(metadataPrefix)) {
+                return Results.notFound(key);
             }
+            int keyStartIndex = metadataPrefix == null ? 0 : metadataPrefix.length();
             // Iteration metadata
-            final int count = index + 1;
-            switch (key) {
-                case "count":
-                    return CompletedStage.of(count);
-                case "index":
-                    return CompletedStage.of(index);
-                case "indexParity":
-                    return count % 2 == 0 ? EVEN : ODD;
-                case "hasNext":
-                    return hasNext ? Results.TRUE : Results.FALSE;
-                case "isLast":
-                    return hasNext ? Results.FALSE : Results.TRUE;
-                case "isFirst":
-                    return index == 0 ? Results.TRUE : Results.FALSE;
-                case "isOdd":
-                case "odd":
-                    return count % 2 != 0 ? Results.TRUE : Results.FALSE;
-                case "isEven":
-                case "even":
-                    return count % 2 == 0 ? Results.TRUE : Results.FALSE;
+            switch (key.length() - keyStartIndex) {
+                case 3:
+                    if (key.indexOf("odd", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 4:
+                    if (key.indexOf("even", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 5:
+                    if (key.indexOf("count", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(index + 1);
+                    }
+                    if (key.indexOf("index", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(index);
+                    }
+                    if (key.indexOf("isOdd", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 6:
+                    if (key.indexOf("isEven", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isLast", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.FALSE : Results.TRUE;
+                    }
+                    return Results.notFound(key);
+                case 7:
+                    if (key.indexOf("hasNext", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isFirst", keyStartIndex) == keyStartIndex) {
+                        return index == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 11:
+                    if (key.indexOf("indexParity", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? EVEN : ODD;
+                    }
+                    return Results.notFound(key);
                 default:
                     return Results.notFound(key);
+            }
+        }
+
+        @Override
+        public Set<String> mappedKeys() {
+            if (metadataPrefix != null) {
+                return Set.of(alias, metadataPrefix + "count", metadataPrefix + "index", metadataPrefix + "indexParity",
+                        metadataPrefix + "hasNext", metadataPrefix + "isLast", metadataPrefix + "isFirst",
+                        metadataPrefix + "isOdd", metadataPrefix + "odd", metadataPrefix + "isEven", metadataPrefix + "even");
+            } else {
+                return Set.of(alias, "count", "index", "indexParity", "hasNext", "isLast", "isFirst", "isOdd",
+                        "odd", "isEven", "even");
             }
         }
 

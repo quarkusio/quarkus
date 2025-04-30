@@ -2,6 +2,7 @@ package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class URITestHTTPResourceProvider implements TestHTTPResourceProvider<URI> {
     @Override
@@ -10,7 +11,11 @@ public class URITestHTTPResourceProvider implements TestHTTPResourceProvider<URI
     }
 
     @Override
-    public URI provide(URI testUri, Field field) {
-        return testUri;
+    public URI provide(String testUri, Field field) {
+        try {
+            return new URI(testUri);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

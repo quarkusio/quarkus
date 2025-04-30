@@ -20,14 +20,13 @@ public class BuildMetricsTest extends DevUIJsonRPCTest {
 
     @Test
     public void testGetBuildStepsMetrics() throws Exception {
-        JsonNode buildStepsMetricsResponse = super.executeJsonRPCMethod("getBuildStepsMetrics");
+        JsonNode buildStepsMetricsResponse = super.executeJsonRPCMethod("getBuildMetrics");
         Assertions.assertNotNull(buildStepsMetricsResponse);
-
         int duration = buildStepsMetricsResponse.get("duration").asInt();
         Assertions.assertTrue(duration > 0);
 
-        boolean dependencyGraphsIncluded = buildStepsMetricsResponse.get("dependencyGraphs").isObject();
-        Assertions.assertTrue(dependencyGraphsIncluded);
+        boolean recordsIncluded = buildStepsMetricsResponse.get("records").isArray();
+        Assertions.assertTrue(recordsIncluded);
 
     }
 }

@@ -6,12 +6,12 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-smallrye-reactive-messaging-amqp-parent</artifactId>
+        <artifactId>quarkus-messaging-amqp-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
-    <name>Quarkus - SmallRye Reactive Messaging - AMQP 1.0 - Runtime</name>
+    <artifactId>quarkus-messaging-amqp</artifactId>
+    <name>Quarkus - Messaging - AMQP 1.0 - Runtime</name>
     <description>Connect to AMQP with Reactive Messaging</description>
     <dependencies>
         <dependency>
@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+            <artifactId>quarkus-messaging</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +33,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
@@ -52,12 +56,6 @@
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -68,15 +66,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

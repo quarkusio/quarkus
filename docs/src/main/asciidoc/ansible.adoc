@@ -1,12 +1,18 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 = Automate Quarkus deployment with Ansible
 include::_attributes.adoc[]
 :categories: command-line
 :summary: Build and deploy your Quarkus App using Ansible
+:topics: ansible,devops
 
 
 Let’s see how to build and deploy a Quarkus app using https://docs.ansible.com/ansible/latest/index.html[Ansible]. We’ll see how we can automate the entire process, from the code checkout to the application compilation using Maven and then its deployment and start of the service, as a https://systemd.io/[systemd service], on the target system using Ansible and its collection for Quarkus.
 
-The first part, the application code checkout, compilation and packaging on the Ansible (where Ansible runs). We’ll use the getting-started sample application provided in its {quickstarts-tree-url}/getting-started[Quarkus QuickStarts directory] as a base for this tutorial. We’ll also leverage the https://galaxy.ansible.com/middleware_automation/quarkus[Quarkus collection] for Ansible, an extension for Ansible that alleviates the boilerplate required and to quickly build and deploy a Quarkus using Ansible.
+The first part, the application code checkout, compilation and packaging on the Ansible (where Ansible runs). We’ll use the getting-started sample application provided in its link:{quickstarts-tree-url}/getting-started[Quarkus QuickStarts directory] as a base for this tutorial. We’ll also leverage the https://galaxy.ansible.com/middleware_automation/quarkus[Quarkus collection] for Ansible, an extension for Ansible that alleviates the boilerplate required and to quickly build and deploy a Quarkus using Ansible.
 
 == Prerequisites
 
@@ -161,7 +167,7 @@ By default, the Ansible collection for Quarkus will install and use the OpenJDK 
 [source,bash]
 ----
 $ ansible-playbook -i inventory ...
-    -e quarkus_java_package_version: java-11-openjdk
+    -e quarkus_java_package_version: java-17-openjdk
 ----
 ====
 
@@ -190,7 +196,7 @@ Apr 13 12:48:19 bd71f39642c8 java[853]:  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 Apr 13 12:48:19 bd71f39642c8 java[853]: --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,284 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT on JVM (powered by Quarkus 2.16.6.Final) started in 0.607s. Listening on: http://0.0.0.0:8080
 Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,309 INFO  [io.quarkus] (main) Profile prod activated.
-Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,310 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,310 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
 
 Manually, you can also test if the app is reachable:

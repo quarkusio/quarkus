@@ -2,6 +2,8 @@ package io.quarkus.devtools.project;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -16,13 +18,14 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
 
 public class QuarkusProjectHelper {
-
+    private static QuarkusProject cachedProject;
     private static RegistriesConfig toolsConfig;
     private static MessageWriter log;
     private static MavenArtifactResolver artifactResolver;
     private static ExtensionCatalogResolver catalogResolver;
 
     private static boolean registryClientEnabled;
+
     static {
         initRegistryClientEnabled();
     }
@@ -41,6 +44,33 @@ public class QuarkusProjectHelper {
 
     public static BuildTool detectExistingBuildTool(Path projectDirPath) {
         return BuildTool.fromProject(projectDirPath);
+    }
+
+    public static QuarkusProject getCachedProject(Path projectDir) {
+        if (cachedProject == null) {
+            PrintStream nullPrintStream = new PrintStream(OutputStream.nullOutputStream());
+            log = MessageWriter.info(nullPrintStream);
+            BuildTool buildTool = detectExistingBuildTool(projectDir);
+            if (buildTool == null) {
+                buildTool = BuildTool.MAVEN;
+            }
+            if (BuildTool.MAVEN.equals(buildTool)) {
+                try {
+                    return MavenProjectBuildFile.getProject(projectDir, log, null);
+                } catch (RegistryResolutionException e) {
+                    throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+                }
+            }
+            final ExtensionCatalog catalog;
+            try {
+                catalog = resolveExtensionCatalog();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
+            }
+            cachedProject = getProject(projectDir, catalog, buildTool, JavaVersion.NA, log);
+        }
+
+        return cachedProject;
     }
 
     public static QuarkusProject getProject(Path projectDir) {
@@ -66,7 +96,8 @@ public class QuarkusProjectHelper {
         // TODO remove this method once the default registry becomes available
         return QuarkusProjectHelper.getProject(projectDir,
                 getExtensionCatalog(quarkusVersion),
-                buildTool);
+                buildTool,
+                JavaVersion.NA);
     }
 
     @Deprecated
@@ -100,21 +131,27 @@ public class QuarkusProjectHelper {
             throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
         }
 
-        return getProject(projectDir, catalog, buildTool, messageWriter());
-    }
-
-    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool) {
-        return getProject(projectDir, catalog, buildTool, messageWriter());
+        return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
+            JavaVersion javaVersion) {
+        return getProject(projectDir, catalog, buildTool, javaVersion, messageWriter());
+    }
+
+    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool) {
+        return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
+    }
+
+    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
+            JavaVersion javaVersion,
             MessageWriter log) {
         return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, buildTool);
+                log, buildTool, javaVersion);
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionManager extManager) throws RegistryResolutionException {
-        return getProject(projectDir, resolveExtensionCatalog(), extManager, messageWriter());
+        return getProject(projectDir, resolveExtensionCatalog(), extManager, JavaVersion.NA, messageWriter());
     }
 
     public static ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
@@ -122,9 +159,10 @@ public class QuarkusProjectHelper {
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, ExtensionManager extManager,
+            JavaVersion javaVersion,
             MessageWriter log) {
         return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, extManager);
+                log, extManager, javaVersion);
     }
 
     public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {

@@ -5,12 +5,14 @@ import java.util.Optional;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "qute", phase = ConfigPhase.RUN_TIME)
-public class QuteRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.qute")
+public interface QuteRuntimeConfig {
 
     /**
      * The strategy used when a standalone expression evaluates to a "not found" value at runtime and
@@ -22,14 +24,14 @@ public class QuteRuntimeConfig {
      * By default, the {@code NOT_FOUND} constant is written to the output. However, in the development mode the
      * {@link PropertyNotFoundStrategy#THROW_EXCEPTION} is used by default, i.e. when the strategy is not specified.
      */
-    @ConfigItem
-    public Optional<PropertyNotFoundStrategy> propertyNotFoundStrategy;
+    Optional<PropertyNotFoundStrategy> propertyNotFoundStrategy();
+
     /**
      * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains at
      * least one section tag, parameter declaration, or comment but no expression and no non-whitespace character.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean removeStandaloneLines;
+    @WithDefault("true")
+    boolean removeStandaloneLines();
 
     /**
      * If set to {@code true} then any expression that is evaluated to a {@link Results.NotFound} value will always result in a
@@ -38,21 +40,21 @@ public class QuteRuntimeConfig {
      * Note that the {@code quarkus.qute.property-not-found-strategy} config property is completely ignored if strict rendering
      * is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean strictRendering;
+    @WithDefault("true")
+    boolean strictRendering();
 
     /**
      * The global rendering timeout in milliseconds. It is used if no {@code timeout} template instance attribute is set.
      */
-    @ConfigItem(defaultValue = "10000")
-    public long timeout;
+    @WithDefault("10000")
+    long timeout();
 
     /**
      * If set to {@code true} then the timeout should also be used for asynchronous rendering methods, such as
      * {@link TemplateInstance#createUni()} and {@link TemplateInstance#renderAsync()}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean useAsyncTimeout;
+    @WithDefault("true")
+    boolean useAsyncTimeout();
 
     public enum PropertyNotFoundStrategy {
         /**

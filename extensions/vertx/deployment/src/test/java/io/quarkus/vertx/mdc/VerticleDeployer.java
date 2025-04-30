@@ -12,10 +12,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.mutiny.core.Vertx;
 
 @ApplicationScoped
@@ -42,28 +39,30 @@ public class VerticleDeployer {
     private static class TestVerticle extends AbstractVerticle {
         private static final Logger LOGGER = Logger.getLogger(TestVerticle.class);
 
-        private HttpRequest<JsonObject> request;
-
         @Override
         public void start(Promise<Void> startPromise) {
             WebClient webClient = WebClient.create(vertx);
-            request = webClient.getAbs("http://worldclockapi.com/api/json/utc/now").as(BodyCodec.jsonObject());
+            var request = webClient.getAbs("http://localhost:" + VERTICLE_PORT + "/now");
 
             Promise<HttpServer> httpServerPromise = Promise.promise();
             httpServerPromise.future().<Void> mapEmpty().onComplete(startPromise);
             vertx.createHttpServer()
                     .requestHandler(req -> {
-                        String requestId = req.getHeader(REQUEST_ID_HEADER);
 
+                        if (req.path().equals("/now")) {
+                            req.response().end(Long.toString(System.currentTimeMillis()));
+                            return;
+                        }
+
+                        String requestId = req.getHeader(REQUEST_ID_HEADER);
                         MDC.put(MDC_KEY, requestId);
                         LOGGER.info("Received HTTP request ### " + MDC.get(MDC_KEY));
-
                         vertx.setTimer(50, l -> {
                             LOGGER.info("Timer fired ### " + MDC.get(MDC_KEY));
-                            vertx.executeBlocking(fut -> {
+                            vertx.executeBlocking(() -> {
                                 LOGGER.info("Blocking task executed ### " + MDC.get(MDC_KEY));
-                                fut.complete();
-                            }, false, bar -> request.send(rar -> {
+                                return null;
+                            }, false).onComplete(bar -> request.send(rar -> {
                                 String value = (String) MDC.get(MDC_KEY);
                                 LOGGER.info("Received Web Client response ### " + value);
                                 req.response().end(value);

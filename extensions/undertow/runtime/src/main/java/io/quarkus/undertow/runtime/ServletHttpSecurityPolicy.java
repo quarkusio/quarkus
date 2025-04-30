@@ -25,10 +25,10 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
 
-        String requestPath = request.request().path();
+        String requestPath = request.normalizedPath();
         if (!requestPath.startsWith(contextPath)) {
             //anything outside the context path we don't have anything to do with
-            return Uni.createFrom().item(CheckResult.PERMIT);
+            return CheckResult.permit();
         }
         if (!contextPath.equals("/")) {
             requestPath = requestPath.substring(contextPath.length() - 1);
@@ -40,9 +40,9 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
         if (mergedConstraint.getRequiredRoles().isEmpty()) {
             SecurityInfo.EmptyRoleSemantic emptyRoleSemantic = mergedConstraint.getEmptyRoleSemantic();
             if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.PERMIT) {
-                return Uni.createFrom().item(CheckResult.PERMIT);
+                return CheckResult.permit();
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.DENY) {
-                return Uni.createFrom().item(CheckResult.DENY);
+                return CheckResult.deny();
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.AUTHENTICATE) {
                 return identity.map(new Function<SecurityIdentity, CheckResult>() {
                     @Override

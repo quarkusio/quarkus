@@ -42,11 +42,11 @@ public class GeoAddArgs implements RedisCommandExtraArguments {
         return this;
     }
 
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         if (xx && nx) {
             throw new IllegalArgumentException("Cannot set XX and NX together");
         }
-        List<String> args = new ArrayList<>();
+        List<Object> args = new ArrayList<>();
         if (xx) {
             args.add("XX");
         }

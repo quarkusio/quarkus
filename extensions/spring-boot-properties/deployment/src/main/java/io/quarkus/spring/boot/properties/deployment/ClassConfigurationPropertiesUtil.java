@@ -305,7 +305,7 @@ final class ClassConfigurationPropertiesUtil {
                                 continue;
                             }
                             if (method.parameterType(0).name().equals(DotNames.STRING)) {
-                                reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
+                                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), method));
                                 break;
                             }
                         }
@@ -399,9 +399,8 @@ final class ClassConfigurationPropertiesUtil {
         }
 
         for (ConfigPropertyBuildItemCandidate candidate : configPropertyBuildItemCandidates) {
-            configProperties
-                    .produce(new ConfigPropertyBuildItem(candidate.getConfigPropertyName(), candidate.getConfigPropertyType(),
-                            null));
+            configProperties.produce(ConfigPropertyBuildItem.runtimeInit(candidate.getConfigPropertyName(),
+                    candidate.getConfigPropertyType(), null));
         }
 
         return configObject;

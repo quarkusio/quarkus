@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -15,16 +17,19 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
@@ -32,6 +37,45 @@ public class OidcClientTest {
 
     @InjectWireMock
     WireMockServer server;
+
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationFromAdditionalAttrs() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthentication")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationFromFile() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationFromFile")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
+    public void testGetAccessTokenWithConfiguredExpiresIn() {
+        Response r = RestAssured.when().get("/frontend/echoTokenConfiguredExpiresIn");
+        assertEquals(200, r.statusCode());
+        String[] data = r.body().asString().split(" ");
+        assertEquals(2, data.length);
+        assertEquals("access_token_without_expires_in", data[0]);
+
+        long now = System.currentTimeMillis() / 1000;
+        long expectedExpiresAt = now + 7;
+        long accessTokenExpiresAt = Long.valueOf(data[1]);
+        assertTrue(accessTokenExpiresAt >= expectedExpiresAt
+                && accessTokenExpiresAt <= expectedExpiresAt + 4);
+    }
+
+    @Test
+    public void testEchoTokensJwtBearerGrant() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerGrant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_grant"));
+    }
 
     @Test
     public void testEchoAndRefreshTokens() {
@@ -44,7 +88,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_1"));
 
         // Wait until the access_token_1 has expired
-        waitUntillAccessTokenHasExpired();
+        waitUntillAccessTokenHasExpired(5000);
 
         // access_token_1 has expired, refresh_token_1 is assumed to be valid and used to acquire access_token_2 and refresh_token_2.
         // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired
@@ -55,7 +99,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_2"));
 
         // Wait until the access_token_2 has expired
-        waitUntillAccessTokenHasExpired();
+        waitUntillAccessTokenHasExpired(5000);
 
         // Both access_token_2 and refresh_token_2 have now expired therefore a password grant request is repeated,
         // as opposed to using a refresh token grant.
@@ -69,8 +113,8 @@ public class OidcClientTest {
         checkLog();
     }
 
-    private static void waitUntillAccessTokenHasExpired() {
-        long expiredTokenTime = System.currentTimeMillis() + 5000;
+    private static void waitUntillAccessTokenHasExpired(int expirationMs) {
+        long expiredTokenTime = System.currentTimeMillis() + expirationMs;
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(Duration.ofSeconds(3))
                 .until(new Callable<Boolean>() {
@@ -79,6 +123,40 @@ public class OidcClientTest {
                         return System.currentTimeMillis() > expiredTokenTime;
                     }
                 });
+    }
+
+    /**
+     * same logic than {@link #testEchoAndRefreshTokens()}, but with concurrency
+     */
+    @Test
+    public void testEchoAndRefreshTokensWithConcurrency() {
+        server.resetRequests(); // reset request counters
+
+        // Given: the first call trigger the token retrieval
+        // When: 2 concurrent requests trigger token retrieval
+        IntStream.range(0, 2).parallel().forEach(i -> {
+            RestAssured.when().get("/frontend/crashTest")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("access_token_1"));
+        });
+        // Then: only one token retrieval should be made
+        server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
+
+        server.resetRequests(); // reset request counters
+
+        // Given : the token access_token_1 expires
+        waitUntillAccessTokenHasExpired(2000);
+
+        // When : 2 concurrents requests until the refresh was made (access_token_2 comes from the refresh)
+        IntStream.range(0, 2).parallel().forEach(i -> {
+            RestAssured.when().get("/frontend/crashTest")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("access_token_2"));
+        });
+        // Then: only one token retrieval should be made
+        server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
     }
 
     @Test
@@ -148,6 +226,21 @@ public class OidcClientTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("ciba_access_token"));
+
+    }
+
+    @Test
+    public void testDeviceCodeGrant() {
+        RestAssured.given().queryParam("deviceCode", "987654321")
+                .when().get("/frontend/device-code-grant")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given().queryParam("deviceCode", "123456789")
+                .when().get("/frontend/device-code-grant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("device_code_access_token"));
 
     }
 

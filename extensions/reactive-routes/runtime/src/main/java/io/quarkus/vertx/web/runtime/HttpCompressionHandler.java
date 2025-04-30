@@ -3,7 +3,6 @@ package io.quarkus.vertx.web.runtime;
 import java.util.Set;
 
 import io.quarkus.vertx.http.runtime.HttpCompression;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -24,33 +23,31 @@ public class HttpCompressionHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext context) {
-        context.addEndHandler(new Handler<AsyncResult<Void>>() {
+        context.addHeadersEndHandler(new Handler<Void>() {
             @Override
-            public void handle(AsyncResult<Void> result) {
-                if (result.succeeded()) {
-                    MultiMap headers = context.response().headers();
-                    String contentEncoding = headers.get(HttpHeaders.CONTENT_ENCODING);
-                    if (contentEncoding != null && HttpHeaders.IDENTITY.toString().equals(contentEncoding)) {
-                        switch (compression) {
-                            case ON:
-                                headers.remove(HttpHeaders.CONTENT_ENCODING);
-                                break;
-                            case UNDEFINED:
-                                String contentType = headers.get(HttpHeaders.CONTENT_TYPE);
-                                if (contentType != null) {
-                                    int paramIndex = contentType.indexOf(';');
-                                    if (paramIndex > -1) {
-                                        contentType = contentType.substring(0, paramIndex);
-                                    }
-                                    if (compressedMediaTypes.contains(contentType)) {
-                                        headers.remove(HttpHeaders.CONTENT_ENCODING);
-                                    }
+            public void handle(Void result) {
+                MultiMap headers = context.response().headers();
+                String contentEncoding = headers.get(HttpHeaders.CONTENT_ENCODING);
+                if (contentEncoding != null && HttpHeaders.IDENTITY.toString().equals(contentEncoding)) {
+                    switch (compression) {
+                        case ON:
+                            headers.remove(HttpHeaders.CONTENT_ENCODING);
+                            break;
+                        case UNDEFINED:
+                            String contentType = headers.get(HttpHeaders.CONTENT_TYPE);
+                            if (contentType != null) {
+                                int paramIndex = contentType.indexOf(';');
+                                if (paramIndex > -1) {
+                                    contentType = contentType.substring(0, paramIndex);
                                 }
-                                break;
-                            default:
-                                // OFF - no action is needed because the "Content-Encoding: identity" header is set
-                                break;
-                        }
+                                if (compressedMediaTypes.contains(contentType)) {
+                                    headers.remove(HttpHeaders.CONTENT_ENCODING);
+                                }
+                            }
+                            break;
+                        default:
+                            // OFF - no action is needed because the "Content-Encoding: identity" header is set
+                            break;
                     }
                 }
             }

@@ -41,13 +41,15 @@ import com.google.common.io.Files;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 @DisableForNative
 public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     private Invoker invoker;
     private RunningInvoker running;
@@ -98,7 +100,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-reactive")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-rest")
                         && d.getVersion() == null))
                 .isTrue();
 
@@ -457,24 +459,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromScratchWithJava11() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-java11");
-        assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
-
-        Properties properties = new Properties();
-        properties.put("javaVersion", "11");
-
-        InvocationResult result = setup(properties);
-        assertThat(result.getExitCode()).isZero();
-
-        testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "pom.xml")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("maven.compiler.release>11<");
-    }
-
-    @Test
     public void testProjectGenerationFromScratchWithJava17() throws MavenInvocationException, IOException {
         testDir = initEmptyProject("projects/project-generation-with-java17");
         assertThat(testDir).isDirectory();
@@ -493,22 +477,21 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromScratchWithGradleJava11() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-gradle-java11");
+    public void testProjectGenerationFromScratchWithJava21() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-java21");
         assertThat(testDir).isDirectory();
         invoker = initInvoker(testDir);
 
         Properties properties = new Properties();
-        properties.put("javaVersion", "11");
-        properties.put("buildTool", "gradle");
+        properties.put("javaVersion", "21");
 
         InvocationResult result = setup(properties);
         assertThat(result.getExitCode()).isZero();
 
         testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "build.gradle")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
-                .contains("sourceCompatibility = JavaVersion.VERSION_11");
+        assertThat(new File(testDir, "pom.xml")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
+                .contains("maven.compiler.release>21<");
     }
 
     @Test
@@ -528,6 +511,25 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "build.gradle")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
                 .contains("sourceCompatibility = JavaVersion.VERSION_17");
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithGradleJava21() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-gradle-java21");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("javaVersion", "21");
+        properties.put("buildTool", "gradle");
+
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isZero();
+
+        testDir = new File(testDir, "code-with-quarkus");
+        assertThat(new File(testDir, "build.gradle")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
+                .contains("sourceCompatibility = JavaVersion.VERSION_21");
     }
 
     /**
@@ -588,13 +590,11 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         mvnRunProps.setProperty("debug", "false");
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
-        String resp = DevModeTestUtils.getHttpResponse();
+        String resp = devModeClient.getHttpResponse();
 
-        assertThat(resp).containsIgnoringCase("Congratulations!").containsIgnoringCase("application")
-                .containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0.0-SNAPSHOT");
+        assertThat(resp).containsIgnoringCase("Dev UI");
 
-        String greeting = DevModeTestUtils.getHttpResponse("/hello");
+        String greeting = devModeClient.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

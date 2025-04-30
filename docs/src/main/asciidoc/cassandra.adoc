@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use the Apache Cassandra NoSQL database in Quarkus.
+:topics: data,cassandra
 
 Apache Cassandra® is a free and open-source, distributed, wide column store, NoSQL database
 management system designed to handle large amounts of data across many commodity servers, providing
@@ -143,7 +144,7 @@ TIP: `@DaoFactory` method names are irrelevant.
 `@DaoFactory` methods should return beans of the following types:
 
 - Any `@Dao`-annotated interface, e.g. `FruitDao`;
-- A `CompletationStage` of any `@Dao`-annotated interface, e.g. `CompletionStage<FruitDao>`.
+- A `CompletionStage` of any `@Dao`-annotated interface, e.g. `CompletionStage<FruitDao>`.
 - A `Uni` of any `@Dao`-annotated interface, e.g. `Uni<FruitDao>`.
 
 TIP: `Uni` is a type from the Mutiny library, which is the reactive programming library used by
@@ -253,7 +254,7 @@ link:https://javadoc.io/doc/com.datastax.oss.quarkus/cassandra-quarkus-client/la
 bean: this application-scoped, singleton bean is your main entry point to the Cassandra client; it
 is a specialized Cassandra driver session instance with a few methods tailored especially for
 Quarkus. Read its javadocs carefully!
-- You can also inject `CompletationStage<QuarkusCqlSession>` or `Uni<QuarkusCqlSession>`.
+- You can also inject `CompletionStage<QuarkusCqlSession>` or `Uni<QuarkusCqlSession>`.
 
 In our example, both `FruitMapper` and `FruitDao` could be injected anywhere. We chose to inject
 `FruitDao` in `FruitService`.
@@ -314,19 +315,19 @@ public class FruitDto {
 }
 ----
 
-The translation to and from JSON is done automatically by the Quarkus RESTEasy Reactive extension, which is
+The translation to and from JSON is done automatically by the Quarkus REST (formerly RESTEasy Reactive) extension, which is
 included in this guide's pom.xml file. If you want to add it manually to your application, add the
-below snippet to your application's ppm.xml file:
+below snippet to your application's pom.xml file:
 
 [source,xml]
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-reactive</artifactId>
+  <artifactId>quarkus-rest</artifactId>
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+  <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
@@ -599,7 +600,7 @@ NOTE: The `getAll()` method above returns `Multi`, and the `add()` method return
 are the same Mutiny types that we met before; they are automatically recognized by the Quarkus
 reactive REST API, so we don't need to convert them into JSON ourselves.
 
-RESTEasy Reactive natively supports the Mutiny reactive types e.g. `Uni` and `Multi`.
+Quarkus REST natively supports the Mutiny reactive types e.g. `Uni` and `Multi`.
 
 This dependency is already included in this guide's pom.xml, but if you are starting a new project
 from scratch, make sure to include it.
@@ -789,8 +790,7 @@ until your application actually connects and hits the database for the first tim
 
 == Running in native mode
 
-If you installed GraalVM, you can link:https://quarkus.io/guides/building-native-image[build a
-native image] using:
+If you installed GraalVM, you can xref:building-native-image.adoc[build a native image] using:
 
 [source,shell]
 ----
@@ -830,8 +830,8 @@ that needs to interact with the Cassandra database.
 
 Using lazy initialization speeds up your application startup time, and avoids startup failures if
 the Cassandra database is not available. However, it could also prove dangerous if your code is
-fully non-blocking, for example if it uses https://quarkus.io/guides/reactive-routes[reactive
-routes]. Indeed, the lazy initialization could accidentally happen on a thread that is not allowed
+fully non-blocking, for example if it uses xref:reactive-routes.adoc[reactive routes].
+Indeed, the lazy initialization could accidentally happen on a thread that is not allowed
 to block, such as a Vert.x event loop thread. Therefore, setting `quarkus.cassandra.init.eager-init`
 to `false` and injecting `QuarkusCqlSession` should be avoided in these contexts.
 

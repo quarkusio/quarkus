@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +22,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
@@ -55,6 +59,9 @@ public class MultipartResource {
     public static final int NUMBER = 12342;
     @RestClient
     MultipartClient client;
+
+    @RestClient
+    MultipartChunksClient chunkClient;
 
     @GET
     @Path("/client/octet-stream")
@@ -373,6 +380,16 @@ public class MultipartResource {
         return client.sendPathAsTextFile(file, number);
     }
 
+    @GET
+    @Path("/client/chunked")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String chunkRequest(@QueryParam("size") int size) {
+        byte[] data = new byte[size];
+        Arrays.fill(data, (byte) 'A');
+        return chunkClient.sendChunkedPayload(data);
+    }
+
     @POST
     @Path("/echo/octet-stream")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
@@ -383,9 +400,17 @@ public class MultipartResource {
     @POST
     @Path("/echo/binary")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public String consumeMultipart(@MultipartForm MultipartBodyWithBinaryFile body) {
+    public String consumeMultipart(@MultipartForm MultipartBodyWithBinaryFile body, Request request) {
         return String.format("fileOk:%s,nameOk:%s", body.file == null ? "null" : containsHelloWorld(body.file),
                 GREETING_TXT.equals(body.fileName));
+    }
+
+    @POST
+    @Path("/echo/chunked")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public String consumeChunkedRequest(Request request, @Context HttpHeaders headers) {
+        List<String> values = headers.getRequestHeader("transfer-encoding");
+        return "transfer-encodingOk:" + (!values.isEmpty() && values.get(0).equals("chunked"));
     }
 
     @POST

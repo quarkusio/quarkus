@@ -19,6 +19,56 @@ public class Validation {
         return array;
     }
 
+    public static float[] notNullOrEmpty(float[] array, String name) {
+        if (array == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
+        }
+        return array;
+    }
+
+    public static double[] notNullOrEmpty(double[] array, String name) {
+        if (array == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
+        }
+        return array;
+    }
+
+    public static int[] notNullOrEmpty(int[] array, String name) {
+        if (array == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
+        }
+        return array;
+    }
+
+    public static long[] notNullOrEmpty(long[] array, String name) {
+        if (array == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
+        }
+        return array;
+    }
+
+    public static byte[] notNullOrEmpty(byte[] array, String name) {
+        if (array == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
+        }
+        return array;
+    }
+
     public static String notNullOrBlank(String v, String name) {
         if (v == null) {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");

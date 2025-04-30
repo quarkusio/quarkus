@@ -59,6 +59,10 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
         assertThat(request).isNotNull();
         assertRunOnWorker();
         assertRunOnDuplicatedContext();
+        String msg = request.getMsg();
+        if ("IllegalArgument".equals(msg)) {
+            throw new IllegalArgumentException("You're not allowed!");
+        }
         responseObserver.onNext(Messages.SimpleResponse.newBuilder().build());
         responseObserver.onCompleted();
     }

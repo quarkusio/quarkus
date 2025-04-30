@@ -1,5 +1,6 @@
 package io.quarkus.test.component;
 
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -7,16 +8,27 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+
 import io.quarkus.test.component.TestConfigProperty.TestConfigProperties;
 
 /**
- * Set the value of a configuration property for a {@code io.quarkus.test.component.QuarkusComponentTest}.
+ * Set the value of a configuration property.
+ * <p>
+ * If declared on a top-level test class then the configuration property is used for all test methods declared on the test class
+ * and all nested test classes.
+ * <p>
+ * If declared on a method then the configuration property is only used for that test method.
+ * If the test instance lifecycle is {@link Lifecycle#_PER_CLASS}, this annotation can only be declared on a top-level test
+ * class, otherwise it's ignored.
+ * <p>
+ * Configuration properties declared on test methods take precedence over the configuration properties declared on test class.
  *
  * @see QuarkusComponentTest
- * @see QuarkusComponentTestExtension#configProperty(String, String)
+ * @see QuarkusComponentTestExtensionBuilder#configProperty(String, String)
  */
 @Retention(RUNTIME)
-@Target(TYPE)
+@Target({ TYPE, METHOD })
 @Repeatable(TestConfigProperties.class)
 public @interface TestConfigProperty {
 
@@ -25,7 +37,7 @@ public @interface TestConfigProperty {
     String value();
 
     @Retention(RUNTIME)
-    @Target(TYPE)
+    @Target({ TYPE, METHOD })
     @interface TestConfigProperties {
 
         TestConfigProperty[] value();

@@ -37,7 +37,10 @@ public final class ClassInclusionReport {
         TreeSet<String> set = new TreeSet<>();
         try (Scanner scanner = new Scanner(usedClassesReport.toFile())) {
             while (scanner.hasNextLine()) {
-                set.add(scanner.nextLine());
+                // Starting with GraalVM for JDK 24 the format of the report has changed prefixing each line with
+                // the class loader name and a colon. We need to strip that part.
+                String[] line = scanner.nextLine().split(":");
+                set.add(line[line.length - 1]);
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Could not load used classes report", e);

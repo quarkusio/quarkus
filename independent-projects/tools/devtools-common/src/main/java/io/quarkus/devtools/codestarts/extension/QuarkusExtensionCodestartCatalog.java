@@ -38,6 +38,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         QUARKUS_BOM_GROUP_ID("quarkus.bom.group-id"),
         QUARKUS_BOM_ARTIFACT_ID("quarkus.bom.artifact-id"),
         QUARKUS_BOM_VERSION("quarkus.bom.version"),
+        JAVA_VERSION("java.version"),
         PROPERTIES_FROM_PARENT("properties.from-parent"),
         PARENT_GROUP_ID("parent.group-id"),
         PARENT_ARTIFACT_ID("parent.artifact-id"),
@@ -49,7 +50,8 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         IT_PARENT_RELATIVE_PATH("it-parent.relative-path"),
         MAVEN_QUARKUS_EXTENSION_PLUGIN("maven.quarkus-extension-plugin"),
         MAVEN_COMPILER_PLUGIN_VERSION("maven.compiler-plugin-version"),
-        HAS_DOCS_MODULE("has-docs-module");
+        HAS_DOCS_MODULE("has-docs-module"),
+        HAS_INTEGRATION_TESTS_MODULE("has-integration-tests-module");
 
         private final String key;
 

@@ -4,6 +4,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.isNotEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractCountMinCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractCountMinCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 
@@ -34,7 +35,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(couples, "couples");
         if (couples.isEmpty()) {
-            throw new IllegalArgumentException("`couples` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`couples` must not be empty"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CMS_INCRBY)
@@ -85,7 +86,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(items, "items");
         if (items.length == 0) {
-            throw new IllegalArgumentException("`items` must not be empty");
+            return Uni.createFrom().failure(new IllegalArgumentException("`items` must not be empty"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CMS_QUERY)

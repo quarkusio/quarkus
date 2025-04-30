@@ -17,6 +17,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +43,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -71,6 +73,7 @@ import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
 import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.smallrye.config.ConfigValue;
 
 /**
  * A test extension deployment processor
@@ -336,8 +339,14 @@ public final class TestProcessor {
             ConfigurationBuildItem configItem,
             TestMappingBuildTime testMappingBuildTime,
             TestMappingBuildTimeRunTime testMappingBuildTimeRunTime) {
-        Map<String, String> buildTimeValues = configItem.getReadResult().getAllBuildTimeValues();
-        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeValues();
+        Map<String, String> buildTimeValues = new HashMap<>();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getAllBuildTimeValues().entrySet()) {
+            buildTimeValues.put(entry.getKey(), entry.getValue().getValue());
+        }
+        Map<String, String> buildTimeRunTimeValues = new HashMap<>();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
+            buildTimeRunTimeValues.put(entry.getKey(), entry.getValue().getValue());
+        }
 
         if (!testMappingBuildTime.value().equals("value")
                 || !buildTimeValues.getOrDefault("quarkus.mapping.bt.value", "").equals("value")) {
@@ -484,6 +493,16 @@ public final class TestProcessor {
     @BuildStep(onlyIf = Never.class)
     void neverRunThisOne() {
         throw new IllegalStateException("Not supposed to run!");
+    }
+
+    @BuildStep
+    void recordPropertyOverrides(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+        // Properties also set in io.quarkus.extest.deployment.BuildTimeCustomConfigBuilder. Ensure that these get overridden.
+        runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem("recorded.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("recorded.profiled.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("quarkus.mapping.rt.record-profiled", "from-build-step"));
     }
 
     public static final class Never implements BooleanSupplier {

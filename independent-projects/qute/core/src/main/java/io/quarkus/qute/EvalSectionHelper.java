@@ -11,6 +11,7 @@ import io.quarkus.qute.TemplateNode.Origin;
 
 public class EvalSectionHelper implements SectionHelper {
 
+    public static final String EVAL = "eval";
     private static final String TEMPLATE = "template";
 
     private final Map<String, Expression> parameters;
@@ -23,52 +24,69 @@ public class EvalSectionHelper implements SectionHelper {
 
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        CompletableFuture<ResultNode> result = new CompletableFuture<>();
-        context.evaluate(parameters).whenComplete((evaluatedParams, t1) -> {
-            if (t1 != null) {
-                result.completeExceptionally(t1);
-            } else {
-                try {
+        CompletableFuture<ResultNode> ret = new CompletableFuture<>();
+        if (parameters.size() > 1) {
+            context.evaluate(parameters).whenComplete((evaluatedParams, t1) -> {
+                if (t1 != null) {
+                    ret.completeExceptionally(t1);
+                } else {
                     // Parse the template and execute with the params as the root context object
-                    String templateStr = evaluatedParams.get(TEMPLATE).toString();
-                    TemplateImpl template;
-                    try {
-                        template = (TemplateImpl) engine.parse(templateStr);
-                    } catch (TemplateException e) {
-                        Origin origin = parameters.get(TEMPLATE).getOrigin();
-                        throw TemplateException.builder()
-                                .message(
-                                        "Parser error in the evaluated template: {templateId} line {line}:\\n\\t{originalMessage}")
-                                .code(Code.ERROR_IN_EVALUATED_TEMPLATE)
-                                .argument("templateId",
-                                        origin.hasNonGeneratedTemplateId() ? " template [" + origin.getTemplateId() + "]"
-                                                : "")
-                                .argument("line", origin.getLine())
-                                .argument("originalMessage", e.getMessage())
-                                .build();
-                    }
-                    template.root
-                            .resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
-                            .whenComplete((resultNode, t2) -> {
-                                if (t2 != null) {
-                                    result.completeExceptionally(t2);
-                                } else {
-                                    result.complete(resultNode);
-                                }
-                            });
-                } catch (Throwable e) {
-                    result.completeExceptionally(e);
+                    String contents = evaluatedParams.get(TEMPLATE).toString();
+                    parseAndResolve(ret, contents,
+                            context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null));
                 }
+            });
+        } else {
+            Expression contents = parameters.get(TEMPLATE);
+            if (contents.isLiteral()) {
+                parseAndResolve(ret, contents.getLiteral().toString(), context.resolutionContext());
+            } else {
+                context.evaluate(contents).whenComplete((r, t) -> {
+                    if (t != null) {
+                        ret.completeExceptionally(t);
+                    } else {
+                        parseAndResolve(ret, r.toString(), context.resolutionContext());
+                    }
+                });
             }
-        });
-        return result;
+        }
+
+        return ret;
+    }
+
+    private void parseAndResolve(CompletableFuture<ResultNode> ret, String contents, ResolutionContext resolutionContext) {
+        Template template;
+        try {
+            template = engine.parse(contents);
+            template.getRootNode()
+                    .resolve(resolutionContext)
+                    .whenComplete((resultNode, t2) -> {
+                        if (t2 != null) {
+                            ret.completeExceptionally(t2);
+                        } else {
+                            ret.complete(resultNode);
+                        }
+                    });
+        } catch (TemplateException e) {
+            Origin origin = parameters.get(TEMPLATE).getOrigin();
+            ret.completeExceptionally(TemplateException.builder()
+                    .message(
+                            "Parser error in the evaluated template: {templateId} line {line}:\\n\\t{originalMessage}")
+                    .code(Code.ERROR_IN_EVALUATED_TEMPLATE)
+                    .argument("templateId",
+                            origin.hasNonGeneratedTemplateId() ? " template [" + origin.getTemplateId() + "]"
+                                    : "")
+                    .argument("line", origin.getLine())
+                    .argument("originalMessage", e.getMessage())
+                    .build());
+        }
     }
 
     public static class Factory implements SectionHelperFactory<EvalSectionHelper> {
 
         @Override
         public List<String> getDefaultAliases() {
-            return ImmutableList.of("eval");
+            return ImmutableList.of(EVAL);
         }
 
         @Override

@@ -5,32 +5,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 
-@ConfigGroup
-public class FilterConfig {
-
+public interface FilterConfig {
     /**
      * A regular expression for the paths matching this configuration
      */
-    @ConfigItem
-    public String matches;
+    String matches();
 
     /**
      * Additional HTTP Headers always sent in the response
      */
-    @ConfigItem
-    public Map<String, String> header;
+    @ConfigDocMapKey("header-name")
+    Map<String, String> header();
 
     /**
      * The HTTP methods for this path configuration
      */
-    @ConfigItem
-    public Optional<List<String>> methods;
+    Optional<List<String>> methods();
 
     /**
      * Order in which this path config is applied. Higher priority takes precedence
      */
-    public OptionalInt order;
+    OptionalInt order();
 }

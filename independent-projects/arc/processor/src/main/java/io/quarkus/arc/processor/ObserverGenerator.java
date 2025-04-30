@@ -6,7 +6,6 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
-import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -33,10 +32,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.impl.CreationalContextImpl;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
@@ -139,7 +136,7 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             baseNameBuilder.append(observer.getObserverMethod().name());
         }
-        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1(sigBuilder.toString()));
+        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1_base64(sigBuilder.toString()));
         String baseName = baseNameBuilder.toString();
         this.observerToGeneratedBaseName.put(observer, baseName);
 
@@ -181,7 +178,8 @@ public class ObserverGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());
+        boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass())
+                || observer.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.OBSERVER : null, generateSources);
 
@@ -552,29 +550,14 @@ public class ObserverGenerator extends AbstractGenerator {
                                     annotationLiterals, observer, reflectionRegistration, injectionPointAnnotationsPredicate));
                 } else {
                     if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
-                        ResultHandle requiredQualifiersHandle = BeanGenerator.collectInjectionPointQualifiers(
-                                observer.getDeclaringBean().getDeployment(), constructor,
-                                injectionPoint,
-                                annotationLiterals);
-                        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
-                                observer.getDeclaringBean().getDeployment(), constructor, injectionPoint, annotationLiterals,
-                                injectionPointAnnotationsPredicate);
-                        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
-                                reflectionRegistration);
-
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, constructor.getMethodParam(paramIdx));
 
-                        ResultHandle wrapHandle = constructor.newInstance(
-                                MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
-                                        Supplier.class, java.lang.reflect.Type.class,
-                                        Set.class, Set.class, Member.class, int.class, boolean.class),
-                                constructor.loadNull(), delegateSupplier,
-                                Types.getTypeHandle(constructor, injectionPoint.getType()),
-                                requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
-                                constructor.load(injectionPoint.getPosition()),
-                                constructor.load(injectionPoint.isTransient()));
+                        ResultHandle wrapHandle = BeanGenerator.wrapCurrentInjectionPoint(observer.getDeclaringBean(),
+                                constructor, injectionPoint, constructor.loadNull(), delegateSupplier,
+                                null, annotationLiterals, reflectionRegistration,
+                                injectionPointAnnotationsPredicate);
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
 

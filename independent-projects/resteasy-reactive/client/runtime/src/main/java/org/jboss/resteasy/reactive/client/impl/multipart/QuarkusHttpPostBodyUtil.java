@@ -28,8 +28,6 @@ import io.netty.util.internal.StringUtil;
  */
 final class QuarkusHttpPostBodyUtil {
 
-    public static final int chunkSize = 8096;
-
     /**
      * Default Content-Type in binary form
      */

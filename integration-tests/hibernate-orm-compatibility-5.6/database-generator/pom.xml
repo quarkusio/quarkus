@@ -15,7 +15,7 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>2.16.3.Final</quarkus.platform.version>
         <skipITs>true</skipITs>
-        <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
+        <surefire-plugin.version>3.5.2</surefire-plugin.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -67,9 +67,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
                 <configuration>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <plugin>
@@ -114,7 +112,7 @@
             </activation>
             <properties>
                 <skipITs>false</skipITs>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

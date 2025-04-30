@@ -237,8 +237,8 @@ class HibernateOrmRestDataPanacheTest {
                 .and().body(book.toString())
                 .when().post("/books")
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("add.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("add.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 
     @Test
@@ -268,7 +268,7 @@ class HibernateOrmRestDataPanacheTest {
         Response response = given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body(book.toString())
-                .when().put("/books/100")
+                .when().post("/books/")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotEmpty();
@@ -307,7 +307,7 @@ class HibernateOrmRestDataPanacheTest {
                 .and().body(book.toString())
                 .when().put("/books/" + CRIME_AND_PUNISHMENT_ID)
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("update.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("update.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 }

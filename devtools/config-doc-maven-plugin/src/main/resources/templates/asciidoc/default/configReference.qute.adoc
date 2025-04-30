@@ -1,0 +1,29 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference{#if searchable}.searchable{/if}, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+{#for item in configItemCollection.nonDeprecatedItems}
+{#if item.isSection}
+{#configSection context=context configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=false /}
+
+{#else}
+{#configProperty context=context configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+
+{/if}
+{#else}
+3+|No configuration properties found.
+
+{/for}
+|===
+
+{#if includeDurationNote}
+{#durationNote summaryTableId=context.summaryTableId /}
+{/if}
+{#if includeMemorySizeNote}
+{#memorySizeNote summaryTableId=context.summaryTableId /}
+{/if}

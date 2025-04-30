@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-agroal</artifactId>
     <name>Quarkus - Agroal - Runtime</name>
-    <description>Pool JDBC database connections (included in Hibernate ORM)</description>
+    <description>JDBC Datasources and connection pooling</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -30,8 +30,8 @@
             <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -90,18 +90,36 @@
                         <provides>io.quarkus.agroal</provides>
                     </capabilities>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal> 
+                        </goals>
+                        <configuration>
+                            <conditionalDevDependencies> 
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact> 
+                            </conditionalDevDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

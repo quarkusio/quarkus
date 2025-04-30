@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
+:topics: internals,documentation
 
 Contribute to the documentation by using the recommended diataxis content types, steps, workflow, and style guidance to ensure the content successfully renders on the Quarkus website portal.
 
@@ -18,14 +19,14 @@ Quarkus docs use link:https://asciidoc.org/[AsciiDoc] markup.
 * You have an editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or with a plugin.
 * You have reviewed the following Quarkus contributor resources:
 ** The link:https://github.com/quarkusio/quarkus/blob/main/CONTRIBUTING.md#documentation[Documentation] section of the Quarkus "Contributing" guide.
-** The xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for the required syntax, preferred style, and other conventions.
-** The xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types].
+** The xref:doc-reference.adoc[Quarkus style and content guidelines] for the required syntax, preferred style, and other conventions.
+** The xref:doc-concept.adoc[Quarkus documentation content types].
 * You have the https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc syntax reference] nearby.
 
 == Locate the source files for Quarkus docs
 
-- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
-- The Quarkus doc templates are located in the `src/main/asciidoc/_templates` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- The Quarkus doc templates are located in the `src/main/asciidoc/_templates` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
 - Configuration documentation is generated from JavaDoc comments in Java source files.
 - Java, YAML, and other source files can also be xref:doc-reference.adoc#reference-source-code[referenced] by AsciiDoc files.
 - The link:https://quarkus.io/guides/[Quarkus documentation] menu page, also known as the doc index page, is sourced in the link:https://github.com/quarkusio/quarkusio.github.io[quarkusio.github.io] repository.
@@ -37,7 +38,7 @@ To ensure that your content shows up correctly on the link:https://quarkus.io/gu
 
 . Decide on a xref:doc-concept.adoc[Diataxis] content type that best fits the content that you are contributing.
 +
-TIP: To help you decide, see the content type descriptions in xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
+TIP: To help you decide, see the content type descriptions in xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
 
 . Go to the `src/main/asciidoc/_templates` directory, and make a copy of the relevant template for the content type you have chosen. Be sure to:
 ** Use the filename syntax of`<category>-<titlekeyword>-<titlekeyword>.adoc`. For example, `security-basic-authentication.adoc`.
@@ -56,11 +57,11 @@ include::_attributes.adoc[] <3>
 :categories: security,web <5>
 <6>
 ----
-<1> Set the `id` value to be the same as the file name but without the extension. 
-<2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
+<1> Set the `id` value to be the same as the file name but without the extension.
+<2> For information about how to create a good title for each content type, see xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
-<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
+<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
 <6> Insert a blank line after all document attributes and before the abstract.
 +
 [IMPORTANT]
@@ -76,7 +77,7 @@ The first sentence of the abstract must explain the value and some benefit of th
 There must also be a line break before and after the abstract.
 ====
 
-For more information about the minimum header requirements, see xref:{doc-guides}/doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
+For more information about the minimum header requirements, see xref:doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
 
 [id="add-prerequisites"]
 == Add a prerequisites section

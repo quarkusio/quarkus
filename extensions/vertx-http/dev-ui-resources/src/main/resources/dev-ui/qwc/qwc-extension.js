@@ -1,14 +1,19 @@
 import { LitElement, html, css} from 'lit';
+import { observeState } from 'lit-element-state';
 import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
-import 'qui-badge';
+import '@qomponent/qui-badge';
+import { JsonRpc } from 'jsonrpc';
+import { notifier } from 'notifier';
+import { connectionState } from 'connection-state';
 
 /**
  * This component represent one extension
  * It's a card on the extension board
  */
-export class QwcExtension extends LitElement {
+export class QwcExtension extends observeState(LitElement) {
+    jsonRpc = new JsonRpc("devui-extensions", false);
 
     static styles = css`
         .card {
@@ -95,13 +100,15 @@ export class QwcExtension extends LitElement {
         builtWith: {type: String},
         providesCapabilities: {},
         extensionDependencies: {}, 
-        favourite: {type: Boolean},   
+        favourite: {type: Boolean},
+        installed: {type: Boolean},
     };
     
     constructor() {
         super();
         this._dialogOpened = false;
         this.favourite = false;
+        this.installed = false;
     }
 
     render() {
@@ -123,9 +130,9 @@ export class QwcExtension extends LitElement {
             ></vaadin-dialog>
 
             <div class="card ${this.clazz}">
-              ${this._headerTemplate()}
-              <slot name="content"></slot>
-              ${this._footerTemplate()}
+                ${this._headerTemplate()}
+                <slot name="content"></slot>
+                ${this._footerTemplate()}
             </div>`;
     }
 
@@ -260,7 +267,28 @@ export class QwcExtension extends LitElement {
                     <td>${this._renderExtensionDependencies()}</td>
                 </tr>
             </table>
+            ${this._renderUninstallButton()}
         `;
+    }
+
+    _renderUninstallButton(){
+        if(connectionState.current.isConnected && this.installed){
+            return html`<vaadin-button style="width: 100%;" theme="secondary error" @click="${this._uninstall}">
+                        <vaadin-icon icon="font-awesome-solid:trash-can" slot="prefix"></vaadin-icon>
+                        Remove this extension
+                    </vaadin-button>`;
+        }
+    }
+
+    _uninstall(){
+        this._dialogOpened = false;
+        notifier.showInfoMessage(this.name + " removal in progress");
+        this.jsonRpc.removeExtension({extensionArtifactId:this.artifact}).then(jsonRpcResponse => {
+            let outcome = jsonRpcResponse.result;
+            if(!outcome){
+                notifier.showErrorMessage(name + " removal failed");
+            }
+        });
     }
 
     _renderGuideDetails() {

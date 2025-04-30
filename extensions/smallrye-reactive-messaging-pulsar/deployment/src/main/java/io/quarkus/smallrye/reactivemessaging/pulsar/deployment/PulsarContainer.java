@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.pulsar.deployment.PulsarDevServicesProcessor.DEV_SERVICE_PULSAR;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
@@ -11,26 +13,33 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
+import io.quarkus.devservices.common.ConfigureUtil;
+
 public class PulsarContainer extends GenericContainer<PulsarContainer> {
 
-    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.0.0");
+    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.2.4");
 
     public static final String STARTER_SCRIPT = "/run_pulsar.sh";
 
     public static final int BROKER_PORT = 6650;
     public static final int BROKER_HTTP_PORT = 8080;
 
+    private final boolean useSharedNetwork;
+    private final String hostName;
+
     public PulsarContainer() {
-        this(PULSAR_IMAGE);
+        this(PULSAR_IMAGE, null, false);
     }
 
-    public PulsarContainer(DockerImageName imageName) {
+    public PulsarContainer(DockerImageName imageName, String defaultNetworkId, boolean useSharedNetwork) {
         super(imageName);
         super.withExposedPorts(BROKER_PORT, BROKER_HTTP_PORT);
         super.withStartupTimeout(Duration.ofSeconds(60));
         super.waitingFor(Wait.forLogMessage(".*Created namespace public/default.*", 1));
         super.withCommand("sh", "-c", runStarterScript());
         super.withTmpFs(Collections.singletonMap("/pulsar/data", "rw"));
+        this.useSharedNetwork = useSharedNetwork;
+        this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, DEV_SERVICE_PULSAR);
     }
 
     protected String runStarterScript() {
@@ -60,10 +69,24 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
     }
 
     public String getPulsarBrokerUrl() {
-        return String.format("pulsar://%s:%s", this.getHost(), this.getMappedPort(BROKER_PORT));
+        if (useSharedNetwork) {
+            return getServiceUrl(this.hostName, PulsarContainer.BROKER_PORT);
+        }
+        return getServiceUrl(this.getHost(), this.getMappedPort(BROKER_PORT));
+    }
+
+    private String getServiceUrl(String host, int port) {
+        return String.format("pulsar://%s:%d", host, port);
     }
 
     public String getHttpServiceUrl() {
-        return String.format("http://%s:%s", this.getHost(), this.getMappedPort(BROKER_HTTP_PORT));
+        if (useSharedNetwork) {
+            return getHttpServiceUrl(this.hostName, PulsarContainer.BROKER_HTTP_PORT);
+        }
+        return getHttpServiceUrl(this.getHost(), this.getMappedPort(BROKER_HTTP_PORT));
+    }
+
+    private String getHttpServiceUrl(String host, int port) {
+        return String.format("http://%s:%d", host, port);
     }
 }

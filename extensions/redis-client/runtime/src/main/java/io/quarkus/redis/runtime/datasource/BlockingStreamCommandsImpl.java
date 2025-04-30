@@ -6,6 +6,7 @@ import java.util.Map;
 
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.stream.ClaimedMessages;
+import io.quarkus.redis.datasource.stream.PendingMessage;
 import io.quarkus.redis.datasource.stream.ReactiveStreamCommands;
 import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.stream.StreamMessage;
@@ -14,6 +15,8 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
+import io.quarkus.redis.datasource.stream.XPendingSummary;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -184,5 +187,20 @@ public class BlockingStreamCommandsImpl<K, F, V> extends AbstractRedisCommandGro
     @Override
     public long xtrim(K key, XTrimArgs args) {
         return reactive.xtrim(key, args).await().atMost(timeout);
+    }
+
+    @Override
+    public XPendingSummary xpending(K key, String group) {
+        return reactive.xpending(key, group).await().atMost(timeout);
+    }
+
+    @Override
+    public List<PendingMessage> xpending(K key, String group, StreamRange range, int count) {
+        return reactive.xpending(key, group, range, count).await().atMost(timeout);
+    }
+
+    @Override
+    public List<PendingMessage> xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        return reactive.xpending(key, group, range, count, args).await().atMost(timeout);
     }
 }

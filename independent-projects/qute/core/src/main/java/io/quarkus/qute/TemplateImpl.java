@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,9 @@ class TemplateImpl implements Template {
     private final List<ParameterDeclaration> parameterDeclarations;
     private final LazyValue<Map<String, Fragment>> fragments;
 
+    // The initial capacity of the StringBuilder used to render the template
+    final Capacity capacity;
+
     TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
         this.root = root;
@@ -46,6 +50,7 @@ class TemplateImpl implements Template {
         this.parameterDeclarations = ImmutableList.copyOf(root.getParameterDeclarations());
         // Use a lazily initialized map to avoid unnecessary performance costs during parsing
         this.fragments = initFragments(root);
+        this.capacity = new Capacity();
     }
 
     @Override
@@ -102,6 +107,21 @@ class TemplateImpl implements Template {
     @Override
     public Set<String> getFragmentIds() {
         return fragments != null ? Set.copyOf(fragments.get().keySet()) : Set.of();
+    }
+
+    @Override
+    public List<TemplateNode> getNodes() {
+        return root.blocks.get(0).nodes;
+    }
+
+    @Override
+    public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+        return root.findNodes(predicate);
+    }
+
+    @Override
+    public SectionNode getRootNode() {
+        return root;
     }
 
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
@@ -220,14 +240,38 @@ class TemplateImpl implements Template {
         }
 
         private CompletionStage<String> renderAsyncNoTimeout() {
-            StringBuilder builder = new StringBuilder(1028);
-            return renderData(data(), builder::append).thenApply(v -> builder.toString());
+            StringBuilder builder = new StringBuilder(getCapacity());
+            return renderData(data(), builder::append).thenApply(v -> {
+                String str = builder.toString();
+                capacity.update(str.length());
+                return str;
+            });
+        }
+
+        private int getCapacity() {
+            return attributes.isEmpty() ? capacity.get() : getCapacityAttributeValue();
+        }
+
+        private int getCapacityAttributeValue() {
+            Object c = getAttribute(TemplateInstance.CAPACITY);
+            if (c != null) {
+                if (c instanceof Number) {
+                    return ((Number) c).intValue();
+                } else {
+                    try {
+                        return Integer.parseInt(c.toString());
+                    } catch (NumberFormatException e) {
+                        LOG.warnf("Invalid capacity value set for " + toString() + ": " + c);
+                    }
+                }
+            }
+            return capacity.get();
         }
 
         private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
             CompletableFuture<Void> result = new CompletableFuture<>();
             ResolutionContext rootContext = new ResolutionContextImpl(data,
-                    engine.getEvaluator(), null, this::getAttribute);
+                    engine.getEvaluator(), null, this);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
             // Async resolution
             root.resolve(rootContext).whenComplete((r, t) -> {
@@ -269,9 +313,67 @@ class TemplateImpl implements Template {
 
     }
 
+    class Capacity {
+
+        static final int LIMIT = 64 * 1024;
+
+        final int computed;
+        // intentionally not volatile; it's not a big deal if working with an outdated value
+        int max;
+
+        Capacity() {
+            this.computed = Math.min(computeCapacity(root.blocks.get(0)), LIMIT);
+        }
+
+        void update(int length) {
+            if (length > max) {
+                max = length < LIMIT ? length : LIMIT;
+            }
+        }
+
+        int get() {
+            return Math.max(max, computed);
+        }
+
+        private int computeCapacity(SectionBlock block) {
+            // This is a bit tricky because a template can contain a lot of dynamic parts
+            // Our approach is rather conservative, i.e. try not to overestimate/waste memory
+            int ret = 0;
+            for (TemplateNode node : block.nodes) {
+                if (Parser.isDummyNode(node)) {
+                    continue;
+                }
+                if (node.isText()) {
+                    ret += node.asText().getValue().length();
+                } else if (node.isExpression()) {
+                    // Reserve 10 characters per expression
+                    ret += 10;
+                } else if (node.isSection()) {
+                    SectionHelper helper = node.asSection().getHelper();
+                    if (LoopSectionHelper.class.isInstance(helper)) {
+                        // Loop secion - multiply the capacity of the main block by 10
+                        ret += 10 * computeCapacity(node.asSection().blocks.get(0));
+                    } else if (IncludeSectionHelper.class.isInstance(helper)) {
+                        // At this point we don't really know - the included template can be tiny or huge
+                        // So we just reserve 500 characters
+                        ret += 500;
+                    } else if (UserTagSectionHelper.class.isInstance(helper)) {
+                        // For user tags we don't expect large templates
+                        ret += 200;
+                    } else {
+                        for (SectionBlock b : node.asSection().blocks) {
+                            ret += computeCapacity(b);
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+    }
+
     class FragmentImpl extends TemplateImpl implements Fragment {
 
-        public FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
+        FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
                 Optional<Variant> variant) {
             super(engine, root, fragmentId, generatedId, variant);
         }
@@ -294,7 +396,9 @@ class TemplateImpl implements Template {
         @Override
         public TemplateInstance instance() {
             TemplateInstance instance = super.instance();
-            instance.setAttribute(Fragment.ATTRIBUTE, true);
+            // when a fragment is executed separately we need a way to instruct FragmentSectionHelper to ignore the "renreded" parameter
+            // Fragment.ATTRIBUTE contains the generated id of the template that declares the fragment section and the fragment identifier
+            instance.setAttribute(Fragment.ATTRIBUTE, TemplateImpl.this.getGeneratedId() + FragmentImpl.this.getId());
             return instance;
         }
 

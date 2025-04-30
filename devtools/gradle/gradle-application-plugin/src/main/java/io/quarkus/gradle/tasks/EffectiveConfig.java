@@ -1,6 +1,8 @@
 package io.quarkus.gradle.tasks;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,26 +10,25 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-
-import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
+import io.quarkus.deployment.configuration.ConfigCompatibility;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.smallrye.config.AbstractLocationConfigSourceLoader;
-import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.common.utils.ConfigSourceUtil;
-import io.smallrye.config.source.yaml.YamlConfigSource;
+import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
 
 /**
  * Helper that bundles the various sources of config options for the Gradle plugin: system environment, system properties,
@@ -38,57 +39,62 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
  * Eventually used to construct a map with the <em>effective</em> config options from all the sources above and expose
  * the Quarkus config objects like {@link PackageConfig}, {@link ClassLoadingConfig} and the underlying {@link SmallRyeConfig}.
  */
-final class EffectiveConfig {
-    private final Map<String, String> fullConfig;
-
-    // URLs of all application.properties/yaml/yml files that were consulted (including those that do not exist)
-    private final List<URL> applicationPropsSources;
+public final class EffectiveConfig {
     private final SmallRyeConfig config;
+    private final Map<String, String> values;
 
     private EffectiveConfig(Builder builder) {
-        List<ConfigSource> configSources = new ArrayList<>();
-        // TODO add io.quarkus.runtime.configuration.DefaultsConfigSource ?
-        // TODO leverage io.quarkus.runtime.configuration.ProfileManager ?
-
         // Effective "ordinals" for the config sources:
         // (see also https://quarkus.io/guides/config-reference#configuration-sources)
         // 600 -> forcedProperties
         // 500 -> taskProperties
-        // 400 -> System.getProperties()
-        // 300 -> System.getenv()
+        // 400 -> System.getProperties() (provided by default sources)
+        // 300 -> System.getenv() (provided by default sources)
         // 290 -> quarkusBuildProperties
         // 280 -> projectProperties
-        // 250 -> application.(properties|yaml|yml) (in classpath/source)
-        // 100 -> microprofile.properties (in classpath/source)
+        // 265 -> application.(yaml/yml) in config folder
+        // 260 -> application.properties in config folder (provided by default sources)
+        // 255 -> application.(yaml|yml) in classpath
+        // 250 -> application.properties in classpath (provided by default sources)
+        // 110 -> microprofile.(yaml|yml) in classpath
+        // 100 -> microprofile.properties in classpath (provided by default sources)
+        // 0 -> fallback config source for error workaround (see below)
 
-        applicationPropsSources = new ArrayList<>();
+        PropertiesConfigSource platformPropertiesConfigSource;
+        if (builder.platformProperties.isEmpty()) {
+            // we don't have the model yet so we don't have the Platform properties around
+            platformPropertiesConfigSource = new PropertiesConfigSource(
+                    Map.of("platform.quarkus.native.builder-image", "<<ignored>>"), "platformProperties", 0);
+        } else {
+            platformPropertiesConfigSource = new PropertiesConfigSource(builder.platformProperties, "platformProperties", 0);
+        }
 
-        configSources.add(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600));
-        configSources.add(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500));
-        configSources.add(new PropertiesConfigSource(ConfigSourceUtil.propertiesToMap(System.getProperties()),
-                "System.getProperties()", 400));
-        configSources.add(new EnvConfigSource(300) {
-        });
-        configSources.add(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290));
-        configSources.add(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280));
-
-        configSourcesForApplicationProperties(builder.sourceDirectories, applicationPropsSources::add, configSources::add, 250,
-                new String[] {
-                        "application.properties",
-                        "application.yaml",
-                        "application.yml"
-                });
-        configSourcesForApplicationProperties(builder.sourceDirectories, applicationPropsSources::add, configSources::add, 100,
-                new String[] {
-                        "microprofile-config.properties"
-                });
-        this.config = buildConfig(builder.profile, configSources);
-
-        this.fullConfig = generateFullConfigMap(config);
+        this.config = ConfigUtils.emptyConfigBuilder()
+                .forClassLoader(toUrlClassloader(builder.sourceDirectories))
+                .withSources(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600))
+                .withSources(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500))
+                .addSystemSources()
+                .withSources(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290))
+                .withSources(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280))
+                .withSources(new YamlConfigSourceLoader.InFileSystem())
+                .withSources(new YamlConfigSourceLoader.InClassPath())
+                .addPropertiesSources()
+                .withSources(platformPropertiesConfigSource)
+                .withDefaultValues(builder.defaultProperties)
+                .withProfile(builder.profile)
+                .withMapping(PackageConfig.class)
+                .withMapping(NativeConfig.class)
+                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
+                .build();
+        this.values = generateFullConfigMap(config);
     }
 
-    SmallRyeConfig config() {
+    public SmallRyeConfig getConfig() {
         return config;
+    }
+
+    public Map<String, String> getValues() {
+        return values;
     }
 
     private Map<String, String> asStringMap(Map<String, ?> map) {
@@ -103,67 +109,42 @@ final class EffectiveConfig {
 
     @VisibleForTesting
     static Map<String, String> generateFullConfigMap(SmallRyeConfig config) {
-        Map<String, String> map = new HashMap<>();
-        config.getPropertyNames().forEach(property -> {
-            String v = config.getConfigValue(property).getValue();
-            if (v != null) {
-                map.put(property, v);
+        return Expressions.withoutExpansion(new Supplier<Map<String, String>>() {
+            @Override
+            public Map<String, String> get() {
+                Map<String, String> properties = new HashMap<>();
+                for (String propertyName : config.getPropertyNames()) {
+                    String value = config.getRawValue(propertyName);
+                    if (value != null) {
+                        properties.put(propertyName, value);
+                    }
+                }
+                return unmodifiableMap(properties);
             }
         });
-        return unmodifiableMap(map);
-    }
-
-    @VisibleForTesting
-    static SmallRyeConfig buildConfig(String profile, List<ConfigSource> configSources) {
-        return ConfigUtils.emptyConfigBuilder()
-                .setAddDiscoveredSecretKeysHandlers(false)
-                .withSources(configSources)
-                .withProfile(profile)
-                .build();
     }
 
     static Builder builder() {
         return new Builder();
     }
 
-    Map<String, String> configMap() {
-        return fullConfig;
-    }
-
-    List<URL> applicationPropsSources() {
-        return applicationPropsSources;
-    }
-
-    static void configSourcesForApplicationProperties(Set<File> sourceDirectories, Consumer<URL> sourceUrls,
-            Consumer<ConfigSource> configSourceConsumer, int ordinal, String[] fileExtensions) {
-        URL[] resourceUrls = sourceDirectories.stream().map(File::toURI)
-                .map(u -> {
-                    try {
-                        return u.toURL();
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toArray(URL[]::new);
-
-        for (URL resourceUrl : resourceUrls) {
-            URLClassLoader classLoader = new URLClassLoader(new URL[] { resourceUrl });
-            CombinedConfigSourceProvider configSourceProvider = new CombinedConfigSourceProvider(sourceUrls, ordinal,
-                    fileExtensions);
-            configSourceProvider.getConfigSources(classLoader).forEach(configSourceConsumer);
-        }
-    }
-
     static final class Builder {
+        private Map<String, String> platformProperties = emptyMap();
+        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, ?> taskProperties = emptyMap();
         private Map<String, String> buildProperties = emptyMap();
         private Map<String, ?> projectProperties = emptyMap();
-        private Map<String, ?> taskProperties = emptyMap();
-        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, String> defaultProperties = emptyMap();
         private Set<File> sourceDirectories = emptySet();
         private String profile = "prod";
 
         EffectiveConfig build() {
             return new EffectiveConfig(this);
+        }
+
+        Builder withPlatformProperties(Map<String, String> platformProperties) {
+            this.platformProperties = platformProperties;
+            return this;
         }
 
         Builder withForcedProperties(Map<String, String> forcedProperties) {
@@ -186,6 +167,11 @@ final class EffectiveConfig {
             return this;
         }
 
+        Builder withDefaultProperties(Map<String, String> defaultProperties) {
+            this.defaultProperties = defaultProperties;
+            return this;
+        }
+
         Builder withSourceDirectories(Set<File> sourceDirectories) {
             this.sourceDirectories = sourceDirectories;
             return this;
@@ -197,33 +183,43 @@ final class EffectiveConfig {
         }
     }
 
-    static final class CombinedConfigSourceProvider extends AbstractLocationConfigSourceLoader implements ConfigSourceProvider {
-        private final Consumer<URL> sourceUrls;
-        private final int ordinal;
-        private final String[] fileExtensions;
-
-        CombinedConfigSourceProvider(Consumer<URL> sourceUrls, int ordinal, String[] fileExtensions) {
-            this.sourceUrls = sourceUrls;
-            this.ordinal = ordinal;
-            this.fileExtensions = fileExtensions;
+    /**
+     * Builds a specific {@link ClassLoader} for {@link SmallRyeConfig} to include potential configuration files in
+     * the application source paths. The {@link ClassLoader} excludes the path <code>META-INF/services</code> because
+     * in most cases, the ServiceLoader files will reference service implementations that are not yet compiled. It is
+     * possible that the service files reference implementations from dependencies, which are valid and, in this case,
+     * wrongly excluded, but most likely only required for the application and not the Gradle build. We will rewrite
+     * the implementation to cover that case if this becomes an issue.
+     *
+     * @param sourceDirectories a Set of source directories specified by the Gradle build.
+     * @return a {@link ClassLoader} with the source paths
+     */
+    private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
+        List<URL> urls = new ArrayList<>();
+        for (File sourceDirectory : sourceDirectories) {
+            try {
+                urls.add(sourceDirectory.toURI().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        @Override
-        protected String[] getFileExtensions() {
-            return fileExtensions;
-        }
+        return new URLClassLoader(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader()) {
+            @Override
+            public URL getResource(String name) {
+                if (name.startsWith("META-INF/services/")) {
+                    return null;
+                }
+                return super.getResource(name);
+            }
 
-        @Override
-        protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            sourceUrls.accept(url);
-            return url.getPath().endsWith(".properties") ? new PropertiesConfigSource(url, ordinal)
-                    : new YamlConfigSource(url, ordinal);
-        }
-
-        @Override
-        public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
-            // Note:
-            return loadConfigSources(getFileExtensions(), ordinal, classLoader);
-        }
+            @Override
+            public Enumeration<URL> getResources(String name) throws IOException {
+                if (name.startsWith("META-INF/services/")) {
+                    return Collections.emptyEnumeration();
+                }
+                return super.getResources(name);
+            }
+        };
     }
 }

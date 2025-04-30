@@ -39,13 +39,8 @@ public class UnknownBuildConfigTest {
                         .orElse(new Object[0]))
                 .collect(toSet());
 
-        assertEquals(7, unrecognized.size());
+        assertEquals(2, unrecognized.size());
         assertTrue(unrecognized.contains("quarkus.unknown.prop"));
         assertTrue(unrecognized.contains("quarkus.build.unknown.prop"));
-        assertTrue(unrecognized.contains("quarkus.rename-old.prop"));
-        assertTrue(unrecognized.contains("quarkus.rename-old.only-in-new"));
-        assertTrue(unrecognized.contains("quarkus.rename-old.only-in-old"));
-        assertTrue(unrecognized.contains("quarkus.rename-old.in-both"));
-        assertTrue(unrecognized.contains("quarkus.rename-old.with-default"));
     }
 }

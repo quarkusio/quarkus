@@ -1,30 +1,58 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 [id="security-basic-authentication-howto"]
 = Enable Basic authentication
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: security
+:topics: security,authentication,basic-authentication,http
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
 Enable xref:security-basic-authentication.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
 
 == Prerequisites
 
-* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as link:{url-quarkusio-guides}security-jdbc[Elytron JDBC].
+* You have installed at least one extension that provides an `IdentityProvider` based on username and password.
+For example:
+
+ifndef::no-quarkus-security-jpa-reactive[]
+** xref:security-jpa.adoc[Quarkus Security Jakarta Persistence extensions (`quarkus-security-jpa` or `quarkus-security-jpa-reactive`)]
+endif::no-quarkus-security-jpa-reactive[]
+ifdef::no-quarkus-security-jpa-reactive[]
+** xref:security-jpa.adoc[Quarkus Security Jakarta Persistence extension (`quarkus-security-jpa`)]
+endif::no-quarkus-security-jpa-reactive[]
+** xref:security-properties.adoc[Elytron security properties file extension `(quarkus-elytron-security-properties-file)`]
+** xref:security-jdbc.adoc[Elytron security JDBC extension `(quarkus-elytron-security-jdbc)`]
+
+The following procedure outlines how you can enable Basic authentication for your application by using the `elytron-security-properties-file` extension.
 
 == Procedure
 
-. Enable Basic authentication by setting the `quarkus.http.auth.basic` property to `true`.
+. In the `application.properties` file, set the `quarkus.http.auth.basic` property to `true`.
 +
 [source,properties]
 ----
 quarkus.http.auth.basic=true
 ----
 
-. For testing purposes, you can configure the required user credentials, user name, secret, and roles, in the `application.properties` file.
+. **Optional:** In a non-production environment only and purely for testing Quarkus Security in your applications:
+.. To enable authentication for the embedded realm, set the `quarkus.security.users.embedded.enabled` property to `true`.
++
+[source,properties]
+----
+quarkus.security.users.embedded.enabled=true
+----
+
+.. You can also configure the required user credentials, user name, secret, and roles.
 For example:
 +
 [source,properties]
 ----
 quarkus.http.auth.basic=true
+quarkus.security.users.embedded.enabled=true
 quarkus.security.users.embedded.plain-text=true
 quarkus.security.users.embedded.users.alice=alice <1>
 quarkus.security.users.embedded.users.bob=bob <2>
@@ -38,13 +66,13 @@ For information about other methods that you can use to configure the required u
 +
 [IMPORTANT]
 ====
-Configuring user names, secrets, and roles in the `application.properties` file is only suitable for testing scenarios.
-If you are securing a production application, always use a database to store this information.
+Configuring user names, secrets, and roles in the `application.properties` file is appropriate only for testing scenarios.
+For securing a production application, it is crucial to use a database to store this information.
 ====
 
 == Next steps
 
-For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence] guide.
+For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] guide.
 
 == References
 

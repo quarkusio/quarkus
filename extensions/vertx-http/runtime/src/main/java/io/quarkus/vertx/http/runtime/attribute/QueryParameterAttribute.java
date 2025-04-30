@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.attribute;
 import java.util.ArrayDeque;
 import java.util.List;
 
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -11,14 +12,17 @@ import io.vertx.ext.web.RoutingContext;
 public class QueryParameterAttribute implements ExchangeAttribute {
 
     private final String parameter;
+    private final boolean useOriginalRequest;
 
-    public QueryParameterAttribute(String parameter) {
+    public QueryParameterAttribute(String parameter, boolean useOriginalRequest) {
         this.parameter = parameter;
+        this.useOriginalRequest = useOriginalRequest;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        List<String> res = exchange.queryParams().getAll(parameter);
+        List<String> res = useOriginalRequest ? OriginalRequestContext.getAllQueryParams(exchange, parameter)
+                : exchange.queryParams().getAll(parameter);
         if (res == null) {
             return null;
         } else if (res.isEmpty()) {
@@ -57,7 +61,11 @@ public class QueryParameterAttribute implements ExchangeAttribute {
         public ExchangeAttribute build(final String token) {
             if (token.startsWith("%{q,") && token.endsWith("}")) {
                 final String qp = token.substring(4, token.length() - 1);
-                return new QueryParameterAttribute(qp);
+                return new QueryParameterAttribute(qp, false);
+            }
+            if (token.startsWith("%{<q,") && token.endsWith("}")) {
+                final String qp = token.substring(5, token.length() - 1);
+                return new QueryParameterAttribute(qp, true);
             }
             return null;
         }

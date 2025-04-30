@@ -15,6 +15,6 @@ public class BuildpackBuildEnabled implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return containerImageConfig.builder.map(b -> b.equals(BuildpackProcessor.BUILDPACK)).orElse(true);
+        return containerImageConfig.builder().map(b -> b.equals(BuildpackProcessor.BUILDPACK)).orElse(true);
     }
 }

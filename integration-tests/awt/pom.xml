@@ -128,6 +128,22 @@
         </resources>
         <plugins>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>jpg</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>tiff</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>tif</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>bmp</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>gif</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>png</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>wbmp</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>jp2</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
@@ -144,26 +160,6 @@
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                <maven.home>${maven.home}</maven.home>
-                                <quarkus.http.host>localhost</quarkus.http.host>
-                                <quarkus.http.port>8081</quarkus.http.port>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

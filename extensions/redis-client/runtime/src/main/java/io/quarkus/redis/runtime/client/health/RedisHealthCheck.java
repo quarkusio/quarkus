@@ -72,9 +72,9 @@ class RedisHealthCheck implements HealthCheck {
 
     private Duration getTimeout(String name) {
         if (RedisConfig.isDefaultClient(name)) {
-            return config.defaultRedisClient.timeout;
+            return config.defaultRedisClient().timeout();
         } else {
-            return config.namedRedisClients.get(name).timeout;
+            return config.namedRedisClients().get(name).timeout();
         }
     }
 

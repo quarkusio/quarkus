@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Security JPA Common"
+metadata:
+  unlisted: true
+  keywords:
+  - "security"
+  - "jpa"
+  - "orm"
+  - "panache"
+  guide: "https://quarkus.io/guides/security-getting-started"
+  categories:
+  - "security"
+  status: "stable"

@@ -3,16 +3,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-oidc-token-propagation-reactive-parent</artifactId>
+        <artifactId>quarkus-rest-client-oidc-token-propagation-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
-    <name>Quarkus - OpenID Connect Token Propagation Reactive - Runtime</name>
-    <description>Use Reactive REST Client to propagate the incoming Bearer access token or token acquired from Authorization Code Flow as HTTP Authorization Bearer token</description>
+    <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
+    <name>Quarkus - REST Client - OpenID Connect Token Propagation - Runtime</name>
+    <description>Use REST Client to propagate the incoming Bearer access token or token acquired from Authorization Code Flow as HTTP Authorization Bearer token</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -20,11 +19,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive</artifactId>
+            <artifactId>quarkus-rest-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-token-propagation-common</artifactId>
         </dependency>
     </dependencies>
 
@@ -36,15 +39,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

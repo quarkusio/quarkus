@@ -1,14 +1,16 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
 import { JsonRpc } from 'jsonrpc';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
 import '@vaadin/icon';
-import 'qui-code-block';
+import '@qomponent/qui-code-block';
 import '@vaadin/progress-bar';
 
 /**
  * This component loads an external page
  */
-export class QwcExternalPage extends LitElement {
+export class QwcExternalPage extends observeState(LitElement) {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -106,16 +108,15 @@ export class QwcExternalPage extends LitElement {
                                 height='100%'>
                             </object>`;
             } else {
-                let currentPath = window.location.pathname;
-                currentPath = currentPath.substring(0, currentPath.indexOf('/dev'));
                 return html`<div class="codeBlock">
-                            <span class="download" @click="${this._download}">
+                            <span class="download" @click="${this._download}" title="${this._externalUrl}">
                                 <vaadin-icon class="icon" icon="font-awesome-solid:download"></vaadin-icon>
                                 Download
                             </span>
                             <qui-code-block 
                                 mode='${this._mode}'
-                                src='${this._externalUrl}'>
+                                src='${this._externalUrl}'
+                                theme='${themeState.theme.name}'>
                             </qui-code-block>
                         </div>
                         `;

@@ -1,14 +1,14 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 # Dependencies for AWT
-RUN microdnf install freetype fontconfig \
-    && microdnf clean all
+RUN microdnf install freetype fontconfig -y \
+    && microdnf clean all -y
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
 # Shared objects to be dynamically loaded at runtime as needed
 COPY --chown=1001:root target/*.so /work/
-COPY --chown=1001:root target/*-runner /work/application
+COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
 # Permissions fix for Windows
 RUN chmod "ugo+x" /work/application
 EXPOSE 8081

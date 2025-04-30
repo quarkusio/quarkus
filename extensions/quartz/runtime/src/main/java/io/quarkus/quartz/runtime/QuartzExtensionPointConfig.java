@@ -3,21 +3,20 @@ package io.quarkus.quartz.runtime;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithName;
 
-@ConfigGroup
-public class QuartzExtensionPointConfig {
+@ConfigMapping
+public interface QuartzExtensionPointConfig {
     /**
      * Class name for the configuration.
      */
-    @ConfigItem(name = "class")
-    public String clazz;
+    @WithName("class")
+    String clazz();
 
     /**
      * The properties passed to the class.
      */
-    @ConfigItem
-    @ConfigDocMapKey("property-name")
-    public Map<String, String> properties;
+    @ConfigDocMapKey("property-key")
+    Map<String, String> properties();
 }

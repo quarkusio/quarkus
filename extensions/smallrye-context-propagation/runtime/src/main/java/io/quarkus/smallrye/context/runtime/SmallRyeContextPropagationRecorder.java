@@ -1,11 +1,18 @@
 package io.quarkus.smallrye.context.runtime;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
+import org.eclipse.microprofile.context.spi.ContextManager.Builder;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
@@ -14,9 +21,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
-import io.smallrye.context.SmallRyeContextManagerProvider;
 import io.smallrye.context.SmallRyeManagedExecutor;
 import io.smallrye.context.SmallRyeThreadContext;
+import io.smallrye.context.impl.DefaultValues;
 
 /**
  * The runtime value service used to create values related to the MP-JWT services
@@ -24,6 +31,92 @@ import io.smallrye.context.SmallRyeThreadContext;
 @Recorder
 public class SmallRyeContextPropagationRecorder {
 
+    private static final ExecutorService NOPE_EXECUTOR_SERVICE = new ExecutorService() {
+
+        @Override
+        public void execute(Runnable command) {
+            nope();
+        }
+
+        @Override
+        public void shutdown() {
+            nope();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            nope();
+            return null;
+        }
+
+        @Override
+        public boolean isShutdown() {
+            nope();
+            return false;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            nope();
+            return false;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            nope();
+            return false;
+        }
+
+        @Override
+        public <T> Future<T> submit(Callable<T> task) {
+            nope();
+            return null;
+        }
+
+        @Override
+        public <T> Future<T> submit(Runnable task, T result) {
+            nope();
+            return null;
+        }
+
+        @Override
+        public Future<?> submit(Runnable task) {
+            nope();
+            return null;
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+            nope();
+            return null;
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException {
+            nope();
+            return null;
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+                throws InterruptedException, ExecutionException {
+            nope();
+            return null;
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            nope();
+            return null;
+        }
+
+        private void nope() {
+            throw new RuntimeException(
+                    "Trying to invoke ContextPropagation on a partially-configured ContextManager instance. You should wait until runtime init is done. You can do that by consuming the ContextPropagationBuildItem.");
+        }
+    };
     private static SmallRyeContextManager.Builder builder;
 
     public void configureStaticInit(List<ThreadContextProvider> discoveredProviders,
@@ -31,7 +124,7 @@ public class SmallRyeContextPropagationRecorder {
         // build the manager at static init time
         // in the live-reload mode, the provider instance may be already set in the previous start
         if (ContextManagerProvider.INSTANCE.get() == null) {
-            ContextManagerProvider contextManagerProvider = new SmallRyeContextManagerProvider();
+            ContextManagerProvider contextManagerProvider = new QuarkusContextManagerProvider();
             ContextManagerProvider.register(contextManagerProvider);
         }
 
@@ -40,6 +133,17 @@ public class SmallRyeContextPropagationRecorder {
                 .getContextManagerBuilder();
         builder.withThreadContextProviders(discoveredProviders.toArray(new ThreadContextProvider[0]));
         builder.withContextManagerExtensions(discoveredExtensions.toArray(new ContextManagerExtension[0]));
+
+        // During boot, if anyone is using CP, they will get no propagation and an error if they try to use
+        // the executor. This is (so far) only for spring-cloud-config-client which uses Vert.x via Mutiny
+        // to load config before we're ready for runtime init
+        SmallRyeContextManager.Builder noContextBuilder = (SmallRyeContextManager.Builder) ContextManagerProvider.instance()
+                .getContextManagerBuilder();
+        noContextBuilder.withThreadContextProviders(new ThreadContextProvider[0]);
+        noContextBuilder.withContextManagerExtensions(new ContextManagerExtension[0]);
+        noContextBuilder.withDefaultExecutorService(NOPE_EXECUTOR_SERVICE);
+        noContextBuilder.withDefaultValues(DefaultValues.empty());
+        ContextManagerProvider.instance().registerContextManager(noContextBuilder.build(), null /* not used */);
     }
 
     public void configureRuntime(ExecutorService executorService, ShutdownContext shutdownContext) {
@@ -59,7 +163,7 @@ public class SmallRyeContextPropagationRecorder {
             }
         });
         //Avoid leaking the classloader:
-        this.builder = null;
+        SmallRyeContextPropagationRecorder.builder = null;
     }
 
     public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {

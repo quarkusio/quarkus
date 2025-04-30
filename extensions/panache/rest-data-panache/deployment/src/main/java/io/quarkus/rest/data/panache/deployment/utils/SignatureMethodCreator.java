@@ -9,6 +9,8 @@ import java.util.List;
 
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.SignatureBuilder;
@@ -72,6 +74,14 @@ public final class SignatureMethodCreator {
         public String getName() {
             return name;
         }
+
+        public Type getType() {
+            return type;
+        }
+
+        public Object getClazz() {
+            return clazz;
+        }
     }
 
     public static class ReturnType {
@@ -79,22 +89,23 @@ public final class SignatureMethodCreator {
         private Type type;
     }
 
-    public static ReturnType responseType() {
-        ReturnType returnType = new ReturnType();
-        returnType.classType = Response.class;
-        returnType.type = RESPONSE_TYPE;
-        return returnType;
+    public static ReturnType responseType(Object entityTypeStr) {
+        return getReturnType(RestResponse.class, entityTypeStr);
     }
 
-    public static ReturnType uniType(Object... arguments) {
+    public static ReturnType uniType(Object entityTypeStr) {
+        return getReturnType(Uni.class, entityTypeStr);
+    }
+
+    private static ReturnType getReturnType(Class<?> entityType, Object... arguments) {
         ReturnType returnType = new ReturnType();
         Type[] typeArguments = new Type[arguments.length];
         for (int index = 0; index < arguments.length; index++) {
             typeArguments[index] = toGizmoType(arguments[index]);
         }
 
-        returnType.classType = Uni.class;
-        returnType.type = parameterizedType(classType(Uni.class), typeArguments);
+        returnType.classType = entityType;
+        returnType.type = parameterizedType(classType(entityType), typeArguments);
         return returnType;
     }
 }

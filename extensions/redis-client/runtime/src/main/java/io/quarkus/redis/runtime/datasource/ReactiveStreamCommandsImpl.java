@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.stream.ClaimedMessages;
+import io.quarkus.redis.datasource.stream.PendingMessage;
 import io.quarkus.redis.datasource.stream.ReactiveStreamCommands;
 import io.quarkus.redis.datasource.stream.StreamMessage;
 import io.quarkus.redis.datasource.stream.StreamRange;
@@ -16,6 +18,8 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
+import io.quarkus.redis.datasource.stream.XPendingSummary;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -27,11 +31,11 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         implements ReactiveStreamCommands<K, F, V>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    private final Class<V> typeOfValue;
-    private final Class<F> typeOfField;
-    private final Class<K> typeOfKey;
+    private final Type typeOfValue;
+    private final Type typeOfField;
+    private final Type typeOfKey;
 
-    public ReactiveStreamCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<F> f, Class<V> v) {
+    public ReactiveStreamCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type f, Type v) {
         super(redis, k, f, v);
         this.typeOfKey = k;
         this.typeOfField = f;
@@ -94,7 +98,7 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         if (r == null) {
             return List.of();
         }
-        var actualKey = marshaller.decode(typeOfKey, r.get(0));
+        K actualKey = marshaller.decode(typeOfKey, r.get(0));
         var listOfMessages = r.get(1);
         List<StreamMessage<K, F, V>> list = new ArrayList<>();
         for (int i = 0; i < listOfMessages.size(); i++) {
@@ -326,5 +330,56 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
     public Uni<Long> xtrim(K key, XTrimArgs args) {
         return super._xtrim(key, args)
                 .map(Response::toLong);
+    }
+
+    @Override
+    public Uni<XPendingSummary> xpending(K key, String group) {
+        return super._xpending(key, group)
+                .map(this::decodeAsXPendingSummary);
+    }
+
+    @Override
+    public Uni<List<PendingMessage>> xpending(K key, String group, StreamRange range, int count) {
+        return xpending(key, group, range, count, null);
+    }
+
+    @Override
+    public Uni<List<PendingMessage>> xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        return super._xpending(key, group, range, count, args)
+                .map(this::decodeListOfPendingMessages);
+    }
+
+    protected List<PendingMessage> decodeListOfPendingMessages(Response r) {
+        if (r == null) {
+            return List.of();
+        }
+        List<PendingMessage> list = new ArrayList<>();
+        for (Response response : r) {
+            var id = response.get(0).toString();
+            var name = response.get(1).toString();
+            var dur = Duration.ofMillis(response.get(2).toLong());
+            var count = response.get(3).toInteger();
+            list.add(new PendingMessage(id, name, dur, count));
+        }
+        return list;
+    }
+
+    protected XPendingSummary decodeAsXPendingSummary(Response r) {
+        if (r == null) {
+            return null;
+        }
+
+        var pending = r.get(0).toLong();
+        var lowest = r.get(1) != null ? r.get(1).toString() : null;
+        var highest = r.get(2) != null ? r.get(2).toString() : null;
+
+        Map<String, Long> consumers = new HashMap<>();
+        if (r.get(3) != null) {
+            for (Response nested : r.get(3)) {
+                consumers.put(nested.get(0).toString(), nested.get(1).toLong());
+            }
+        }
+
+        return new XPendingSummary(pending, lowest, highest, consumers);
     }
 }

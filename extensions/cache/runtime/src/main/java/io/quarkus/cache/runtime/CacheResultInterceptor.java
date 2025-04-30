@@ -65,11 +65,17 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             throw new CacheException(e);
                         }
                     }
+                }).onFailure().call(new Function<>() {
+                    @Override
+                    public Uni<?> apply(Throwable throwable) {
+                        return cache.invalidate(key).replaceWith(throwable);
+                    }
                 });
 
                 if (binding.lockTimeout() <= 0) {
                     return createAsyncResult(cacheValue, returnType);
                 }
+                // IMPORTANT: The item/failure are emitted on the captured context.
                 cacheValue = cacheValue.ifNoItem().after(Duration.ofMillis(binding.lockTimeout()))
                         .recoverWithUni(new Supplier<Uni<?>>() {
                             @Override

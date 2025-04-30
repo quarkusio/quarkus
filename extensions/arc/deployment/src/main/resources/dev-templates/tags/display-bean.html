@@ -1,5 +1,0 @@
-<span class="annotation" title="Scope: {it.scope}">@{it.scope.simpleName}</span><br/>
-{#for q in it.nonDefaultQualifiers}
-<span class="annotation" title="Qualifier: {q}">{q.simpleName}</span><br/>
-{/for}
-<span class="class-candidate" title="{it.providerType}">{#if it.providerType.toString.length > 70}{it.providerType.toString.substring(0,70)}...{#else}{it.providerType}{/if}</span>

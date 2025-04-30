@@ -7,13 +7,25 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Link;
 
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.Header;
+import io.restassured.http.Headers;
 import io.restassured.response.Response;
 
 @QuarkusTest
@@ -32,6 +44,9 @@ class SpringDataRestTest {
     private static final int IDIOT_ID = 2;
 
     private static final String IDIOT_TITLE = "Idiot";
+
+    protected static final List<String> ORIGINAL_ARTICLES = Arrays.asList("Aeneid", "Beach House", "Cadillac Desert",
+            "Dagon and Other Macabre Tales");
 
     @Test
     void shouldGetAuthor() {
@@ -172,8 +187,8 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().post("/books")
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("add.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("add.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
     }
 
     @Test
@@ -203,7 +218,7 @@ class SpringDataRestTest {
         Response response = given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body(book.toString())
-                .when().put("/books/100")
+                .when().post("/books/")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotEmpty();
@@ -242,7 +257,40 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().put("/books/" + CRIME_AND_PUNISHMENT_ID)
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("update.entity.title"))
-                .and().body("parameterViolations[0].message", equalTo("must not be blank"));
+                .and().body("violations[0].field", equalTo("update.entity.title"))
+                .and().body("violations[0].message", equalTo("must not be blank"));
+    }
+
+    @Test
+    void sorting() {
+        //Test repository sorting
+        List<String> articleNamesSortedDesc = new ArrayList<>(getItemsAfterUpdates());
+        articleNamesSortedDesc.sort(Comparator.reverseOrder());
+        Response response = given()
+                .accept("application/json")
+                .queryParam("sort", "-name")
+                .when().get("/article-jpa")
+                .then()
+                .statusCode(HttpStatus.SC_OK).extract().response();
+        List<String> articleNamesRepositorySortedDesc = response.jsonPath().getList("name");
+        assertEquals(articleNamesSortedDesc, articleNamesRepositorySortedDesc);
+    }
+
+    protected List<String> getItemsAfterUpdates() {
+        return ORIGINAL_ARTICLES;
+    }
+
+    private void assertLinks(Headers headers, Map<String, String> expectedLinks) {
+        List<Link> links = new LinkedList<>();
+        for (Header header : headers.getList("Link")) {
+            links.add(Link.valueOf(header.getValue()));
+        }
+        assertThat(links).hasSize(expectedLinks.size());
+        for (Map.Entry<String, String> expectedLink : expectedLinks.entrySet()) {
+            assertThat(links).anySatisfy(link -> {
+                assertThat(link.getUri().toString()).endsWith(expectedLink.getValue());
+                assertThat(link.getRel()).isEqualTo(expectedLink.getKey());
+            });
+        }
     }
 }

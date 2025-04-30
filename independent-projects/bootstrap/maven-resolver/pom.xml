@@ -34,6 +34,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-classloader-commons</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.beanbag</groupId>
             <artifactId>smallrye-beanbag-maven</artifactId>
             <exclusions>
@@ -57,7 +61,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.slf4j</groupId>

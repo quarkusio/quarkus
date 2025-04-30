@@ -12,22 +12,22 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
-import io.quarkus.paths.PathVisitor;
 
 public class PathTreeClassPathElement extends AbstractClassPathElement {
 
@@ -36,18 +36,18 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     private final ReadWriteLock lock;
     private final OpenPathTree pathTree;
     private final boolean runtime;
-    private final ArtifactKey dependencyKey;
+    private final ResolvedDependency resolvedDependency;
     private volatile Set<String> resources;
 
     public PathTreeClassPathElement(PathTree pathTree, boolean runtime) {
         this(pathTree, runtime, null);
     }
 
-    public PathTreeClassPathElement(PathTree pathTree, boolean runtime, ArtifactKey dependencyKey) {
+    public PathTreeClassPathElement(PathTree pathTree, boolean runtime, ResolvedDependency resolvedDependency) {
         this.pathTree = Objects.requireNonNull(pathTree, "Path tree is null").open();
         this.lock = new ReentrantReadWriteLock();
         this.runtime = runtime;
-        this.dependencyKey = dependencyKey;
+        this.resolvedDependency = resolvedDependency;
     }
 
     @Override
@@ -56,8 +56,8 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public ArtifactKey getDependencyKey() {
-        return dependencyKey;
+    public ResolvedDependency getResolvedDependency() {
+        return resolvedDependency;
     }
 
     @Override
@@ -103,7 +103,29 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         if (resources != null && !resources.contains(sanitized)) {
             return null;
         }
-        return apply(tree -> tree.apply(sanitized, visit -> visit == null ? null : new Resource(visit)));
+        return apply(tree -> tree.apply(sanitized, this::getResource));
+    }
+
+    private Resource getResource(PathVisit visit) {
+        return visit == null ? null : new Resource(visit);
+    }
+
+    @Override
+    public List<ClassPathResource> getResources(String name) {
+        final String sanitized = sanitize(name);
+        final Set<String> resources = this.resources;
+        if (resources != null && !resources.contains(sanitized)) {
+            return List.of();
+        }
+        return apply(tree -> {
+            final List<ClassPathResource> ret = new ArrayList<>();
+            tree.acceptAll(sanitized, visit -> {
+                if (visit != null) {
+                    ret.add(new Resource(visit));
+                }
+            });
+            return ret;
+        });
     }
 
     @Override
@@ -134,32 +156,35 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     public Set<String> getProvidedResources() {
         Set<String> resources = this.resources;
         if (resources == null) {
-            resources = apply(tree -> {
-                final Set<String> relativePaths = new HashSet<>();
-                tree.walk(new PathVisitor() {
-                    @Override
-                    public void visitPath(PathVisit visit) {
-                        final String relativePath = visit.getRelativePath("/");
-                        if (relativePath.isEmpty()) {
-                            return;
-                        }
-                        relativePaths.add(relativePath);
-                    }
-                });
-                return relativePaths;
-            });
+            resources = apply(PathTreeClassPathElement::collectResources);
             this.resources = resources;
         }
         return resources;
     }
 
-    @Override
-    protected Manifest readManifest() {
-        return apply(OpenPathTree::getManifest);
+    private static Set<String> collectResources(OpenPathTree tree) {
+        final Set<String> relativePaths = new HashSet<>();
+        tree.walk(visit -> {
+            final String relativePath = visit.getRelativePath();
+            if (!relativePath.isEmpty()) {
+                relativePaths.add(relativePath);
+            }
+        });
+        return relativePaths;
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+    public boolean containsReloadableResources() {
+        return !pathTree.isArchiveOrigin();
+    }
+
+    @Override
+    protected ManifestAttributes readManifest() {
+        return apply(OpenPathTree::getManifestAttributes);
+    }
+
+    @Override
+    public ProtectionDomain getProtectionDomain() {
         URL url = null;
         final Path root = getRoot();
         try {
@@ -168,8 +193,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
             throw new RuntimeException("Unable to create protection domain for " + root, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
-        return protectionDomain;
+        return new ProtectionDomain(codesource, null);
     }
 
     @Override
@@ -190,13 +214,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         if (getDependencyKey() != null) {
             sb.append(getDependencyKey().toGacString()).append(" ");
         }
-        final Iterator<Path> i = pathTree.getRoots().iterator();
-        if (i.hasNext()) {
-            sb.append(i.next());
-            while (i.hasNext()) {
-                sb.append(",").append(i.next());
-            }
-        }
+        sb.append(pathTree.getOriginalTree().toString());
         sb.append(" runtime=").append(isRuntime());
         final Set<String> resources = this.resources;
         sb.append(" resources=").append(resources == null ? "null" : resources.size());
@@ -210,7 +228,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         private volatile URL url;
 
         private Resource(PathVisit visit) {
-            name = visit.getRelativePath("/");
+            name = visit.getRelativePath();
             path = visit.getPath();
         }
 
@@ -252,12 +270,34 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                     }
                     return this.url = url;
                 }
-                return url = apply(tree -> tree.apply(name, visit -> visit == null ? null : visit.getUrl()));
+                return url = apply(this::getUrl);
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to translate " + path + " to URL", e);
             } finally {
                 lock.readLock().unlock();
             }
+        }
+
+        /**
+         * URL for this resource in a given {@link OpenPathTree}.
+         * If the path tree contains the resource, its URL is returned.
+         * Otherwise, the method returns null.
+         *
+         * @param tree path tree to look for the resource in
+         * @return resource URL if it exists in a given path tree or null if it does not
+         */
+        private URL getUrl(OpenPathTree tree) {
+            return tree.apply(name, Resource::getUrl);
+        }
+
+        /**
+         * Returns a URL for a given {@link PathVisit} or null if the argument is null.
+         *
+         * @param visit visited path or null
+         * @return URL for a given path or null, in case the argument is null
+         */
+        private static URL getUrl(PathVisit visit) {
+            return visit == null ? null : visit.getUrl();
         }
 
         @Override
@@ -339,10 +379,18 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                 if (pathTree.isOpen()) {
                     return Files.isDirectory(path);
                 }
-                return apply(tree -> tree.apply(name, visit -> visit == null ? null : Files.isDirectory(visit.getPath())));
+                return apply(this::isDirectory);
             } finally {
                 lock.readLock().unlock();
             }
+        }
+
+        private boolean isDirectory(OpenPathTree tree) {
+            return tree.apply(name, Resource::isDirectory);
+        }
+
+        private static boolean isDirectory(PathVisit visit) {
+            return visit != null && Files.isDirectory(visit.getPath());
         }
     }
 }

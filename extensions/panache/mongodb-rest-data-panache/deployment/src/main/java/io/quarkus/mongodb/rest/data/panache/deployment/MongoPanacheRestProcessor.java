@@ -76,12 +76,11 @@ class MongoPanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getComputingIndex()
+        for (ClassInfo resourceInterface : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getComputingIndex(), classInfo);
+            validateResource(index.getComputingIndex(), resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String entityType = generics.get(0).toString();
             String idType = generics.get(1).toString();
 
@@ -109,12 +108,11 @@ class MongoPanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getComputingIndex()
+        for (ClassInfo resourceInterface : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index.getComputingIndex(), classInfo);
+            validateResource(index.getComputingIndex(), resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String repositoryClassName = generics.get(0).toString();
             String entityType = generics.get(1).toString();
             String idType = generics.get(2).toString();

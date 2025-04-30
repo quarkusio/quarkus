@@ -1,6 +1,7 @@
 package io.quarkus.cli.deploy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -27,7 +28,7 @@ import picocli.CommandLine;
 public class CliDeployGradleTest {
 
     static final Path testProjectRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/");
+            .resolve("target/test-classes/test-project/");
     static final Path workspaceRoot = testProjectRoot.resolve("CliImageGradleTest");
     static final Path wrapperRoot = testProjectRoot.resolve("gradle-wrapper");
 
@@ -97,14 +98,15 @@ public class CliDeployGradleTest {
         assertTrue(result.getStdout().contains("--no-daemon"));
         assertTrue(result.getStdout().contains("--no-build-cache"));
 
-        testDeployer("kubernetes", "docker");
-        testDeployer("knative", "docker");
-        testDeployer("minikube", "docker");
-        testDeployer("kind", "docker");
-        testDeployer("openshift", "openshift");
+        testDeployer("kubernetes", "kubernetes", "docker");
+        testDeployer("minikube", "kubernetes", "docker");
+        testDeployer("kind", "kubernetes", "docker");
+        testDeployer("openshift", "openshift", "openshift");
+        testDeployer("knative", "knative", "docker");
+
     }
 
-    protected void testDeployer(String deployer, String defaultImageBuilder) throws Exception {
+    protected void testDeployer(String deployer, String configGroup, String defaultImageBuilder) throws Exception {
         CliDriver.Result result = CliDriver.execute(project, "deploy", deployer, "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
@@ -112,6 +114,7 @@ public class CliDeployGradleTest {
         assertTrue(result.getStdout().contains("--no-build-cache"));
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("--init-script="));
+        assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-build", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
@@ -121,6 +124,7 @@ public class CliDeployGradleTest {
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("--init-script="));
         assertTrue(result.getStdout().contains("--image-builder=" + defaultImageBuilder));
+        assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-builder=jib", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
@@ -130,5 +134,19 @@ public class CliDeployGradleTest {
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("--init-script="));
         assertTrue(result.getStdout().contains("--image-builder=jib"));
+        assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
+
+        if ("knative".equals(deployer)) {
+            return;
+        }
+        result = CliDriver.execute(project, "deploy", deployer, "--deployment-kind", "Deployment",
+                "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("deploy"));
+        assertTrue(result.getStdout().contains("--no-daemon"));
+        assertTrue(result.getStdout().contains("--no-build-cache"));
+        assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
+        assertTrue(result.getStdout().contains("--init-script="));
+        assertTrue(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind=Deployment"));
     }
 }

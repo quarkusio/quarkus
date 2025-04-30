@@ -2,10 +2,10 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.util.List;
 import java.util.Objects;
-
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import java.util.Optional;
 
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.runtime.annotations.RecordableConstructor;
@@ -16,52 +16,42 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
  */
 public final class QuarkusPersistenceUnitDefinition {
 
-    private final RuntimePersistenceUnitDescriptor actualHibernateDescriptor;
+    private final QuarkusPersistenceUnitDescriptor persistenceUnitDescriptor;
     private final RecordedConfig config;
     private final List<RecordableXmlMapping> xmlMappings;
-    private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final boolean isHibernateValidatorPresent;
+    private final Optional<FormatMapperKind> jsonMapperCreator;
+    private final Optional<FormatMapperKind> xmlMapperCreator;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
-    public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor,
-            String configurationName, RecordedConfig config,
+    @RecordableConstructor
+    public QuarkusPersistenceUnitDefinition(QuarkusPersistenceUnitDescriptor persistenceUnitDescriptor,
+            RecordedConfig config,
             List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml,
+            boolean fromPersistenceXml,
+            boolean hibernateValidatorPresent,
+            Optional<FormatMapperKind> jsonMapperCreator,
+            Optional<FormatMapperKind> xmlMapperCreator,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
         Objects.requireNonNull(config);
-        this.actualHibernateDescriptor = RuntimePersistenceUnitDescriptor.validateAndReadFrom(persistenceUnitDescriptor,
-                configurationName);
+        this.persistenceUnitDescriptor = persistenceUnitDescriptor;
         this.config = config;
         this.xmlMappings = xmlMappings;
-        this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.isHibernateValidatorPresent = hibernateValidatorPresent;
+        this.jsonMapperCreator = jsonMapperCreator;
+        this.xmlMapperCreator = xmlMapperCreator;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
     }
 
-    @RecordableConstructor
-    public QuarkusPersistenceUnitDefinition(RuntimePersistenceUnitDescriptor actualHibernateDescriptor,
-            RecordedConfig config,
-            List<RecordableXmlMapping> xmlMappings,
-            boolean reactive,
-            boolean fromPersistenceXml,
-            List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        Objects.requireNonNull(actualHibernateDescriptor);
-        Objects.requireNonNull(config);
-        this.actualHibernateDescriptor = actualHibernateDescriptor;
-        this.config = config;
-        this.xmlMappings = xmlMappings;
-        this.isReactive = reactive;
-        this.fromPersistenceXml = fromPersistenceXml;
-        this.integrationStaticDescriptors = integrationStaticDescriptors;
-    }
-
-    public RuntimePersistenceUnitDescriptor getActualHibernateDescriptor() {
-        return actualHibernateDescriptor;
+    public QuarkusPersistenceUnitDescriptor getPersistenceUnitDescriptor() {
+        return persistenceUnitDescriptor;
     }
 
     public String getName() {
-        return actualHibernateDescriptor.getName();
+        return persistenceUnitDescriptor.getName();
     }
 
     public RecordedConfig getConfig() {
@@ -74,11 +64,23 @@ public final class QuarkusPersistenceUnitDefinition {
 
     //TODO assert that we match the right type of ORM!
     public boolean isReactive() {
-        return isReactive;
+        return persistenceUnitDescriptor.isReactive();
     }
 
     public boolean isFromPersistenceXml() {
         return fromPersistenceXml;
+    }
+
+    public boolean isHibernateValidatorPresent() {
+        return isHibernateValidatorPresent;
+    }
+
+    public Optional<FormatMapperKind> getJsonMapperCreator() {
+        return jsonMapperCreator;
+    }
+
+    public Optional<FormatMapperKind> getXmlMapperCreator() {
+        return xmlMapperCreator;
     }
 
     public List<HibernateOrmIntegrationStaticDescriptor> getIntegrationStaticDescriptors() {

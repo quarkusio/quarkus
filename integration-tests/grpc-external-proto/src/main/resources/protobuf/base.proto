@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_package = "org.acme.protos.base";
+option java_outer_classname = "BASEProtos";
+
+option optimize_for = CODE_SIZE;
+
+// Import the extra proto file
+import "protobuf/role.proto";
+
+package org.acme.protos.base;
+
+// A basic message representing user information
+message User {
+    int32 id = 1;
+    string name = 2;
+    string email = 3;
+    org.acme.protos.role.Role role = 4; // Use the Role message from extra.proto
+}
+
+// A basic message representing an address
+message Address {
+    string street = 1;
+    string city = 2;
+    string state = 3;
+    string zip = 4;
+}
+

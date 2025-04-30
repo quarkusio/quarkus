@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -26,20 +25,52 @@ public interface ApplicationModel {
     ResolvedDependency getAppArtifact();
 
     /**
-     * All the dependencies of an application including runtime and build time dependencies.
+     * Returns application dependencies that are included into the runtime and augmentation (Quarkus build time)
+     * classpath.
      *
      * @return application runtime and build time dependencies
      */
     Collection<ResolvedDependency> getDependencies();
 
     /**
+     * Returns application dependencies with the requested flags set.
+     *
+     * @param flags dependency flags that must be set for a dependency to be included in the result
+     * @return application dependencies that have requested flags set
+     */
+    Iterable<ResolvedDependency> getDependencies(int flags);
+
+    /**
+     * Returns application dependencies that have any of the flags combined in the value of the {@code flags} arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags);
+
+    /**
+     * Returns application dependencies that have any of the flags passed in as arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    default Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
+        if (flags.length == 0) {
+            throw new IllegalArgumentException("Flags are empty");
+        }
+        int combined = flags[0];
+        for (int i = 1; i < flags.length; ++i) {
+            combined |= flags[i];
+        }
+        return getDependenciesWithAnyFlag(combined);
+    }
+
+    /**
      * Runtime dependencies of an application
      *
      * @return runtime dependencies of an application
      */
-    default Collection<ResolvedDependency> getRuntimeDependencies() {
-        return getDependencies().stream().filter(Dependency::isRuntimeCp).collect(Collectors.toList());
-    }
+    Collection<ResolvedDependency> getRuntimeDependencies();
 
     /**
      * Quarkus platforms (BOMs) found in the configuration of an application
@@ -142,4 +173,11 @@ public interface ApplicationModel {
             collectModules(((ResolvedDependency) d).getWorkspaceModule(), collected);
         }
     }
+
+    /**
+     * Extension Dev mode configuration options.
+     *
+     * @return extension Dev mode configuration options
+     */
+    Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
 }

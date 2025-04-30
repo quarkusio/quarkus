@@ -1,0 +1,17 @@
+name: "Micrometer OpenTelemetry Bridge"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "micrometer"
+  - "metrics"
+  - "metric"
+  - "opentelemetry"
+  - "tracing"
+  - "logging"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/telemetry-micrometer-to-opentelemetry"
+  categories:
+  - "observability"
+  status: "preview"
+  config:
+  - "quarkus.micrometer.otel."

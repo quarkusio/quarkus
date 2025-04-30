@@ -19,14 +19,14 @@ public class ImageBuildIT extends MojoTestBase {
     private RunningInvoker running;
     private File testDir;
 
-    // We can only test with jib as its the only extension that has 0 dependencies from the system.
+    // We can only test with jib as it's the only extension that has 0 dependencies from the system.
     @Test
     @EnabledOnOs({ OS.LINUX })
     public void testImageBuildWithJib() throws Exception {
         Properties buildProperties = new Properties();
         buildProperties.put("quarkus.container-image.builder", "jib");
 
-        testDir = initProject("projects/classic");
+        testDir = initProject("projects/classic", "projects/image-build-with-jib");
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:image-build"),
                 Collections.emptyMap(), buildProperties);

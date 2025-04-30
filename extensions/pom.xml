@@ -14,8 +14,9 @@
     <name>Quarkus - Extensions - Parent pom</name>
     <packaging>pom</packaging>
     <modules>
-        <!-- Netty loom adaptor-->
-        <module>netty-loom-adaptor</module>
+        <module>virtual-threads</module>
+        <module>tls-registry</module>
+
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
@@ -37,7 +38,8 @@
         <module>vertx-http</module>
         <module>undertow</module>
         <module>websockets</module>
-        <module>webjars-locator</module>
+        <module>websockets-next</module>
+        <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
         <module>apache-httpclient</module>
@@ -46,13 +48,15 @@
         <!-- Monitoring -->
         <module>smallrye-health</module>
         <module>smallrye-metrics</module>
-        <module>smallrye-opentracing</module>
         <module>smallrye-fault-tolerance</module>
-        <module>jaeger</module>
         <module>micrometer</module>
         <module>micrometer-registry-prometheus</module>
+        <module>micrometer-opentelemetry</module>
         <module>opentelemetry</module>
         <module>info</module>
+        <module>observability-devservices</module>
+        <module>jfr</module>
+        <module>load-shedding</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -96,11 +100,12 @@
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>hibernate-search-backend-elasticsearch-common</module>
         <module>hibernate-search-orm-elasticsearch</module>
-        <module>hibernate-search-orm-coordination-outbox-polling</module>
+        <module>hibernate-search-orm-outbox-polling</module>
+        <module>hibernate-search-standalone-elasticsearch</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
-        <module>elasticsearch-rest-high-level-client</module>
         <module>elasticsearch-java-client</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
@@ -139,17 +144,25 @@
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
         <module>oidc-client-reactive-filter</module>
+        <module>oidc-client-registration</module>
+        <module>oidc-client-graphql</module>
+        <module>oidc-token-propagation-common</module>
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
+        <module>oidc-db-token-state-manager</module>
+        <module>oidc-redis-token-state-manager</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client-common</module>
-        <module>keycloak-admin-client</module>
-        <module>keycloak-admin-client-reactive</module>
+        <module>keycloak-admin-rest-client</module>
+        <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
-        <module>csrf-reactive</module>
+
+        <!-- SBOM -->
+        <module>cyclonedx</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+        <module>infinispan-cache</module>
 
         <!-- Caching -->
         <module>caffeine</module>
@@ -182,8 +195,13 @@
 
         <!-- Database migrations -->
         <module>flyway</module>
+        <module>flyway-postgresql</module>
+        <module>flyway-oracle</module>
+        <module>flyway-mysql</module>
+        <module>flyway-mssql</module>
+        <module>flyway-derby</module>
+        <module>flyway-db2</module>
         <module>liquibase</module>
-        <module>liquibase-mongodb</module>
 
         <!-- GraphQL -->
         <module>vertx-graphql</module>
@@ -223,24 +241,18 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-no-runtime-deps</id>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
-                            <rules>
+                            <rules combine.children="append">
                                 <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-enforcer-rules</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

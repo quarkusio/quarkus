@@ -1,14 +1,16 @@
 package io.quarkus.reactive.datasource.runtime;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class DataSourceReactiveBuildTimeConfig {
+public interface DataSourceReactiveBuildTimeConfig {
 
     /**
      * If we create a Reactive datasource for this datasource.
      */
-    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "true")
-    public boolean enabled = true;
+    @WithDefault("true")
+    @WithParentName
+    boolean enabled();
 }

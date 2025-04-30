@@ -39,6 +39,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory.class,
         org.eclipse.aether.internal.impl.collect.DefaultDependencyCollector.class,
         org.eclipse.aether.transport.wagon.WagonTransporterFactory.class
-})
+}, ignoreNested = true)
 public class Reflections {
 }

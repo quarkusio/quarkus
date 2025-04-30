@@ -12,10 +12,11 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>@project.version@</quarkus.platform.version>
         <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
-        <surefire-plugin.version>3.0.0</surefire-plugin.version>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+        <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
+        <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+        <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
     </properties>
     <modules>
         <module>runner</module>
@@ -24,6 +25,13 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>\${compiler-plugin.version}</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>

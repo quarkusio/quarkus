@@ -1,12 +1,14 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.Paths;
 
 import io.quarkus.runtime.rest.DisabledRestEndpoints;
 
@@ -17,28 +19,56 @@ import io.quarkus.runtime.rest.DisabledRestEndpoints;
  */
 public class DisabledRestEndpointsFilter implements OASFilter {
 
-    public void filterOpenAPI(OpenAPI openAPI) {
-        Map<String, List<String>> disabledEndpointsMap = DisabledRestEndpoints.get();
-        if (disabledEndpointsMap != null) {
-            Map<String, PathItem> pathItems = openAPI.getPaths().getPathItems();
-            List<String> emptyPathItems = new ArrayList<>();
-            if (pathItems != null) {
-                for (Map.Entry<String, PathItem> entry : pathItems.entrySet()) {
-                    String path = entry.getKey();
-                    PathItem pathItem = entry.getValue();
-                    List<String> disabledMethodsForThisPath = disabledEndpointsMap.get(path);
-                    if (disabledMethodsForThisPath != null) {
-                        disabledMethodsForThisPath.forEach(method -> {
-                            pathItem.setOperation(PathItem.HttpMethod.valueOf(method), null);
-                        });
-                        // if the pathItem is now empty, remove it
-                        if (pathItem.getOperations().isEmpty()) {
-                            emptyPathItems.add(path);
-                        }
-                    }
-                }
-                emptyPathItems.forEach(openAPI.getPaths()::removePathItem);
-            }
+    public static Optional<OASFilter> maybeGetInstance() {
+        var endpoints = DisabledRestEndpoints.get();
+
+        if (endpoints != null && !endpoints.isEmpty()) {
+            return Optional.of(new DisabledRestEndpointsFilter(endpoints));
         }
+
+        return Optional.empty();
+    }
+
+    final Map<String, List<String>> disabledEndpoints;
+
+    private DisabledRestEndpointsFilter(Map<String, List<String>> disabledEndpoints) {
+        this.disabledEndpoints = disabledEndpoints;
+    }
+
+    @Override
+    public void filterOpenAPI(OpenAPI openAPI) {
+        Paths paths = openAPI.getPaths();
+
+        disabledEndpoints.entrySet()
+                .stream()
+                .map(pathMethods -> Map.entry(stripSlash(pathMethods.getKey()), pathMethods.getValue()))
+                // Skip paths that are not present in the OpenAPI model
+                .filter(pathMethods -> paths.hasPathItem(pathMethods.getKey()))
+                .forEach(pathMethods -> {
+                    String path = pathMethods.getKey();
+                    PathItem pathItem = paths.getPathItem(path);
+
+                    // Remove each operation identified as a disabled HTTP method
+                    Optional.ofNullable(pathMethods.getValue())
+                            .orElseGet(Collections::emptyList)
+                            .stream()
+                            .map(PathItem.HttpMethod::valueOf)
+                            .forEach(method -> pathItem.setOperation(method, null));
+
+                    if (pathItem.getOperations().isEmpty()) {
+                        paths.removePathItem(path);
+                    }
+                });
+    }
+
+    /**
+     * Removes any trailing slash character from the path when it is not the root '/'
+     * path. This is necessary to align with the paths generated in the OpenAPI model.
+     */
+    static String stripSlash(String path) {
+        if (path.endsWith("/") && path.length() > 1) {
+            return path.substring(0, path.length() - 1);
+        }
+        return path;
     }
 }

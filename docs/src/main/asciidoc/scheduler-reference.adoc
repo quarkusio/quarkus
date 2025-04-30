@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: scheduling,cronjob
+:extensions: io.quarkus:quarkus-scheduler
 
 Modern applications often need to run specific tasks periodically.
 There are two scheduler extensions in Quarkus.
@@ -17,7 +19,7 @@ The `quarkus-scheduler` extension brings the API and a lightweight in-memory sch
 The `quarkus-quartz` extension implements the API from the `quarkus-scheduler` extension and contains a scheduler implementation based on the Quartz library.
 You will only need `quarkus-quartz` for more advanced scheduling use cases, such as persistent tasks and clustering.
 
-NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight scheduler implementation from the `quarkus-scheduler` extension is automatically disabled. 
+NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight scheduler implementation from the `quarkus-scheduler` extension is automatically disabled.
 
 == Scheduled Methods
 
@@ -32,26 +34,56 @@ Furthermore, the annotated method must return `void` and either declare no param
 
 TIP: The annotation is repeatable so a single method could be scheduled multiple times.
 
-[WARNING]
-====
-Subclasses never inherit the metadata of a `@Scheduled` method declared on a superclass. In the following example, the `everySecond()` method is only invoked upon the instance of `Jobs`.
+=== Inheritance of metadata
+
+A subclass never inherits the metadata of a `@Scheduled` method declared on a superclass.
+For example, suppose the class `org.amce.Foo` is extended by the class `org.amce.Bar`.
+If `Foo` declares a non-static method annotated with `@Scheduled` then `Bar` does not inherit the metadata of the scheduled method.
+In the following example, the `everySecond()` method is only invoked upon the instance of `Foo`.
+
 [source,java]
 ----
-class Jobs {
+class Foo {
 
    @Scheduled(every = "1s")
    void everySecond() {
-     // ..do something 
+     // ..do something
    }
 }
 
 @Singleton
-class MyJobs extends Jobs {
+class Bar extends Foo {
 }
 ----
-====
 
-A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful. A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throws an exception.
+=== CDI events
+
+Some CDI events are fired synchronously and asynchronously when specific events occur.
+
+|===
+|Type |Event description
+
+|`io.quarkus.scheduler.SuccessfulExecution`
+|An execution of a scheduled job completed successfully.
+
+|`io.quarkus.scheduler.FailedExecution`
+|An execution of a scheduled job completed with an exception.
+
+|`io.quarkus.scheduler.SkippedExecution`
+|An execution of a scheduled job was skipped.
+
+|`io.quarkus.scheduler.SchedulerPaused`
+|The scheduler was paused.
+
+|`io.quarkus.scheduler.SchedulerResumed`
+|The scheduler was resumed.
+
+|`io.quarkus.scheduler.ScheduledJobPaused`
+|A scheduled job was paused.
+
+|`io.quarkus.scheduler.ScheduledJobResumed`
+|A scheduled job was resumed.
+|===
 
 === Triggers
 
@@ -68,7 +100,7 @@ For example `"0 15 10 * * ?"` fires at 10:15am every day.
 [source,java]
 ----
 @Scheduled(cron = "0 15 10 * * ?")
-void fireAt10AmEveryDay() { }
+void fireAt1015AmEveryDay() { }
 ----
 
 The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron-type` property.
@@ -124,15 +156,15 @@ Property Expressions.
 .Time Zone Configuration Property Example
 [source,java]
 ----
-@Scheduled(cron = "0 15 10 * * ?", timeZone = "{myMethod.timeZone}")
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "${myMethod.timeZone}")
 void myMethod() { }
 ----
 
 ==== Intervals
 
 An interval trigger defines a period between invocations.
-The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value of `@Scheduled#every()` is parsed with `java.time.Duration#parse(CharSequence)`. 
-However, if an expression starts with a digit then the `PT` prefix is added automatically.
+The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value of `@Scheduled#every()` is parsed with `java.time.Duration#parse(CharSequence)`.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minutes".
 
 .Interval Trigger Example
@@ -141,6 +173,8 @@ So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minute
 @Scheduled(every = "15m")
 void every15Mins() { }
 ----
+
+WARNING: A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning message is logged during build and application start.
 
 The `every` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
@@ -162,7 +196,7 @@ So for example a Property Expression with the default value `"off"` can be used 
 void myMethod() { }
 ----
 
-
+[[identity]]
 === Identity
 
 By default, a unique identifier is generated for each scheduled method.
@@ -186,7 +220,8 @@ Property Expressions. (Note that `"{property.path}"` style expressions are still
 void myMethod() { }
 ----
 
-=== Delayed Execution
+[[delayed_start]]
+=== Delayed Start of a Trigger
 
 `@Scheduled` provides two ways to delay the time a trigger should start firing at.
 
@@ -202,8 +237,8 @@ void everyTwoSeconds() { }
 NOTE: The final value is always rounded to full second.
 
 `@Scheduled#delayed()` is a text alternative to the properties above.
-The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value is parsed with `java.time.Duration#parse(CharSequence)`. 
-However, if an expression starts with a digit, the `PT` prefix is added automatically.
+The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value is parsed with `java.time.Duration#parse(CharSequence)`.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15s` can be used instead of `PT15S` and is parsed as "15 seconds".
 
 [source,java]
@@ -215,9 +250,8 @@ void everyTwoSeconds() { }
 NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
 
 The main advantage over `@Scheduled#delay()` is that the value is configurable.
-The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
-Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
-
+The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
+(Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 [source,java]
 ----
@@ -225,6 +259,25 @@ Property Expressions. (Note that `"{property.path}"` style expressions are still
 void everyTwoSeconds() { }
 ----
 <1> The config property `myMethod.delay.expr` is used to set the delay.
+
+[[delayed_execution]]
+=== Delayed Execution
+
+`@Scheduled#executionMaxDelay()` can be set to delay each execution of a scheduled method.
+The value represents the maximum delay between the activation of the trigger and the execution of the scheduled method.
+The actual delay is a randomized number between 0 and the maximum specified delay.
+
+The value is parsed with `DurationConverter#parseDuration(String)`.
+It can be a property expression, in which case, the scheduler attempts to use the configured value instead: `@Scheduled(executionMaxDelay = "${myJob.maxDelay}")`.
+Additionally, the property expression can specify a default value:
+`@Scheduled(executionMaxDelay = "${myJob.maxDelay}:500ms}")`.
+
+[source,java]
+----
+@Scheduled(every = "2s", executionMaxDelay = "500ms") <1>
+void everyTwoSeconds() { }
+----
+<1> The delay will be a value between 0 and 500 milliseconds. As a result, the period between to `everyTwoSeconds()` executions will be roughly between one and a half and two and a half seconds.
 
 [[concurrent_execution]]
 === Concurrent Execution
@@ -251,12 +304,16 @@ NOTE: Note that only executions within the same application instance are conside
 === Conditional Execution
 
 You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
-The specified bean class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The specified class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The class must either represent a CDI bean or declare a public no-args constructor.
+In case of CDI, there must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails.
+Furthermore, the scope of the bean must be active during execution of the job.
+If the scope is `@Dependent` then the bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
 
 [source,java]
 ----
 class Jobs {
-  
+
    @Scheduled(every = "1s", skipExecutionIf = MyPredicate.class) <1>
    void everySecond() {
      // do something every second...
@@ -286,7 +343,7 @@ class Jobs {
 
    @Inject
    MyService service;
-  
+
    @Scheduled(every = "1s")
    void everySecond() {
      if (service.isStarted()) {
@@ -300,17 +357,19 @@ The main idea is to keep the logic to skip the execution outside the scheduled b
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 
+TIP: To skip the scheduled executions while the application is starting up/shutting down, you can make use of the `io.quarkus.scheduler.Scheduled.ApplicationNotRunning` skip predicate.
+
 [[non-blocking-methods]]
 === Non-blocking Methods
 
-By default, a scheduled method is executed on the main executor for blocking tasks. 
+By default, a scheduled method is executed on the main executor for blocking tasks.
 As a result, a technology that is designed to run on a Vert.x event loop (such as Hibernate Reactive) cannot be used inside the method body.
 For this reason, a scheduled method that returns `java.util.concurrent.CompletionStage<Void>` or `io.smallrye.mutiny.Uni<Void>`, or is annotated with `@io.smallrye.common.annotation.NonBlocking` is executed on the Vert.x event loop instead.
 
 [source,java]
 ----
 class Jobs {
-  
+
    @Scheduled(every = "1s")
    Uni<Void> everySecond() { <1>
      // ...do something async
@@ -318,6 +377,30 @@ class Jobs {
 }
 ----
 <1> The return type `Uni<Void>` instructs the scheduler to execute the method on the Vert.x event loop.
+
+=== How to use multiple scheduler implementations
+
+In some cases, it might be useful to choose a scheduler implementation used to execute a scheduled method.
+However, only one `Scheduler` implementation is used for all scheduled methods by default.
+For example, the `quarkus-quartz` extension provides an implementation that supports clustering, but it also removes the simple in-memory implementation from the game.
+Now, if clustering is enabled then it's not possible to define a scheduled method that would be executed locally on a single node.
+Nevertheless, if you set the `quarkus.scheduler.use-composite-scheduler` config property to `true` then a composite `Scheduler` is used instead.
+This means that multiple scheduler implementations are kept running side by side.
+Furthermore, it's possible to choose a specific implementation used to execute a scheduled method using `@Scheduled#executeWith()`.
+
+[source,java]
+----
+class Jobs {
+
+   @Scheduled(cron = "0 15 10 * * ?") <1>
+   void fireAt10AmEveryDay() { }
+
+   @Scheduled(every = "1s", executeWith = Scheduled.SIMPLE) <2>
+   void everySecond() { }
+}
+----
+<1> If the `quarkus-quartz` extension is present then this method will be executed with the Quartz-specific scheduler.
+<2> If `quarkus.scheduler.use-composite-scheduler=true` is set then this method will be executed with the simple in-memory implementation provided by the `quarkus-scheduler` extension.
 
 == Scheduler
 
@@ -359,6 +442,57 @@ class MyService {
 
 NOTE: A CDI event is fired synchronously and asynchronously when the scheduler or a scheduled job is paused/resumed. The payload is `io.quarkus.scheduler.SchedulerPaused`, `io.quarkus.scheduler.SchedulerResumed`, `io.quarkus.scheduler.ScheduledJobPaused` and `io.quarkus.scheduler.ScheduledJobResumed` respectively.
 
+[[scheduling_long_running_tasks]]
+== Scheduling Long-Running Tasks
+
+Executing a long-running task might yield a warning message similar to the following:
+
+[source,java]
+----
+WARN  [io.ver.cor.imp.BlockedThreadChecker] (vertx-blocked-thread-checker) Thread Thread[vert.x-worker-thread-1,5,main] has been blocked for 81879 ms, time limit is 60000 ms: io.vertx.core.VertxException: Thread blocked
+----
+
+This is happening because the default worker thread pool is coming from Vert.x which guards against threads being blocked for far too long.
+
+NOTE: The amount of time for which a Vert.x worker thread can be blocked is also https://quarkus.io/guides/all-config#quarkus-vertx_quarkus-vertx-max-worker-execute-time[configurable].
+
+Therefore, a proper way to execute long tasks is to offload them from the scheduled method to a custom executor service.
+Here's an example of such setup for a long-running task that we do not expect to execute often:
+
+[source,java]
+----
+@ApplicationScoped
+public class LongRunner implements Runnable {
+    
+    private ExecutorService executorService;
+    
+    @PostConstruct
+    void init() {
+        executorService = Executors.newThreadPerTaskExecutor(Executors.defaultThreadFactory()); <1>
+    }
+    
+    @PreDestroy
+    void destroy() {
+        executorService.shutdown(); <2>
+    }
+    
+    
+    @Scheduled(cron = "{my.schedule}")
+    public void update() {
+        executorService.execute(this); <3>
+    }
+    
+    @Override
+    public void run() { <4>
+        // perform the actual task here
+    }
+}
+----
+<1> Create a fitting executor. In this case, a new thread is created per scheduled task and stopped once the task finishes.
+<2> `@PreDestroy` callback is used to shut down the executor service.
+<3> Scheduled method only delegates the job to the custom executor - this prevent Vert.x thread from being blocked.
+<4> The bean implements `Runnable`, a format we can directly pass to the executor service as a parameter.
+
 [[programmatic_scheduling]]
 == Programmatic Scheduling
 
@@ -383,10 +517,10 @@ class MyJobs {
             })
             .schedule(); <3>
     }
-    
+
     void removeMyJob() {
         scheduler.unscheduleJob("myJob"); <4>
-    } 
+    }
 }
 ----
 <1> This is a programmatic alternative to a method annotated with `@Scheduled(identity = "myJob", cron = "0/5 * * * * ?")`.
@@ -396,7 +530,24 @@ class MyJobs {
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
 
-NOTE: If the xref:quartz.adoc[Quartz extension] is present then the Quartz API can be also used to schedule a job programmatically.
+NOTE: If the xref:quartz.adoc[Quartz extension] is present and the DB store type is used then it's not possible to pass a task instance to the job definition and a task class must be used instead. The Quartz API can be also used to schedule a job programmatically.
+
+In certain cases, a more fine-grained approach might be needed which is why Quarkus also exposes `java.util.concurrent.ScheduledExecutorService` and `java.util.concurrent.ExecutorService` that can be injected as CDI beans.
+However, these executors are used by other Quarkus extensions and therefore should be approached with caution. Furthermore, users are never allowed to shut these executors down manually.
+
+[source,java]
+----
+class JobScheduler {
+
+   @Inject
+   ScheduledExecutorService executor;
+
+   void everySecondWithDelay() {
+       Runnable myRunnable = createMyRunnable();
+       executor.scheduleAtFixedRate(myRunnable, 3, 1, TimeUnit.SECONDS);
+   }
+}
+----
 
 == Scheduled Methods and Testing
 
@@ -407,7 +558,7 @@ You can even disable the scheduler for particular <<getting-started-testing#test
 
 == Metrics
 
-Some basic metrics are published out of the box if `quarkus.scheduler.metrics.enabled` is set to `true` and a metrics extension is present. 
+Some basic metrics are published out of the box if `quarkus.scheduler.metrics.enabled` is set to `true` and a metrics extension is present.
 
 If the xref:telemetry-micrometer.adoc[Micrometer extension] is present, then a `@io.micrometer.core.annotation.Timed` interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `io.micrometer.core.instrument.Timer` with name `scheduled.methods` and a `io.micrometer.core.instrument.LongTaskTimer` with name `scheduled.methods.running` are registered. The fully qualified name of the declaring class and the name of a `@Scheduled` method are used as tags.
 
@@ -415,7 +566,16 @@ If the xref:smallrye-metrics.adoc[SmallRye Metrics extension] is present, then a
 
 == OpenTelemetry Tracing
 
-If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then the `@io.opentelemetry.instrumentation.annotations.WithSpan` annotation is added automatically to every `@Scheduled` method. As a result, each execution of this method has a new `io.opentelemetry.api.trace.Span` associated.
+If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then every job execution, either defined with the `@Scheduled` annotation or scheduled programmatically, automatically creates a span named after the job's <<identity>>.
+
+[[virtual_threads]]
+== Run @Scheduled methods on virtual threads
+
+Methods annotated with `@Scheduled` can also be annotated with `@RunOnVirtualThread`.
+In this case, the method is invoked on a virtual thread.
+
+The method must return `void` and your Java runtime must provide support for virtual threads.
+Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
 == Configuration Reference
 

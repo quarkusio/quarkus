@@ -1,7 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,11 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -40,7 +40,8 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.HyphenateEnumConverter;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class TestSupport implements TestController {
 
@@ -61,6 +62,7 @@ public class TestSupport implements TestController {
     volatile List<String> excludeTags = Collections.emptyList();
     volatile Pattern include = null;
     volatile Pattern exclude = null;
+    volatile String specificSelection = null;
     volatile List<String> includeEngines = Collections.emptyList();
     volatile List<String> excludeEngines = Collections.emptyList();
     volatile boolean displayTestOutput;
@@ -74,13 +76,13 @@ public class TestSupport implements TestController {
     private Throwable compileProblem;
     private volatile boolean firstRun = true;
 
-    String appPropertiesIncludeTags;
-    String appPropertiesExcludeTags;
+    List<String> appPropertiesIncludeTags;
+    List<String> appPropertiesExcludeTags;
     String appPropertiesIncludePattern;
     String appPropertiesExcludePattern;
-    String appPropertiesIncludeEngines;
-    String appPropertiesExcludeEngines;
-    String appPropertiesTestType;
+    List<String> appPropertiesIncludeEngines;
+    List<String> appPropertiesExcludeEngines;
+    TestType appPropertiesTestType;
     private TestConfig config;
     private volatile boolean closed;
 
@@ -156,11 +158,11 @@ public class TestSupport implements TestController {
         if (moduleRunners.isEmpty()) {
             TestWatchedFiles.setWatchedFilesListener(
                     (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
-            final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern);
-            final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern);
+            final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern());
+            final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern());
             for (var module : context.getAllModules()) {
                 final boolean mainModule = module == context.getApplicationRoot();
-                if (config.onlyTestApplicationModule && !mainModule) {
+                if (config.onlyTestApplicationModule() && !mainModule) {
                     continue;
                 } else if (includeModulePattern != null) {
                     if (!includeModulePattern
@@ -211,15 +213,18 @@ public class TestSupport implements TestController {
                         final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
                         bootstrapConfig.setExistingModel(testModel);
 
+                        // TODO I don't think we should have both this and AppMakerHelper, doing apparently the same thing?
+
                         QuarkusClassLoader.Builder clBuilder = null;
                         var currentParentFirst = curatedApplication.getApplicationModel().getParentFirst();
                         for (ResolvedDependency d : testModel.getDependencies()) {
                             if (d.isClassLoaderParentFirst() && !currentParentFirst.contains(d.getKey())) {
                                 if (clBuilder == null) {
-                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First",
+                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First"
+                                            + curatedApplication.getClassLoaderNameSuffix(),
                                             getClass().getClassLoader().getParent(), false);
                                 }
-                                clBuilder.addElement(ClassPathElement.fromDependency(d));
+                                clBuilder.addNormalPriorityElement(ClassPathElement.fromDependency(d));
                             }
                         }
 
@@ -322,6 +327,8 @@ public class TestSupport implements TestController {
         for (var runner : moduleRunners) {
             runner.abort();
         }
+        TestWatchedFiles.setWatchedFilesListener(
+                (BiConsumer<Map<String, Boolean>, List<Map.Entry<Predicate<String>, Boolean>>>) null);
     }
 
     public void runTests() {
@@ -504,90 +511,68 @@ public class TestSupport implements TestController {
      * We also can't apply this as part of the test startup, as it is too
      * late and the filters have already been resolved.
      * <p>
-     * We manually check for application.properties changes and apply them.
+     * We manually check for configuration changes and apply them.
      */
     private void handleApplicationPropertiesChange() {
-        for (Path rootPath : curatedApplication.getQuarkusBootstrap().getApplicationRoot()) {
-            Path appProps = rootPath.resolve("application.properties");
-            if (Files.exists(appProps)) {
-                Properties p = new Properties();
-                try (InputStream in = Files.newInputStream(appProps)) {
-                    p.load(in);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+        SmallRyeConfig updatedConfig = getMinimalConfig();
+
+        List<String> includeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-tags").orElse(null);
+        List<String> excludeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-tags").orElse(null);
+        String includePattern = updatedConfig.getOptionalValue("quarkus.test.include-pattern", String.class).orElse(null);
+        String excludePattern = updatedConfig.getOptionalValue("quarkus.test.exclude-pattern", String.class).orElse(null);
+        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines").orElse(null);
+        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines").orElse(null);
+        TestType testType = updatedConfig.getOptionalValue("quarkus.test.type", TestType.class).orElse(TestType.ALL);
+
+        if (!firstRun) {
+            if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
+                this.includeTags = Objects.requireNonNullElse(includeTags, Collections.emptyList());
+            }
+            if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
+                this.excludeTags = Objects.requireNonNullElse(excludeTags, Collections.emptyList());
+            }
+            if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
+                if (includePattern == null) {
+                    this.include = null;
+                } else {
+                    this.include = Pattern.compile(includePattern);
                 }
-                String includeTags = p.getProperty("quarkus.test.include-tags");
-                String excludeTags = p.getProperty("quarkus.test.exclude-tags");
-                String includePattern = p.getProperty("quarkus.test.include-pattern");
-                String excludePattern = p.getProperty("quarkus.test.exclude-pattern");
-                String includeEngines = p.getProperty("quarkus.test.include-engines");
-                String excludeEngines = p.getProperty("quarkus.test.exclude-engines");
-                String testType = p.getProperty("quarkus.test.type");
-                if (!firstRun) {
-                    if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
-                        if (includeTags == null) {
-                            this.includeTags = Collections.emptyList();
-                        } else {
-                            this.includeTags = Arrays.stream(includeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
-                        if (excludeTags == null) {
-                            this.excludeTags = Collections.emptyList();
-                        } else {
-                            this.excludeTags = Arrays.stream(excludeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
-                        if (includePattern == null) {
-                            include = null;
-                        } else {
-                            include = Pattern.compile(includePattern);
-                        }
-                    }
-                    if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
-                        if (excludePattern == null) {
-                            exclude = null;
-                        } else {
-                            exclude = Pattern.compile(excludePattern);
-                        }
-                    }
-                    if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
-                        if (includeEngines == null) {
-                            this.includeEngines = Collections.emptyList();
-                        } else {
-                            this.includeEngines = Arrays.stream(includeEngines.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
-                        if (excludeEngines == null) {
-                            this.excludeEngines = Collections.emptyList();
-                        } else {
-                            this.excludeEngines = Arrays.stream(excludeEngines.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(testType, appPropertiesTestType)) {
-                        if (testType == null) {
-                            this.testType = TestType.ALL;
-                        } else {
-                            this.testType = new HyphenateEnumConverter<>(TestType.class).convert(testType);
-                        }
-                    }
+            }
+            if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
+                if (excludePattern == null) {
+                    this.exclude = null;
+                } else {
+                    this.exclude = Pattern.compile(excludePattern);
                 }
-                appPropertiesIncludeTags = includeTags;
-                appPropertiesExcludeTags = excludeTags;
-                appPropertiesIncludePattern = includePattern;
-                appPropertiesExcludePattern = excludePattern;
-                appPropertiesIncludeEngines = includeEngines;
-                appPropertiesExcludeEngines = excludeEngines;
-                appPropertiesTestType = testType;
-                break;
+            }
+            if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
+                this.includeEngines = Objects.requireNonNullElse(includeEngines, Collections.emptyList());
+            }
+            if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
+                this.excludeEngines = Objects.requireNonNullElse(excludeEngines, Collections.emptyList());
+            }
+            if (!Objects.equals(testType, appPropertiesTestType)) {
+                this.testType = testType;
             }
         }
+
+        appPropertiesIncludeTags = includeTags;
+        appPropertiesExcludeTags = excludeTags;
+        appPropertiesIncludePattern = includePattern;
+        appPropertiesExcludePattern = excludePattern;
+        appPropertiesIncludeEngines = includeEngines;
+        appPropertiesExcludeEngines = excludeEngines;
+        appPropertiesTestType = testType;
+    }
+
+    private static SmallRyeConfig getMinimalConfig() {
+        return new SmallRyeConfigBuilder().addDefaultSources().build();
+    }
+
+    private Optional<List<String>> getTrimmedListFromConfig(SmallRyeConfig updatedConfig, String property) {
+        return updatedConfig.getOptionalValue(property, String.class)
+                .map(t -> Arrays.stream(t.split(",")).map(String::trim)
+                        .collect(Collectors.toList()));
     }
 
     public boolean isStarted() {
@@ -621,6 +606,10 @@ public class TestSupport implements TestController {
     public void setPatterns(String include, String exclude) {
         this.include = include == null ? null : Pattern.compile(include);
         this.exclude = exclude == null ? null : Pattern.compile(exclude);
+    }
+
+    public void setSpecificSelection(String specificSelection) {
+        this.specificSelection = specificSelection;
     }
 
     public void setEngines(List<String> includeEngines, List<String> excludeEngines) {

@@ -1,6 +1,5 @@
 package io.quarkus.vertx.web.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.vertx.web.ReactiveRoutes.APPLICATION_JSON;
 import static io.quarkus.vertx.web.ReactiveRoutes.EVENT_STREAM;
 import static io.quarkus.vertx.web.ReactiveRoutes.JSON_STREAM;
@@ -30,7 +29,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.RolesAllowed;
@@ -67,7 +65,6 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -94,20 +91,16 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.gizmo.WhileLoop;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
@@ -117,7 +110,6 @@ import io.quarkus.vertx.web.runtime.RouteMatcher;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.UniFailureCallback;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
-import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -172,7 +164,7 @@ class ReactiveRoutesProcessor {
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
 
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -227,7 +219,7 @@ class ReactiveRoutesProcessor {
                     // access the SecurityIdentity in a synchronous manner
                     final boolean blocking = annotationStore.hasAnnotation(method, DotNames.BLOCKING);
                     final boolean alwaysAuthenticateRoute;
-                    if (!httpBuildTimeConfig.auth.proactive && !blocking) {
+                    if (!httpBuildTimeConfig.auth().proactive() && !blocking) {
                         final DotName returnTypeName = method.returnType().name();
                         // method either returns 'something' in a synchronous manner or void (in which case we can't tell)
                         final boolean possiblySynchronousResponse = !returnTypeName.equals(DotNames.UNI)
@@ -263,11 +255,6 @@ class ReactiveRoutesProcessor {
                 }
             }
         }
-    }
-
-    @BuildStep
-    BodyHandlerBuildItem bodyHandler(io.quarkus.vertx.http.deployment.BodyHandlerBuildItem realOne) {
-        return new BodyHandlerBuildItem(realOne.getHandler());
     }
 
     @BuildStep
@@ -445,7 +432,7 @@ class ReactiveRoutesProcessor {
                 if (routeHandler == null) {
                     String handlerClass = generateHandler(
                             new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null),
-                                    handlerType, produces),
+                                    handlerType == HandlerType.FAILURE, produces),
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
                             routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
@@ -458,6 +445,13 @@ class ReactiveRoutesProcessor {
                 // Wrap the route handler if necessary
                 // Note that route annotations with the same values share a single handler implementation
                 routeHandler = recorder.compressRouteHandler(routeHandler, businessMethod.getCompression());
+                if (businessMethod.getMethod().hasDeclaredAnnotation(DotNames.RUN_ON_VIRTUAL_THREAD)) {
+                    LOGGER.debugf("Route %s#%s() will be executed on a virtual thread",
+                            businessMethod.getMethod().declaringClass().name(), businessMethod.getMethod().name());
+                    routeHandler = recorder.runOnVirtualThread(routeHandler);
+                    // The handler must be executed on the event loop
+                    handlerType = HandlerType.NORMAL;
+                }
 
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
@@ -489,7 +483,7 @@ class ReactiveRoutesProcessor {
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(
-                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), HandlerType.NORMAL,
+                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), false,
                             new String[0]),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
                     filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable, index);
@@ -501,23 +495,6 @@ class ReactiveRoutesProcessor {
         }
 
         detectConflictingRoutes(matchers);
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(RUNTIME_INIT)
-    void routeNotFound(Capabilities capabilities, ResourceNotFoundRecorder recorder, VertxWebRouterBuildItem router,
-            List<RouteDescriptionBuildItem> descriptions,
-            HttpRootPathBuildItem httpRoot,
-            List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoints) {
-        if (capabilities.isMissing(Capability.RESTEASY)) {
-            // Register a special error handler if JAX-RS not available
-            recorder.registerNotFoundHandler(router.getHttpRouter(), httpRoot.getRootPath(),
-                    descriptions.stream().map(RouteDescriptionBuildItem::getDescription).collect(Collectors.toList()),
-                    additionalEndpoints.stream()
-                            .map(s -> s.isAbsolutePath() ? s.getEndpoint()
-                                    : TemplateHtmlBuilder.adjustRoot(httpRoot.getRootPath(), s.getEndpoint()))
-                            .collect(Collectors.toList()));
-        }
     }
 
     @BuildStep
@@ -785,7 +762,7 @@ class ReactiveRoutesProcessor {
                 defaultProduces == null ? invoke.loadNull() : invoke.load(defaultProduces));
 
         // For failure handlers attempt to match the failure type
-        if (descriptor.getHandlerType() == HandlerType.FAILURE) {
+        if (descriptor.isFailureHandler()) {
             Type failureType = getFailureType(parameters, index);
             if (failureType != null) {
                 ResultHandle failure = invoke.invokeInterfaceMethod(Methods.FAILURE, routingContext);
@@ -958,8 +935,8 @@ class ReactiveRoutesProcessor {
         if (TYPES_IGNORED_FOR_REFLECTION.contains(contentType.name())) {
             return;
         }
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(contentType)
+        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                .builder(contentType)
                 .ignoreTypePredicate(ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                         .or(TYPES_IGNORED_FOR_REFLECTION::contains))
                 .source(ReactiveRoutesProcessor.class.getSimpleName() + " > " + contentType)

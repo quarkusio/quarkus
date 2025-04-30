@@ -21,7 +21,7 @@ import picocli.CommandLine;
  */
 public class CliImageMavenTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/CliImageMavenTest");
+            .resolve("target/test-classes/test-project/CliImageMavenTest");
     Path project;
 
     @BeforeAll

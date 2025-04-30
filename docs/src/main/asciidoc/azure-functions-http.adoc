@@ -3,13 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes
+= Azure Functions with Quarkus REST, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Deploy Vert.x Web, Servlet, or RESTEasy microservices as a Microsoft Azure Function.
+:topics: azure,serverless,function,cloud
+:extensions: io.quarkus:quarkus-azure-functions-http
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (our Jakarta REST implementation),
+The `quarkus-azure-functions-http` extension allows you to write microservices with Quarkus REST (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.
 In other words, this extension is a bridge from the Azure Functions HttpTrigger and the Quarkus family
 of HTTP APIs.
@@ -28,7 +30,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Solution
 
-This guide walks you through running a maven project that can deploy a Resteasy Reactive endpoint to Azure Functions.
+This guide walks you through running a maven project that can deploy a Quarkus REST endpoint to Azure Functions.
 While only Jakarta REST is provided as an example, you can easily replace it with the HTTP framework of your choice.
 
 == Creating the Maven/Gradle Project
@@ -83,7 +85,7 @@ The Azure Functions `host.json` deployment descriptor is automatically
 generated, but if you need to override it, declare it in the root directory of the project and
 rerun the build when you are ready.
 
-[#config-azure-paths]
+[[config-azure-paths]]
 == Configuring Root Paths
 
 The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
@@ -160,7 +162,7 @@ The `quarkus-azure-functions-http` extension handles all the work to deploy to A
 Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure.  If you have
 multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
 property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see our config properties https://quarkus.io/guides/all-config[here].
+For other authentication mechanisms and deployment options see our config properties xref:all-config.adoc[here].
 
 To run the deploy, after you build your project execute:
 

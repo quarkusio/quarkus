@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 class FilePathTree implements OpenPathTree {
 
@@ -24,12 +23,17 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return false;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return Collections.singletonList(file);
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         return null;
     }
 
@@ -64,6 +68,11 @@ class FilePathTree implements OpenPathTree {
                 return "";
             }
         });
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -127,5 +136,14 @@ class FilePathTree implements OpenPathTree {
             return false;
         FilePathTree other = (FilePathTree) obj;
         return Objects.equals(file, other.file) && Objects.equals(pathFilter, other.pathFilter);
+    }
+
+    @Override
+    public String toString() {
+        if (pathFilter == null) {
+            return file.toString();
+        }
+
+        return file + " (filtered)";
     }
 }

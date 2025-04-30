@@ -7,8 +7,8 @@ import java.util.function.Function;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
@@ -50,11 +50,13 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
+     * <li>{@code resolvePath("/")} will return {@literal /}</li>
      * </ul>
      * Given {@literal quarkus.http.root-path=/app}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /app/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
+     * <li>{@code resolvePath("/")} will return {@literal /}</li>
      * </ul>
      * <p>
      * The returned path will not end with a slash.
@@ -64,7 +66,8 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      */
     public String resolvePath(String path) {
-        return UriNormalizationUtil.normalizeWithBase(rootPath, path, false).getPath();
+        var isSlashAbsolutePath = "/".equals(path);
+        return UriNormalizationUtil.normalizeWithBase(rootPath, path, isSlashAbsolutePath).getPath();
     }
 
     /**
@@ -221,6 +224,12 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         @Override
         public Builder management() {
             super.management();
+            return this;
+        }
+
+        @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
             return this;
         }
 

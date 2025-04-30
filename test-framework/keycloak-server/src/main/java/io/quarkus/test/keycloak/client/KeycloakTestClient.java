@@ -1,10 +1,14 @@
 package io.quarkus.test.keycloak.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -24,14 +28,26 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     private final static String CLIENT_ID_PROP = "quarkus.oidc.client-id";
     private final static String CLIENT_SECRET_PROP = "quarkus.oidc.credentials.secret";
 
-    static {
-        RestAssured.useRelaxedHTTPSValidation();
-    }
-
     private DevServicesContext testContext;
 
-    public KeycloakTestClient() {
+    private final String authServerUrl;
+    private final Tls tls;
 
+    public KeycloakTestClient() {
+        this(null, null);
+    }
+
+    public KeycloakTestClient(Tls tls) {
+        this(null, tls);
+    }
+
+    public KeycloakTestClient(String authServerUrl) {
+        this(authServerUrl, null);
+    }
+
+    public KeycloakTestClient(String authServerUrl, Tls tls) {
+        this.authServerUrl = authServerUrl;
+        this.tls = tls;
     }
 
     /**
@@ -156,6 +172,55 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     /**
+     * Get a refresh token from the default tenant realm using a password grant with a provided user name.
+     * Realm name is set to `quarkus` unless it has been configured with the `quarkus.keycloak.devservices.realm-name` property.
+     * User secret will be the same as the user name.
+     * Client id will be set to `quarkus-app` unless it has been configured with the `quarkus.oidc.client-id` property.
+     * Client secret will be to `secret` unless it has been configured with the `quarkus.oidc.credentials.secret` property.
+     */
+    public String getRefreshToken(String userName) {
+        return getRefreshToken(userName, getClientId());
+    }
+
+    /**
+     * Get a refresh token from the default tenant realm using a password grant with the provided user name and client id.
+     * Realm name is set to `quarkus` unless it has been configured with the `quarkus.keycloak.devservices.realm-name` property.
+     * User secret will be the same as the user name.
+     * Client secret will be to `secret` unless it has been configured with the `quarkus.oidc.credentials.secret` property.
+     */
+    public String getRefreshToken(String userName, String clientId) {
+        return getRefreshToken(userName, userName, clientId);
+    }
+
+    /**
+     * Get a refresh token from the default tenant realm using a password grant with the provided user name, user secret and
+     * client id.
+     * Realm name is set to `quarkus` unless it has been configured with the `quarkus.keycloak.devservices.realm-name` property.
+     * Client secret will be set to `secret` unless it has been configured with the `quarkus.oidc.credentials.secret` propertys.
+     */
+    public String getRefreshToken(String userName, String userSecret, String clientId) {
+        return getRefreshToken(userName, userSecret, clientId, getClientSecret());
+    }
+
+    /**
+     * Get a refresh token from the default tenant realm using a password grant with the provided user name, user secret, client
+     * id and secret.
+     * Realm name is set to `quarkus` unless it has been configured with the `quarkus.keycloak.devservices.realm-name` property.
+     */
+    public String getRefreshToken(String userName, String userSecret, String clientId, String clientSecret) {
+        return getRefreshToken(userName, userSecret, clientId, clientSecret, null);
+    }
+
+    /**
+     * Get a refresh token from the default tenant realm using a password grant with the provided user name, user secret, client
+     * id and secret, and scopes.
+     */
+    public String getRefreshToken(String userName, String userSecret, String clientId, String clientSecret,
+            List<String> scopes) {
+        return getRefreshTokenInternal(userName, userSecret, clientId, clientSecret, scopes, getAuthServerUrl());
+    }
+
+    /**
      * Get a realm access token using a password grant with a provided user name.
      * User secret will be the same as the user name.
      * Client id will be set to `quarkus-app` unless it has been configured with the `quarkus.oidc.client-id` property.
@@ -203,7 +268,17 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
     private String getAccessTokenInternal(String userName, String userSecret, String clientId, String clientSecret,
             List<String> scopes, String authServerUrl) {
-        RequestSpecification requestSpec = RestAssured.given().param("grant_type", "password")
+        return getAccessTokenResponse(userName, userSecret, clientId, clientSecret, scopes, authServerUrl).getToken();
+    }
+
+    private String getRefreshTokenInternal(String userName, String userSecret, String clientId, String clientSecret,
+            List<String> scopes, String authServerUrl) {
+        return getAccessTokenResponse(userName, userSecret, clientId, clientSecret, scopes, authServerUrl).getRefreshToken();
+    }
+
+    private AccessTokenResponse getAccessTokenResponse(String userName, String userSecret, String clientId, String clientSecret,
+            List<String> scopes, String authServerUrl) {
+        RequestSpecification requestSpec = getSpec().param("grant_type", "password")
                 .param("username", userName)
                 .param("password", userSecret)
                 .param("client_id", clientId);
@@ -214,12 +289,12 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             requestSpec = requestSpec.param("scope", urlEncode(String.join(" ", scopes)));
         }
         return requestSpec.when().post(authServerUrl + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+                .as(AccessTokenResponse.class);
     }
 
     private String getClientAccessTokenInternal(String clientId, String clientSecret,
             List<String> scopes, String authServerUrl) {
-        RequestSpecification requestSpec = RestAssured.given().param("grant_type", "client_credentials")
+        RequestSpecification requestSpec = getSpec().param("grant_type", "client_credentials")
                 .param("client_id", clientId);
         if (clientSecret != null && !clientSecret.isBlank()) {
             requestSpec = requestSpec.param("client_secret", clientSecret);
@@ -268,6 +343,9 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * For example: 'http://localhost:8081/auth/realms/quarkus'.
      */
     public String getAuthServerUrl() {
+        if (this.authServerUrl != null) {
+            return this.authServerUrl;
+        }
         String authServerUrl = getPropertyValue(CLIENT_AUTH_SERVER_URL_PROP, null);
         if (authServerUrl == null) {
             authServerUrl = getPropertyValue(AUTH_SERVER_URL_PROP, null);
@@ -285,8 +363,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      */
     public void createRealm(RealmRepresentation realm) {
         try {
-            RestAssured
-                    .given()
+            getSpec()
                     .auth().oauth2(getAdminAccessToken())
                     .contentType("application/json")
                     .body(JsonSerialization.writeValueAsBytes(realm))
@@ -302,8 +379,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * Delete a realm
      */
     public void deleteRealm(String realm) {
-        RestAssured
-                .given()
+        getSpec()
                 .auth().oauth2(getAdminAccessToken())
                 .when()
                 .delete(getAuthServerBaseUrl() + "/admin/realms/" + realm).then().statusCode(204);
@@ -314,6 +390,30 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      */
     public void deleteRealm(RealmRepresentation realm) {
         deleteRealm(realm.getRealm());
+    }
+
+    public void createRealmFromPath(String path) {
+        RealmRepresentation representation = readRealmFile(path);
+        createRealm(representation);
+    }
+
+    public RealmRepresentation readRealmFile(String realmPath) {
+        try {
+            return readRealmFile(Path.of(realmPath).toUri().toURL(), realmPath);
+        } catch (MalformedURLException ex) {
+            // Will not happen as this method is called only when it is confirmed the file exists
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public RealmRepresentation readRealmFile(URL url, String realmPath) {
+        try {
+            try (InputStream is = url.openStream()) {
+                return JsonSerialization.readValue(is, RealmRepresentation.class);
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Realm " + realmPath + " resource can not be opened", ex);
+        }
     }
 
     private String getPropertyValue(String prop, String defaultValue) {
@@ -338,4 +438,26 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             throw new RuntimeException(ex);
         }
     }
+
+    private RequestSpecification getSpec() {
+        RequestSpecification spec = RestAssured.given();
+        if (tls != null) {
+            spec = spec.keyStore(tls.keystore(), tls.keystorePassword())
+                    .trustStore(tls.truststore(), tls.truststorePassword());
+        } else {
+            spec = spec.relaxedHTTPSValidation();
+        }
+        return spec;
+    }
+
+    public record Tls(String keystore, String keystorePassword,
+            String truststore, String truststorePassword) {
+        public Tls() {
+            this("client-keystore.p12", "password", "client-truststore.p12", "password");
+        }
+
+        public Tls(String keystore, String truststore) {
+            this(keystore, "password", truststore, "password");
+        }
+    };
 }

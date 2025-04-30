@@ -42,7 +42,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+            <artifactId>quarkus-rest-spi-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -63,7 +63,7 @@
 
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
+            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -81,7 +81,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -93,10 +93,20 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>stork-service-discovery-static-list</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
@@ -126,6 +136,22 @@
             <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -140,15 +166,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -173,6 +204,20 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>Java 21+</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-java21</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

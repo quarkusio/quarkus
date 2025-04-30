@@ -1,40 +1,38 @@
 package io.quarkus.elytron.security.ldap.config;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Runtime configuration object for an LDAP based realm configuration,
  * {@linkplain org.wildfly.security.auth.realm.ldap.LdapSecurityRealm}
  */
-@ConfigRoot(name = "security.ldap", phase = ConfigPhase.RUN_TIME)
-public class LdapSecurityRealmRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.security.ldap")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface LdapSecurityRealmRuntimeConfig {
 
     /**
      * Provided credentials are verified against ldap?
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean directVerification;
+    @WithDefault("true")
+    boolean directVerification();
 
     /**
      * The ldap server configuration
      */
-    @ConfigItem
-    public DirContextConfig dirContext;
+    DirContextConfig dirContext();
+
+    /**
+     * The LDAP cache configuration
+     */
+    CacheConfig cache();
 
     /**
      * The config which we use to map an identity
      */
-    @ConfigItem
-    public IdentityMappingConfig identityMapping;
+    IdentityMappingConfig identityMapping();
 
-    @Override
-    public String toString() {
-        return "LdapSecurityRealmRuntimeConfig{" +
-                "directVerification=" + directVerification +
-                ", dirContext=" + dirContext +
-                ", identityMapping=" + identityMapping +
-                '}';
-    }
+    String toString();
 }

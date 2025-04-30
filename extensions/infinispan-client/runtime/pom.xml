@@ -41,6 +41,21 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-common</artifactId>
         </dependency>
+        <!-- Will allow projects to run annotation processor -->
+        <dependency>
+            <groupId>org.infinispan.protostream</groupId>
+            <artifactId>protostream-processor</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan.protostream</groupId>
+            <artifactId>protostream-types</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron-sasl-plain</artifactId>
@@ -67,7 +82,7 @@
         </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-client-hotrod-jakarta</artifactId>
+            <artifactId>infinispan-client-hotrod</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.infinispan</groupId>
@@ -111,28 +126,13 @@
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-query-dsl</artifactId>
         </dependency>
-        <!-- Will allow projects to run annotation processor -->
-        <dependency>
-            <groupId>org.infinispan.protostream</groupId>
-            <artifactId>protostream-processor</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.annotation</groupId>
-                    <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.infinispan.protostream</groupId>
-            <artifactId>protostream-types</artifactId>
-        </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -165,15 +165,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

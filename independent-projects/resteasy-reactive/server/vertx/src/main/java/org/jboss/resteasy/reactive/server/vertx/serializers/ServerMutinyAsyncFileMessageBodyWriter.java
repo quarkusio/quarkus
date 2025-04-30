@@ -65,7 +65,9 @@ public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBody
         file.endHandler(new Runnable() {
             @Override
             public void run() {
-                file.close();
+                // we don't need to wait for the file to be closed, we just need to make sure it does get closed
+                //noinspection ResultOfMethodCallIgnored
+                file.close().subscribeAsCompletionStage();
                 response.end();
                 // Not sure if I need to resume, actually
                 ctx.resume();

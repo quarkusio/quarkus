@@ -27,8 +27,25 @@
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
             <classifier>linux-aarch_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+            <classifier>linux-ppcle_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+            <classifier>linux-s390_64</classifier>
             <type>exe</type>
         </dependency>
         <dependency>
@@ -46,13 +63,13 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
-            <classifier>osx-x86_64</classifier>
+            <classifier>osx-aarch_64</classifier>
             <type>exe</type>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
-            <classifier>osx-aarch_64</classifier>
+            <classifier>osx-x86_64</classifier>
             <type>exe</type>
         </dependency>
         <dependency>
@@ -67,11 +84,24 @@
             <classifier>windows-x86_64</classifier>
             <type>exe</type>
         </dependency>
+
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>protoc-gen-grpc-java</artifactId>
             <type>exe</type>
             <classifier>linux-aarch_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
+            <classifier>linux-ppcle_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
+            <classifier>linux-s390_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>

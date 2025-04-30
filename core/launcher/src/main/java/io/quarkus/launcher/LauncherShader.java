@@ -3,6 +3,7 @@ package io.quarkus.launcher;
 import java.io.BufferedWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 /**
@@ -56,7 +57,7 @@ public class LauncherShader {
                                 continue;
                             }
                             Files.createDirectories(destPath.getParent());
-                            Files.copy(p, destPath);
+                            Files.copy(p, destPath, StandardCopyOption.COPY_ATTRIBUTES);
                         }
                     }
                 }

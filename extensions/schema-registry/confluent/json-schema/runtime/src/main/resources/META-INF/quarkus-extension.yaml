@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Confluent Schema Registry - Json Schema"
+metadata:
+  keywords:
+  - "confluent"
+  - "json-schema"
+  categories:
+  - "serialization"
+  status: "preview"

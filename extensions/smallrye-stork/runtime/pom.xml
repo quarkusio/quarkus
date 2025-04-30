@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-smallrye-stork</artifactId>
     <name>Quarkus - SmallRye Stork - Runtime</name>
-    <description>Support for SmallRye Stork</description>
+    <description>SmallRye Stork is a dynamic service discovery and selection framework for locating and selecting service instances.</description>
 
     <dependencies>
         <dependency>
@@ -41,18 +41,28 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.smallrye.stork</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

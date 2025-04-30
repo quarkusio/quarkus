@@ -1,17 +1,32 @@
 package io.quarkus.runtime.configuration;
 
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
 /**
@@ -76,50 +91,65 @@ public final class ConfigDiagnostic {
      * @param properties the set of possible unused properties
      */
     public static void unknownProperties(Set<String> properties) {
+        if (properties.isEmpty()) {
+            return;
+        }
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Set<String> usedProperties = new HashSet<>();
-        for (String property : ConfigProvider.getConfig().getPropertyNames()) {
+        StringBuilder tmp = null;
+        for (String property : config.getPropertyNames()) {
             if (properties.contains(property)) {
                 continue;
             }
-
-            usedProperties.add(StringUtil.replaceNonAlphanumericByUnderscores(property));
+            if (tmp == null) {
+                tmp = new StringBuilder(property.length());
+            } else {
+                tmp.setLength(0);
+            }
+            String usedProperty = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
+            if (properties.contains(usedProperty)) {
+                continue;
+            }
+            usedProperties.add(usedProperty);
         }
-        usedProperties.removeAll(properties);
-
         for (String property : properties) {
             // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
-            if (property.contains("[") && property.contains("]")) {
+            if (property.indexOf('[') != -1 && property.indexOf(']') != -1) {
                 continue;
             }
 
             boolean found = false;
-            for (String usedProperty : usedProperties) {
-                if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
-                    found = true;
-                    break;
+            if (!usedProperties.isEmpty()) {
+                if (tmp == null) {
+                    tmp = new StringBuilder(property.length());
+                } else {
+                    tmp.setLength(0);
+                }
+                String propertyWithUnderscores = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
+                for (String usedProperty : usedProperties) {
+                    if (usedProperty.equalsIgnoreCase(propertyWithUnderscores)) {
+                        found = true;
+                        break;
+                    }
                 }
             }
             if (!found) {
-                unknown(property);
+                ConfigValue configValue = config.getConfigValue(property);
+                if (property.equals(configValue.getName())) {
+                    unknown(property);
+                }
             }
         }
     }
 
-    public static void unknownRunTime(String name) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
-            // only warn at run time for native images, otherwise the user will get warned twice for every property
-            unknown(name);
-        }
-    }
-
-    public static void unknownRunTime(NameIterator name) {
-        unknownRunTime(name.getName());
-    }
-
-    public static void unknownPropertiesRuntime(Set<String> properties) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
+    public static void reportUnknown(Set<String> properties) {
+        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
             unknownProperties(properties);
         }
+    }
+
+    public static void reportUnknownRuntime(Set<String> properties) {
+        unknownProperties(properties);
     }
 
     /**
@@ -151,5 +181,83 @@ public final class ConfigDiagnostic {
 
     public static Set<String> getErrorKeys() {
         return new HashSet<>(errorKeys);
+    }
+
+    private static final DirectoryStream.Filter<Path> CONFIG_FILES_FILTER = new DirectoryStream.Filter<>() {
+        @Override
+        public boolean accept(final Path entry) {
+            // Ignore .properties, because we know these are have a default loader in core
+            // Ignore profile files. The loading rules require the main file to be present, so we only need the type
+            String filename = entry.getFileName().toString();
+            return Files.isRegularFile(entry) && filename.startsWith("application.") && !filename.endsWith(".properties");
+        }
+    };
+
+    public static Set<String> configFiles(Path configFilesLocation) throws IOException {
+        if (!Files.exists(configFilesLocation)) {
+            return Collections.emptySet();
+        }
+
+        Set<String> configFiles = new HashSet<>();
+        try (DirectoryStream<Path> candidates = Files.newDirectoryStream(configFilesLocation, CONFIG_FILES_FILTER)) {
+            for (Path candidate : candidates) {
+                configFiles.add(candidate.toUri().toURL().toString());
+            }
+        } catch (NotDirectoryException ignored) {
+            log.debugf("File %s is not a directory", configFilesLocation.toAbsolutePath());
+            return Collections.emptySet();
+        }
+        return configFiles;
+    }
+
+    public static Set<String> configFilesFromLocations() throws Exception {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+
+        Set<String> configFiles = new HashSet<>();
+        configFiles.addAll(configFiles(Paths.get(System.getProperty("user.dir"), "config")));
+        Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
+        optionalLocations.ifPresent(new Consumer<List<URI>>() {
+            @Override
+            public void accept(final List<URI> locations) {
+                for (URI location : locations) {
+                    Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                            : Paths.get(location.getPath());
+                    if (Files.isDirectory(path)) {
+                        try {
+                            configFiles.addAll(configFiles(path));
+                        } catch (IOException e) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
+        });
+
+        return configFiles;
+    }
+
+    public static void unknownConfigFiles(final Set<String> configFiles) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Set<String> configNames = new HashSet<>();
+        for (ConfigSource configSource : config.getConfigSources()) {
+            if (configSource.getName() != null && configSource.getName().contains("application")) {
+                configNames.add(configSource.getName());
+            }
+        }
+
+        for (String configFile : configFiles) {
+            boolean found = false;
+            for (String configName : configNames) {
+                if (configName.contains(configFile)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                log.warnf(
+                        "Unrecognized configuration file %s found; Please, check if your are providing the proper extension to load the file",
+                        configFile);
+            }
+        }
     }
 }

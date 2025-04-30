@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -34,6 +35,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
+import io.quarkus.resteasy.common.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 
@@ -87,6 +89,30 @@ public class SpringWebProcessor {
     }
 
     @BuildStep
+    EndpointValidationPredicatesBuildItem createSpringRestControllerPredicateForClassic() {
+        Predicate<ClassInfo> predicate = new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return classInfo
+                        .declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
+            }
+        };
+        return new EndpointValidationPredicatesBuildItem(predicate);
+    }
+
+    @BuildStep
+    io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem createSpringRestControllerPredicateForReactive() {
+        Predicate<ClassInfo> predicate = new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return classInfo
+                        .declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
+            }
+        };
+        return new io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem(predicate);
+    }
+
+    @BuildStep
     public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
         ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
                 new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(RESPONSE_ENTITY)));
@@ -120,7 +146,7 @@ public class SpringWebProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-rest-jackson' is present");
         }
 
         TypesUtil typesUtil = new TypesUtil(Thread.currentThread().getContextClassLoader());

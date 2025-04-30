@@ -1,12 +1,17 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.ExpressionImpl.PartImpl;
 
 public class ReflectionResolverTest {
 
@@ -47,6 +52,29 @@ public class ReflectionResolverTest {
     public void testStaticMembersIgnored() {
         assertEquals("baz::baz", Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
                 .parse("{foo.bar ?: 'baz'}::{foo.BAR ?: 'baz'}").data("foo", new Foo("box")).render());
+    }
+
+    @Test
+    public void testCachedResolver() {
+        Template template = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
+                .parse("{foo.name}::{foo.name.repeat(5)}::{foo.name.repeat(n)}");
+        Expression fooName = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
+        Expression fooNameRepeat5 = template.findExpression(e -> e.toOriginalString().equals("foo.name.repeat(5)"));
+        Expression fooNameRepeatN = template.findExpression(e -> e.toOriginalString().equals("foo.name.repeat(n)"));
+        PartImpl fooNamePart = (PartImpl) fooName.getParts().get(1);
+        PartImpl fooNameRepeat5Part = (PartImpl) fooNameRepeat5.getParts().get(2);
+        PartImpl fooNameRepeatNPart = (PartImpl) fooNameRepeatN.getParts().get(2);
+        assertNull(fooNamePart.cachedResolver);
+        assertNull(fooNameRepeat5Part.cachedResolver);
+        assertNull(fooNameRepeatNPart.cachedResolver);
+        assertEquals("box::boxboxboxboxbox::box", template.data("foo", new Foo("box"), "n", 1).render());
+        assertEquals("box::boxboxboxboxbox::boxbox", template.data("foo", new Foo("box"), "n", 2).render());
+        assertNotNull(fooNamePart.cachedResolver);
+        assertNotNull(fooNameRepeat5Part.cachedResolver);
+        assertNotNull(fooNameRepeatNPart.cachedResolver);
+        assertTrue(fooNamePart.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
+        assertTrue(fooNameRepeat5Part.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
+        assertTrue(fooNameRepeatNPart.cachedResolver instanceof ReflectionValueResolver.CandidateResolver);
     }
 
     public static class Foo {

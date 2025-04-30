@@ -38,8 +38,8 @@ public class XReadArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
         if (count > 0) {
             args.add("COUNT");
             args.add(Integer.toString(count));

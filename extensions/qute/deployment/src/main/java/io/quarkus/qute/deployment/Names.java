@@ -14,8 +14,10 @@ import io.quarkus.qute.Locate;
 import io.quarkus.qute.Locate.Locates;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateContents;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
@@ -52,6 +54,8 @@ final class Names {
     static final DotName SECTION_HELPER_FACTORY = DotName.createSimple(SectionHelperFactory.class.getName());
     static final DotName VALUE_RESOLVER = DotName.createSimple(ValueResolver.class.getName());
     static final DotName NAMESPACE_RESOLVER = DotName.createSimple(NamespaceResolver.class.getName());
+    static final DotName PARSER_HOOK = DotName.createSimple(ParserHook.class);
+    static final DotName TEMPLATE_CONTENTS = DotName.createSimple(TemplateContents.class);
 
     private Names() {
     }

@@ -13,7 +13,8 @@ public class DependencyConstraintsTest extends QuarkusGradleWrapperTestBase {
     public void shoudBuildProjectWithDependencyConstraint() throws Exception {
         File projectDir = getProjectDir("dependency-constraints-project");
 
-        BuildResult buildResult = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=mutable-jar");
+        BuildResult buildResult = runGradleWrapper(projectDir, "clean", "quarkusBuild",
+                "-Dquarkus.package.jar.type=mutable-jar");
 
         assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusBuild"))).isTrue();
 

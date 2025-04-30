@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: This reference guide explains in more details the configuration and usage of the Quarkus Mailer.
+:topics: mail,mailer
+:extensions: io.quarkus:quarkus-mailer
 
 This guide is the companion from the xref:mailer.adoc[Mailer Getting Started Guide].
 It explains in more details the configuration and usage of the Quarkus Mailer.
@@ -64,9 +66,9 @@ To send a simple email, proceed as follows:
 [source, java]
 ----
 // Imperative API:
-mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body."));
+mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body.").setFrom("from@acme.org"));
 // Reactive API:
-Uni<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body."));
+Uni<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body.").setFrom("from@acme.org"));
 ----
 
 For example, you can use the `Mailer` in an HTTP endpoint as follows:
@@ -76,14 +78,14 @@ For example, you can use the `Mailer` in an HTTP endpoint as follows:
 @GET
 @Path("/imperative")
 public void sendASimpleEmail() {
-    mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body"));
+    mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body").setFrom("from@acme.org"));
 }
 
 @GET
 @Path("/reactive")
 public Uni<Void> sendASimpleEmailAsync() {
     return reactiveMailer.send(
-            Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body"));
+            Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body").setFrom("from@acme.org"));
 }
 ----
 
@@ -93,6 +95,20 @@ The mailer lets you send `io.quarkus.mailer.Mail` objects.
 You can create new `io.quarkus.mailer.Mail` instances from the constructor or from the `Mail.withText` and
 `Mail.withHtml` helper methods.
 The `Mail` instance lets you add recipients (to, cc, or bcc), set the subject, headers, sender (from) address...
+
+Most of these properties are optional, but the sender address is required. It can either be set on an individual `Mail` instances using
+
+[source,java]
+----
+.setFrom("from@acme.org");
+----
+
+or a global default can be configured, using
+
+[source,properties]
+----
+quarkus.mailer.from=from@acme.org
+----
 
 You can also send several `Mail` objects in one call:
 
@@ -154,10 +170,16 @@ When you want to reference your attachment, for instance in the `src` attribute,
 [[templates]]
 == Message Body Based on Qute Templates
 
-It's possible to inject a mail template, where the message body is created automatically using xref:qute.adoc[Qute templates].
+It's also possible to send an e-mail where the message body is created automatically using xref:qute.adoc[Qute templates].
+
+You can define a type-safe mail template in your Java code.
+Just annotate a class with `@io.quarkus.qute.CheckedTemplate` and all its `static native` methods that return `MailTemplate` will be used to define type-safe mail templates and the list of parameters they require:
 
 [source, java]
 ----
+import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.CheckedTemplate;
+
 @Path("")
 public class MailingResource {
 
@@ -183,13 +205,43 @@ we will use the `src/main/resources/templates/MailingResource/hello.html` and `s
 <3> Create a mail template instance and set the recipient.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
-TIP: Injected mail templates are validated during build.
-The build fails if there is no matching template in `src/main/resources/templates`.
+Alternatively, use a Java record that implements `io.quarkus.mailer.MailTemplate`.
+The record components represent the template parameters.
+
+[source, java]
+----
+import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.CheckedTemplate;
+
+@Path("")
+public class MailingResource {
+
+    record hello(String name) implements MailTemplateInstance { // <1>
+    }
+
+    @GET
+    @Path("/mail")
+    public Uni<Void> send() {
+        // the template looks like: Hello {name}! // <2>
+        return new hello("John")
+           .to("to@acme.org")  // <3>
+           .subject("Hello from Qute template")
+           .send(); // <4>
+    }
+}
+----
+<1> By convention, the enclosing class name and the record name are used to locate the template. In this particular case,
+we will use the `src/main/resources/templates/MailingResource/hello.html` and `src/main/resources/templates/MailingResource/hello.txt` templates to create the message body.
+<2> Set the data used in the template.
+<3> Create a mail template instance and set the recipient.
+<4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
 You can also do this without type-safe templates:
 
 [source, java]
 ----
+import io.quarkus.mailer.MailTemplate;
+
 @Inject
 @Location("hello")
 MailTemplate hello; // <1>
@@ -209,6 +261,9 @@ Otherwise, search for the template as the specified location. In this particular
 <3> Set the data used in the template.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
+TIP: Injected mail templates are validated during build.
+The build fails if there is no matching template in `src/main/resources/templates`.
+
 [[execution-model]]
 == Execution model
 
@@ -223,7 +278,7 @@ Note that does not mean that the message is delivered, just that it's been sent 
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean
 configuration to `true` to prevent the actual sending of emails but instead print them on stdout and collect them in a `MockMailbox` bean instead.
-This is the default if you are running Quarkus in `DEV` or `TEST` mode.
+This is the default if you are running Quarkus in dev or test mode.
 
 You can then write tests to verify that your emails were sent, for example, by a REST endpoint:
 
@@ -264,6 +319,9 @@ class MailTest {
 }
 ----
 
+Another option is to use the  https://github.com/quarkiverse/quarkus-mailpit[Quarkus Mailpit] extension
+which provides Dev Services for https://github.com/axllent/mailpit[Mailpit], a nice UI for testing and debugging email sending.
+
 == Using the underlying Vert.x Mail Client
 
 The Quarkus Mailer is implemented on top of the https://vertx.io/docs/vertx-mail-client/java/[Vert.x Mail Client], providing an asynchronous and non-blocking way to send emails.
@@ -281,7 +339,7 @@ Three API flavors are exposed:
 
 Check the xref:vertx.adoc[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.
 
-The retrieved `MailClient` is configured using the configuration key presented above.
+The retrieved `MailClient` is configured using the configuration property presented above.
 You can also create your own instance, and pass your own configuration.
 
 
@@ -312,34 +370,108 @@ the only way to get the new value would be to restart the application.
 
 [NOTE]
 Do use Vault, you need the https://github.com/quarkiverse/quarkus-vault[Quarkus Vault] extension.
-More details about this extension and its configuration can be found in the https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html[extension documentation].
+More details about this extension and its configuration can be found in the https://docs.quarkiverse.io/quarkus-vault/dev/index.html[extension documentation].
 
 
 [TIP]
-For more information about the Mailer configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the Mailer configuration please refer to the <<configuration-reference,Configuration Reference>>.
 
-== Configuring a trust store
+== Configuring TLS
 
-If your SMTP requires a trust store, you can configure the trust store as follows:
+SMTP provides various way to use TLS:
+
+- StartTLS: The client connects to the server using a plain connection and then upgrades to a secure connection.
+- SSL/TLS: The client connects to the server using a secure connection from the start.
+
+=== Configuring STARTTLS
+
+To use `STARTTLS`, you need to configure the `start-tls` property to `REQUIRED` or `OPTIONAL` and set `tls` to `false`:
 
 [source, properties]
 ----
-quarkus.mailer.host=...
-quarkus.mailer.port=...
-quarkus.mailer.ssl=true
-quarkus.mailer.trust-store.paths=truststore.jks # the path to your trust store
-quarkus.mailer.trust-store.password=secret # the trust store password if any
-quarkus.mailer.trust-store.type=JKS # the type of trust store if it can't be deduced from the file extension
+quarkus.mailer.tls=false
+quarkus.mailer.start-tls=REQUIRED
 ----
 
-Quarkus mailer supports JKS, PKCS#12 and PEM trust stores.
-For PEM, you can configure multiple files.
-For JKS and PKCS#12, you can configure the password if any.
+Setting `tls` to `false` ensure we connect using a plain connection and then upgrade to a secure connection using `STARTTLS`.
 
-`quarkus.mailer.trust-store.type` is optional and allows configuring the type of trust store (among `JKS`, `PEM` and `PKCS`).
-When not set, Quarkus tries to deduce the type from the file name.
+To configure the trust store, you can use a _named_ TLS configuration stored in the xref:./tls-registry-reference.adoc[TLS registry]:
 
-NOTE: You can also configure `quarkus.mailer.trust-all=true` to bypass the verification.
+[source, properties]
+----
+quarkus.mailer.tls=false
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configuration
+
+quarkus.tls.my-mailer.trust-store.pem.certs=server-cert.pem # Configure the trust store
+----
+
+While not recommended, you can trust all certificates by setting `quarkus.tls.trust-all` to `true`:
+
+[source, properties]
+----
+quarkus.mailer.tls=false
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configuration
+quarkus.tls.my-mailer.trust-all=true
+----
+
+Alternatively, you can use the _deprecated_ `quarkus.mailer.trust-store.paths`  and `quarkus.mailer.trust-all` properties:
+
+[source, properties]
+----
+quarkus.mailer.tls=false
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.truststore.paths=target/certs/mailpit-ca.crt
+----
+
+[source, properties]
+----
+quarkus.mailer.tls=false
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.trust-all=true
+----
+
+IMPORTANT: To use `START_TLS`, make sure you set `tls` to `false` and `start-tls` to `REQUIRED` or `OPTIONAL`.
+
+=== Configuring SSL/TLS
+
+To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:
+
+[source, properties]
+----
+quarkus.tls.my-mailer.trust-store.p12.path=server-truststore.p12
+quarkus.tls.my-mailer.trust-store.p12.password=secret
+
+quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configuration
+----
+
+WARNING: When using the mailer, using a _named_ configuration is required to avoid conflicts with other TLS configurations.
+The mailer will not use the default TLS configuration.
+
+When you configure a _named_ TLS configuration, TLS is enabled by default.
+If your SMTP server uses a valid (trusted) certificate, and thus do not require a specific TLS configuration, you need to enable TLS explicitly (as you do not have to configure a trust store):
+
+[source, properties]
+----
+quarkus.mailer.tls=true
+----
+
+
+
+[IMPORTANT]
+====
+When `quarkus.tls.trust-all` is set to `true`, the trust store configuration is ignored. This is not recommended for production.
+Also, we recommend avoiding using `quarkus.tls.trust-all`, and use a named configuration instead if `trust-all` is required:
+
+[source, properties]
+----
+quarkus.tls.my-mailer.trust-all=true
+quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configuration
+----
+
+You can also use the deprecated `quarkus.mailer.trust-all=true` property.
+====
 
 == Multiple mailer configurations
 
@@ -420,7 +552,7 @@ Use `MailTemplate` injection for the named mailer configurations.
 
 This section provides the configurations to use with popular mail services.
 
-[#gmail-specific-configuration]
+[[gmail-specific-configuration]]
 === Gmail specific configuration
 
 If you want to use the Gmail SMTP server, first create a dedicated password in `Google Account > Security > App passwords` or go to https://myaccount.google.com/apppasswords.
@@ -432,7 +564,7 @@ You need to switch on 2-Step Verification at https://myaccount.google.com/securi
 
 When done, you can configure your Quarkus application by adding the following properties to your `application.properties`:
 
-With TLS:
+With `STARTTLS`:
 
 [source,properties]
 ----
@@ -447,7 +579,7 @@ quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 ----
 
-Or with SSL:
+Or with TLS/SSL:
 
 [source,properties]
 ----
@@ -455,7 +587,7 @@ quarkus.mailer.auth-methods=DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGI
 quarkus.mailer.from=YOUREMAIL@gmail.com
 quarkus.mailer.host=smtp.gmail.com
 quarkus.mailer.port=465
-quarkus.mailer.ssl=true
+quarkus.mailer.tls=true
 quarkus.mailer.username=YOUREMAIL@gmail.com
 quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 
@@ -488,6 +620,7 @@ ses.from=an email address from the verified domain
 
 quarkus.mailer.host=${ses.smtp}
 quarkus.mailer.port=587
+quarkus.mailer.tls=false
 quarkus.mailer.username=${ses.user}
 quarkus.mailer.password=${ses.password}
 quarkus.mailer.start-tls=REQUIRED
@@ -521,7 +654,7 @@ quarkus.mailer.port=465
 quarkus.mailer.username=${mailjet.api-key}
 quarkus.mailer.password=${mailjet.secret-key}
 quarkus.mailer.start-tls=OPTIONAL
-quarkus.mailer.ssl=true
+quarkus.mailer.tls=true
 quarkus.mailer.login=REQUIRED
 quarkus.mailer.from=${mailjet.from}
 
@@ -547,12 +680,34 @@ quarkus.mailer.port=465
 quarkus.mailer.username=${sendgrid.username}
 quarkus.mailer.password=${sendgrid.key}
 quarkus.mailer.start-tls=OPTIONAL
-quarkus.mailer.ssl=true
 quarkus.mailer.login=REQUIRED
 quarkus.mailer.from=...
+quarkus.mailer.tls=true
 
 quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 ----
+
+=== Office 365
+
+==== Prerequisites
+
+1. Enable SMTP Access to your Office 365 mailbox, you can do it from the administration console (see link:https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission[this guide] for more information)
+
+==== Configuration
+
+[source, properties]
+----
+quarkus.mailer.from=NAME<YOUREMAIL@YOURDOMAIN.COM>
+quarkus.mailer.host=smtp.office365.com
+quarkus.mailer.port=587
+quarkus.mailer.username=YOUREMAIL@YOURDOMAIN.COM
+quarkus.mailer.password=YOURPASSWORD
+quarkus.mailer.auth-methods=LOGIN
+quarkus.mailer.login=REQUIRED
+
+quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
+----
+
 
 [[configuration-reference]]
 == Mailer Configuration Reference

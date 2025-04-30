@@ -3,7 +3,7 @@ extends: substitution
 ignorecase: true
 level: warning
 link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
-message: "Consider using '%s' rather than '%s' unless updating existing content that uses it."
+message: "Consider using '%s' rather than '%s' unless updating existing content that uses the term."
 # source: Quarkus contributor guide
 action:
   name: replace
@@ -44,6 +44,8 @@ swap:
   command-language: command language
   deinstall: uninstall
   deinstallation: uninstallation
+  entitlement: repository|subscription
+  host name: hostname
   in order to: to
   in other words: for example|that is
   in spite of: regardless of|despite
@@ -60,9 +62,10 @@ swap:
   lots of|bunches of: many
   main directory: root directory
   make sure: verify
-  may: might (for possiblity)|can (for ability)
+  may: might (for possibility)|can (for ability)
   OK button: OK
   okay: OK
+  on-premises|on-prem|on premise: on-premise|on-site|in-house
   openshift: OpenShift
   open-source|OpenSource|opensource: open source
   organise: organize
@@ -79,6 +82,7 @@ swap:
   recognise: recognize
   right double-click: double right-click
   right-hand: right
+  sane: accurate|valid|verified
   sanity check: test|evaluate|validate|verify
   sanity test: test|evaluate|validate|verify
   shift-click: press Shift and click
@@ -95,7 +99,7 @@ swap:
   upward compatible: compatible with later versions
   utilize: use
   versus|vs: compared to
-  via: through
+  via: through|by|from|on|by using
   wish: want
   wish|would like: want
   xsite: cross-site replication

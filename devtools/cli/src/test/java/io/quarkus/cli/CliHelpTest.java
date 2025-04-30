@@ -10,6 +10,8 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -218,32 +220,18 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("Usage");
         assertTrue(result.getStdout().contains("Commands:"), "Should list subcommands\n");
         assertTrue(result.getStdout().contains("docker"), "Should list docker subcommand\n");
+        assertTrue(result.getStdout().contains("podman"), "Should list podman subcommand\n");
         assertTrue(result.getStdout().contains("jib"), "Should list jib subcommand\n");
         assertTrue(result.getStdout().contains("openshift"), "Should list openshift subcommand\n");
         assertTrue(result.getStdout().contains("buildpack"), "Should list buildpack subcommand\n");
 
     }
 
-    @Test
+    @ParameterizedTest
     @Order(93)
-    public void testImageBuildDockerHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "docker", "--help");
-        result.echoSystemOut();
-        assertThat(result.stdout).contains("Usage");
-    }
-
-    @Test
-    @Order(94)
-    public void testImageBuildJibHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "jib", "--help");
-        result.echoSystemOut();
-        assertThat(result.stdout).contains("Usage");
-    }
-
-    @Test
-    @Order(95)
-    public void testImageBuildOpenshiftHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "openshift", "--help");
+    @ValueSource(strings = { "docker", "podman", "jib", "openshift", "buildpack" })
+    public void testImageBuildBuilderHelp(String builder) throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", builder, "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
     }
@@ -260,34 +248,11 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("--registry-password-stdin");
     }
 
-    @Test
+    @ParameterizedTest
     @Order(97)
-    public void testImagePushDockerHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "docker", "--help");
-        result.echoSystemOut();
-        assertThat(result.stdout).contains("Usage");
-    }
-
-    @Test
-    @Order(98)
-    public void testImagePushJibHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "jib", "--help");
-        result.echoSystemOut();
-        assertThat(result.stdout).contains("Usage");
-    }
-
-    @Test
-    @Order(99)
-    public void testImagePushOpenshiftHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "openshift", "--help");
-        result.echoSystemOut();
-        assertThat(result.stdout).contains("Usage");
-    }
-
-    @Test
-    @Order(100)
-    public void testImagePushBuildpackHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "buildpack", "--help");
+    @ValueSource(strings = { "docker", "podman", "jib", "openshift", "buildpack" })
+    public void testImagePushBuilderHelp(String builder) throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", builder, "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
     }

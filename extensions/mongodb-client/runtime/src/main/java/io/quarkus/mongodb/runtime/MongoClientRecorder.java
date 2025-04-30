@@ -115,17 +115,17 @@ public class MongoClientRecorder {
      */
     public void performInitialization(MongodbConfig config, RuntimeValue<Vertx> vertx) {
         MongoDnsClientProvider.vertx = vertx.getValue();
-        initializeDNSLookup(config.defaultMongoClientConfig);
-        for (MongoClientConfig mongoClientConfig : config.mongoClientConfigs.values()) {
+        initializeDNSLookup(config.defaultMongoClientConfig());
+        for (MongoClientConfig mongoClientConfig : config.mongoClientConfigs().values()) {
             initializeDNSLookup(mongoClientConfig);
         }
     }
 
     private void initializeDNSLookup(MongoClientConfig mongoClientConfig) {
-        if (mongoClientConfig.connectionString.isEmpty()) {
+        if (mongoClientConfig.connectionString().isEmpty()) {
             return;
         }
         // this ensures that DNS resolution will take place if necessary
-        new ConnectionString(mongoClientConfig.connectionString.get());
+        new ConnectionString(mongoClientConfig.connectionString().get());
     }
 }

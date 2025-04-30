@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to consume gRPC services in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 gRPC clients can be injected in your application code.
 
@@ -202,16 +204,62 @@ public class StreamingEndpoint {
 
 For each gRPC service you inject in your application, you can configure the following attributes:
 
-include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
+=== Global configuration
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc-client.adoc[opts=optional, leveloffset=+1]
+
+=== Per-client configuration
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.clients.adoc[opts=optional, leveloffset=+1]
 
 The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
 The following examples uses _hello_ as the client name.
 Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
 
-IMPORTANT: When you enable `quarkus.grpc.clients."client-name".use-quarkus-grpc-client`, you are then using the new Vert.x gRPC channel implementation, so not all configuration properties can still be applied. And currently there is no Stork support yet.
-
 IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
+
+=== Custom Channel building
+
+When Quarkus builds a gRPC Channel instance (the way gRPC clients communicate with gRPC services on a lower network level), users can apply their own Channel(Builder) customizers. The customizers are applied by `priority`, the higher the number the later customizer is applied. The customizers are applied before Quarkus applies user's client configuration; e.g. ideal for some initial defaults per all clients.
+
+There are two `customize` methods, the first one uses gRPC's `ManagedChannelBuilder` as a parameter - to be used with Quarkus' legacy gRPC support, where the other uses `GrpcClientOptions` - to be used with the new Vert.x gRPC support. User should implement the right `customize` method per gRPC support type usage, or both if the customizer is gRPC type neutral.
+
+[source, java]
+----
+public interface ChannelBuilderCustomizer<T extends ManagedChannelBuilder<T>> {
+
+    /**
+     * Customize a ManagedChannelBuilder instance.
+     *
+     * @param name gRPC client name
+     * @param config client's configuration
+     * @param builder Channel builder instance
+     * @return map of config properties to be used as default service config against the builder
+     */
+    default Map<String, Object> customize(String name, GrpcClientConfiguration config, T builder) {
+        return Map.of();
+    }
+
+    /**
+     * Customize a GrpcClientOptions instance.
+     *
+     * @param name gRPC client name
+     * @param config client's configuration
+     * @param options GrpcClientOptions instance
+     */
+    default void customize(String name, GrpcClientConfiguration config, GrpcClientOptions options) {
+    }
+
+    /**
+     * Priority by which the customizers are applied.
+     * Higher priority is applied later.
+     *
+     * @return the priority
+     */
+    default int priority() {
+        return 0;
+    }
+}
+----
 
 === Enabling TLS
 
@@ -247,7 +295,7 @@ quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 === Client Stub Deadlines
 
 If you need to configure a deadline for a gRPC stub, i.e. to specify a duration of time after which the stub will always return the status error `DEADLINE_EXCEEDED`.
-You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
+You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.:
 
 [source,properties]
 ----
@@ -259,6 +307,7 @@ quarkus.grpc.clients.hello.deadline=2s <1>
 IMPORTANT: Do not use this feature to implement an RPC timeout.
 To implement an RPC timeout, either use Mutiny `call.ifNoItem().after(...)` or Fault Tolerance `@Timeout`.
 
+[[grpc-headers]]
 == gRPC Headers
 Similarly to HTTP, alongside the message, gRPC calls can carry headers.
 Headers can be useful e.g. for authentication.
@@ -468,7 +517,7 @@ public class HelloExceptionHandlerProvider implements ExceptionHandlerProvider {
 By default, when starting the application in dev mode, a gRPC server is started, even if no services are configured.
 You can configure the gRPC extension's dev mode behavior using the following properties.
 
-include::{generated-dir}/config/quarkus-grpc-config-group-grpc-dev-mode-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.dev-mode.adoc[opts=optional, leveloffset=+1]
 
 == Inject mock clients
 

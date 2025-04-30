@@ -52,7 +52,7 @@ ifndef::devtools-no-gradle[]
 To create a Gradle project, add the `--gradle` or `--gradle-kotlin-dsl` option.
 endif::[]
 
-_For more information about how to install the Quarkus CLI and use it, please refer to xref:cli-tooling.adoc[the Quarkus CLI guide]._
+For more information about how to install and use the Quarkus CLI, see the xref:cli-tooling.adoc[Quarkus CLI] guide.
 ****
 
 [role="secondary asciidoc-tabs-sync-maven"]
@@ -99,3 +99,8 @@ ifndef::devtools-no-gradle[]
 To create a Gradle project, add the `-DbuildTool=gradle` or `-DbuildTool=gradle-kotlin-dsl` option.
 endif::[]
 ****
+
+For Windows users:
+
+- If using cmd, (don't use backward slash `\` and put everything on the same line)
+- If using Powershell, wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId={create-app-artifact-id}"`

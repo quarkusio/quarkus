@@ -7,14 +7,17 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security
+:topics: security,identity-providers
+:extensions: io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
-In the Quarkus Security framework, identity providers play a crucial role in authentication and authorization by  verifying user identities.
+
+In the Quarkus Security framework, identity providers play a crucial role in authentication and authorization by verifying user identities.
 `IdentityProvider` creates a `SecurityIdentity` instance, which gets used during user authentication to verify and authorize access requests to your Quarkus application.
 
 [[identity-providers]]
 `IdentityProvider` converts the authentication credentials provided by `HttpAuthenticationMechanism` to a `SecurityIdentity` instance.
 
-Some extensions, for example, `OIDC`, `OAuth2`, and `SmallRye JWT`, have inline `IdentityProvider` implementations specific to the supported authentication flow.
+Some extensions, such as the ones for OIDC and SmallRye JWT, include inline `IdentityProvider` implementations specific to the supported authentication flow.
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to a `SecurityIdentity` instance.
 
 If you use Basic or form-based authentication, you must add an `IdentityProvider` instance to convert a username and password to a `SecurityIdentity` instance.
@@ -24,7 +27,7 @@ To get started with security in Quarkus, consider combining the Quarkus built-in
 For more information about Basic authentication, its mechanisms, and related identity providers, see the following resources:
 
 * xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence]
-** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+** xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-authentication-mechanisms.adoc#form-auth[Form-based authentication]
 * xref:security-jdbc.adoc[Using security with JDBC]
 * xref:security-ldap.adoc[Using security with an LDAP realm]

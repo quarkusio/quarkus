@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-common-spi</artifactId>
-    <name>Quarkus - RESTEasy - Common - SPI</name>
+    <name>Quarkus - RESTEasy Classic - Common - SPI</name>
 
     <dependencies>
         <dependency>

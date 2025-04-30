@@ -36,10 +36,14 @@ option objc_class_prefix = "HLW";
 
 package helloworld;
 
+// Import the empty message definition
+import "google/protobuf/empty.proto";
+
 // The greeting service definition.
 service Greeter {
     // Sends a greeting
     rpc SayHello (HelloRequest) returns (HelloReply) {}
+    rpc SayJo (google.protobuf.Empty) returns (HelloReply) {}
     rpc ThreadName (HelloRequest) returns (HelloReply) {}
 }
 

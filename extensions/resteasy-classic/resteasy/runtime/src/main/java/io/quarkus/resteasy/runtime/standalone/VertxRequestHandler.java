@@ -12,6 +12,7 @@ import java.util.concurrent.Executor;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.logging.Logger;
@@ -52,6 +53,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
     protected final long readTimeout;
+    protected boolean customNotFoundExist = false;
 
     public VertxRequestHandler(Vertx vertx,
             ResteasyDeployment deployment,
@@ -64,6 +66,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.allocator = allocator;
         this.executor = executor;
         this.readTimeout = readTimeout;
+        this.customNotFoundExist = deployment.getProviderFactory()
+                .getExceptionMapper(NotFoundException.class) != null;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -144,7 +148,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             map.put(RoutingContext.class, routingContext);
             try (ResteasyContext.CloseableContext restCtx = ResteasyContext.addCloseableContextDataLevel(map)) {
                 ContextUtil.pushContext(routingContext);
-                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true, routingContext.failure());
+                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, customNotFoundExist,
+                        routingContext.failure());
+            } catch (NotFoundException nfe) {
+                // Maybe someone else can find this. If not, not found will be handled in vertx-http
+                routingContext.next();
             } catch (Failure e1) {
                 vertxResponse.setStatus(e1.getErrorCode());
                 if (e1.isLoggable()) {

@@ -9,7 +9,7 @@ public interface ComponentsProvider {
 
     static Logger LOG = Logger.getLogger(ComponentsProvider.class);
 
-    Components getComponents();
+    Components getComponents(CurrentContextFactory currentContextFactory);
 
     static void unableToLoadRemovedBeanType(String type, Throwable problem) {
         LOG.warnf("Unable to load removed bean type [%s]: %s", type, problem.toString());

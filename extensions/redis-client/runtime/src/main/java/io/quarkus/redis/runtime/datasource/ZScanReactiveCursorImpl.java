@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,11 +14,11 @@ import io.vertx.mutiny.redis.client.Response;
 public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements ReactiveZScanCursor<V> {
 
     private final byte[] key;
-    private final Class<V> typeOfValue;
+    private final Type typeOfValue;
     private long cursor;
     private final List<String> extra = new ArrayList<>();
 
-    public <K> ZScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Class<V> typeOfValue,
+    public <K> ZScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfValue,
             List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
@@ -65,7 +66,7 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     public Multi<ScoredValue<V>> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)
-                .whilst(m -> !m.isEmpty() && hasNext())
+                .whilst(m -> hasNext())
                 .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
     }
 }

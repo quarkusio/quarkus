@@ -19,8 +19,9 @@ import io.vertx.mutiny.redis.client.Response;
 @SuppressWarnings("resource")
 public class RedisServerExtension implements BeforeAllCallback, AfterAllCallback {
 
+    public static final String REDIS_DEFAULT_IMAGE = "redis/redis-stack:7.2.0-v0";
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse(System.getProperty("redis.base.image", "redis/redis-stack:7.0.2-RC2")))
+            DockerImageName.parse(System.getProperty("redis.base.image", REDIS_DEFAULT_IMAGE)))
             .withExposedPorts(6379);
     static Redis redis;
     static RedisAPI api;

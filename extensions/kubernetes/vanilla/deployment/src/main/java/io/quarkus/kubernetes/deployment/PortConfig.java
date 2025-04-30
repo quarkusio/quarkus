@@ -1,52 +1,44 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.Protocol;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class PortConfig {
+public interface PortConfig {
 
     /**
      * The port number. Refers to the container port.
      */
-    @ConfigItem
-    public OptionalInt containerPort;
+    OptionalInt containerPort();
 
     /**
      * The host port.
      */
-    @ConfigItem
-    public OptionalInt hostPort;
+    OptionalInt hostPort();
 
     /**
      * The application path (refers to web application path).
-     *
-     * @return The path, defaults to /.
      */
-    @ConfigItem(defaultValue = "/")
-    public Optional<String> path;
+    @WithDefault("/")
+    Optional<String> path();
 
     /**
      * The protocol.
      */
-    @ConfigItem(defaultValue = "TCP")
-    public Protocol protocol;
+    @WithDefault("TCP")
+    Protocol protocol();
 
     /**
-     * The nodePort to which this port should be mapped to.
-     * This only takes affect when the serviceType is set to node-port.
+     * The nodePort to which this port should be mapped to. This only takes affect when the serviceType is set to
+     * node-port.
      */
-    public OptionalInt nodePort;
+    OptionalInt nodePort();
 
     /**
      * If enabled, the port will be configured to use the schema HTTPS.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean tls;
-
+    @WithDefault("false")
+    boolean tls();
 }

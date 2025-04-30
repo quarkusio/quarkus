@@ -1,11 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import java.util.Optional;
-
-import io.vertx.core.Context;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.VertxMetricsFactory;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
@@ -29,13 +25,13 @@ public class OpenTelemetryVertxMetricsFactory implements VertxMetricsFactory {
             @Override
             public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(final HttpServerOptions options,
                     final SocketAddress localAddress) {
-                return new OpenTelemetryHttpServerMetrics();
+                return new OpenTelemetryVertxServerMetrics();
             }
         };
     }
 
-    public static class OpenTelemetryHttpServerMetrics
-            implements HttpServerMetrics<OpenTelemetryHttpServerMetrics.MetricRequest, Object, Object> {
+    public static class OpenTelemetryVertxServerMetrics
+            implements HttpServerMetrics<MetricRequest, Object, Object> {
         @Override
         public MetricRequest requestBegin(final Object socketMetric, final HttpRequest request) {
             return MetricRequest.request(request);
@@ -45,26 +41,6 @@ public class OpenTelemetryVertxMetricsFactory implements VertxMetricsFactory {
         public void requestRouted(final MetricRequest requestMetric, final String route) {
             if (route != null) {
                 requestMetric.getContext().ifPresent(context -> context.putLocal("VertxRoute", route));
-            }
-        }
-
-        static final class MetricRequest {
-            private final HttpRequest request;
-
-            MetricRequest(final HttpRequest request) {
-                this.request = request;
-            }
-
-            Optional<Context> getContext() {
-                if (request instanceof HttpServerRequestInternal) {
-                    return Optional.of(((HttpServerRequestInternal) request).context());
-                } else {
-                    return Optional.empty();
-                }
-            }
-
-            static MetricRequest request(final HttpRequest httpRequest) {
-                return new MetricRequest(httpRequest);
             }
         }
     }

@@ -27,15 +27,15 @@ public class ApplySecuritySettingsDecorator extends NamedResourceDecorator<PodSp
     public void andThenVisit(PodSpecFluent podSpec, ObjectMeta resourceMeta) {
         PodSecurityContextBuilder securityContextBuilder = new PodSecurityContextBuilder();
 
-        securityContext.runAsUser.ifPresent(securityContextBuilder::withRunAsUser);
-        securityContext.runAsGroup.ifPresent(securityContextBuilder::withRunAsGroup);
-        securityContext.runAsNonRoot.ifPresent(securityContextBuilder::withRunAsNonRoot);
-        securityContext.supplementalGroups.ifPresent(securityContextBuilder::addAllToSupplementalGroups);
-        securityContext.fsGroup.ifPresent(securityContextBuilder::withFsGroup);
-        securityContext.sysctls.ifPresent(map -> map.entrySet().stream()
+        securityContext.runAsUser().ifPresent(securityContextBuilder::withRunAsUser);
+        securityContext.runAsGroup().ifPresent(securityContextBuilder::withRunAsGroup);
+        securityContext.runAsNonRoot().ifPresent(securityContextBuilder::withRunAsNonRoot);
+        securityContext.supplementalGroups().ifPresent(securityContextBuilder::addAllToSupplementalGroups);
+        securityContext.fsGroup().ifPresent(securityContextBuilder::withFsGroup);
+        securityContext.sysctls().entrySet().stream()
                 .map(entry -> new SysctlBuilder().withName(entry.getKey()).withValue(entry.getValue()).build())
-                .forEach(securityContextBuilder::addToSysctls));
-        securityContext.fsGroupChangePolicy.map(e -> e.name()).ifPresent(securityContextBuilder::withFsGroupChangePolicy);
+                .forEach(securityContextBuilder::addToSysctls);
+        securityContext.fsGroupChangePolicy().map(e -> e.name()).ifPresent(securityContextBuilder::withFsGroupChangePolicy);
         buildSeLinuxOptions().ifPresent(securityContextBuilder::withSeLinuxOptions);
         buildWindowsOptions().ifPresent(securityContextBuilder::withWindowsOptions);
 
@@ -49,12 +49,12 @@ public class ApplySecuritySettingsDecorator extends NamedResourceDecorator<PodSp
 
     private Optional<WindowsSecurityContextOptions> buildWindowsOptions() {
         WindowsSecurityContextOptions item = null;
-        if (securityContext.windowsOptions.isAnyPropertySet()) {
+        if (securityContext.windowsOptions().isAnyPropertySet()) {
             WindowsSecurityContextOptionsBuilder builder = new WindowsSecurityContextOptionsBuilder();
-            securityContext.windowsOptions.gmsaCredentialSpec.ifPresent(builder::withGmsaCredentialSpec);
-            securityContext.windowsOptions.gmsaCredentialSpecName.ifPresent(builder::withGmsaCredentialSpecName);
-            securityContext.windowsOptions.hostProcess.ifPresent(builder::withHostProcess);
-            securityContext.windowsOptions.runAsUserName.ifPresent(builder::withRunAsUserName);
+            securityContext.windowsOptions().gmsaCredentialSpec().ifPresent(builder::withGmsaCredentialSpec);
+            securityContext.windowsOptions().gmsaCredentialSpecName().ifPresent(builder::withGmsaCredentialSpecName);
+            securityContext.windowsOptions().hostProcess().ifPresent(builder::withHostProcess);
+            securityContext.windowsOptions().runAsUserName().ifPresent(builder::withRunAsUserName);
             item = builder.build();
         }
 
@@ -63,12 +63,12 @@ public class ApplySecuritySettingsDecorator extends NamedResourceDecorator<PodSp
 
     private Optional<SELinuxOptions> buildSeLinuxOptions() {
         SELinuxOptions item = null;
-        if (securityContext.seLinuxOptions.isAnyPropertySet()) {
+        if (securityContext.seLinuxOptions().isAnyPropertySet()) {
             SELinuxOptionsBuilder builder = new SELinuxOptionsBuilder();
-            securityContext.seLinuxOptions.user.ifPresent(builder::withUser);
-            securityContext.seLinuxOptions.role.ifPresent(builder::withRole);
-            securityContext.seLinuxOptions.level.ifPresent(builder::withLevel);
-            securityContext.seLinuxOptions.type.ifPresent(builder::withType);
+            securityContext.seLinuxOptions().user().ifPresent(builder::withUser);
+            securityContext.seLinuxOptions().role().ifPresent(builder::withRole);
+            securityContext.seLinuxOptions().level().ifPresent(builder::withLevel);
+            securityContext.seLinuxOptions().type().ifPresent(builder::withType);
             item = builder.build();
         }
 

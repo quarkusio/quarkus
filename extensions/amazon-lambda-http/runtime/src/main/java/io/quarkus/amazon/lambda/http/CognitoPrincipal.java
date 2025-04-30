@@ -76,8 +76,8 @@ public class CognitoPrincipal implements JsonWebToken {
     @Override
     public Set<String> getGroups() {
         if (groups == null) {
-            if (jwt.getClaims().containsKey(LambdaHttpRecorder.config.cognitoRoleClaim)) {
-                String claim = jwt.getClaims().get(LambdaHttpRecorder.config.cognitoRoleClaim);
+            if (jwt.getClaims().containsKey(LambdaHttpRecorder.config.cognitoRoleClaim())) {
+                String claim = jwt.getClaims().get(LambdaHttpRecorder.config.cognitoRoleClaim());
                 Matcher matcher = LambdaHttpRecorder.groupPattern.matcher(claim);
                 groups = new HashSet<>();
                 while (matcher.find()) {

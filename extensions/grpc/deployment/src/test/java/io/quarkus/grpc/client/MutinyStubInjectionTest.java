@@ -23,8 +23,7 @@ import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
@@ -46,7 +45,7 @@ public class MutinyStubInjectionTest {
     @Test
     public void test() {
         String neo = service.invoke("neo-mutiny");
-        assertThat(neo).startsWith("Hello neo-mutiny").doesNotContain("vert.x");
+        assertThat(neo).startsWith("Hello neo-mutiny").contains("vert.x");
 
         neo = service.invokeFromIoThread("neo-io");
         assertThat(neo).startsWith("Hello neo-io").contains("vert.x");
@@ -79,7 +78,7 @@ public class MutinyStubInjectionTest {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
                             .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(EventLoopContext.class))
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
                             .map(r -> r + " " + Thread.currentThread().getName())
                             .subscribe().with(e::complete, e::fail);
                 });
@@ -94,7 +93,6 @@ public class MutinyStubInjectionTest {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
                             .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
-                                    .isNotInstanceOf(EventLoopContext.class).isNotInstanceOf(WorkerContext.class)
                                     .isEqualTo(duplicate))
                             .map(r -> r + " " + Thread.currentThread().getName())
                             .subscribe().with(e::complete, e::fail);

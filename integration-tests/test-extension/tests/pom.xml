@@ -78,6 +78,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-test-maven</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -87,30 +92,15 @@
         <filtering>true</filtering>
       </resource>
     </resources>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.gradle</groupId>
-          <artifactId>gradle-enterprise-maven-extension</artifactId>
-          <configuration>
-            <gradleEnterprise>
-              <normalization combine.children="append">
-                <runtimeClassPath>
-                  <propertiesNormalizations>
-                    <propertiesNormalization>
-                      <path>application.properties</path>
-                      <ignoredProperties>
-                        <ignore>quarkus.bt.classpath-recording.record-file</ignore>
-                      </ignoredProperties>
-                    </propertiesNormalization>
-                  </propertiesNormalizations>
-                </runtimeClassPath>
-              </normalization>
-            </gradleEnterprise>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources-filtered</directory>
+        <filtering>true</filtering>
+        <excludes>
+          <exclude>**/target/**</exclude> <!-- Target folders sometimes creep in when manually executing locally-->
+        </excludes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>
@@ -158,16 +148,24 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
-            <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
-            <quarkus.dymmy>test</quarkus.dymmy>
-          </systemPropertyVariables>
-          <environmentVariables>
-            <DUMMY_AGE>70</DUMMY_AGE>  <!-- Used to test that env vars are propagated -->
-          </environmentVariables>
-        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <systemPropertyVariables>
+                <!-- See io.quarkus.extest.runtime.classpath.RecordedClasspathEntries -->
+                <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
+                <quarkus.dymmy>test</quarkus.dymmy>
+              </systemPropertyVariables>
+              <environmentVariables>
+                <DUMMY_AGE>70</DUMMY_AGE>  <!-- Used to test that env vars are propagated -->
+              </environmentVariables>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -183,8 +181,31 @@
       <!-- these properties must not be defined in the general properties,
            otherwise the native profile in the parent pom is not able to override them -->
       <properties>
-        <quarkus.package.type>uber-jar</quarkus.package.type>
+        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
       </properties>
+    </profile>
+    <profile>
+      <id>native-image</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
+      <!-- add some custom config, the rest comes from parent -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <!-- add a system property that can be used by JUnit to determine whether a native image can be built -->
+                <quarkus.test.native>true</quarkus.test.native>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

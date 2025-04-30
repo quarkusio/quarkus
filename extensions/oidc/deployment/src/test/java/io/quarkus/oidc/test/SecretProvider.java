@@ -14,7 +14,11 @@ public class SecretProvider implements CredentialsProvider {
 
     @Override
     public Map<String, String> getCredentials(String credentialsProviderName) {
-        return Collections.singletonMap("secret-from-vault", "secret");
+        if ("oidc".equals(credentialsProviderName)) {
+            return Collections.singletonMap("secret-from-vault", "secret");
+        } else {
+            return Map.of();
+        }
     }
 
 }

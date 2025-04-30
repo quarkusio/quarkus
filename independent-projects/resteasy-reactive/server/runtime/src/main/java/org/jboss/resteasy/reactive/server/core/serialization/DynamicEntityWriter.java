@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
+import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
@@ -41,15 +42,27 @@ public class DynamicEntityWriter implements EntityWriter {
             ServerHttpRequest vertxRequest = context.serverRequest();
             // first check and see if the resource method defined a media type and try to use it
             if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
-                MediaType negotiatedMediaType = context.getTarget().getProduces()
-                        .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
+                ServerMediaType producesServerMediaType = context.getTarget().getProduces();
+                MediaType negotiatedMediaType = null;
+                List<String> accepts = context.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
+                for (String accept : accepts) {
+                    negotiatedMediaType = producesServerMediaType.negotiateProduces(accept).getKey();
+                    if (negotiatedMediaType != null) {
+                        break;
+                    }
+                }
+                if (negotiatedMediaType == null) { // fallback to ensure that MessageBodyWriter is passed the proper media type
+                    negotiatedMediaType = producesServerMediaType
+                            .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
+                }
+
                 List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), negotiatedMediaType,
                         RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {
                     writers = writersList.toArray(EMPTY_ARRAY);
                     // use the actual type the method declares as this is what the spec expects despite the fact that we might
                     // have used the suffix of the subtype to determine a MessageBodyWriter
-                    MediaType[] sortedOriginalMediaTypes = context.getTarget().getProduces().getSortedOriginalMediaTypes();
+                    MediaType[] sortedOriginalMediaTypes = producesServerMediaType.getSortedOriginalMediaTypes();
                     for (MediaType methodMediaType : sortedOriginalMediaTypes) {
                         if (methodMediaType.isCompatible(negotiatedMediaType)) {
                             selectedMediaType = methodMediaType;

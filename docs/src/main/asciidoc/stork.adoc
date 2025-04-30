@@ -5,8 +5,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started with SmallRye Stork
 :extension-status: preview
-
 include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery,load-balancing,stork
+:extensions: io.quarkus:quarkus-smallrye-stork
 
 The essence of distributed systems resides in the interaction between services.
 In modern architecture, you often have multiple instances of your service to share the load or improve the resilience by redundancy.
@@ -48,7 +50,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `stork-quickstart` {quickstarts-tree-url}/stork-quickstart[directory].
+The solution is located in the `stork-quickstart` link:{quickstarts-tree-url}/stork-quickstart[directory].
 
 == Discovery and selection
 
@@ -68,10 +70,10 @@ image::stork-process.png[Discovery and Selection of services,width=50%, align=ce
 
 == Bootstrapping the project
 
-Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-resteasy-reactive extensions using your favorite approach:
+Create a Quarkus project importing the quarkus-rest-client, quarkus-rest, and quarkus-smallrye-stork extensions using your favorite approach:
 
 :create-app-artifact-id: stork-quickstart
-:create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
+:create-app-extensions: quarkus-rest-client,quarkus-rest,quarkus-smallrye-stork
 include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
@@ -225,7 +227,7 @@ Both registration uses the same name (`my-service`), but different ids to indica
 
 So far, we didn't use Stork; we just scaffolded the services we will be discovering, selecting, and calling.
 
-We will call the services using the Reactive REST Client.
+We will call the services using the REST Client.
 Create the `src/main/java/org/acme/MyService.java` file with the following content:
 
 [source, java]

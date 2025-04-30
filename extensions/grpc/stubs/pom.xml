@@ -72,14 +72,6 @@
     </dependencies>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>${os-maven-plugin.version}</version>
-            </extension>
-        </extensions>
-
         <plugins>
             <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
@@ -127,7 +119,7 @@
                             <arguments>
                                 <argument>${project.build.directory}/generated-sources/protobuf/grpc-java</argument>
                             </arguments>
-                            <mainClass>io.quarkus.grpc.deployment.GrpcPostProcessing</mainClass>
+                            <mainClass>io.quarkus.grpc.codegen.GrpcPostProcessing</mainClass>
                         </configuration>
                     </execution>
                 </executions>

@@ -19,6 +19,7 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                             + "quarkus.hibernate-orm.active=false\n"
                             + "quarkus.hibernate-orm.datasource=<default>\n"
                             + "quarkus.hibernate-orm.packages=io.quarkus.test.devui\n"
+                            + "quarkus.hibernate-orm.\"namedpu\".schema-management.strategy=drop-and-create\n"
                             // ... but it's (implicitly) active for a named PU
                             + "quarkus.hibernate-orm.\"namedpu\".datasource=nameddatasource\n"
                             + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.test.devui.namedpu\n"),
@@ -27,7 +28,7 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                     .addClasses(MyNamedPuEntity.class));
 
     public DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest() {
-        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity");
+        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity", null);
     }
 
 }

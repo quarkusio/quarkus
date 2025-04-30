@@ -3,9 +3,17 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-openid-connect-providers"]
 = Configuring Well-Known OpenID Connect Providers
-
 include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: security,web
+:keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch linkedin strava
+:toclevels: 3
+:topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch,linkedin,strava
+:extensions: io.quarkus:quarkus-oidc
+
+This document explains how to configure well-known social OIDC and OAuth2 providers.
 
 == Introduction
 
@@ -17,135 +25,15 @@ The configuration of such providers can become complex, very technical and diffi
 
 `quarkus.oidc.provider` configuration property has been introduced to refer to well-known OpenID Connect and OAuth2 providers. This property can be used to refer to a provider such as `github` with only a minimum number of customizations required, typically, an account specific `client id`, `client secret` and some properties have to be set to complete the configuration.
 
-This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://quarkiverse.github.io/quarkiverse-docs/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
+This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://docs.quarkiverse.io/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
 
 == Well Known Providers
 
-=== GitHub
-
-In order to set up OIDC for GitHub you need to create a new OAuth application in your https://github.com/settings/applications/new[GitHub developer settings]:
-
-image::oidc-github-1.png[role="thumb"]
-
-Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/_renarde/security/github-success`
-(if you intend to test this using the Quarkus DEV mode).
-
-Now click on `Register application` and you'll be shown your application page:
-
-image::oidc-github-2.png[role="thumb"]
-
-You need to click on `Generate a new client secret`, confirm your credentials, and write down
-your Client ID and Client secret (especially that one, because you will not be able to see it again
-later from that page, but you can always recreate one, do don't worry too much):
-
-image::oidc-github-3.png[role="thumb"]
-
-Now add the following configuration to your `application.properties`:
-
-[source,properties]
-----
-quarkus.oidc.provider=github
-quarkus.oidc.client-id=<Client ID>
-quarkus.oidc.credentials.secret=<Secret>
-----
-
-TIP: You can also use GitHub provider with `quarkus.oidc.application-type=service`, just set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true`.
-
-=== Google
-
-In order to set up OIDC for Google you need to create a new project in your https://console.cloud.google.com/projectcreate[Google Cloud Platform console]:
-
-Pick a project name and click on `CREATE`.
-
-image::oidc-google-1.png[role="thumb"]
-
-Now make sure you select your project in the top selector, and click on the left-hand bar menu on `APIs and Services > OAuth consent screen`:
-
-image::oidc-google-2.png[role="thumb"]
-
-Select `External` to authorise any Google user to log in to your application and press `CREATE`:
-
-image::oidc-google-3.png[role="thumb"]
-
-Now you can fill in your application name, your support email, your developer contact information and press `SAVE AND CONTINUE`:
-
-image::oidc-google-4.png[role="thumb"]
-
-Do not add any scopes on the next page, and press `SAVE AND CONTINUE`:
-
-image::oidc-google-5.png[role="thumb"]
-
-Do not add any test user on the next page, and press `SAVE AND CONTINUE`:
-
-image::oidc-google-6.png[role="thumb"]
-
-Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
-
-image::oidc-google-7.png[role="thumb"]
-
-Select `Web application` as `Application type`, and add `http://localhost:8080/_renarde/security/oidc-success` in
-the `Authorised redirect URIs` list, then press `CREATE`:
-
-image::oidc-google-8.png[role="thumb"]
-
-Copy your Client ID and Client Secret:
-
-image::oidc-google-9.png[role="thumb"]
-
-You can now configure your `application.properties`:
-
-[source,properties]
-----
-quarkus.oidc.provider=google
-quarkus.oidc.client-id=<Client ID>
-quarkus.oidc.credentials.secret=<Secret>
-----
-
-=== Microsoft
-
-In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
-and search for `Azure Active Directory`, then click on it:
-
-image::oidc-microsoft-1.png[role="thumb"]
-
-Once there, on the left side under `Manage`, click on `App registrations` then click on `New registration`:
-
-image::oidc-microsoft-2.png[role="thumb"]
-
-Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/_renarde/security/oidc-success`,
-then click on `Register`:
-
-image::oidc-microsoft-3.png[role="thumb"]
-
-On that resulting page, copy the `Client Id` (under `Application (client) ID`, then click on `Add a certificate or secret`:
-
-image::oidc-microsoft-4.png[role="thumb"]
-
-Now, under `Client secrets (0)`, click on `New client secret`:
-
-image::oidc-microsoft-5.png[role="thumb"]
-
-Click on `Add` in that dialog without changing anything:
-
-image::oidc-microsoft-6.png[role="thumb"]
-
-On the resulting page, copy your `Secret Value`:
-
-image::oidc-microsoft-7.png[role="thumb"]
-
-You can now configure your `application.properties`:
-
-[source,properties]
-----
-quarkus.oidc.provider=microsoft
-quarkus.oidc.client-id=<Client ID>
-quarkus.oidc.credentials.secret=<Secret>
-----
-
+[[apple]]
 === Apple
 
-In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers: 
-you will need to run it over `https` and make it publicly accessible, so for development purposes
+In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99$/year program, but you cannot test your application on `localhost` like most other OIDC providers:
+you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
 Go to https://developer.apple.com/account/resources/identifiers/list[Create a new identifier] and press `+`
@@ -196,7 +84,7 @@ Enable `Sign in with Apple` and press `Configure`:
 
 image::oidc-apple-12.png[role="thumb"]
 
-Add your domain and return URL (set to `<host>/_renarde/security/oidc-success`) and press `Next`:
+Add your domain and return URL (set to `<host>/apple`) and press `Next`:
 
 image::oidc-apple-13.png[role="thumb"]
 
@@ -248,17 +136,40 @@ quarkus.oidc.credentials.jwt.issuer=<App ID Prefix>
 quarkus.oidc.credentials.jwt.subject=<Bundle ID}
 ----
 
+`quarkus.oidc.provider=apple` will request Apple to add `openid`, `email` and `name` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+[[discord]]
+=== Discord
+
+Create a https://discord.com/developers/applications[Discord application]:
+
+image::oidc-discord-1.png[role="thumb"]
+
+You now can get your client id and secret:
+
+image::oidc-discord-2.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=discord
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret=<Client Secret>
+----
+
+[[facebook]]
 === Facebook
 
-Facebook you will not be let you test your application on `localhost` like most other OIDC providers: 
-you will need to run it over `https` and make it publicly accessible, so for development purposes
+Facebook you will not be let you test your application on `localhost` like most other OIDC providers:
+you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
-In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `None` as an app type, and press `Next`:
+In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `Other` as an app type, and click `Next`.
 
 image::oidc-facebook-1.png[role="thumb"]
 
-Now enter an application name, and contact email, and press `Create app`:
+Now choose your application type. For this guide choose `Consumer` and click `Next` until you reach the screen below. Now enter an application name, and contact email, and press `Create app`:
 
 image::oidc-facebook-2.png[role="thumb"]
 
@@ -266,11 +177,12 @@ On the app page, click `Set up` on the `Facebook login` product:
 
 image::oidc-facebook-3.png[role="thumb"]
 
-Quick the `Quickstarts` page and click on `Facebook login > Settings` on the left menu:
+On the `Quickstart` page click on `Facebook login > Settings` on the left menu:
 
 image::oidc-facebook-4.png[role="thumb"]
 
-Enter your `Redirect URIs` (set to `<host>/_renarde/security/oidc-success`) and press `Save changes`:
+First click on `Get Advanced Access` to switch `public_profile` to advanced access.
+Then enter your `Redirect URIs` (set to `<host>/facebook`) and press `Save changes`:
 
 image::oidc-facebook-5.png[role="thumb"]
 
@@ -287,12 +199,317 @@ quarkus.oidc.client-id=<App ID>
 quarkus.oidc.credentials.secret=<App secret>
 ----
 
-=== Twitter
+`quarkus.oidc.provider=facebook` will request Facebook to add `email` and `public_profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
-You can use Twitter for OIDC login, but at the moment, it restricts access to the user's email, which means you
+[[github]]
+=== GitHub
+
+In order to set up OIDC for GitHub you need to create a new OAuth application in your https://github.com/settings/applications/new[GitHub developer settings]:
+
+image::oidc-github-1.png[role="thumb"]
+
+Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/github`
+(if you intend to test this using the Quarkus dev mode).
+
+Now click on `Register application` and you'll be shown your application page:
+
+image::oidc-github-2.png[role="thumb"]
+
+You need to click on `Generate a new client secret`, confirm your credentials, and write down
+your Client ID and Client secret (especially that one, because you will not be able to see it again
+later from that page, but you can always recreate one, do don't worry too much):
+
+image::oidc-github-3.png[role="thumb"]
+
+Now add the following configuration to your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=github
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+`quarkus.oidc.provider=github` will request GitHub to add a `user:email` scope to issued access tokens. For information about overriding this scope or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by GitHub to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.
+
+[[google]]
+=== Google
+
+In order to set up OIDC for Google you need to create a new project in your https://console.cloud.google.com/projectcreate[Google Cloud Platform console]:
+
+Pick a project name and click on `CREATE`.
+
+image::oidc-google-1.png[role="thumb"]
+
+Now make sure you select your project in the top selector, and click on the left-hand bar menu on `APIs and Services > OAuth consent screen`:
+
+image::oidc-google-2.png[role="thumb"]
+
+Select `External` to authorise any Google user to log in to your application and press `CREATE`:
+
+image::oidc-google-3.png[role="thumb"]
+
+Now you can fill in your application name, your support email, your developer contact information and press `SAVE AND CONTINUE`:
+
+image::oidc-google-4.png[role="thumb"]
+
+Do not add any scopes on the next page, and press `SAVE AND CONTINUE`:
+
+image::oidc-google-5.png[role="thumb"]
+
+Do not add any test user on the next page, and press `SAVE AND CONTINUE`:
+
+image::oidc-google-6.png[role="thumb"]
+
+Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
+
+image::oidc-google-7.png[role="thumb"]
+
+Select `Web application` as `Application type`, and add `http://localhost:8080/google` in
+the `Authorised redirect URIs` list, then press `CREATE`:
+
+image::oidc-google-8.png[role="thumb"]
+
+Copy your Client ID and Client Secret:
+
+image::oidc-google-9.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+`quarkus.oidc.provider=google` will request Google to add `openid`, `email` and `profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by Google to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.
+
+[[linkedin]]
+=== LinkedIn
+
+Create a https://developer.linkedin.com/[LinkedIn application]:
+
+image::oidc-linkedin-1.png[role="thumb"]
+
+Add the `Sign In with LinkedIn using OpenId Connect` product:
+
+image::oidc-linkedin-2.png[role="thumb"]
+
+You now can get your client id and secret. Don't forget to also add the authorized redirect URLs for your application:
+
+image::oidc-linkedin-3.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=linkedin
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret=<Client Secret>
+----
+
+[[mastodon]]
+=== Mastodon
+
+Create a https://joinmastodon.org/[Mastodon account]. You must https://joinmastodon.org/servers[pick a server], for example, `mastodon.social`.
+Select a `Development` option in your account and register an application, for example:
+
+image::oidc-mastodon-register-app.png[role="thumb"]
+
+Select the registered application:
+
+image::oidc-mastodon-registered-apps.png[role="thumb"]
+
+and note its client id and client secret properties, use them to configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=mastodon
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret.value=<Client Secret>
+----
+
+By default, `quarkus.oidc.provider=mastodon` sets `quarkus.oidc.auth-server-url` to the `https://mastodon.social` Mastodon server address.
+
+You can override `quarkus.oidc.auth-server-url` if you have created your account in another Mastodon server, for example:
+
+[source,properties]
+----
+quarkus.oidc.provider=mastodon
+quarkus.oidc.auth-server-url=https://infosec.exchange
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret.value=<Client Secret>
+----
+
+[[microsoft]]
+=== Microsoft
+
+In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
+and search for `Microsoft Entra ID` formerly known as `Azure Active Directory` , then click on it:
+
+image::oidc-microsoft-1.png[role="thumb"]
+
+Once there, on the left side under `Manage`, click on `App registrations` then click on `New registration`:
+
+image::oidc-microsoft-2.png[role="thumb"]
+
+Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/microsoft`,
+then click on `Register`:
+
+image::oidc-microsoft-3.png[role="thumb"]
+
+On that resulting page, copy the `Client Id` (under `Application (client) ID`, then click on `Add a certificate or secret`:
+
+image::oidc-microsoft-4.png[role="thumb"]
+
+Now, under `Client secrets (0)`, click on `New client secret`:
+
+image::oidc-microsoft-5.png[role="thumb"]
+
+Click on `Add` in that dialog without changing anything:
+
+image::oidc-microsoft-6.png[role="thumb"]
+
+On the resulting page, copy your `Secret Value`:
+
+image::oidc-microsoft-7.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=microsoft
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+`quarkus.oidc.provider=microsoft` will request Microsoft to add `openid`, `email` and `profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by Microsoft to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications but you may need to set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true` if access tokens issued by Microsoft are not in JWT format.
+
+[NOTE]
+====
+Some Microsoft services may issue tokens whose signatures can only be verified if the current token's `nonce` header is reset with its SHA-256 digest value.
+If your application has to deal with such tokens then please enable an Azure token customizer:
+
+[source,properties]
+----
+quarkus.oidc.provider=microsoft
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+quarkus.oidc.token.customizer-name=azure-access-token-customizer
+----
+
+====
+
+[[slack]]
+=== Slack
+
+Create a https://api.slack.com/authentication/sign-in-with-slack#setup[Slack application]:
+
+image::oidc-slack-1.png[role="thumb"]
+
+Select application name, workspace, and remember it, you will need it later:
+
+image::oidc-slack-2.png[role="thumb"]
+
+Please save client id and secret displayed on the next page, you will need them later:
+
+image::oidc-slack-3.png[role="thumb"]
+
+Configure redirect URLs.
+Slack provider requires HTTPS protocol, for development purposes, you can use ngrok:
+
+image::oidc-slack-4.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=slack
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+quarkus.oidc.authentication.extra-params.team=quarkus-slack <1>
+----
+<1> Use the `team` parameter to refer to the workspace you chose during the Slack OIDC application registration.
+
+Open your browser and navigate to your application `https://<your ngrok instance>.ngrok-free.app/`.
+Quarkus will redirect you to Slack provider on the first request where you can grant required permissions:
+
+image::oidc-slack-5.png[role="thumb"]
+
+[[spotify]]
+=== Spotify
+
+Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:
+
+image::oidc-spotify-1.png[role="thumb"]
+
+Don't forget to add `http://localhost:8080` as a redirect URI for testing during development purposes. You should get a client id and secret generated once a Spotify application setup has been complete, for example:
+
+image::oidc-spotify-2.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=spotify
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+----
+
+`quarkus.oidc.provider=spotify` will request Spotify to add `user-read-private` and `user-read-email` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+[[strava]]
+=== Strava
+
+Create a https://www.strava.com/settings/api[Strava application]:
+
+image::oidc-strava-1.png[role="thumb"]
+
+For example, set `Category` to `SocialMotivation`, and set `ApplicationCallbackDomain` to either `localhost` or the domain name provided by Ngrok, see the <<redirect_url>> for more information.
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=strava
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret=<Client Secret>
+# default value is '/strava'
+quarkus.oidc.authentication.redirect-path=/fitness/welcome <1>
+----
+<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficient redirect_uri validation] for more information.
+Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authorization code flow. See the <<exact_redirect_uri_match>> for more information.
+
+[[twitch]]
+=== Twitch
+
+Create a https://dev.twitch.tv/console/apps[Twitch application]:
+
+image::oidc-twitch-1.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=twitch
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret.value=<Client Secret>
+----
+
+[[x]]
+=== [[twitter]] X (formerly Twitter)
+
+You can use X (formerly Twitter) for OIDC login, but at the moment, it restricts access to the user's email, which means you
 will have to obtain it and verify it yourself.
 
-In order to set up OIDC for Twitter start by https://developer.twitter.com/en/portal/projects/new[Creating a project], enter a project name, and press `Next`:
+In order to set up OIDC for X, start by https://developer.twitter.com/en/portal/projects/new[Creating a project], enter a project name, and press `Next`:
 
 image::oidc-twitter-1.png[role="thumb"]
 
@@ -323,7 +540,7 @@ image::oidc-twitter-7.png[role="thumb"]
 Select `Web App` as application type, then fill in your application details (use `<host>/_renarde/security/twitter-success`
 for the `Callback URI`).
 
-NOTE: Twitter doesn't require https usage in practice, but won't accept your `Website URL` without it, so
+NOTE: X doesn't require https usage in practice, but won't accept your `Website URL` without it, so
 you can still use ngrok for it.
 
 Now press `Save`:
@@ -338,39 +555,223 @@ You can now configure your `application.properties`:
 
 [source,properties]
 ----
-quarkus.oidc.provider=twitter
+quarkus.oidc.provider=x
 quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
+
+`quarkus.oidc.provider=x` will request X to add `offline.access`, `tweet.read` and `users.read` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
 [NOTE]
 ====
-Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=twitter` declaration.
-Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with Twitter is in progress and it will
+X provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=x` declaration.
+Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with X is in progress and it will
 generate a secure random secret key for encrypting it.
 
-You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.pkce-secret` property but
+You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.state-secret` property but
 note that this secret should be 32 characters long, and an error will be reported if it is less than 16 characters long.
 ====
 
-=== Spotify
+[NOTE]
+====
+X is the new name of Twitter. You can continue using `quarkus.oidc.provider=twitter` for the time being but it might become deprecated in the future.
+====
 
-Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:
- 
-image::oidc-spotify-1.png[role="thumb"]
+[[provider-scope]]
+== Provider scopes
 
-Don't forget to add `http://localhost:8080` as a redirect URI for testing during development purposes. You should get a client id and secret generated once a Spotify application setup has been complete, for example:
+Each provider declaration will request one or more token scopes added to access tokens issued by a given provider. For example, `quarkus.oidc.provider=google` will request `Google` to add `openid`, `email` and `profile` scopes.
 
-image::oidc-spotify-2.png[role="thumb"]
-
-You can now configure your `application.properties`:
+You can override these scopes with `quarkus.oidc.authentication.scopes` property, for example, if you work with `Google` and would not like to have an `email` scope added to access tokens:
 
 [source,properties]
 ----
-quarkus.oidc.provider=spotify
-quarkus.oidc.client-id=<Client ID>
-quarkus.oidc.credentials.secret=<Client Secret>
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.scopes=oidc,profile
 ----
+
+You may also want to add one or more scopes in addition to the scopes requested by default. For example, if you would like to use an access token issued by `Google` to access `Google Calendar` service, you can do it like this:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.extra-params.scope=https://www.googleapis.com/auth/calendar
+----
+
+It is simpler than using `quarkus.oidc.authentication.scopes` to add a new scope, because `quarkus.oidc.authentication.scopes` overrides the scopes already set by the provider declaration, which is why you need to list all the required scopes in this case:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.scopes=oidc,email,profile,https://www.googleapis.com/auth/calendar
+----
+
+== Support for multiple providers
+
+If you would like to support authenticating users with more than one provider then a provider-specific tenant configuration resolution must be supported.
+
+For more information, see the Quarkus xref:security-openid-connect-multitenancy.adoc#static-tenant-resolution[Using OpenID Connect (OIDC) Multi-Tenancy] guide.
+
+== Access provider services with token propagation
+
+Sometimes, only authenticating users with a social provider is not enough.
+A provider-specific service also needs to be accessed for the Quarkus OIDC `web-app` application to fetch or update data from the provider service on behalf of the currently authenticated user.
+
+As mentioned in the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide, ID and access tokens are returned after the authorization code flow has been completed, with some providers like `GitHub` returning an access token only.
+It is this access token that has to be propagated to services such as `Google Calendar`, or `Spotify Playlists` for the currently authenticated user to be able to use such services.
+
+You do not have to bring provider-specific libraries in order to achieve this, but instead you can use a reactive `Token Propagation` filter, which can be bound to a given REST client with a simple annotation.
+For more information, see the Quarkus xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Access token propagation] guide.
+
+For example, after you have configured the <<google>> provider, you can have events added to the user's Google Calendar by using a REST client as shown in the following example:
+
+[source,java]
+----
+package org.acme.calendar;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import io.quarkus.oidc.token.propagation.common.AccessToken;
+import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@RegisterRestClient(configKey="google-calendar-api")
+@AccessToken  <1>
+@Path("/calendars/primary")
+public interface GoogleCalendarClient {
+    @POST
+    @Path("events")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    Uni<String> addEvent(Event event);
+    public static class Event {
+        public String summary;
+        public String kind = "calendar#event";
+        public Time start;
+        public Time end
+    }
+
+    public static class Time {
+        public String dateTime;
+        public String timeZone = "Europe/CET";
+        public Time() {
+        }
+        public Time(String value) {
+            dateTime = value;
+	}
+    }
+}
+----
+
+<1> The `@AccessToken` annotation enables an access token propagation to the target service.
+
+Finally,  you need to configure the Google Calendar address and request  the Google Calendar scope for an access token, as outlined in the following example:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+
+# Add a required calendar scope
+quarkus.oidc.authentication.extra-params.scope=https://www.googleapis.com/auth/calendar
+
+# Point REST client to Google Calendar endpoint
+quarkus.rest-client.google-calendar-api.url=https://www.googleapis.com/calendar/v3
+----
+
+Now you are ready to have users authenticated with Google and support updating their `Google` calendars on their behalf, for example:
+
+[source,java]
+----
+package org.acme.calendar;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import io.quarkus.oidc.IdToken;
+import io.quarkus.security.Authenticated;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+
+@Path("/calendar")
+@Authenticated
+public class CalendarService {
+
+    @Inject
+    @IdToken
+    JsonWebToken jwt;
+
+    @Inject
+    @RestClient
+    GoogleCalendarClient calendarClient;
+
+    @GET
+    @Path("/event")
+    @Produces("text/plain")
+    public Uni<String> get() {
+        return calendarClient.addEvent(new Event()).onItem()
+           .transform(c -> ("Hello " + jwt.getName() + ", new event: " + c));
+    }
+}
+----
+
+You must update the application registered with the <<google>> provider to list `http://localhost:8080/calendar/event` as one of the authorized redirect URIs if you would like to test this endpoint on the local host, for example:
+
+image::oidc-google-authorized-redirects.png[role="thumb"]
+
+You might also have to register one or more test users:
+
+image::oidc-google-test-users.png[role="thumb"]
+
+Follow the same approach if the endpoint must access other Google services.
+
+The pattern of authenticating with a given provider, where the endpoint uses either an ID token or UserInfo (especially if an OAuth2-only provider such as `GitHub` is used) to get some information about the currently authenticated user and using an access token to access some downstream services (provider or application specific ones) on behalf of this user can be universally applied, irrespectively of which provider is used to secure the application.
+
+[[exact_redirect_uri_match]]
+== Exact redirect URI match
+
+Most OIDC and OAuth2 providers with the exception of <<strava>> will enforce that the authorization code flow can be completed only if the redirect URI matches precisely the redirect URI configured in a given provider's dashboard.
+
+From the practical point of view, your Quarkus endpoint will most likely need to have the `quarkus.oidc.authentication.redirect-path` relative path property set to an initial entry path for all the authenticated users, for example, `quarkus.oidc.authentication.redirect-path=/authenticated`, which means that newly authenticated users will land on the `/authenticated` page, irrespectively of how many secured entry points your application has and which secured resource they initially accessed.
+
+It is a typical flow for many OIDC `web-app` applications. Once the user lands on the initial secured page, your application can return an HTML page which uses links to guide users to other parts of the application or users can be immediately redirected to other application resources with the help of JAX-RS API.
+
+If necessary, you can configure Quarkus to restore the original request URI after the authentication has been completed. For example:
+
+[source,properties]
+----
+quarkus.oidc.provider=strava <1>
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+quarkus.oidc.authentication.restore-path-after-redirect=true <2>
+----
+<1> `strava` provider configuration is the only supported configuration which enforces the `quarkus.oidc.authentication.redirect-path` property with the `/strava` path which you can override with another path such as `/fitness`.
+<2> If the users access the `/run` endpoint before the authentication, then, once they have authenticated and been redirected to the configured redirect path such as `/strava`, they will land on the original request `/run` path.
+
+You do not have to set `quarkus.oidc.authentication.redirect-path` immediately because Quarkus assumes the current request URL is an authorization code flow redirect URL if no `quarkus.oidc.authentication.redirect-path` is configured. For example, to test that a <<google>> authentication is working, you can have a Quarkus endpoint listening on `/google` and update the Google dashboard that `http://localhost:8080/google` redirect URI is supported. Setting `quarkus.oidc.authentication.redirect-path` property will be required once your secured application URL space grows.
+
+[[redirect_url]]
+== HTTPS Redirect URI
+
+Some providers will only accept HTTPS-based redirect URIs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in dev mode.
+
+== Rate Limiting
+
+Depending on your developer API subscription level, some providers may enforce a rather strict request rate limiting policy.
+
+It may not be a problem when Quarkus fetches public verification keys from OIDC-compliant providers like the <<google>> provider and keeps verifying the user session with these keys locally. However, for pure OAuth2 providers where only an access token is available and which has to be verified indirectly by requesting UserInfo from the provider endpoint on every request done by an already authenticated user, it can become a problem.
+
+Therefore, UserInfo is embedded in an internally generated ID token and is encrypted in the session cookie. You can disable it with `quarkus.oidc.cache-user-info-in-idtoken=false`.
+
+Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 == References
 

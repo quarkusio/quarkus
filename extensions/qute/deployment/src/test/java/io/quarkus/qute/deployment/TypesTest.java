@@ -19,6 +19,7 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.deployment.Types.AssignabilityCheck;
@@ -78,8 +79,9 @@ public class TypesTest {
     private static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
+            final String resourceName = ClassLoaderHelper.fromClassNameToResourceName(clazz.getName());
             try (InputStream stream = TypesTest.class.getClassLoader()
-                    .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                    .getResourceAsStream(resourceName)) {
                 indexer.index(stream);
             }
         }

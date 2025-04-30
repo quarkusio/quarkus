@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Classic's REST Client Mutiny support"
+metadata:
+  keywords:
+  - "rest-client-mutiny"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "mutiny"
+  guide: "https://quarkus.io/guides/resteasy-client"
+  categories:
+  - "web"
+  - "reactive"
+  status: "deprecated"

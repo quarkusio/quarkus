@@ -36,17 +36,20 @@ public class HibernateOrmDevServicesProcessor {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap()
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits()
                 .entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource;
+            Optional<String> dataSourceName = entry.getValue().datasource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
                     .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
 
             if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
+                String schemaManagementStrategyPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
+                        "schema-management.strategy");
+                String legacyDatabaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
                         "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
+                        && !ConfigUtils.isPropertyNonEmpty(schemaManagementStrategyPropertyKey)
+                        && !ConfigUtils.isPropertyNonEmpty(legacyDatabaseGenerationPropertyKey)) {
                     devServicesAdditionalConfigProducer
                             .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
                                 // Only force DB generation if the datasource is configured through dev services
@@ -54,8 +57,8 @@ public class HibernateOrmDevServicesProcessor {
                                         .anyMatch(devServicesConfig::containsKey)) {
                                     String forcedValue = "drop-and-create";
                                     LOG.infof("Setting %s=%s to initialize Dev Services managed database",
-                                            databaseGenerationPropertyKey, forcedValue);
-                                    return Map.of(databaseGenerationPropertyKey, forcedValue);
+                                            schemaManagementStrategyPropertyKey, forcedValue);
+                                    return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
                                 } else {
                                     return Map.of();
                                 }

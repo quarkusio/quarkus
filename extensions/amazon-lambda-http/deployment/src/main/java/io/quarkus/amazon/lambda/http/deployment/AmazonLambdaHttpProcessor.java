@@ -49,7 +49,7 @@ public class AmazonLambdaHttpProcessor {
     @BuildStep
     public void setupSecurity(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             LambdaHttpBuildTimeConfig config) {
-        if (!config.enableSecurity)
+        if (!config.enableSecurity())
             return;
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -86,6 +86,7 @@ public class AmazonLambdaHttpProcessor {
                         APIGatewayV2HTTPEvent.RequestContext.IAM.class,
                         APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.class,
                         APIGatewayV2HTTPResponse.class, Headers.class, MultiValuedTreeMap.class)
+                        .reason(getClass().getName())
                         .methods().fields().build());
     }
 

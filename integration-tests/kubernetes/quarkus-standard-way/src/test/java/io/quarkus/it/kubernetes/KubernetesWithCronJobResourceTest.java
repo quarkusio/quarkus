@@ -50,6 +50,7 @@ public class KubernetesWithCronJobResourceTest {
                 });
 
                 assertThat(s.getSpec().getSchedule()).isEqualTo("0 0 0 0 *");
+                assertThat(s.getSpec().getTimeZone()).isEqualTo("Etc/UTC");
 
                 assertThat(s.getSpec().getJobTemplate().getSpec()).satisfies(jobSpec -> {
                     assertThat(jobSpec.getParallelism()).isEqualTo(10);
@@ -64,9 +65,7 @@ public class KubernetesWithCronJobResourceTest {
                             });
                         });
                     });
-                    assertThat(jobSpec.getSelector()).satisfies(ls -> {
-                        assertThat(ls.getMatchLabels()).containsEntry("app.kubernetes.io/name", APP_NAME);
-                    });
+                    assertThat(jobSpec.getSelector()).isEqualTo(null);
                 });
             });
         });

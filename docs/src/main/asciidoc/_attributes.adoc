@@ -6,26 +6,31 @@
 // .
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-community.version-for-documentation}
-:graalvm-flavor: ${graal-community.version-for-documentation}
-:mandrel-version: ${mandrel.version-for-documentation}
-:mandrel-flavor: ${mandrel.version-for-documentation}
+:graalvm-docs-version: ${graal-community.tag-for-documentation}
+:graalvm-flavor: ${graal-community.image-tag-for-documentation}
+:mandrel-flavor: ${mandrel.image-tag-for-documentation}
 :surefire-version: ${version.surefire.plugin}
 :gradle-version: ${gradle-wrapper.version}
 :elasticsearch-version: ${elasticsearch-server.version}
 :elasticsearch-image: ${elasticsearch.image}
+:opensearch-image: ${opensearch.image}
 :infinispan-version: ${infinispan.version}
 :infinispan-protostream-version: ${infinispan.protostream.version}
 :logstash-image: ${logstash.image}
 :kibana-image: ${kibana.image}
 :keycloak-docker-image: ${keycloak.docker.image}
 :jandex-version: ${jandex.version}
-:jandex-gradle-plugin.version: ${jandex-gradle-plugin.version}
+:jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}
 :grpc-version: ${grpc.version}
 :protoc-version: ${protoc.version}
 :gcf-invoker-version: ${gcf-invoker.version}
-:hibernate-orm-version: ${hibernate-orm.version-for-documentation}
-:hibernate-search-version: ${hibernate-search.version-for-documentation}
+// Cannot simply use the name 'hibernate-*-version' here as it somehow gets
+// overridden to the full version, at least when building locally.
+:hibernate-orm-version-major-minor: ${hibernate-orm.majorVersion}.${hibernate-orm.minorVersion}
+:hibernate-search-version-major-minor: ${hibernate-search.majorVersion}.${hibernate-search.minorVersion}
+:hibernate-validator-version-major-minor: ${hibernate-validator.majorVersion}.${hibernate-validator.minorVersion}
+:jakarta-persistence-version-major-minor: ${jakarta-persistence.majorVersion}.${jakarta-persistence.minorVersion}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
@@ -38,7 +43,7 @@
 :quarkus-blob-url: ${quarkus-base-url}/blob/main
 :quarkus-tree-url: ${quarkus-base-url}/tree/main
 :quarkus-issues-url: ${quarkus-base-url}/issues
-:quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
+:quarkus-images-url: https://github.com/quarkusio/quarkus-images
 :quarkus-chat-url: https://quarkusio.zulipchat.com
 :quarkus-mailing-list-subscription-email: quarkus-dev+subscribe@googlegroups.com
 :quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev
@@ -48,19 +53,33 @@
 :quickstarts-blob-url: ${quickstarts-base-url}/blob/main
 :quickstarts-tree-url: ${quickstarts-base-url}/tree/main
 // .
-:hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version}/userguide/html_single/Hibernate_User_Guide.html
-:hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version}/reference/en-US/html_single/
+:hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/userguide/html_single/Hibernate_User_Guide.html
+:hibernate-orm-dialect-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
+:hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
+:hibernate-validator-docs-url: https://docs.jboss.org/hibernate/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
+:jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}#a6072
 // .
-:amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
-:config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html
-:hibernate-search-orm-elasticsearch-aws-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html
-:neo4j-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html
-:vault-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html
-:vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
-:micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
+:amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
+:config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html
+:hibernate-search-orm-elasticsearch-aws-guide: https://docs.quarkiverse.io/quarkus-hibernate-search-extras/dev/index.html
+:neo4j-guide: https://docs.quarkiverse.io/quarkus-neo4j/dev/index.html
+:vault-guide: https://docs.quarkiverse.io/quarkus-vault/dev/index.html
+:vault-datasource-guide: https://docs.quarkiverse.io/quarkus-vault/dev/vault-datasource.html
+:micrometer-registry-guide: https://docs.quarkiverse.io/quarkus-micrometer-registry/dev/index.html
 :quarkus-migration-guide: https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides]
+:quarkus-tls-registry-reference-guide: TLS registry reference
 // .
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}
+// Attributes required for single-sourcing to downstream.
+:jdk-version-other: 17
+:jdk-version-latest: 21
+:jdk-version-all: 17 or 21
+:openshift-long: OpenShift
+:openshift: OpenShift
+:name-image-ubi9-open-jdk-17: registry.access.redhat.com/ubi9/openjdk-17
+:name-image-ubi9-open-jdk-17-short: ubi9/openjdk-17
+:name-image-ubi9-open-jdk-21: registry.access.redhat.com/ubi9/openjdk-21
+:name-image-ubi9-open-jdk-21-short: ubi9/openjdk-21
 // .
 include::_attributes-local.adoc[]

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how to deploy a Quarkus application to Google Cloud.
+:topics: devops,google,gcp,cloud,deployment
 
 This guide covers:
 
@@ -44,7 +45,7 @@ gcloud auth login
 Quarkus supports deploying your application to Google Cloud Functions via the following extensions:
 
 - xref:gcp-functions.adoc[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
-- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy Reactive (Jakarta REST),
+- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: Quarkus REST (formerly RESTEasy Reactive, our Jakarta REST implementation),
 Undertow (Servlet), Vert.x Web, or xref:funqy-http.adoc[Funqy HTTP].
 - xref:funqy-gcp-functions.adoc[Funky Google Cloud Functions]: Build functions using Funqy.
 
@@ -59,21 +60,21 @@ Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep i
 
 [source, yaml]
 ----
-runtime: java11
+runtime: java21
 ----
 
 This will create a default service for your App Engine application.
 
 [NOTE]
 ====
-You can also use the new Java 17 runtime by defining `runtime: java17` instead.
+You can also use another Java runtime supported by App Engine, for example, for Java 17, use `runtime: java17` instead.
 ====
 
 App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:
 
 [source, properties]
 ----
-quarkus.package.type=uber-jar
+quarkus.package.jar.type=uber-jar
 ----
 
 Then, you can choose to build the application manually or delegating that responsibility to `gcloud` or the Google Cloud Maven plugin.
@@ -113,7 +114,7 @@ First, add the plugin to your `pom.xml`:
 <plugin>
     <groupId>com.google.cloud.tools</groupId>
     <artifactId>appengine-maven-plugin</artifactId>
-    <version>2.4.4</version>
+    <version>2.7.0</version>
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
@@ -164,7 +165,7 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=java#updated_health_checks[health checks],
-it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[SmallRye Health] support.
 
 == Deploying to Google Cloud Run
 
@@ -220,7 +221,7 @@ After you answer to these questions, it will deploy your application.
 When the deployment is done, the output will display the URL to access your application.
 
 NOTE: Cloud Run supports link:https://cloud.google.com/run/docs/configuring/healthchecks[health checks],
-it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[SmallRye Health] support.
 
 == Using Cloud SQL
 
@@ -248,22 +249,17 @@ Finally, you need to configure your datasource specifically to use the socket fa
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=other <1>
-quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <2>
-quarkus.datasource.jdbc.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <1>
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
-quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <3>
-quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.cloud.sql.postgres.SocketFactory <4>
+quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <2>
+quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.cloud.sql.postgres.SocketFactory <3>
 ----
-<1> Database kind must be 'other' as we need to skip Quarkus auto-configuration.
-<2> The JDBC URL should not include the hostname / IP of the database.
-<3> We add the `cloudSqlInstance` additional JDBC property to configure the instance id.
-<4> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
+<1> The JDBC URL should not include the hostname / IP of the database.
+<2> We add the `cloudSqlInstance` additional JDBC property to configure the instance id.
+<3> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
 this one is coming from the `postgres-socket-factory` dependency.
-
-NOTE: If you use Hibernate ORM, you also need to configure `quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQL10Dialect`
-as Hibernate ORM would not be able to automatically detect the dialect of your database.
 
 WARNING: Using a PostgreSQL socket factory is not possible in dev mode at the moment
 due to issue link:https://github.com/quarkusio/quarkus/issues/15782[#15782].
@@ -293,9 +289,25 @@ quarkus.vertx.prefer-native-transport=true
 
 WARNING: This only works when your application is running inside a Google Cloud managed runtime like App Engine.
 
+=== Using Cloud SQL with native executables
+
+When generating native executables, you must mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder
+----
+
+Additionally, starting with `com.google.cloud.sql:postgres-socket-factory:1.17.0`, you must also mark `com.kenai.jffi.internal.Cleaner` as runtime initialized.
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder\\,com.kenai.jffi.internal.Cleaner
+----
+
 == Going further
 
 You can find a set of extensions to access various Google Cloud Services in the Quarkiverse (a GitHub organization for Quarkus extensions maintained by the community),
 including PubSub, BigQuery, Storage, Spanner, Firestore, Secret Manager (visit the repository for an accurate list of supported services).
 
-You can find some documentation about them in the link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].
+You can find some documentation about them in the link:https://docs.quarkiverse.io/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].

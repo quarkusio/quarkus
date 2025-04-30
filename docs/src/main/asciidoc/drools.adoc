@@ -1,0 +1,638 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Defining and executing business rules with Drools
+include::_attributes.adoc[]
+:categories: rule engine
+:summary: Drools is the most used rule engine implementation in the Java ecosystem. The purpose of this guide is to show how to use to define and execute business rules in Quarkus using Drools.
+:topics: drools,rules,rule engine
+:extensions: org.drools:drools-quarkus
+
+This guide demonstrates how your Quarkus application can use https://www.drools.org[Drools] to add intelligent automation
+and power it up with the Drools rule engine.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Introduction
+
+https://www.drools.org[Drools] is a set of projects focusing on intelligent automation and decision management, most notably providing a forward-chaining and backward-chaining inference-based rule engine, DMN decisions engine and other projects. A rule engine is a fundamental building block to create an expert system which, in artificial intelligence, is a computer system that emulates the decision-making ability of a human expert. You can read more information on the https://www.drools.org[Drools website].
+
+Drools allows defining rules with 2 different programming styles: one more traditional based on the concepts of a KieBase acting as a repository of business rules and a KieSession storing and evaluating the runtime data against them, and the other using a Rule Unit as a single abstraction that encapsulates the definitions of both a set of rules and the facts against which those rules will be matched.
+
+Both these styles are fully supported in the Drools Quarkus extension and this document explains how to use both, outlining the pros and cons of each one.
+
+== Integrating the traditional Drools programming model with Quarkus
+
+This first example demonstrates how to define a set of rules using the traditional Drools style and how to expose their evaluation inside a REST endpoint through Quarkus.
+
+The domain model of this sample project is made only by two classes, a loan application
+
+[source,java]
+----
+public class LoanApplication {
+    private String id;
+    private Applicant applicant;
+    private int amount;
+    private int deposit;
+    private boolean approved = false;
+
+   public LoanApplication(String id, Applicant applicant, int amount, int deposit) {
+       this.id = id;
+       this.applicant = applicant;
+       this.amount = amount;
+       this.deposit = deposit;
+   }
+}
+----
+
+and the applicant who requested it
+
+[source,java]
+----
+public class Applicant {
+   private String name;
+   private int age;
+
+   public Applicant(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+}
+----
+
+The rules set is made of business decisions to approve or reject an application plus one last rule collecting all the approved applications into a list.
+
+[source]
+----
+global Integer maxAmount;
+global java.util.List approvedApplications;
+
+rule LargeDepositApprove when
+   $l: LoanApplication( applicant.age >= 20, deposit >= 1000, amount <= maxAmount )
+then
+   modify($l) { setApproved(true) }; // loan is approved
+end
+
+rule LargeDepositReject when
+   $l: LoanApplication( applicant.age >= 20, deposit >= 1000, amount > maxAmount )
+then
+   modify($l) { setApproved(false) }; // loan is rejected
+end
+
+// ... more loans approval/rejections business rules ...
+
+rule CollectApprovedApplication when
+   $l: LoanApplication( approved )
+then
+   approvedApplications.add($l); // collect all approved loan applications
+end
+----
+
+The goal that we want to achieve is putting the evaluation of these rules in a microservice, exposing them in a REST endpoint developed with Quarkus. To do so it is enough to add the Drools Quarkus extension among the dependencies of your project.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-quarkus</artifactId>
+</dependency>
+----
+
+and at this point it is possible to obtain a reference to the KieSession evaluating the formerly defined rules and use it in a REST endpoint as it follows:
+
+[source,java]
+----
+@Path("/find-approved")
+public class FindApprovedLoansEndpoint {
+
+   @Inject
+   KieRuntimeBuilder kieRuntimeBuilder;
+
+   @POST()
+   @Produces(MediaType.APPLICATION_JSON)
+   @Consumes(MediaType.APPLICATION_JSON)
+   public List<LoanApplication> executeQuery(LoanAppDto loanAppDto) {
+       KieSession session = kieRuntimeBuilder.newKieSession();
+       List<LoanApplication> approvedApplications = new ArrayList<>();
+
+       session.setGlobal("approvedApplications", approvedApplications);
+       session.setGlobal("maxAmount", loanAppDto.getMaxAmount());
+       loanAppDto.getLoanApplications().forEach(session::insert);
+
+       session.fireAllRules();
+       session.dispose();
+       return approvedApplications;
+   }
+}
+----
+
+where an implementation of the `KieRuntimeBuilder` interface is automatically generated and made injectable for you by the Drools extension and allows to obtain with a single statement an instance of any KieBases and KieSessions defined in your Drools project.
+
+Here the `LoanAppDto` is a simple POJO used to submit multiple loan application to the same KieSession
+
+[source,java]
+----
+public class LoanAppDto {
+   private int maxAmount;
+   private List<LoanApplication> loanApplications;
+
+   public int getMaxAmount() {
+       return maxAmount;
+   }
+
+   public void setMaxAmount(int maxAmount) {
+       this.maxAmount = maxAmount;
+   }
+
+   public List<LoanApplication> getLoanApplications() {
+       return loanApplications;
+   }
+
+   public void setLoanApplications(List<LoanApplication> loanApplications) {
+       this.loanApplications = loanApplications;
+   }
+}
+----
+
+thus trying for example to invoke that endpoint with a set of loan applications
+
+[source]
+----
+curl -X POST -H 'Accept: application/json' -H 'Content-Type: application/json' -d
+'{"maxAmount":5000,"loanApplications":[
+  {"id":"ABC10001","amount":2000,"deposit":1000,"applicant":{"age":45,"name":"John"}},
+  {"id":"ABC10002","amount":5000,"deposit":100,"applicant":{"age":25,"name":"Paul"}},
+  {"id":"ABC10015","amount":1000,"deposit":100,"applicant":{"age":12,"name":"George"}}
+]}'
+http://localhost:8080/find-approved
+----
+
+the rule engine will evaluate them against the business rules we have configured before, returning the only one that in this case can be approved according to them
+
+[source]
+----
+[{"id":"ABC10001","applicant":{"name":"John","age":45},"amount":2000,"deposit":1000,"approved":true}]
+----
+
+== Moving to the rule unit programming model
+
+A rule unit is a new concept introduced in Drools encapsulating both a set of rules and the facts against which those rules will be matched. It comes with a second abstraction called data source, defining the sources through which the facts are inserted, acting in practice as typed entry-points. There are two types of data sources:
+
+* DataStream: an append-only data source
+** subscribers only receive new (and possibly past) messages
+** cannot update/remove
+** stream may also be hot/cold in “reactive streams” terminology
+* DataStore: data source for modifiable data
+** subscribers may act upon the data store, by acting upon the fact handle
+
+In order to use rule units in our quarkus application it is necessary to add a second dependency.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-ruleunits-engine</artifactId>
+</dependency>
+----
+
+In essence a rule unit is made of 2 strictly related parts: the definition of the fact to be evaluated and the set of rules evaluating them. The first part is implemented with a POJO, that for the loan example could be something like the following:
+
+[source,java]
+----
+package org.loans;
+
+import org.drools.ruleunits.api.DataSource;
+import org.drools.ruleunits.api.DataStore;
+import org.drools.ruleunits.api.RuleUnitData;
+
+public class LoanUnit implements RuleUnitData {
+
+   private int maxAmount;
+   private DataStore<LoanApplication> loanApplications;
+
+   public LoanUnit() {
+       this(DataSource.createStore(), 0);
+   }
+
+   public LoanUnit(DataStore<LoanApplication> loanApplications, int maxAmount) {
+       this.loanApplications = loanApplications;
+       this.maxAmount = maxAmount;
+   }
+
+   public DataStore<LoanApplication> getLoanApplications() {
+      return loanApplications;
+   }
+
+   public void setLoanApplications(DataStore<LoanApplication> loanApplications) {
+       this.loanApplications = loanApplications;
+   }
+
+   public int getMaxAmount() {
+        return maxAmount;
+   }
+
+   public void setMaxAmount(int maxAmount) {
+        this.maxAmount = maxAmount;
+   }
+}
+----
+
+Here instead of using the `LoanAppDto` that we introduced to marshall/unmarshall the JSON requests we are binding directly the class representing the rule unit. The two relevant differences are that it implements the `RuleUnitData` interface and uses a `DataStore` instead of a plain `List` containing the loan applications to be approved. The first is just a marker interface to notify the engine that this class is part of a rule unit definition. The use of a `DataStore` is necessary to let the rule engine to react accordingly to the changes by firing new rules and triggering other rules. In the example, the consequences of the rules modify the approved property of the loan applications. Conversely, the `maxAmount` value can be considered a configuration parameter of the rule unit and left as it is: it will automatically be processed during the rules evaluation with the same semantic of a global, and automatically set from the value passed by the JSON request as in the first example, so you will still be allowed to use it in your rules.
+
+The second part of the rule unit is the drl file containing the rules belonging to this unit.
+
+[source]
+----
+package org.loans;
+
+unit LoanUnit; // no need to using globals, all variables and facts are stored in the rule unit
+
+rule LargeDepositApprove when
+   $l: /loanApplications[ applicant.age >= 20, deposit >= 1000, amount <= maxAmount ] // oopath style
+then
+   modify($l) { setApproved(true) };
+end
+
+rule LargeDepositReject when
+   $l: /loanApplications[ applicant.age >= 20, deposit >= 1000, amount > maxAmount ]
+then
+   modify($l) { setApproved(false) };
+end
+
+// ... more loans approval/rejections business rules ...
+
+// approved loan applications are now retrieved through a query
+query FindApproved
+   $l: /loanApplications[ approved ]
+end
+----
+
+This rules file must declare the same package and a unit with the same name of the Java class implementing the `RuleUnitData` interface in order to state that they belong to the same rule unit.
+
+This file has also been rewritten using the new OOPath notation: as anticipated, here the data source acts as a typed entry-point and the oopath expression has its name as root while the constraints are in square brackets, like in the following example.
+
+[source]
+----
+$l: /loanApplications[ applicant.age >= 20, deposit >= 1000, amount <= maxAmount ]
+----
+
+Alternatively you can still use the old DRL syntax, specifying the name of the data source as an entry-point, with the drawback that in this case you need to specify again the type of the matched object, even if the engine can infer it from the type of the datasource, as it follows.
+
+[source]
+----
+$l: LoanApplication( applicant.age >= 20, deposit >= 1000, amount <= maxAmount ) from entry-point loanApplications
+----
+
+Finally note that the last rule collecting all the approved loan applications into a global `List` has been replaced by a query simply retrieving them. One of the advantages in using a rule unit is that it clearly defines the context of computation, in other terms the facts to be passed in input to the rule evaluation. Similarly, the query defines what is the output expected by this evaluation.
+
+This clear definition of the computation boundaries allows Drools to also automatically generate a class executing the query and returning its results, together with a REST endpoint taking the rule unit as input, passing it to the former query executor and returning its as output.
+
+You can have as many query as you want and for each of them it will be generated a different REST endpoint with the same name of the query transformed from camel case (like `FindApproved`) to dash separated (like `find-approved`).
+
+== A more comprehensive example
+
+In this more comprehensive and complete example, we will augment a basic Quarkus application with a few simple rules to infer potential issues with the status of a home automation setup.
+
+We will define a Drools Rule Unit and the rules in the DRL format.
+
+We will wire the Rule Unit into a standard Quarkus CDI bean, for use in the Quarkus application (for instance, wiring MQTT messages from Kafka, etc.).
+
+=== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 17+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.9.3+
+* Docker
+* link:{https://quarkus.io/guides/building-native-image}[GraalVM installed] if you want to run in native mode
+
+=== Creating the Maven Project
+
+First, we need a new Quarkus project.
+To create a new Quarkus project, you can reference the link:{https://quarkus.io/guides/maven-tooling}[Quarkus and Maven Guide]
+
+When you have your Quarkus project configured, you can add the Drools Quarkus extensions to your project by adding the following dependencies to your `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-quarkus</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-ruleunits-engine</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.assertj</groupId>
+    <artifactId>assertj-core</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+=== Writing the application
+
+Let's start from the application domain model.
+
+This application goal is to infer potential issues with the status of a home automation setup, so we create the necessary domain models to represent status of sensors, devices and other things inside the house.
+
+Light device domain model:
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test.model;
+
+public class Light {
+    private final String name;
+    private Boolean powered;
+
+	public Light(String name, Boolean powered) {
+		this.name = name;
+		this.powered = powered;
+	}
+
+    // getters, setters, etc.
+}
+----
+
+CCTV security camera domain model:
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test.model;
+
+public class CCTV {
+    private final String name;
+    private Boolean powered;
+
+    public CCTV(String name, Boolean powered) {
+        this.name = name;
+        this.powered = powered;
+    }
+
+    // getters, setters, etc.
+}
+----
+
+Smartphone detected in WiFi domain model:
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test.model;
+
+public class Smartphone {
+    private final String name;
+
+    public Smartphone(String name) {
+        this.name = name;
+    }
+
+    // getters, setters, etc.
+}
+----
+
+Alert class to hold information of the potential detected problems:
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test.model;
+
+public class Alert {
+    private final String notification;
+
+    public Alert(String notification) {
+        this.notification = notification;
+    }
+
+    // getters, setters, etc.
+}
+----
+
+Next, we create a rule file `rules.drl` inside the `src/main/resources/org/drools/quarkus/quickstart/test` folder of the Quarkus project.
+
+[source]
+----
+package org.drools.quarkus.quickstart.test;
+
+unit HomeRuleUnitData;
+
+import org.drools.quarkus.quickstart.test.model.*;
+
+rule "No lights on while outside"
+when
+    $l: /lights[ powered == true ];
+    not( /smartphones );
+then
+    alerts.add(new Alert("You might have forgot one light powered on: " + $l.getName()));
+end
+
+query "AllAlerts"
+	$a: /alerts;
+end
+
+rule "No camera when present at home"
+when
+    accumulate( $s: /smartphones ; $count : count($s) ; $count >= 1 );
+    $l: /cctvs[ powered == true ];
+then
+    alerts.add(new Alert("One CCTV is still operating: " + $l.getName()));
+end
+----
+
+In this file there are some example rules to decide whether the overall status of the house is deemed inappropriate, triggering the necessary `Alert` (s).
+
+Rule Unit a central paradigm introduced in Drools 8 that helps users to encapsulate the set of rules and the facts against which those rules will be matched; you can read more information in the https://www.drools.org/learn/documentation.html[Drools documentation].
+
+The facts will be inserted into a `DataStore`, a type-safe entry point. To make everything work, we need to define both the RuleUnit and the DataStore.
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test;
+
+import org.drools.quarkus.quickstart.test.model.Alert;
+import org.drools.quarkus.quickstart.test.model.CCTV;
+import org.drools.quarkus.quickstart.test.model.Light;
+import org.drools.quarkus.quickstart.test.model.Smartphone;
+import org.drools.ruleunits.api.DataSource;
+import org.drools.ruleunits.api.DataStore;
+import org.drools.ruleunits.api.RuleUnitData;
+
+public class HomeRuleUnitData implements RuleUnitData {
+
+    private final DataStore<Light> lights;
+    private final DataStore<CCTV> cctvs;
+    private final DataStore<Smartphone> smartphones;
+
+    private final DataStore<Alert> alerts = DataSource.createStore();
+
+    public HomeRuleUnitData() {
+        this(DataSource.createStore(), DataSource.createStore(), DataSource.createStore());
+    }
+
+    public HomeRuleUnitData(DataStore<Light> lights, DataStore<CCTV> cctvs, DataStore<Smartphone> smartphones) {
+		this.lights = lights;
+		this.cctvs = cctvs;
+		this.smartphones = smartphones;
+	}
+
+	public DataStore<Light> getLights() {
+		return lights;
+	}
+
+	public DataStore<CCTV> getCctvs() {
+		return cctvs;
+	}
+
+	public DataStore<Smartphone> getSmartphones() {
+		return smartphones;
+	}
+
+	public DataStore<Alert> getAlerts() {
+		return alerts;
+	}
+}
+----
+
+=== Testing the Application
+
+We can create a standard Quarkus and JUnit test to check the behaviour of the Rule Unit and the defined rules, accordingly to a certain set of scenarios.
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test;
+
+@QuarkusTest
+public class RuntimeTest {
+
+    @Inject
+    RuleUnit<HomeRuleUnitData> ruleUnit;
+
+    @Test
+    public void testRuleOutside() {
+        HomeRuleUnitData homeUnitData = new HomeRuleUnitData();
+        homeUnitData.getLights().add(new Light("living room", true));
+        homeUnitData.getLights().add(new Light("bedroom", false));
+        homeUnitData.getLights().add(new Light("bathroom", false));
+
+        RuleUnitInstance<HomeRuleUnitData> unitInstance = ruleUnit.createInstance(homeUnitData);
+        List<Map<String, Object>> queryResults = unitInstance.executeQuery("AllAlerts");
+        assertThat(queryResults).isNotEmpty().anyMatch(kv -> kv.containsValue(new Alert("You might have forgot one light powered on: living room")));
+    }
+
+    @Test
+    public void testRuleInside() {
+        HomeRuleUnitData homeUnitData = new HomeRuleUnitData();
+        homeUnitData.getLights().add(new Light("living room", true));
+        homeUnitData.getLights().add(new Light("bedroom", false));
+        homeUnitData.getLights().add(new Light("bathroom", false));
+        homeUnitData.getCctvs().add(new CCTV("security camera 1", false));
+        homeUnitData.getCctvs().add(new CCTV("security camera 2", true));
+        homeUnitData.getSmartphones().add(new Smartphone("John Doe's phone"));
+
+        RuleUnitInstance<HomeRuleUnitData> unitInstance = ruleUnit.createInstance(homeUnitData);
+        List<Map<String, Object>> queryResults = unitInstance.executeQuery("AllAlerts");
+        assertThat(queryResults).isNotEmpty().anyMatch(kv -> kv.containsValue(new Alert("One CCTV is still operating: security camera 2")));
+    }
+
+    @Test
+    public void testNoAlerts() {
+        HomeRuleUnitData homeUnitData = new HomeRuleUnitData();
+        homeUnitData.getLights().add(new Light("living room", false));
+        homeUnitData.getLights().add(new Light("bedroom", false));
+        homeUnitData.getLights().add(new Light("bathroom", false));
+        homeUnitData.getCctvs().add(new CCTV("security camera 1", true));
+        homeUnitData.getCctvs().add(new CCTV("security camera 2", true));
+
+        RuleUnitInstance<HomeRuleUnitData> unitInstance = ruleUnit.createInstance(homeUnitData);
+        List<Map<String, Object>> queryResults = unitInstance.executeQuery("AllAlerts");
+        assertThat(queryResults).isEmpty();
+    }
+}
+----
+
+=== Wiring the Rule Unit with Quarkus CDI beans
+
+We can now wire the Rule Unit into a standard Quarkus CDI bean, for general use in the Quarkus application.
+
+For example, this might later be helpful to wire device status reporting through MQTT via Kafka, using the appropriate Quarkus extensions.
+
+We create a simple CDI bean to abstract away the Rule Unit API usage with:
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test;
+
+@ApplicationScoped
+public class HomeAlertsBean {
+
+    @Inject
+    RuleUnit<HomeRuleUnitData> ruleUnit;
+
+    public Collection<Alert> computeAlerts(Collection<Light> lights, Collection<CCTV> cameras, Collection<Smartphone> phones) {
+        HomeRuleUnitData homeUnitData = new HomeRuleUnitData();
+        lights.forEach(homeUnitData.getLights()::add);
+        cameras.forEach(homeUnitData.getCctvs()::add);
+        phones.forEach(homeUnitData.getSmartphones()::add);
+
+        RuleUnitInstance<HomeRuleUnitData> unitInstance = ruleUnit.createInstance(homeUnitData);
+        var queryResults = unitInstance.executeQuery("AllAlerts");
+        List<Alert> results = queryResults.stream()
+                .flatMap(m -> m.values().stream()
+                        .filter(Alert.class::isInstance)
+                        .map(Alert.class::cast))
+                .collect(Collectors.toList());
+        return results;
+    }
+}
+----
+
+The same test scenarios can be refactored using this CDI bean accordingly.
+
+[source,java]
+----
+package org.drools.quarkus.quickstart.test;
+
+@QuarkusTest
+public class BeanTest {
+
+    @Inject
+    HomeAlertsBean alerts;
+
+    @Test
+    public void testRuleOutside() {
+        Collection<Alert> computeAlerts = alerts.computeAlerts(
+                List.of(new Light("living room", true), new Light("bedroom", false), new Light("bathroom", false)),
+                Collections.emptyList(),
+                Collections.emptyList());
+
+        assertThat(computeAlerts).isNotEmpty().contains(new Alert("You might have forgot one light powered on: living room"));
+    }
+
+    @Test
+    public void testRuleInside() {
+        Collection<Alert> computeAlerts = alerts.computeAlerts(
+                List.of(new Light("living room", true), new Light("bedroom", false), new Light("bathroom", false)),
+                List.of(new CCTV("security camera 1", false), new CCTV("security camera 2", true)),
+                List.of(new Smartphone("John Doe's phone")));
+
+        assertThat(computeAlerts).isNotEmpty().contains(new Alert("One CCTV is still operating: security camera 2"));
+    }
+
+    @Test
+    public void testNoAlerts() {
+        Collection<Alert> computeAlerts = alerts.computeAlerts(
+                List.of(new Light("living room", false), new Light("bedroom", false), new Light("bathroom", false)),
+                List.of(new CCTV("security camera 1", true), new CCTV("security camera 2", true)),
+                Collections.emptyList());
+
+        assertThat(computeAlerts).isEmpty();
+    }
+}
+----

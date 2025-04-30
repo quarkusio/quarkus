@@ -1,38 +1,26 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
-import java.util.Objects;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.RUN_TIME)
-public class DataSourcesRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface DataSourcesRuntimeConfig {
 
     /**
-     * The default datasource.
+     * Datasources.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public DataSourceRuntimeConfig defaultDataSource;
-
-    /**
-     * Additional named datasources.
-     */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceRuntimeConfig> namedDataSources;
-
-    public DataSourceRuntimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource;
-        }
-
-        DataSourceRuntimeConfig dataSourceRuntimeConfig = namedDataSources.get(dataSourceName);
-        return Objects.requireNonNullElseGet(dataSourceRuntimeConfig, DataSourceRuntimeConfig::new);
-    }
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceRuntimeConfig> dataSources();
 }

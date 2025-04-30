@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,12 +11,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import org.jboss.logging.Logger;
+
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.micrometer.runtime.HttpClientMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
@@ -27,6 +35,7 @@ import io.vertx.core.spi.observability.HttpResponse;
 
 class VertxHttpClientMetrics extends VertxTcpClientMetrics
         implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, String, LongTaskTimer.Sample, EventTiming> {
+    static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
     private final LongAdder queue = new LongAdder();
 
@@ -35,6 +44,10 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     private final Timer queueDelay;
     private final Map<String, LongAdder> webSockets = new ConcurrentHashMap<>();
     private final HttpBinderConfiguration config;
+
+    private final Meter.MeterProvider<Timer> responseTimes;
+
+    private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
 
     VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration) {
         super(registry, prefix, tags);
@@ -61,6 +74,31 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                 return pending.longValue();
             }
         }).description("Number of requests waiting for a response");
+
+        httpClientMetricsTagsContributors = resolveHttpClientMetricsTagsContributors();
+
+        responseTimes = Timer.builder(config.getHttpClientRequestsName())
+                .description("Response times")
+                .withRegistry(registry);
+    }
+
+    private List<HttpClientMetricsTagsContributor> resolveHttpClientMetricsTagsContributors() {
+        final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
+        ArcContainer arcContainer = Arc.container();
+        if (arcContainer == null) {
+            httpClientMetricsTagsContributors = Collections.emptyList();
+        } else {
+            var handles = arcContainer.listAll(HttpClientMetricsTagsContributor.class);
+            if (handles.isEmpty()) {
+                httpClientMetricsTagsContributors = Collections.emptyList();
+            } else {
+                httpClientMetricsTagsContributors = new ArrayList<>(handles.size());
+                for (var handle : handles) {
+                    httpClientMetricsTagsContributors.add(handle.get());
+                }
+            }
+        }
+        return httpClientMetricsTagsContributors;
     }
 
     @Override
@@ -82,7 +120,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public RequestTracker requestBegin(String uri, HttpRequest request) {
-                RequestTracker handler = new RequestTracker(tags, remote, request.uri(), request.method().name());
+                RequestTracker handler = new RequestTracker(tags, remote, request);
                 String path = handler.getNormalizedUriPath(
                         config.getServerMatchPatterns(),
                         config.getServerIgnorePatterns());
@@ -133,10 +171,21 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                 Tags list = tracker.tags
                         .and(HttpCommonTags.status(tracker.response.statusCode()))
                         .and(HttpCommonTags.outcome(tracker.response.statusCode()));
-                Timer.builder(config.getHttpClientRequestsName())
-                        .description("Response times")
-                        .tags(list)
-                        .register(registry).record(duration, TimeUnit.NANOSECONDS);
+                if (!httpClientMetricsTagsContributors.isEmpty()) {
+                    HttpClientMetricsTagsContributor.Context context = new DefaultContext(tracker.request, tracker.response);
+                    for (int i = 0; i < httpClientMetricsTagsContributors.size(); i++) {
+                        try {
+                            Tags additionalTags = httpClientMetricsTagsContributors.get(i).contribute(context);
+                            list = list.and(additionalTags);
+                        } catch (Exception e) {
+                            log.debug("Unable to obtain additional tags", e);
+                        }
+                    }
+                }
+
+                responseTimes
+                        .withTags(list)
+                        .record(duration, TimeUnit.NANOSECONDS);
             }
         };
     }
@@ -171,19 +220,19 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
     public static class RequestTracker extends RequestMetricInfo {
         private final Tags tags;
-        private final String path;
+        private final HttpRequest request;
         private EventTiming timer;
         HttpResponse response;
         private boolean responseEnded;
         private boolean requestEnded;
         private boolean reset;
 
-        RequestTracker(Tags origin, String address, String path, String method) {
-            this.path = path;
+        RequestTracker(Tags origin, String address, HttpRequest request) {
+            this.request = request;
             this.tags = origin.and(
                     Tag.of("address", address),
-                    HttpCommonTags.method(method),
-                    HttpCommonTags.uri(path, -1));
+                    HttpCommonTags.method(request.method().name()),
+                    HttpCommonTags.uri(request.uri(), null, -1, false));
         }
 
         void requestReset() {
@@ -201,7 +250,11 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         }
 
         public String getNormalizedUriPath(Map<Pattern, String> serverMatchPatterns, List<Pattern> serverIgnorePatterns) {
-            return super.getNormalizedUriPath(serverMatchPatterns, serverIgnorePatterns, path);
+            return super.getNormalizedUriPath(serverMatchPatterns, serverIgnorePatterns, request.uri());
         }
+    }
+
+    private record DefaultContext(HttpRequest request,
+            HttpResponse response) implements HttpClientMetricsTagsContributor.Context {
     }
 }

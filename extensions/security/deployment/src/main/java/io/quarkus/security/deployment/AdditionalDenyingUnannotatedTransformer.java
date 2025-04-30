@@ -1,35 +1,36 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.security.deployment.SecurityProcessor.createMethodDescription;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.DENY_ALL;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import org.jboss.jandex.AnnotationTarget;
+import jakarta.annotation.security.DenyAll;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.jandex.AnnotationTransformation;
+import org.jboss.jandex.MethodInfo;
+
 import io.quarkus.security.spi.runtime.MethodDescription;
 
-public class AdditionalDenyingUnannotatedTransformer implements AnnotationsTransformer {
+final class AdditionalDenyingUnannotatedTransformer
+        implements Predicate<MethodInfo>, Consumer<AnnotationTransformation.TransformationContext> {
 
     private final Set<MethodDescription> methods;
 
-    public AdditionalDenyingUnannotatedTransformer(Collection<MethodDescription> methods) {
-        this.methods = new HashSet<>(methods);
+    AdditionalDenyingUnannotatedTransformer(Collection<MethodDescription> methods) {
+        this.methods = Set.copyOf(methods);
     }
 
     @Override
-    public boolean appliesTo(AnnotationTarget.Kind kind) {
-        return kind == AnnotationTarget.Kind.METHOD;
+    public void accept(AnnotationTransformation.TransformationContext ctx) {
+        ctx.add(DenyAll.class);
     }
 
     @Override
-    public void transform(TransformationContext context) {
-        MethodDescription methodDescription = createMethodDescription(context.getTarget().asMethod());
-        if (methods.contains(methodDescription)) {
-            context.transform().add(DENY_ALL).done();
-        }
+    public boolean test(MethodInfo methodInfo) {
+        MethodDescription methodDescription = createMethodDescription(methodInfo);
+        return methods.contains(methodDescription);
     }
 }

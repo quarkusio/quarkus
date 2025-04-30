@@ -52,10 +52,10 @@ public class FunqyCloudFunctionsBindingRecorder {
 
     public void chooseInvoker(FunqyConfig config) {
         // this is done at Runtime so that we can change it with an environment variable.
-        if (config.export.isPresent()) {
-            invoker = FunctionRecorder.registry.matchInvoker(config.export.get());
+        if (config.export().isPresent()) {
+            invoker = FunctionRecorder.registry.matchInvoker(config.export().get());
             if (invoker == null) {
-                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export.get());
+                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export().get());
             }
         } else if (FunctionRecorder.registry.invokers().size() == 0) {
             throw new RuntimeException("There are no functions to process lambda");

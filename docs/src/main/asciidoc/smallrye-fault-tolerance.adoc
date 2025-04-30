@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web, observability
 :summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Fault Tolerance specification through the SmallRye Fault Tolerance extension.
+:topics: fault-tolerance,resiliency
+:extensions: io.quarkus:quarkus-smallrye-fault-tolerance
 
 One of the challenges brought by the distributed nature of microservices is that communication with external systems is
 inherently unreliable. This increases demand on resiliency of applications. To simplify making more resilient
@@ -15,7 +17,7 @@ implementation of the https://github.com/eclipse/microprofile-fault-tolerance/[M
 specification.
 
 In this guide, we demonstrate usage of MicroProfile Fault Tolerance annotations such as `@Timeout`, `@Fallback`,
-`@Retry` and `@CircuitBreaker`.
+`@Retry`, `@CircuitBreaker`, and `@RateLimit`.
 
 == Prerequisites
 
@@ -36,17 +38,17 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `microprofile-fault-tolerance-quickstart` {quickstarts-tree-url}/microprofile-fault-tolerance-quickstart[directory].
+The solution is located in the `microprofile-fault-tolerance-quickstart` link:{quickstarts-tree-url}/microprofile-fault-tolerance-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: microprofile-fault-tolerance-quickstart
-:create-app-extensions: smallrye-fault-tolerance,resteasy-reactive-jackson
+:create-app-extensions: smallrye-fault-tolerance,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project, importing the extensions for RESTEasy Reactive/Jakarta REST and SmallRye Fault Tolerance.
+This command generates a project, importing the extensions for Quarkus REST (formerly RESTEasy Reactive)/Jakarta REST and SmallRye Fault Tolerance.
 
 If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
 to your project by running the following command in your project base directory:
@@ -436,6 +438,76 @@ To test this out, do the following:
 5. Give it 5 seconds during which circuit breaker should close, and you should be able to make two successful requests
    again.
 
+== Adding Resiliency: Rate Limits
+
+IMPORTANT: This is an additional feature of https://github.com/smallrye/smallrye-fault-tolerance/[SmallRye Fault Tolerance] and is not specified by MicroProfile Fault Tolerance.
+
+It is possible to prevent an operation from being executed too often using a _rate limit_. Rate limits enforce a maximum number of permitted invocations in a time window of some length. For example, with a rate limit, one can make sure that a method may only be called 50 times per minute. Invocations that would exceed the limit are rejected with an exception of type `RateLimitException`.
+
+Additionally, it is possible to define minimum spacing between invocations. For example, with a minimum spacing of 1 second, if a second invocation happens 500 millis after the first, it is rejected even if the limit would not be exceeded yet.
+
+Rate limit is superficially similar to a bulkhead (concurrency limit), but is in fact quite different. Bulkhead limits the number of executions happening concurrently at any point in time. Rate limit limits the number of executions in a time window of some length, without considering concurrency.
+
+Rate limits need to maintain some state between invocations: the number of recent invocations, the time stamp of last invocation, and so on. This state is a singleton, irrespective of the lifecycle of the bean that uses the `@RateLimit` annotation.
+
+More specifically, the rate limit state is uniquely identified by the combination of the bean class (`java.lang.Class`) and the method object (`java.lang.reflect.Method`) representing the guarded method.
+
+Let the Quarkus development mode run and in your IDE add the `@RateLimit` annotation to the `CoffeeResource#coffees()` method as follows and save the file:
+
+[source,java]
+----
+import java.time.temporal.ChronoUnit;
+import io.smallrye.faulttolerance.api.RateLimit;
+
+...
+public class CoffeeResource {
+    ...
+    @GET
+    @RateLimit(value = 2, window = 10, windowUnit = ChronoUnit.SECONDS)
+    public List<Coffee> coffees() {
+        ...
+    }
+    ...
+}
+----
+
+Hit refresh in your browser. The Quarkus development server will automatically detect the changes and recompile the app for you, so there’s no need to restart it.
+
+You can hit refresh a couple more times. After 2 requests within a 10 second interval you should start seeing errors in the logs, similar to these:
+
+[source]
+----
+INFO  [org.acm.mic.fau.CoffeeResource] (executor-thread-1) CoffeeResource#coffees() invocation #1 returning successfully
+ERROR [io.qua.ver.htt.run.QuarkusErrorHandler] (executor-thread-1) HTTP Request to /coffee failed, error id: d3e59090-fd45-4c67-844e-80a8f7fa6ee0-4: io.smallrye.faulttolerance.api.RateLimitException: org.acme.microprofile.faulttolerance.CoffeeResource#coffees rate limit exceeded
+        at io.smallrye.faulttolerance.core.rate.limit.RateLimit.doApply(RateLimit.java:58)
+        at io.smallrye.faulttolerance.core.rate.limit.RateLimit.apply(RateLimit.java:44)
+        at io.smallrye.faulttolerance.FaultToleranceInterceptor.syncFlow(FaultToleranceInterceptor.java:255)
+        at io.smallrye.faulttolerance.FaultToleranceInterceptor.intercept(FaultToleranceInterceptor.java:182)
+        at io.smallrye.faulttolerance.FaultToleranceInterceptor_Bean.intercept(Unknown Source)
+        at io.quarkus.arc.impl.InterceptorInvocation.invoke(InterceptorInvocation.java:42)
+        at io.quarkus.arc.impl.AroundInvokeInvocationContext.perform(AroundInvokeInvocationContext.java:30)
+        at io.quarkus.arc.impl.InvocationContexts.performAroundInvoke(InvocationContexts.java:27)
+        at org.acme.microprofile.faulttolerance.CoffeeResource_Subclass.coffees(Unknown Source)
+        at org.acme.microprofile.faulttolerance.CoffeeResource$quarkusrestinvoker$coffees_73d7590ab944adfa130e4ad57c30282f825b2d18.invoke(Unknown Source)
+        at org.jboss.resteasy.reactive.server.handlers.InvocationHandler.handle(InvocationHandler.java:29)
+        at io.quarkus.resteasy.reactive.server.runtime.QuarkusResteasyReactiveRequestContext.invokeHandler(QuarkusResteasyReactiveRequestContext.java:141)
+        at org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext.run(AbstractResteasyReactiveContext.java:147)
+        at io.quarkus.vertx.core.runtime.VertxCoreRecorder$14.runWith(VertxCoreRecorder.java:599)
+        at org.jboss.threads.EnhancedQueueExecutor$Task.doRunWith(EnhancedQueueExecutor.java:2516)
+        at org.jboss.threads.EnhancedQueueExecutor$Task.run(EnhancedQueueExecutor.java:2495)
+        at org.jboss.threads.EnhancedQueueExecutor$ThreadBody.run(EnhancedQueueExecutor.java:1521)
+        at org.jboss.threads.DelegatingRunnable.run(DelegatingRunnable.java:11)
+        at org.jboss.threads.ThreadLocalResettingRunnable.run(ThreadLocalResettingRunnable.java:11)
+        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+        at java.base/java.lang.Thread.run(Thread.java:1583)
+----
+
+If `@Fallback` is used with `@RateLimit`, the fallback method or handler may be invoked if a `RateLimitException` is thrown, depending on the fallback configuration.
+
+If `@Retry` is used with `@RateLimit`, each retry attempt is processed by the rate limit as an independent invocation. If `RateLimitException` is thrown, the execution may be retried, depending on how the retry is configured.
+
+If `@CircuitBreaker` is used with `@RateLimit`, the circuit breaker is checked before enforcing the rate limit. If rate limiting results in `RateLimitException`, this may be counted as a failure, depending on how the circuit breaker is configured.
+
 == Runtime configuration
 
 You can override the annotations parameters at runtime inside your `application.properties` file.
@@ -463,11 +535,14 @@ public class CoffeeResource {
 We can override the `maxRetries` parameter with 6 retries instead of 4 by the following configuration item:
 [source,properties]
 ----
+quarkus.fault-tolerance."org.acme.CoffeeResource/coffees".retry.max-retries=6
+
+# alternatively, a specification-defined property can be used
 org.acme.CoffeeResource/coffees/Retry/maxRetries=6
 ----
 
-NOTE: The format is `fully-qualified-class-name/method-name/annotation-name/property-name=value`.
-You can also configure a property for all the annotation via `annotation-name/property-name=value`.
+The full set of Quarkus-native configuration properties is detailed in the <<configuration-reference>>.
+The specification-defined configuration properties are still supported, but the Quarkus-native configuration takes priority.
 
 == Conclusion
 
@@ -501,7 +576,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.9.1/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -519,7 +594,7 @@ The entire point of context propagation is to make sure the new thread has the s
 ====
 
 Non-compatible mode is enabled by default.
-This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@Blocking` or `@NonBlocking` annotation.
+This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without the `@Asynchronous` or `@AsynchronousNonBlocking` annotation.
 It also means that circuit breaker, fallback and retry automatically inspect the exception cause chain if the exception itself is insufficient to decide what should happen.
 
 [NOTE]
@@ -529,12 +604,12 @@ To restore full compatibility, add this configuration property:
 
 [source,properties]
 ----
-smallrye.faulttolerance.mp-compatibility=true
+quarkus.fault-tolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.0/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
-You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.9.1/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
+You can use the `Guard`, `TypedGuard` and `@ApplyGuard` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.
 
@@ -542,3 +617,46 @@ Metrics are automatically discovered and integrated.
 If your application uses the Quarkus extension for Micrometer, SmallRye Fault Tolerance will emit metrics to Micrometer.
 If your application uses the Quarkus extension for SmallRye Metrics, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics.
 Otherwise, SmallRye Fault Tolerance metrics will be disabled.
+
+[[configuration-reference]]
+== Configuration reference
+
+The `"<identifier>"` below is:
+
+* `"<classname>/<methodname>"` for per method configuration
+* `"<classname>"` for per class configuration
+* `global` for global configuration
+* It may also be an `@Identifier` value for configuring a programmatically constructed `Guard` or `TypedGuard` that is used declaratively through `@ApplyGuard`.
+Note that in this case, the `Guard`/`TypedGuard` should *NEVER* be used programmatically, because configuration is applied on creation, which happens lazily, on the first use.
+This first use must be through `@ApplyGuard`, otherwise configuration would be ignored.
+
+include::{generated-dir}/config/quarkus-smallrye-fault-tolerance.adoc[opts=optional, leveloffset=+1]
+
+This is how the specification-defined properties are mapped to the Quarkus-native configuration:
+
+[%header,cols="1,1"]
+|===
+|Specification-defined config property
+|Quarkus-native config property
+
+|`<classname>/<methodname>/<annotation>/<member>`
+|`quarkus.fault-tolerance."<classname>/<methodname>".<annotation>.<member>`
+
+|`<classname>/<annotation>/<member>`
+|`quarkus.fault-tolerance."<classname>".<annotation>.<member>`
+
+|`<annotation>/<member>`
+|`quarkus.fault-tolerance.global.<annotation>.<member>`
+
+|`MP_Fault_Tolerance_NonFallback_Enabled`
+|`quarkus.fault-tolerance.enabled`
+
+|`MP_Fault_Tolerance_Metrics_Enabled`
+|`quarkus.fault-tolerance.metrics.enabled`
+|===
+
+All the `<annotation>` and `<member>` parts are changed from camel case (`BeforeRetry`, `methodName`) to kebab case (`before-retry`, `method-name`).
+Two annotation members are special cased to improve consistency:
+
+- `Retry/durationUnit` moves to `retry.max-duration-unit`
+- `Retry/jitterDelayUnit` moves to `retry.jitter-unit`

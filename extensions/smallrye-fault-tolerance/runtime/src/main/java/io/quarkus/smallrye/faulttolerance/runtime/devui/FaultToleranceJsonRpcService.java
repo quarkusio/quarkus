@@ -16,12 +16,15 @@ import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperation
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
+import io.smallrye.faulttolerance.api.BeforeRetry;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
 import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
 import io.smallrye.faulttolerance.api.RateLimit;
+import io.smallrye.faulttolerance.api.RetryWhen;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -50,6 +53,10 @@ public class FaultToleranceJsonRpcService {
         if (operation.hasApplyFaultTolerance()) {
             result.put(ApplyFaultTolerance.class.getSimpleName(), new JsonObject()
                     .put("value", operation.getApplyFaultTolerance().value()));
+        }
+        if (operation.hasApplyGuard()) {
+            result.put(ApplyGuard.class.getSimpleName(), new JsonObject()
+                    .put("value", operation.getApplyGuard().value()));
         }
 
         if (operation.hasAsynchronous()) {
@@ -126,6 +133,16 @@ public class FaultToleranceJsonRpcService {
         if (operation.hasCustomBackoff()) {
             result.put(CustomBackoff.class.getSimpleName(), new JsonObject()
                     .put("value", operation.getCustomBackoff().value().getName()));
+        }
+        if (operation.hasRetryWhen()) {
+            result.put(RetryWhen.class.getSimpleName(), new JsonObject()
+                    .put("result", operation.getRetryWhen().result().getName())
+                    .put("exception", operation.getRetryWhen().exception().getName()));
+        }
+        if (operation.hasBeforeRetry()) {
+            result.put(BeforeRetry.class.getSimpleName(), new JsonObject()
+                    .put("value", operation.getBeforeRetry().value().getName())
+                    .put("methodName", operation.getBeforeRetry().methodName()));
         }
         if (operation.hasTimeout()) {
             result.put(Timeout.class.getSimpleName(), new JsonObject()

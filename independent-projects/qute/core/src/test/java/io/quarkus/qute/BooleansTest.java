@@ -10,6 +10,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,6 +38,10 @@ public class BooleansTest {
         assertTrue(Booleans.isFalsy(new String[0]));
         assertTrue(Booleans.isFalsy(new AtomicLong(0)));
         assertTrue(Booleans.isFalsy(new AtomicBoolean(false)));
+        assertTrue(Booleans.isFalsy(Optional.empty()));
+        assertTrue(Booleans.isFalsy(OptionalInt.empty()));
+        assertTrue(Booleans.isFalsy(OptionalLong.empty()));
+        assertTrue(Booleans.isFalsy(OptionalDouble.empty()));
         // truthy values
         assertFalse(Booleans.isFalsy(new Object()));
         assertFalse(Booleans.isFalsy(true));
@@ -49,6 +57,10 @@ public class BooleansTest {
         assertFalse(Booleans.isFalsy(new String[] { "foo" }));
         assertFalse(Booleans.isFalsy(new AtomicLong(10)));
         assertFalse(Booleans.isFalsy(new AtomicBoolean(true)));
+        assertFalse(Booleans.isFalsy(Optional.of("foo")));
+        assertFalse(Booleans.isFalsy(OptionalInt.of(1)));
+        assertFalse(Booleans.isFalsy(OptionalLong.of(10l)));
+        assertFalse(Booleans.isFalsy(OptionalDouble.of(1.0)));
     }
 
     @Test

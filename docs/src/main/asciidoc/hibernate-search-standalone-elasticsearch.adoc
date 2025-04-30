@@ -1,0 +1,1060 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Use Hibernate Search in Standalone mode with Elasticsearch/OpenSearch
+include::_attributes.adoc[]
+:categories: data
+:summary: Hibernate Search Standalone allows you to index your entities in an Elasticsearch/OpenSearch cluster and easily offer full text search in all your applications, even without Hibernate ORM.
+:keywords: elasticsearch opensearch hibernate search
+:topics: data,hibernate-search,elasticsearch,opensearch,search,nosql
+:extensions: io.quarkus:quarkus-hibernate-search-standalone-elasticsearch
+
+You have a Quarkus application? You want to provide a full-featured full-text search to your users? You're at the right place.
+
+With this guide, you'll learn how to index entities into an Elasticsearch or OpenSearch cluster in a heartbeat with Hibernate Search.
+We will also explore how you can query your Elasticsearch or OpenSearch cluster using the Hibernate Search API.
+
+[IMPORTANT]
+====
+If you want to index Hibernate ORM entities,
+see xref:hibernate-search-orm-elasticsearch.adoc[this dedicated guide] instead.
+====
+
+== Prerequisites
+
+:prerequisites-time: 20 minutes
+:prerequisites-docker:
+include::{includes}/prerequisites.adoc[]
+
+== Architecture
+
+The application described in this guide allows to manage a (simple) library: you manage authors and their books.
+
+The entities are stored and indexed in an Elasticsearch cluster.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `hibernate-search-standalone-elasticsearch-quickstart` link:{quickstarts-tree-url}/hibernate-search-standalone-elasticsearch-quickstart[directory].
+
+[NOTE]
+====
+The provided solution contains a few additional elements such as tests and testing infrastructure.
+====
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: hibernate-search-standalone-elasticsearch-quickstart
+:create-app-extensions: hibernate-search-standalone-elasticsearch,rest-jackson
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a Maven structure importing the following extensions:
+
+ * Hibernate Search Standalone + Elasticsearch,
+ * Quarkus REST (formerly RESTEasy Reactive) and Jackson.
+
+If you already have your Quarkus project configured, you can add the `hibernate-search-standalone-elasticsearch` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: hibernate-search-standalone-elasticsearch
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your `pom.xml`:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-search-standalone-elasticsearch</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-hibernate-search-standalone-elasticsearch")
+----
+
+== Creating the bare classes
+
+First, let's create our `Book` and `Author` classes in the `model` subpackage.
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.model;
+
+import java.util.List;
+import java.util.Objects;
+
+public class Author {
+
+    public UUID id; // <1>
+
+    public String firstName;
+
+    public String lastName;
+
+    public List<Book> books;
+
+    public Author(UUID id, String firstName, String lastName, List<Book> books) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.books = books;
+    }
+}
+----
+<1> We're using public fields here,
+because it's shorter and there is no expectation of encapsulation on what is essentially a data class.
++
+However, if you prefer using private fields with getters/setters,
+that's totally fine and will work perfectly as long as the getters/setters follow the JavaBeans naming convention
+(`getSomething()`/`isSomething()`/`setSomething(...)`).
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.model;
+
+import java.util.Objects;
+
+public class Book {
+
+    public UUID id;
+
+    public String title;
+
+    public Book(UUID id, String title) {
+        this.id = id;
+        this.title = title;
+    }
+}
+----
+
+== Using Hibernate Search annotations
+
+Enabling full text search capabilities for our classes is as simple as adding a few annotations.
+
+Let's edit the `Author` entity to include this content:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.model;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.DocumentId;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IdProjection;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ProjectionConstructor;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.SearchEntity;
+
+@SearchEntity // <1>
+@Indexed // <2>
+public class Author {
+
+    @DocumentId // <3>
+    public UUID id;
+
+    @FullTextField(analyzer = "name") // <4>
+    @KeywordField(name = "firstName_sort", sortable = Sortable.YES, normalizer = "sort") // <5>
+    public String firstName;
+
+    @FullTextField(analyzer = "name")
+    @KeywordField(name = "lastName_sort", sortable = Sortable.YES, normalizer = "sort")
+    public String lastName;
+
+    @IndexedEmbedded // <6>
+    public List<Book> books = new ArrayList<>();
+
+    public Author(UUID id, String firstName, String lastName) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    @ProjectionConstructor // <7>
+    public Author(@IdProjection UUID id, String firstName, String lastName, List<Book> books) {
+        this( id, firstName, lastName );
+        this.books = books;
+    }
+}
+----
+<1> First, let's mark the `Author` type as an link:{hibernate-search-docs-url}#concepts-entity[entity type].
+In short, this implies the `Author` type it has its own, distinct lifecycle (not tied to another type),
+and that every `BookAuthor instance carries an immutable, unique identifier.
+<2> Then, let's use the `@Indexed` annotation to register our `Author` entity as part of the full text index.
+<3> And let's end the mandatory configuration by defining a document identifier.
+<4> The `@FullTextField` annotation declares a field in the index specifically tailored for full text search.
+In particular, we have to define an analyzer to split and analyze the tokens (~ words) - more on this later.
+<5> As you can see, we can define several fields for the same property.
+Here, we define a `@KeywordField` with a specific name.
+The main difference is that a keyword field is not tokenized (the string is kept as one single token) but can be normalized (i.e. filtered) - more on this later.
+This field is marked as sortable as our intention is to use it for sorting our authors.
+<6> The purpose of `@IndexedEmbedded` is to include the `Book` fields into the `Author` index.
+In this case, we just use the default configuration: all the fields of the associated `Book` instances are included in the index (i.e. the `title` field).
+`@IndexedEmbedded` also supports nested documents (using the `structure = NESTED` attribute), but we don't need it here.
+You can also specify the fields you want to embed in your parent index using the `includePaths`/`excludePaths` attributes if you don't want them all.
+<7> We mark a (single) constructor as a `@ProjectionConstructor`,
+so that an `Author` instance can be reconstructed from the content of the index.
+
+Now that our authors are indexed, we will want to map books,
+so that this `@IndexedEmbedded` annotation actually embeds _something_.
+
+Open the `Book` class and include the content below.
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.model;
+
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ProjectionConstructor;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.SearchEntity;
+
+@SearchEntity // <1>
+public class Book {
+
+    @KeywordField // <2>
+    public UUID id;
+
+    @FullTextField(analyzer = "english") // <3>
+    public String title;
+
+    @ProjectionConstructor // <4>
+    public Book(UUID id, String title) {
+        this.id = id;
+        this.title = title;
+    }
+}
+----
+<1> We also mark the Book type as an link:{hibernate-search-docs-url}#concepts-entity[entity type],
+but we don't use `@Indexed`, because we decided we don't need a dedicated index for books.
+<2> We index the book's ID, so it can be projected (see below).
+<3> We use a `@FullTextField` similar to what we did for `Author` but you'll notice that the analyzer is different - more on this later.
+<4> Like `Author`, we mark a constructor as a `@ProjectionConstructor`,
+so that a `Book` instance can be reconstructed from the content of the index.
+
+== Analyzers and normalizers
+
+=== Introduction
+
+Analysis is a big part of full text search: it defines how text will be processed when indexing or building search queries.
+
+The role of analyzers is to split the text into tokens (~ words) and filter them (making it all lowercase and removing accents for instance).
+
+Normalizers are a special type of analyzers that keeps the input as a single token.
+It is especially useful for sorting or indexing keywords.
+
+There are a lot of bundled analyzers, but you can also develop your own for your own specific purposes.
+
+You can learn more about the Elasticsearch analysis framework in the https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html[Analysis section of the Elasticsearch documentation].
+
+=== Defining the analyzers used
+
+When we added the Hibernate Search annotations to our entities, we defined the analyzers and normalizers used.
+Typically:
+
+[source,java]
+----
+@FullTextField(analyzer = "english")
+----
+
+[source,java]
+----
+@FullTextField(analyzer = "name")
+----
+
+[source,java]
+----
+@KeywordField(name = "lastName_sort", sortable = Sortable.YES, normalizer = "sort")
+----
+
+We use:
+
+ * an analyzer called `name` for person names,
+ * an analyzer called `english` for book titles,
+ * a normalizer called `sort` for our sort fields
+
+but we haven't set them up yet.
+
+Let's see how you can do it with Hibernate Search.
+
+[[analysis-configurer]]
+=== Setting up the analyzers
+
+It is an easy task, we just need to create an implementation of `ElasticsearchAnalysisConfigurer`
+(and configure Quarkus to use it, more on that later).
+
+To fulfill our requirements, let's create the following implementation:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.config;
+
+import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurationContext;
+import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
+
+import io.quarkus.hibernate.search.standalone.elasticsearch.SearchExtension;
+
+@SearchExtension // <1>
+public class AnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
+
+    @Override
+    public void configure(ElasticsearchAnalysisConfigurationContext context) {
+        context.analyzer("name").custom() // <2>
+                .tokenizer("standard")
+                .tokenFilters("asciifolding", "lowercase");
+
+        context.analyzer("english").custom() // <3>
+                .tokenizer("standard")
+                .tokenFilters("asciifolding", "lowercase", "porter_stem");
+
+        context.normalizer("sort").custom() // <4>
+                .tokenFilters("asciifolding", "lowercase");
+    }
+}
+----
+<1> Annotate the configurer implementation with the `@SearchExtension` qualifier
+to tell Quarkus it should be used in Hibernate Search Standalone, for all Elasticsearch indexes (by default).
++
+The annotation can also target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`),
+backend (`@SearchExtension(backend = "nameOfYourBackend")`), index (`@SearchExtension(index = "nameOfYourIndex")`),
+or a combination of those
+(`@SearchExtension(persistenceUnit = "nameOfYourPU", backend = "nameOfYourBackend", index = "nameOfYourIndex")`).
+<2> This is a simple analyzer separating the words on spaces, removing any non-ASCII characters by its ASCII counterpart (and thus removing accents) and putting everything in lowercase.
+It is used in our examples for the author's names.
+<3> We are a bit more aggressive with this one and we include some stemming: we will be able to search for `mystery` and get a result even if the indexed input contains `mysteries`.
+It is definitely too aggressive for person names, but it is perfect for the book titles.
+<4> Here is the normalizer used for sorting. Very similar to our first analyzer, except we don't tokenize the words as we want one and only one token.
+
+For more information about configuring analyzers,
+see link:{hibernate-search-docs-url}#backend-elasticsearch-analysis[this section of the reference documentation].
+
+== Implementing the REST service
+
+Create the `org.acme.hibernate.search.elasticsearch.LibraryResource` class:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch;
+
+import java.util.ArrayList;
+import java.util.UUID;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.acme.hibernate.search.elasticsearch.model.Author;
+import org.acme.hibernate.search.elasticsearch.model.Book;
+
+import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
+import org.hibernate.search.mapper.pojo.standalone.session.SearchSession;
+
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestPath;
+
+@Path("/library")
+public class LibraryResource {
+
+    @Inject
+    SearchMapping searchMapping; // <1>
+
+    @PUT
+    @Path("author")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public void addAuthor(@RestForm String firstName, @RestForm String lastName) {
+        try (var searchSession = searchMapping.createSession()) { // <2>
+            Author author = new Author(UUID.randomUUID(), firstName, lastName, new ArrayList<>());
+            searchSession.indexingPlan().add(author); // <3>
+        }
+    }
+
+    @GET
+    @Path("author/{id}")
+    public Author getAuthor(@RestPath UUID id) {
+        try (var searchSession = searchMapping.createSession()) {
+            return getAuthor(searchSession, id);
+        }
+    }
+
+    private Author getAuthor(SearchSession searchSession, UUID id) {
+        return searchSession.search(Author.class) // <4>
+                .where(f -> f.id().matching(id))
+                .fetchSingleHit()
+                .orElseThrow(NotFoundException::new);
+    }
+
+    @POST
+    @Path("author/{id}")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public void updateAuthor(@RestPath UUID id, @RestForm String firstName, @RestForm String lastName) {
+        try (var searchSession = searchMapping.createSession()) {
+            Author author = getAuthor(searchSession, id); // <5>
+            author.firstName = firstName;
+            author.lastName = lastName;
+            searchSession.indexingPlan().addOrUpdate(author); // <5>
+        }
+    }
+
+    @DELETE
+    @Path("author/{id}")
+    public void deleteAuthor(@RestPath UUID id) {
+        try (var searchSession = searchMapping.createSession()) {
+            searchSession.indexingPlan().purge(Author.class, id, null); // <6>
+        }
+    }
+
+    @PUT
+    @Path("author/{authorId}/book/")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public void addBook(@RestPath UUID authorId, @RestForm String title) {
+        try (var searchSession = searchMapping.createSession()) {
+            Author author = getAuthor(searchSession, authorId); // <7>
+            author.books.add(new Book(authorId, title));
+            searchSession.indexingPlan().addOrUpdate(author);
+        }
+    }
+
+    @DELETE
+    @Path("author/{authorId}/book/{bookId}")
+    public void deleteBook(@RestPath UUID authorId, @RestPath UUID bookId) {
+        try (var searchSession = searchMapping.createSession()) {
+            Author author = getAuthor(searchSession, authorId); // <7>
+            author.books.removeIf(book -> book.id.equals(bookId));
+            searchSession.indexingPlan().addOrUpdate(author);
+        }
+    }
+}
+----
+<1> Inject a Hibernate Search mapping, the main entry point to Hibernate Search APIs.
+<2> Create a Hibernate Search session, which allows executing operations on the indexes.
+<3> To index a new Author, retrieve the session's indexing plan and call `add`, passing the author instance in argument.
+<4> To retrieve an Author from the index, execute a simple search -- more on search later -- by identifier.
+<5> To update an Author, retrieve it from the index, apply changes,
+retrieve the session's indexing plan and call `addOrUpdate`, passing the author instance in argument.
+<6> To delete an Author by identifier, retrieve the session's indexing plan
+and call `purge`, passing the author class and identifier in argument.
+<7> Since books are "owned" by authors (they are duplicated for each author and their lifecycle is bound to their author's),
+adding/deleting a book is simply an update to the author.
+
+Nothing groundbreaking here: just a few CRUD operations in a REST service,
+using Hibernate Search APIs.
+
+The interesting part comes with the addition of a search endpoint.
+In our `LibraryResource`, we just need to add the following method (and a few ``import``s):
+
+[source,java]
+----
+    @GET
+    @Path("author/search")
+    public List<Author> searchAuthors(@RestQuery String pattern, // <1>
+            @RestQuery Optional<Integer> size) {
+        try (var searchSession = searchMapping.createSession()) { // <2>
+            return searchSession.search(Author.class) // <3>
+                    .where(f -> pattern == null || pattern.isBlank()
+                            ? f.matchAll() // <4>
+                            : f.simpleQueryString()
+                                    .fields("firstName", "lastName", "books.title").matching(pattern)) // <5>
+                    .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <6>
+                    .fetchHits(size.orElse(20)); // <7>
+        }
+    }
+----
+<1> Use the `org.jboss.resteasy.reactive.RestQuery` annotation type to avoid repeating the parameter name.
+<2> Create a Hibernate Search session, which allows executing operations on the indexes.
+<3> We indicate that we are searching for ``Author``s.
+<4> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
+<5> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
+<6> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
+<7> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
+
+[NOTE]
+====
+The Hibernate Search DSL supports a significant subset of the Elasticsearch predicates (match, range, nested, phrase, spatial...).
+Feel free to explore the DSL using autocompletion.
+
+When that's not enough, you can always fall back to
+link:{hibernate-search-docs-url}#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
+====
+
+== Automatic data initialization
+
+For the purpose of this demonstration, let's import an initial dataset.
+
+Let's add a few methods in `LibraryResource`:
+
+[source,java]
+----
+    void onStart(@Observes StartupEvent ev) { // <1>
+        // Index some test data if nothing exists
+        try (var searchSession = searchMapping.createSession()) {
+            if (0 < searchSession.search(Author.class) // <2>
+                    .where(f -> f.matchAll())
+                    .fetchTotalHitCount()) {
+                return;
+            }
+            for (Author author : initialDataSet()) { // <3>
+                searchSession.indexingPlan().add(author); // <4>
+            }
+        }
+    }
+
+    private List<Author> initialDataSet() {
+        return List.of(
+                new Author(UUID.randomUUID(), "John", "Irving",
+                        List.of(
+                                new Book(UUID.randomUUID(), "The World According to Garp"),
+                                new Book(UUID.randomUUID(), "The Hotel New Hampshire"),
+                                new Book(UUID.randomUUID(), "The Cider House Rules"),
+                                new Book(UUID.randomUUID(), "A Prayer for Owen Meany"),
+                                new Book(UUID.randomUUID(), "Last Night in Twisted River"),
+                                new Book(UUID.randomUUID(), "In One Person"),
+                                new Book(UUID.randomUUID(), "Avenue of Mysteries"))),
+                new Author(UUID.randomUUID(), "Paul", "Auster",
+                        List.of(
+                                new Book(UUID.randomUUID(), "The New York Trilogy"),
+                                new Book(UUID.randomUUID(), "Mr. Vertigo"),
+                                new Book(UUID.randomUUID(), "The Brooklyn Follies"),
+                                new Book(UUID.randomUUID(), "Invisible"),
+                                new Book(UUID.randomUUID(), "Sunset Park"),
+                                new Book(UUID.randomUUID(), "4 3 2 1"))));
+    }
+----
+<1> Add a method that will get executed on application startup.
+<2> Check whether there already is data in the index -- if not, bail out.
+<3> Generate the initial dataset.
+<4> For each author, add it to the index.
+
+== Configuring the application
+
+As usual, we can configure everything in the Quarkus configuration file, `application.properties`.
+
+Edit `src/main/resources/application.properties` and inject the following configuration:
+
+[source,properties]
+----
+quarkus.hibernate-search-standalone.mapping.structure=document <1>
+quarkus.hibernate-search-standalone.elasticsearch.version=8 <2>
+quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy=sync <3>
+
+%prod.quarkus.hibernate-search-standalone.elasticsearch.hosts=localhost:9200 <4>
+----
+<1> We need to tell Hibernate Search about the structure of our entities.
++
+In this application we consider an indexed entity (the author) is the root of a "document":
+the author "owns" books it references through associations,
+which *cannot* be updated independently of the author.
++
+See <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-mapping-structure,`quarkus.hibernate-search-standalone.mapping.structure`>> for other options and more details.
+<2> We need to tell Hibernate Search about the version of Elasticsearch we will use.
++
+It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
+Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
+Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
+<3> This means that we wait for the entities to be searchable before considering a write complete.
+On a production setup, the `write-sync` default will provide better performance.
+Using `sync` is especially important when testing as you need the entities to be searchable immediately.
+<4> For development and tests, we rely on <<dev-services,Dev Services>>,
+which means Quarkus will start an Elasticsearch cluster automatically.
+In production mode, however,
+we will want to start an Elasticsearch cluster manually,
+which is why we provide Quarkus with this connection info in the `prod` profile (`%prod.` prefix).
+
+[NOTE]
+====
+Because we rely on <<dev-services,Dev Services>>, the Elasticsearch schema
+will automatically be dropped and re-created on each application startup
+in tests and dev mode
+(unless <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-schema-management-strategy,`quarkus.hibernate-search-standalone.schema-management.strategy`>> is set explicitly).
+
+If for some reason you cannot use Dev Services,
+you will have to set the following properties to get similar behavior:
+
+[source,properties]
+----
+%dev,test.quarkus.hibernate-search-standalone.schema-management.strategy=drop-and-create
+----
+
+See also <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-schema-management-strategy,`quarkus.hibernate-search-standalone.schema-management.strategy`>>.
+====
+
+[TIP]
+For more information about configuration of the Hibernate Search Standalone extension, refer to the <<configuration-reference,Configuration Reference>>.
+
+== Creating a frontend
+
+Now let's add a simple web page to interact with our `LibraryResource`.
+Quarkus automatically serves static resources located under the `META-INF/resources` directory.
+In the `src/main/resources/META-INF/resources` directory, overwrite the existing `index.html` file with the content from this
+{quickstarts-blob-url}/hibernate-search-standalone-elasticsearch-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file.
+
+== Time to play with your application
+
+You can now interact with your REST service:
+
+:devtools-wrapped:
+
+ * start your Quarkus application with:
++
+include::{includes}/devtools/dev.adoc[]
+ * open a browser to `http://localhost:8080/`
+ * search for authors or book titles (we initialized some data for you)
+ * create new authors and books and search for them too
+
+:!devtools-wrapped:
+
+As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
+
+== Building a native executable
+
+You can build a native executable with the usual command:
+
+include::{includes}/devtools/build-native.adoc[]
+
+[NOTE]
+====
+As usual with native executable compilation, this operation consumes a lot of memory.
+
+It might be safer to stop the two containers while you are building the native executable and start them again once you are done.
+====
+
+Running it is as simple as executing `./target/hibernate-search-standalone-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
+
+You can then point your browser to `http://localhost:8080/` and use your application.
+
+[NOTE]
+====
+The startup is a bit slower than usual: it is mostly due to us dropping and recreating the Elasticsearch mapping every time at startup.
+We also index some initial data.
+
+In a real life application, it is obviously something you won't do on every startup.
+====
+
+[[dev-services]]
+=== Dev Services (Configuration Free Datastores)
+
+Quarkus supports a feature called xref:dev-services.adoc[Dev Services] that allows you to start various containers without any config.
+
+In the case of Elasticsearch this support extends to the default Elasticsearch connection.
+What that means practically, is that if you have not configured `quarkus.hibernate-search-standalone.elasticsearch.hosts`,
+Quarkus will automatically start an Elasticsearch container when running tests or in xref:dev-mode-differences.adoc[dev mode],
+and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
+
+[[programmatic-mapping]]
+== Programmatic mapping
+
+If, for some reason, adding Hibernate Search annotations to entities is not possible,
+mapping can be applied programmatically instead.
+Programmatic mapping is configured through the `ProgrammaticMappingConfigurationContext`
+that is exposed via a mapping configurer (`HibernateOrmSearchMappingConfigurer`).
+
+[NOTE]
+====
+A mapping configurer (`StandalonePojoMappingConfigurer`) allows much more than just programmatic mapping capabilities.
+It also allows link:{hibernate-search-docs-url}#mapper-pojo-standalone-mapping-configurer[configuring annotation mapping, bridges, and more].
+====
+
+Below is an example of a mapping configurer that applies programmatic mapping:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.config;
+
+import org.hibernate.search.mapper.pojo.standalone.mapping.StandalonePojoMappingConfigurationContext;
+import org.hibernate.search.mapper.pojo.standalone.mapping.StandalonePojoMappingConfigurer;
+import org.hibernate.search.mapper.pojo.mapping.definition.programmatic.TypeMappingStep;
+
+import io.quarkus.hibernate.search.standalone.elasticsearch.SearchExtension;
+
+@SearchExtension // <1>
+public class CustomMappingConfigurer implements StandalonePojoMappingConfigurer {
+
+	@Override
+    public void configure(StandalonePojoMappingConfigurationContext context) {
+        TypeMappingStep type = context.programmaticMapping()    // <2>
+                .type(SomeIndexedEntity.class);                 // <3>
+        type.searchEntity();                                    // <4>
+        type.indexed()                                          // <5>
+                .index(SomeIndexedEntity.INDEX_NAME);           // <6>
+        type.property("id").documentId();                       // <7>
+        type.property("text").fullTextField();                  // <8>
+    }
+}
+----
+<1> Annotate the configurer implementation with the `@SearchExtension` qualifier
+to tell Quarkus it should be used by Hibernate Search Standalone.
+<2> Access the programmatic mapping context.
+<3> Create mapping step for the `SomeIndexedEntity` type.
+<4> Define `SomeIndexedEntity` as an entity type for Hibernate Search.
+<5> Define the `SomeIndexedEntity` entity as indexed.
+<6> Provide an index name to be used for the `SomeIndexedEntity` entity.
+<7> Define the document id property.
+<8> Define a full-text search field for the `text` property.
+
+[[opensearch]]
+== OpenSearch compatibility
+
+Hibernate Search is compatible with both https://www.elastic.co/elasticsearch[Elasticsearch]
+and https://www.opensearch.org/[OpenSearch],
+but it assumes it is working with an Elasticsearch cluster by default.
+
+To have Hibernate Search work with an OpenSearch cluster instead,
+link:{hibernate-search-docs-url}#backend-elasticsearch-configuration-version[prefix the configured version with `opensearch:`],
+as shown below.
+
+[source,properties]
+----
+quarkus.hibernate-search-standalone.elasticsearch.version=opensearch:2.16
+----
+
+All other configuration options and APIs are exactly the same as with Elasticsearch.
+
+You can find more information about compatible distributions and versions of Elasticsearch in
+link:{hibernate-search-docs-url}#compatibility[this section of Hibernate Search's reference documentation].
+
+[[cdi]]
+== CDI integration
+
+[[injecting-entry-points]]
+=== Injecting entry points
+
+You can inject Hibernate Search's main entry point, `SearchMapping`, using CDI:
+
+[source,java]
+----
+@Inject
+SearchMapping searchMapping;
+----
+
+[[plugging-in-custom-components]]
+=== Plugging in custom components
+
+The Quarkus extension for Hibernate Search Standalone will automatically
+inject components annotated with `@SearchExtension` into Hibernate Search.
+
+The annotation can optionally target a specific
+backend (`@SearchExtension(backend = "nameOfYourBackend")`), index (`@SearchExtension(index = "nameOfYourIndex")`),
+or a combination of those
+(`@SearchExtension(backend = "nameOfYourBackend", index = "nameOfYourIndex")`),
+when it makes sense for the type of the component being injected.
+
+This feature is available for the following component types:
+
+`org.hibernate.search.engine.reporting.FailureHandler`::
+A component that should be notified of any failure occurring in a background process
+(mainly index operations).
++
+Scope: one per application.
++
+See link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference documentation]
+for more information.
+`org.hibernate.search.mapper.pojo.standalone.mapping.StandalonePojoMappingConfigurer`::
+A component used to configure the Hibernate Search mapping, in particular programmatically.
++
+Scope: one or more per persistence unit.
++
+See <<programmatic-mapping,this section of this guide>> for more information.
+`org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy`::
+A component used to configure how to synchronize between application threads and indexing.
++
+Scope: one per application.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy`>>.
++
+See link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
+for more information.
+`org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer`::
+A component used to configure full text analysis (e.g. analyzers, normalizers).
++
+Scope: one or more per backend.
++
+See <<analysis-configurer,this section of this guide>> for more information.
+`org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy`::
+A component used to configure the Elasticsearch layout: index names, index aliases, ...
++
+Scope: one per backend.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-elasticsearch-layout-strategy,`quarkus.hibernate-search-standalone.elasticsearch.layout.strategy`>>.
++
+See link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+for more information.
+
+[[offline-startup]]
+== Offline startup
+
+By default, Hibernate Search sends a few requests to the Elasticsearch cluster on startup.
+If the Elasticsearch cluster is not necessarily up and running when Hibernate Search starts,
+this could cause a startup failure.
+
+To address this, you can configure Hibernate Search to not send any request on startup:
+
+* Disable Elasticsearch version checks on startup by setting the configuration property
+  <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-elasticsearch-version-check-enabled,`quarkus.hibernate-search-standalone.elasticsearch.version-check.enabled`>>
+  to `false`.
+* Disable schema management on startup by setting the configuration property
+  <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-schema-management-strategy,`quarkus.hibernate-search-standalone.schema-management.strategy`>>
+  to `none`.
+
+Of course, even with this configuration, Hibernate Search still won't be able to index anything or run search queries
+until the Elasticsearch cluster becomes accessible.
+
+[IMPORTANT]
+====
+If you disable automatic schema creation by setting `quarkus.hibernate-search-standalone.schema-management.strategy` to `none`,
+you will have to create the schema manually at some point before your application starts persisting/updating entities
+and executing search requests.
+
+See link:{hibernate-search-docs-url}#schema-management-manager[this section of the reference documentation]
+for more information.
+====
+
+[[loading]]
+== Loading
+
+As an alternative to using Elasticsearch as a primary datastore,
+this extension can also be used to index entities coming from another datastore.
+
+[TIP]
+====
+In such a scenario, you will need to set
+<<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-mapping-structure,`quarkus.hibernate-search-standalone.mapping.structure`>>
+to a value matching the structure of the primary datastore.
+====
+
+In order to do this, entities need to be loaded from that other datastore,
+and such loading must be implemented explicitly.
+
+You can refer to Hibernate Search's reference documentation for more information about configuring loading:
+
+* To load entities from an external datasource in order to reindex them,
+see https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-mass[Mass loading strategy].
+* To load entities from an external datasource when returning search hits,
+see https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-selection[Selection loading strategy].
+
+[NOTE]
+====
+In Quarkus, the entity loader mentioned in Hibernate Search's reference documentation
+can be defined as a <<plugging-in-custom-components,CDI bean>>,
+but will still need to be attached to particular entities using `@SearchEntity(loadingBinder = ...)`.
+====
+
+[[management]]
+== Management endpoint
+
+[CAUTION]
+====
+Hibernate Search's management endpoint is considered preview.
+
+In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
+Specific improvements might require changing configuration or APIs, or even storage formats,
+and plans to become _stable_ are under way.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list]
+or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
+The Hibernate Search extension provides an HTTP endpoint to reindex your data through the xref:./management-interface-reference.adoc[management interface].
+By default, this endpoint is not available. It can be enabled through configuration properties as shown below.
+
+[source,properties]
+----
+quarkus.management.enabled=true <1>
+quarkus.hibernate-search-standalone.management.enabled=true <2>
+----
+<1> Enable the xref:./management-interface-reference.adoc[management interface].
+<2> Enable Hibernate Search Standalone specific management endpoints.
+
+Once the management endpoints are enabled, data can be re-indexed via `/q/hibernate-search/standalone/reindex`, where `/q` is the default management root path
+and `/hibernate-search/standalone/` is the default Hibernate Search root management path.
+It (`/hibernate-search/standalone/`) can be changed via configuration property as shown below.
+
+[source,properties]
+----
+quarkus.hibernate-search-standalone.management.root-path=custom-root-path <1>
+----
+<1> Use a custom `custom-root-path` path for Hibernate Search's management endpoint.
+If the default management root path is used then the reindex path becomes `/q/custom-root-path/reindex`.
+
+This endpoint accepts `POST` requests with `application/json` content type only.
+All indexed entities will be re-indexed if an empty request body is submitted.
+
+[NOTE]
+====
+In order to reindex an entity type,
+it needs to be <<loading,configured for loading from an external source>>.
+
+Without that configuration, reindexing through the management endpoint (or through any other API)
+will fail.
+====
+
+If only a subset of entities must be re-indexed or
+if there is a need to have a custom configuration of the underlying mass indexer
+then this information can be passed through the request body as shown below.
+
+[source,json]
+----
+{
+  "filter": {
+    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <1>
+  },
+  "massIndexer":{
+    "typesToIndexInParallel": 1, <2>
+  }
+}
+----
+<1> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+<2> Sets the number of entity types to be indexed in parallel.
+
+The full list of possible filters and available mass indexer configurations is presented in the example below.
+
+[source,json]
+----
+{
+  "filter": { <1>
+    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <2>
+    "tenants": ["tenant1", "tenant2", ...] <3>
+  },
+  "massIndexer":{ <4>
+    "typesToIndexInParallel": 1, <5>
+    "threadsToLoadObjects": 6,  <6>
+    "batchSizeToLoadObjects": 10, <7>
+    "cacheMode": "IGNORE", <8>
+    "mergeSegmentsOnFinish": false, <9>
+    "mergeSegmentsAfterPurge": true, <10>
+    "dropAndCreateSchemaOnStart": false, <11>
+    "purgeAllOnStart": true, <12>
+    "idFetchSize": 100, <13>
+    "transactionTimeout": 100000, <14>
+  }
+}
+----
+<1> Filter object that allows to limit the scope of reindexing.
+<2> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+<3> An array of tenant ids, in case of multi-tenancy. If unspecified or empty, all tenants will be re-indexed.
+<4> Mass indexer configuration object.
+<5> Sets the number of entity types to be indexed in parallel.
+<6> Sets the number of threads to be used to load the root entities.
+<7> Sets the batch size used to load the root entities.
+<8> Sets the cache interaction mode for the data loading tasks.
+<9> Whether each index is merged into a single segment after indexing.
+<10> Whether each index is merged into a single segment after the initial index purge, just before indexing.
+<11> Whether the indexes and their schema (if they exist) should be dropped and re-created before indexing.
+<12> Whether all entities are removed from the indexes before indexing.
+<13> Specifies the fetch size to be used when loading primary keys if objects to be indexed.
+<14> Specifies the timeout of transactions for loading ids and entities to be re-indexed.
++
+Note all the properties in the JSON are optional, and only those that are needed should be used.
+
+For more detailed information on mass indexer configuration see the
+link:{hibernate-search-docs-url}#indexing-massindexer-parameters[corresponding section of the Hibernate Search reference documentation].
+
+Submitting the reindexing request will trigger indexing in the background. Mass indexing progress will appear in the application logs.
+For testing purposes, it might be useful to know when the indexing finished. Adding `wait_for=finished` query parameter to the URL
+will result in the management endpoint returning a chunked response that will report when the indexing starts and then when it is finished.
+
+[[limitations]]
+== Limitations
+
+* The Hibernate Search Standalone extension cannot be used in the same application
+as the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search extension with Hibernate ORM]
++
+See https://github.com/quarkusio/quarkus/issues/39517[#39517] to track progress.
+* AWS request signing is not available at the moment, unlike in the
+xref:hibernate-search-orm-elasticsearch.adoc#aws-request-signing[Hibernate Search extension with Hibernate ORM]
++
+See https://github.com/quarkusio/quarkus/issues/26991[#26991] to track progress.
+* Optimistic concurrency control is not available at the moment.
++
+See https://hibernate.atlassian.net/browse/HSEARCH-5105[HSEARCH-5105] to track progress.
+* Elasticsearch/OpenSearch do not support transactions,
+so multi-document updates may fail partially and leave the index in an inconsistent state.
++
+This cannot be avoided like in the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search extension with Hibernate ORM]
+with xref:hibernate-search-orm-elasticsearch.adoc#coordination[coordination through outbox polling],
+because that coordination requires Hibernate ORM and relies on the fact
+that data is derived from that of a (transactional) relational database.
+
+== Further reading
+
+If you are interested in learning more about Hibernate Search,
+the Hibernate team publishes link:{hibernate-search-docs-url}[an extensive reference documentation],
+as well as a page listing https://hibernate.org/search/more-resources/[other relevant resources].
+
+== FAQ
+
+=== Why Elasticsearch only?
+
+Hibernate Search supports both a Lucene backend and an Elasticsearch backend.
+
+In the context of Quarkus and to build scalable applications, we thought the latter would make more sense.
+Thus, we focused our efforts on it.
+
+We don't have plans to support the Lucene backend in Quarkus for now,
+though there is an issue tracking progress on such an implementation in the Quarkiverse:
+https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/180[quarkiverse/quarkus-hibernate-search-extras#180].
+
+[[configuration-reference]]
+== Configuration Reference for Hibernate Search Standalone
+
+include::{generated-dir}/config/quarkus-hibernate-search-standalone-elasticsearch.adoc[leveloffset=+1, opts=optional]
+
+[NOTE]
+[[bean-reference-note-anchor]]
+.About bean references
+====
+First, be aware that referencing beans in configuration properties is optional and, in fact, discouraged:
+you can achieve the same results by annotating your beans with `@SearchExtension`.
+See <<plugging-in-custom-components,this section>> for more information.
+
+If you really do want to reference beans using a string value in configuration properties
+know that string is parsed; here are the most common formats:
+
+* `bean:` followed by the name of a `@Named` CDI bean.
+For example `bean:myBean`.
+* `class:` followed by the fully-qualified name of a class, to be instantiated through CDI if it's a CDI bean,
+or through its public, no-argument constructor otherwise.
+For example `class:com.mycompany.MyClass`.
+* An arbitrary string referencing a built-in implementation.
+Available values are detailed in the documentation of each configuration property,
+such as `async`/`read-sync`/`write-sync`/`sync` for
+<<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy`>>.
+
+Other formats are also accepted, but are only useful for advanced use cases.
+See link:{hibernate-search-docs-url}#configuration-bean-reference-parsing[this section of Hibernate Search's reference documentation]
+for more information.
+====

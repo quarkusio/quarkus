@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use Hibernate ORM with Panache for your data layer, Quarkus provides a compatibility layer for Spring Data JPA in the form of the spring-data-jpa extension.
+:topics: spring,data,hibernate-orm,jpa,compatibility
+:extensions: io.quarkus:quarkus-spring-data-jpa
 
 While users are encouraged to use Hibernate ORM with Panache for Relational Database access, Quarkus provides a compatibility layer for
 Spring Data JPA repositories in the form of the `spring-data-jpa` extension.
@@ -22,14 +24,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `spring-data-jpa-quickstart` {quickstarts-tree-url}/spring-data-jpa-quickstart[directory].
+The solution is located in the `spring-data-jpa-quickstart` link:{quickstarts-tree-url}/spring-data-jpa-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-data-jpa-quickstart
-:create-app-extensions: resteasy-reactive-jackson,spring-data-jpa,quarkus-jdbc-postgresql
+:create-app-extensions: rest-jackson,spring-data-jpa,quarkus-jdbc-postgresql
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project and imports the `spring-data-jpa` extension.
@@ -130,7 +132,7 @@ quarkus.datasource.password=quarkus_test
 quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
 quarkus.datasource.jdbc.max-size=8
 quarkus.datasource.jdbc.min-size=2
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 This configuration assumes that PostgreSQL will be running locally.
@@ -159,6 +161,8 @@ INSERT INTO fruit(id, name, color) VALUES (5, 'Strawberry', 'Red');
 ----
 
 Hibernate ORM will execute these queries on application startup.
+
+TIP: Users can also use a file named `data.sql` in addition to `import.sql`
 
 == Define the repository
 
@@ -412,7 +416,9 @@ Interfaces that extend any of the following Spring Data repositories are automat
 
 * `org.springframework.data.repository.Repository`
 * `org.springframework.data.repository.CrudRepository`
+* `org.springframework.data.repository.ListCrudRepository`
 * `org.springframework.data.repository.PagingAndSortingRepository`
+* `org.springframework.data.repository.ListPagingAndSortingRepository`
 * `org.springframework.data.jpa.repository.JpaRepository`
 
 The generated repositories are also registered as beans so they can be injected into any other bean.
@@ -595,6 +601,7 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 
 * Methods of the `org.springframework.data.repository.query.QueryByExampleExecutor` interface - if any of these are invoked, a Runtime exception will be thrown.
 * QueryDSL support. No attempt will be made to generate implementations of the QueryDSL related repositories.
+* Using `org.springframework.data.jpa.repository.JpaSpecificationExecutor`
 * Customizing the base repository for all repository interfaces in the code base.
 ** In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
@@ -602,6 +609,7 @@ is not used at all (since all the necessary plumbing is done at build time). Sim
 * Native and named queries when using `@Query`
 * https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
 via `EntityInformation`.
+* The use of `org.springframework.data.jpa.repository.Lock`
 
 The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 

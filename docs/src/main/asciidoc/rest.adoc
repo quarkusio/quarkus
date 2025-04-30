@@ -1,0 +1,3376 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Writing REST Services with Quarkus REST (formerly RESTEasy Reactive)
+include::_attributes.adoc[]
+:categories: web
+:topics: rest,resteasy-reactive,virtual-threads
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.
+:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
+:jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
+:jdkapi: https://docs.oracle.com/en/java/javase/17/docs/api/java.base
+:mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/2.1.0/io.smallrye.mutiny
+:httpspec: https://tools.ietf.org/html/rfc7231
+:jsonpapi: https://javadoc.io/doc/jakarta.json/jakarta.json-api/2.1.2/jakarta.json
+:injectapi: https://javadoc.io/static/jakarta.inject/jakarta.inject-api/2.0.1/jakarta.inject
+:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.4.6
+:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
+:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
+
+This guide explains how to write REST Services with Quarkus REST in Quarkus.
+
+[TIP]
+====
+This is the reference guide for Quarkus REST.
+For a more lightweight introduction, please refer to the xref:rest-json.adoc[Writing JSON REST services guides].
+====
+
+== What is Quarkus REST?
+
+Quarkus REST is a new link:{jaxrsspec}[Jakarta REST (formerly known as JAX-RS)]
+implementation written from the ground up to work on our
+common https://vertx.io/[Vert.x] layer and is thus fully reactive, while also being very tightly integrated with
+Quarkus and consequently moving a lot of work to build time.
+
+You should be able to use it in place of any Jakarta REST implementation, but on top of that it has
+great performance for both blocking and non-blocking endpoints, and a lot of new features on top
+of what Jakarta REST provides.
+
+== Writing endpoints
+
+=== Getting started
+
+Add the following import to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-rest")
+----
+
+You can now write your first endpoint in the `org.acme.rest.Endpoint` class:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("")
+public class Endpoint {
+
+    @GET
+    public String hello() {
+        return "Hello, World!";
+    }
+}
+----
+
+=== Terminology
+
+REST:: https://en.wikipedia.org/wiki/Representational_state_transfer[REpresentational State Transfer]
+Endpoint:: Java method which is called to serve a REST call
+URL / URI (Uniform Resource Locator / Identifier):: Used to identify the location of REST resources (https://tools.ietf.org/html/rfc7230#section-2.7[specification])
+Resource:: Represents your domain object. This is what your API serves and modifies. Also called an `entity` in Jakarta REST.
+Representation:: How your resource is represented on the wire, can vary depending on content types
+Content type:: Designates a particular representation (also called a media type), for example `text/plain` or `application/json`
+HTTP:: Underlying wire protocol for routing REST calls (see https://tools.ietf.org/html/rfc7230[HTTP specifications])
+HTTP request:: The request part of the HTTP call, consisting of an HTTP method, a target URI, headers and an optional message body
+HTTP response:: The response part of the HTTP call, consisting of an HTTP response status, headers and an optional message body
+
+=== Declaring endpoints: URI mapping
+
+Any class annotated with a link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation can have its methods exposed as REST endpoints,
+provided they have an HTTP method annotation (see below).
+
+That link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation defines the URI prefix under which those methods will be exposed. It can
+be empty, or contain a prefix such as `rest` or `rest/V1`.
+
+Each exposed endpoint method can in turn have another link:{jaxrsapi}/jakarta/ws/rs/Path.html[`@Path`] annotation which adds to its containing
+class annotation. For example, this defines a `rest/hello` endpoint:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("rest")
+public class Endpoint {
+
+    @Path("hello")
+    @GET
+    public String hello() {
+        return "Hello, World!";
+    }
+}
+----
+
+See <<uri-parameters,URI parameters>> for more information about URI mapping.
+
+You can set the root path for all rest endpoints using the `@ApplicationPath` annotation, as shown below.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
+
+@ApplicationPath("/api")
+public static class MyApplication extends Application {
+
+}
+----
+
+This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
+be accessible at `/api/rest/`. You can also set the `quarkus.rest.path` build time property to set the root path if you
+don't want to use an annotation.
+
+=== Declaring endpoints: HTTP methods
+
+Each endpoint method must be annotated with one of the following annotations, which defines which HTTP
+method will be mapped to the method:
+
+.HTTP method annotations
+|===
+|Annotation|Usage
+
+|link:{jaxrsapi}/jakarta/ws/rs/GET.html[`@GET`]
+|Obtain a resource representation, should not modify state, link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.1[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/HEAD.html[`@HEAD`]
+|Obtain metadata about a resource, similar to `GET` with no body (link:{httpspec}#section-4.3.2[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/POST.html[`@POST`]
+|Create a resource and obtain a link to it (link:{httpspec}#section-4.3.3[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/PUT.html[`@PUT`]
+|Replace a resource or create one, should be link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.4[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/DELETE.html[`@DELETE`]
+|Delete an existing resource, link:{httpspec}#section-4.2.2[idempotent]  (link:{httpspec}#section-4.3.5[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/OPTIONS.html[`@OPTIONS`]
+|Obtain information about a resource, link:{httpspec}#section-4.2.2[idempotent] (link:{httpspec}#section-4.3.7[HTTP docs])
+
+|link:{jaxrsapi}/jakarta/ws/rs/PATCH.html[`@PATCH`]
+|Update a resource, or create one, not link:{httpspec}#section-4.2.2[idempotent] (https://tools.ietf.org/html/rfc5789#section-2[HTTP docs])
+
+|===
+
+You can also declare other HTTP methods by declaring them as an annotation with the
+link:{jaxrsapi}/jakarta/ws/rs/HttpMethod.html[`@HttpMethod`] annotation:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.Path;
+
+@Retention(RetentionPolicy.RUNTIME)
+@HttpMethod("CHEESE")
+@interface CHEESE {
+}
+
+@Path("")
+public class Endpoint {
+
+    @CHEESE
+    public String hello() {
+        return "Hello, Cheese World!";
+    }
+}
+----
+
+=== Declaring endpoints: representation / content types
+
+Each endpoint method may consume or produce specific resource representations, which are indicated by
+the HTTP link:{httpspec}#section-3.1.1.5[`Content-Type`] header, which in turn contains
+link:{httpspec}#section-3.1.1.1[MIME (Media Type)] values, such as the following:
+
+- `text/plain` which is the default for any endpoint returning a `String`.
+- `text/html` for HTML (such as with xref:qute.adoc[Qute templating])
+- `application/json` for a <<json,JSON REST endpoint>>
+- `text/*` which is a sub-type wildcard for any text media type
+- `\*/*` which is a wildcard for any media type
+
+You may annotate your endpoint class with the link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces`]
+or link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`@Consumes`] annotations, which
+allow you to specify one or more media types that your endpoint may accept as HTTP request body
+or produce as HTTP response body. Those class annotations apply to each method.
+
+Any method may also be annotated with the link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces`]
+or link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`@Consumes`] annotations, in which
+case they override any eventual class annotation.
+
+The link:{jaxrsapi}/jakarta/ws/rs/core/MediaType.html[`MediaType`] class has many constants you
+can use to point to specific pre-defined media types.
+
+See the <<negotiation>> section for more information.
+
+=== Accessing request parameters
+
+[[request-parameters]]
+
+NOTE: don't forget to configure your compiler to generate parameter name information with `-parameters` (javac)
+or `<parameters>` or `<maven.compiler.parameters>` (https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html#parameters[Maven]).
+
+The following HTTP request elements may be obtained by your endpoint method:
+
+.HTTP request parameter annotations
+|===
+|HTTP element|Annotation|Usage
+
+|[[path-parameter]]Path parameter
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`] (or nothing)
+|URI template parameter (simplified version of the https://tools.ietf.org/html/rfc6570[URI Template specification]),
+see <<uri-parameters,URI parameters>> for more information.
+
+|Query parameter
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestQuery.html[`@RestQuery`]
+|The value of a https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
+
+|Header
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestHeader.html[`@RestHeader`]
+|The value of an https://tools.ietf.org/html/rfc7230#section-3.2[HTTP header]
+
+|Cookie
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestCookie.html[`@RestCookie`]
+|The value of an https://tools.ietf.org/html/rfc6265#section-4.2[HTTP cookie]
+
+|Form parameter
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`]
+|The value of an https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST[HTTP URL-encoded FORM]
+
+|Matrix parameter
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestMatrix.html[`@RestMatrix`]
+|The value of an https://tools.ietf.org/html/rfc3986#section-3.3[URI path segment parameter]
+
+|===
+
+For each of those annotations, you may specify the name of the element they refer to,
+otherwise, they will use the name of the annotated method parameter.
+
+If a client made the following HTTP call:
+
+[source,http]
+----
+POST /cheeses;variant=goat/tomme?age=matured HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Cookie: level=hardcore
+X-Cheese-Secret-Handshake: fist-bump
+
+smell=strong
+----
+
+Then you could obtain all the various parameters with this endpoint method:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestMatrix;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Path("/cheeses/{type}")
+public class Endpoint {
+
+    @POST
+    public String allParams(@RestPath String type,
+                            @RestMatrix String variant,
+                            @RestQuery String age,
+                            @RestCookie String level,
+                            @RestHeader("X-Cheese-Secret-Handshake")
+                            String secretHandshake,
+                            @RestForm String smell) {
+        return type + "/" + variant + "/" + age + "/" + level + "/"
+            + secretHandshake + "/" + smell;
+    }
+}
+----
+
+NOTE: The link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`]
+annotation is optional: any parameter whose name matches an existing URI
+template variable will be automatically assumed to have link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`].
+
+You can also use any of the Jakarta REST annotations link:{jaxrsapi}/jakarta/ws/rs/PathParam.html[`@PathParam`],
+link:{jaxrsapi}/jakarta/ws/rs/QueryParam.html[`@QueryParam`],
+link:{jaxrsapi}/jakarta/ws/rs/HeaderParam.html[`@HeaderParam`],
+link:{jaxrsapi}/jakarta/ws/rs/CookieParam.html[`@CookieParam`],
+link:{jaxrsapi}/jakarta/ws/rs/FormParam.html[`@FormParam`] or
+link:{jaxrsapi}/jakarta/ws/rs/MatrixParam.html[`@MatrixParam`] for this,
+but they require you to specify the parameter name.
+
+See <<parameter-mapping>> for more advanced use-cases.
+
+[NOTE]
+====
+When an exception occurs in Quarkus REST request parameter handling code, the exception is not printed by default to the log (for security reasons).
+This can sometimes make it hard to understand why certain HTTP status codes are returned (as the Jakarta REST mandates the use of non-intuitive error codes in various cases).
+In such cases, users are encouraged to set the logging level for the `org.jboss.resteasy.reactive.server.handlers.ParameterHandler` category to `DEBUG` like so:
+
+[source, properties]
+----
+quarkus.log.category."org.jboss.resteasy.reactive.server.handlers.ParameterHandler".level=DEBUG
+----
+====
+
+==== Grouping parameters in a custom class
+[[parameter-grouping]]
+
+You can group your request parameters in a container class instead of declaring them as method parameters to you endpoint,
+so we can rewrite the previous example like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestMatrix;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Path("/cheeses/{type}")
+public class Endpoint {
+
+    public static class Parameters {
+        @RestPath
+        String type;
+
+        @RestMatrix
+        String variant;
+
+        @RestQuery
+        String age;
+
+        @RestCookie
+        String level;
+
+        @RestHeader("X-Cheese-Secret-Handshake")
+        String secretHandshake;
+
+        @RestForm
+        String smell;
+    }
+
+    @POST
+    public String allParams(@BeanParam Parameters parameters) { <1>
+        return parameters.type + "/" + parameters.variant + "/" + parameters.age
+            + "/" + parameters.level + "/" + parameters.secretHandshake
+            + "/" + parameters.smell;
+    }
+}
+----
+<1> `BeanParam` is required to comply with the Jakarta REST specification so that libraries like OpenAPI can introspect the parameters.
+
+Record classes are also supported, so you could rewrite the previous example as a record:
+
+[source,java]
+----
+    public record Parameters(
+        @RestPath
+        String type,
+
+        @RestMatrix
+        String variant,
+
+        @RestQuery
+        String age,
+
+        @RestCookie
+        String level,
+
+        @RestHeader("X-Cheese-Secret-Handshake")
+        String secretHandshake,
+
+        @RestForm
+        String smell){}
+----
+
+[[uri-parameters]]
+=== [[declaring-uri-parameters]] Declaring URI parameters
+
+You can declare URI parameters and use regular expressions in your path, so for instance
+the following endpoint will serve requests for `/hello/stef/23` and `/hello` but not
+`/hello/stef/0x23`:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("hello")
+public class Endpoint {
+
+    @Path("{name}/{age:\\d+}")
+    @GET
+    public String personalisedHello(String name, int age) {
+        return "Hello " + name + " is your age really " + age + "?";
+    }
+
+    @GET
+    public String genericHello() {
+        return "Hello stranger";
+    }
+}
+----
+
+
+=== Accessing the request body
+
+Any method parameter with no annotation will receive the method body.footnote:[Unless it is a
+<<path-parameter,URI template parameter>> or a <<context-objects,context object>>.], after it has been mapped from
+its HTTP representation to the Java type of the parameter.
+
+The following parameter types will be supported out of the box:
+
+[[resource-types]]
+.Request body parameter types
+|===
+|Type|Usage
+
+|link:{jdkapi}/java/io/File.html[`File`]
+|The entire request body in a temporary file
+
+|`byte[]`
+|The entire request body, not decoded
+
+|`char[]`
+|The entire request body, decoded
+
+|link:{jdkapi}/java/lang/String.html[`String`]
+|The entire request body, decoded
+
+|link:{jdkapi}/java/io/InputStream.html[`InputStream`]
+|The request body in a blocking stream
+
+|link:{jdkapi}/java/io/Reader.html[`Reader`]
+|The request body in a blocking stream
+
+|All Java primitives and their wrapper classes
+|Java primitive types
+
+|link:{jdkapi}/java/math/BigDecimal.html[`BigDecimal`], link:{jdkapi}/java/math/BigInteger.html[`BigInteger`]
+|Large integers and decimals.
+
+|link:{jsonpapi}/jakarta/json/JsonArray.html[`JsonArray`], link:{jsonpapi}/jakarta/json/JsonObject.html[`JsonObject`],
+link:{jsonpapi}/jakarta/json/JsonStructure.html[`JsonStructure`], link:{jsonpapi}/jakarta/json/JsonValue.html[`JsonValue`]
+|JSON value types
+
+|link:{vertxapi}/io/vertx/core/buffer/Buffer.html[`Buffer`]
+|Vert.x Buffer
+
+|any other type
+|Will be <<json,mapped from JSON to that type>>
+
+|===
+
+NOTE: You can add support for more <<readers-writers,body parameter types>>.
+
+[[multipart]]
+=== Handling Multipart Form data
+
+To handle HTTP requests that have `multipart/form-data` as their content type, you can use the regular
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] annotation, but we have special types
+that allow you to access the parts as files or as entities.
+Let us look at an example of its use.
+
+Assuming an HTTP request containing a file upload, a JSON entity and a form value containing a string description, we could write
+the following endpoint:
+
+[source,java]
+----
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+
+@Path("multipart")
+public class MultipartResource {
+    public static class Person {
+        public String firstName;
+        public String lastName;
+    }
+
+    @POST
+    public void multipart(@RestForm String description,
+            @RestForm("image") FileUpload file,
+            @RestForm @PartType(MediaType.APPLICATION_JSON) Person person) {
+        // do something
+    }
+}
+----
+
+The `description` parameter will contain the data contained in the part of HTTP request called `description` (because
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] does not define a value, the field name is used),
+while the `file` parameter will contain data about the uploaded file in the `image` part of HTTP request, and
+the `person` parameter will read the `Person` entity using the `JSON` <<json,body reader>>.
+
+The size of every part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
+Any request with a part of a size exceeding this configuration will result in HTTP status code 413.
+
+NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
+provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
+
+If you need access to all uploaded files for all parts regardless of their names, you can do it with `@RestForm(FileUpload.ALL) List<FileUpload>`.
+
+NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PartType.html[`@PartType`] is used to aid
+in deserialization of the corresponding part of the request into the desired Java type. It is only required if
+you need to use a <<readers-writers,special body parameter type>> for that particular parameter.
+
+NOTE: Just like for any other request parameter type, you can also group them into a <<parameter-grouping,container class>>.
+
+WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
+Otherwise, the file will no longer be accessible when the request terminates.
+Moreover, if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
+the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
+with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
+
+
+[TIP]
+====
+When a Resource method needs to handle various types of multipart requests, then the `org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput` method type can be used as provides access to all the parts of the request.
+
+The following code shows a simple example where we iterate over the parts and return a list of aggregated data:
+
+[source,java]
+----
+@Path("/test")
+public static class Resource {
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Item> hello(MultipartFormDataInput input) throws IOException {
+        Map<String, Collection<FormValue>> map = input.getValues();
+        List<Item> items = new ArrayList<>();
+        for (var entry : map.entrySet()) {
+            for (FormValue value : entry.getValue()) {
+                items.add(new Item(
+                        entry.getKey(),
+                        value.isFileItem() ? value.getFileItem().getFileSize() : value.getValue().length(),
+                        value.getCharset(),
+                        value.getFileName(),
+                        value.isFileItem(),
+                        value.getHeaders()));
+            }
+
+        }
+        return items;
+    }
+
+    public static class Item {
+        public final String name;
+        public final long size;
+        public final String charset;
+        public final String fileName;
+        public final boolean isFileItem;
+        public final Map<String, List<String>> headers;
+
+        public Item(String name, long size, String charset, String fileName, boolean isFileItem,
+                Map<String, List<String>> headers) {
+            this.name = name;
+            this.size = size;
+            this.charset = charset;
+            this.fileName = fileName;
+            this.isFileItem = isFileItem;
+            this.headers = headers;
+        }
+    }
+}
+----
+====
+
+==== Handling malformed input
+
+As part of reading the multipart body, Quarkus REST invokes the proper MessageBodyReaderlink:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
+If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
+
+==== Multipart output
+
+Similarly, Quarkus REST can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
+that will hold the information we want to expose as:
+
+[source,java]
+----
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
+
+public class DownloadFormData {
+
+    @RestForm
+    String name;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    File file;
+}
+----
+
+And then expose this POJO via a Resource like so:
+
+[source,java]
+----
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("multipart")
+public class Endpoint {
+
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("file")
+    public DownloadFormData getFile() {
+        // return something
+    }
+}
+----
+
+Additionally, you can also manually append the parts of the form using the class `MultipartFormDataOutput` as:
+
+[source,java]
+----
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
+
+@Path("multipart")
+public class Endpoint {
+
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("file")
+    public MultipartFormDataOutput getFile() {
+        MultipartFormDataOutput form = new MultipartFormDataOutput();
+        form.addFormData("person", new Person("John"), MediaType.APPLICATION_JSON_TYPE);
+        form.addFormData("status", "a status", MediaType.TEXT_PLAIN_TYPE)
+                .getHeaders().putSingle("extra-header", "extra-value");
+        return form;
+    }
+}
+----
+
+This last approach allows you adding extra headers to the output part.
+
+WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
+
+=== Returning a response body
+
+In order to return an HTTP response, simply return the resource you want from your method. The method
+return type and its optional content type will be used to decide how to serialise it to the HTTP
+response (see the <<negotiation>> section for more advanced information).
+
+You can return any of the pre-defined types that you can read from the <<resource-types,HTTP response>>,
+and any other type will be mapped <<json,from that type to JSON>>.
+
+In addition, the following return types are also supported:
+
+.Additional response body parameter types
+|===
+|Type|Usage
+
+|link:{jdkapi}/java/nio/file/Path.html[`Path`]
+|The contents of the file specified by the given path
+
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PathPart.html[`PathPart`]
+|The partial contents of the file specified by the given path
+
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/FilePart.html[`FilePart`]
+|The partial contents of a file
+
+|link:{vertxapi}/io/vertx/core/file/AsyncFile.html[`AsyncFile`]
+|Vert.x AsyncFile, which can be in full, or partial
+
+|===
+
+Alternately, you can also return a <<reactive,reactive type>> such as link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`],
+link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] or
+link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`]
+that resolve to one of the mentioned return types.
+
+=== Setting other response properties
+
+==== Manually setting the response
+
+If you need to set more properties on the HTTP response than just the body, such as the status code
+or headers, you can make your method return `org.jboss.resteasy.reactive.RestResponse` from a resource method.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+
+@Path("")
+public class Endpoint {
+
+    @GET
+    public RestResponse<String> hello() {
+        // HTTP OK status with text/plain content type
+        return ResponseBuilder.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
+         // set a response header
+         .header("X-Cheese", "Camembert")
+         // set the Expires response header to two days from now
+         .expires(Date.from(Instant.now().plus(Duration.ofDays(2))))
+         // send a new cookie
+         .cookie(new NewCookie("Flavour", "chocolate"))
+         // end of builder API
+         .build();
+    }
+}
+----
+
+NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
+not strongly typed to your entity.
+
+==== Using annotations
+
+Alternatively, if you only need to set the status code and / or HTTP headers with static values, you can use `@org.jboss.resteasy.reactive.ResponseStatus` and /or `ResponseHeader` respectively.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest;
+
+import org.jboss.resteasy.reactive.Header;
+import org.jboss.resteasy.reactive.ResponseHeader;
+import org.jboss.resteasy.reactive.ResponseStatus;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("")
+public class Endpoint {
+
+    @ResponseStatus(201)
+    @ResponseHeader(name = "X-Cheese", value = "Camembert")
+    @GET
+    public String hello() {
+        return "Hello, World!";
+    }
+}
+----
+
+=== Redirect support
+
+When handling a `@POST`, `@PUT` or `@DELETE` endpoint, it is common practice to redirect to a `@GET` endpoint after the action has been performed to allow the user to reload the page without triggering the action a second time.
+There are multiple ways to achieve this.
+
+==== Using RestResponse
+
+Using `RestResponse` as the return type while making sure the proper redirection URI is created can be done as in the following example:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
+import org.jboss.resteasy.reactive.RestResponse;
+
+@Path("/fruits")
+public class FruitResource {
+
+    public static class Fruit {
+        public Long id;
+        public String name;
+        public String description;
+
+        public Fruit() {
+        }
+
+        public Fruit(Long id, String name, String description) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+        }
+    }
+
+    private final Map<Long, Fruit> fruits = new ConcurrentHashMap<>();
+    private final AtomicLong ids = new AtomicLong(0);
+
+
+    public FruitResource() {
+        Fruit apple = new Fruit(ids.incrementAndGet(), "Apple", "Winter fruit");
+        fruits.put(apple.id, apple);
+        Fruit pinneapple = new Fruit(ids.incrementAndGet(), "Pineapple", "Tropical fruit");
+        fruits.put(pinneapple.id, pinneapple);
+    }
+
+    // when invoked, this method will result in an HTTP redirect to the GET method that obtains the fruit by id
+    @POST
+    public RestResponse<Fruit> add(Fruit fruit, @Context UriInfo uriInfo) {
+        fruit.id = ids.incrementAndGet();
+        fruits.put(fruit.id, fruit);
+        // seeOther results in an HTTP 303 response with the Location header set to the value of the URI
+        return RestResponse.seeOther(uriInfo.getAbsolutePathBuilder().path(Long.toString(fruit.id)).build());
+    }
+
+    @GET
+    @Path("{id}")
+    public Fruit byId(Long id) {
+        return fruits.get(id);
+    }
+}
+----
+
+==== Using RedirectException
+
+Users can also throw `jakarta.ws.rs.RedirectionException` from a method body to get Quarkus REST to perform the desired redirect.
+
+=== Async/reactive support
+
+[[reactive]]
+
+If your endpoint method needs to accomplish an asynchronous or reactive task before
+being able to answer, you can declare your method to return the
+link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]), in which
+case the current HTTP request will be automatically suspended after your method, until
+the returned link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni`] instance resolves to a value,
+which will be mapped to a response exactly according to the previously described rules:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.mutiny.Uni;
+
+@Path("escoffier")
+public class Endpoint {
+
+    @GET
+    public Uni<Book> culinaryGuide() {
+        return Book.findByIsbn("978-2081229297");
+    }
+}
+----
+
+This allows you to not block the event-loop thread while the book is being fetched from the
+database, and allows Quarkus to serve more requests until your book is ready to
+be sent to the client and terminate this request.
+See <<execution-model,Execution Model documentation>> for more information.
+
+The link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`] return
+type is also supported.
+
+=== Streaming support
+
+If you want to stream your response element by element, you can make your endpoint method return a
+link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]).
+This is especially useful for streaming text or binary data.
+
+This example, using https://github.com/quarkiverse/quarkus-reactive-messaging-http[Reactive Messaging HTTP] shows how to stream
+text data:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+
+@Path("logs")
+public class Endpoint {
+
+    @Inject
+    @Channel("log-out")
+    Multi<String> logs;
+
+    @GET
+    public Multi<String> streamLogs() {
+        return logs;
+    }
+}
+----
+
+NOTE: Response filters are **not** invoked on streamed responses, because they would give a false
+impression that you can set headers or HTTP status codes, which is not true after the initial
+response.
+Exception mappers are also not invoked because part of the response may already have been written.
+
+==== Customizing headers and status
+If you need to set custom HTTP headers and / or the HTTP response, then you can return `org.jboss.resteasy.reactive.RestMulti` instead, like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("logs")
+public class Endpoint {
+
+    @Inject
+    @Channel("log-out")
+    Multi<String> logs;
+
+    @GET
+    public Multi<String> streamLogs() {
+        return RestMulti.fromMultiData(logs).status(222).header("foo", "bar").build();
+    }
+}
+----
+
+In more advanced cases where the headers and / or status can only be obtained from the results of an async call, the `RestMulti.fromUniResponse` needs to be used.
+Here is an example of such a use case:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import java.util.List;import java.util.Map;import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("logs")
+public class Endpoint {
+
+    interface SomeService {
+        Uni<SomeResponse> get();
+    }
+
+    interface SomeResponse {
+        Multi<byte[]> data();
+
+        String myHeader();
+    }
+
+    private final SomeService someService;
+
+    public Endpoint(SomeService someService) {
+        this.someService = someService;
+    }
+
+    @GET
+    public Multi<String> streamLogs() {
+        return RestMulti.fromUniResponse(someService.get(), SomeResponse::data, (r -> Map.of("MyHeader", List.of(r.myHeader()))));
+    }
+}
+----
+
+=== Concurrent stream element processing
+
+By default, `RestMulti` ensures serial/sequential order of the items/elements produced by the wrapped
+`Multi` by using a value of 1 for the demand signaled to the publishers. To enable concurrent
+processing/generation of multiple items, use `withDemand(long demand)`.
+
+Using a demand higher than 1 is useful when multiple items shall be returned and the production of each
+item takes some time, i.e. when parallel/concurrent production improves the service response time. Be
+aware the concurrent processing also requires more resources and puts a higher load on services or
+resources that are needed to produce the items. Also consider using `Multi.capDemandsTo(long)` and
+`Multi.capDemandsUsing(LongFunction)`.
+
+The example below produces 5 (JSON) strings, but the _order_ of the strings in the returned JSON array
+is not guaranteed. The below example also works for JSON objects and not just simple types.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("message-stream")
+public class Endpoint {
+    @GET
+    public Multi<String> streamMessages() {
+        Multi<String> sourceMulti = Multi
+            .createBy()
+            .merging()
+            .streams(
+                Multi.createFrom().items(
+                    "message-1",
+                    "message-2",
+                    "message-3",
+                    "message-4",
+                    "message-5"
+                )
+            );
+
+        return RestMulti
+            .fromMultiData(sourceMulti)
+            .withDemand(5)
+            .build();
+    }
+}
+----
+
+Example response, the order is non-deterministic.
+
+[source,text]
+----
+"message-3"
+"message-5"
+"message-4"
+"message-1"
+"message-2"
+----
+
+=== Returning multiple JSON objects
+
+By default, `RestMulti` returns items/elements produced by the wrapped `Multi` as a JSON array, if the
+media-type is `application/json`. To return separate JSON objects that are not wrapped in a JSON array,
+use `encodeAsArray(false)` (`encodeAsArray(true)` is the default). Note that streaming multiple
+objects this way requires a slightly different parsing on the client side, but objects can be parsed and
+consumed as they appear without having to deserialize a possibly huge result at once.
+
+The example below produces 5 (JSON) strings, that are not wrapped in an array, like this:
+
+[source,text]
+----
+"message-1"
+"message-2"
+"message-3"
+"message-4"
+"message-5"
+----
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("message-stream")
+public class Endpoint {
+    @GET
+    public Multi<String> streamMessages() {
+        Multi<String> sourceMulti = Multi
+            .createBy()
+            .merging()
+            .streams(
+                Multi.createFrom().items(
+                    "message-1",
+                    "message-2",
+                    "message-3",
+                    "message-4",
+                    "message-5"
+                )
+            );
+
+        return RestMulti
+            .fromMultiData(sourceMulti)
+            .encodeAsJsonArray(false)
+            .build();
+    }
+}
+----
+
+
+=== Server-Sent Event (SSE) support
+
+If you want to stream JSON objects in your response, you can use
+https://html.spec.whatwg.org/multipage/server-sent-events.html[Server-Sent Events]
+by just annotating your endpoint method with
+link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
+and specifying that each element should be <<json,serialised to JSON>> with
+`@RestStreamElementType(MediaType.APPLICATION_JSON)`.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.RestStreamElementType;
+
+import io.smallrye.mutiny.Multi;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+@Path("escoffier")
+public class Endpoint {
+
+    // Inject our Book channel
+    @Inject
+    @Channel("book-out")
+    Multi<Book> books;
+
+    @GET
+    // Each element will be sent as JSON
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    // by using @RestStreamElementType, we don't need to add @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<Book> stream() {
+        return books;
+    }
+}
+----
+
+Sometimes it's useful to create a customized SSE message, for example if you need to specify the `event` field of a SSE message to distinguish various event types.
+A resource method may return `Multi<jakarta.ws.rs.sse.OutboundSseEvent>` and an injected `jakarta.ws.rs.sse.Sse` can be used to create `OutboundSseEvent` instances.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+
+import org.jboss.resteasy.reactive.RestStreamElementType;
+
+import io.smallrye.mutiny.Multi;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+@Path("escoffier")
+public class Endpoint {
+
+    @Inject
+    @Channel("book-out")
+    Multi<Book> books;
+
+    @Inject
+    Sse sse; <1>
+
+    @GET
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
+    public Multi<OutboundSseEvent> stream() {
+        return books.map(book -> sse.newEventBuilder() <2>
+            .name("book")  <3>
+            .data(book.title) <4>
+            .build());
+    }
+}
+----
+<1> Inject the server-side entry point for creating ``OutboundSseEvent``s.
+<2> Create a new outbound event builder.
+<3> Set the event name, i.e. the value of the `event` field of a SSE message.
+<4> Set the data, i.e. the value of the `data` field of a SSE message.
+
+[WARNING]
+====
+Manipulation of the returned HTTP headers and status code is not possible via `RestMulti.fromUniResponse` because when returning SSE responses the headers and status code cannot be delayed until the response becomes available.
+====
+
+=== Controlling HTTP Caching features
+
+Quarkus REST provides the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
+and link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/NoCache.html[`@NoCache`] annotations to facilitate
+handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
+
+These annotations can be placed either on a Resource Method or a Resource Class (in which case it applies to all Resource Methods of the class that do *not* contain the same annotation) and allow users
+to return domain objects and not have to deal with building up the `Cache-Control` HTTP header explicitly.
+
+While link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
+builds a complex `Cache-Control` header, link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/NoCache.html[`@NoCache`]
+is a simplified notation to say that you don't want anything cached; i.e. `Cache-Control: nocache`.
+
+NOTE: More information on the `Cache-Control` header and be found in link:https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234]
+
+=== Accessing context objects
+
+[[context-objects]]
+
+There are a number of contextual objects that the framework will give you, if your endpoint
+method takes parameters of the following type:
+
+.Contextual objects
+|===
+|Type|Usage
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/HttpHeaders.html[`HttpHeaders`]
+|All the request headers
+
+|link:{jaxrsapi}/jakarta/ws/rs/container/ResourceInfo.html[`ResourceInfo`]
+|Information about the current endpoint method and class (requires reflection)
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/SecurityContext.html[`SecurityContext`]
+|Access to the current user and roles
+
+|link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/SimpleResourceInfo.html[`SimpleResourceInfo`]
+|Information about the current endpoint method and class (no reflection required)
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/UriInfo.html[`UriInfo`]
+|Provides information about the current endpoint and application URI
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/Application.html[`Application`]
+|Advanced: Current Jakarta REST application class
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/Configuration.html[`Configuration`]
+|Advanced: Configuration about the deployed Jakarta REST application
+
+|link:{jaxrsapi}/jakarta/ws/rs/ext/Providers.html[`Providers`]
+|Advanced: Runtime access to Jakarta REST providers
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`]
+|Advanced: Access to the current HTTP method and <<preconditions>>
+
+|link:{jaxrsapi}/jakarta/ws/rs/core/ResourceContext.html[`ResourceContext`]
+|Advanced: access to instances of endpoints
+
+|link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerRequestContext.html[`ServerRequestContext`]
+|Advanced: Quarkus REST access to the current request/response
+
+|link:{jaxrsapi}/jakarta/ws/rs/sse/Sse.html[`Sse`]
+|Advanced: Complex SSE use-cases
+
+|link:{vertxapi}/io/vertx/core/http/HttpServerRequest.html[`HttpServerRequest`]
+|Advanced: Vert.x HTTP Request
+
+|link:{vertxapi}/io/vertx/core/http/HttpServerResponse.html[`HttpServerResponse`]
+|Advanced: Vert.x HTTP Response
+
+|===
+
+For example, here is how you can return the name of the currently logged-in user:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.security.Principal;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
+
+@Path("user")
+public class Endpoint {
+
+    @GET
+    public String userName(SecurityContext security) {
+        Principal user = security.getUserPrincipal();
+        return user != null ? user.getName() : "<NOT LOGGED IN>";
+    }
+}
+----
+
+You can also inject those context objects using
+{injectapi}/jakarta/inject/Inject.html[`@Inject`] on fields of the same
+type:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.security.Principal;
+
+import jakarta.inject.Inject;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
+
+@Path("user")
+public class Endpoint {
+
+    @Inject
+    SecurityContext security;
+
+    @GET
+    public String userName() {
+        Principal user = security.getUserPrincipal();
+        return user != null ? user.getName() : "<NOT LOGGED IN>";
+    }
+}
+----
+
+Or even on your endpoint constructor:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.security.Principal;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.SecurityContext;
+
+@Path("user")
+public class Endpoint {
+
+    SecurityContext security;
+
+    Endpoint(SecurityContext security) {
+        this.security = security;
+    }
+
+    @GET
+    public String userName() {
+        Principal user = security.getUserPrincipal();
+        return user != null ? user.getName() : "<NOT LOGGED IN>";
+    }
+}
+----
+
+
+=== JSON serialisation
+
+[[json]]
+
+Instead of importing `io.quarkus:quarkus-rest`, you can import either of the following modules to get support for JSON:
+
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-rest-jackson`
+|https://github.com/FasterXML/jackson[Jackson support]
+
+|`io.quarkus:quarkus-rest-jsonb`
+|https://github.com/jakartaee/jsonb-api/[JSON-B support]
+
+|===
+
+In both cases, importing those modules will allow HTTP message bodies to be read from JSON
+and serialised to JSON, for <<resource-types,all the types not already registered with a more specific
+serialisation>>.
+
+==== Jackson-specific features
+
+===== Exception handling
+
+By default, Quarkus provides a built-in `ExceptionMapper` for `MismatchedInputException` which returns an HTTP 400 status code
+along with a good error message in Dev and Test modes, about what went wrong during serialization of an entity.
+
+[NOTE]
+====
+There are situations where various Jackson related exceptions need to handled in a uniform way.For example, the application may need to handle all `JsonMappingException` the same way.
+This becomes a problem when taking JAX-RS / Jakarta REST rules into account, because the exception mapper `ExceptionMapper` for `MismatchedInputException` would be used instead of the user provide
+`ExceptionMapper` for `JsonMappingException` (as `MismatchedInputException` is a subtype of `JsonMappingException`).
+
+One solution for this case is to configure the following:
+
+[source,properties]
+----
+quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class
+----
+
+which essentially makes Quarkus ignore the `ExceptionMapper` for `MismatchedInputException` completely.
+====
+
+[[secure-serialization]]
+===== Secure serialization
+
+When used with Jackson to perform JSON serialization, Quarkus REST provides the ability to limit the set of fields that are serialized based on the roles of the current user.
+This is achieved by simply annotating the fields (or getters) of the POJO being returned with `@io.quarkus.resteasy.reactive.jackson.SecureField`.
+
+A simple example could be the following:
+
+Assume we have a POJO named `Person` which looks like so:
+
+[source,java]
+----
+package org.acme.rest;
+
+import io.quarkus.resteasy.reactive.jackson.SecureField;
+
+public class Person {
+
+    @SecureField(rolesAllowed = "admin")
+    private final Long id;
+    private final String first;
+    private final String last;
+    @SecureField(rolesAllowed = "${role:admin}")                 <1>
+    private String address;
+
+    public Person(Long id, String first, String last, String address) {
+        this.id = id;
+        this.first = first;
+        this.last = last;
+        this.address = address;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getFirst() {
+        return first;
+    }
+
+    public String getLast() {
+        return last;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+}
+----
+<1> The `io.quarkus.resteasy.reactive.jackson.SecureField.rolesAllowed` property supports xref:config-reference.adoc#property-expressions[property expressions]
+exactly in the same fashion the `jakarta.annotation.security.RolesAllowed` annotation does. For more information, please
+refer to the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Standard security annotations]
+section of the Authorization of web endpoints guide.
+
+A very simple Jakarta REST Resource that uses `Person` could be:
+
+[source,java]
+----
+package org.acme.rest;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
+
+@Path("person")
+public class PersonResource {
+
+    @Path("{id}")
+    @GET
+    public Person getPerson(Long id) {
+        return new Person(id, "foo", "bar", "Brick Lane");
+    }
+
+    @Produces(APPLICATION_JSON) <1>
+    @Path("/friend/{id}")
+    @GET
+    public Response getPersonFriend(Long id) {
+        var person = new Person(id, "foo", "bar", "Brick Lane");
+        return Response.ok(person).build();
+    }
+}
+----
+<1> The `@SecureField` annotation is only effective when Quarkus recognizes that produced content type is the 'application/json' type.
+
+WARNING: Currently you cannot use the `@SecureField` annotation to secure your data returned from resource methods returning the `io.smallrye.mutiny.Multi` reactive type.
+
+[IMPORTANT]
+====
+All resource methods returning data secured with the `@SecureField` annotation should be tested.
+Please make sure data are secured as you intended.
+Quarkus always attempts to detect fields annotated with the `@SecureField` annotation,
+however it may fail to infer returned type and miss the `@SecureField` annotation instance.
+If that happens, please explicitly enable secure serialization on the resource endpoint with the `@EnableSecureSerialization` annotation.
+====
+
+Assuming security has been set up for the application (see our xref:security-overview.adoc[guide] for more details), when a user with the `admin` role
+performs an HTTP GET on `/person/1` they will receive:
+
+[source,json]
+----
+{
+  "id": 1,
+  "first": "foo",
+  "last": "bar",
+  "address", "Brick Lane"
+}
+----
+
+as the response.
+
+Any user however that does not have the `admin` role will receive:
+
+[source,json]
+----
+{
+  "first": "foo",
+  "last": "bar"
+}
+----
+
+NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
+annotation to opt in or out for specific Jakarta REST Resource classes or methods.
+
+WARNING: Configuration expressions set with the `SecureField.rolesAllowed` property are validated during application startup even when the `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization` annotation is used.
+
+===== @JsonView support
+
+Jakarta REST methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
+in order to customize the serialization of the returned POJO, on a per method-basis. This is best explained with an example.
+
+A typical use of `@JsonView` is to hide certain fields on certain methods. In that vein, let's define two views:
+
+[source,java]
+----
+public class Views {
+
+    public static class Public {
+    }
+
+    public static class Private extends Public {
+    }
+}
+----
+
+Let's assume we have the `User` POJO on which we want to hide some field during serialization. A simple example of this is:
+
+[source,java]
+----
+public class User {
+
+    @JsonView(Views.Private.class)
+    public int id;
+
+    @JsonView(Views.Public.class)
+    public String name;
+}
+----
+
+Depending on the Jakarta REST method that returns this user, we might want to exclude the `id` field from serialization.
+For example, you might want an insecure method to not expose this field.
+The way we can achieve that in Quarkus REST is shown in the following example:
+
+[source,java]
+----
+@JsonView(Views.Public.class)
+@GET
+@Path("/public")
+public User userPublic() {
+    return testUser();
+}
+
+@JsonView(Views.Private.class)
+@GET
+@Path("/private")
+public User userPrivate() {
+    return testUser();
+}
+----
+
+When the result of the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
+The result of `userPrivate` however will include the `id` as expected when serialized.
+
+`@JsonView` is also supported for deserializing the request body. So for example in the following code:
+
+[source,java]
+----
+        @POST
+        @Produces(MediaType.APPLICATION_JSON)
+        @Consumes(MediaType.APPLICATION_JSON)
+        public RestResponse<User> create(@JsonView(Views.Public.class) User user) {
+            return RestResponse.status(CREATED, user);
+        }
+----
+
+inside the `create` method, `user` would only contain the value of `name` while `id` would always be `null` (regardless if the JSON request contained it)
+
+===== Reflection-free Jackson serialization and deserialization
+
+By default, Jackson uses reflection to convert objects to and from JSON.
+However, {project-name} follows a build-time optimization philosophy.
+To align with this approach, configure your application to minimize reflection by using the link:https://quarkus.io/extensions/io.quarkus/quarkus-rest-jackson[`quarkus-rest-jackson`] extension.
+
+This feature is introduced as a Technology Preview and is disabled by default.
+
+By eliminating reliance on reflection during deserialization, applications can achieve better performance and reduced memory consumption, particularly for native applications where reflection can introduce overhead.
+If you implement this feature, run tests to assess its effect on your applications.
+
+To enable this feature, set the following configuration property to `true`:
+
+`quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
+
+Setting this property applies reflection-free optimization to deserialization and serialization.
+
+When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` implementations at build time for each class requiring JSON conversion. The application then processes objects returned by REST endpoints using these generated serializers and deserializers, eliminating reliance on reflection and improving performance.
+
+Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
+
+===== Completely customized per method serialization/deserialization
+
+There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis or on a per Jakarta REST resource basis. For such use cases, you can use the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations in the REST method or in the REST resource at class level. These annotations allow you to fully configure the `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader`.
+
+Here is an example use case to customize the `com.fasterxml.jackson.databind.ObjectWriter`:
+
+[source,java]
+----
+@CustomSerialization(UnquotedFields.class)
+@GET
+@Path("/invalid-use-of-custom-serializer")
+public User invalidUseOfCustomSerializer() {
+    return testUser();
+}
+----
+
+where `UnquotedFields` is a `BiFunction` defined as so:
+
+[source,java]
+----
+public static class UnquotedFields implements BiFunction<ObjectMapper, Type, ObjectWriter> {
+
+    @Override
+    public ObjectWriter apply(ObjectMapper objectMapper, Type type) {
+        return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+    }
+}
+----
+
+Essentially what this class does is force Jackson to not include quotes in the field names.
+
+It is important to note that this customization is only performed for the serialization of the Jakarta REST methods that use `@CustomSerialization(UnquotedFields.class)`.
+
+Following the previous example, let's now customize the `com.fasterxml.jackson.databind.ObjectReader` to read JSON requests with unquoted field names:
+
+[source,java]
+----
+@CustomDeserialization(SupportUnquotedFields.class)
+@POST
+@Path("/use-of-custom-deserializer")
+public void useOfCustomSerializer(User request) {
+    // ...
+}
+----
+
+where `SupportUnquotedFields` is a `BiFunction` defined as so:
+
+[source,java]
+----
+public static class SupportUnquotedFields implements BiFunction<ObjectMapper, Type, ObjectReader> {
+
+    @Override
+    public ObjectReader apply(ObjectMapper objectMapper, Type type) {
+        return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+    }
+}
+----
+
+=== XML serialisation
+
+[[xml]]
+
+To enable XML support, add the `quarkus-rest-jaxb` extension to your project.
+
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-rest-jaxb`
+|https://javaee.github.io/jaxb-v2/[XML support]
+
+|===
+
+Importing this module will allow HTTP message bodies to be read from XML
+and serialised to XML, for <<resource-types,all the types not already registered with a more specific
+serialisation>>.
+
+The JAXB Quarkus REST extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer.
+
+However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB Quarkus REST extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance.
+
+[NOTE]
+====
+The property `quarkus.jaxb.exclude-classes` accepts a comma separated list of either fully qualified class names
+or package names. Package names must be suffixed by `.*` and all classes in the specified package and its subpackages will be excluded.
+
+For instance, when setting `quarkus.jaxb.exclude-classes=org.acme.one.Model,org.acme.two.Model,org.acme.somemodel.*`, the following elements are excluded:
+
+- The class `org.acme.one.Model`
+- The class `org.acme.two.Model`
+- All the classes in the `org.acme.somemodel` package and its subpackages
+====
+
+==== Advanced JAXB-specific features
+
+When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that Quarkus REST supports.
+
+===== Inject JAXB components
+
+The JAXB Quarkus REST extension will serialize and unserialize requests and responses transparently for users. However, if you need finer grain control over JAXB components, you can inject either the JAXBContext, Marshaller, or Unmarshaller components into your beans:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyService {
+
+    @Inject
+    JAXBContext jaxbContext;
+
+    @Inject
+    Marshaller marshaller;
+
+    @Inject
+    Unmarshaller unmarshaller;
+
+    // ...
+}
+----
+
+[NOTE]
+====
+Quarkus will automatically find all the classes annotated with `@XmlRootElement` and then bound them to the JAXB context.
+====
+
+===== Customize the JAXB configuration
+
+To customize the JAXB configuration for either the JAXB context, and/or the Marshaller/Unmarshaller components, the suggested approach is to define a CDI bean of type `io.quarkus.jaxb.runtime.JaxbContextCustomizer`.
+
+An example where a custom module needs to be registered would look like so:
+
+[source,java]
+----
+@Singleton
+public class RegisterCustomModuleCustomizer implements JaxbContextCustomizer {
+
+    // For JAXB context configuration
+    @Override
+    public void customizeContextProperties(Map<String, Object> properties) {
+
+    }
+
+    // For Marshaller configuration
+    @Override
+    public void customizeMarshaller(Marshaller marshaller) throws PropertyException {
+        marshaller.setProperty("jaxb.formatted.output", Boolean.TRUE);
+    }
+
+    // For Unmarshaller configuration
+    @Override
+    public void customizeUnmarshaller(Unmarshaller unmarshaller) throws PropertyException {
+        // ...
+    }
+}
+----
+
+[NOTE]
+====
+It's not necessary to implement all three methods, but only the want you need.
+====
+
+Alternatively, you can provide your own `JAXBContext` bean by doing:
+
+[source,java]
+----
+public class CustomJaxbContext {
+
+    // Replaces the CDI producer for JAXBContext built into Quarkus
+    @Singleton
+    @Produces
+    JAXBContext jaxbContext() {
+        // ...
+    }
+}
+----
+
+[IMPORTANT]
+====
+Note that if you provide your custom JAXB context instance, you will need to register the classes you want to use for the XML serialization. This means that Quarkus will not update your custom JAXB context instance with the auto-discovered classes.
+====
+
+=== Web Links support
+
+[[links]]
+
+To enable Web Links support, add the `quarkus-rest-links` extension to your project.
+
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-rest-links`
+|https://www.w3.org/wiki/LinkHeader[Web Links support]
+
+|===
+
+Importing this module will allow injecting web links into the response HTTP headers by just annotating your endpoint resources with the `@InjectRestLinks` annotation. To declare the web links that will be returned, you must use the `@RestLink` annotation in the linked methods.
+Assuming a `Record` looks like:
+
+[source,java]
+----
+public class Record {
+
+    // The class must contain/inherit either and `id` field, an `@Id` or `@RestLinkId` annotated field.
+    // When resolving the id the order of preference is: `@RestLinkId` > `@Id` > `id` field.
+    private int id;
+
+    public Record() {
+    }
+
+    protected Record(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+}
+----
+
+An example of enabling Web Links support would look like:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @GET
+    @RestLink(rel = "list")
+    @InjectRestLinks
+    public List<Record> getAll() {
+        // ...
+    }
+
+    @GET
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public Record get(@PathParam("id") int id) {
+        // ...
+    }
+
+    @PUT
+    @Path("/{id}")
+    @RestLink
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public Record update(@PathParam("id") int id) {
+        // ...
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @RestLink
+    public Record delete(@PathParam("id") int id) {
+        // ...
+    }
+}
+----
+
+When calling the endpoint `/records` which is defined by the method `getAll` within the above resource using curl, you would get the web links header:
+
+[source,bash]
+----
+& curl -i localhost:8080/records
+Link: <http://localhost:8080/records>; rel="list"
+----
+
+As this resource does not return a single instance of type `Record`, the links for the methods `get`, `update`, and `delete` are not injected. Now, when calling the endpoint `/records/1`, you would get the following web links:
+
+[source,bash]
+----
+& curl -i localhost:8080/records/1
+Link: <http://localhost:8080/records>; rel="list"
+Link: <http://localhost:8080/records/1>; rel="self"
+Link: <http://localhost:8080/records/1>; rel="update"
+Link: <http://localhost:8080/records/1>; rel="delete"
+----
+
+The `get`, `update`, and `delete` methods use the path param "id" and as the field "id" exists in the entity type "Record", the web link properly populates the value "1" in the returned links. In addition to this, we can also generate web links with path params that do not match with any field of the entity type. For example, the following method is using a path param "text" and the entity Record does not have any field named "text":
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    // ...
+
+    @GET
+    @Path("/search/{text}")
+    @RestLink(rel = "search records by free text")
+    @InjectRestLinks
+    public List<Record> search(@PathParam("text") String text) { <4>
+        // ...
+    }
+
+    // ...
+}
+----
+
+The generated web link for this resource is `Link: <http://localhost:8080/search/{text}>; rel="search records by free text"`.
+
+Finally, when calling the `delete` resource, you should not see any web links as the method `delete` is not annotated with the `@InjectRestLinks` annotation.
+
+==== Programmatically access to the web links registry
+
+You can programmatically have access to the web links registry just by injecting the `RestLinksProvider` bean:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @Inject
+    RestLinksProvider linksProvider;
+
+    // ...
+}
+----
+
+Using this injected bean of type `RestLinksProvider`, you can get the links by type using the method `RestLinksProvider.getTypeLinks` or get the links by a concrete instance using the method `RestLinksProvider.getInstanceLinks`.
+
+==== JSON Hypertext Application Language (HAL) support
+
+The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links.
+
+To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-rest-jsonb` or the `quarkus-rest-jackson` extension.
+
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-hal`
+|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+
+|===
+
+After adding the extensions, we can now annotate the REST resources to produce the media type `application/hal+json` (or use RestMediaType.APPLICATION_HAL_JSON). For example:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(rel = "list")
+    @InjectRestLinks
+    public List<Record> getAll() {
+        // ...
+    }
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public Record get(@PathParam("id") int id) {
+        // ...
+    }
+}
+----
+
+Now, the endpoints `/records` and `/records/{id}` will accept the media type both `json` and `hal+json` to print the records in Hal format.
+
+For example, if we invoke the `/records` endpoint using curl to return a list of records, the HAL format will look like as follows:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records
+{
+    "_embedded": {
+        "items": [
+            {
+                "id": 1,
+                "slug": "first",
+                "value": "First value",
+                "_links": {
+                    "self": {
+                        "href": "http://localhost:8081/records/1"
+                    },
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "slug": "second",
+                "value": "Second value",
+                "_links": {
+                    "self": {
+                        "href": "http://localhost:8081/records/2"
+                    },
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    }
+                }
+            }
+        ]
+    },
+    "_links": {
+        "list": {
+            "href": "http://localhost:8081/records"
+        }
+    }
+}
+----
+
+When we call a resource `/records/1` that returns only one instance, then the output is:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records/1
+{
+    "id": 1,
+    "slug": "first",
+    "value": "First value",
+    "_links": {
+        "self": {
+            "href": "http://localhost:8081/records/1"
+        },
+        "list": {
+            "href": "http://localhost:8081/records"
+        }
+    }
+}
+----
+
+Finally, you can also provide additional HAL links programmatically in your resource just by returning either `HalCollectionWrapper<T>` (to return a list of entities) or `HalEntityWrapper<T>` (to return a single object) as described in the following example:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @Inject
+    HalService halService;
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(rel = "list")
+    public HalCollectionWrapper<Record> getAll() {
+        List<Record> list = // ...
+        HalCollectionWrapper<Record> halCollection = halService.toHalCollectionWrapper( list, "collectionName", Record.class);
+        halCollection.addLinks(Link.fromPath("/records/1").rel("first-record").build());
+        return halCollection;
+    }
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public HalEntityWrapper<Record> get(@PathParam("id") int id) {
+        Record entity = // ...
+        HalEntityWrapper<Record> halEntity = halService.toHalWrapper(entity);
+        halEntity.addLinks(Link.fromPath("/records/1/parent").rel("parent-record").build());
+        return halEntity;
+    }
+}
+----
+
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus includes a CORS filter at the HTTP layer level.
+For more information about the CORS filters and their usage, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the Quarkus "Cross-origin resource sharing" guide.
+
+== More advanced usage
+
+Here are some more advanced topics that you may not need to know about initially, but
+could prove useful for more complex use cases.
+
+[[execution-model-blocking-non-blocking]]
+=== Execution model, blocking, non-blocking
+
+[[execution-model]]
+
+Quarkus REST is implemented using two main thread types:
+
+- Event-loop threads: which are responsible, among other things, for reading bytes from the HTTP request and
+writing bytes back to the HTTP response
+- Worker threads: they are pooled and can be used to offload long-running operations
+
+The event-loop threads (also called IO threads) are responsible for actually performing all the IO
+operations in an asynchronous way, and to trigger any listener interested in the completion of those
+IO operations.
+
+By default, the thread Quarkus REST will run endpoint methods on depends on the signature of the method.
+If a method returns one of the following types then it is considered non-blocking, and will be run on the IO thread
+by default:
+
+- `io.smallrye.mutiny.Uni`
+- `io.smallrye.mutiny.Multi`
+- `java.util.concurrent.CompletionStage`
+- `org.reactivestreams.Publisher`
+- Kotlin `suspended` methods
+
+This 'best guess' approach means most operations will run on the correct thread by default.
+If you are writing reactive code, your method will generally return one of these types and will be executed on the IO thread.
+If you are writing blocking code, your methods will usually return the result directly, and these will be run on a worker thread.
+
+You can override this behaviour using the
+https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/Blocking.html[`@Blocking`]
+and
+https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/1.5.0/io/smallrye/common/annotation/NonBlocking.html[`@NonBlocking`]
+annotations. This can be applied at the method, class or `jakarta.ws.rs.core.Application` level.
+
+The example below will override the default behaviour and always run on a worker thread, even though it returns a `Uni`.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.common.annotation.Blocking;
+
+@Path("yawn")
+public class Endpoint {
+
+    @Blocking
+    @GET
+    public Uni<String> blockingHello() throws InterruptedException {
+        // do a blocking operation
+        Thread.sleep(1000);
+        return Uni.createFrom().item("Yaaaawwwwnnnnnn…");
+    }
+}
+----
+
+Most of the time, there are ways to achieve the same blocking operations in an asynchronous/reactive
+way, using https://smallrye.io/smallrye-mutiny/[Mutiny], https://hibernate.org/reactive/[Hibernate Reactive]
+or any of the xref:quarkus-reactive-architecture.adoc#quarkus-extensions-enabling-reactive[Quarkus Reactive extensions] for example:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.time.Duration;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.mutiny.Uni;
+
+@Path("yawn")
+public class Endpoint {
+
+    @GET
+    public Uni<String> blockingHello() throws InterruptedException {
+        return Uni.createFrom().item("Yaaaawwwwnnnnnn…")
+                // do a non-blocking sleep
+                .onItem().delayIt().by(Duration.ofSeconds(2));
+    }
+}
+----
+
+If a method or class is annotated with `jakarta.transaction.Transactional` then it will also be treated as a blocking
+method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
+Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
+
+==== Overriding the default behaviour
+
+If you want to override the default behavior, you can annotate a `jakarta.ws.rs.core.Application` subclass in your application with `@Blocking` or `@NonBlocking`,
+and this will set the default for every method that does not have an explicit annotation.
+
+Behavior can still be overridden on a class or method level by annotating them directly, however,
+all endpoints without an annotation will now follow the default, no matter their method signature.
+
+[[exception-mapping]]
+=== Exception mapping
+
+If your application needs to return non-nominal HTTP codes in error cases, the best is
+to throw exceptions that will result in the proper HTTP response being sent by the
+framework using link:{jaxrsapi}/jakarta/ws/rs/WebApplicationException.html[`WebApplicationException`] or any of its subtypes:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+
+@Path("cheeses/{cheese}")
+public class Endpoint {
+
+    @GET
+    public String findCheese(String cheese) {
+        if(cheese == null)
+            // send a 400
+            throw new BadRequestException();
+        if(!cheese.equals("camembert"))
+            // send a 404
+            throw new NotFoundException("Unknown cheese: " + cheese);
+        return "Camembert is a very nice cheese";
+    }
+}
+----
+
+[NOTE]
+====
+You can change the log level of the thrown `WebApplicationException` exceptions by configuring the following property `quarkus.log.category."WebApplicationException".level` like so:
+
+[source, properties]
+----
+quarkus.log.category."WebApplicationException".level=DEBUG
+----
+====
+
+If your endpoint method is delegating calls to another service layer which
+does not know of Jakarta REST, you need a way to turn service exceptions to an
+HTTP response, and you can do that using the
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerExceptionMapper.html[`@ServerExceptionMapper`]
+annotation on a method, with one parameter of the exception type you want to handle, and turning
+that exception into a link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] (or a
+link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`]):
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
+
+class UnknownCheeseException extends RuntimeException {
+    public final String name;
+
+    public UnknownCheeseException(String name) {
+        this.name = name;
+    }
+}
+
+@ApplicationScoped
+class CheeseService {
+    private static final Map<String, String> cheeses =
+            Map.of("camembert", "Camembert is a very nice cheese",
+                   "gouda", "Gouda is acceptable too, especially with cumin");
+
+    public String findCheese(String name) {
+        String ret = cheeses.get(name);
+        if(ret != null)
+            return ret;
+        throw new UnknownCheeseException(name);
+    }
+}
+
+@Path("cheeses/{cheese}")
+public class Endpoint {
+
+    @Inject
+    CheeseService cheeses;
+
+    @ServerExceptionMapper
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
+    }
+
+    @GET
+    public String findCheese(String cheese) {
+        if(cheese == null)
+            // send a 400
+            throw new BadRequestException();
+        return cheeses.findCheese(cheese);
+    }
+}
+----
+
+[TIP]
+====
+By default, methods annotated with `@ServerExceptionMapper` do **not** run CDI interceptors that apply to the other methods of the class (like ones needed for implementing security method level security).
+
+Users however can opt into interceptors by adding the corresponding annotations to the method.
+====
+
+[TIP]
+====
+When mapping an exception to a `@ServerExceptionMapper` method, the cause of the exception normally does not come into play.
+
+However, some exception types in Java only serve as wrappers for other exceptions. Often, checked exceptions are wrapped into `RuntimeException` just to not have them declared in method `throws` parameters.
+Working with `CompletionStage` for example, will require `CompletionException`. There are many such exception types that are just wrappers around the real cause of the exception.
+
+If you wish to make sure your exception mapper is called for your exception type even when it is wrapped by one of those wrapper exceptions, you can use `@UnwrapException` on the exception wrapper type:
+
+[source,java]
+----
+@UnwrapException
+public class MyExceptionWrapper extends RuntimeException {
+    public MyExceptionWrapper(Exception cause) {
+        super(cause);
+    }
+}
+----
+
+If you don't control that exception wrapper type, you can place the annotation on any class and specify the exception wrapper types it applies to as annotation parameter:
+
+[source,java]
+----
+@UnwrapException({CompletionException.class, RuntimeException.class})
+public class Mapper {
+
+    @ServerExceptionMapper
+    public Response handleMyException(MyException x) {
+        // ...
+    }
+
+}
+----
+====
+
+[NOTE]
+====
+Εxception mappers defined in REST endpoint classes will only be called if the  exception is thrown in the same class. If you want to define global exception mappers,
+simply define them outside a REST endpoint class:
+
+[source,java]
+----
+package org.acme.rest;
+
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.RestResponse;
+
+class ExceptionMappers {
+    @ServerExceptionMapper
+    public RestResponse<String> mapException(UnknownCheeseException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, "Unknown cheese: " + x.name);
+    }
+}
+----
+
+You can also declare link:{jaxrsspec}#exceptionmapper[exception mappers in the Jakarta REST way].
+====
+
+Your exception mapper may declare any of the following parameter types:
+
+.Exception mapper parameters
+|===
+|Type|Usage
+
+|An exception type
+|Defines the exception type you want to handle
+
+|Any of the <<context-objects,Context objects>>
+|
+
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
+|A context object to access the current request
+
+|===
+
+It may declare any of the following return types:
+
+.Exception mapper return types
+|===
+|Type|Usage
+
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse`] or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`]
+|The response to send to the client when the exception occurs
+
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|An asynchronous response to send to the client when the exception occurs
+
+|===
+
+[NOTE]
+====
+When an exception occurs, Quarkus REST does not log it by default (for security reasons).
+This can sometimes make it hard to understand why certain exception handling code was invoked (or not invoked).
+To make Quarkus REST log the actual exception before an exception mapping code is run the `org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext` log category can be set to `DEBUG` like so:
+
+[source, properties]
+----
+quarkus.log.category."org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext".level=DEBUG
+----
+====
+
+=== Request or response filters
+
+==== Via annotations
+
+You can declare functions that are invoked in the following phases of the request processing:
+
+- Before the endpoint method is identified: pre-matching request filter
+- After routing, but before the endpoint method is called: normal request filter
+- After the endpoint method is called: response filter
+
+These filters allow you to do various things such as examine the request URI,
+HTTP method, influence routing, look or change request headers, abort the request,
+or modify the response.
+
+Request filters can be declared with the
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerRequestFilter.html[`@ServerRequestFilter`]
+annotation:
+
+[source,java]
+----
+import java.util.Optional;
+
+class Filters {
+
+    @ServerRequestFilter(preMatching = true)
+    public void preMatchingFilter(ContainerRequestContext requestContext) {
+        // make sure we don't lose cheese lovers
+        if("yes".equals(requestContext.getHeaderString("Cheese"))) {
+            requestContext.setRequestUri(URI.create("/cheese"));
+        }
+    }
+
+    @ServerRequestFilter
+    public Optional<RestResponse<Void>> getFilter(ContainerRequestContext ctx) {
+        // only allow GET methods for now
+        if(!ctx.getMethod().equals(HttpMethod.GET)) {
+            return Optional.of(RestResponse.status(Response.Status.METHOD_NOT_ALLOWED));
+        }
+        return Optional.empty();
+    }
+}
+----
+
+[IMPORTANT]
+====
+Request filters are usually executed on the same thread that the method that handles the request will be executed.
+That means that if the method servicing the request is annotated with `@Blocking`, then the filters will also be run
+on the worker thread.
+If the method is annotated with `@NonBlocking` (or is not annotated at all), then the filters will also be run
+on the same event-loop thread.
+
+If however a filter needs to be run on the event-loop despite the fact that the method servicing the request will be
+run on a worker thread, then `@ServerRequestFilter(nonBlocking=true)` can be used.
+Note however, that these filters need to be run before **any** filter that does not use that setting and would run on a worker thread.
+
+Keep in mind however that the information above does **not** apply to pre-matching filters (`@ServerRequestFilter(preMatching = true)`).
+These filters are *always* run on an event-loop thread.
+====
+
+Similarly, response filters can be declared with the
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/ServerResponseFilter.html[`@ServerResponseFilter`]
+annotation:
+
+[source,java]
+----
+class Filters {
+    @ServerResponseFilter
+    public void getFilter(ContainerResponseContext responseContext) {
+        Object entity = responseContext.getEntity();
+        if(entity instanceof String) {
+            // make it shout
+            responseContext.setEntity(((String)entity).toUpperCase());
+        }
+    }
+}
+----
+
+Such a response filter will also be called for <<exception-mapping, handled>> exceptions.
+
+Your filters may declare any of the following parameter types:
+
+.Filter parameters
+|===
+|Type|Usage
+
+|Any of the <<context-objects,Context objects>>
+|
+
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerRequestContext.html[`ContainerRequestContext`]
+|A context object to access the current request
+
+|link:{jaxrsapi}/jakarta/ws/rs/container/ContainerResponseContext.html[`ContainerResponseContext`]
+|A context object to access the current response
+
+|link:{jdkapi}/java/lang/Throwable.html[`Throwable`]
+|Any thrown and <<exception-mapping, handled>> exception, or `null` (only for response filters).
+
+|===
+
+It may declare any of the following return types:
+
+.Filter return types
+|===
+|Type|Usage
+
+|link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`] or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`]
+|The response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
+
+|link:{jdkapi}/java/util/Optional.html[`Optional<RestResponse<?>>`] or link:{jdkapi}/java/util/Optional.html[`Optional<Response>`]
+|An optional response to send to the client instead of continuing the filter chain, or an empty value if the filter chain should proceed
+
+|link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<RestResponse<?>>`] or link:{mutinyapi}/io/smallrye/mutiny/Uni.html[`Uni<Response>`]
+|An asynchronous response to send to the client instead of continuing the filter chain, or `null` if the filter chain should proceed
+
+|===
+
+NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/jakarta/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
+
+==== The Jakarta REST way
+
+You can also link:{jaxrsspec}#filters[declare request and response filters in the Jakarta REST way].
+
+Both HTTP request and response can be intercepted by providing `ContainerRequestFilter` or `ContainerResponseFilter`
+implementations respectively. These filters are suitable for processing the metadata associated with a message: HTTP
+headers, query parameters, media type, and other metadata. They also have the capability to abort the request
+processing, for instance when the user does not have the permissions to access the endpoint.
+
+Let's use `ContainerRequestFilter` to add logging capability to our service. We can do that by implementing
+`ContainerRequestFilter` and annotating it with the `@Provider` annotation:
+
+[source,java]
+----
+package org.acme.rest.json;
+
+import io.vertx.core.http.HttpServerRequest;
+import org.jboss.logging.Logger;
+
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class LoggingFilter implements ContainerRequestFilter {
+
+    private static final Logger LOG = Logger.getLogger(LoggingFilter.class);
+
+    @Context
+    UriInfo info;
+
+    @Context
+    HttpServerRequest request;
+
+    @Override
+    public void filter(ContainerRequestContext context) {
+
+        final String method = context.getMethod();
+        final String path = info.getPath();
+        final String address = request.remoteAddress().toString();
+
+        LOG.infof("Request %s %s from IP %s", method, path, address);
+    }
+}
+----
+
+Now, whenever a REST method is invoked, the request will be logged into the console:
+
+[source,text]
+----
+2019-06-05 12:44:26,526 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /legumes from IP 127.0.0.1
+2019-06-05 12:49:19,623 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:50:44,019 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request POST /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:51:04,485 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 127.0.0.1
+----
+
+[NOTE]
+====
+A `ContainerResponseFilter` will also be called for <<exception-mapping, handled>> exceptions.
+====
+
+=== Readers and Writers: mapping entities and HTTP bodies
+
+[[readers-writers]]
+
+Whenever your endpoint methods return an object (or when they return a
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
+or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] with
+an entity), Quarkus REST will look for a way to map that into an HTTP response body.
+
+Similarly, whenever your endpoint method takes an object as parameter, we will look for
+a way to map the HTTP request body into that object.
+
+This is done via a pluggable system of link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`]
+and link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`] interfaces,
+which are responsible for defining which Java type they map from/to, for which media types,
+and how they turn HTTP bodies to/from Java instances of that type.
+
+For example, if we have our own `Cheese` type on our endpoint:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+
+class Cheese {
+    public String name;
+
+    public Cheese(String name) {
+        this.name = name;
+    }
+}
+
+@Path("cheese")
+public class Endpoint {
+
+    @GET
+    public Cheese sayCheese() {
+        return new Cheese("Cheeeeeese");
+    }
+
+    @PUT
+    public void addCheese(Cheese cheese) {
+        System.err.println("Received a new cheese: " + cheese.name);
+    }
+}
+----
+
+Then we can define how to read and write it with our body reader/writers, annotated
+with link:{jaxrsapi}/jakarta/ws/rs/ext/Provider.html[`@Provider`]:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
+                                           MessageBodyWriter<Cheese> {
+
+    @Override
+    public boolean isWriteable(Class<?> type, Type genericType,
+                               Annotation[] annotations, MediaType mediaType) {
+        return type == Cheese.class;
+    }
+
+    @Override
+    public void writeTo(Cheese t, Class<?> type, Type genericType,
+                        Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap<String, Object> httpHeaders,
+                        OutputStream entityStream)
+            throws IOException, WebApplicationException {
+        entityStream.write(("[CheeseV1]" + t.name)
+                           .getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType,
+                              Annotation[] annotations, MediaType mediaType) {
+        return type == Cheese.class;
+    }
+
+    @Override
+    public Cheese readFrom(Class<Cheese> type, Type genericType,
+                            Annotation[] annotations, MediaType mediaType,
+                            MultivaluedMap<String, String> httpHeaders,
+                            InputStream entityStream)
+            throws IOException, WebApplicationException {
+        String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
+        if(body.startsWith("[CheeseV1]"))
+            return new Cheese(body.substring(11));
+        throw new IOException("Invalid cheese: " + body);
+    }
+
+}
+----
+
+If you want to get the most performance out of your writer, you can extend the
+link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerMessageBodyWriter.html[`ServerMessageBodyWriter`]
+instead of link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
+where you will be able to use less reflection and bypass the blocking IO layer:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+@Provider
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
+                                           ServerMessageBodyWriter<Cheese> {
+
+    // …
+
+    @Override
+    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target,
+                               MediaType mediaType) {
+        return type == Cheese.class;
+    }
+
+    @Override
+    public void writeResponse(Cheese t, ServerRequestContext context)
+      throws WebApplicationException, IOException {
+        context.serverResponse().end("[CheeseV1]" + t.name);
+    }
+}
+----
+
+NOTE: You can restrict which content-types your reader/writer apply to by adding
+link:{jaxrsapi}/jakarta/ws/rs/Consumes.html[`Consumes`]/link:{jaxrsapi}/jakarta/ws/rs/Produces.html[`Produces`] annotations
+on your provider class.
+
+=== Reader and Writer interceptors
+
+Just as you can intercept requests and responses, you can also intercept readers and writers, by
+extending the link:{jaxrsapi}/jakarta/ws/rs/ext/ReaderInterceptor.html[`ReaderInterceptor`] or
+link:{jaxrsapi}/jakarta/ws/rs/ext/WriterInterceptor.html[`WriterInterceptor`] on a class annotated with
+link:{jaxrsapi}/jakarta/ws/rs/ext/Provider.html[`@Provider`].
+
+If we look at this endpoint:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+
+@Path("cheese")
+public class Endpoint {
+
+    @GET
+    public String sayCheese() {
+        return "Cheeeeeese";
+    }
+
+    @PUT
+    public void addCheese(String cheese) {
+        System.err.println("Received a new cheese: " + cheese);
+    }
+}
+----
+
+We can add reader and writer interceptors like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.io.IOException;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.ReaderInterceptorContext;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
+
+@Provider
+public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor {
+
+    @Override
+    public void aroundWriteTo(WriterInterceptorContext context)
+      throws IOException, WebApplicationException {
+        System.err.println("Before writing " + context.getEntity());
+        context.proceed();
+        System.err.println("After writing " + context.getEntity());
+    }
+
+    @Override
+    public Object aroundReadFrom(ReaderInterceptorContext context)
+      throws IOException, WebApplicationException {
+        System.err.println("Before reading " + context.getGenericType());
+        Object entity = context.proceed();
+        System.err.println("After reading " + entity);
+        return entity;
+    }
+}
+----
+
+==== Quarkus REST and REST Client interactions
+
+In Quarkus, the Quarkus REST extension and xref:rest-client.adoc[the REST Client extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider;
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider.
+
+=== Parameter mapping
+
+All <<request-parameters,Request Parameters>> can be declared as link:{jdkapi}/java/lang/String.html[`String`],
+but also as any of the following types:
+
+1. Types for which a link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
+link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverterProvider.html[`ParamConverterProvider`].
+2. Primitive types.
+3. Types that have a constructor that accepts a single link:{jdkapi}/java/lang/String.html[`String`] argument.
+4. Types that have a static method named `valueOf` or `fromString` with a single link:{jdkapi}/java/lang/String.html[`String`] argument
+that return an instance of the type. If both methods are present then `valueOf` will be used unless
+the type is an `enum` in which case `fromString` will be used.
+5. link:{jdkapi}/java/util/List.html[`List<T>`], link:{jdkapi}/java/util/Set.html[`Set<T>`], or
+link:{jdkapi}/java/util/SortedSet.html[`SortedSet<T>`], where `T` satisfies 1, 3 or 4 above.
+
+For 3 and 4, constructor instantiation is prioritesed above method instantiation. Public, protected, and package private constructors and methods are supported for instantiation.
+
+The following example illustrates all those possibilities:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.List;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Provider
+class MyConverterProvider implements ParamConverterProvider {
+
+    @Override
+    public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
+                                              Annotation[] annotations) {
+        // declare a converter for this type
+        if(rawType == Converter.class) {
+            return (ParamConverter<T>) new MyConverter();
+        }
+        return null;
+    }
+
+}
+
+// this is my custom converter
+class MyConverter implements ParamConverter<Converter> {
+
+    @Override
+    public Converter fromString(String value) {
+        return new Converter(value);
+    }
+
+    @Override
+    public String toString(Converter value) {
+        return value.value;
+    }
+
+}
+
+// this uses a converter
+class Converter {
+    String value;
+    Converter(String value) {
+        this.value = value;
+    }
+}
+
+class Constructor {
+    String value;
+    // this will use the constructor
+    public Constructor(String value) {
+        this.value = value;
+    }
+}
+
+class ValueOf {
+    String value;
+    private ValueOf(String value) {
+        this.value = value;
+    }
+    // this will use the valueOf method
+    public static ValueOf valueOf(String value) {
+        return new ValueOf(value);
+    }
+}
+
+@Path("hello")
+public class Endpoint {
+
+    @Path("{converter}/{constructor}/{primitive}/{valueOf}")
+    @GET
+    public String conversions(Converter converter, Constructor constructor,
+                              int primitive, ValueOf valueOf,
+                              @RestQuery List<Constructor> list) {
+        return converter + "/" + constructor + "/" + primitive
+               + "/" + valueOf + "/" + list;
+    }
+}
+----
+
+==== Separating Query parameter values
+
+Normally a collection of `String` values is used to capture the values used in multiple occurrences of the same query parameter.
+For example, for the following resource method:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and the following request:
+
+[source,http]
+----
+GET /hello?name=foo&name=bar HTTP/1.1
+----
+
+the `names` variable will contain both `foo` and `bar` and the response will be `hello foo bar`.
+
+It is not uncommon however to need to convert a single query parameter into a collection of values based on some delimiting character. That is where the `@org.jboss.resteasy.reactive.Separator` annotation comes into play.
+
+If we update the resource method to:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") @Separator(",") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and use the following request:
+
+[source,http]
+----
+GET /hello?name=foo,bar HTTP/1.1
+----
+
+then the response will be `hello foo bar`.
+
+==== Handling dates
+
+Quarkus REST supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.
+Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation, which can be used to set a custom expected pattern.
+Otherwise, the JDK's default format for each type is used implicitly.
+
+=== Preconditions
+
+https://tools.ietf.org/html/rfc7232[HTTP allows requests to be conditional], based on a number of
+conditions, such as:
+
+- Date of last resource modification
+- A resource tag, similar to a hash code of the resource to designate its state or version
+
+Let's see how you can do conditional request validation using the
+link:{jaxrsapi}/jakarta/ws/rs/core/Request.html[`Request`] context object:
+
+[source,java]
+----
+package org.acme.rest;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+import java.util.Date;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+
+@Path("conditional")
+public class Endpoint {
+
+    // It's important to keep our date on seconds because that's how it's sent to the
+    // user in the Last-Modified header
+    private Date date = Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+    private int version = 1;
+    private EntityTag tag = new EntityTag("v1");
+    private String resource = "Some resource";
+
+    @GET
+    public Response get(Request request) {
+        // first evaluate preconditions
+        ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
+        if(conditionalResponse != null)
+            return conditionalResponse.build();
+        // preconditions are OK
+        return Response.ok(resource)
+                .lastModified(date)
+                .tag(tag)
+                .build();
+    }
+
+    @PUT
+    public Response put(Request request, String body) {
+        // first evaluate preconditions
+        ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
+        if(conditionalResponse != null)
+            return conditionalResponse.build();
+        // preconditions are OK, we can update our resource
+        resource = body;
+        date = Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+        version++;
+        tag = new EntityTag("v" + version);
+        return Response.ok(resource)
+                .lastModified(date)
+                .tag(tag)
+                .build();
+    }
+}
+----
+
+When we call `GET /conditional` the first time, we will get this response:
+
+[source]
+----
+HTTP/1.1 200 OK
+Content-Type: text/plain;charset=UTF-8
+ETag: "v1"
+Last-Modified: Wed, 09 Dec 2020 16:10:19 GMT
+Content-Length: 13
+
+Some resource
+----
+
+So now if we want to check if we need to fetch a new version, we can make the following request:
+
+[source]
+----
+GET /conditional HTTP/1.1
+Host: localhost:8080
+If-Modified-Since: Wed, 09 Dec 2020 16:10:19 GMT
+----
+
+And we would get the following response:
+
+[source]
+----
+HTTP/1.1 304 Not Modified
+----
+
+Because the resource has not been modified since that date, this saves on sending the resource but can also help your users detect the concurrent modification.
+For example, one client wants to update the resource, but another user has modified it since.
+You can follow the previous `GET` request with this update:
+
+[source]
+----
+PUT /conditional HTTP/1.1
+Host: localhost:8080
+If-Unmodified-Since: Wed, 09 Dec 2020 16:25:43 GMT
+If-Match: v1
+Content-Length: 8
+Content-Type: text/plain
+
+newstuff
+----
+
+And if some other user has modified the resource between your `GET` and your `PUT` you would
+get this answer back:
+
+[source]
+----
+HTTP/1.1 412 Precondition Failed
+ETag: "v2"
+Content-Length: 0
+----
+
+=== Negotiation
+
+One of the main ideas of REST (https://tools.ietf.org/html/rfc7231#section-3.4[and HTTP]) is that
+your resource is independent of its representation, and
+that both the client and server are free to represent their resources in as many media types as
+they want. This allows the server to declare support for multiple representations and let the
+client declare which ones it supports and get served something appropriate.
+
+The following endpoint supports serving cheese in plain text or JSON:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+class Cheese {
+    public String name;
+    @JsonCreator
+    public Cheese(String name) {
+        this.name = name;
+    }
+    @Override
+    public String toString() {
+        return "Cheese: " + name;
+    }
+}
+
+@Path("negotiated")
+public class Endpoint {
+
+    @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
+    @GET
+    public Cheese get() {
+        return new Cheese("Morbier");
+    }
+
+    @Consumes(MediaType.TEXT_PLAIN)
+    @PUT
+    public Cheese putString(String cheese) {
+        return new Cheese(cheese);
+    }
+
+    @Consumes(MediaType.APPLICATION_JSON)
+    @PUT
+    public Cheese putJson(Cheese cheese) {
+        return cheese;
+    }
+}
+----
+
+The user will be able to select which representation it gets with the
+link:{httpspec}#section-5.3.2[`Accept`] header, in the case of JSON:
+
+[source,sh]
+----
+> GET /negotiated HTTP/1.1
+> Host: localhost:8080
+> Accept: application/json
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Content-Length: 18
+<
+< {"name":"Morbier"}
+----
+
+And for text:
+
+[source,sh]
+----
+> GET /negotiated HTTP/1.1
+> Host: localhost:8080
+> Accept: text/plain
+>
+< HTTP/1.1 200 OK
+< Content-Type: text/plain
+< Content-Length: 15
+<
+< Cheese: Morbier
+----
+
+Similarly, you can `PUT` two different representations. JSON:
+
+[source,sh]
+----
+> PUT /negotiated HTTP/1.1
+> Host: localhost:8080
+> Content-Type: application/json
+> Content-Length: 16
+>
+> {"name": "brie"}
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json;charset=UTF-8
+< Content-Length: 15
+<
+< {"name":"brie"}
+----
+
+Or plain text:
+
+[source,sh]
+----
+> PUT /negotiated HTTP/1.1
+> Host: localhost:8080
+> Content-Type: text/plain
+> Content-Length: 9
+>
+> roquefort
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json;charset=UTF-8
+< Content-Length: 20
+<
+< {"name":"roquefort"}
+----
+
+=== HTTP Compression
+
+The body of an HTTP response is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+
+If compression support is enabled then the response body is compressed if:
+
+- the resource method is annotated with `@io.quarkus.vertx.http.Compressed`, or
+- the `Content-Type` header is set and the value is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+The response body is never compressed if:
+
+- the resource method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
+- the `Content-Type` header is not set.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+
+== Include/Exclude Jakarta REST classes
+
+=== Using Build time conditions
+
+Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the various Jakarta REST classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these Jakarta REST classes should be included.
+
+In the following example, Quarkus includes the `ResourceForApp1Only` Resource class if and only if the build profile `app1` has been enabled.
+
+[source,java]
+----
+@IfBuildProfile("app1")
+public class ResourceForApp1Only {
+
+    @GET
+    @Path("sayHello")
+    public String sayHello() {
+        return "hello";
+     }
+}
+----
+
+Please note that if a Jakarta REST Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the Jakarta REST Application.
+
+=== Using a runtime property
+
+Quarkus can also conditionally disable Jakarta REST Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
+
+In the following example, Quarkus will exclude `RuntimeResource` at runtime if the application has `some.property` configured to `"disable"`.
+
+[source,java]
+----
+@EndpointDisabled(name = "some.property", stringValue = "disable")
+public class RuntimeResource {
+
+    @GET
+    @Path("sayHello")
+    public String sayHello() {
+        return "hello";
+     }
+}
+----
+[IMPORTANT]
+====
+This feature does not work when using native build.
+====
+
+
+== REST Client
+
+In addition to the Server side, Quarkus REST comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
+
+Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-rest-client` instead.
+
+See the xref:rest-client.adoc[REST Client Guide] for more information about the REST client.

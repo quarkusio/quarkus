@@ -34,55 +34,47 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0</version.surefire.plugin>
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <jandex.version>3.1.2</jandex.version>
+        <jandex.version>3.3.0</jandex.version>
+        <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.24.2</assertj.version>
+        <assertj.version>3.27.3</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.5.1.Final</jboss-logging.version>
-        <junit.jupiter.version>5.9.3</junit.jupiter.version>
-        <maven-core.version>3.9.3</maven-core.version><!-- Keep in sync with sisu.version -->
-        <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->
-        <maven-plugin-annotations.version>3.7.1</maven-plugin-annotations.version>
-        <maven-resolver.version>1.9.13</maven-resolver.version>
-        <maven-shared-utils.version>3.3.4</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <junit5.version>5.12.2</junit5.version>
+        <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
+        <sisu.version>0.9.0.M3</sisu.version><!-- Keep in sync with maven-core.version -->
+        <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
+        <maven-resolver.version>1.9.22</maven-resolver.version>
+        <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
         <maven-wagon.version>3.5.3</maven-wagon.version>
-        <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
+        <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.5.3 brings in httpclient 4.5.14 which brings httpcore 4.4.16) -->
         <httpclient.version>4.5.14</httpclient.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.15.2</jackson-bom.version>
-        <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
-        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
+        <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
-        <commons-codec.version>1.16.0</commons-codec.version>
-        <commons-io.version>2.13.0</commons-io.version>
-        <commons-lang.version>3.12.0</commons-lang.version>
-        <guava.version>32.1.1-jre</guava.version>
+        <commons-codec.version>1.18.0</commons-codec.version>
+        <commons-io.version>2.19.0</commons-io.version>
+        <commons-lang.version>3.17.0</commons-lang.version>
+        <guava.version>33.4.8-jre</guava.version>
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
-        <jboss-logmanager-embedded.version>1.0.11</jboss-logmanager-embedded.version>
+        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
-        <slf4j-api.version>1.7.36</slf4j-api.version>
-        <graal-sdk.version>23.0.0</graal-sdk.version>
+        <slf4j-api.version>2.0.6</slf4j-api.version>
+        <graal-sdk.version>23.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
-        <plexus-cipher.version>1.7</plexus-cipher.version>
+        <plexus-cipher.version>2.0</plexus-cipher.version>
+        <plexus-interpolation.version>1.26</plexus-interpolation.version>
+        <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.1.0</smallrye-common.version>
-        <smallrye-beanbag.version>1.3.2</smallrye-beanbag.version>
-        <gradle-tooling.version>8.1.1</gradle-tooling.version>
-        <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
+        <smallrye-common.version>2.12.0</smallrye-common.version>
+        <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
+        <gradle-tooling.version>8.13</gradle-tooling.version>
+        <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>
-        <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
-        <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
     </properties>
     <modules>
         <module>bom</module>
@@ -92,13 +84,14 @@
         <module>core</module>
         <module>runner</module>
         <module>gradle-resolver</module>
+        <module>classloader-commons</module>
+        <module>benchmarks</module>
     </modules>
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${version.compiler.plugin}</version>
                 </plugin>
                 <plugin>
                     <groupId>io.smallrye</groupId>
@@ -125,6 +118,7 @@
                     <executions>
                         <execution>
                             <id>enforce</id>
+                            <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
@@ -155,7 +149,6 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${version.surefire.plugin}</version>
                     <configuration>
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                         <systemPropertyVariables combine.self="override"/>
@@ -164,43 +157,9 @@
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
-                <!-- Replicate what's in parent, since this pom doesn't inherit parent but IDE settings will be common -->
-                <plugin>
-                    <groupId>net.revelc.code.formatter</groupId>
-                    <artifactId>formatter-maven-plugin</artifactId>
-                    <version>${formatter-maven-plugin.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <artifactId>quarkus-ide-config</artifactId>
-                            <groupId>io.quarkus</groupId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
-                        <configFile>eclipse-format.xml</configFile>
-                        <lineEnding>LF</lineEnding>
-                        <skip>${format.skip}</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code</groupId>
-                    <artifactId>impsort-maven-plugin</artifactId>
-                    <version>${impsort-maven-plugin.version}</version>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <groups>java.,javax.,jakarta.,org.,com.</groups>
-                        <staticGroups>*</staticGroups>
-                        <skip>${format.skip}</skip>
-                        <removeUnused>true</removeUnused>
-                    </configuration>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-plugin-plugin</artifactId>
-                    <version>${maven-plugin-plugin.version}</version>
                     <configuration>
                         <goalPrefix>quarkus-bootstrap</goalPrefix>
                         <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
@@ -280,73 +239,6 @@
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
             </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you
-                            need to add and edit the following profile:
-                            <profile>
-                                <id>release</id>
-                                <properties>
-                                    <gpg.useagent>false</gpg.useagent>
-                                    <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                    <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                                </properties>
-                            </profile>
-                        -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>format</id>

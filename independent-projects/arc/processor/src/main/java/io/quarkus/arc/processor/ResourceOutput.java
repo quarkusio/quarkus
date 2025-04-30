@@ -77,7 +77,8 @@ public interface ResourceOutput {
             DECORATOR_BEAN,
             OBSERVER,
             CLIENT_PROXY,
-            SUBCLASS
+            SUBCLASS,
+            INVOKER,
         }
 
     }

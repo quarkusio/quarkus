@@ -652,19 +652,6 @@
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
     "name" : "Elytron Security Common",
     "description" : "Common components to secure your applications via Elytron",
     "metadata" : {
@@ -1111,22 +1098,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
     },
     "artifact" : "io.quarkus:quarkus-jacoco::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "Jaeger",
-    "description" : "Trace your services with Jaeger",
-    "metadata" : {
-      "keywords" : [ "tracing", "distributed-tracing", "jaeger" ],
-      "categories" : [ "observability" ],
-      "unlisted" : true,
-      "status" : "stable",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.opentracing" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
-    },
-    "artifact" : "io.quarkus:quarkus-jaeger::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "JAXB",
@@ -2559,22 +2530,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-swagger-ui" ]
     },
     "artifact" : "io.quarkus:quarkus-smallrye-openapi::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "SmallRye OpenTracing",
-    "description" : "Trace your services with SmallRye OpenTracing",
-    "metadata" : {
-      "keywords" : [ "smallrye-opentracing", "opentracing", "tracing", "distributed-tracing", "jaeger" ],
-      "guide" : "https://quarkus.io/guides/opentracing",
-      "categories" : [ "observability" ],
-      "status" : "stable",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.smallrye.opentracing" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaeger", "io.quarkus:quarkus-jsonp" ]
-    },
-    "artifact" : "io.quarkus:quarkus-smallrye-opentracing::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "SmallRye Reactive Messaging - AMQP Connector",
@@ -4043,7 +3998,7 @@
       "categories" : [ "integration" ],
       "status" : [ "stable" ],
       "built-with-quarkus-core" : "2.0.0.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
+      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
     },
     "artifact" : "org.apache.camel.quarkus:camel-quarkus-elasticsearch-rest::jar:2.0.0",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
@@ -7341,7 +7296,7 @@
         "gradle-plugin-version" : "2.0.3.Final",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "3.1.0",
+        "maven-wrapper-version" : "3.3.2",
         "gradle-wrapper-version" : "6.9"
       }
     },

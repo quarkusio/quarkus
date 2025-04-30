@@ -36,7 +36,8 @@ public class PropertyNotFoundThrowExceptionTest {
         } catch (Exception expected) {
             Throwable rootCause = ExceptionUtil.getRootCause(expected);
             assertEquals(TemplateException.class, rootCause.getClass());
-            assertTrue(rootCause.getMessage().contains("Entry \"foos\" not found in the data map"), rootCause.getMessage());
+            assertTrue(rootCause.getMessage().contains("Key \"foos\" not found in the template data map with keys []"),
+                    rootCause.getMessage());
         }
     }
 

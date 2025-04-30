@@ -13,6 +13,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import io.quarkus.qute.EvaluatorImpl.EvalContextImpl;
+import io.quarkus.qute.EvaluatorImpl.TerminalEvalContextImpl;
+
 /**
  * Common value resolvers.
  */
@@ -24,66 +27,74 @@ public final class ValueResolvers {
     public static final String OR = "or";
 
     public static ValueResolver rawResolver() {
-        return new ValueResolver() {
+        return new RawResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getBase() != null
-                        && (context.getName().equals("raw") || context.getName().equals("safe"));
-            }
+    public static final class RawResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                return CompletedStage.of(new RawString(context.getBase().toString()));
-            }
-        };
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() != null
+                    && (context.getName().equals("raw") || context.getName().equals("safe"));
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return CompletedStage.of(new RawString(context.getBase().toString()));
+        }
+
     }
 
     public static ValueResolver listResolver() {
-        return new ValueResolver() {
+        return new ListResolver();
+    }
 
-            @Override
-            public int getPriority() {
-                // Use this resolver before collectionResolver()
-                return WithPriority.DEFAULT_PRIORITY + 1;
-            }
+    public static final class ListResolver implements ValueResolver {
+        @Override
+        public int getPriority() {
+            // Use this resolver before collectionResolver()
+            return WithPriority.DEFAULT_PRIORITY + 1;
+        }
 
-            public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, List.class);
-            }
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, List.class);
+        }
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                return listResolveAsync(context);
-            }
-        };
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return listResolveAsync(context);
+        }
     }
 
     public static ValueResolver collectionResolver() {
-        return new ValueResolver() {
+        return new CollectionResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, Collection.class);
-            }
+    public static final class CollectionResolver implements ValueResolver {
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, Collection.class);
+        }
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                return collectionResolveAsync(context);
-            }
-        };
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return collectionResolveAsync(context);
+        }
     }
 
     public static ValueResolver thisResolver() {
-        return new ValueResolver() {
+        return new ThisResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getBase() != null && THIS.equals(context.getName());
-            }
+    public static final class ThisResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                return CompletedStage.of(context.getBase());
-            }
-        };
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() != null && THIS.equals(context.getName());
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return CompletedStage.of(context.getBase());
+        }
+
     }
 
     /**
@@ -93,47 +104,52 @@ public final class ValueResolvers {
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
     public static ValueResolver orResolver() {
-        return new ValueResolver() {
+        return new OrResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                if (context.getParams().size() != 1) {
-                    return false;
-                }
-                String name = context.getName();
-                return name.equals(ELVIS) || name.equals(OR) || name.equals(COLON);
+    public static final class OrResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            if (context.getParams().size() != 1) {
+                return false;
             }
+            String name = context.getName();
+            return name.equals(ELVIS) || name.equals(OR) || name.equals(COLON);
+        }
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                Object base = context.getBase();
-                if (base == null || Results.isNotFound(base) || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
-                    return context.evaluate(context.getParams().get(0));
-                }
-                return CompletedStage.of(base);
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            Object base = context.getBase();
+            if (base == null || Results.isNotFound(base) || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
+                return asLiteralOrEvaluate(context, 0);
             }
+            return CompletedStage.of(base);
+        }
 
-        };
     }
 
     /**
      * Return an empty list if the base object is null or not found.
      */
     public static ValueResolver orEmpty() {
-        CompletionStage<Object> empty = CompletedStage.of(Collections.emptyList());
-        return new ValueResolver() {
+        return new OrEmptyResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getParams().isEmpty() && context.getName().equals("orEmpty");
-            }
+    public static final class OrEmptyResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                if (context.getBase() == null || Results.isNotFound(context.getBase())) {
-                    return empty;
-                }
-                return CompletedStage.of(context.getBase());
+        private static final CompletionStage<Object> EMPTY = CompletedStage.of(Collections.emptyList());
+
+        public boolean appliesTo(EvalContext context) {
+            return context.getParams().isEmpty() && context.getName().equals("orEmpty");
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            if (context.getBase() == null || Results.isNotFound(context.getBase())) {
+                return EMPTY;
             }
-        };
+            return CompletedStage.of(context.getBase());
+        }
     }
 
     /**
@@ -144,79 +160,86 @@ public final class ValueResolvers {
      * {@code person.isElvis ? 'elvis' : notElvis}
      */
     public static ValueResolver trueResolver() {
-        return new ValueResolver() {
+        return new TrueResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                if (context.getParams().size() != 1) {
-                    return false;
-                }
-                String name = context.getName();
-                return name.equals("?") || name.equals("ifTruthy");
+    public static final class TrueResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            if (context.getParams().size() != 1) {
+                return false;
             }
+            String name = context.getName();
+            return name.equals("?") || name.equals("ifTruthy");
+        }
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                if (isFalsy(context.getBase())) {
-                    return Results.notFound(context);
-                }
-                return context.evaluate(context.getParams().get(0));
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            if (isFalsy(context.getBase())) {
+                return Results.notFound(context);
             }
-
-        };
+            return asLiteralOrEvaluate(context, 0);
+        }
     }
 
     public static ValueResolver mapEntryResolver() {
-        return new ValueResolver() {
+        return new MapEntryResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, Entry.class);
-            }
+    public static final class MapEntryResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                Entry<?, ?> entry = (Entry<?, ?>) context.getBase();
-                return CompletedStage.of(entryResolve(entry, context.getName()));
-            }
-        };
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, Entry.class);
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            Entry<?, ?> entry = (Entry<?, ?>) context.getBase();
+            return CompletedStage.of(entryResolve(entry, context.getName()));
+        }
     }
 
     public static ValueResolver mapResolver() {
-        return new ValueResolver() {
+        return new MapResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, Map.class);
-            }
+    public static final class MapResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                return mapResolveAsync(context);
-            }
-        };
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, Map.class);
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return mapResolveAsync(context);
+        }
     }
 
     public static ValueResolver mapperResolver() {
-        return new ValueResolver() {
+        return new MapperResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                if (context.getBase() instanceof Mapper && context.getParams().isEmpty()) {
-                    return ((Mapper) context.getBase()).appliesTo(context.getName());
-                }
-                return false;
+    public static final class MapperResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            if (hasNoParams(context)
+                    && matchClass(context, Mapper.class)
+                    && context.getBase() instanceof Mapper mapper) {
+                return mapper.appliesTo(context.getName());
             }
+            return false;
+        }
 
-            @Override
-            public int getPriority() {
-                // mapper is used in loops so we use a higher priority to jump the queue
-                return 15;
-            }
+        @Override
+        public int getPriority() {
+            // mapper is used in loops so we use a higher priority to jump the queue
+            return 15;
+        }
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                Mapper mapper = (Mapper) context.getBase();
-                return mapper.getAsync(context.getName());
-            }
-
-        };
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return ((Mapper) context.getBase()).getAsync(context.getName());
+        }
     }
 
     /**
@@ -226,26 +249,27 @@ public final class ValueResolvers {
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalAndResolver() {
-        return new ValueResolver() {
+        return new LogicalAndResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getBase() != null && context.getParams().size() == 1
-                        && ("&&".equals(context.getName()));
-            }
+    public static final class LogicalAndResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
-                return baseIsFalsy ? CompletedStage.of(false)
-                        : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
-                            @Override
-                            public Object apply(Object booleanParam) {
-                                return !Booleans.isFalsy(booleanParam);
-                            }
-                        });
-            }
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() != null && context.getParams().size() == 1
+                    && ("&&".equals(context.getName()));
+        }
 
-        };
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
+            return baseIsFalsy ? CompletedStage.of(false)
+                    : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                        @Override
+                        public Object apply(Object booleanParam) {
+                            return !Booleans.isFalsy(booleanParam);
+                        }
+                    });
+        }
     }
 
     /**
@@ -255,238 +279,250 @@ public final class ValueResolvers {
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalOrResolver() {
-        return new ValueResolver() {
+        return new LogicalOrResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getBase() != null && context.getParams().size() == 1
-                        && ("||".equals(context.getName()));
-            }
+    public static final class LogicalOrResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
-                return !baseIsFalsy ? CompletedStage.of(true)
-                        : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
-                            @Override
-                            public Object apply(Object booleanParam) {
-                                return !Booleans.isFalsy(booleanParam);
-                            }
-                        });
-            }
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() != null && context.getParams().size() == 1
+                    && ("||".equals(context.getName()));
+        }
 
-        };
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
+            return !baseIsFalsy ? CompletedStage.of(true)
+                    : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                        @Override
+                        public Object apply(Object booleanParam) {
+                            return !Booleans.isFalsy(booleanParam);
+                        }
+                    });
+        }
+
     }
 
     public static ValueResolver arrayResolver() {
-        return new ValueResolver() {
+        return new ArrayResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                return context.getBase() != null && context.getBase().getClass().isArray();
-            }
+    public static final class ArrayResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                String name = context.getName();
-                if (name.equals("length") || name.equals("size")) {
-                    return CompletedStage.of(Array.getLength(context.getBase()));
-                } else if (name.equals("take")) {
-                    if (context.getParams().isEmpty()) {
-                        throw new IllegalArgumentException("n-th parameter is missing");
-                    }
-                    Expression indexExpr = context.getParams().get(0);
-                    if (indexExpr.isLiteral()) {
-                        Object literalValue = indexExpr.getLiteral();
-                        if (literalValue instanceof Integer) {
-                            return CompletedStage.of(takeArray((Integer) literalValue, context.getBase()));
-                        }
-                        return Results.notFound(context);
-                    } else {
-                        return context.evaluate(indexExpr).thenCompose(n -> {
-                            if (n instanceof Integer) {
-                                return CompletedStage.of(takeArray((Integer) n, context.getBase()));
-                            }
-                            return Results.notFound(context);
-                        });
-                    }
-                } else if (name.equals("takeLast")) {
-                    if (context.getParams().isEmpty()) {
-                        throw new IllegalArgumentException("n-th parameter is missing");
-                    }
-                    Expression indexExpr = context.getParams().get(0);
-                    if (indexExpr.isLiteral()) {
-                        Object literalValue = indexExpr.getLiteral();
-                        if (literalValue instanceof Integer) {
-                            return CompletedStage.of(takeLastArray((Integer) literalValue, context.getBase()));
-                        }
-                        return Results.notFound(context);
-                    } else {
-                        return context.evaluate(indexExpr).thenCompose(n -> {
-                            if (n instanceof Integer) {
-                                return CompletedStage.of(takeLastArray((Integer) n, context.getBase()));
-                            }
-                            return Results.notFound(context);
-                        });
-                    }
-                } else if (name.equals("get")) {
-                    if (context.getParams().isEmpty()) {
-                        throw new IllegalArgumentException("Index parameter is missing");
-                    }
-                    Expression indexExpr = context.getParams().get(0);
-                    if (indexExpr.isLiteral()) {
-                        Object literalValue = indexExpr.getLiteral();
-                        if (literalValue instanceof Integer) {
-                            return CompletedStage.of(Array.get(context.getBase(), (Integer) literalValue));
-                        }
-                        return Results.notFound(context);
-                    } else {
-                        return context.evaluate(indexExpr).thenCompose(idx -> {
-                            if (idx instanceof Integer) {
-                                return CompletedStage.of(Array.get(context.getBase(), (Integer) idx));
-                            }
-                            return Results.notFound(context);
-                        });
-                    }
-                } else {
-                    // Try to use the name as an index
-                    int index;
-                    try {
-                        index = Integer.parseInt(name);
-                    } catch (NumberFormatException e) {
-                        return Results.notFound(context);
-                    }
-                    return CompletedStage.of(Array.get(context.getBase(), index));
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() != null && context.getBase().getClass().isArray();
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            String name = context.getName();
+            if (name.equals("length") || name.equals("size")) {
+                return CompletedStage.of(Array.getLength(context.getBase()));
+            } else if (name.equals("take")) {
+                if (context.getParams().isEmpty()) {
+                    throw new IllegalArgumentException("n-th parameter is missing");
                 }
+                Expression indexExpr = context.getParams().get(0);
+                if (indexExpr.isLiteral()) {
+                    Object literalValue = indexExpr.getLiteral();
+                    if (literalValue instanceof Integer) {
+                        return CompletedStage.of(takeArray((Integer) literalValue, context.getBase()));
+                    }
+                    return Results.notFound(context);
+                } else {
+                    return context.evaluate(indexExpr).thenCompose(n -> {
+                        if (n instanceof Integer) {
+                            return CompletedStage.of(takeArray((Integer) n, context.getBase()));
+                        }
+                        return Results.notFound(context);
+                    });
+                }
+            } else if (name.equals("takeLast")) {
+                if (context.getParams().isEmpty()) {
+                    throw new IllegalArgumentException("n-th parameter is missing");
+                }
+                Expression indexExpr = context.getParams().get(0);
+                if (indexExpr.isLiteral()) {
+                    Object literalValue = indexExpr.getLiteral();
+                    if (literalValue instanceof Integer) {
+                        return CompletedStage.of(takeLastArray((Integer) literalValue, context.getBase()));
+                    }
+                    return Results.notFound(context);
+                } else {
+                    return context.evaluate(indexExpr).thenCompose(n -> {
+                        if (n instanceof Integer) {
+                            return CompletedStage.of(takeLastArray((Integer) n, context.getBase()));
+                        }
+                        return Results.notFound(context);
+                    });
+                }
+            } else if (name.equals("get")) {
+                if (context.getParams().isEmpty()) {
+                    throw new IllegalArgumentException("Index parameter is missing");
+                }
+                Expression indexExpr = context.getParams().get(0);
+                if (indexExpr.isLiteral()) {
+                    Object literalValue = indexExpr.getLiteral();
+                    if (literalValue instanceof Integer) {
+                        return CompletedStage.of(Array.get(context.getBase(), (Integer) literalValue));
+                    }
+                    return Results.notFound(context);
+                } else {
+                    return context.evaluate(indexExpr).thenCompose(idx -> {
+                        if (idx instanceof Integer) {
+                            return CompletedStage.of(Array.get(context.getBase(), (Integer) idx));
+                        }
+                        return Results.notFound(context);
+                    });
+                }
+            } else {
+                // Try to use the name as an index
+                int index;
+                try {
+                    index = Integer.parseInt(name);
+                } catch (NumberFormatException e) {
+                    return Results.notFound(context);
+                }
+                return CompletedStage.of(Array.get(context.getBase(), index));
             }
-        };
+        }
+
     }
 
     public static ValueResolver numberValueResolver() {
-        return new ValueResolver() {
+        return new NumberValueResolver();
+    }
 
-            public boolean appliesTo(EvalContext context) {
-                Object base = context.getBase();
-                String name = context.getName();
-                return base != null
-                        && (base instanceof Number)
-                        && context.getParams().isEmpty()
-                        && ("intValue".equals(name) || "longValue".equals(name) || "floatValue".equals(name)
-                                || "doubleValue".equals(name) || "byteValue".equals(name) || "shortValue".equals(name));
-            }
+    public static final class NumberValueResolver implements ValueResolver {
 
-            @Override
-            public CompletionStage<Object> resolve(EvalContext context) {
-                switch (context.getName()) {
-                    case "intValue":
-                        return CompletedStage.of(((Number) context.getBase()).intValue());
-                    case "longValue":
-                        return CompletedStage.of(((Number) context.getBase()).longValue());
-                    case "floatValue":
-                        return CompletedStage.of(((Number) context.getBase()).floatValue());
-                    case "doubleValue":
-                        return CompletedStage.of(((Number) context.getBase()).doubleValue());
-                    case "byteValue":
-                        return CompletedStage.of(((Number) context.getBase()).byteValue());
-                    case "shortValue":
-                        return CompletedStage.of(((Number) context.getBase()).shortValue());
-                    default:
-                        throw new IllegalArgumentException();
-                }
+        public boolean appliesTo(EvalContext context) {
+            Object base = context.getBase();
+            String name = context.getName();
+            return base != null
+                    && (base instanceof Number)
+                    && context.getParams().isEmpty()
+                    && ("intValue".equals(name) || "longValue".equals(name) || "floatValue".equals(name)
+                            || "doubleValue".equals(name) || "byteValue".equals(name) || "shortValue".equals(name));
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            switch (context.getName()) {
+                case "intValue":
+                    return CompletedStage.of(((Number) context.getBase()).intValue());
+                case "longValue":
+                    return CompletedStage.of(((Number) context.getBase()).longValue());
+                case "floatValue":
+                    return CompletedStage.of(((Number) context.getBase()).floatValue());
+                case "doubleValue":
+                    return CompletedStage.of(((Number) context.getBase()).doubleValue());
+                case "byteValue":
+                    return CompletedStage.of(((Number) context.getBase()).byteValue());
+                case "shortValue":
+                    return CompletedStage.of(((Number) context.getBase()).shortValue());
+                default:
+                    throw new IllegalArgumentException();
             }
-        };
+        }
+
     }
 
     public static ValueResolver plusResolver() {
-        return new IntArithmeticResolver() {
+        return new PlusResolver();
+    }
 
-            @Override
-            protected boolean appliesToName(String name) {
-                return "plus".equals(name) || "+".equals(name);
-            }
+    public static final class PlusResolver extends IntArithmeticResolver {
 
-            @Override
-            protected Object compute(Long op1, Long op2) {
-                return op1 + op2;
-            }
+        @Override
+        protected boolean appliesToName(String name) {
+            return "plus".equals(name) || "+".equals(name);
+        }
 
-            @Override
-            protected Object compute(Integer op1, Long op2) {
-                return op1 + op2;
-            }
+        @Override
+        protected Object compute(Long op1, Long op2) {
+            return op1 + op2;
+        }
 
-            @Override
-            protected Object compute(Long op1, Integer op2) {
-                return op1 + op2;
-            }
+        @Override
+        protected Object compute(Integer op1, Long op2) {
+            return op1 + op2;
+        }
 
-            @Override
-            protected Object compute(Integer op1, Integer op2) {
-                return op1 + op2;
-            }
+        @Override
+        protected Object compute(Long op1, Integer op2) {
+            return op1 + op2;
+        }
 
-        };
+        @Override
+        protected Object compute(Integer op1, Integer op2) {
+            return op1 + op2;
+        }
 
     }
 
     public static ValueResolver minusResolver() {
-        return new IntArithmeticResolver() {
+        return new MinusResolver();
+    }
 
-            @Override
-            protected boolean appliesToName(String name) {
-                return "minus".equals(name) || "-".equals(name);
-            }
+    public static final class MinusResolver extends IntArithmeticResolver {
 
-            @Override
-            protected Object compute(Long op1, Long op2) {
-                return op1 - op2;
-            }
+        @Override
+        protected boolean appliesToName(String name) {
+            return "minus".equals(name) || "-".equals(name);
+        }
 
-            @Override
-            protected Object compute(Integer op1, Long op2) {
-                return op1 - op2;
-            }
+        @Override
+        protected Object compute(Long op1, Long op2) {
+            return op1 - op2;
+        }
 
-            @Override
-            protected Object compute(Long op1, Integer op2) {
-                return op1 - op2;
-            }
+        @Override
+        protected Object compute(Integer op1, Long op2) {
+            return op1 - op2;
+        }
 
-            @Override
-            protected Object compute(Integer op1, Integer op2) {
-                return op1 - op2;
-            }
+        @Override
+        protected Object compute(Long op1, Integer op2) {
+            return op1 - op2;
+        }
 
-        };
+        @Override
+        protected Object compute(Integer op1, Integer op2) {
+            return op1 - op2;
+        }
     }
 
     public static ValueResolver modResolver() {
-        return new IntArithmeticResolver() {
+        return new ModResolver();
+    }
 
-            @Override
-            protected boolean appliesToName(String name) {
-                return "mod".equals(name);
-            }
+    public static final class ModResolver extends IntArithmeticResolver {
 
-            @Override
-            protected Object compute(Long op1, Long op2) {
-                return op1 % op2;
-            }
+        @Override
+        protected boolean appliesToName(String name) {
+            return "mod".equals(name);
+        }
 
-            @Override
-            protected Object compute(Integer op1, Long op2) {
-                return op1 % op2;
-            }
+        @Override
+        protected Object compute(Long op1, Long op2) {
+            return op1 % op2;
+        }
 
-            @Override
-            protected Object compute(Long op1, Integer op2) {
-                return op1 % op2;
-            }
+        @Override
+        protected Object compute(Integer op1, Long op2) {
+            return op1 % op2;
+        }
 
-            @Override
-            protected Object compute(Integer op1, Integer op2) {
-                return op1 % op2;
-            }
+        @Override
+        protected Object compute(Long op1, Integer op2) {
+            return op1 % op2;
+        }
 
-        };
+        @Override
+        protected Object compute(Integer op1, Integer op2) {
+            return op1 % op2;
+        }
+
     }
 
     static abstract class IntArithmeticResolver implements ValueResolver {
@@ -699,6 +735,53 @@ public final class ValueResolvers {
                 }
                 return CompletedStage.of(val);
         }
+    }
+
+    /**
+     *
+     * @param ctx
+     * @return {@code true} if the context has no parameters; i.e it is not a virtual method call, {@code false} otherwise
+     */
+    public static boolean hasNoParams(EvalContext ctx) {
+        if (ctx instanceof TerminalEvalContextImpl terminal) {
+            return terminal.params.isEmpty();
+        }
+        if (ctx instanceof EvalContextImpl impl) {
+            return impl.params.isEmpty();
+        }
+        return ctx.getParams().isEmpty();
+    }
+
+    /**
+     *
+     * @param ctx
+     * @return {@code true} if the context has at least one parameter; i.e it is a virtual method call, {@code false} otherwise
+     */
+    public static boolean hasParams(EvalContext ctx) {
+        return !hasNoParams(ctx);
+    }
+
+    /**
+     *
+     * @param ctx
+     * @param clazz
+     * @return {@code true} if the base object from the context is assignable from the clazz, {@code false} otherwise
+     */
+    public static boolean matchClass(EvalContext ctx, Class<?> clazz) {
+        Object base;
+        if (ctx instanceof TerminalEvalContextImpl terminal) {
+            base = terminal.base;
+        } else if (ctx instanceof EvalContextImpl impl) {
+            base = impl.base;
+        } else {
+            base = ctx.getBase();
+        }
+        return base != null && clazz.isAssignableFrom(base.getClass());
+    }
+
+    private static CompletionStage<Object> asLiteralOrEvaluate(EvalContext context, int pos) {
+        Expression val = context.getParams().get(pos);
+        return val.isLiteral() ? val.asLiteral() : context.evaluate(val);
     }
 
 }

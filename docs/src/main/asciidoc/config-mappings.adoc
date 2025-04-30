@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: configuration
 
 With config mappings it is possible to group multiple configuration properties in a single interface that
 share the same prefix.
@@ -156,11 +157,12 @@ server.port=8080
 
 ==== `@WithParentName`
 
-The `@WithParentName` annotation allows to configurations mapping to inherit its container name, simplifying the
+The `@WithParentName` annotation allows the configuration mapping property to inherit its container name, simplifying the
 configuration property name required to match the mapping:
 
 [source,java]
 ----
+@ConfigMapping(prefix = "server")
 interface Server {
     @WithParentName
     ServerHostAndPort hostAndPort();
@@ -232,11 +234,11 @@ server.theHost=localhost
 server.thePort=8080
 ----
 
-The `@ConfigMapping` annotation support the following naming strategies:
+The `@ConfigMapping` annotation support the following naming strategies with the following enum values:
 
-- `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property.
-- `VERBATIM` - The method name is used as is to map the configuration property.
-- `SNAKE_CASE` - The method name is derived by replacing case changes with an underscore to map the configuration property.
+- `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property, i.e. `theHost` maps to `the-host`.
+- `VERBATIM` - The method name is used as is to map the configuration property, i.e. `theHost` maps to `theHost`.
+- `SNAKE_CASE` - The method name is derived by replacing case changes with an underscore to map the configuration property, i.e. `theHost` maps to `the_host`.
 
 === Conversions
 
@@ -387,6 +389,8 @@ The `List` or `Set` mappings can use xref:config-reference.adoc#indexed-properti
 configuration values in mapping groups. For collection with simple element types like `String`, their configuration
 value is a comma separated string.
 
+NOTE: Only the `List` mapping can maintain element order. Hence, with `Set` mappings the element order is not maintained from the configuration files but is random.
+
 ==== Maps ====
 
 A config mapping is also able to map a `Map`:
@@ -415,6 +419,39 @@ server.form.landing-page=index.html
 
 The configuration property needs to specify an additional name to act as the key. In this case the `form()` `Map` will
 contain three elements with the keys `login-page`, `error-page` and `landing-page`.
+
+It also works for groups:
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface Servers {
+    @WithParentName
+    Map<String, Server> allServers();
+}
+
+public interface Server {
+    String host();
+
+    int port();
+
+    String login();
+
+    String error();
+
+    String landing();
+}
+----
+.application.properties
+[source,properties]
+----
+server."my-server".host=localhost
+server."my-server".port=8080
+server."my-server".login=login.html
+server."my-server".error=error.html
+server."my-server".landing=index.html
+----
+In this case the `allServers()` `Map` will
+contain one `Server` element with the key `my-server`.
 
 === Defaults
 

@@ -27,6 +27,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-reflection</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
@@ -45,12 +49,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-stork</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-            <optional>true</optional>
+            <artifactId>quarkus-virtual-threads</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-stubs</artifactId>
@@ -80,6 +83,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
@@ -97,7 +104,7 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
-        
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -122,10 +129,21 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.grpc</provides>
+                    </capabilities>
+                </configuration>
                 <executions>
                     <execution>
                         <id>generate-extension-descriptor</id>
@@ -141,15 +159,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

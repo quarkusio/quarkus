@@ -21,12 +21,17 @@ public class AbstractOidcClientRequestFilter extends AbstractTokensProducer impl
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
+        if (isClientFeatureDisabled()) {
+            LOG.debug("OIDC client filter can not acquire and propagate tokens because "
+                    + "OIDC client is disabled with `quarkus.oidc-client.enabled=false`");
+            return;
+        }
         try {
             final String accessToken = getAccessToken();
             requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
         } catch (DisabledOidcClientException ex) {
-            LOG.debug("Client is disabled, aborting the request");
-            throw ex;
+            LOG.debug("Client is disabled, acquiring and propagating the token is not necessary");
+            return;
         } catch (Exception ex) {
             LOG.debugf("Access token is not available, cause: %s, aborting the request", ex.getMessage());
             throw (ex instanceof RuntimeException) ? (RuntimeException) ex : new RuntimeException(ex);

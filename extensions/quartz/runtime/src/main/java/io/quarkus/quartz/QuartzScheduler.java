@@ -13,4 +13,18 @@ public interface QuartzScheduler extends Scheduler {
      */
     org.quartz.Scheduler getScheduler();
 
+    @Override
+    QuartzJobDefinition newJob(String identity);
+
+    interface QuartzJobDefinition extends JobDefinition<QuartzJobDefinition> {
+
+        /**
+         *
+         * @return self
+         * @see Nonconcurrent
+         */
+        QuartzJobDefinition setNonconcurrent();
+
+    }
+
 }

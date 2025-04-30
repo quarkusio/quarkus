@@ -70,7 +70,7 @@ public class TransactionalSearchCommandsTest extends DatasourceTestBase {
     }
 
     @Test
-    public void searchBlocking() {
+    public void transactionalSearchBlocking() {
         setup();
 
         TransactionResult result = blocking.withTransaction(tx -> {
@@ -91,7 +91,7 @@ public class TransactionalSearchCommandsTest extends DatasourceTestBase {
     }
 
     @Test
-    public void graphReactive() {
+    public void transactionalSearchReactive() {
         setup();
 
         TransactionResult result = reactive.withTransaction(tx -> {

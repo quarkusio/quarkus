@@ -11,6 +11,6 @@ metadata:
   guide: "https://quarkus.io/guides/opentelemetry"
   categories:
     - "observability"
-  status: "experimental"
+  status: "stable"
   config:
   - "quarkus.opentelemetry."

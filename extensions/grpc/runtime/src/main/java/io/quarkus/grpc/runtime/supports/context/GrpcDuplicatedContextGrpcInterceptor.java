@@ -47,11 +47,26 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(ehp, call, () -> next.startCall(call, headers), local);
+            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
         }
+    }
+
+    private <ReqT, RespT> Supplier<ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
+            Metadata headers,
+            ServerCallHandler<ReqT, RespT> next) {
+        // Must be sure to call next.startCall on the right context
+        io.grpc.Context current = io.grpc.Context.current();
+        return () -> {
+            io.grpc.Context previous = current.attach();
+            try {
+                return next.startCall(call, headers);
+            } finally {
+                current.detach(previous);
+            }
+        };
     }
 
     @Override

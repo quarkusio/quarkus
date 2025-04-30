@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, command-line
 :summary: This reference guide explains how to develop command line applications with Quarkus.
+:topics: command-line,cli
 
 This reference covers how to write applications that run and then exit.
 
@@ -17,7 +18,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-command-mode` {quickstarts-tree-url}/getting-started-command-mode[directory].
+The solution is located in the `getting-started-command-mode` link:{quickstarts-tree-url}/getting-started-command-mode[directory].
 
 == Creating the Maven project
 
@@ -27,9 +28,9 @@ First, we need to create a new Quarkus project with the following command:
 include::{includes}/devtools/create-app.adoc[]
 
 NOTE: The suggested project creation command lines disable the codestarts to avoid including a REST server. Similarly, if you use code.quarkus.io to generate a
-project, you need to go to *MORE OPTIONS -> Starter Code* and select *No* to avoid adding the RESTEasy Reactive extension.
+project, you need to go to *MORE OPTIONS -> Starter Code* and select *No* to avoid adding the Quarkus REST (formerly RESTEasy Reactive) extension.
 
-The RESTEasy Reactive extension is added automatically only if you ask for codestarts and you didn't specify any extensions.
+The Quarkus REST extension is added automatically only if you ask for codestarts and you didn't specify any extensions.
 
 
 == Writing Command Mode Applications
@@ -136,6 +137,24 @@ thread (A non-command mode application is essentially just running an applicatio
 If you want to shut down a running application and you are not in the main thread, then you should call `Quarkus.asyncExit`
 in order to unblock the main thread and initiate the shutdown process.
 
+=== Running the application 
+
+To run the command mode application on the JVM, first build it using `mvnw package` or equivalent. 
+
+Then launch it:
+
+[source,shell]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+You can also build a native application with `mvnw package -Dnative`, and launch it with something like:
+
+[source,shell]
+----
+./target/getting-started-command-mode-1.0-SNAPSHOT-runner
+----
+
 === Development Mode
 
 Also, for command mode applications, the dev mode is supported.
@@ -163,7 +182,7 @@ quarkus dev '--help'
 ./gradlew quarkusDev --quarkus-args='--help'
 ----
 
-You should see the following down the bottom of the screen after the application is stopped: 
+You should see the following down the bottom of the screen after the application is stopped:
 
 [source]
 ----
@@ -236,7 +255,7 @@ Consequently, mocking CDI beans with `QuarkusMock` or `@InjectMock` is not suppo
 
 It is possible to mock CDI beans by leveraging xref:getting-started-testing.adoc#testing_different_profiles[test profiles] though.
 
-For instance, in the following test, the singleton `CdiBean1` will be mocked by `MockedCdiBean1`:
+For instance, in the following test, the launched application would receive a mocked singleton `CdiBean1`. The implementation `MockedCdiBean1` is provided by the test:
 
 [source,java]
 ----

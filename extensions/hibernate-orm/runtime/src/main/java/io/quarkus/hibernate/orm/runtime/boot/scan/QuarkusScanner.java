@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.boot.scan;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -149,8 +151,9 @@ public class QuarkusScanner implements Scanner {
 
         @Override
         public InputStreamAccess getStreamAccess() {
+            final String resourceName = fromClassNameToResourceName(name);
             return new UrlInputStreamAccess(
-                    Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + ".class"));
+                    Thread.currentThread().getContextClassLoader().getResource(resourceName));
         }
     }
 }

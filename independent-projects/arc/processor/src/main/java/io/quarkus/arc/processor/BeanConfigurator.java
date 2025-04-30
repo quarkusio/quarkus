@@ -9,6 +9,10 @@ import java.util.function.Consumer;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+
+import io.quarkus.arc.InterceptionProxy;
 
 /**
  * Synthetic bean configurator. An alternative to {@link jakarta.enterprise.inject.spi.configurator.BeanConfigurator}.
@@ -69,6 +73,26 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
             }
 
+            InterceptionProxyInfo interceptionProxy = this.interceptionProxy;
+            if (interceptionProxy != null) {
+                Type providerType = this.providerType;
+                if (providerType == null) {
+                    providerType = BeanInfo.initProviderType(null, implClass);
+                }
+                interceptionProxy = new InterceptionProxyInfo(providerType.name(), interceptionProxy.getBindingsSourceClass());
+                addInjectionPoint(ParameterizedType.builder(InterceptionProxy.class)
+                        .addArgument(providerType)
+                        .build());
+            }
+
+            // perform type discovery for registered types
+            for (Type jandexType : registeredTypeClosures) {
+                this.types.addAll(Types.getTypeClosureFromJandexType(jandexType, beanDeployment).unrestrictedTypes());
+            }
+
+            // restrict resulting bean types if needed
+            this.types.removeAll(typesToRemove);
+
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .identifier(identifier)
@@ -87,13 +111,22 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .defaultBean(defaultBean)
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
-                    .targetPackageName(targetPackageName);
+                    .targetPackageName(targetPackageName)
+                    .startupPriority(startupPriority)
+                    .interceptionProxy(interceptionProxy)
+                    .checkActive(checkActiveConsumer);
 
             if (!injectionPoints.isEmpty()) {
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));
             }
 
-            beanConsumer.accept(builder.build());
+            BeanInfo bean = builder.build();
+
+            for (Type type : this.types) {
+                Types.checkLegalBeanType(type, bean);
+            }
+
+            beanConsumer.accept(bean);
         }
     }
 

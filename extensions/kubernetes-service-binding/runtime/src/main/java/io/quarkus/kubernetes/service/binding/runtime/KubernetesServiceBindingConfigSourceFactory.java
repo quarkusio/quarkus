@@ -18,28 +18,37 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.smallrye.config.ConfigSourceContext;
-import io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory;
+import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
-public class KubernetesServiceBindingConfigSourceFactory
-        implements ConfigurableConfigSourceFactory<KubernetesServiceBindingConfig> {
+public class KubernetesServiceBindingConfigSourceFactory implements ConfigSourceFactory {
 
     private static final Logger log = Logger.getLogger(KubernetesServiceBindingConfigSourceFactory.class);
 
     @Override
-    public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context,
-            final KubernetesServiceBindingConfig config) {
-        if (!config.enabled()) {
+    public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withSources(new ConfigSourceContext.ConfigSourceContextConfigSource(context))
+                .withMapping(KubernetesServiceBindingConfig.class)
+                .withMappingIgnore("quarkus.**")
+                .build();
+
+        KubernetesServiceBindingConfig kubernetesServiceBindingConfig = config
+                .getConfigMapping(KubernetesServiceBindingConfig.class);
+
+        if (!kubernetesServiceBindingConfig.enabled()) {
             log.debug(
                     "No attempt will be made to bind configuration based on Kubernetes ServiceBinding because the feature was not enabled.");
             return emptyList();
         }
-        if (config.root().isEmpty()) {
+        if (kubernetesServiceBindingConfig.root().isEmpty()) {
             log.debug(
                     "No attempt will be made to bind configuration based on Kubernetes Service Binding because the binding root was not specified.");
             return emptyList();
         }
 
-        List<ServiceBinding> serviceBindings = getServiceBindings(config.root().get());
+        List<ServiceBinding> serviceBindings = getServiceBindings(kubernetesServiceBindingConfig.root().get());
         if (serviceBindings.isEmpty()) {
             return emptyList();
         }

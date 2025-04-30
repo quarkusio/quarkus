@@ -41,4 +41,12 @@ public interface SyntheticCreationalContext<T> extends CreationalContext<T> {
      */
     <R> R getInjectedReference(TypeLiteral<R> requiredType, Annotation... qualifiers);
 
+    /**
+     * Returns an {@link InterceptionProxy} for this synthetic bean.
+     *
+     * @return an {@link InterceptionProxy} for this synthetic bean
+     * @throws IllegalArgumentException if no {@link InterceptionProxy} was registered for this synthetic bean
+     */
+    <R> InterceptionProxy<R> getInterceptionProxy();
+
 }

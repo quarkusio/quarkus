@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. Because it’s the canonical web socket application, we are going to create a simple chat application.
+:topics: web,websockets
+:extensions: io.quarkus:quarkus-websockets,io.quarkus:quarkus-websockets-client
 
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.
@@ -28,7 +30,7 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `websockets-quickstart` {quickstarts-tree-url}/websockets-quickstart[directory].
+The solution is located in the `websockets-quickstart` link:{quickstarts-tree-url}/websockets-quickstart[directory].
 
 == Creating the Maven project
 
@@ -95,6 +97,7 @@ public class ChatSocket {
 
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username) {
+        broadcast("User " + username + " joined");
         sessions.put(username, session);
     }
 
@@ -112,11 +115,7 @@ public class ChatSocket {
 
     @OnMessage
     public void onMessage(String message, @PathParam("username") String username) {
-        if (message.equalsIgnoreCase("_ready_")) {
-            broadcast("User " + username + " joined");
-        } else {
-            broadcast(">> " + username + ": " + message);
-        }
+        broadcast(">> " + username + ": " + message);
     }
 
     private void broadcast(String message) {
@@ -138,7 +137,7 @@ public class ChatSocket {
 
 All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-Create the `src/main/resources/META-INF/resources` directory and copy this {quickstarts-blob-url}/websockets-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+Create the `src/main/resources/META-INF/resources` directory and copy this link:{quickstarts-blob-url}/websockets-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 
@@ -164,7 +163,7 @@ You can also build the native executable using:
 
 include::{includes}/devtools/build-native.adoc[]
 
-You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
+You can also test your web socket applications using the approach detailed link:{quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
 
 == WebSocket Clients
 

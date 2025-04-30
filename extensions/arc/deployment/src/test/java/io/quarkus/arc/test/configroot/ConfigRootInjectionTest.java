@@ -26,19 +26,16 @@ public class ConfigRootInjectionTest {
     @Test
     public void testInjectionWorks() {
         assertNotNull(client.applicationConfig);
-        assertNotNull(client.applicationConfig.name);
-        assertEquals(1, client.threadPoolConfig.coreThreads);
+        assertNotNull(client.applicationConfig.name());
+        assertEquals(1, client.threadPoolConfig.coreThreads());
     }
 
     @Singleton
     static class Client {
-
         @Inject
         ApplicationConfig applicationConfig;
 
         @Inject
         ThreadPoolConfig threadPoolConfig;
-
     }
-
 }

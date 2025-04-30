@@ -1,0 +1,170 @@
+= Working Groups
+
+* Status: _accepted_
+* Date: 2024-07-15 by @cescoffier
+
+== Context and Problem Statement
+
+Quarkus is a large project with many contributors.
+It's hard to keep track of all the initiatives and ensure that the community is aware of ongoing work.
+We need a way to organize work around specific topics and ensure that the community is aware of these initiatives.
+
+We also need to ensure that the work is done transparently and that the community can participate in the discussions.
+
+This would be the basis of an informal roadmap, where the community can see what is being worked on and what is coming next.
+Our previous attempts to publish and maintain a roadmap were not successful.
+We need a more lightweight approach, focusing on current work and next steps.
+
+Additionally, new contributors may find it hard to find a way to contribute to the project, as the project's size may be overwhelming.
+Working on a specific area or topic may be more appealing to new contributors and may help them get started.
+
+== Working Groups
+
+The idea behind this proposal is to introduce the concept of _working groups_.
+A working group is a lightweight way to organize work around a specific topic.
+It aims to gather people interested in a specific topic and ensure that the work is done transparently.
+It also aims to ensure that the community is aware of ongoing work and can participate in the discussions.
+
+=== Defining a Working Group
+
+To kick off a working group, let’s make sure we know what we’re getting into.
+Here’s a simple checklist to keep things clear and manageable:
+
+1.	Clear Goal: What exactly do the working group want to achieve?
+Make sure the group has a straightforward, easy-to-understand goal.
+The scope of the group must be carefully defined.
+2.	Trackable Progress: How will we know the group is making progress?
+GitHub issues will be the primary way to publicize the progress.
+Other means like regular GitHub project updates can be used.
+3.	Realistic Aim: The working group goal must be achievable within a reasonable timeframe.
+It’s better to break down large ideas into smaller working groups, one at a time.
+4.	End in Sight: When will we be done? Even if there’s no strict deadline, a working group should have an idea of what ‘done’ looks like.
+
+Once the scope of a working group is defined, it should be announced on GitHub discussions under the https://github.com/quarkusio/quarkus/discussions/categories/design-discussions[Design Discussion category].
+This way, the community can be aware of ongoing work and participate in the discussions.
+During that time, the definition of the working group can be refined based on the feedback received.
+
+Here are a few examples:
+
+- https://github.com/quarkusio/quarkus/discussions/41309[Working Group: Static Site Generation]
+- https://github.com/quarkusio/quarkus/discussions/38473[Working Group: WebSocket Next]
+- https://github.com/quarkusio/quarkus/discussions/41867[Working Group: Test classloading]
+
+=== Organizing a Working Group
+
+Once a working group has garnered enough interest, a project board should be created, and a main point of contact should be identified.
+A (public) project board should be used to track the progress of the working group.
+It gathers all the related issues and PRs and should be updated regularly.
+
+It is recommended to use a simple template for the project board, with columns like "to do," "in progress," and "done."
+The board should be updated regularly.
+The _status_ of the working group should be updated, and the related issues should be added to the board.
+It is important that the board does not remain stale.
+
+Depending on where the main part of the work is done, the board can be created in the Quarkus organization or in the Quarkiverse organization.
+
+On the board, a short description of the working group should be added, along with the proposed scope and the main point of contact.
+
+=== Point of Contact and Communication
+
+The point of contact is the main entry point for the working group.
+Both the community and the team can reach out to this person to get more information about the working group or to participate.
+The point of contact should be available on GitHub and Zulip, ensuring that communication is done transparently.
+A working group may have multiple points of contact, depending on the size and scope of the group.
+
+Most communication should be done on GitHub discussions, issues, and PRs.
+If the working group needs to organize calls, these calls should be open to everyone in the community.
+It is important for the working group to publish the outcome of these discussions and possible decisions made during these calls.
+
+=== Participating in a Working Group
+
+Anyone can participate in a working group.
+The working group should be open to everyone, and the discussions should be done transparently.
+The point of contact and the other contributors should ensure that the discussions are respectful and that everyone can participate and contribute.
+
+=== Driving a Working Group
+
+Ideally, once a week, an update should be posted on the board and on the GitHub discussion.
+The update should summarize the progress made during the week, the next steps, and include a status (on track, at risk, off track, complete).
+It's important to keep the community aware of ongoing work and ensure that the working group is making progress, identifying the next steps, and so on.
+
+It might be interesting to publish demos, blog posts, or other content to keep the community aware of ongoing work.
+
+=== Completing a Working Group
+
+Once the goal of the working group is achieved, the working group should be closed.
+The outcome of the working group should be published on GitHub discussions, and the project board should be archived (status set to `complete`).
+
+The outcome of a working group can be various:
+
+- _Technical contribution_: It can be a set of identified issues and PRs that have been resolved.
+- _ADR_: The outcome of a working group may end up proposing an ADR to capture the decisions made during the working group.
+- _Documentation_: The outcome of a working group may be a set of documentation updates.
+- _Blog posts / Demos / Videos_: The outcome of a working group may be a blog post to summarize the work done or a demo/video.
+- _Exploratory work_: The outcome of a working group may be a set of exploratory work that will be used to drive the next steps.
+
+=== Maximum Number of Working Groups
+
+We should limit the number of working groups running concurrently to avoid overwhelming contributors.
+The exact number should be defined based on the capacity of the team and the community.
+It is better to have a few working groups that are making progress than many working groups that are stalled.
+
+=== Working Group Lifecycle
+
+The lifecycle of a working group is as follows:
+
+1. Define the scope of the working group
+2. Announce the working group on GitHub discussions
+3. Organize the working group
+4. Drive the working group
+5. Complete the working group
+
+Once a working group is completed, the outcome should be published on GitHub discussions, and the project board should be archived.
+
+=== Working Group vs. Rest of the Work
+
+Not all work should be done in working groups.
+Working groups are a way to organize work around specific topics, but they should not be the only way to contribute to the project.
+Working groups should be used to drive specific initiatives, but the rest of the work should be done as usual.
+
+== Considered Options
+
+=== Status Quo
+
+We continue to work as we are doing now, without any specific organization around the work.
+Under this option, we would not have a way to organize work around specific topics, and the community would not be aware of ongoing work.
+It makes it harder for new contributors to find a way to contribute to the project and to understand the roadmap of the project.
+
+This approach has been tried in the past and has not been successful.
+
+=== More Formal Organization
+
+We could introduce a more formal organization around the work, with a more detailed roadmap and a more structured way to organize the work.
+This would require more resources and more time to maintain, and it may be harder to keep up to date.
+It may also be harder for the community to participate in the discussions, making a clear distinction between the _core_ team and the community.
+
+=== Considered Names
+
+We have considered various names for the _working group_.
+Task force, working group, tiger team, tribe, etc., are some of the names that have been considered.
+
+We have chosen _working group_ as it is a simple and clear name that reflects the purpose of the group.
+One of the considered benefits is its abbreviation, _WG_, which is easy to understand.
+
+== Consequences
+
+=== Positive
+
+* The community is aware of ongoing work and can participate in the discussions.
+* New contributors can find a way to contribute to the project.
+* The work is done transparently.
+* The work is organized around specific topics.
+* The community can see what is being worked on and what is coming next.
+
+=== Negative
+
+* It requires more work to organize the working groups.
+* It requires more work to keep the working groups up to date.
+* It may be harder to limit the number of working groups running concurrently.
+
+The proposed working group process is designed to be lightweight and should not require too much overhead, but any coordination effort requires some work.

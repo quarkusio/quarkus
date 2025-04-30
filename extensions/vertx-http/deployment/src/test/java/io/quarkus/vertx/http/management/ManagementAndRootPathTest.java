@@ -2,9 +2,8 @@ package io.quarkus.vertx.http.management;
 
 import java.util.function.Consumer;
 
-import javax.inject.Singleton;
-
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -22,9 +21,10 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 public class ManagementAndRootPathTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.management.enabled=true\n" +
-            "quarkus.management.root-path=/management\n";
+    private static final String APP_PROPS = """
+            quarkus.management.enabled=true
+            quarkus.management.root-path=/management
+            """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -67,7 +67,7 @@ public class ManagementAndRootPathTest {
     @Test
     public void testNonApplicationEndpointDirect() {
         // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("http://0.0.0.0:9001/management/management-relative")
+        RestAssured.given().get("http://localhost:9001/management/management-relative")
                 .then().statusCode(200).body(Matchers.equalTo("/management/management-relative"));
     }
 

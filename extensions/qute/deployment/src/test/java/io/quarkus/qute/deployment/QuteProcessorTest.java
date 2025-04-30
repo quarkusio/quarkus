@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -37,8 +36,7 @@ public class QuteProcessorTest {
     @Test
     public void testCollectNamespaceExpressions() {
         Template template = Engine.builder().build().parse("{msg:hello} {msg2:hello_alpha} {foo:baz.get(foo:bar)}");
-        TemplateAnalysis analysis = new TemplateAnalysis("foo", "1", template.getExpressions(), Collections.emptyList(), null,
-                Collections.emptySet());
+        TemplateAnalysis analysis = new TemplateAnalysis("foo", template, null);
         Set<Expression> msg = QuteProcessor.collectNamespaceExpressions(analysis, "msg");
         assertEquals(1, msg.size());
         assertEquals("msg:hello", msg.iterator().next().toOriginalString());

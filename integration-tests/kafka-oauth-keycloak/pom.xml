@@ -26,17 +26,17 @@
         <!-- JAX-RS -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
         <!-- Kafka -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
         </dependency>
 
         <!-- kafka-oauth -->
@@ -71,6 +71,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
@@ -88,7 +93,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
+            <artifactId>quarkus-messaging-kafka-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -101,7 +106,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -114,7 +119,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -172,9 +177,11 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <argLine>-Djava.security.manager=allow</argLine>
                             <systemPropertyVariables>
                                 <!-- Configure the app to test to resolve "keycloak" hostname to the Docker hostname -->
-                                <jdk.net.hosts.file>target/hosts</jdk.net.hosts.file>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.realm.json>${project.basedir}/src/test/resources/keycloak/realms/kafka-authz-realm.json</keycloak.realm.json>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -182,8 +189,10 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <argLine>-Djava.security.manager=allow</argLine>
                             <systemPropertyVariables>
-                                <quarkus.test.arg-line>-Djdk.net.hosts.file=${basedir}/target/hosts</quarkus.test.arg-line>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.realm.json>${project.basedir}/src/test/resources/keycloak/realms/kafka-authz-realm.json</keycloak.realm.json>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

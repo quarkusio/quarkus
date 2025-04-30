@@ -66,7 +66,7 @@ public class GrpcServerProcessorTest {
 
         ClassInfo classInfo = index.getClassByName(className);
 
-        assertThat(GrpcServerProcessor.gatherBlockingMethodNames(classInfo, index))
+        assertThat(GrpcServerProcessor.gatherBlockingOrVirtualMethodNames(classInfo, index, false))
                 .containsExactlyInAnyOrderElementsOf(expectedBlocking);
     }
 

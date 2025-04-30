@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers the usage of MongoDB using active records and repositories.
 :config-file: application.properties
 :mongodb-doc-root-url: https://www.mongodb.com/docs/drivers/java/sync/current
+:topics: data,mongodb,nosql,panache,kotlin
+:extensions: io.quarkus:quarkus-mongodb-panache,io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/fundamentals/data-formats/documents/#document[`Document`].
 
@@ -58,17 +60,17 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `mongodb-panache-quickstart` {quickstarts-tree-url}/mongodb-panache-quickstart[directory].
+The solution is located in the `mongodb-panache-quickstart` link:{quickstarts-tree-url}/mongodb-panache-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mongodb-panache-quickstart
-:create-app-extensions: resteasy-reactive-jackson,mongodb-panache
+:create-app-extensions: rest-jackson,mongodb-panache
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB with Panache extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive) Jackson and MongoDB with Panache extensions.
 After this, the `quarkus-mongodb-panache` extension has been added to your build file.
 
 If you don't want to generate a new project, add the dependency in your build file:
@@ -87,37 +89,6 @@ If you don't want to generate a new project, add the dependency in your build fi
 ----
 implementation("io.quarkus:quarkus-mongodb-panache")
 ----
-
-[NOTE]
-====
-If your project is already configured to use other annotation processors, you will need to additionally add the Panache annotation processor:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-        <parameters>${maven.compiler.parameters}</parameters>
-        <annotationProcessorPaths>
-            <!-- Your existing annotation processor(s)... -->
-            <path>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-common</artifactId>
-                <version>${quarkus.platform.version}</version>
-            </path>
-        </annotationProcessorPaths>
-    </configuration>
-</plugin>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-annotationProcessor("io.quarkus:quarkus-panache-common")
-----
-====
 
 == Setting up and configuring MongoDB with Panache
 
@@ -271,7 +242,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 === Adding entity methods
 
@@ -439,7 +410,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 NOTE: The rest of the documentation show usages based on the active record pattern only,
 but keep in mind that they can be performed with the repository pattern as well.
@@ -447,7 +418,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a Jakarta REST resource
 
-First, include one of the RESTEasy extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for Jakarta REST and JSON support.
+First, include one of the RESTEasy extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-rest-jackson` dependency for Jakarta REST and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -601,11 +572,13 @@ Here are some query examples:
 - `amount > ?1 and firstname != ?2` will be mapped to `{'amount': {'$gt': ?1}, 'firstname': {'$ne': ?2}}`
 - `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern.
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
-- `status in ?1` will be mapped to `{'status':{$in: [?1]}}`
+- `status in ?1` will be mapped to `{'status':{$in: ?1}}`
 
 WARNING: MongoDB queries must be valid JSON documents,
 using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON
 (see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on GitHub]).
+
+WARNING: Prior to Quarkus 3.16, when using `$in` with a list, you had to write your query with `{'status':{$in: [?1]}}`. Starting with Quarkus 3.16, make sure you use `{'status':{$in: ?1}}` instead. The list will be properly expanded with surrounding square brackets.
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
 link:https://docs.mongodb.com/manual/reference/bson-types/#date[BSON Date] using the `ISODate` type (UTC datetime).
@@ -734,7 +707,7 @@ TIP: Using `@BsonProperty` is not needed to define custom column mappings, as th
 
 TIP: You can have your projection class extends from another class. In this case, the parent class also needs to have use `@ProjectionFor` annotation.
 
-TIP: If you run Java 17+, records are a good fit for projection classes.
+TIP: Records are a good fit for projection classes.
 
 == Query debugging
 
@@ -744,13 +717,14 @@ This can be achieved by setting to DEBUG the following log category inside your 
 
 [source,properties]
 ----
-quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
+quarkus.log.category."io.quarkus.mongodb.panache.common.runtime".level=DEBUG
 ----
 
 == The PojoCodecProvider: easy object to BSON document conversion.
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/[PojoCodecProvider], with link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/#configure-the-driver-for-pojos[automatic POJO support],
 to automatically convert your object to a BSON document.
+This codec also supports Java records so you can use them for your entities or an attribute of your entities.
 
 In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to
 automatically convert your object.
@@ -767,6 +741,8 @@ See xref:mongodb.adoc#simplifying-mongodb-client-usage-using-bson-codec[Using BS
 MongoDB offers ACID transactions since version 4.0.
 
 To use them with MongoDB with Panache you need to annotate the method that starts the transaction with the `@Transactional` annotation.
+
+Inside methods annotated with `@Transactional` you can access the `ClientSession` with `Panache.getClientSession()` if needed.
 
 In MongoDB, a transaction is only possible on a replicaset,
 luckily our xref:mongodb.adoc#dev-services[Dev Services for MongoDB] setups a single node replicaset so it is compatible with transactions.
@@ -810,7 +786,7 @@ you need to provide the value by yourself.
 ====
 
 `ObjectId` can be difficult to use if you want to expose its value in your REST service.
-So we created Jackson and JSON-B providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy Reactive Jackson extension or the RESTEasy Reactive JSON-B extension.
+So we created Jackson and JSON-B providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the Quarkus REST Jackson extension or the Quarkus REST JSON-B extension.
 
 [IMPORTANT]
 ====
@@ -884,6 +860,12 @@ data class Person (
     var status: Status
 ): PanacheMongoEntity()
 ----
+
+[IMPORTANT]
+====
+Unlike the @BsonCreator approach, `val` cannot be used here. Properties must be defined as `var`, otherwise, the system creates an object with 
+`null` values for every property.
+====
 
 [[reactive]]
 == Reactive Entities and Repositories
@@ -979,11 +961,11 @@ Uni<Boolean> deleted = ReactivePerson.deleteById(personId);
 Uni<Long> updated = ReactivePerson.update("name", "Mortal").where("status", Status.Alive);
 ----
 
-TIP: If you use MongoDB with Panache in conjunction with RESTEasy Reactive, you can directly return a reactive type inside your Jakarta REST resource endpoint.
+TIP: If you use MongoDB with Panache in conjunction with Quarkus REST, you can directly return a reactive type inside your Jakarta REST resource endpoint.
 
 The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a `Multi` (which implement  a reactive stream `Publisher`) instead of a `Stream`.
 
-It allows more advanced reactive use cases, for example, you can use it to send server-sent events (SSE) via RESTEasy Reactive:
+It allows more advanced reactive use cases, for example, you can use it to send server-sent events (SSE) via Quarkus REST:
 
 [source,java]
 ----
@@ -1002,7 +984,7 @@ public Multi<ReactivePerson> streamPersons() {
 }
 ----
 
-TIP: `@RestStreamElementType(MediaType.APPLICATION_JSON)` tells RESTEasy Reactive to serialize the object in JSON.
+TIP: `@RestStreamElementType(MediaType.APPLICATION_JSON)` tells Quarkus REST to serialize the object in JSON.
 
 === Reactive transactions
 
@@ -1250,24 +1232,24 @@ That's all there is to it: with Panache, MongoDB has never looked so trim and ne
 
 == Defining entities in external projects or jars
 
-MongoDB with Panache relies on compile-time bytecode enhancements to your entities.
+MongoDB with Panache relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine.
 
-It attempts to identity archives with Panache entities (and consumers of Panache entities)
-by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
-annotation processor that will automatically create this file in archives that depend on
-Panache (even indirectly). If you have disabled annotation processors you may need to create
-this file manually in some cases.
+If the entities come from external projects
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
+
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
 == Multitenancy
 
-"Multitenancy is a software architecture where a single software instance can serve multiple, distinct user groups. Software-as-a-service (SaaS) 
+"Multitenancy is a software architecture where a single software instance can serve multiple, distinct user groups. Software-as-a-service (SaaS)
 offerings are an example of multitenant architecture." (link:https://www.redhat.com/en/topics/cloud-computing/what-is-multitenancy#:~:text=Multitenancy%20is%20a%20software%20architecture,an%20example%20of%20multitenant%20architecture.[Red Hat]).
 
 MongoDB with Panache currently supports the database per tenant approach, it's similar to schema per tenant approach when compared to SQL databases.
 
 === Writing the application
 
-In order to resolve the tenant from incoming requests and map it to a specific database, you must create an implementation 
+In order to resolve the tenant from incoming requests and map it to a specific database, you must create an implementation
 of the `io.quarkus.mongodb.panache.common.MongoDatabaseResolver` interface.
 
 [source,java]
@@ -1280,31 +1262,31 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
 
     @Inject
     RoutingContext context;
-   
+
     @Override
     public String resolve() {
         return context.request().getHeader("X-Tenant");
     }
-    
+
 }
 ----
 <1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 [IMPORTANT]
 ====
-The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`, 
+The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`,
 and then `quarkus.mongodb.database` property.
 ====
 
 [NOTE]
 ====
-If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB 
-database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver` 
-to the MongoDB with Panache `MongoDatabaseResolver` as a `RoutingContext` attribute, for example:
+If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB
+database are the same, you can access the OIDC tenant id from a `RoutingContext` attribute like in the example below:
 
 [source,java]
 ----
 import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped
@@ -1315,8 +1297,8 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
     ...
     @Override
     public String resolve() {
-        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
-        return context.get("tenantId");
+        // OIDC has saved the tenant id as the RoutingContext attribute:
+        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
     }
 }
 ----
@@ -1367,7 +1349,7 @@ public class PersonResource {
 }
 ----
 
-From the classes above, we have enough to persist and fetch persons from different databases, so it's possible to see how it works. 
+From the classes above, we have enough to persist and fetch persons from different databases, so it's possible to see how it works.
 
 === Configuring the application
 
@@ -1424,7 +1406,7 @@ public class PanacheMongoMultiTenancyTest {
         // creating person 1
         Response createPerson1Response = callCreatePersonEndpoint(endpoint, TENANT_1, person1);
         assertResponse(createPerson1Response, 201);
-        
+
         // checking person 1 creation
         Response getPerson1ByIdResponse = callGetPersonByIdEndpoint(endpoint, person1.id, TENANT_1);
         assertResponse(getPerson1ByIdResponse, 200, person1);

@@ -1,12 +1,25 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DELETE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATCH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.POST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -18,7 +31,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,29 +56,20 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public class ResteasyReactiveScanner {
 
-    public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
-    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS;
-
-    static {
-        Map<DotName, String> map = new HashMap<>();
-        Map<String, DotName> reverseMap = new HashMap<>();
-        map.put(GET, "GET");
-        reverseMap.put("GET", GET);
-        map.put(POST, "POST");
-        reverseMap.put("POST", POST);
-        map.put(HEAD, "HEAD");
-        reverseMap.put("HEAD", HEAD);
-        map.put(PUT, "PUT");
-        reverseMap.put("PUT", PUT);
-        map.put(DELETE, "DELETE");
-        reverseMap.put("DELETE", DELETE);
-        map.put(PATCH, "PATCH");
-        reverseMap.put("PATCH", PATCH);
-        map.put(OPTIONS, "OPTIONS");
-        reverseMap.put("OPTIONS", OPTIONS);
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(map);
-        METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
-    }
+    public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Map.of(GET, "GET",
+            POST, "POST",
+            HEAD, "HEAD",
+            PUT, "PUT",
+            DELETE, "DELETE",
+            PATCH, "PATCH",
+            OPTIONS, "OPTIONS");
+    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Map.of("GET", GET,
+            "POST", POST,
+            "HEAD", HEAD,
+            "PUT", PUT,
+            "DELETE", DELETE,
+            "PATCH", PATCH,
+            "OPTIONS", OPTIONS);
 
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
         Collection<ClassInfo> applications = index
@@ -116,14 +119,23 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
-                            + "' contains both @Blocking and @NonBlocking annotations.");
-                }
+            // collect default behaviour, making sure that we don't have multiple contradicting annotations
+            int numAnnotations = 0;
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.BLOCKING)) {
                 blocking = BlockingDefault.BLOCKING;
-            } else if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING)) {
                 blocking = BlockingDefault.NON_BLOCKING;
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.RUN_ON_VIRTUAL_THREAD)) {
+                blocking = BlockingDefault.RUN_ON_VIRTUAL_THREAD;
+                numAnnotations++;
+            }
+            if (numAnnotations > 1) {
+                throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                        + "' contains multiple conflicting @Blocking, @NonBlocking and @RunOnVirtualThread annotations.");
             }
         }
         if (selectedAppClass != null) {
@@ -228,6 +240,7 @@ public class ResteasyReactiveScanner {
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
         List<MethodInfo> methodExceptionMappers = new ArrayList<>();
+        Set<DotName> requestScopedResources = new HashSet<>();
 
         Set<DotName> interfacesWithPathOnMethods = new HashSet<>();
 
@@ -243,6 +256,9 @@ public class ResteasyReactiveScanner {
                 MethodInfo ctor = hasJaxRsCtorParams(clazz);
                 if (ctor != null) {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
+                }
+                if (hasJaxRsFieldInjection(clazz, index)) {
+                    requestScopedResources.add(clazz.name());
                 }
                 List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
                         .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
@@ -262,19 +278,33 @@ public class ResteasyReactiveScanner {
             }
         }
 
+        // handle abstract classes
+        var abstractClasses = scannedResources.values().stream().filter(ClassInfo::isAbstract).toList();
+        abstractClasses.forEach(abstractScannedResource -> {
+            Collection<ClassInfo> allSubclasses = index.getAllKnownSubclasses(abstractScannedResource.name());
+            if (allSubclasses.size() != 1) {
+                return; // don't do anything with this case as it's not evident how it's supposed to be handled
+            }
+            ClassInfo subclass = allSubclasses.iterator().next();
+            if (!scannedResources.containsKey(subclass.name())) {
+                scannedResources.put(subclass.name(), subclass);
+                scannedResources.remove(abstractScannedResource.name());
+                scannedResourcePaths.put(subclass.name(), scannedResourcePaths.get(abstractScannedResource.name()));
+                scannedResourcePaths.remove(abstractScannedResource.name());
+            }
+        });
+
         Map<DotName, String> clientInterfaces = new HashMap<>(pathInterfaces);
-        // for clients it is enough to have @PATH annotations on methods only
+        // for clients, it is enough to have @PATH annotations on methods only
         for (DotName interfaceName : interfacesWithPathOnMethods) {
             if (!clientInterfaces.containsKey(interfaceName)) {
                 clientInterfaces.put(interfaceName, "");
             }
         }
 
-        Map<DotName, String> clientInterfaceSubtypes = new HashMap<>();
-        for (DotName interfaceName : clientInterfaces.keySet()) {
-            addClientSubInterfaces(interfaceName, index, clientInterfaceSubtypes, clientInterfaces);
+        for (DotName interfaceName : new ArrayList<>(clientInterfaces.keySet())) {
+            addClientSubInterfaces(interfaceName, index, clientInterfaces);
         }
-        clientInterfaces.putAll(clientInterfaceSubtypes);
 
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
@@ -284,6 +314,18 @@ public class ResteasyReactiveScanner {
                         if (!scannedResources.containsKey(clazz.name())) {
                             scannedResources.put(clazz.name(), clazz);
                             scannedResourcePaths.put(clazz.name(), i.getValue());
+
+                            // check for server exception mapper method in implementation class of the interface.
+                            List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
+                                    .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
+                            if (exceptionMapperAnnotationInstances != null) {
+                                for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
+                                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                                        continue;
+                                    }
+                                    methodExceptionMappers.add(instance.target().asMethod());
+                                }
+                            }
                         }
                     }
                 }
@@ -299,7 +341,7 @@ public class ResteasyReactiveScanner {
             httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
         }
 
-        // for clients it is also enough to only have @GET, @POST, etc on methods and no PATH whatsoever
+        // for clients, it is also enough to only have @GET, @POST, etc on methods and no PATH whatsoever
         Set<DotName> methodAnnotations = httpAnnotationToMethod.keySet();
         for (DotName methodAnnotation : methodAnnotations) {
             for (AnnotationInstance methodAnnotationInstance : index.getAnnotations(methodAnnotation)) {
@@ -307,7 +349,7 @@ public class ResteasyReactiveScanner {
                     MethodInfo annotatedMethod = methodAnnotationInstance.target().asMethod();
                     ClassInfo classWithJaxrsMethod = annotatedMethod.declaringClass();
                     if (Modifier.isAbstract(annotatedMethod.flags())
-                            && Modifier.isAbstract(classWithJaxrsMethod.flags())
+                            && Modifier.isInterface(classWithJaxrsMethod.flags())
                             && !clientInterfaces.containsKey(classWithJaxrsMethod.name())) {
                         clientInterfaces.put(classWithJaxrsMethod.name(), "");
                     }
@@ -342,77 +384,29 @@ public class ResteasyReactiveScanner {
                     possibleSubResources.containsKey(classInfo.name())) {
                 continue;
             }
+            if (hasJaxRsFieldInjection(classInfo, index)) {
+                requestScopedResources.add(classInfo.name());
+            }
             possibleSubResources.put(classInfo.name(), classInfo);
-            //we need to also look for all sub classes and interfaces
+            //we need to also look for all subclasses and interfaces
             //they may have type variables that need to be handled
             toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
             toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
         }
 
-        Set<String> beanParams = new HashSet<>();
-
-        Set<ClassInfo> beanParamAsBeanUsers = new HashSet<>(scannedResources.values());
-        beanParamAsBeanUsers.addAll(possibleSubResources.values());
-
-        Collection<AnnotationInstance> unregisteredBeanParamAnnotations = new ArrayList<>(
-                index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM));
-        boolean newBeanParamsRegistered;
-        do {
-            newBeanParamsRegistered = false;
-            for (Iterator<AnnotationInstance> iterator = unregisteredBeanParamAnnotations.iterator(); iterator.hasNext();) {
-                AnnotationInstance beanParamAnnotation = iterator.next();
-                AnnotationTarget target = beanParamAnnotation.target();
-                // FIXME: this isn't right wrt generics
-                switch (target.kind()) {
-                    case FIELD:
-                        FieldInfo field = target.asField();
-                        ClassInfo beanParamDeclaringClass = field.declaringClass();
-                        if (beanParamAsBeanUsers.contains(beanParamDeclaringClass)
-                                || beanParams.contains(beanParamDeclaringClass.name().toString())) {
-                            newBeanParamsRegistered |= beanParams.add(field.type().name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    case METHOD:
-                        MethodInfo setterMethod = target.asMethod();
-                        if (beanParamAsBeanUsers.contains(setterMethod.declaringClass())
-                                || beanParams.contains(setterMethod.declaringClass().name().toString())) {
-                            Type setterParamType = setterMethod.parameterType(0);
-
-                            newBeanParamsRegistered |= beanParams.add(setterParamType.name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    case METHOD_PARAMETER:
-                        MethodInfo method = target.asMethodParameter().method();
-                        if (beanParamAsBeanUsers.contains(method.declaringClass())
-                                || beanParams.contains(method.declaringClass().name().toString())) {
-                            int paramIndex = target.asMethodParameter().position();
-                            Type paramType = method.parameterType(paramIndex);
-                            newBeanParamsRegistered |= beanParams.add(paramType.name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        } while (newBeanParamsRegistered);
-
         return new ResourceScanningResult(index, scannedResources,
                 scannedResourcePaths, possibleSubResources, pathInterfaces, clientInterfaces, resourcesThatNeedCustomProducer,
-                beanParams,
-                httpAnnotationToMethod, methodExceptionMappers);
+                httpAnnotationToMethod, methodExceptionMappers, requestScopedResources);
     }
 
     private static void addClientSubInterfaces(DotName interfaceName, IndexView index,
-            Map<DotName, String> clientInterfaceSubtypes, Map<DotName, String> clientInterfaces) {
+            Map<DotName, String> clientInterfaces) {
+
         Collection<ClassInfo> subclasses = index.getKnownDirectImplementors(interfaceName);
         for (ClassInfo subclass : subclasses) {
-            if (!clientInterfaces.containsKey(subclass.name()) && Modifier.isInterface(subclass.flags())
-                    && !clientInterfaceSubtypes.containsKey(subclass.name())) {
-                clientInterfaceSubtypes.put(subclass.name(), clientInterfaces.get(interfaceName));
-                addClientSubInterfaces(subclass.name(), index, clientInterfaceSubtypes, clientInterfaces);
+            if (!clientInterfaces.containsKey(subclass.name()) && Modifier.isInterface(subclass.flags())) {
+                clientInterfaces.put(subclass.name(), clientInterfaces.get(interfaceName));
+                addClientSubInterfaces(subclass.name(), index, clientInterfaces);
             }
         }
 
@@ -442,6 +436,32 @@ public class ResteasyReactiveScanner {
             }
         }
         return needsHandling ? ctor : null;
+    }
+
+    public static final Set<DotName> ANNOTATIONS_REQUIRING_FIELD_INJECTION = new HashSet<>(
+            Arrays.asList(PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM, MATRIX_PARAM,
+                    COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM, REST_MATRIX_PARAM,
+                    REST_COOKIE_PARAM, BEAN_PARAM));
+
+    private static boolean hasJaxRsFieldInjection(ClassInfo classInfo, IndexView index) {
+        while (true) {
+            for (FieldInfo field : classInfo.fields()) {
+                List<AnnotationInstance> annotations = field.annotations();
+                if (annotations.stream()
+                        .anyMatch(an -> ANNOTATIONS_REQUIRING_FIELD_INJECTION.contains(an.name()))) {
+                    return true;
+                }
+            }
+            DotName parentDotName = classInfo.superName();
+            if (parentDotName.equals(ResteasyReactiveDotNames.OBJECT)) {
+                return false;
+            }
+            classInfo = index.getClassByName(parentDotName);
+            if (classInfo == null) {
+                return false;
+            }
+        }
+
     }
 
 }

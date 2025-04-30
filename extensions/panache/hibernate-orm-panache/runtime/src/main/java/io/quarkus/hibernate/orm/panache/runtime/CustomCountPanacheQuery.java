@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
-
-import org.hibernate.query.spi.AbstractQuery;
+import org.hibernate.Session;
+import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 
@@ -11,21 +9,13 @@ import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
-    public CustomCountPanacheQuery(EntityManager em, Query jpaQuery, String customCountQuery,
+    public CustomCountPanacheQuery(Session session, SelectionQuery hibernateQuery, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(session, CommonPanacheQueryImpl.getQueryString(hibernateQuery),
+                null, null, paramsArrayOrMap) {
             {
-                this.countQuery = customCountQuery;
+                this.customCountQueryForSpring = customCountQuery;
             }
         });
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static org.hibernate.query.sqm.internal.QuerySqmImpl castQuery(Query jpaQuery) {
-        if (!(jpaQuery instanceof org.hibernate.query.sqm.internal.QuerySqmImpl)) {
-            throw new IllegalArgumentException("Unexpected Query class: '" + jpaQuery.getClass().getName() + "', where '"
-                    + AbstractQuery.class.getName() + "' is expected.");
-        }
-        return (org.hibernate.query.sqm.internal.QuerySqmImpl) jpaQuery;
     }
 }

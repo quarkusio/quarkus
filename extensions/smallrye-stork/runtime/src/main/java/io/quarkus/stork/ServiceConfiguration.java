@@ -1,19 +1,23 @@
 package io.quarkus.stork;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class ServiceConfiguration {
+public interface ServiceConfiguration {
     /**
      * ServiceDiscovery configuration for the service
      */
-    @ConfigItem
-    public StorkServiceDiscoveryConfiguration serviceDiscovery;
+    Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery();
 
     /**
      * LoadBalancer configuration for the service
      */
-    @ConfigItem
-    public StorkLoadBalancerConfiguration loadBalancer;
+    StorkLoadBalancerConfiguration loadBalancer();
+
+    /**
+     * ServiceRegistrar configuration for the service
+     */
+    Optional<StorkServiceRegistrarConfiguration> serviceRegistrar();
 }

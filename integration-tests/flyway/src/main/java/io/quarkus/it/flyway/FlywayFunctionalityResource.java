@@ -71,7 +71,7 @@ public class FlywayFunctionalityResource {
     @GET
     @Path("init-sql-result")
     public Integer returnInitSqlResult() {
-        return (Integer) entityManager.createNativeQuery("SELECT f_my_constant()")
+        return (Integer) entityManager.createNativeQuery("SELECT TEST_SCHEMA.f_my_constant()")
                 .getSingleResult();
     }
 

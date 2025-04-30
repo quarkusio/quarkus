@@ -83,8 +83,8 @@ public class MessageBundleTest {
                 foo.instance().render());
         assertEquals("Hello world! Ahoj Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
-        assertEquals("Hallo Welt! Hallo Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
-                foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.GERMAN).render());
+        assertEquals("Hallo Welt! Hallo Jachym! Hallo you guys! Hello alpha! Hello! Hello foo from alpha!",
+                foo.instance().setLocale(Locale.GERMAN).render());
         assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
         assertEquals("Hello world! Hello Malachi Constant!",
                 engine.getTemplate("dynamic").data("key", "hello_fullname").data("surname", "Constant").render());

@@ -29,14 +29,18 @@ public class FixedProducesHandler implements ServerRestHandler {
     public FixedProducesHandler(MediaType mediaType, EntityWriter writer) {
         this.mediaType = new EncodedMediaType(mediaType);
         this.writer = writer;
-        this.mediaTypeString = mediaType.getType() + "/" + mediaType.getSubtype();
-        this.mediaTypeSubstring = mediaType.getType() + "/*";
+        // we want to avoid the small startup cost incurred by JEP 280 and that shows up in the startup cpu flamegraph
+        this.mediaTypeString = new StringBuilder(mediaType.getType().length() + 1 + mediaType.getSubtype().length())
+                .append(mediaType.getType()).append("/").append(mediaType.getSubtype()).toString();
+        this.mediaTypeSubstring = new StringBuilder(mediaType.getType().length() + 2).append(mediaType.getType()).append("/*")
+                .toString();
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        List<String> acceptValues = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);
-        if (acceptValues.isEmpty()) {
+        List<String> acceptValues;
+        if (requestContext.isProducesChecked() ||
+                (acceptValues = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false)).isEmpty()) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);
         } else {

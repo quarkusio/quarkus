@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
@@ -19,7 +21,7 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveJsonCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveJsonCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
     }
@@ -70,40 +72,81 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
         nonNull(clazz, "clazz");
         return _jsonGet(key)
                 .map(r -> {
-                    if (r == null) {
-                        return null;
+                    var m = getJsonObject(r);
+                    if (m != null) {
+                        return m.mapTo(clazz);
                     }
-                    return Json.decodeValue(r.getDelegate().toBuffer(), clazz);
+                    return null;
                 });
     }
 
     @Override
     public Uni<JsonObject> jsonGetObject(K key) {
         return _jsonGet(key)
-                .map(r -> r.toBuffer().toJsonObject());
+                .map(ReactiveJsonCommandsImpl::getJsonObject);
     }
 
     @Override
     public Uni<JsonArray> jsonGetArray(K key) {
         return _jsonGet(key)
-                .map(r -> r.toBuffer().toJsonArray());
+                .map(ReactiveJsonCommandsImpl::getJsonArray);
+    }
+
+    static JsonArray getJsonArray(Response r) {
+        if (r == null || r.toString().equalsIgnoreCase("null")) { // JSON null
+            return null;
+        }
+        // With Redis 7.2 the response is a BULK (String) but using a nested array.
+        Buffer buffer = r.toBuffer();
+        JsonArray array = buffer.toJsonArray();
+        if (array.size() == 1 && array.getString(0).startsWith("[")) {
+            return array.getJsonArray(0);
+        }
+        return array;
+    }
+
+    static JsonObject getJsonObject(Response r) {
+        if (r == null || r.toString().equalsIgnoreCase("null")) { // JSON null
+            return null;
+        }
+        // With Redis 7.2 the response is a BULK (String) but using a nested array.
+        Buffer buffer = r.toBuffer();
+        if (buffer.toJsonValue() instanceof JsonArray) {
+            var array = buffer.toJsonArray();
+            if (array.size() == 0) {
+                return null;
+            }
+            return array.getJsonObject(0);
+        }
+        return r.toBuffer().toJsonObject();
+    }
+
+    static JsonArray getJsonArrayFromJsonGet(Response r) {
+        if (r == null || r.toString().equalsIgnoreCase("null")) { // JSON null
+            return null;
+        }
+        // With Redis 7.2 the response is a BULK (String) but using a nested array.
+        Buffer buffer = r.toBuffer();
+        if (buffer.toJsonValue() instanceof JsonArray) {
+            var array = buffer.toJsonArray();
+            if (array.size() == 0) {
+                return new JsonArray();
+            }
+            return array;
+        }
+        return buffer.toJsonArray();
     }
 
     @Override
     public Uni<JsonArray> jsonGet(K key, String path) {
         return _jsonGet(key, path)
-                .map(r -> r.toBuffer().toJsonArray());
+                .map(ReactiveJsonCommandsImpl::getJsonArrayFromJsonGet);
     }
 
     @Override
     public Uni<JsonObject> jsonGet(K key, String... paths) {
         return _jsonGet(key, paths)
-                .map(r -> {
-                    if (r == null || r.toString().equalsIgnoreCase("null")) { // JSON null
-                        return null;
-                    }
-                    return r.toBuffer().toJsonObject();
-                });
+                .map(ReactiveJsonCommandsImpl::getJsonObject);
     }
 
     @Override
@@ -283,7 +326,16 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
         List<String> list = new ArrayList<>();
         if (r.type() == ResponseType.MULTI) {
             for (Response response : r) {
-                list.add(response == null ? null : response.toString());
+                if (response == null) {
+                    list.add(null);
+                } else if (response.type() == ResponseType.MULTI) {
+                    // Redis 7.2 behavior
+                    for (Response nested : response) {
+                        list.add(nested == null ? null : nested.toString());
+                    }
+                } else {
+                    list.add(response.toString());
+                }
             }
         } else {
             list.add(r.toString());

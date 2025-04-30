@@ -13,12 +13,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -34,6 +34,7 @@ import io.quarkus.bootstrap.resolver.BootstrapTestBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsArtifact.ContentProvider;
 import io.quarkus.bootstrap.resolver.TsDependency;
+import io.quarkus.builder.BuildResult;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -49,9 +50,6 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
 
     protected void addToExpectedLib(TsArtifact entry) {
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
-    }
-
-    protected void assertDeploymentDep(Set<Dependency> deploymentDeps) throws Exception {
     }
 
     protected void assertAppModel(ApplicationModel appModel) throws Exception {
@@ -115,20 +113,77 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
 
     public static Collection<Dependency> getDeploymentOnlyDeps(ApplicationModel model) {
         return model.getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
-                .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet());
+                .map(ArtifactDependency::new).collect(Collectors.toSet());
     }
 
-    @Override
-    protected void testBootstrap(QuarkusBootstrap creator) throws Exception {
-        CuratedApplication curated = creator.bootstrap();
+    public static Collection<Dependency> getDependenciesWithFlag(ApplicationModel model, int flag) {
+        var set = new HashSet<Dependency>();
+        for (var d : model.getDependencies(flag)) {
+            set.add(new ArtifactDependency(d));
+        }
+        return set;
+    }
+
+    public static Collection<Dependency> getDependenciesWithAnyFlag(ApplicationModel model, int... flags) {
+        var set = new HashSet<Dependency>();
+        for (var d : model.getDependenciesWithAnyFlag(flags)) {
+            set.add(new ArtifactDependency(d));
+        }
+        return set;
+    }
+
+    /**
+     * Overriding this method allows performing a custom build targeting specific build items.
+     *
+     * @return alternative build items that should be produced instead of the default packaging ones
+     */
+    protected Class<?>[] targetBuildItems() {
+        return null;
+    }
+
+    private AugmentAction initAugmentAction(QuarkusBootstrap creator) throws Exception {
+        final CuratedApplication curated = creator.bootstrap();
         assertAppModel(curated.getApplicationModel());
         final String[] expectedExtensions = expectedExtensionDependencies();
         if (expectedExtensions != null) {
             assertExtensionDependencies(curated.getApplicationModel(), expectedExtensions);
         }
-        AugmentAction action = curated.createAugmentor();
-        AugmentResult outcome = action.createProductionApplication();
+        return curated.createAugmentor();
+    }
 
+    @Override
+    protected void testBootstrap(QuarkusBootstrap bootstrap) throws Exception {
+        testAugmentResult(initAugmentAction(bootstrap));
+    }
+
+    protected void testAugmentResult(AugmentAction augmentAction) throws Exception {
+        final Class<?>[] targetBuildItems = targetBuildItems();
+        if (targetBuildItems == null) {
+            assertAugmentOutcome(augmentAction.createProductionApplication());
+        } else {
+            augmentAction.performCustomBuild(CustomBuildConsumer.class.getName(), this, toClassNames(targetBuildItems));
+        }
+    }
+
+    private static String[] toClassNames(Class<?>[] classes) {
+        final String[] arr = new String[classes.length];
+        for (int i = 0; i < classes.length; ++i) {
+            arr[i] = classes[i].getName();
+        }
+        return arr;
+    }
+
+    public static class CustomBuildConsumer implements BiConsumer<PackageAppTestBase, BuildResult> {
+        @Override
+        public void accept(PackageAppTestBase test, BuildResult buildResult) {
+            test.assertBuildResult(buildResult);
+        }
+    }
+
+    protected void assertBuildResult(BuildResult result) {
+    }
+
+    private void assertAugmentOutcome(AugmentResult outcome) throws IOException {
         final Path libDir = outcome.getJar().getLibraryDir();
         assertTrue(Files.isDirectory(libDir));
         final Path bootLibDir = libDir.resolve("boot");
@@ -159,7 +214,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
             }
         }
 
-        List<String> missingEntries = Collections.emptyList();
+        List<String> missingEntries = List.of();
         for (String entry : expectedLib) {
             if (!actualMainLib.remove(entry)) {
                 if (missingEntries.isEmpty()) {

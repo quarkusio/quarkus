@@ -1,6 +1,5 @@
 package io.quarkus.deployment;
 
-import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,9 +11,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.DependencyInfoProvider;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChain;
@@ -54,8 +55,10 @@ public class QuarkusAugmentor {
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
+    private final Properties runtimeProperties;
     private final Path targetDir;
     private final ApplicationModel effectiveModel;
+    private final Supplier<DependencyInfoProvider> depInfoProvider;
     private final String baseName;
     private final String originalBaseName;
     private final boolean rebuild;
@@ -73,6 +76,7 @@ public class QuarkusAugmentor {
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
+        this.runtimeProperties = builder.runtimeProperties;
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.baseName = builder.baseName;
@@ -83,11 +87,12 @@ public class QuarkusAugmentor {
         this.auxiliaryApplication = builder.auxiliaryApplication;
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
         this.test = builder.test;
+        this.depInfoProvider = builder.depInfoProvider;
     }
 
     public BuildResult run() throws Exception {
-        if (!JavaVersionUtil.isJava11OrHigher()) {
-            throw new IllegalStateException("Quarkus applications require Java 11 or higher to build");
+        if (!JavaVersionUtil.isJava17OrHigher()) {
+            throw new IllegalStateException("Quarkus applications require Java 17 or higher to build");
         }
         long start = System.nanoTime();
         log.debug("Beginning Quarkus augmentation");
@@ -99,13 +104,9 @@ public class QuarkusAugmentor {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(deploymentClassLoader);
 
-            //provideCapabilities(chainBuilder);
-
-            //TODO: we load everything from the deployment class loader
-            //this allows the deployment config (application.properties) to be loaded, but in theory could result
-            //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
+                    runtimeProperties == null ? new Properties() : runtimeProperties,
                     effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
@@ -153,7 +154,7 @@ public class QuarkusAugmentor {
                             auxiliaryDevModeType, test))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, originalBaseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
-                    .produce(new AppModelProviderBuildItem(effectiveModel));
+                    .produce(new AppModelProviderBuildItem(effectiveModel, depInfoProvider));
             for (PathCollection i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
@@ -182,9 +183,6 @@ public class QuarkusAugmentor {
             } catch (Exception ignore) {
 
             }
-            if (deploymentClassLoader instanceof Closeable) {
-                ((Closeable) deploymentClassLoader).close();
-            }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             buildCloseables.close();
         }
@@ -210,6 +208,7 @@ public class QuarkusAugmentor {
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
         Properties buildSystemProperties;
+        Properties runtimeProperties;
 
         ApplicationModel effectiveModel;
         String baseName = QUARKUS_APPLICATION;
@@ -218,6 +217,7 @@ public class QuarkusAugmentor {
         DevModeType devModeType;
         boolean test;
         boolean auxiliaryApplication;
+        private Supplier<DependencyInfoProvider> depInfoProvider;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -321,6 +321,15 @@ public class QuarkusAugmentor {
             return this;
         }
 
+        public Properties getRuntimeProperties() {
+            return runtimeProperties;
+        }
+
+        public Builder setRuntimeProperties(final Properties runtimeProperties) {
+            this.runtimeProperties = runtimeProperties;
+            return this;
+        }
+
         public Builder setRebuild(boolean rebuild) {
             this.rebuild = rebuild;
             return this;
@@ -355,6 +364,11 @@ public class QuarkusAugmentor {
 
         public Builder setDeploymentClassLoader(ClassLoader deploymentClassLoader) {
             this.deploymentClassLoader = deploymentClassLoader;
+            return this;
+        }
+
+        public Builder setDependencyInfoProvider(Supplier<DependencyInfoProvider> depInfoProvider) {
+            this.depInfoProvider = depInfoProvider;
             return this;
         }
     }

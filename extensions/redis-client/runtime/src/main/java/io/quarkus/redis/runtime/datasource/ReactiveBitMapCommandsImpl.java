@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 import io.quarkus.redis.datasource.ReactiveRedisCommands;
@@ -14,7 +15,7 @@ public class ReactiveBitMapCommandsImpl<K> extends AbstractBitMapCommands<K>
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveBitMapCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveBitMapCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
     }

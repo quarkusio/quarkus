@@ -46,16 +46,15 @@
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-server-mock</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>kubernetes-httpclient-okhttp</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-httpclient-vertx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
@@ -66,4 +65,32 @@
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <!-- We override the rules here as Okhttp will be present -->
+                        <configuration>
+                            <rules combine-self="override">
+                                <dependencyConvergence />
+                                <externalRules>
+                                    <location>
+                                        classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

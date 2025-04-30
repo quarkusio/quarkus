@@ -62,7 +62,7 @@ import jakarta.inject.Qualifier;
  *
  * The list is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
  *
- * @see Priority
+ * @see jakarta.annotation.Priority
  */
 @Qualifier
 @Retention(RUNTIME)

@@ -10,6 +10,7 @@ dependencies {
 
 quarkusExtension {
     deploymentArtifact = "org.acme:ext-c-deployment:1.0-SNAPSHOT"
+    conditionalDevDependencies = ["org.acme:dev-mode-only-lib::jar:1.0-SNAPSHOT"]
 }
 
 publishing {

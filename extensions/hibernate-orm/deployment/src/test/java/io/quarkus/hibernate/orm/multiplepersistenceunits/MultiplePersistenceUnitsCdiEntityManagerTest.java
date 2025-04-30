@@ -7,10 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -40,6 +42,18 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Inject
     @PersistenceUnit("inventory")
     EntityManager inventoryEntityManager;
+
+    // The following sessionFactories are not used in tests but needs to be correctly created, if not the test will fail
+    @Inject
+    SessionFactory defaultSessionFactory;
+
+    @Inject
+    @Named("users")
+    SessionFactory usersFactory;
+
+    @Inject
+    @Named("inventory")
+    SessionFactory inventoryFactory;
 
     @Test
     @Transactional

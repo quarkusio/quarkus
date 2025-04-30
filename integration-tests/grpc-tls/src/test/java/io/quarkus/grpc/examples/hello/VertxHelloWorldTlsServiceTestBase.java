@@ -1,5 +1,6 @@
 package io.quarkus.grpc.examples.hello;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,8 @@ abstract class VertxHelloWorldTlsServiceTestBase extends HelloWorldTlsServiceTes
         options.setUseAlpn(true);
         options.setSsl(true);
         Buffer buffer;
-        try (InputStream stream = getClass().getClassLoader().getResourceAsStream("tls/ca.pem")) {
+
+        try (InputStream stream = new FileInputStream("target/certs/grpc-tls-ca.crt")) {
             buffer = Buffer.buffer(stream.readAllBytes());
         }
         options.setTrustOptions(new PemTrustOptions().addCertValue(buffer));
@@ -40,7 +42,9 @@ abstract class VertxHelloWorldTlsServiceTestBase extends HelloWorldTlsServiceTes
 
     @Override
     protected void doCleanup() {
-        GRPCTestUtils.close(client);
+        if (client != null) {
+            GRPCTestUtils.close(client);
+        }
         close(_vertx);
     }
 }

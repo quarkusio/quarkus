@@ -1,11 +1,13 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
-import 'qui-code-block';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@qomponent/qui-code-block';
 
 /**
  * This component renders build time data in raw json format
  */
-export class QwcDataRawPage extends LitElement {
+export class QwcDataRawPage extends observeState(LitElement) {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -15,11 +17,6 @@ export class QwcDataRawPage extends LitElement {
             flex-direction: column;
             padding-left: 10px;
             padding-right: 10px;
-        }
-        .jsondata {
-            height: 100%;
-            overflow: scroll;
-            padding-bottom: 100px;
         }
     `;
 
@@ -55,8 +52,10 @@ export class QwcDataRawPage extends LitElement {
 
         return html`<div class="codeBlock">
                         <qui-code-block 
-                            mode='javascript'
-                            content='${json}'>
+                            mode='json'
+                            content='${json}'
+                            theme='${themeState.theme.name}'
+                            showLineNumbers>
                         </qui-code-block>
             </div>`;
     }

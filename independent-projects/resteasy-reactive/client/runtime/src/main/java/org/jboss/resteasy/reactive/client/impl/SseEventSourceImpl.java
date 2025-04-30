@@ -42,6 +42,11 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
 
     public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
             long reconnectDelay, TimeUnit reconnectUnit) {
+        this(webTarget, invocationBuilder, reconnectDelay, reconnectUnit, null);
+    }
+
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
+            long reconnectDelay, TimeUnit reconnectUnit, String defaultContentType) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -49,7 +54,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         this.webTarget = webTarget;
         this.reconnectDelay = reconnectDelay;
         this.reconnectUnit = reconnectUnit;
-        this.sseParser = new SseParser(this);
+        this.sseParser = new SseParser(this, defaultContentType);
         this.invocationBuilder = invocationBuilder;
     }
 
@@ -136,7 +141,9 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         vertxClientResponse.request().exceptionHandler(null);
         connection = vertxClientResponse.request().connection();
         String sseContentTypeHeader = vertxClientResponse.getHeader(CommonSseUtil.SSE_CONTENT_TYPE);
-        sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        if ((sseContentTypeHeader != null) && !sseContentTypeHeader.isEmpty()) {
+            sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        }
         // we don't add a closeHandler handler on the connection as it can race with this handler
         // and close before the emitter emits anything
         // see: https://github.com/quarkusio/quarkus/pull/16438
@@ -203,7 +210,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             timerId = -1;
         }
         // schedule a new reconnect if the client closed us
-        if (clientClosed) {
+        if (clientClosed && reconnectDelay != Integer.MAX_VALUE) {
             timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(reconnectDelay, reconnectUnit), this);
         }
     }

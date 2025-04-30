@@ -1,6 +1,6 @@
 package io.quarkus.runtime;
 
-import org.graalvm.nativeimage.ImageInfo;
+import io.quarkus.bootstrap.graal.ImageInfo;
 
 /**
  * The image execution mode of the application.

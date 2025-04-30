@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.cuckoo.CfInsertArgs;
 import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
@@ -143,6 +146,23 @@ public class CuckooCommandsTest extends DatasourceTestBase {
         cuckoo.cfreserve("key3", 6000, new CfReserveArgs().expansion(5).bucketSize(1));
         assertThat(cuckoo.cfinsertnx("key3", luke, leia, anakin)).containsExactly(true, true, true);
         assertThat(cuckoo.cfmexists("key3", luke, anakin, leia)).containsExactly(true, true, true);
+    }
+
+    @Test
+    void cuckooWithTypeReference() {
+        var cuckoo = ds.cuckoo(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        var l1 = List.of(Person.person1, Person.person2);
+        var l2 = List.of(Person.person1, Person.person3);
+        cuckoo.cfadd(key, l1);
+
+        assertThat(cuckoo.cfexists(key, l1)).isTrue();
+        assertThat(cuckoo.cfexists(key, l2)).isFalse();
+
+        assertThat(cuckoo.cfaddnx(key, l1)).isFalse();
+        cuckoo.cfadd(key, l2);
+        assertThat(cuckoo.cfexists(key, l2)).isTrue();
     }
 
 }

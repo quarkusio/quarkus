@@ -10,7 +10,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -44,10 +43,11 @@ public class PulsarSchemaDiscoveryProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBean,
             RecorderContext recorderContext,
             SchemaProviderRecorder recorder) {
-        if (buildTimeConfig.schemaAutodetectionEnabled) {
+        if (buildTimeConfig.schemaAutodetectionEnabled()) {
             DefaultSchemaDiscoveryState discoveryState = new DefaultSchemaDiscoveryState(combinedIndex.getIndex());
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.schemaGenerationEnabled ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
+                    buildTimeConfig.schemaGenerationEnabled()
+                            ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
                             : null);
         }
     }
@@ -69,7 +69,7 @@ public class PulsarSchemaDiscoveryProcessor {
             processIncomingType(discovery, config, incomingType, channelName, syntheticBean);
         }
 
-        for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.OUTGOING)) {
+        for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING)) {
             String channelName = annotation.value().asString();
             if (!discovery.isPulsarConnector(channelsManagedByConnectors, false, channelName)) {
                 continue;
@@ -144,15 +144,19 @@ public class PulsarSchemaDiscoveryProcessor {
     }
 
     private Type getInjectionPointType(AnnotationInstance annotation) {
-        switch (annotation.target().kind()) {
-            case FIELD:
-                return annotation.target().asField().type();
-            case METHOD_PARAMETER:
-                MethodParameterInfo parameter = annotation.target().asMethodParameter();
-                return parameter.method().parameterType(parameter.position());
-            default:
-                return null;
-        }
+        return switch (annotation.target().kind()) {
+            case FIELD -> handleInstanceChannelInjection(annotation.target().asField().type());
+            case METHOD_PARAMETER -> handleInstanceChannelInjection(annotation.target().asMethodParameter().type());
+            default -> null;
+        };
+    }
+
+    private Type handleInstanceChannelInjection(Type type) {
+        return (DotNames.INSTANCE.equals(type.name())
+                || DotNames.PROVIDER.equals(type.name())
+                || DotNames.INJECTABLE_INSTANCE.equals(type.name()))
+                        ? type.asParameterizedType().arguments().get(0)
+                        : type;
     }
 
     private void produceRuntimeConfigurationDefaultBuildItem(DefaultSchemaDiscoveryState discovery,
@@ -189,7 +193,7 @@ public class PulsarSchemaDiscoveryProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.OUTGOING)) {
+        if (method.hasAnnotation(DotNames.OUTGOING) || method.hasAnnotation(DotNames.OUTGOINGS)) {
             if ((isCompletionStage(returnType) && parametersCount >= 1)
                     || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
@@ -251,21 +255,21 @@ public class PulsarSchemaDiscoveryProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.INCOMING)) {
-            if ((isCompletionStage(returnType) && parametersCount == 1)
-                    || (isUni(returnType) && parametersCount == 1)
-                    || (isPublisher(returnType) && parametersCount == 1)
+        if (method.hasAnnotation(DotNames.INCOMING) || method.hasAnnotation(DotNames.INCOMINGS)) {
+            if (isCompletionStage(returnType) || isUni(returnType) || isMulti(returnType)) {
+                outgoingType = returnType.asParameterizedType().arguments().get(0);
+            } else if ((isPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
                     || (isFlowPublisher(returnType) && parametersCount == 1)
-                    || (isMulti(returnType) && parametersCount == 1)) {
+                    || (isMultiSplitter(returnType) && parametersCount == 1)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(0);
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(1);
-            } else if (parametersCount == 1) {
-                outgoingType = returnType;
             } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
+            } else {
+                outgoingType = returnType;
             }
 
             // @Incoming @Outgoing stream manipulation
@@ -296,7 +300,8 @@ public class PulsarSchemaDiscoveryProcessor {
             return null;
         }
 
-        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType) || isPulsarEmitter(injectionPointType)) {
+        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)
+                || isContextualEmitter(injectionPointType) || isPulsarEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
             return null;
@@ -321,6 +326,15 @@ public class PulsarSchemaDiscoveryProcessor {
 
     private void extractValueType(Type type, BiConsumer<Type, Boolean> schemaAcceptor) {
         if (type == null) {
+            return;
+        }
+
+        if (isTargeted(type)) {
+            return;
+        }
+
+        if (isGenericPayload(type)) {
+            extractValueType(type.asParameterizedType().arguments().get(0), schemaAcceptor);
             return;
         }
 
@@ -375,6 +389,18 @@ public class PulsarSchemaDiscoveryProcessor {
         return DotNames.MULTI.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isMultiSplitter(Type type) {
+        // raw type MultiSplitter is wrong, must be MultiSplitter<Something, KeyEnum>
+        return DotNames.MULTI_SPLITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isTargeted(Type type) {
+        return DotNames.TARGETED.equals(type.name())
+                || DotNames.TARGETED_MESSAGES.equals(type.name());
     }
 
     private static boolean isFlowPublisher(Type type) {
@@ -442,6 +468,13 @@ public class PulsarSchemaDiscoveryProcessor {
                 && type.asParameterizedType().arguments().size() == 1;
     }
 
+    private static boolean isContextualEmitter(Type type) {
+        // raw type MutinyEmitter is wrong, must be MutinyEmitter<Something>
+        return DotNames.CONTEXTUAL_EMITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
     private static boolean isPulsarEmitter(Type type) {
         // raw type PulsarTransactions is wrong, must be PulsarTransactions<Something>
         return DotNames.PULSAR_EMITTER.equals(type.name())
@@ -454,6 +487,13 @@ public class PulsarSchemaDiscoveryProcessor {
     private static boolean isMessage(Type type) {
         // raw type Message is wrong, must be Message<Something>
         return DotNames.MESSAGE.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isGenericPayload(Type type) {
+        // raw type Message is wrong, must be Message<Something>
+        return DotNames.GENERIC_PAYLOAD.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
     }

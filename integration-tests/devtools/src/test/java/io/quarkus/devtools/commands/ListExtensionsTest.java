@@ -141,7 +141,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void searchRest() throws Exception {
+    public void searchHibernate() throws Exception {
         final QuarkusProject quarkusProject = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(quarkusProject, "commons-io:commons-io:2.5", "Agroal");
 
@@ -150,7 +150,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
             new ListExtensions(quarkusProject, MessageWriter.info(printStream))
                     .all(true)
                     .format("full")
-                    .search("Rest")
+                    .search("Hibernate")
                     .execute();
         }
         final String output = baos.toString("UTF-8");
@@ -192,6 +192,9 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     private static Map<ArtifactKey, ArtifactCoords> readByKey(QuarkusProject project) throws IOException {
+        // re-create the QuarkusProject to re-read the POM Model from the disk
+        project = QuarkusProjectHelper.getProject(project.getProjectDirPath(), project.getExtensionsCatalog(),
+                project.getBuildTool(), project.getJavaVersion(), project.log());
         return project.getExtensionManager().getInstalled().stream()
                 .collect(toMap(ArtifactCoords::getKey, Function.identity()));
     }

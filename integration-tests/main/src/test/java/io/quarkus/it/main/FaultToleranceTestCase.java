@@ -20,7 +20,7 @@ public class FaultToleranceTestCase {
     URL uri;
 
     @Test
-    public void testRetry() throws Exception {
+    public void test() throws Exception {
         RestAssured
                 .given().baseUri(uri.toString())
                 .when().get()
@@ -30,5 +30,15 @@ public class FaultToleranceTestCase {
                 .given().baseUri(uri.toString() + "/retried")
                 .when().get()
                 .then().body(is("2:Lucie"));
+
+        RestAssured
+                .given().baseUri(uri.toString() + "/fallback")
+                .when().get()
+                .then().body(is("1:fallback"));
+
+        RestAssured
+                .given().baseUri(uri.toString() + "/hello")
+                .when().get()
+                .then().body(is("hello"));
     }
 }

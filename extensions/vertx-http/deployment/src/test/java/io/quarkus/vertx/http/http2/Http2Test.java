@@ -9,23 +9,27 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.JdkSSLEngineOptions;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class Http2Test {
 
     protected static final String PING_DATA = "12345678";
@@ -33,24 +37,24 @@ public class Http2Test {
     @TestHTTPResource(value = "/ping", ssl = true)
     URL sslUrl;
 
-    @TestHTTPResource(value = "/ping", ssl = false)
-    URL url;
+    @TestHTTPResource(value = "/ping")
+    URL plainUrl;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
-                    .addAsResource(new File("src/test/resources/conf/ssl-jks.conf"), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-keystore.jks"), "server-keystore.jks"));
+                    .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
     public void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
-        Assumptions.assumeTrue(JdkSSLEngineOptions.isAlpnAvailable()); //don't run on JDK8
         WebClientOptions options = new WebClientOptions()
                 .setUseAlpn(true)
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setSsl(true)
-                .setTrustAll(true);
+                .setTrustOptions(new JksOptions().setPath("target/certs/ssl-test-truststore.jks").setPassword("secret"));
         WebClient client = WebClient.create(VertxCoreRecorder.getVertx().get(), options);
         int port = sslUrl.getPort();
 
@@ -63,7 +67,7 @@ public class Http2Test {
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
         WebClient client = WebClient.create(VertxCoreRecorder.getVertx().get(), options);
-        runTest(client, url.getPort());
+        runTest(client, plainUrl.getPort());
     }
 
     private void runTest(WebClient client, int port) throws InterruptedException, ExecutionException {

@@ -1,6 +1,6 @@
 package io.quarkus.builder;
 
-import static io.quarkus.builder.Execution.*;
+import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -12,13 +12,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The context passed to a deployer's operation.
@@ -154,32 +153,6 @@ public final class BuildContext {
         final List<T> result = consumeMulti(type);
         result.sort(comparator);
         return result;
-    }
-
-    /**
-     * Determine if an item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     *         not consume the named item
-     */
-    public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
-        final ItemId id = new ItemId(type);
-        return stepInfo.getConsumes().contains(id) && id.isMulti()
-                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
-                : execution.getSingles().containsKey(id);
-    }
-
-    /**
-     * Determine if an item will be consumed in this build. If an item is not consumed, then build steps are not
-     * required to produce it.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item will be consumed, {@code false} if it will not be or if this deployer does
-     *         not produce the named item
-     */
-    public boolean isConsumed(Class<? extends BuildItem> type) {
-        return execution.getBuildChain().getConsumed().contains(new ItemId(type));
     }
 
     /**

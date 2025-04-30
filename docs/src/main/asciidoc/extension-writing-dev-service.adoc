@@ -1,0 +1,153 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="extension-writing-dev-service"]
+= Writing a Dev Service
+include::_attributes.adoc[]
+:categories: writing-extensions
+:diataxis-type: howto
+:topics: extensions
+
+Learn how to develop a xref:dev-services.adoc[Dev Service] for your extension in order to replace an external service in development mode.
+
+== Prerequisites
+
+:prerequisites-time: 15 minutes
+:prerequisites-docker:
+:prerequisites-no-cli:
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+* An xref:building-my-first-extension.adoc[extension structure] in place
+* A containerised version of your external service (not all Dev Services rely on containers, but most do)
+
+== Creating a Dev Service
+
+If your extension provides APIs for connecting to an external service, it's a good idea to provide a dev service implementation.
+
+First, you must add the following dependency to the build file, in your xref:writing-extensions.adoc#project-setup[deployement] module :
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-devservices-deployment</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-devservices-deployment")
+----
+
+Then, add a new build step into the extension processor class that returns a `DevServicesResultBuildItem`.
+Here, the https://hub.docker.com/_/hello-world[`hello-world`] image is used, but you should set up the right image for your service.
+
+[source,java]
+----
+@BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+public DevServicesResultBuildItem createContainer() {
+    DockerImageName dockerImageName = DockerImageName.parse("hello-world");
+    GenericContainer container = new GenericContainer<>(dockerImageName)
+                                     .withExposedPorts(SERVICE_PORT, OTHER_SERVICE_PORT)
+                                     .waitingFor(Wait.forLogMessage(".*Started.*", 1))
+                                     .withReuse(true);
+
+    container.start();
+
+    String newUrl = "http://%s:%d".formatted(container.getHost(),
+            container.getMappedPort(SERVICE_PORT));
+    Map<String, String> configOverrides = Map.of("some-service.base-url", newUrl);
+
+    return new DevServicesResultBuildItem.RunningDevService(FEATURE,
+            container.getContainerId(),
+            container::close,
+            configOverrides).toBuildItem();
+}
+----
+
+With this code, you should be able to see your container starting if you add your extension to a test application and run `quarkus dev`.
+However, the application will not be able to connect to it, because no ports are exposed.
+To expose ports, add `withExposedPorts` to the container construction.
+For example,
+
+[source,java]
+----
+GenericContainer container = new GenericContainer<>(dockerImageName)
+                                 .withExposedPorts(SERVICE_PORT, OTHER_SERVICE_PORT);
+----
+
+`Testcontainers` will map these ports to random ports on the host.
+This avoids port conflicts, but presents a new problem – how do applications connect to the service in the container?
+
+To allow applications to connect, the extension should override the default configuration for the service with the mapped ports.
+This must be done after starting the container.
+For example,
+
+[source,java]
+----
+container.start();
+String serviceUrl = "http://%s:%d".formatted(container.getHost(),
+        container.getMappedPort(SERVICE_PORT));
+Map<String, String> configOverrides = Map.of("some-service.base-url",
+    serviceUrl);
+----
+
+Other configuration overrides may be included in the same map.
+
+== Waiting for the container to start
+
+You should add a `.waitingFor` call to the container construction, to wait for the container to start.
+For example
+
+[source,java]
+----
+container.waitingFor(Wait.forLogMessage(".*Started.*", 1));
+----
+
+Waiting for a port to be open is another option.
+See the link:https://java.testcontainers.org/features/startup_and_waits/[Testcontainers documentation] for a full discussion on wait strategies.
+
+== Configuring the Dev Service
+
+To configure the Dev Service launch process, your build step can accept a `ConfigPhase.BUILD_TIME` config class in its constructor.
+For example,
+
+[source,java]
+----
+@BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+public DevServicesResultBuildItem createContainer(MyConfig config) {}
+----
+
+You may wish to use this config to set a fixed port, or set an image name, for example.
+
+[source,java]
+----
+if (config.port.isPresent()) {
+    String portBinding = "%d:%d".formatted(config.port.get(), SERVICE_PORT);
+    container.setPortBindings(List.of(portBinding));
+}
+----
+
+== Controlling re-use
+
+In dev mode, with live reload, Quarkus may restart frequently.
+By default, this will also restart test containers.
+Quarkus restarts are usually very fast, but containers may take much longer to restart.
+To prevent containers restarting on every code change, you can mark the container as reusable:
+
+[source,java]
+----
+container.withReuse(true);
+----
+
+Some Dev Services implement sophisticated reuse logic in which they track the state of the container in the processor itself.
+You may need this if your service has more complex requirements, or needs sharing across instances.
+
+== References
+
+- xref:dev-services.adoc[Dev services overview]
+- xref:writing-extensions.adoc[Guide to writing extensions]

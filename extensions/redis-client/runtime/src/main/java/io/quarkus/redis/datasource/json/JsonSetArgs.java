@@ -31,11 +31,11 @@ public class JsonSetArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         if (xx && nx) {
             throw new IllegalArgumentException("Cannot set XX and NX together");
         }
-        List<String> args = new ArrayList<>();
+        List<Object> args = new ArrayList<>();
         if (xx) {
             args.add("XX");
         }

@@ -19,7 +19,7 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.ReaderInterceptor;
 import jakarta.ws.rs.ext.ReaderInterceptorContext;
 
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyReader;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -76,22 +76,24 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
             for (MessageBodyReader<?> reader : readers) {
                 if (reader.isReadable(entityClass, entityType, annotations, mediaType)) {
                     try {
-                        if (reader instanceof ClientRestHandler) {
-                            try {
-                                ((ClientRestHandler) reader).handle(clientRequestContext);
-                            } catch (Exception e) {
-                                throw new WebApplicationException("Can't inject the client request context", e);
-                            }
+                        if (reader instanceof ClientMessageBodyReader) {
+                            return ((ClientMessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType,
+                                    headers,
+                                    inputStream, clientRequestContext);
+                        } else {
+                            return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType,
+                                    headers,
+                                    inputStream);
                         }
-                        return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType, headers,
-                                inputStream);
+
                     } catch (IOException e) {
                         throw new ProcessingException(e);
                     }
                 }
             }
 
-            StringBuilder errorMessage = new StringBuilder("Response could not be mapped to type " + entityType);
+            StringBuilder errorMessage = new StringBuilder(
+                    "Response could not be mapped to type " + entityType + " for response with media type " + mediaType);
             if (!contextualizers.isEmpty()) {
                 var input = new MissingMessageBodyReaderErrorMessageContextualizer.Input() {
                     @Override

@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.opentelemetry.deployment.common.HelloResource;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
@@ -23,7 +23,8 @@ public class OpenTelemetryDevModeTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
-                            "quarkus.otel.traces.exporter=test-span-exporter")), "application.properties"));
+                            "quarkus.otel.traces.exporter=test-span-exporter",
+                            "quarkus.otel.metrics.exporter=none")), "application.properties"));
 
     @Test
     void testDevMode() {

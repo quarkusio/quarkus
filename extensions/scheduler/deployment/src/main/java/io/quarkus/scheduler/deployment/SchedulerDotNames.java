@@ -6,6 +6,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 
 class SchedulerDotNames {
 
@@ -22,5 +23,7 @@ class SchedulerDotNames {
     static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
     static final DotName ABSTRACT_COROUTINE_INVOKER = DotName
             .createSimple("io.quarkus.scheduler.kotlin.runtime.AbstractCoroutineInvoker");
+
+    static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class);
 
 }

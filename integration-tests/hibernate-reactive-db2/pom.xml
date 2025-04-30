@@ -14,8 +14,9 @@
     <description>Hibernate Reactive related tests running with the DB2 database</description>
 
     <properties>
-        <reactive-db2.url>vertx-reactive:db2://localhost:50000/hreact</reactive-db2.url>
+        <reactive-db2.url>vertx-reactive:db2://localhost:50005/hreact</reactive-db2.url>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -27,7 +28,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+            <artifactId>quarkus-rest-jsonb</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -71,7 +72,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -157,9 +158,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-db2.url>vertx-reactive:db2://localhost:50005/hreact</reactive-db2.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

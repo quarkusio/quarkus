@@ -4,139 +4,119 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 
-@ConfigGroup
-public class SecurityContextConfig {
-
+public interface SecurityContextConfig {
     /**
      * SELinuxOptions to be applied to the container.
      */
-    SeLinuxOptions seLinuxOptions;
+    SeLinuxOptions seLinuxOptions();
 
     /**
      * The Windows specific settings applied to all containers.
      */
-    WindowsOptions windowsOptions;
+    WindowsOptions windowsOptions();
 
     /**
      * The UID to run the entrypoint of the container process.
      */
-    @ConfigItem
-    Optional<Long> runAsUser;
+    Optional<Long> runAsUser();
 
     /**
      * The GID to run the entrypoint of the container process.
      */
-    @ConfigItem
-    Optional<Long> runAsGroup;
+    Optional<Long> runAsGroup();
 
     /**
      * Indicates that the container must run as a non-root user.
      */
-    @ConfigItem
-    Optional<Boolean> runAsNonRoot;
+    Optional<Boolean> runAsNonRoot();
 
     /**
      * A list of groups applied to the first process run in each container, in addition to the container's primary GID.
      * If unspecified, no groups will be added to any container.
      */
-    @ConfigItem
-    Optional<List<Long>> supplementalGroups;
+    Optional<List<Long>> supplementalGroups();
 
     /**
      * A special supplemental group that applies to all containers in a pod.
      */
-    @ConfigItem
-    Optional<Long> fsGroup;
+    Optional<Long> fsGroup();
 
     /**
      * Sysctls hold a list of namespaced sysctls used for the pod.
      */
-    @ConfigItem
-    Optional<Map<String, String>> sysctls;
+    @ConfigDocMapKey("sysctl-name")
+    Map<String, String> sysctls();
 
     /**
      * It holds policies that will be used for applying fsGroup to a volume when volume is mounted.
      * Values: OnRootMismatch, Always
      */
-    @ConfigItem
-    Optional<PodFSGroupChangePolicy> fsGroupChangePolicy;
+    Optional<PodFSGroupChangePolicy> fsGroupChangePolicy();
 
-    protected boolean isAnyPropertySet() {
-        return seLinuxOptions.isAnyPropertySet() || windowsOptions.isAnyPropertySet() || runAsUser.isPresent()
-                || runAsGroup.isPresent() || runAsNonRoot.isPresent() || supplementalGroups.isPresent()
-                || fsGroup.isPresent() || sysctls.isPresent() || fsGroupChangePolicy.isPresent();
+    default boolean isAnyPropertySet() {
+        return seLinuxOptions().isAnyPropertySet() || windowsOptions().isAnyPropertySet() || runAsUser().isPresent()
+                || runAsGroup().isPresent() || runAsNonRoot().isPresent() || supplementalGroups().isPresent()
+                || fsGroup().isPresent() || !sysctls().isEmpty() || fsGroupChangePolicy().isPresent();
     }
 
-    @ConfigGroup
-    public static class SeLinuxOptions {
-
+    interface SeLinuxOptions {
         /**
          * The SELinux level label that applies to the container.
          */
-        @ConfigItem
-        Optional<String> level;
+        Optional<String> level();
 
         /**
          * The SELinux role label that applies to the container.
          */
-        @ConfigItem
-        Optional<String> role;
+        Optional<String> role();
 
         /**
          * The SELinux type label that applies to the container.
          */
-        @ConfigItem
-        Optional<String> type;
+        Optional<String> type();
 
         /**
          * The SELinux user label that applies to the container.
          */
-        @ConfigItem
-        Optional<String> user;
+        Optional<String> user();
 
-        protected boolean isAnyPropertySet() {
-            return level.isPresent() || role.isPresent() || type.isPresent() || user.isPresent();
+        default boolean isAnyPropertySet() {
+            return level().isPresent() || role().isPresent() || type().isPresent() || user().isPresent();
         }
     }
 
-    @ConfigGroup
-    public static class WindowsOptions {
-
+    interface WindowsOptions {
         /**
          * The name of the GMSA credential spec to use.
          */
-        @ConfigItem
-        Optional<String> gmsaCredentialSpecName;
+        Optional<String> gmsaCredentialSpecName();
 
         /**
-         * GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the
-         * contents of the GMSA credential spec named by the GMSACredentialSpecName field.
+         * GMSACredentialSpec is where the GMSA admission webhook
+         * (<a href="https://github.com/kubernetes-sigs/windows-gmsa">windows-gsma</a>) inlines the contents of the
+         * GMSA credential spec named by the GMSACredentialSpecName field.
          */
-        @ConfigItem
-        Optional<String> gmsaCredentialSpec;
+        Optional<String> gmsaCredentialSpec();
 
         /**
          * The UserName in Windows to run the entrypoint of the container process.
          */
-        @ConfigItem
-        Optional<String> runAsUserName;
+        Optional<String> runAsUserName();
 
         /**
          * HostProcess determines if a container should be run as a 'Host Process' container.
          */
-        @ConfigItem
-        Optional<Boolean> hostProcess;
+        Optional<Boolean> hostProcess();
 
-        protected boolean isAnyPropertySet() {
-            return gmsaCredentialSpecName.isPresent() || gmsaCredentialSpec.isPresent() || runAsUserName.isPresent()
-                    || hostProcess.isPresent();
+        default boolean isAnyPropertySet() {
+            return gmsaCredentialSpecName().isPresent() || gmsaCredentialSpec().isPresent() || runAsUserName().isPresent()
+                    || hostProcess().isPresent();
         }
     }
 
-    public enum PodFSGroupChangePolicy {
+    enum PodFSGroupChangePolicy {
         /**
          * It indicates that volume's ownership and permissions will be changed only when permission and ownership of root
          * directory does not match with expected permissions on the volume.

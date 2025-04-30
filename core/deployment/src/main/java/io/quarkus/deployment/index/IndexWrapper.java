@@ -1,5 +1,7 @@
 package io.quarkus.deployment.index;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -26,14 +28,22 @@ import org.jboss.jandex.ModuleInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.steps.CombinedIndexBuildStep;
-
 /**
  * This wrapper is used to index JDK classes on demand.
  */
 public class IndexWrapper implements IndexView {
 
-    private static final Logger LOGGER = Logger.getLogger(CombinedIndexBuildStep.class);
+    private static final Logger LOGGER = Logger.getLogger(IndexWrapper.class);
+
+    private static final Set<String> PRIMITIVE_TYPES = Set.of(
+            "boolean",
+            "byte",
+            "short",
+            "int",
+            "long",
+            "float",
+            "double",
+            "char");
 
     private final IndexView index;
     private final ClassLoader deploymentClassLoader;
@@ -159,6 +169,35 @@ public class IndexWrapper implements IndexView {
         }
 
         return result;
+    }
+
+    @Override
+    public Collection<ClassInfo> getKnownDirectImplementations(DotName interfaceName) {
+        if (additionalClasses.isEmpty()) {
+            return index.getKnownDirectImplementations(interfaceName);
+        }
+        Set<ClassInfo> directImplementations = new HashSet<>(index.getKnownDirectImplementations(interfaceName));
+        for (Optional<ClassInfo> additional : additionalClasses.values()) {
+            if (additional.isEmpty()) {
+                continue;
+            }
+            ClassInfo additionalClass = additional.get();
+            if (additionalClass.isInterface()) {
+                continue;
+            }
+            for (Type interfaceType : additionalClass.interfaceTypes()) {
+                if (interfaceName.equals(interfaceType.name())) {
+                    directImplementations.add(additionalClass);
+                    break;
+                }
+            }
+        }
+        return directImplementations;
+    }
+
+    @Override
+    public Collection<ClassInfo> getAllKnownImplementations(DotName interfaceName) {
+        return getAllKnownImplementors(interfaceName);
     }
 
     @Override
@@ -300,8 +339,12 @@ public class IndexWrapper implements IndexView {
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
         boolean result = false;
+        if (PRIMITIVE_TYPES.contains(className) || className.startsWith("[")) {
+            // Ignore primitives and arrays
+            return false;
+        }
         try (InputStream stream = classLoader
-                .getResourceAsStream(className.replace('.', '/') + ".class")) {
+                .getResourceAsStream(fromClassNameToResourceName(className))) {
             if (stream != null) {
                 indexer.index(stream);
                 result = true;

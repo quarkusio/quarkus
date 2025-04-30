@@ -1,5 +1,7 @@
 package io.quarkus.azure.functions.deployment;
 
+import static io.quarkus.azure.functions.deployment.AzureFunctionsDeployCommand.AZURE_FUNCTIONS;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -44,6 +46,7 @@ import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandle
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,7 +56,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
@@ -65,20 +67,13 @@ public class AzureFunctionsProcessor {
     public static final String FUNCTION_JSON = "function.json";
 
     @BuildStep
-    public LegacyJarRequiredBuildItem forceLegacy(PackageConfig config) {
-        // Azure Functions need a legacy jar and no runner
-        config.addRunnerSuffix = false;
-        return new LegacyJarRequiredBuildItem();
-    }
-
-    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.AZURE_FUNCTIONS);
     }
 
     @BuildStep
     AzureFunctionsAppNameBuildItem appName(OutputTargetBuildItem output, AzureFunctionsConfig functionsConfig) {
-        String appName = functionsConfig.appName.orElse(output.getBaseName());
+        String appName = functionsConfig.appName().orElse(output.getBaseName());
         return new AzureFunctionsAppNameBuildItem(appName);
     }
 
@@ -93,12 +88,17 @@ public class AzureFunctionsProcessor {
             log.warn("No azure functions exist in deployment");
             return null;
         }
+        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+            throw new BuildException("Azure Function deployment need to use a legacy JAR, " +
+                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+                    List.of());
+        }
         AnnotationHandler handler = new AnnotationHandlerImpl();
         HashSet<Method> methods = new HashSet<>();
         for (AzureFunctionBuildItem item : functions)
             methods.add(item.getMethod());
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
-        final String scriptFilePath = String.format("../%s.jar", target.getBaseName() + packageConfig.getRunnerSuffix());
+        final String scriptFilePath = String.format("../%s.jar", target.getBaseName() + packageConfig.computedRunnerSuffix());
         configMap.values().forEach(config -> config.setScriptFile(scriptFilePath));
         configMap.values().forEach(FunctionConfiguration::validate);
 
@@ -106,7 +106,7 @@ public class AzureFunctionsProcessor {
 
         Path rootPath = target.getOutputDirectory().resolve("..");
         Path outputDirectory = target.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
+        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
         copyHostJson(rootPath, functionStagingDir);
 
@@ -115,7 +115,7 @@ public class AzureFunctionsProcessor {
         writeFunctionJsonFiles(objectWriter, configMap, functionStagingDir);
 
         copyJarsToStageDirectory(jar, functionStagingDir);
-        return new ArtifactResultBuildItem(functionStagingDir, "azure-functions", Collections.EMPTY_MAP);
+        return new ArtifactResultBuildItem(functionStagingDir, AZURE_FUNCTIONS, Collections.EMPTY_MAP);
     }
 
     protected void writeFunctionJsonFiles(final ObjectWriter objectWriter,
@@ -213,7 +213,7 @@ public class AzureFunctionsProcessor {
                 Class declaring = loader.loadClass(ci.name().toString());
                 Class[] params = methodInfo.parameters().stream().map(methodParameterInfo -> {
                     try {
-                        return loader.loadClass(methodParameterInfo.type().name().toString());
+                        return Class.forName(methodParameterInfo.type().name().toString(), false, loader);
                     } catch (ClassNotFoundException e) {
                         throw new DeploymentException(e);
                     }

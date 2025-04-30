@@ -25,10 +25,11 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
@@ -56,7 +57,7 @@ class NettyProcessor {
     @BuildStep
     public SystemPropertyBuildItem limitArenaSize(NettyBuildTimeConfig config,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
-        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, true);
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
 
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
@@ -78,10 +79,28 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SystemPropertyBuildItem disableFinalizers() {
+        return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+    }
+
+    @BuildStep
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
+
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "jdk.internal.misc.Unsafe", "getUnsafe", new String[0]));
+        // in JDK >= 21 the constructor has `long, long` signature
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), long.class.getName() }));
+        // in JDK < 21 the constructor has `long, int` signature
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), int.class.getName() }));
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
                 .build());
@@ -94,72 +113,181 @@ class NettyProcessor {
                 .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
-        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
+        String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
-                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
+                // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
+                // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
+                // Runtime initialize to respect run-time provided values of the following properties:
+                // - io.netty.handler.ssl.openssl.bioNonApplicationBufferSize
+                // - io.netty.handler.ssl.openssl.useTasks
+                // - jdk.tls.client.enableSessionTicketExtension
+                // - io.netty.handler.ssl.openssl.sessionCacheServer
+                // - io.netty.handler.ssl.openssl.sessionCacheClient
+                // - jdk.tls.ephemeralDHKeySize
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
+                // .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
+                // Runtime initialize to respect run-time provided values of the following properties:
+                // - keystore.type
+                // - ssl.KeyManagerFactory.algorithm
+                // - ssl.TrustManagerFactory.algorithm
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
+                // .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
+                // Runtime initialize to prevent embedding SecureRandom instances in the native image
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
-                .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
-                .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
-                .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
-                .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
-                // The default channel id uses the process id, it should not be cached in the native image.
+                // The default channel id uses the process id, it should not be cached in the native image. This way we
+                // also respect the run-time provided value of the io.netty.processId property, io.netty.machineId
+                // property is being hardcoded in setNettyMachineId method
                 .addRuntimeInitializedClass("io.netty.channel.DefaultChannelId")
+                // Disable leak detection by default, it can still be enabled via
+                // io.netty.util.ResourceLeakDetector.setLevel method
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {
             builder
+                    // Runtime initialize due to transitive use of the io.netty.util.internal.PlatformDependent class
+                    // when initializing CRLF_BUF and ZERO_CRLF_CRLF_BUF
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
+            // Zstd is an optional dependency, runtime initialize to avoid IllegalStateException when zstd is not
+            // available. This will result in a runtime ClassNotFoundException if the user tries to use zstd.
+            if (!QuarkusClassLoader.isClassPresentAtRuntime("com.github.luben.zstd.Zstd")) {
+                builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                        .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
+            }
+            // Brotli is an optional dependency, we should only runtime initialize BrotliOptions to avoid
+            // IllegalStateException when brotli (e.g. com.aayushatharva.brotli4j.Brotli4jLoader) is not available.
+            // This will result in a runtime ClassNotFoundException if the user tries to use Brotli.
+            // Due to https://github.com/quarkusio/quarkus/issues/43662 we cannot do this yet though so we always enable
+            // runtime initialization of BrotliOptions if the class is present
+            if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.compression.BrotliOptions")) {
+                builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
+            }
         } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
         }
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http2.Http2CodecUtil")) {
             builder
+                    // Runtime initialize due to the transitive use of the io.netty.util.internal.PlatformDependent
+                    // class in the static initializers
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
+                    // Runtime initialize due to dependency on io.netty.handler.codec.http2.Http2CodecUtil
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec");
         } else {
             log.debug("Not registering Netty HTTP2 classes as they were not found");
         }
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.unix.UnixChannel")) {
+            // Runtime initialize to avoid embedding quite a few Strings in the image heap
             builder.addRuntimeInitializedClass("io.netty.channel.unix.Errors")
+                    // Runtime initialize due to the use of AtomicIntegerFieldUpdater?
                     .addRuntimeInitializedClass("io.netty.channel.unix.FileDescriptor")
+                    // Runtime initialize due to the use of Buffer.addressSize() in the static initializers
                     .addRuntimeInitializedClass("io.netty.channel.unix.IovArray")
+                    // Runtime initialize due to the use of native methods in the static initializers?
                     .addRuntimeInitializedClass("io.netty.channel.unix.Limits");
         } else {
             log.debug("Not registering Netty native unix classes as they were not found");
         }
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
+            // Runtime initialize due to machine dependent native methods being called in static initializer and to
+            // respect the run-time provided value of io.netty.transport.noNative
             builder.addRuntimeInitializedClass("io.netty.channel.epoll.Epoll")
+                    // Runtime initialize due to machine dependent native methods being called in static initializer
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventArray")
+                    // Runtime initialize due to dependency on Epoll and to respect the run-time provided value of
+                    // io.netty.channel.epoll.epollWaitThreshold
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventLoop")
+                    // Runtime initialize due to InetAddress fields, dependencies on native methods and to transitively
+                    // respect a number of properties, e.g. java.nio.channels.spi.SelectorProvider
                     .addRuntimeInitializedClass("io.netty.channel.epoll.Native");
         } else {
             log.debug("Not registering Netty native epoll classes as they were not found");
         }
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
+            // Runtime initialize due to machine dependent native methods being called in static initializer and to
+            // respect the run-time provided value of io.netty.transport.noNative
             builder.addRuntimeInitializedClass("io.netty.channel.kqueue.KQueue")
+                    // Runtime initialize due to machine dependent native methods being called in static initializers
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
-                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop")
-                    .addRuntimeInitializedClass("io.netty.channel.kqueue.Native");
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.Native")
+                    // Runtime initialize due to dependency on Epoll and the use of AtomicIntegerFieldUpdater?
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop");
         } else {
             log.debug("Not registering Netty native kqueue classes as they were not found");
+        }
+
+        // Runtime initialize due to platform dependent initialization and to respect the run-time provided value of the
+        // properties:
+        // - io.netty.maxDirectMemory
+        // - io.netty.uninitializedArrayAllocationThreshold
+        // - io.netty.noPreferDirect
+        // - io.netty.osClassifiers
+        // - io.netty.tmpdir
+        // - java.io.tmpdir
+        // - io.netty.bitMode
+        // - sun.arch.data.model
+        // - com.ibm.vm.bitmode
+        builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
+                // Similarly for properties:
+                // - io.netty.noUnsafe
+                // - sun.misc.unsafe.memory.access
+                // - io.netty.tryUnsafe
+                // - org.jboss.netty.tryUnsafe
+                // - io.netty.tryReflectionSetAccessible
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
+            // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class
+            builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")
+                    .addRuntimeReinitializedClass("io.netty.buffer.Unpooled")
+                    // Runtime initialize due to dependency on io.netty.buffer.Unpooled
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.http.HttpObjectAggregator")
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.ReplayingDecoderByteBuf")
+                    // Runtime initialize to avoid embedding quite a few Strings in the image heap
+                    .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
+                    // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class in the
+                    // static initializers and to respect the run-time provided value of the following properties:
+                    // - io.netty.allocator.directMemoryCacheAlignment
+                    // - io.netty.allocator.pageSize
+                    // - io.netty.allocator.maxOrder
+                    // - io.netty.allocator.numHeapArenas
+                    // - io.netty.allocator.numDirectArenas
+                    // - io.netty.allocator.smallCacheSize
+                    // - io.netty.allocator.normalCacheSize
+                    // - io.netty.allocator.maxCachedBufferCapacity
+                    // - io.netty.allocator.cacheTrimInterval
+                    // - io.netty.allocation.cacheTrimIntervalMillis
+                    // - io.netty.allocator.cacheTrimIntervalMillis
+                    // - io.netty.allocator.useCacheForAllThreads
+                    // - io.netty.allocator.maxCachedByteBuffersPerChunk
+                    .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
+                    // Runtime initialize due to the use of ByteBufUtil.DEFAULT_ALLOCATOR in the static initializers
+                    .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
+                    // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class in the
+                    // static initializers and to respect the run-time provided value of the following properties:
+                    // - io.netty.allocator.type
+                    // - io.netty.threadLocalDirectBufferSize
+                    // - io.netty.maxThreadLocalCharBufferSize
+                    .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil");
+
+            if (QuarkusClassLoader
+                    .isClassPresentAtRuntime("org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload")) {
+                // Runtime initialize due to dependency on io.netty.buffer.Unpooled
+                builder.addRuntimeReinitializedClass(
+                        "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload");
+            }
         }
 
         return builder //TODO: make configurable
@@ -222,8 +350,8 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public RuntimeReinitializedClassBuildItem reinitScheduledFutureTask() {
-        return new RuntimeReinitializedClassBuildItem(
+    public RuntimeInitializedClassBuildItem reinitScheduledFutureTask() {
+        return new RuntimeInitializedClassBuildItem(
                 "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
     }
 
@@ -232,23 +360,8 @@ class NettyProcessor {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
-
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField", "producerIndex"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField", "producerLimit"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField", "consumerIndex"),
-
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
-                        "producerIndex"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
-                        "producerLimit"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
-                        "consumerIndex"));
+                new UnsafeAccessedFieldBuildItem("io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess",
+                        "REF_ELEMENT_SHIFT"));
     }
 
     @BuildStep
@@ -275,6 +388,14 @@ class NettyProcessor {
     LogCleanupFilterBuildItem cleanupMacDNSInLog() {
         return new LogCleanupFilterBuildItem(DnsServerAddressStreamProviders.class.getName(), Level.WARN,
                 "Can not find io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider in the classpath");
+    }
+
+    /**
+     * `Version.identify()` in netty-common uses the resource to determine the version of netty.
+     */
+    @BuildStep
+    NativeImageResourceBuildItem nettyVersions() {
+        return new NativeImageResourceBuildItem("META-INF/io.netty.versions.properties");
     }
 
     private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,

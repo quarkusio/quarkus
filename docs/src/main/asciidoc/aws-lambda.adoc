@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Quarkus-based AWS Lambdas.
+:topics: aws,lambda,serverless,function,cloud
+:extensions: io.quarkus:quarkus-amazon-lambda
 
 The `quarkus-amazon-lambda` extension allows you to use Quarkus to build your AWS Lambdas.
 Your lambdas can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
@@ -362,6 +364,13 @@ quarkus.lambda.mock-event-server.test-port=8083
 
 A port value of zero will result in a randomly assigned port.
 
+To turn off the mock event server:
+[source, subs=attributes+]
+----
+quarkus.lambda.mock-event-server.enabled=false
+----
+
+
 == Testing with the SAM CLI
 If you do not want to use the mock event server, you can test your lambdas with SAM CLI.
 
@@ -577,7 +586,7 @@ To extract the required ssl, you must start up a Docker container in the backgro
 First, let's start the GraalVM container, noting the container id output.
 [source,bash,subs=attributes+]
 ----
-docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
+docker run -it -d --entrypoint bash quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}
 
 # This will output a container id, like 6304eea6179522aff69acb38eca90bedfd4b970a5475aa37ccda3585bc2abdde
 # Note this value as we will need it for the commands below
@@ -708,4 +717,4 @@ That's all there is to it!
 
 == SnapStart
 
-To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].
+To optimize your application for Lambda SnapStart, check xref:aws-lambda-snapstart.adoc[the SnapStart Configuration Documentation].

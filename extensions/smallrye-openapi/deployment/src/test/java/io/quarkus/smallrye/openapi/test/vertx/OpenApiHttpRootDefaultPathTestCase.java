@@ -16,7 +16,7 @@ public class OpenApiHttpRootDefaultPathTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo\n" +
-                            "quarkus.http.cors=true\n"
+                            "quarkus.http.cors.enabled=true\n"
                             + "quarkus.http.cors.origins=*"), "application.properties"));
 
     @Test
@@ -34,7 +34,7 @@ public class OpenApiHttpRootDefaultPathTestCase {
                 .when().get(OPEN_API_PATH)
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.0"))
+                .body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/foo/resource"));
     }

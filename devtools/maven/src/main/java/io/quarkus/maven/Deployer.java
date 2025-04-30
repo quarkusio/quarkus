@@ -1,11 +1,13 @@
 package io.quarkus.maven;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.deployment.util.DeploymentUtil;
@@ -61,29 +63,42 @@ public enum Deployer {
     /**
      * Get the deployer by name or the first one found in the project.
      *
-     * @project the project to search for deployer extensions
+     * @param project the project to search for deployer extensions
      * @return the {@link Optional} builder matching the name, project.
      */
     public static Optional<Deployer> getDeployer(MavenProject project) {
         return DeploymentUtil.getEnabledDeployer()
-                .or(() -> getProjecDeployer(project).stream().findFirst()).map(Deployer::valueOf);
+                .or(() -> getProjectDeployer(project).stream().findFirst()).map(Deployer::valueOf);
     }
 
     /**
-     * Get teh deployer extensions found in the project.
+     * Get the deployer extensions found in the project.
      *
-     * @param the project to search for extensions
-     * @return A set with the discovered extenions.
+     * @param project The project to search for extensions
+     * @return A set with the discovered extensions.
      */
-    public static Set<String> getProjecDeployer(MavenProject project) {
-        return project.getDependencies().stream()
+    public static Set<String> getProjectDeployer(MavenProject project) {
+        return getProjectDeployers(project.getDependencies());
+    }
+
+    /**
+     * Get the deployer extensions found in the project.
+     *
+     * @param dependencies the dependencies for extensions
+     * @return A set with the discovered extensions.
+     */
+    public static Set<String> getProjectDeployers(List<Dependency> dependencies) {
+        if (dependencies == null) {
+            return Set.of();
+        }
+        return dependencies.stream()
                 .filter(d -> QUARKUS_GROUP_ID.equals(d.getGroupId()))
                 .map(d -> strip(d.getArtifactId()))
-                .filter(n -> Arrays.stream(Deployer.values()).anyMatch(e -> e.equals(n)))
+                .filter(n -> Arrays.stream(Deployer.values()).anyMatch(e -> e.name().equals(n)))
                 .collect(Collectors.toSet());
     }
 
-    private static final String strip(String s) {
+    private static String strip(String s) {
         return s.replaceAll("^" + Pattern.quote(QUARKUS_PREFIX), "");
     }
 }

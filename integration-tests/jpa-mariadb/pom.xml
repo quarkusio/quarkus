@@ -14,14 +14,10 @@
     <description>Module that contains JPA related tests running with the MariaDB database</description>
 
     <properties>
-        <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+        <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
@@ -29,6 +25,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -82,7 +82,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -162,9 +162,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

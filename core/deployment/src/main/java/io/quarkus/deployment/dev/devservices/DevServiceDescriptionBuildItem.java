@@ -9,14 +9,22 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     private String name;
+    private String description;
     private ContainerInfo containerInfo;
     private Map<String, String> configs;
 
     public DevServiceDescriptionBuildItem() {
     }
 
-    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo, Map<String, String> configs) {
+    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo,
+            Map<String, String> configs) {
+        this(name, null, containerInfo, configs);
+    }
+
+    public DevServiceDescriptionBuildItem(String name, String description, ContainerInfo containerInfo,
+            Map<String, String> configs) {
         this.name = name;
+        this.description = description;
         this.containerInfo = containerInfo;
         this.configs = configs instanceof SortedMap ? configs : new TreeMap<>(configs);
     }
@@ -29,6 +37,10 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
         return name;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public ContainerInfo getContainerInfo() {
         return containerInfo;
     }
@@ -39,6 +51,10 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public void setContainerInfo(ContainerInfo containerInfo) {

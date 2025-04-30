@@ -1,7 +1,9 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class RedisCacheInfo {
 
@@ -29,12 +31,12 @@ public class RedisCacheInfo {
     /**
      * The default type of the value stored in the cache.
      */
-    public String valueType;
+    public Type valueType;
 
     /**
      * The key type, {@code String} by default.
      */
-    public String keyType = String.class.getName();
+    public Type keyType = String.class;
 
     /**
      * Whether the access to the cache should be using optimistic locking
@@ -42,4 +44,11 @@ public class RedisCacheInfo {
      * Locking</a> for details.
      */
     public boolean useOptimisticLocking = false;
+
+    /**
+     * If set, the {@code SCAN} command (used to implement invalidation) will have
+     * the {@code COUNT} argument with given value. If not set (default),
+     * no {@code COUNT} argument is present.
+     */
+    public OptionalInt invalidationScanSize = OptionalInt.empty();
 }

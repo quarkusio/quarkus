@@ -8,12 +8,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.WildcardType;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
@@ -49,9 +51,7 @@ import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.wildfly.common.Assert;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -71,8 +71,11 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
-import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.RelaxedValidation;
+import io.quarkus.runtime.types.GenericArrayTypeImpl;
+import io.quarkus.runtime.types.ParameterizedTypeImpl;
+import io.quarkus.runtime.types.WildcardTypeImpl;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
@@ -103,7 +106,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final Class<?> SINGLETON_MAP_CLASS = Collections.singletonMap(1, 1).getClass();
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    private static final String BASE_PACKAGE = "io.quarkus.deployment.steps.";
+    private static final String BASE_PACKAGE = "io.quarkus.runner.recorded.";
 
     private static final String PROXY_KEY = "proxykey";
 
@@ -114,14 +117,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final boolean staticInit;
     private final ClassLoader classLoader;
 
-    private static final Map<Class<?>, ProxyFactory<?>> recordingProxyFactories = new ConcurrentHashMap<>();
     private final Map<Class<?>, ProxyFactory<?>> returnValueProxy = new ConcurrentHashMap<>();
 
     private final Map<Class<?>, Object> existingProxyClasses = new ConcurrentHashMap<>();
     private final Map<Class<?>, NewRecorder> existingRecorderValues = new ConcurrentHashMap<>();
     private final List<BytecodeInstruction> storedMethodCalls = new ArrayList<>();
 
-    private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
+    private final Map<String, String> classProxyNamesToOriginalClassNames = new HashMap<>();
+    private final Map<String, Class<?>> originalClassNamesToClassProxyClasses = new HashMap<>();
     private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
     private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaultConstructors = new HashMap<>();
     private final String className;
@@ -271,14 +274,20 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return void.class;
         }
 
+        Class<?> proxyClass = originalClassNamesToClassProxyClasses.get(name);
+        if (proxyClass != null) {
+            return proxyClass;
+        }
+
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
                 .setSuperClass(Object.class)
                 .setClassLoader(classLoader)
                 .setAnchorClass(getClass())
                 .setProxyNameSuffix("$$ClassProxy" + COUNT.incrementAndGet()));
-        Class theClass = factory.defineClass();
-        classProxies.put(theClass, name);
-        return theClass;
+        proxyClass = factory.defineClass();
+        classProxyNamesToOriginalClassNames.put(proxyClass.getName(), name);
+        originalClassNamesToClassProxyClasses.put(name, proxyClass);
+        return proxyClass;
     }
 
     @Override
@@ -364,9 +373,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
         };
 
         try {
-            if (recordingProxyFactories.containsKey(theClass)) {
-                return (T) recordingProxyFactories.get(theClass).newInstance(invocationHandler);
+            ProxyFactory<T> factory = RecordingProxyFactories.get(theClass);
+
+            if (factory != null) {
+                return factory.newInstance(invocationHandler);
             }
+
             String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
 
             ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
@@ -374,19 +386,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     .setClassLoader(classLoader)
                     .setAnchorClass(getClass())
                     .setProxyNameSuffix(proxyNameSuffix);
-            ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
+            factory = new ProxyFactory<T>(proxyConfiguration);
             T recordingProxy = factory.newInstance(invocationHandler);
             existingProxyClasses.put(theClass, recordingProxy);
-            recordingProxyFactories.put(theClass, factory);
-
-            if (theClass.getClassLoader() instanceof QuarkusClassLoader) {
-                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        recordingProxyFactories.remove(theClass);
-                    }
-                });
-            }
+            RecordingProxyFactories.put(theClass, factory);
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
@@ -415,36 +418,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
 
         String key = PROXY_KEY + COUNT.incrementAndGet();
-        Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (method.getName().equals("__returned$proxy$key")) {
-                    return key;
-                }
-                if (method.getName().equals("__static$$init")) {
-                    return staticInit;
-                }
-                if (method.getName().equals("toString")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(String.class)) {
-                    return "Runtime proxy of " + returnType + " with id " + key;
-                }
-                if (method.getName().equals("hashCode")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(int.class)) {
-                    return System.identityHashCode(proxy);
-                }
-                if (method.getName().equals("equals")
-                        && method.getParameterCount() == 1
-                        && method.getParameterTypes()[0] == Object.class
-                        && method.getReturnType().equals(boolean.class)) {
-                    return proxy == args[0];
-                }
-                throw new RuntimeException(
-                        "You cannot invoke " + method.getName()
-                                + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
-            }
-        });
+        Object proxyInstance = proxyFactory.newInstance(new ReturnValueProxyInvocationHandler(key, returnType, staticInit));
         return new ProxyInstance(proxyInstance, key);
     }
 
@@ -776,14 +750,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             method.load(param.toString()));
                 }
             };
-        } else if (param instanceof Class<?>) {
-            if (!((Class) param).isPrimitive()) {
+        } else if (param instanceof Class<?> clazz) {
+            if (!clazz.isPrimitive()) {
                 // Only try to load the class by name if it is not a primitive class
-                String name = classProxies.get(param);
-                if (name == null) {
-                    name = ((Class) param).getName();
-                }
-                String finalName = name;
+                String finalName = classProxyNamesToOriginalClassNames.getOrDefault(clazz.getName(), clazz.getName());
                 return new DeferredParameter() {
                     @Override
                     ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
@@ -803,9 +773,71 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return new DeferredParameter() {
                     @Override
                     ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
-                        return method.loadClassFromTCCL((Class) param);
+                        return method.loadClassFromTCCL(clazz);
                     }
                 };
+            }
+        } else if (param instanceof ParameterizedType parameterized) {
+            DeferredParameter raw = loadObjectInstance(parameterized.getRawType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            DeferredParameter args = loadObjectInstance(parameterized.getActualTypeArguments(), existing,
+                    java.lang.reflect.Type[].class, relaxedValidation);
+            DeferredParameter owner = loadObjectInstance(parameterized.getOwnerType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                    return method.newInstance(ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
+                            java.lang.reflect.Type[].class, java.lang.reflect.Type.class),
+                            context.loadDeferred(raw), context.loadDeferred(args), context.loadDeferred(owner));
+                }
+            };
+        } else if (param instanceof GenericArrayType array) {
+            DeferredParameter res = loadObjectInstance(array.getGenericComponentType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                    return method.newInstance(ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
+                            context.loadDeferred(res));
+                }
+            };
+        } else if (param instanceof WildcardType wildcard) {
+            java.lang.reflect.Type[] upperBound = wildcard.getUpperBounds();
+            java.lang.reflect.Type[] lowerBound = wildcard.getLowerBounds();
+            if (lowerBound.length == 0 && upperBound.length == 1 && Object.class.equals(upperBound[0])) {
+                // unbounded
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "defaultInstance",
+                                WildcardType.class));
+                    }
+                };
+            } else if (lowerBound.length == 0 && upperBound.length == 1) {
+                // upper bound
+                DeferredParameter res = loadObjectInstance(upperBound[0], existing,
+                        java.lang.reflect.Type.class, relaxedValidation);
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "withUpperBound",
+                                WildcardType.class, java.lang.reflect.Type.class), context.loadDeferred(res));
+                    }
+                };
+            } else if (lowerBound.length == 1) {
+                // lower bound
+                DeferredParameter res = loadObjectInstance(lowerBound[0], existing,
+                        java.lang.reflect.Type.class, relaxedValidation);
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "withLowerBound",
+                                WildcardType.class, java.lang.reflect.Type.class), context.loadDeferred(res));
+                    }
+                };
+            } else {
+                throw new UnsupportedOperationException("Unsupported wildcard type: " + wildcard);
             }
         } else if (expectedType == boolean.class || expectedType == Boolean.class || param instanceof Boolean) {
             return new DeferredParameter() {
@@ -1173,15 +1205,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
             }
-            if (nonDefaultConstructorHolder.constructor.getParameterCount() > 0) {
-                Parameter[] parameters = nonDefaultConstructorHolder.constructor.getParameters();
-                for (int i = 0; i < parameters.length; ++i) {
-                    if (parameters[i].isNamePresent()) {
-                        String name = parameters[i].getName();
-                        constructorParamNameMap.put(name, i);
-                    }
-                }
-            }
+            extractConstructorParameterNames(nonDefaultConstructorHolder.constructor, constructorParamNameMap);
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
@@ -1189,24 +1213,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (current == null || current.getParameterCount() < c.getParameterCount()) {
                     current = c;
                     count = 0;
-                } else if (current != null && current.getParameterCount() == c.getParameterCount()) {
+                } else if (current.getParameterCount() == c.getParameterCount()) {
                     count++;
                 }
             }
             if (current == null || count > 0) {
                 throw new RuntimeException("Unable to determine the recordable constructor to use for " + param.getClass());
             }
+
             nonDefaultConstructorHolder = new NonDefaultConstructorHolder(current, null);
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
-            if (current.getParameterCount() > 0) {
-                Parameter[] parameters = current.getParameters();
-                for (int i = 0; i < parameters.length; ++i) {
-                    if (parameters[i].isNamePresent()) {
-                        String name = parameters[i].getName();
-                        constructorParamNameMap.put(name, i);
-                    }
-                }
-            }
+            extractConstructorParameterNames(current, constructorParamNameMap);
         } else {
             Constructor<?>[] ctors = param.getClass().getConstructors();
             Constructor<?> selectedCtor = null;
@@ -1222,22 +1239,20 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
             if (selectedCtor != null) {
                 nonDefaultConstructorHolder = new NonDefaultConstructorHolder(selectedCtor, null);
-                nonDefaultConstructorHandles = new DeferredParameter[selectedCtor.getParameterCount()];
+                final var parameterCount = selectedCtor.getParameterCount();
+                nonDefaultConstructorHandles = new DeferredParameter[parameterCount];
+                extractConstructorParameterNames(selectedCtor, constructorParamNameMap);
 
-                if (selectedCtor.getParameterCount() > 0) {
-                    Parameter[] ctorParameters = selectedCtor.getParameters();
-                    for (int i = 0; i < ctorParameters.length; ++i) {
-                        if (ctorParameters[i].isNamePresent()) {
-                            String name = ctorParameters[i].getName();
-                            constructorParamNameMap.put(name, i);
-                        }
-                    }
+                if (constructorParamNameMap.size() != parameterCount) {
+                    throw new IllegalArgumentException("Couldn't extract all parameters information for constructor "
+                            + selectedCtor + " for type " + expectedType);
                 }
             }
         }
 
         Set<String> handledProperties = new HashSet<>();
         Property[] desc = PropertyUtils.getPropertyDescriptors(param);
+        FieldsHelper fieldsHelper = new FieldsHelper(param.getClass());
         for (Property i : desc) {
             if (!i.getDeclaringClass().getPackageName().startsWith("java.")) {
                 // check if the getter is ignored
@@ -1245,13 +1260,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     continue;
                 }
                 // check if the matching field is ignored
-                try {
-                    Field field = param.getClass().getDeclaredField(i.getName());
-                    if (ignoreField(field)) {
-                        continue;
-                    }
-                } catch (NoSuchFieldException ignored) {
-
+                Field field = fieldsHelper.getDeclaredField(i.getName());
+                if (field != null && ignoreField(field)) {
+                    continue;
                 }
             }
             Integer ctorParamIndex = constructorParamNameMap.remove(i.name);
@@ -1276,9 +1287,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
                                     //get the collection
-                                    ResultHandle prop = method.invokeVirtualMethod(
-                                            MethodDescriptor.ofMethod(i.getReadMethod()),
-                                            context.loadDeferred(out));
+                                    ResultHandle prop;
+                                    if (i.getReadMethod().isDefault()) {
+                                        prop = method.invokeInterfaceMethod(
+                                                MethodDescriptor.ofMethod(i.getReadMethod()),
+                                                context.loadDeferred(out));
+                                    } else {
+                                        prop = method.invokeVirtualMethod(
+                                                MethodDescriptor.ofMethod(i.getReadMethod()),
+                                                context.loadDeferred(out));
+                                    }
                                     for (DeferredParameter i : params) {
                                         //add the parameter
                                         //TODO: this is not guarded against large collections, probably not an issue in practice
@@ -1392,8 +1410,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             }
                         }
                     }
-                    DeferredParameter val = loadObjectInstance(propertyValue, existing,
-                            i.getPropertyType(), relaxedValidation);
+                    DeferredParameter val;
+                    try {
+                        val = loadObjectInstance(propertyValue, existing,
+                                i.getPropertyType(), relaxedValidation);
+                    } catch (Exception e) {
+                        throw new RuntimeException(
+                                "Couldn't load object of type " + i.propertyType.getName() + " for property '" + i.getName()
+                                        + "' on object '" + param + "'.");
+                    }
                     if (ctorParamIndex != null) {
                         nonDefaultConstructorHandles[ctorParamIndex] = val;
                         ctorSetupSteps.add(new SerializationStep() {
@@ -1492,7 +1517,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         NonDefaultConstructorHolder finalNonDefaultConstructorHolder = nonDefaultConstructorHolder;
         DeferredParameter[] finalCtorHandles = nonDefaultConstructorHandles;
 
-        //create a deferred value to represet the object itself. This allows the creation to be split
+        //create a deferred value to represent the object itself. This allows the creation to be split
         //over multiple methods, which is important if this is a large object
         DeferredArrayStoreParameter objectValue = new DeferredArrayStoreParameter(param, expectedType) {
             @Override
@@ -1574,6 +1599,24 @@ public class BytecodeRecorderImpl implements RecorderContext {
         };
     }
 
+    private static List<Parameter> extractConstructorParameterNames(Constructor<?> selectedCtor,
+            Map<String, Integer> constructorParamNameMap) {
+        List<Parameter> unnamed = Collections.emptyList();
+        if (selectedCtor.getParameterCount() > 0) {
+            Parameter[] ctorParameters = selectedCtor.getParameters();
+            unnamed = new ArrayList<>(ctorParameters.length);
+            for (int i = 0; i < ctorParameters.length; ++i) {
+                if (ctorParameters[i].isNamePresent()) {
+                    String name = ctorParameters[i].getName();
+                    constructorParamNameMap.put(name, i);
+                } else {
+                    unnamed.add(ctorParameters[i]);
+                }
+            }
+        }
+        return unnamed;
+    }
+
     /**
      * Returns {@code true} iff the field is annotated {@link IgnoreProperty} or the field is marked as {@code transient}
      */
@@ -1609,6 +1652,47 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
         return holder;
+    }
+
+    private static final class ReturnValueProxyInvocationHandler implements InvocationHandler {
+        private final Class<?> returnType;
+        private final String key;
+        private final boolean staticInit;
+
+        private ReturnValueProxyInvocationHandler(String key, Class<?> returnType, boolean staticInit) {
+            this.returnType = returnType;
+            this.key = key;
+            this.staticInit = staticInit;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.getName().equals("__returned$proxy$key")) {
+                return key;
+            }
+            if (method.getName().equals("__static$$init")) {
+                return staticInit;
+            }
+            if (method.getName().equals("toString")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(String.class)) {
+                return "Runtime proxy of " + returnType + " with id " + key;
+            }
+            if (method.getName().equals("hashCode")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(int.class)) {
+                return System.identityHashCode(proxy);
+            }
+            if (method.getName().equals("equals")
+                    && method.getParameterCount() == 1
+                    && method.getParameterTypes()[0] == Object.class
+                    && method.getReturnType().equals(boolean.class)) {
+                return proxy == args[0];
+            }
+            throw new RuntimeException(
+                    "You cannot invoke " + method.getName()
+                            + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
+        }
     }
 
     interface BytecodeInstruction {

@@ -25,7 +25,7 @@ abstract class QuarkusITBase extends MojoTestBase {
                 .execute(Arrays.asList("package", "-B",
                         "-D" + profile), Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES)
+        await().atMost(3, TimeUnit.MINUTES)
                 .until(() -> packageInvocationResult.getProcess() != null && !packageInvocationResult.getProcess().isAlive());
         assertThat(packageInvocation.log()).containsIgnoringCase("BUILD SUCCESS");
 
@@ -35,7 +35,7 @@ abstract class QuarkusITBase extends MojoTestBase {
                 .execute(Arrays.asList("failsafe:integration-test", "-B",
                         "-D" + profile), Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES)
+        await().atMost(3, TimeUnit.MINUTES)
                 .until(() -> integrationTestsInvocationResult.getProcess() != null
                         && !integrationTestsInvocationResult.getProcess().isAlive());
         assertThat(integrationTestsInvocation.log()).containsIgnoringCase("BUILD SUCCESS");

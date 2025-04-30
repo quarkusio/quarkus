@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 /**
  * A result node backed by a single object value.
  */
-public final class SingleResultNode implements ResultNode {
+public final class SingleResultNode extends ResultNode {
 
     private final Object value;
     private final ExpressionNode node;

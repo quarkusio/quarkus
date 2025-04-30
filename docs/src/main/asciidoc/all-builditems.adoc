@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Explore all the BuildItems you can consume/produce in your extensions.
 
-Here you can find a list of Build Items and the extension that provides them:
+Here you can find a list of Build Items and the extension that provides them.
 
-include::{generated-dir}/config/quarkus-all-build-items.adoc[opts=optional]
+icon:building[title=Non-instantiatable Build Item] Build item can't be instantiated directly, but can be extended/inherited from
+
+include::{generated-dir}/infra/quarkus-all-build-items.adoc[opts=optional]

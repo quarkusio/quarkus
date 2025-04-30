@@ -1,14 +1,18 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.deployment;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
-@ConfigRoot(name = "elasticsearch", phase = ConfigPhase.BUILD_TIME)
-public class ElasticsearchBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.elasticsearch")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface ElasticsearchBuildTimeConfig {
     /**
      * Whether a health check is published in case the smallrye-health extension is present.
      */
-    @ConfigItem(name = "health.enabled", defaultValue = "true")
-    public boolean healthEnabled;
+    @WithName("health.enabled")
+    @WithDefault("true")
+    boolean healthEnabled();
 }

@@ -1,5 +1,6 @@
 package io.quarkus.cli;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -20,7 +21,7 @@ import picocli.CommandLine;
  */
 public class CliProjectMavenTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-project/CliProjectMavenTest");
+            .resolve("target/test-classes/test-project/CliProjectMavenTest");
     Path project;
 
     @BeforeAll
@@ -48,11 +49,13 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(project.resolve("mvnw").toFile().exists(),
                 "Wrapper should exist by default");
+        Assertions.assertTrue(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should exist by default");
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
-                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-rest</artifactId>"),
+                "pom.xml should contain quarkus-rest:\n" + pomContent);
 
         // check that the project doesn't have a <description> (a <name> is defined in the profile, it's harder to test)
         Assertions.assertFalse(pomContent.contains("<description>"),
@@ -71,20 +74,31 @@ public class CliProjectMavenTest {
     }
 
     @Test
+    public void testCreateAppWithoutDockerfiles() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--no-dockerfiles", "-e", "-B",
+                "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+        Assertions.assertFalse(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should not exist");
+    }
+
+    @Test
     public void testCreateAppOverrides() throws Exception {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
-        List<String> data = Arrays.asList("resteasy-reactive-codestart.resource.response=An awesome response");
+        List<String> data = Arrays.asList("rest-codestart.resource.response=An awesome response");
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
                 "--data=" + String.join(",", data),
-                "-x resteasy-reactive,micrometer-registry-prometheus",
+                "-x rest,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -94,8 +108,8 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(project.resolve("mvnw").toFile().exists(),
                 "Wrapper should not exist when specifying --no-wrapper");
         String pomContent = validateBasicIdentifiers("silly", "my-project", "0.1.0");
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
-                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-rest</artifactId>"),
+                "pom.xml should contain quarkus-rest:\n" + pomContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
@@ -131,8 +145,10 @@ public class CliProjectMavenTest {
         CliDriver.invokeExtensionAddRedundantQute(project);
         CliDriver.invokeExtensionListInstallable(project);
         CliDriver.invokeExtensionAddMultiple(project, pom);
+        CliDriver.invokeExtensionAddMultipleCommas(project, pom);
         CliDriver.invokeExtensionRemoveQute(project, pom);
         CliDriver.invokeExtensionRemoveMultiple(project, pom);
+        CliDriver.invokeExtensionRemoveMultipleCommas(project, pom);
 
         CliDriver.invokeExtensionListInstallableSearch(project);
         CliDriver.invokeExtensionListFormatting(project);
@@ -257,14 +273,31 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "mvn command should not specify '-Dsuspend'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
-                "mvn command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1\" \"arg2\""),
+                "mvn command should not specify -Dquarkus.args=\"arg1\" \"arg2\"\n" + result);
 
         // 4 TEST MODE: test --clean --debug --suspend --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
-                "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline");
+                "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline", "--filter=FooTest");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in continuous test mode"), result.toString());
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.test.include-pattern=FooTest"), result.toString());
+
+        // 5 TEST MODE - run once: test --once --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--once", "--offline", "--filter=FooTest");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
+        Assertions.assertTrue(result.stdout.contains("-Dtest=FooTest"), result.toString());
+
+        // 6 TEST MODE: Two word argument
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1 arg2");
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1 arg2\""),
+                "mvn command should not specify -Dquarkus.args=\"arg1 arg2\"\n" + result);
     }
 
     @Test
@@ -299,7 +332,7 @@ public class CliProjectMavenTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create",
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
-                "-x resteasy-reactive",
+                "-x rest",
                 "-x micrometer",
                 "--output-directory=" + nested,
                 "silly:my-project:0.1.0");
@@ -325,22 +358,6 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testCreateArgJava11() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
-                "-e", "-B", "--verbose",
-                "--java", "11");
-
-        // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
-
-        Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(pom);
-
-        Assertions.assertTrue(pomContent.contains("maven.compiler.release>11<"),
-                "Java 11 should be used when specified. Found:\n" + pomContent);
-    }
-
-    @Test
     public void testCreateArgJava17() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
                 "-e", "-B", "--verbose",
@@ -354,6 +371,22 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
                 "Java 17 should be used when specified. Found:\n" + pomContent);
+    }
+
+    @Test
+    public void testCreateArgJava21() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
+                "-e", "-B", "--verbose",
+                "--java", "21");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path pom = project.resolve("pom.xml");
+        String pomContent = CliDriver.readFileAsString(pom);
+
+        Assertions.assertTrue(pomContent.contains("maven.compiler.release>21<"),
+                "Java 21 should be used when specified. Found:\n" + pomContent);
     }
 
     @Test

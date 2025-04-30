@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
-import io.narayana.lra.client.NarayanaLRAClient;
+import io.narayana.lra.client.internal.NarayanaLRAClient;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipant;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipantRegistry;
 import io.quarkus.runtime.annotations.Recorder;
@@ -19,7 +19,7 @@ public class NarayanaLRARecorder {
 
     public void setConfig(final LRAConfiguration config) {
         if (System.getProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY) == null) {
-            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, config.coordinatorURL);
+            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, config.coordinatorURL());
         }
     }
 

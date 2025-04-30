@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
     <properties>
         <rest-assured.version>3.3.0</rest-assured.version>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     </properties>
 
     <modules>

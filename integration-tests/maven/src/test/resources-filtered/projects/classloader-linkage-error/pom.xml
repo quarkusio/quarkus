@@ -10,9 +10,10 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
     <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
+    <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+    <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>11</maven.compiler.target>
     <stax-api.version>1.0.1</stax-api.version>
   </properties>
   <dependencyManagement>
@@ -46,6 +47,10 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>\${compiler-plugin.version}</version>
+      </plugin>
+      <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
@@ -73,7 +78,7 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-quarkus-app</quarkus.package.output-directory>
               </properties>
             </configuration>
@@ -88,7 +93,7 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-quarkus-app</quarkus.package.output-directory>
               </properties>
             </configuration>

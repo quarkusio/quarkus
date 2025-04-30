@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use a database to store your user identities.
+:topics: security,identity-providers,jdbc,sql,database
+:extensions: io.quarkus:quarkus-elytron-security-jdbc
 
 This guide demonstrates how your Quarkus application can use a database to store your user identities.
 
@@ -34,14 +36,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-jdbc-quickstart` {quickstarts-tree-url}/security-jdbc-quickstart[directory].
+The solution is located in the `security-jdbc-quickstart` link:{quickstarts-tree-url}/security-jdbc-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jdbc-quickstart
-:create-app-extensions: elytron-security-jdbc,jdbc-postgresql,resteasy-reactive
+:create-app-extensions: elytron-security-jdbc,jdbc-postgresql,rest
 include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
@@ -165,6 +167,8 @@ quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
 In our context, we are using PostgreSQL as identity store, and we initialize the database with users and roles.
+We will use the salted and hashed version of `password` as a password in this example.
+We can use the `BcryptUtil` class to generate passwords in the Modular Crypt Format (MCF).
 
 [source,sql]
 ----
@@ -175,15 +179,27 @@ CREATE TABLE test_user (
   role VARCHAR(255)
 );
 
-INSERT INTO test_user (id, username, password, role) VALUES (1, 'admin', 'admin', 'admin');
-INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','user', 'user');
+INSERT INTO test_user (id, username, password, role) VALUES (1, 'admin', '$2a$10$Uc.SZ0hvGJQlYdsAp7be1.lFjmOnc7aAr4L0YY3/VN3oK.F8zJHRG', 'admin');
+INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','$2a$10$Uc.SZ0hvGJQlYdsAp7be1.lFjmOnc7aAr4L0YY3/VN3oK.F8zJHRG', 'user');
 ----
 
-[NOTE]
-====
-It is probably useless, but we kindly remind you that you must not store clear-text passwords in production environment ;-).
-The `elytron-security-jdbc` offers a built-in bcrypt password mapper.
-====
+When signing up new users, we can encrypt their password as follows:
+
+[source,java]
+----
+package org.acme.security.jdbc;
+
+import io.quarkus.elytron.security.common.BcryptUtil;
+
+public class AccountService {
+
+    public void signupUser(String username, String password) {
+        String encryptedPassword = BcryptUtil.bcryptHash(password);
+
+        // store user with the encrypted password in the database
+    }
+}
+----
 
 We can now configure the Elytron JDBC Realm.
 
@@ -191,8 +207,8 @@ We can now configure the Elytron JDBC Realm.
 ----
 quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password, u.role FROM test_user u WHERE u.username=? <1>
-quarkus.security.jdbc.principal-query.clear-password-mapper.enabled=true <2>
-quarkus.security.jdbc.principal-query.clear-password-mapper.password-index=1
+quarkus.security.jdbc.principal-query.bcrypt-password-mapper.enabled=true <2>
+quarkus.security.jdbc.principal-query.bcrypt-password-mapper.password-index=1
 quarkus.security.jdbc.principal-query.attribute-mappings.0.index=2 <3>
 quarkus.security.jdbc.principal-query.attribute-mappings.0.to=groups
 ----
@@ -200,7 +216,7 @@ quarkus.security.jdbc.principal-query.attribute-mappings.0.to=groups
 The `elytron-security-jdbc` extension requires at least one principal query to authenticate the user and its identity.
 
 <1> We define a parameterized SQL statement (with exactly 1 parameter) which should return the user's password plus any additional information you want to load.
-<2> We  configure the password mapper with the position of the password field in the `SELECT` fields and other information like salt, hash encoding, etc.
+<2> The password mapper is configured with the position of the password field in the `SELECT` fields. The hash is stored in the Modular Crypt Format (MCF) because the salt and iteration count indexes are set to `-1` by default. You can override them in order to decompose each element into three separate columns.
 <3> We use `attribute-mappings` to bind the `SELECT` projection fields (i.e. `u.role` here) to the target Principal representation attributes.
 
 [NOTE]
@@ -239,21 +255,21 @@ So far so good, now let's try with an allowed user.
 
 [source,shell]
 ----
-$ curl -i -X GET -u admin:admin http://localhost:8080/api/admin
+$ curl -i -X GET -u admin:password http://localhost:8080/api/admin
 HTTP/1.1 200 OK
 Content-Length: 5
 Content-Type: text/plain;charset=UTF-8
 
 admin%
 ----
-By providing the `admin:admin` credentials, the extension authenticated the user and loaded their roles.
+By providing the `admin:password` credentials, the extension authenticated the user and loaded their roles.
 The `admin` user is authorized to access to the protected resources.
 
 The user `admin` should be forbidden to access a resource protected with `@RolesAllowed("user")` because it doesn't have this role.
 
 [source,shell]
 ----
-$ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
+$ curl -i -X GET -u admin:password http://localhost:8080/api/users/me
 HTTP/1.1 403 Forbidden
 Content-Length: 34
 Content-Type: text/html;charset=UTF-8
@@ -265,7 +281,7 @@ Finally, using the user `user` works and the security context contains the princ
 
 [source,shell]
 ----
-$ curl -i -X GET -u user:user http://localhost:8080/api/users/me
+$ curl -i -X GET -u user:password http://localhost:8080/api/users/me
 HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8
@@ -291,8 +307,8 @@ quarkus.datasource.permissions.jdbc.url=jdbc:postgresql:multiple-data-sources-pe
 
 quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password FROM test_user u WHERE u.username=?
-quarkus.security.jdbc.principal-query.clear-password-mapper.enabled=true
-quarkus.security.jdbc.principal-query.clear-password-mapper.password-index=1
+quarkus.security.jdbc.principal-query.bcrypt-password-mapper.enabled=true
+quarkus.security.jdbc.principal-query.bcrypt-password-mapper.password-index=1
 
 quarkus.security.jdbc.principal-query.roles.sql=SELECT r.role_name FROM test_role r, test_user_role ur WHERE ur.username=? AND ur.role_id = r.id
 quarkus.security.jdbc.principal-query.roles.datasource=permissions

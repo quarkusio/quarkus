@@ -16,7 +16,7 @@ public class TestResource {
     @Authenticated
     @Path("secure")
     @GET
-    public String getUserName() {
+    public String getUsername() {
         return identity.getPrincipal().getName() + ": " + identity.getRoles();
     }
 

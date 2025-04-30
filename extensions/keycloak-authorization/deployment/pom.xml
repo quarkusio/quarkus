@@ -22,6 +22,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apache-httpclient-deployment</artifactId>
         </dependency>
         <dependency>
@@ -31,7 +35,7 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+            <artifactId>quarkus-keycloak-admin-resteasy-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -72,15 +76,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

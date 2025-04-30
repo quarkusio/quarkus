@@ -2,7 +2,9 @@ package io.quarkus.hibernate.validator.runtime;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -29,6 +31,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
+import io.quarkus.hibernate.validator.runtime.clockprovider.RuntimeReinitializedDefaultClockProvider;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
@@ -75,11 +78,15 @@ public class HibernateValidatorRecorder {
                     configuration.localeResolver(localeResolver);
                 }
 
-                configuration
-                        .builtinConstraints(detectedBuiltinConstraints)
+                // Filter out classes with incomplete hierarchy
+                filterIncompleteClasses(classesToBeValidated);
+
+                configuration.builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
-                        .locales(localesBuildTimeConfig.locales)
-                        .defaultLocale(localesBuildTimeConfig.defaultLocale)
+                        // Locales, Locale ROOT means all locales in this setting.
+                        .locales(localesBuildTimeConfig.locales().contains(Locale.ROOT) ? Set.of(Locale.getAvailableLocales())
+                                : localesBuildTimeConfig.locales())
+                        .defaultLocale(localesBuildTimeConfig.defaultLocale().orElse(Locale.getDefault()))
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
                 if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().isPresent()) {
@@ -123,6 +130,11 @@ public class HibernateValidatorRecorder {
                 InstanceHandle<ClockProvider> configuredClockProvider = Arc.container().instance(ClockProvider.class);
                 if (configuredClockProvider.isAvailable()) {
                     configuration.clockProvider(configuredClockProvider.get());
+                } else {
+                    // If user didn't provide a custom clock provider we want to set our own.
+                    // This provider ensure the correct behavior in a native mode as it does not
+                    // cache the time zone at a build time.
+                    configuration.clockProvider(RuntimeReinitializedDefaultClockProvider.INSTANCE);
                 }
 
                 // Hibernate Validator-specific configuration
@@ -185,6 +197,22 @@ public class HibernateValidatorRecorder {
                         validatorFactory.close();
                     }
                 });
+            }
+
+            /**
+             * Filter out classes with incomplete hierarchy
+             */
+            private void filterIncompleteClasses(Set<Class<?>> classesToBeValidated) {
+                Iterator<Class<?>> iterator = classesToBeValidated.iterator();
+                while (iterator.hasNext()) {
+                    Class<?> clazz = iterator.next();
+                    try {
+                        // This should trigger a NoClassDefFoundError if the class has an incomplete hierarchy
+                        clazz.getCanonicalName();
+                    } catch (NoClassDefFoundError e) {
+                        iterator.remove();
+                    }
+                }
             }
         };
 

@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile Reactive Messaging</name>
 
     <properties>
-        <microprofile-reactive-messaging-tck.version>3.0</microprofile-reactive-messaging-tck.version>
+        <microprofile-reactive-messaging-tck.version>3.0.1</microprofile-reactive-messaging-tck.version>
     </properties>
 
     <build>
@@ -27,7 +27,7 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye-messaging-strict-binding>true</smallrye-messaging-strict-binding>
-                        <quarkus.reactive-messaging.strict>true</quarkus.reactive-messaging.strict>
+                        <quarkus.messaging.strict>true</quarkus.messaging.strict>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -57,7 +57,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+            <artifactId>quarkus-messaging</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
@@ -68,7 +68,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
+            <artifactId>quarkus-messaging-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

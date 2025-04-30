@@ -52,7 +52,7 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final TagExtractor tagExtractor) {
             if (delegate == null) {
                 log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "SpanKind: {}; Request: {}; Operation:{}.",
+                        "SpanKind: {0}; Request: {1}; Operation:{2}.",
                         kind,
                         request == null ? "null" : request.toString(),
                         operation);
@@ -70,7 +70,7 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final TagExtractor tagExtractor) {
             if (delegate == null) {
                 log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "Response: {}; Failure: {}.",
+                        "Response: {0}; Failure: {1}.",
                         response == null ? "null" : response.toString(),
                         failure == null ? "null" : failure.getMessage());
                 return;
@@ -89,7 +89,7 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final TagExtractor tagExtractor) {
             if (delegate == null) {
                 log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "SpanKind: {}; Request: {}; Operation:{}.",
+                        "SpanKind: {0}; Request: {1}; Operation:{2}.",
                         kind,
                         request == null ? "null" : request.toString(),
                         operation);
@@ -107,7 +107,7 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final TagExtractor tagExtractor) {
             if (delegate == null) {
                 log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "Response: {}; Failure: {}.",
+                        "Response: {0}; Failure: {1}.",
                         response == null ? "null" : response.toString(),
                         failure == null ? "null" : failure.getMessage());
                 return;

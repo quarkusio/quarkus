@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import io.quarkus.builder.Json;
 import io.quarkus.builder.Json.JsonArrayBuilder;
@@ -16,7 +17,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.util.GlobUtil;
 
 public class NativeImageResourceConfigStep {
 
@@ -35,14 +35,13 @@ public class NativeImageResourceConfigStep {
         for (NativeImageResourceBuildItem i : resources) {
             for (String path : i.getResources()) {
                 JsonObjectBuilder pat = Json.object();
-                pat.put("pattern", GlobUtil.toRegexPattern(path));
+                pat.put("pattern", Pattern.quote(path));
                 includes.add(pat);
             }
-            addListToJsonArray(includes, i.getResources());
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            includes.add(Json.object().put("pattern", GlobUtil.toRegexPattern(i.serviceDescriptorFile())));
+            includes.add(Json.object().put("pattern", Pattern.quote(i.serviceDescriptorFile())));
         }
 
         for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {

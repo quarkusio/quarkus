@@ -17,6 +17,11 @@
         <dependency>
             <groupId>io.smallrye.stork</groupId>
             <artifactId>stork-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>stork-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
@@ -48,6 +53,10 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -58,6 +67,18 @@
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>

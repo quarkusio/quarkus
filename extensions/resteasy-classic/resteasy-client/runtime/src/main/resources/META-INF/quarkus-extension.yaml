@@ -1,0 +1,19 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Classic's REST Client"
+metadata:
+  keywords:
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  guide: "https://quarkus.io/guides/resteasy-client"
+  categories:
+  - "web"
+  codestart:
+    name: "resteasy-client"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.rest-client."

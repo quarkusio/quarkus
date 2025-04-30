@@ -24,7 +24,9 @@ public class SpringCloudConfigProcessor {
 
     @BuildStep
     public void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Response.class, Response.PropertySource.class).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Response.class, Response.PropertySource.class)
+                .reason(getClass().getName())
+                .build());
     }
 
     @BuildStep

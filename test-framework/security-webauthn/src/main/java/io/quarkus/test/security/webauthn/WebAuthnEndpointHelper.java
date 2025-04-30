@@ -1,9 +1,10 @@
 package io.quarkus.test.security.webauthn;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.security.webauthn.WebAuthnController;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
 import io.restassured.http.ContentType;
@@ -13,19 +14,18 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
 public class WebAuthnEndpointHelper {
-    public static String invokeRegistration(String userName, Filter cookieFilter) {
-        JsonObject registerJson = new JsonObject()
-                .put("name", userName);
+    public static String obtainRegistrationChallenge(String username, Filter cookieFilter) {
         ExtractableResponse<Response> response = RestAssured
-                .given().body(registerJson.encode())
-                .contentType(ContentType.JSON)
+                .given()
+                .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .post("/q/webauthn/register")
-                .then().statusCode(200)
+                .queryParam("username", username)
+                .get("/q/webauthn/register-options-challenge")
+                .then()
                 .log().ifValidationFails()
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.notNullValue())
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.notNullValue())
+                .statusCode(200)
+                .cookie(getChallengeCookie(), Matchers.notNullValue())
                 .extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
@@ -34,33 +34,47 @@ public class WebAuthnEndpointHelper {
         return challenge;
     }
 
-    public static void invokeCallback(JsonObject registration, Filter cookieFilter) {
+    public static void invokeLogin(JsonObject login, Filter cookieFilter) {
+        RestAssured
+                .given().body(login.encode())
+                .filter(cookieFilter)
+                .contentType(ContentType.JSON)
+                .log().ifValidationFails()
+                .post("/q/webauthn/login")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(204)
+                .cookie(getChallengeCookie(), Matchers.is(""))
+                .cookie(getMainCookie(), Matchers.notNullValue());
+    }
+
+    public static void invokeRegistration(String username, JsonObject registration, Filter cookieFilter) {
         RestAssured
                 .given().body(registration.encode())
                 .filter(cookieFilter)
                 .contentType(ContentType.JSON)
                 .log().ifValidationFails()
-                .post("/q/webauthn/callback")
-                .then().statusCode(204)
+                .queryParam("username", username)
+                .post("/q/webauthn/register")
+                .then()
                 .log().ifValidationFails()
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+                .statusCode(204)
+                .cookie(getChallengeCookie(), Matchers.is(""))
+                .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
-    public static String invokeLogin(String userName, Filter cookieFilter) {
-        JsonObject loginJson = new JsonObject()
-                .put("name", userName);
+    public static String obtainLoginChallenge(String username, Filter cookieFilter) {
         ExtractableResponse<Response> response = RestAssured
-                .given().body(loginJson.encode())
-                .contentType(ContentType.JSON)
+                .given()
+                .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .post("/q/webauthn/login")
-                .then().statusCode(200)
+                .queryParam("username", username)
+                .get("/q/webauthn/login-options-challenge")
+                .then()
                 .log().ifValidationFails()
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.notNullValue())
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.notNullValue())
+                .statusCode(200)
+                .cookie(getChallengeCookie(), Matchers.notNullValue())
                 .extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
@@ -99,6 +113,17 @@ public class WebAuthnEndpointHelper {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(302)
-                .cookie("quarkus-credential", Matchers.is(""));
+                .cookie(getMainCookie(), Matchers.is(""));
+    }
+
+    public static String getMainCookie() {
+        Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue("quarkus.webauthn.cookie-name", String.class).orElse("quarkus-credential");
+    }
+
+    public static String getChallengeCookie() {
+        Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue("quarkus.webauthn.challenge-cookie-name", String.class)
+                .orElse("_quarkus_webauthn_challenge");
     }
 }

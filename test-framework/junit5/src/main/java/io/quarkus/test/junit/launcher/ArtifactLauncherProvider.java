@@ -11,7 +11,7 @@ public interface ArtifactLauncherProvider {
      * Determines whether this provider support the artifact type
      *
      */
-    boolean supportsArtifactType(String type);
+    boolean supportsArtifactType(String type, String testProfile);
 
     /**
      * Returns an instance of {@link ArtifactLauncher} on which the {@code init} method has been called

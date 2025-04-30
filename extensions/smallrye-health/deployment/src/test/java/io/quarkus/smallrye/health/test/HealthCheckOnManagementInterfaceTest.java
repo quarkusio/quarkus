@@ -1,10 +1,10 @@
 package io.quarkus.smallrye.health.test;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class HealthCheckOnManagementInterfaceTest {
+class HealthCheckOnManagementInterfaceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -25,17 +25,17 @@ public class HealthCheckOnManagementInterfaceTest {
             .overrideConfigKey("quarkus.management.enabled", "true");
 
     @Test
-    public void testHealth() {
+    void testHealth() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("http://0.0.0.0:9001/q/health/live").then()
+            when().get("http://localhost:9001/q/health/live").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
-                            "checks.name", containsInAnyOrder("my-check"));
-            when().get("http://0.0.0.0:9001/q/health/live").then()
+                            "checks.name", contains("my-check"));
+            when().get("http://localhost:9001/q/health/live").then()
                     .body("status", is("DOWN"),
                             "checks.status", contains("DOWN"),
-                            "checks.name", containsInAnyOrder("my-check"));
+                            "checks.name", contains("my-check"));
         } finally {
             RestAssured.reset();
         }
@@ -44,11 +44,11 @@ public class HealthCheckOnManagementInterfaceTest {
     @Liveness
     static class MyCheck implements HealthCheck {
 
-        volatile int counter = 0;
+        final AtomicInteger counter = new AtomicInteger(0);
 
         @Override
         public HealthCheckResponse call() {
-            if (++counter > 1) {
+            if (counter.incrementAndGet() > 1) {
                 return HealthCheckResponse.builder().down().name("my-check").build();
             }
             return HealthCheckResponse.builder().up().name("my-check").build();

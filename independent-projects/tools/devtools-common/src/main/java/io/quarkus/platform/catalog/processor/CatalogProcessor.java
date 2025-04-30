@@ -85,4 +85,12 @@ public class CatalogProcessor {
     public static MetadataValue getMetadataValue(ExtensionCatalog catalog, String path) {
         return MetadataValue.get(catalog.getMetadata(), path);
     }
+
+    public static String getMinimumJavaVersion(ExtensionCatalog catalog) {
+        return getMetadataValue(catalog, ExtensionCatalog.MD_MINIMUM_JAVA_VERSION).asString();
+    }
+
+    public static String getRecommendedJavaVersion(ExtensionCatalog catalog) {
+        return getMetadataValue(catalog, ExtensionCatalog.MD_RECOMMENDED_JAVA_VERSION).asString();
+    }
 }

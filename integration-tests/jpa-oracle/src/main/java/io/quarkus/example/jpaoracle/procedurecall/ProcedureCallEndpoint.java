@@ -13,18 +13,18 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestQuery;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
 
-@WebServlet("/jpa-oracle/procedure-call/")
-public class ProcedureCallEndpoint extends HttpServlet {
+@Path("/jpa-oracle/procedure-call/")
+public class ProcedureCallEndpoint {
 
     private static final String PROCEDURE_NAME = "myproc";
 
@@ -59,10 +59,9 @@ public class ProcedureCallEndpoint extends HttpServlet {
         em.persist(entity);
     }
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @GET
+    public String test(@RestQuery String pattern) throws IOException {
         try {
-            String pattern = req.getParameter("pattern");
             StoredProcedureQuery storedProcedure = em.createStoredProcedureQuery(PROCEDURE_NAME);
             storedProcedure.registerStoredProcedureParameter("p_pattern", String.class, ParameterMode.IN);
             storedProcedure.registerStoredProcedureParameter("p_cur", Object.class, ParameterMode.REF_CURSOR);
@@ -74,7 +73,7 @@ public class ProcedureCallEndpoint extends HttpServlet {
             while (resultSet.next()) {
                 result.add(resultSet.getString(1));
             }
-            resp.getWriter().write(String.join("\n", result));
+            return String.join("\n", result);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

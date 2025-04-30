@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 
 public class MultiRootPathTree implements OpenPathTree {
 
@@ -26,15 +26,29 @@ public class MultiRootPathTree implements OpenPathTree {
         roots = tmp;
     }
 
+    /**
+     * If at least one of the PathTrees is not an archive, we return false.
+     */
+    @Override
+    public boolean isArchiveOrigin() {
+        for (PathTree tree : trees) {
+            if (!tree.isArchiveOrigin()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public Collection<Path> getRoots() {
         return roots;
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         for (PathTree tree : trees) {
-            final Manifest m = tree.getManifest();
+            final ManifestAttributes m = tree.getManifestAttributes();
             if (m != null) {
                 return m;
             }
@@ -49,6 +63,16 @@ public class MultiRootPathTree implements OpenPathTree {
         }
         for (PathTree t : trees) {
             t.walk(visitor);
+        }
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        if (trees.length == 0) {
+            return;
+        }
+        for (PathTree t : trees) {
+            t.walkIfContains(relativePath, visitor);
         }
     }
 
@@ -80,6 +104,26 @@ public class MultiRootPathTree implements OpenPathTree {
             if (consumed.get()) {
                 break;
             }
+        }
+        if (!consumed.get()) {
+            func.accept(null);
+        }
+    }
+
+    @Override
+    public void acceptAll(String relativePath, Consumer<PathVisit> func) {
+        final AtomicBoolean consumed = new AtomicBoolean();
+        final Consumer<PathVisit> wrapper = new Consumer<>() {
+            @Override
+            public void accept(PathVisit t) {
+                if (t != null) {
+                    func.accept(t);
+                    consumed.set(true);
+                }
+            }
+        };
+        for (PathTree tree : trees) {
+            tree.accept(relativePath, wrapper);
         }
         if (!consumed.get()) {
             func.accept(null);
@@ -148,5 +192,10 @@ public class MultiRootPathTree implements OpenPathTree {
             return false;
         MultiRootPathTree other = (MultiRootPathTree) obj;
         return Arrays.equals(trees, other.trees);
+    }
+
+    @Override
+    public String toString() {
+        return roots.stream().map(p -> p.toString()).collect(Collectors.joining(", ", "[", "]"));
     }
 }

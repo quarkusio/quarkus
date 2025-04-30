@@ -6,6 +6,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -26,7 +28,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
 
-    AbstractStreamCommands(RedisCommandExecutor redis, Class<K> k, Class<F> m, Class<V> v) {
+    AbstractStreamCommands(RedisCommandExecutor redis, Type k, Type m, Type v) {
         super(redis, new Marshaller(k, m, v));
     }
 
@@ -317,7 +319,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         return execute(cmd);
     }
 
-    private <K> void writeStreamsAndIds(Map<K, String> lastIdsPerStream, RedisCommand cmd) {
+    private void writeStreamsAndIds(Map<K, String> lastIdsPerStream, RedisCommand cmd) {
         List<String> ids = new ArrayList<>();
         for (Map.Entry<K, String> entry : lastIdsPerStream.entrySet()) {
             cmd.put(marshaller.encode(entry.getKey()));
@@ -424,6 +426,42 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         RedisCommand cmd = RedisCommand.of(Command.XTRIM)
                 .put(marshaller.encode(key))
                 .putArgs(args);
+
+        return execute(cmd);
+    }
+
+    Uni<Response> _xpending(K key, String group) {
+        nonNull(key, "key");
+        nonNull(key, "group");
+
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
+                .put(marshaller.encode(key))
+                .put(group);
+        return execute(cmd);
+    }
+
+    Uni<Response> _xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        nonNull(key, "key");
+        nonNull(key, "group");
+        nonNull(range, "range");
+        positive(count, "count");
+
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
+                .put(marshaller.encode(key))
+                .put(group);
+
+        // IDLE must be before the range and count
+        if (args != null && args.idle() != null) {
+            cmd.put("IDLE");
+            cmd.put(args.idle().toMillis());
+        }
+
+        cmd.putArgs(range)
+                .put(count);
+
+        if (args != null) {
+            cmd.putArgs(args);
+        }
 
         return execute(cmd);
     }

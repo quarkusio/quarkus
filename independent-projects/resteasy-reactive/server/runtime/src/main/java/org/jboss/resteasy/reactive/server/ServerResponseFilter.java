@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.UriInfo;
 /**
  * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerResponseContext} is generated
  * that calls the annotated method with the proper arguments
- *
+ * <p>
  * The idea behind using this is to make it much to write a {@code ServerResponseFilter} as all the necessary information
  * is passed as arguments to the method instead of forcing the author to use a mix of {@code @Context} and programmatic CDI
  * look-ups.

@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.JOB;
@@ -25,10 +24,9 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
         this.config = config;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        JobBuilder builder = list.getItems().stream()
+        JobBuilder builder = list.buildItems().stream()
                 .filter(this::containsJobResource)
                 .map(replaceExistingJobResource(list))
                 .findAny()
@@ -43,7 +41,7 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
     }
 
     private void initJobResourceWithDefaults(JobBuilder builder) {
-        JobFluent.SpecNested<JobBuilder> spec = builder.editOrNewSpec();
+        JobFluent<?>.SpecNested<JobBuilder> spec = builder.editOrNewSpec();
 
         spec.editOrNewSelector()
                 .endSelector()
@@ -66,14 +64,14 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
             spec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
         }
 
-        spec.withSuspend(config.suspend);
-        spec.withCompletionMode(config.completionMode.name());
-        spec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy.name()).endSpec().endTemplate();
-        config.parallelism.ifPresent(spec::withParallelism);
-        config.completions.ifPresent(spec::withCompletions);
-        config.backoffLimit.ifPresent(spec::withBackoffLimit);
-        config.activeDeadlineSeconds.ifPresent(spec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished.ifPresent(spec::withTtlSecondsAfterFinished);
+        spec.withSuspend(config.suspend());
+        spec.withCompletionMode(config.completionMode().name());
+        spec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
+        config.parallelism().ifPresent(spec::withParallelism);
+        config.completions().ifPresent(spec::withCompletions);
+        config.backoffLimit().ifPresent(spec::withBackoffLimit);
+        config.activeDeadlineSeconds().ifPresent(spec::withActiveDeadlineSeconds);
+        config.ttlSecondsAfterFinished().ifPresent(spec::withTtlSecondsAfterFinished);
 
         spec.endSpec();
     }
@@ -89,7 +87,7 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
         };
     }
 
-    private boolean containsContainerWithName(JobFluent.SpecNested<JobBuilder> spec) {
+    private boolean containsContainerWithName(JobFluent<?>.SpecNested<JobBuilder> spec) {
         List<Container> containers = spec.buildTemplate().getSpec().getContainers();
         return containers == null || containers.stream().anyMatch(c -> name.equals(c.getName()));
     }

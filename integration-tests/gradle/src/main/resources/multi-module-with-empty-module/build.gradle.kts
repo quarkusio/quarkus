@@ -12,6 +12,7 @@ allprojects {
     mavenLocal {
       content {
         includeGroupByRegex("io.quarkus.*")
+        includeGroup("org.hibernate.orm")
       }
     }
     mavenCentral()
@@ -29,7 +30,7 @@ subprojects {
   val quarkusPlatformArtifactId: String by project
   val quarkusPlatformVersion: String by project
 
-  val javaVersion = "11"
+  val javaVersion = "17"
 
   dependencies {
     "implementation"(enforcedPlatform("$quarkusPlatformGroupId:$quarkusPlatformArtifactId:$quarkusPlatformVersion"))

@@ -1,7 +1,8 @@
 package io.quarkus.builder;
 
-import org.wildfly.common.Assert;
 import org.wildfly.common.flags.Flags;
+
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Flags which can be set on consume declarations.

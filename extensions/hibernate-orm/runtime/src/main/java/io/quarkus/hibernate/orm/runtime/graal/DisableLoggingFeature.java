@@ -16,7 +16,8 @@ public class DisableLoggingFeature implements Feature {
             "org.hibernate.Version",
             "org.hibernate.annotations.common.Version",
             "SQL dialect",
-            "org.hibernate.cfg.Environment"
+            "org.hibernate.cfg.Environment",
+            "org.hibernate.orm.connections.pooling"
     };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);
@@ -34,10 +35,8 @@ public class DisableLoggingFeature implements Feature {
     public void afterAnalysis(AfterAnalysisAccess access) {
         for (String category : CATEGORIES) {
             Level level = categoryMap.remove(category);
-            if (level != null) {
-                Logger logger = Logger.getLogger(category);
-                logger.setLevel(level);
-            }
+            Logger logger = Logger.getLogger(category);
+            logger.setLevel(level);
         }
     }
 

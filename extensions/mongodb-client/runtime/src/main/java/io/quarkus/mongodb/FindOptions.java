@@ -21,7 +21,6 @@ public class FindOptions {
     private Bson projection;
     private Bson sort;
     private boolean noCursorTimeout;
-    private boolean oplogReplay;
     private boolean partial;
     private CursorType cursorType;
     private Collation collation;
@@ -134,17 +133,6 @@ public class FindOptions {
      */
     public FindOptions noCursorTimeout(boolean noCursorTimeout) {
         this.noCursorTimeout = noCursorTimeout;
-        return this;
-    }
-
-    /**
-     * Users should not set this under normal circumstances.
-     *
-     * @param oplogReplay if oplog replay is enabled
-     * @return this
-     */
-    public FindOptions oplogReplay(boolean oplogReplay) {
-        this.oplogReplay = oplogReplay;
         return this;
     }
 
@@ -293,9 +281,6 @@ public class FindOptions {
         }
         if (noCursorTimeout) {
             publisher = publisher.noCursorTimeout(true);
-        }
-        if (oplogReplay) {
-            publisher = publisher.oplogReplay(true);
         }
         if (partial) {
             publisher = publisher.partial(true);

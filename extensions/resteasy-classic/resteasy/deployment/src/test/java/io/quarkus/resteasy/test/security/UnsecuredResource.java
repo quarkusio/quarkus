@@ -6,15 +6,22 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 
+import io.quarkus.security.Authenticated;
+
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 @Path("/unsecured")
-public class UnsecuredResource {
+public class UnsecuredResource extends UnsecuredParentResource implements UnsecuredResourceInterface {
     @Path("/defaultSecurity")
     @GET
     public String defaultSecurity() {
         return "defaultSecurity";
+    }
+
+    @Override
+    public String defaultSecurityInterface() {
+        return UnsecuredResourceInterface.super.defaultSecurityInterface();
     }
 
     @Path("/permitAllPathParam/{index}")
@@ -36,6 +43,13 @@ public class UnsecuredResource {
     @DenyAll
     public String denyAll() {
         return "denyAll";
+    }
+
+    @Path("/authenticated")
+    @GET
+    @Authenticated
+    public String authenticated() {
+        return "authenticated";
     }
 
     @Path("/sub")

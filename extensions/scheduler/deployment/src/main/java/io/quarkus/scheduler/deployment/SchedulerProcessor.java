@@ -1,7 +1,6 @@
 package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 import static org.jboss.jandex.AnnotationValue.createArrayValue;
 import static org.jboss.jandex.AnnotationValue.createBooleanValue;
@@ -11,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,8 +20,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -54,7 +56,6 @@ import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -68,9 +69,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -83,15 +81,16 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
-import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.MutableScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
+import io.quarkus.scheduler.runtime.CompositeScheduler;
+import io.quarkus.scheduler.runtime.Constituent;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
-import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
+import io.smallrye.common.annotation.Identifier;
 
 public class SchedulerProcessor {
 
@@ -104,9 +103,59 @@ public class SchedulerProcessor {
     static final String NESTED_SEPARATOR = "$_";
 
     @BuildStep
-    void beans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isMissing(Capability.QUARTZ)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class, Scheduled.ApplicationNotRunning.class));
+    SchedulerImplementationBuildItem implementation() {
+        return new SchedulerImplementationBuildItem(Scheduled.SIMPLE, DotName.createSimple(SimpleScheduler.class), 0);
+    }
+
+    @BuildStep
+    void compositeScheduler(SchedulerConfig config, List<SchedulerImplementationBuildItem> implementations,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<DiscoveredImplementationsBuildItem> discoveredImplementations) {
+        List<SchedulerImplementationBuildItem> sorted = implementations.stream()
+                .sorted(Comparator.comparingInt(SchedulerImplementationBuildItem::getPriority).reversed()).toList();
+        Set<String> found = sorted.stream().map(SchedulerImplementationBuildItem::getImplementation)
+                .collect(Collectors.toUnmodifiableSet());
+        if (found.size() != implementations.size()) {
+            throw new IllegalStateException("Invalid scheduler implementations detected: " + implementations);
+        }
+        DiscoveredImplementationsBuildItem discovered = new DiscoveredImplementationsBuildItem(
+                sorted.get(0).getImplementation(), found,
+                config.useCompositeScheduler());
+        discoveredImplementations.produce(discovered);
+        if (implementations.size() > 1 && config.useCompositeScheduler()) {
+            // If multiple implementations are needed we have to register the CompositeScheduler, and
+            // instruct the extensions that provide an implementation to modify the bean metadata, i.e. add the marker qualifier
+            additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(Constituent.class, CompositeScheduler.class).setUnremovable().build());
+        }
+    }
+
+    @BuildStep
+    void transformSchedulerBeans(DiscoveredImplementationsBuildItem discoveredImplementations,
+            List<SchedulerImplementationBuildItem> implementations,
+            BuildProducer<AnnotationsTransformerBuildItem> transformer) {
+        if (discoveredImplementations.isCompositeSchedulerUsed()) {
+            Map<DotName, String> implsToBeanClass = implementations.stream()
+                    .collect(Collectors.toMap(SchedulerImplementationBuildItem::getSchedulerBeanClass,
+                            SchedulerImplementationBuildItem::getImplementation));
+            transformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+                    .whenClass(c -> implsToBeanClass.containsKey(c.name()))
+                    .transform(c -> {
+                        c.add(AnnotationInstance.builder(Constituent.class).build());
+                        c.add(AnnotationInstance.builder(Identifier.class)
+                                .add("value", implsToBeanClass.get(c.declaration().asClass().name())).build());
+                    })));
+        }
+    }
+
+    @BuildStep
+    void beans(DiscoveredImplementationsBuildItem discoveredImplementations,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(Scheduled.ApplicationNotRunning.class));
+        if (discoveredImplementations.getImplementations().size() == 1
+                || discoveredImplementations.isCompositeSchedulerUsed()) {
+            // Quartz extension is not present or composite scheduler is used
+            additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
         }
     }
 
@@ -138,13 +187,21 @@ public class SchedulerProcessor {
         }
         for (AnnotationInstance annotationInstance : schedules) {
             if (annotationInstance.target().kind() != METHOD) {
-                continue;
+                continue; // This should never happen as the annotation has @Target(METHOD)
             }
             MethodInfo method = annotationInstance.target().asMethod();
+            ClassInfo declaringClass = method.declaringClass();
+            if (!Modifier.isStatic(method.flags())
+                    && (Modifier.isAbstract(declaringClass.flags()) || declaringClass.isInterface())) {
+                throw new IllegalStateException(String.format(
+                        "Non-static @Scheduled methods may not be declared on abstract classes and interfaces: %s() declared on %s",
+                        method.name(), declaringClass.name()));
+            }
             if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
-                LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
+                LOGGER.debugf("Found scheduled static method %s declared on %s", method, declaringClass.name());
             }
         }
 
@@ -183,7 +240,8 @@ public class SchedulerProcessor {
             }
             if (schedules != null) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }
@@ -191,7 +249,9 @@ public class SchedulerProcessor {
 
     @BuildStep
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
-            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
+            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
+            Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndex,
+            DiscoveredImplementationsBuildItem discoveredImplementations) {
         List<Throwable> errors = new ArrayList<>();
         Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
         Set<String> methodDescriptions = new HashSet<>();
@@ -212,6 +272,11 @@ public class SchedulerProcessor {
                 errors.add(new IllegalStateException("@Scheduled method must not be private: "
                         + scheduledMethod.getMethodDescription()));
                 continue;
+            }
+
+            if (scheduledMethod.isNonBlocking() && scheduledMethod.isRunOnVirtualThread()) {
+                errors.add(new IllegalStateException("@Scheduled method cannot be non-blocking and annotated " +
+                        "with @RunOnVirtualThread: " + scheduledMethod.getMethodDescription()));
             }
 
             boolean isSuspendMethod = KotlinUtil.isSuspendMethod(method);
@@ -239,9 +304,11 @@ public class SchedulerProcessor {
                 }
             }
             // Validate cron() and every() expressions
-            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
+            long checkPeriod = capabilities.isMissing(Capability.QUARTZ) ? SimpleScheduler.CHECK_PERIOD : 50;
+            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType()));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext());
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
+                        checkPeriod, beanArchiveIndex.getIndex(), discoveredImplementations);
                 if (error != null) {
                     errors.add(error);
                 }
@@ -285,7 +352,8 @@ public class SchedulerProcessor {
     public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            AnnotationProxyBuildItem annotationProxy) {
+            AnnotationProxyBuildItem annotationProxy, List<ForceStartSchedulerBuildItem> schedulerForcedStartItems,
+            DiscoveredImplementationsBuildItem discoveredImplementations) {
 
         List<MutableScheduledMethod> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
@@ -319,23 +387,11 @@ public class SchedulerProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
-                .supplier(recorder.createContext(config, scheduledMetadata))
+                .supplier(recorder.createContext(config, scheduledMetadata, !schedulerForcedStartItems.isEmpty(),
+                        discoveredImplementations.getAutoImplementation()))
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);
-    }
-
-    @BuildStep
-    @Record(value = STATIC_INIT, optional = true)
-    public DevConsoleRouteBuildItem devConsole(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos,
-            SchedulerDevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
-                new BeanLookupSupplier(SchedulerContext.class), this.getClass(), curateOutcomeBuildItem));
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
-                new BeanLookupSupplier(Scheduler.class), this.getClass(), curateOutcomeBuildItem));
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("configLookup",
-                recorder.getConfigLookup(), this.getClass(), curateOutcomeBuildItem));
-        return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 
     @BuildStep
@@ -343,7 +399,7 @@ public class SchedulerProcessor {
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
-        if (config.metricsEnabled && metricsCapability.isPresent()) {
+        if (config.metricsEnabled() && metricsCapability.isPresent()) {
             DotName micrometerTimed = DotName.createSimple("io.micrometer.core.annotation.Timed");
             DotName mpTimed = DotName.createSimple("org.eclipse.microprofile.metrics.annotation.Timed");
 
@@ -376,30 +432,6 @@ public class SchedulerProcessor {
                                     scheduledMethod.declaringClass().name(),
                                     scheduledMethod.name());
                         }
-                    })));
-        }
-    }
-
-    @BuildStep
-    public void tracing(SchedulerConfig config,
-            Capabilities capabilities, BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-
-        if (config.tracingEnabled && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
-            DotName withSpan = DotName.createSimple("io.opentelemetry.instrumentation.annotations.WithSpan");
-            DotName legacyWithSpan = DotName.createSimple("io.opentelemetry.extension.annotations.WithSpan");
-
-            annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
-                    .appliesTo(METHOD)
-                    .whenContainsAny(List.of(SchedulerDotNames.SCHEDULED_NAME, SchedulerDotNames.SCHEDULES_NAME))
-                    .whenContainsNone(List.of(withSpan, legacyWithSpan))
-                    .transform(context -> {
-                        MethodInfo scheduledMethod = context.getTarget().asMethod();
-                        context.transform()
-                                .add(withSpan)
-                                .done();
-                        LOGGER.debugf("Added OpenTelemetry @WithSpan to a @Scheduled method %s#%s()",
-                                scheduledMethod.declaringClass().name(),
-                                scheduledMethod.name());
                     })));
         }
     }
@@ -458,14 +490,26 @@ public class SchedulerProcessor {
         String returnTypeStr = DescriptorUtils.typeToString(method.returnType());
         ResultHandle res;
         if (isStatic) {
-            if (method.parameterTypes().isEmpty()) {
-                res = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+            if (implClazz.isInterface()) {
+                if (method.parameterTypes().isEmpty()) {
+                    res = tryBlock.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+                } else {
+                    res = tryBlock.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
+                                    ScheduledExecution.class),
+                            tryBlock.getMethodParam(0));
+                }
             } else {
-                res = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
-                                ScheduledExecution.class),
-                        tryBlock.getMethodParam(0));
+                if (method.parameterTypes().isEmpty()) {
+                    res = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+                } else {
+                    res = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
+                                    ScheduledExecution.class),
+                            tryBlock.getMethodParam(0));
+                }
             }
         } else {
             // InjectableBean<Foo> bean = Arc.container().bean("foo1");
@@ -530,6 +574,13 @@ public class SchedulerProcessor {
         if (scheduledMethod.isNonBlocking()) {
             MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);
             isBlocking.returnValue(isBlocking.load(false));
+            isBlocking.close();
+        }
+
+        if (scheduledMethod.isRunOnVirtualThread()) {
+            MethodCreator isRunOnVirtualThread = invokerCreator.getMethodCreator("isRunningOnVirtualThread", boolean.class);
+            isRunOnVirtualThread.returnValue(isRunOnVirtualThread.load(true));
+            isRunOnVirtualThread.close();
         }
 
         invokerCreator.close();
@@ -537,8 +588,8 @@ public class SchedulerProcessor {
     }
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
-            Map<String, AnnotationInstance> encounteredIdentities,
-            BeanDeploymentValidator.ValidationContext validationContext) {
+            Map<String, AnnotationInstance> encounteredIdentities, BeanDeploymentValidator.ValidationContext validationContext,
+            long checkPeriod, IndexView index, DiscoveredImplementationsBuildItem discoveredImplementations) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
@@ -548,7 +599,7 @@ public class SchedulerProcessor {
                 try {
                     parser.parse(cron).validate();
                 } catch (IllegalArgumentException e) {
-                    return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
+                    return new IllegalStateException(errorMessage("Invalid cron() expression", schedule, method), e);
                 }
                 if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                     LOGGER.warnf(
@@ -564,7 +615,7 @@ public class SchedulerProcessor {
                     try {
                         ZoneId.of(timeZone);
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid timeZone() on " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid timeZone()", schedule, method), e);
                     }
                 }
             }
@@ -577,9 +628,14 @@ public class SchedulerProcessor {
                         every = "PT" + every;
                     }
                     try {
-                        Duration.parse(every);
+                        Duration period = Duration.parse(every);
+                        if (period.toMillis() < checkPeriod) {
+                            LOGGER.warnf(
+                                    "An every() value less than %s ms is not supported - the scheduled job will be executed with a delay: %s declared on %s#%s()",
+                                    checkPeriod, schedule, method.declaringClass().name(), method.name());
+                        }
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid every() expression", schedule, method), e);
                     }
                 }
             } else {
@@ -598,7 +654,7 @@ public class SchedulerProcessor {
                     try {
                         Duration.parse(delayed);
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid delayed() expression", schedule, method), e);
                     }
                 }
 
@@ -627,15 +683,47 @@ public class SchedulerProcessor {
         AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
         if (skipExecutionIfValue != null) {
             DotName skipPredicate = skipExecutionIfValue.asClass().name();
-            if (!SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)
-                    && validationContext.beans().withBeanType(skipPredicate).collect().size() != 1) {
-                String message = String.format("There must be exactly one bean that matches the skip predicate: \"%s\" on: %s",
-                        skipPredicate, schedule);
+            if (SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)) {
+                return null;
+            }
+            List<BeanInfo> beans = validationContext.beans().withBeanType(skipPredicate).collect();
+            if (beans.size() > 1) {
+                String message = String.format(
+                        "There must be exactly one bean that matches the skip predicate: \"%s\" on: %s; beans: %s",
+                        skipPredicate, schedule, beans);
                 return new IllegalStateException(message);
+            } else if (beans.isEmpty()) {
+                ClassInfo skipPredicateClass = index.getClassByName(skipPredicate);
+                if (skipPredicateClass != null) {
+                    MethodInfo noArgsConstructor = skipPredicateClass.method("<init>");
+                    if (noArgsConstructor == null || !Modifier.isPublic(noArgsConstructor.flags())) {
+                        return new IllegalStateException(
+                                "The skip predicate class must declare a public no-args constructor: " + skipPredicateClass);
+                    }
+                }
             }
         }
 
+        AnnotationValue executeWithValue = schedule.value("executeWith");
+        if (executeWithValue != null) {
+            String implementation = executeWithValue.asString();
+            if (!Scheduled.AUTO.equals(implementation)) {
+                if (!discoveredImplementations.getImplementations().contains(implementation)) {
+                    return new IllegalStateException(
+                            "The required scheduler implementation was not discovered in application: " + implementation);
+                } else if (!discoveredImplementations.isCompositeSchedulerUsed()
+                        && !discoveredImplementations.isAutoImplementation(implementation)) {
+                    return new IllegalStateException(
+                            "The required scheduler implementation is not available because the composite scheduler is not used: "
+                                    + implementation);
+                }
+            }
+        }
         return null;
+    }
+
+    private static String errorMessage(String base, AnnotationInstance scheduled, MethodInfo method) {
+        return String.format("%s: %s declared on %s#%s()", base, scheduled, method.declaringClass().name(), method.name());
     }
 
     @BuildStep

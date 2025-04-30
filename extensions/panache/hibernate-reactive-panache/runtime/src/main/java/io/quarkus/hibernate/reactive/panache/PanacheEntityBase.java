@@ -151,7 +151,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Map)
      * @see #find(String, Parameters)
      * @see #list(String, Object...)
-     * @see #stream(String, Object...)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Object... params) {
@@ -169,7 +168,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Object...)
-     * @see #stream(String, Sort, Object...)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Sort sort, Object... params) {
@@ -186,7 +184,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Object...)
      * @see #find(String, Parameters)
      * @see #list(String, Map)
-     * @see #stream(String, Map)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Map<String, Object> params) {
@@ -204,7 +201,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Sort, Object...)
      * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Map)
-     * @see #stream(String, Sort, Map)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Sort sort, Map<String, Object> params) {
@@ -221,7 +217,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Map)
      * @see #find(String, Parameters)
      * @see #list(String, Parameters)
-     * @see #stream(String, Parameters)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Parameters params) {
@@ -239,7 +234,6 @@ public abstract class PanacheEntityBase {
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Sort sort, Parameters params) {
@@ -252,7 +246,6 @@ public abstract class PanacheEntityBase {
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll(Sort)
      * @see #listAll()
-     * @see #streamAll()
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> findAll() {
@@ -266,7 +259,6 @@ public abstract class PanacheEntityBase {
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll()
      * @see #listAll(Sort)
-     * @see #streamAll(Sort)
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(Sort sort) {
@@ -284,7 +276,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Map)
      * @see #list(String, Parameters)
      * @see #find(String, Object...)
-     * @see #stream(String, Object...)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -304,7 +295,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Sort, Map)
      * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Object...)
-     * @see #stream(String, Sort, Object...)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -323,7 +313,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Object...)
      * @see #list(String, Parameters)
      * @see #find(String, Map)
-     * @see #stream(String, Map)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -343,7 +332,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Parameters)
      * @see #find(String, Sort, Map)
-     * @see #stream(String, Sort, Map)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -362,7 +350,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Object...)
      * @see #list(String, Map)
      * @see #find(String, Parameters)
-     * @see #stream(String, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -382,7 +369,6 @@ public abstract class PanacheEntityBase {
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
      */
     @CheckReturnValue
     @GenerateBridge
@@ -397,7 +383,6 @@ public abstract class PanacheEntityBase {
      * @return a {@link List} containing all results, without paging
      * @see #listAll(Sort)
      * @see #findAll()
-     * @see #streamAll()
      */
     @CheckReturnValue
     @GenerateBridge
@@ -413,7 +398,6 @@ public abstract class PanacheEntityBase {
      * @return a {@link List} containing all results, without paging
      * @see #listAll()
      * @see #findAll(Sort)
-     * @see #streamAll(Sort)
      */
     @CheckReturnValue
     @GenerateBridge

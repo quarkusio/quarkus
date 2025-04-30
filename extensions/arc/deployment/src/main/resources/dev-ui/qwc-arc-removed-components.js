@@ -3,6 +3,7 @@ import { LitElement, html, css} from 'lit';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import 'qui-badge';
@@ -17,32 +18,48 @@ import 'qui-ide-link';
 export class QwcArcRemovedComponents extends LitElement {
     static styles = css`
         .fullHeight {
-          height: 100%;
+            height: 100%;
         }
+    
+        .searchableGrid {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    
         code {
-          font-size: 85%;
+            font-size: 85%;
         }
 
         .annotation {
-          color: var(--lumo-contrast-50pct);
+            color: var(--lumo-contrast-50pct);
         }
 
         .producer {
-          color: var(--lumo-primary-text-color);
+            color: var(--lumo-primary-text-color);
+        }
+    
+        .filterBar {
+            width: 99%;
+            margin-left: 5px;
         }
     `;
 
     static properties = {
         _removedBeans: {state: true},
+        _filteredRemovedBeans: {state: true},
         _removedDecorators: {state: true},
         _removedInterceptors: {state: true},
+        _filteredRemovedInterceptors: {state: true},
     };
 
     constructor() {
         super();
         this._removedBeans = removedBeans;
+        this._filteredRemovedBeans = this._removedBeans;
         this._removedDecorators = removedDecorators;
         this._removedInterceptors = removedInterceptors;
+        this._filteredRemovedInterceptors = this._removedInterceptors;
     }
 
     render() {
@@ -74,13 +91,13 @@ export class QwcArcRemovedComponents extends LitElement {
         
         if (this._removedBeans.length > 0) {
 
-            return html`
-                <vaadin-grid .items="${this._removedBeans}" theme="no-border" class="fullHeight">
-                    <vaadin-grid-column auto-width
+            return html`${this._renderFilterBar(0)}
+                <vaadin-grid .items="${this._filteredRemovedBeans}" theme="no-border" class="searchableGrid">
+                    <vaadin-grid-sort-column path="providerType.name" auto-width
                         header="Bean"
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
                         header="Kind"
                         ${columnBodyRenderer(this._kindRenderer, [])}
@@ -94,6 +111,43 @@ export class QwcArcRemovedComponents extends LitElement {
         }
     }
 
+    _renderFilterBar(tab){
+        return html`<vaadin-text-field
+                        placeholder="Search"
+                        class="filterBar"
+                        @value-changed="${(e) => {
+                            const searchTerm = (e.detail.value || '').trim();
+                            const matchesTerm = (value) => {
+                                if(value){
+                                    return value.toLowerCase().includes(searchTerm.toLowerCase());
+                                }
+                            }
+                            if(tab === 0){
+                                if(searchTerm?.trim()){
+                                    this._filteredRemovedBeans = this._removedBeans.filter(
+                                        ({ providerType}) => {
+                                            return !searchTerm ||
+                                                matchesTerm(providerType?.name)
+                                    });
+                                }else{
+                                    this._filteredRemovedBeans = this._removedBeans;
+                                }
+                            }else if (tab === 2){
+                                if(searchTerm?.trim()){
+                                    this._filteredRemovedInterceptors = this._removedInterceptors.filter(
+                                        ({ interceptorClass}) => {
+                                            return !searchTerm ||
+                                                matchesTerm(interceptorClass?.name)
+                                    });
+                                }else{
+                                    this._filteredRemovedInterceptors = this._removedInterceptors;
+                                }
+                            }
+                        }}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                    </vaadin-text-field>`;  
+  }
+
     _renderRemovedDecorators(){
         if (this._removedDecorators.length > 0) {
             return html`TODO: Not yet implemented`;
@@ -105,13 +159,13 @@ export class QwcArcRemovedComponents extends LitElement {
 
     _renderRemovedInterceptors(){
         if (this._removedInterceptors.length > 0) {                 	
-            return html`
-                <vaadin-grid .items="${this._removedInterceptors}" theme="no-border" class="fullHeight">
-                    <vaadin-grid-column auto-width
+            return html`${this._renderFilterBar(2)}
+                <vaadin-grid .items="${this._filteredRemovedInterceptors}" theme="no-border" class="fullHeight">
+                    <vaadin-grid-sort-column path="interceptorClass.name" auto-width
                         header="Interceptor"
                         ${columnBodyRenderer(this._interceptorRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
                         header="Bindings"
                         ${columnBodyRenderer(this._bindingsRenderer, [])}
@@ -143,8 +197,7 @@ export class QwcArcRemovedComponents extends LitElement {
       ${bean.nonDefaultQualifiers.map(qualifier =>
             html`${this._simpleNameRenderer(qualifier)}`
         )}
-      <qui-ide-link fileName='${bean.providerType.name}'
-                        lineNumber=0><code>${bean.providerType.name}</code></qui-ide-link>
+      <qui-ide-link fileName='${bean.providerType.name}'><code>${bean.providerType.name}</code></qui-ide-link>
       </vaadin-vertical-layout>`;
     }
 
@@ -179,12 +232,13 @@ export class QwcArcRemovedComponents extends LitElement {
       }
   
       _kindClassRenderer(bean){
-        return html`
-            ${bean.declaringClass
-              ? html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
-              : html`<code class="producer">${bean.memberName}</code>`
-            }
-        `;
+          if (bean.kind.toLowerCase() === "field") {
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`
+          } else if (bean.kind.toLowerCase() === "method") {
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+          } else {
+              return html``;
+          }
       }
 
       _simpleNameRenderer(name) {

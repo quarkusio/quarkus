@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.DynamicFeature;
@@ -152,6 +153,9 @@ public class RuntimeInterceptorDeployment {
         List<BeanFactory.BeanInstance<T>> responseBeanInstances = new ArrayList<>(interceptors.size());
         Collections.sort(interceptors);
         for (ResourceInterceptor<T> interceptor : interceptors) {
+            if (RuntimeType.CLIENT.equals(interceptor.getRuntimeType())) {
+                continue;
+            }
             BeanFactory.BeanInstance<T> beanInstance = interceptor.getFactory().createInstance();
             responseBeanInstances.add(beanInstance);
             T containerResponseFilter = beanInstance.getInstance();
@@ -169,7 +173,8 @@ public class RuntimeInterceptorDeployment {
             Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
             Map<ResourceInterceptor<T>, T> nameInterceptorsMap,
             Map<ResourceInterceptor<T>, T> methodSpecificInterceptorsMap, ResourceMethod method, boolean reversed) {
-        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(HasPriority.TreeMapComparator.INSTANCE);
+        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(
+                reversed ? HasPriority.TreeMapComparator.REVERSED : HasPriority.TreeMapComparator.INSTANCE);
         interceptorsToUse.putAll(globalInterceptorsMap);
         interceptorsToUse.putAll(methodSpecificInterceptorsMap);
         for (ResourceInterceptor<T> nameInterceptor : nameInterceptorsMap.keySet()) {

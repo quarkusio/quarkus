@@ -1,6 +1,9 @@
 package io.quarkus.it.rest.client.main;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -10,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -19,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
 import io.quarkus.it.rest.client.main.wronghost.WrongHostClient;
@@ -62,9 +67,6 @@ public class ClientCallingResource {
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
-    @Inject
-    MyClientLogger globalClientLogger;
-
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
 
@@ -82,9 +84,9 @@ public class ClientCallingResource {
             String url = rc.body().asString();
             ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(ClientWithClientLogger.class);
-            globalClientLogger.reset();
+            Arc.container().instance(MyClientLogger.class).get().reset();
             client.call();
-            if (globalClientLogger.wasUsed()) {
+            if (Arc.container().instance(MyClientLogger.class).get().wasUsed()) {
                 success(rc, "global client logger was used");
             } else {
                 fail(rc, "global client logger was not used");
@@ -106,9 +108,9 @@ public class ClientCallingResource {
         });
 
         router.post("/call-cdi-client-with-global-client-logger").blockingHandler(rc -> {
-            globalClientLogger.reset();
+            Arc.container().instance(MyClientLogger.class).get().reset();
             clientWithClientLogger.call();
-            if (globalClientLogger.wasUsed()) {
+            if (Arc.container().instance(MyClientLogger.class).get().wasUsed()) {
                 success(rc, "global client logger was used");
             } else {
                 fail(rc, "global client logger was not used");
@@ -262,6 +264,24 @@ public class ClientCallingResource {
                 rc.response().setStatusCode(500).end(e.getCause().getClass().getSimpleName());
             }
         });
+
+        router.post("/preserve-response-entity").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            JAXRSResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(JAXRSResponseClient.class);
+            Response response = client.call();
+            Response newResponse = Response.fromResponse(response).build();
+            rc.response().end(String.valueOf(newResponse.getEntity() instanceof InputStream));
+        });
+
+        router.post("/preserve-response-entity-async").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            final JAXRSResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(JAXRSResponseClient.class);
+            Response response = client.asyncCall().await().atMost(Duration.of(5, ChronoUnit.SECONDS));
+            rc.response().end(String.valueOf(response.getEntity() instanceof InputStream));
+        });
+
     }
 
     private Future<Void> success(RoutingContext rc, String body) {

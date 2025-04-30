@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class ReactiveListCommandsImpl<K, V> extends AbstractListCommands<K, V> i
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveListCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveListCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

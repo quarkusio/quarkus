@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -202,33 +202,33 @@ public abstract class PanacheMongoEntityBase {
     /**
      * Find entities using a BSON query.
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(Document, Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Document query) {
+    public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find entities using a BSON query and a BSON sort.
      *
-     * @param query a {@link org.bson.Document} query
-     * @param sort the {@link org.bson.Document} sort
+     * @param query a {@link org.bson.conversions.Bson} query
+     * @param sort the {@link org.bson.conversions.Bson} sort
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Document query, Document sort) {
+    public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -374,16 +374,16 @@ public abstract class PanacheMongoEntityBase {
      * Find entities using a BSON query.
      * This method is a shortcut for <code>find(query).list()</code>.
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return a {@link List} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> List<T> list(Document query) {
+    public static <T extends PanacheMongoEntityBase> List<T> list(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -391,17 +391,17 @@ public abstract class PanacheMongoEntityBase {
      * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
-     * @param query a {@link org.bson.Document} query
-     * @param sort the {@link org.bson.Document} sort
+     * @param query a {@link org.bson.conversions.Bson} query
+     * @param sort the {@link org.bson.conversions.Bson} sort
      * @return a {@link List} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> List<T> list(Document query, Document sort) {
+    public static <T extends PanacheMongoEntityBase> List<T> list(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -549,16 +549,16 @@ public abstract class PanacheMongoEntityBase {
      * Find entities using a BSON query.
      * This method is a shortcut for <code>find(query).stream()</code>.
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return a {@link Stream} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> Stream<T> stream(Document query) {
+    public static <T extends PanacheMongoEntityBase> Stream<T> stream(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -566,17 +566,17 @@ public abstract class PanacheMongoEntityBase {
      * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
-     * @param query a {@link org.bson.Document} query
-     * @param sort the {@link org.bson.Document} sort
+     * @param query a {@link org.bson.conversions.Bson} query
+     * @param sort the {@link org.bson.conversions.Bson} sort
      * @return a {@link Stream} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends PanacheMongoEntityBase> Stream<T> stream(Document query, Document sort) {
+    public static <T extends PanacheMongoEntityBase> Stream<T> stream(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -670,14 +670,14 @@ public abstract class PanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return he number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public static long count(Document query) {
+    public static long count(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -753,14 +753,14 @@ public abstract class PanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return he number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public static long delete(Document query) {
+    public static long delete(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -892,7 +892,7 @@ public abstract class PanacheMongoEntityBase {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
-     * @see #update(Document)
+     * @see #update(Bson)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Object... params) {
@@ -910,7 +910,7 @@ public abstract class PanacheMongoEntityBase {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     * @see #update(Document)
+     * @see #update(Bson)
      *
      */
     @GenerateBridge
@@ -929,7 +929,7 @@ public abstract class PanacheMongoEntityBase {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Map)
-     * @see #update(Document)
+     * @see #update(Bson)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Parameters params) {
@@ -937,18 +937,19 @@ public abstract class PanacheMongoEntityBase {
     }
 
     /**
-     * Update all entities of this type by the given update BSON document.
+     * Update all entities of this type by the given update BSON document. An update document must contain an operator,
+     * see <a href="https://www.mongodb.com/docs/manual/tutorial/update-documents">update documents</a>.
      * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
      * update should be applied.
      *
-     * @param update the update document, as a {@link org.bson.Document}.
+     * @param update the update document, as a {@link Bson}.
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Map)
      * @see #update(String, Parameters)
      */
     @GenerateBridge
-    public static io.quarkus.mongodb.panache.common.PanacheUpdate update(Document update) {
+    public static io.quarkus.mongodb.panache.common.PanacheUpdate update(Bson update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

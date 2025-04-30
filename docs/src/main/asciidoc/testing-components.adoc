@@ -1,0 +1,391 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Testing components
+include::_attributes.adoc[]
+:categories: core,tooling
+:keywords: testing
+:summary:  This reference guide covers the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies. 
+:numbered:
+:sectnums:
+:sectnumlevels: 3
+:topics: testing,tooling
+
+The component model of Quarkus is built on top xref:cdi-reference.adoc[CDI].
+Therefore, Quarkus provides `QuarkusComponentTestExtension` - a JUnit extension that makes it easy to test the components/CDI beans and mock their dependencies.
+Unlike `@QuarkusTest` this extension does not start a full Quarkus application but merely the CDI container and the configuration service.
+You can find more details in the <<lifecycle>> section.
+
+TIP: This extension is available in the `quarkus-junit5-component` dependency.
+
+== Basic example
+
+Let's have a component `Foo` - a CDI bean with two injection points.
+
+.`Foo` component
+[source, java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped <1>
+public class Foo {
+
+    @Inject
+    Charlie charlie; <2>
+
+    @ConfigProperty(name = "bar")
+    boolean bar; <3>
+
+    public String ping() {
+        return bar ? charlie.ping() : "nok";
+    }
+}
+----
+<1> `Foo` is an `@ApplicationScoped` CDI bean.
+<2> `Foo` depends on `Charlie` which declares a method `ping()`.
+<3> `Foo` depends on the config property `bar`. `@Inject` is not needed for this injection point because it also declares a CDI qualifier - this is a Quarkus-specific feature.
+
+Then a component test could look like:
+
+.Simple component test
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.TestConfigProperty;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest <1>
+@TestConfigProperty(key = "bar", value = "true") <2>
+public class FooTest {
+
+    @Inject
+    Foo foo; <3>
+
+    @InjectMock
+    Charlie charlieMock; <4>
+
+    @Test
+    public void testPing() {
+        Mockito.when(charlieMock.ping()).thenReturn("OK"); <5>
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> The `QuarkusComponentTest` annotation registers the JUnit extension.
+<2> Sets a configuration property for the test.
+<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
+<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisfied_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
+<5> We can leverage the Mockito API in a test method to configure the behavior.
+
+`QuarkusComponentTestExtension` also resolves parameters of test methods and injects matching beans.
+
+So the code snippet above can be rewritten as: 
+
+.Simple component test with test method parameters
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.TestConfigProperty;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest
+@TestConfigProperty(key = "bar", value = "true")
+public class FooTest {
+
+    @Test
+    public void testPing(Foo foo, @InjectMock Charlie charlieMock) { <1>
+        Mockito.when(charlieMock.ping()).thenReturn("OK");
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> Parameters annotated with `@io.quarkus.test.component.SkipInject` are never resolved by this extension.
+
+Furthermore, if you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programmatically.
+
+The original test could be rewritten like:
+
+.Simple component test with programmatic configuration
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.QuarkusComponentTestExtension;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+public class FooTest {
+
+    @RegisterExtension <1>
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder().configProperty("bar","true").build();
+
+    @Inject
+    Foo foo;
+
+    @InjectMock
+    Charlie charlieMock;
+
+    @Test
+    public void testPing() {
+        Mockito.when(charlieMock.ping()).thenReturn("OK");
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> The `QuarkusComponentTestExtension` is configured in a static field of the test class.
+
+[[lifecycle]]
+== Lifecycle
+
+So what exactly does the `QuarkusComponentTest` do?
+It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object].
+
+If the test instance lifecycle is `Lifecycle#PER_METHOD` (default) then the container is started during the `before each` test phase and stopped during the `after each` test phase.
+However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the container is started during the `before all` test phase and stopped during the `after all` test phase.
+
+The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created.
+The parameters of a test method for which a matching bean exists are resolved (unless annotated with `@io.quarkus.test.component.SkipInject` or `@org.mockito.Mock`) when a test method is executed.
+Finally, the CDI request context is activated and terminated per each test method.
+
+== Injection
+
+Fields of the test class that are annotated with `@jakarta.inject.Inject` and `@io.quarkus.test.InjectMock` are injected after a test instance is created.
+Furthermore, the parameters of a test method for which a matching bean exists are resolved unless annotated with `@io.quarkus.test.component.SkipInject` or `@org.mockito.Mock`.
+There are also some JUnit built-in parameters, such as `RepetitionInfo` and `TestInfo`, which are skipped automatically.
+
+An `@Inject` injection point receives the contextual instance of a CDI bean - the real component under test. 
+An `@InjectMock` injection point receives an "unconfigured" Mockito mock that was created for an <<auto_mocking,unsatisfied dependency automatically>>.
+
+Dependent beans injected into the fields and test method arguments are correctly destroyed before a test instance is destroyed and after the test method completes, respectively.
+
+NOTE: Arguments of a `@ParameterizedTest` method that are provided by an `ArgumentsProvider`, for example with `@org.junit.jupiter.params.provider.ValueArgumentsProvider`, must be annotated with `@SkipInject`. 
+
+=== Tested components
+
+The initial set of tested components is derived from the test class:
+
+1. The types of all fields annotated with `@jakarta.inject.Inject` are considered the component types.
+2. The types of test methods parameters that are not annotated with `@InjectMock`, `@SkipInject`, or `@org.mockito.Mock` are also considered the component types.
+3. If `@QuarkusComponentTest#addNestedClassesAsComponents()` is set to `true` (default) then all static nested classes declared on the test class are components too.
+
+NOTE: `@Inject Instance<T>` and `@Inject @All List<T>` injection points are handled specifically. The actual type argument is registered as a component. However, if the type argument is an interface the implementations _are not registered_ automatically. 
+
+Additional component classes can be set using `@QuarkusComponentTest#value()` or `QuarkusComponentTestExtensionBuilder#addComponentClasses()`.
+
+
+[[auto_mocking]]
+=== Auto Mocking Unsatisfied Dependencies
+
+Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency.
+Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
+The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers.
+The injected reference is an _unconfigured_ Mockito mock.
+You can inject the mock in your test using the `io.quarkus.test.InjectMock` annotation and leverage the Mockito API to configure the behavior.
+
+[NOTE]
+====
+`@InjectMock` is not intended as a universal replacement for functionality provided by the Mockito JUnit extension.
+It's meant to be used for configuration of unsatisfied dependencies of CDI beans.
+You can use the `QuarkusComponentTest` and `MockitoExtension` side by side.
+
+[source, java]
+----
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+@QuarkusComponentTest
+public class FooTest {
+
+    @TestConfigProperty(key = "bar", value = "true")
+    @Test
+    public void testPing(Foo foo, @InjectMock Charlie charlieMock, @Mock Ping ping) { 
+        Mockito.when(ping.pong()).thenReturn("OK");
+        Mockito.when(charlieMock.ping()).thenReturn(ping);
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+
+====
+
+=== Custom Mocks For Unsatisfied Dependencies
+
+Sometimes you need the full control over the bean attributes and maybe even configure the default mock behavior.
+You can use the mock configurator API via the `QuarkusComponentTestExtensionBuilder#mock()` method.
+
+== Nested Tests
+
+JUnit 5 https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested[@Nested tests] may help to structure more complex test scenarios.
+However, only basic use cases are tested with `@QuarkusComponentTest`.
+
+.Nested test
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.TestConfigProperty;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest <1>
+@TestConfigProperty(key = "bar", value = "true") <2>
+public class FooTest {
+
+    @Inject
+    Foo foo; <3>
+
+    @InjectMock
+    Charlie charlieMock; <4>
+    
+    @Nested
+    class PingTest {
+    
+       @Test
+       public void testPing() {
+          Mockito.when(charlieMock.ping()).thenReturn("OK");
+          assertEquals("OK", foo.ping());
+       }
+    }
+    
+    @Nested
+    class PongTest {
+    
+       @Test
+       public void testPong() {
+          Mockito.when(charlieMock.pong()).thenReturn("NOK");
+          assertEquals("NOK", foo.pong());
+       }
+    }
+}
+----
+<1> The `QuarkusComponentTest` annotation registers the JUnit extension.
+<2> Sets a configuration property for the test.
+<3> The test injects the component under the test. `Foo` injects `Charlie`.
+<4> The test also injects a mock for `Charlie`. The injected reference is an "unconfigured" Mockito mock.
+
+== Configuration
+
+You can set the configuration properties for a test with the `@io.quarkus.test.component.TestConfigProperty` annotation or with the `QuarkusComponentTestExtensionBuilder#configProperty(String, String)` method.
+If you only need to use the default values for missing config properties, then the `@QuarkusComponentTest#useDefaultConfigProperties()` or `QuarkusComponentTestExtensionBuilder#useDefaultConfigProperties()` might come in useful.
+
+It is also possible to set configuration properties for a test method with the `@io.quarkus.test.component.TestConfigProperty` annotation.
+However, if the test instance lifecycle is `Lifecycle#_PER_CLASS` this annotation can only be used on the test class and is ignored on test methods.
+
+NOTE: `@io.quarkus.test.component.TestConfigProperty` declared on a `@Nested` test class is always ignored.
+
+CDI beans are also automatically registered for all injected https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings]. The mappings are populated with the test configuration properties.
+
+== Mocking CDI Interceptors
+
+If a tested component class declares an interceptor binding then you might need to mock the interception too.
+There are two ways to accomplish this task.
+First, you can define an interceptor class as a static nested class of the test class.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+
+    @ApplicationScoped
+    static class Foo {
+
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+
+    }
+
+    @SimpleBinding
+    @Interceptor
+    static class SimpleInterceptor { <2>
+
+        @AroundInvoke
+        Object aroundInvoke(InvocationContext context) throws Exception {
+            return context.proceed().toString().toUpperCase();
+        }
+
+    }
+}
+----
+<1> `@SimpleBinding` is an interceptor binding.
+<2> The interceptor class is automatically considered a tested component.
+
+NOTE: Static nested classes declared on a test class that is annotated with `@QuarkusComponentTest` are excluded from bean discovery when running a `@QuarkusTest` in order to prevent unintentional CDI conflicts.
+
+The second option is to declare an interceptor method directly in the test class; the method is then invoked in the relevant interception phase.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+
+    @SimpleBinding <1>
+    @AroundInvoke <2>
+    Object aroundInvoke(InvocationContext context) throws Exception {
+       return context.proceed().toString().toUpperCase();
+    }
+
+    @ApplicationScoped
+    static class Foo {
+
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+
+    }
+}
+----
+<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types.
+<2> Defines the interception type.

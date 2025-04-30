@@ -28,10 +28,13 @@ import jakarta.interceptor.InterceptorBinding;
  * annotations on a single method. Caching operations will always be executed in the same order: {@link CacheInvalidateAll}
  * first, then {@link CacheInvalidate} and finally {@link CacheResult}.
  * <p>
+ *
+ * @deprecated Use Infinispan Cache Extension
  */
 @InterceptorBinding
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
+@Deprecated(forRemoval = true)
 public @interface CacheResult {
 
     /**

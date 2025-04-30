@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -37,6 +38,10 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         Path appClasses = (Path) stringObjectMap.get("app-classes");
         DevModeContext devModeContext = new DevModeContext();
         devModeContext.setArgs((String[]) stringObjectMap.get("args"));
+        Properties buildSystemProperties = curatedApplication.getQuarkusBootstrap().getBuildSystemProperties();
+        for (String key : buildSystemProperties.stringPropertyNames()) {
+            devModeContext.getBuildSystemProperties().put(key, buildSystemProperties.getProperty(key));
+        }
 
         ApplicationModel appModel = null;
         try {
@@ -86,6 +91,7 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
     private DevModeContext.ModuleInfo toModule(ResolvedDependency module) throws BootstrapGradleException {
 
         String classesDir = null;
+        String generatedSourcesDir = null;
         final Set<Path> sourceParents = new LinkedHashSet<>();
         final PathList.Builder srcPaths = PathList.builder();
         final ArtifactSources sources = module.getSources();
@@ -98,6 +104,9 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             }
             if (classesDir == null) {
                 classesDir = src.getOutputDir().toString();
+            }
+            if (generatedSourcesDir == null && src.getAptSourcesDir() != null) {
+                generatedSourcesDir = src.getAptSourcesDir().toString();
             }
         }
 
@@ -120,6 +129,7 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 .setProjectDirectory(module.getWorkspaceModule().getModuleDir().getPath())
                 .setSourcePaths(srcPaths.build())
                 .setClassesPath(classesDir)
+                .setGeneratedSourcesPath(generatedSourcesDir)
                 .setResourcePaths(resourcesPaths.build())
                 .setResourcesOutputPath(resourceDirectory)
                 .setSourceParents(PathList.from(sourceParents))

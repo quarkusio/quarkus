@@ -3,6 +3,8 @@ package io.quarkus.redis.runtime.datasource;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
+
 import io.quarkus.redis.datasource.cuckoo.CfInsertArgs;
 import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
 import io.smallrye.mutiny.Uni;
@@ -11,7 +13,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractCuckooCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractCuckooCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 
@@ -76,7 +78,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
         // Create command
@@ -94,7 +96,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(args, "args");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CF_INSERT)
@@ -112,7 +114,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX)
@@ -130,7 +132,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         doesNotContainNull(values, "values");
         nonNull(args, "args");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX)
@@ -148,7 +150,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         doesNotContainNull(values, "values");
         if (values.length == 0) {
-            throw new IllegalArgumentException("`values` must contain at least one item");
+            return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
         RedisCommand cmd = RedisCommand.of(Command.CF_MEXISTS)

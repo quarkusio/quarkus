@@ -1,14 +1,20 @@
 plugins {
-    id("com.gradle.enterprise") version "3.13.4"
+    id("com.gradle.develocity") version "4.0.1"
 }
 
-gradleEnterprise {
+develocity {
+    val isAuthenticated = !System.getenv("DEVELOCITY_ACCESS_KEY").isNullOrEmpty()
+    if(isAuthenticated) {
+        server = "https://ge.quarkus.io"
+    }
+
     buildScan {
-        // plugin configuration
-        //See also: https://docs.gradle.com/enterprise/gradle-plugin/
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishOnFailure()
+        if (!isAuthenticated) {
+            termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+            termsOfUseAgree.set("yes")
+        }
+        publishing.onlyIf { it.buildResult.failures.isNotEmpty() }
+        uploadInBackground = System.getenv("CI").isNullOrEmpty()
     }
 }
 

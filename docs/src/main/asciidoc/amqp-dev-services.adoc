@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: Start AMQP automatically in dev and test modes.
+:extensions: io.quarkus:quarkus-messaging-amqp
+:topics: messaging,amqp,dev-services,testing,dev-mode
 
 Dev Services for AMQP automatically starts an AMQP 1.0 broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
@@ -52,3 +54,12 @@ You can configure the image and version using the `quarkus.amqp.devservices.imag
 ----
 quarkus.amqp.devservices.image-name=quay.io/artemiscloud/activemq-artemis-broker:latest
 ----
+
+IMPORTANT: The configured image must be _compatible_ with the `activemq-artemis-broker` one.
+The container is launched with the `AMQ_USER`, `AMQ_PASSWORD` and `AMQ_EXTRA_ARGS` environment variables.
+The ports 5672 and 8161 (web console) are exposed.
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-amqp_quarkus.amqp.devservices.adoc[opts=optional, leveloffset=+1]

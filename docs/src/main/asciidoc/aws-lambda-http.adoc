@@ -3,16 +3,20 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= AWS Lambda with RESTEasy Reactive, Undertow, or Reactive Routes
+= AWS Lambda with Quarkus REST, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an AWS Lambda.
 :devtools-no-gradle:
+:topics: aws,lambda,serverless,function,cloud
+:extensions: io.quarkus:quarkus-amazon-lambda,io.quarkus:quarkus-amazon-lambda-http
 
 With Quarkus you can deploy your favorite Java HTTP frameworks as AWS Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
-or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy Reactive (our Jakarta REST implementation),
+or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with Quarkus REST (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
+
+IMPORTANT: You should only use single HTTP framework together with AWS Lambda extension to avoid unexpected conflicts and errors.
 
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.  Our integration also generates SAM deployment files that can be consumed by https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
@@ -83,6 +87,18 @@ include::{includes}/devtools/build-native.adoc[]
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a Docker build as Amazon
 Lambda requires Linux binaries.  You can do this by passing `-Dquarkus.native.container-build=true` to your build command.
 This requires you to have Docker installed locally, however.
+
+[NOTE]
+====
+According to the https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html#system-requirements-cpu-x86-64[AWS documentation], AL2023
+x86-64 binaries are built for the x86-64-**v2** revision of the x86-64 architecture.
+In Quarkus, the default value of xref:building-native-image.adoc#quarkus-core_quarkus-native-march[quarkus.native.march] is x86-64-**v3**.
+This could cause
+https://repost.aws/questions/QUBVnl6hn-Toe1LPr1qjOXzg/lambda-failed-with-java-compiled-into-machine-code[issues] if AWS Lambda provisions older
+hardware.
+To maximize Lambda compatibility, you can set `quarkus.native.march` to `x86-64-v2`.
+See the xref:native-reference.adoc#work-around-missing-cpu-features[Native Reference] guide for more information.
+====
 
 include::{includes}/devtools/build-native-container.adoc[]
 
@@ -170,6 +186,13 @@ quarkus.lambda.mock-event-server.test-port=8083
 
 A port value of zero will result in a randomly assigned port.
 
+To turn off the mock event server:
+[source, subs=attributes+]
+----
+quarkus.lambda.mock-event-server.enabled=false
+----
+
+
 == Simulate AWS Lambda Deployment with SAM CLI
 
 The AWS SAM CLI allows you to run your lambda's locally on your laptop in a simulated Lambda environment.  This requires Docker to be installed.
@@ -238,7 +261,7 @@ There is nothing special about the POM other than the inclusion of the `quarkus-
 (if you are deploying an AWS Gateway HTTP API) or the `quarkus-amazon-lambda-rest` extension (if you are deploying an AWS Gateway REST API).
 These extensions automatically generate everything you might need for your lambda deployment.
 
-Also, at least in the generated Maven archetype `pom.xml`, the `quarkus-resteasy-reactive`, `quarkus-reactive-routes`, and `quarkus-undertow`
+Also, at least in the generated Maven archetype `pom.xml`, the `quarkus-rest`, `quarkus-reactive-routes`, and `quarkus-undertow`
 dependencies are all optional.  Pick which HTTP framework(s) you want to use (Jakarta REST, Reactive Routes, and/or Servlet) and
 remove the other dependencies to shrink your deployment.
 
@@ -254,7 +277,7 @@ Do not change the Lambda handler name.
 ----
      Properties:
         Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
-        Runtime: java11
+        Runtime: java17
 ----
 
 This handler is a bridge between the lambda runtime and the Quarkus HTTP framework you are using (Jakarta REST, Servlet, etc.)
@@ -287,7 +310,7 @@ HTTP response messages and the `sam.yaml` file must configure the API Gateway to
 
 == Injectable AWS Context Variables
 
-If you are using RESTEasy Reactive and Jakarta REST, you can inject various AWS Context variables into your Jakarta REST resource classes
+If you are using Quarkus REST and Jakarta REST, you can inject various AWS Context variables into your Jakarta REST resource classes
 using the Jakarta REST `@Context` annotation or anywhere else with the CDI `@Inject` annotation.
 
 For the AWS HTTP API you can inject the AWS variables `com.amazonaws.services.lambda.runtime.Context` and
@@ -569,4 +592,4 @@ the `QUARKUS_AWS_LAMBDA_FORCE_USER_NAME` environment variable
 
 == SnapStart
 
-To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].
+To optimize your application for Lambda SnapStart, check xref:aws-lambda-snapstart.adoc[the SnapStart Configuration Documentation].

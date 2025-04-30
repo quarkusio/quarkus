@@ -7,7 +7,6 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.UserTransaction;
 
-import org.jboss.logging.Logger;
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.XAResourceRecoveryRegistry;
 import org.jboss.tm.usertx.UserTransactionRegistry;
@@ -16,10 +15,10 @@ import com.arjuna.ats.internal.jbossatx.jta.jca.XATerminator;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.narayana.jta.runtime.internal.tsr.TransactionSynchronizationRegistryWrapper;
 
 @Dependent
 public class NarayanaJtaProducers {
-    private static final Logger log = Logger.getLogger(NarayanaJtaProducers.class);
 
     @Produces
     @ApplicationScoped
@@ -50,7 +49,7 @@ public class NarayanaJtaProducers {
     @ApplicationScoped
     @Unremovable
     public TransactionSynchronizationRegistry transactionSynchronizationRegistry() {
-        return new TransactionSynchronizationRegistryImple();
+        return new TransactionSynchronizationRegistryWrapper(new TransactionSynchronizationRegistryImple());
     }
 
     @Produces

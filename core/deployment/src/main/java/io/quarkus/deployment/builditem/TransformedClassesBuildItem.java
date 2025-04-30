@@ -13,7 +13,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * The results of applying bytecode transformation to a class.
  *
  * Note that this has also been abused somewhat to also represent removed
- * resources, as the logic is the same, and it avoids have two separate mechanisms
+ * resources, as the logic is the same, and it avoids having two separate mechanisms
  * that essentially do the same thing.
  */
 public final class TransformedClassesBuildItem extends SimpleBuildItem {
@@ -46,13 +46,18 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
          */
         private final byte[] data;
         private final String fileName;
-        private final boolean eager;
 
+        @Deprecated
         public TransformedClass(String className, byte[] data, String fileName, boolean eager) {
             this.className = className;
             this.data = data;
             this.fileName = fileName;
-            this.eager = eager;
+        }
+
+        public TransformedClass(String className, byte[] data, String fileName) {
+            this.className = className;
+            this.data = data;
+            this.fileName = fileName;
         }
 
         public byte[] getData() {
@@ -67,8 +72,9 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
             return className;
         }
 
+        @Deprecated
         public boolean isEager() {
-            return eager;
+            return false;
         }
 
         @Override

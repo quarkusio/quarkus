@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
+:topics: rest,openapi,swagger-ui,dev-ui
+:extensions: io.quarkus:quarkus-smallrye-openapi
 
 This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
 how you can test it via a user-friendly UI named Swagger UI.
@@ -27,14 +29,14 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `openapi-swaggerui-quickstart` {quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
+The solution is located in the `openapi-swaggerui-quickstart` link:{quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: openapi-swaggerui-quickstart
-:create-app-extensions: resteasy-reactive-jackson
+:create-app-extensions: rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 == Expose a REST Resource
@@ -160,10 +162,10 @@ public class FruitResourceTest {
 
 == Expose OpenAPI Specifications
 
-Quarkus provides the https://github.com/smallrye/smallrye-open-api/[Smallrye OpenAPI] extension compliant with the
+Quarkus provides the https://github.com/smallrye/smallrye-open-api/[SmallRye OpenAPI] extension compliant with the
 https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
 specification in order to generate your API
-https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI v3 specification].
+https://spec.openapis.org/oas/v3.1.0.html[OpenAPI v3 specification].
 
 You just need to add the `openapi` extension to your Quarkus application:
 
@@ -196,7 +198,7 @@ Once your application is started, you can make a request to the default `/q/open
 [source,shell]
 ----
 $ curl http://localhost:8080/q/openapi
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Generated API
   version: "1.0"
@@ -320,6 +322,46 @@ quarkus.smallrye-openapi.info-license-url=https://www.apache.org/licenses/LICENS
 
 This will give you similar information as the `@OpenAPIDefinition` example above.
 
+== Enhancing the OpenAPI Schema with Filters
+
+You can change the Generated OpenAPI Schema using one or more filter. Filters can run during build time, or at runtime.
+
+[source,java]
+----
+/**
+ * Filter to add custom elements
+ */
+@OpenApiFilter(OpenApiFilter.RunStage.BUILD) //<1>
+public class MyBuildTimeFilter implements OASFilter { //<2>
+
+    private IndexView view;
+
+    public MyBuildTimeFilter(IndexView view) { //<3>
+        this.view = view;
+    }
+
+    @Override
+    public void filterOpenAPI(OpenAPI openAPI) { //<4>
+        Collection<ClassInfo> knownClasses = this.view.getKnownClasses();
+        Info info = OASFactory.createInfo();
+        info.setDescription("Created from Annotated Buildtime filter with " + knownClasses.size() + " known indexed classes");
+        openAPI.setInfo(info);
+    }
+
+}
+----
+<1> Annotate method with `@OpenApiFilter` and the run stage (BUILD,RUN,BOTH)
+<2> Implement OASFilter and override any of the methods
+<3> For Build stage filters, the index can be passed in (optional)
+<4> Get a hold of the generated `OpenAPI` Schema, and enhance as required
+
+Remember that setting fields on the schema will override what has been generated, you might want to get and add to (so modify). Also know that the generated values might be null, so you will have to check for that.
+
+=== Runtime filters
+
+Runtime filters by default runs on startup (when the final OpenAPI document gets created). You can change runtime filters to run on every request, making the OpenAPI document dynamic.
+To do this you need to set this propery: `quarkus.smallrye-openapi.always-run-filter=true`.
+
 == Loading OpenAPI Schema From Static Files
 
 Instead of dynamically creating OpenAPI schemas from annotation scanning, Quarkus also supports serving static OpenAPI documents.
@@ -331,7 +373,7 @@ Quarkus also supports alternative <<open-document-paths,OpenAPI document paths>>
 
 [source,yaml]
 ----
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: Static OpenAPI document of fruits resource
   description: Fruit resources Open API documentation
@@ -404,15 +446,22 @@ Live reload of static OpenAPI document is supported during development. A modifi
 
 == Changing the OpenAPI version
 
-By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file
+By default, when the document is generated, the OpenAPI version used will be `3.1.0`. If you use a static file as mentioned above, the version in the file
 will be used. You can also define the version in SmallRye using the following configuration:
 
 [source, properties]
 ----
-mp.openapi.extensions.smallrye.openapi=3.0.2
+mp.openapi.extensions.smallrye.openapi=3.0.4
 ----
 
 This might be useful if your API goes through a Gateway that needs a certain version.
+
+[NOTE]
+====
+Changing the OpenAPI version between `3.0.x` and `3.1.x` versions will result in changes to the rendered document to satisfy the requirements
+of the chosen version. A good starting point to learn about the differences between OpenAPI 3.0 and 3.1 is the
+https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0[OpenAPI Initiative].
+====
 
 == Auto-generation of Operation Id
 
@@ -482,7 +531,7 @@ Now, we are ready to run our application:
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev
+./mvnw quarkus:dev
 ----
 
 You can check the Swagger UI path in your application's log:
@@ -511,7 +560,7 @@ To supply your own logo, you need to place a file called `logo.png` in `src/main
 
 This will set the logo for all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
 
-If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png` 
+If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png`
 rather than `logo.png`.
 
 ==== CSS
@@ -520,16 +569,21 @@ To supply your own css that override/enhance style in the html, you need to plac
 
 This will add that css to all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
 
-If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css` 
+If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css`
 rather than `style.css`.
 
 For more information on styling, read this blog entry: https://quarkus.io/blog/stylish-api/
 
 === Cross Origin Resource Sharing
 
-If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:http-reference.adoc#cors-filter[HTTP CORS documentation] for more details.
+If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more details.
 
 == Configuration Reference
+
+=== MicroProfile OpenAPI
+
+MicroProfile OpenAPI Core configuration is defined in https://download.eclipse.org/microprofile/microprofile-open-api-3.1.1/microprofile-openapi-spec-3.1.1.html#_core_configurations[MicroProfile OpenAPI Specification].
+More information about the MicroProfile OpenAPI annotations can be found in the https://download.eclipse.org/microprofile/microprofile-open-api-3.1.1/apidocs/org/eclipse/microprofile/openapi/annotations/package-summary.html[MicroProfile OpenAPI API Javadoc].
 
 === OpenAPI
 
@@ -537,4 +591,4 @@ include::{generated-dir}/config/quarkus-smallrye-openapi.adoc[opts=optional, lev
 
 === Swagger UI
 
-include::{generated-dir}/config/quarkus-swaggerui.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-swagger-ui.adoc[opts=optional, leveloffset=+1]

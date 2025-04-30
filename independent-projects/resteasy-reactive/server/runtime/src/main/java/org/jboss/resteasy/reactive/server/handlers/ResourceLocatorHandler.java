@@ -9,11 +9,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -23,9 +25,12 @@ public class ResourceLocatorHandler implements ServerRestHandler {
 
     private final Map<Class<?>, Map<String, RequestMapper<RuntimeResource>>> resourceLocatorHandlers = new ConcurrentHashMap<>();
     private final Function<Class<?>, BeanFactory.BeanInstance<?>> instantiator;
+    private final Function<Object, Object> clientProxyUnwrapper;
 
-    public ResourceLocatorHandler(Function<Class<?>, BeanFactory.BeanInstance<?>> instantiator) {
+    public ResourceLocatorHandler(Function<Class<?>, BeanFactory.BeanInstance<?>> instantiator,
+            Function<Object, Object> clientProxyUnwrapper) {
         this.instantiator = instantiator;
+        this.clientProxyUnwrapper = clientProxyUnwrapper;
     }
 
     @Override
@@ -54,10 +59,25 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         } else {
             locatorClass = locator.getClass();
         }
+
+        // in case of a subresource gets returned, we might not control the lifecycle of the subresource ourself
+        // E.g. the user could return a singleton instance, or construct an instance on each invocation of the locator.
+        // therefore, only inject into CDI Beans, where we already know they are constructed once for each request
+        // (thanks to the requestScopedResources validation)
+        // otherwise TCK JAXRSClient0015 fails
+        Object unwrapped = null;
+        if (clientProxyUnwrapper != null) {
+            unwrapped = clientProxyUnwrapper.apply(locator);
+        }
+        if (unwrapped instanceof ResteasyReactiveInjectionTarget t && unwrapped != locator) {
+            t.__quarkus_rest_inject(requestContext);
+        }
+
         Map<String, RequestMapper<RuntimeResource>> target = findTarget(locatorClass);
         if (target == null) {
             throw new RuntimeException("Resource locator method returned object that was not a resource: " + locator);
         }
+
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
         boolean hadNullMethodMapper = false;
         if (mapper == null) {
@@ -66,6 +86,25 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             // we check for a null mapper, so by the time we use it, it must have meant that
             // we had a matcher for a null method
             hadNullMethodMapper = true;
+
+            if (mapper == null) {
+                String requestMethod = requestContext.getMethod();
+                if (requestMethod.equals(HttpMethod.HEAD)) {
+                    mapper = target.get(HttpMethod.GET);
+                } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
+                    Set<String> allowedMethods = new HashSet<>();
+                    for (String method : target.keySet()) {
+                        if (method == null) {
+                            continue;
+                        }
+                        allowedMethods.add(method);
+                    }
+                    allowedMethods.add(HttpMethod.OPTIONS);
+                    allowedMethods.add(HttpMethod.HEAD);
+                    requestContext.abortWith(Response.ok().allow(allowedMethods).build());
+                    return;
+                }
+            }
         }
         if (mapper == null) {
             throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());

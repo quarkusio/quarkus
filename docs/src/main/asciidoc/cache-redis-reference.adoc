@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Use Redis as the Quarkus cache backend
+:topics: redis,cache,data
+:extensions: io.quarkus:quarkus-redis-cache,io.quarkus:quarkus-redis-client
 
 By default, Quarkus Cache uses Caffeine as backend.
 It's possible to use Redis instead.
@@ -18,8 +20,8 @@ include::{includes}/extension-status.adoc[]
 
 When using Redis as the backend for Quarkus cache, each cached item will be stored in Redis:
 
-- The backend uses the _<default>_ Redis client (if not configured otherwise), so make sure it's configured (or use the xref:redis-dev-services.adoc[redis dev service])
-- the Redis key is built as follows: `cache:$cache-name:$cache-key`, where `cache-key` is the key the application uses.
+- The backend uses the _<default>_ Redis client (if not configured otherwise), so make sure it's configured (or use the xref:redis-dev-services.adoc[Redis Dev Service])
+- the Redis key is built as follows: `cache:{cache-name}:{cache-key}`, where `cache-key` is the key the application uses and `cache:{cache-name}` the prefix.
 - the value is encoded to JSON if needed
 
 
@@ -112,14 +114,15 @@ You would need to invalidate the values using the `@CacheInvalidateAll` or `@Cac
 
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-cache-redis.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-cache.adoc[opts=optional, leveloffset=+1]
 
 == Configure the Redis key
 
-By default, the Redis backend stores the entry using the following keys: `cache:$cache-name:$cache-key`, where `cache-key` is the key the application uses.
-So, you can find all the entries for a single cache using the Redis `KEYS` command: `KEYS cache:$cache-name:*`
+By default, the Redis backend stores the entry using the following keys pattern: `cache:{cache-name}:{cache-key}`, where `cache-key` is the key the application uses and `cache:{cache-name}` the prefix. The variable `{cache-name}` is resolved from the value set in the cache annotations.
+So, you can find all the entries for a single cache using the Redis `KEYS` command: `KEYS cache:{cache-name}:*`
 
-The `cache:$cache-name:` segment can be configured using the `prefix` property:
+The prefix can be configured by using the `prefix` property:
+
 
 
 [source, properties]
@@ -132,6 +135,16 @@ quarkus.cache.redis.expensiveResourceCache.prefix=my-expensive-cache
 ----
 
 In these cases, you can find all the keys managed by the default cache using `KEYS my-cache:*`, and all the keys managed by the `expensiveResourceCache` cache using: `KEYS my-expensive-cache:*`.
+
+
+----
+# Default configuration
+# The variable "{cache-name}" is resolved from the value set in the cache annotations.
+quarkus.cache.redis.prefix=my-cache-{cache-name}
+----
+
+In this latest example, you can find all the keys managed by the default cache using `KEYS my-cache-{cache-name}:*`.
+
 
 == Enable optimistic locking
 

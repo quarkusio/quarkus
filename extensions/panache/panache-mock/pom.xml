@@ -13,10 +13,6 @@
     <name>Quarkus - Panache - Mock</name>
     <description>Mocking with Panache</description>
 
-    <properties>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -46,6 +42,32 @@
                 <configuration>
                     <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
+            </plugin>
+            <!--
+                This is a test dependency and as such some test libraries don't have the test scope
+                which is perfectly fine.
+                We override the enforcer rules to avoid testing that.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
+                        <configuration>
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

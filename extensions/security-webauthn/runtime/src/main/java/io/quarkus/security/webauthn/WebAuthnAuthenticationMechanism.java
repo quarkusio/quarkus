@@ -1,5 +1,7 @@
 package io.quarkus.security.webauthn;
 
+import static io.quarkus.security.webauthn.WebAuthn.AUTH_MECHANISM_SCHEME;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,9 +22,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * An AuthenticationMechanism for WebAuthn which mostly delegates to @{link PersistentLoginManager}
- * and @{TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController}
- * or @{link WebAuthnSecurity}.
+ * An AuthenticationMechanism for WebAuthn which mostly delegates to {@link PersistentLoginManager}
+ * and {@link TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController}
+ * or {@link WebAuthnSecurity}.
  */
 public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechanism {
 
@@ -61,18 +63,18 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
     }
 
     static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().host() + location;
+        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
         return Uni.createFrom().item(new ChallengeData(302, "Location", loc));
     }
 
     @Override
     public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
-        return new HashSet<>(Arrays.asList(WebAuthnAuthenticationRequest.class, TrustedAuthenticationRequest.class));
+        return new HashSet<>(Arrays.asList(TrustedAuthenticationRequest.class));
     }
 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, AUTH_MECHANISM_SCHEME));
     }
 
     public PersistentLoginManager getLoginManager() {

@@ -127,7 +127,7 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs(Codec codec) {
+    public List<Object> toArgs(Codec codec) {
         // Validation
         if (any && count == -1) {
             throw new IllegalArgumentException("ANY can only be used if COUNT is also set");
@@ -136,7 +136,7 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
             throw new IllegalArgumentException("At least `STORE` or `STOREDIST` must be set");
         }
 
-        List<String> list = new ArrayList<>();
+        List<Object> list = new ArrayList<>();
         if (withDistance) {
             list.add("WITHDIST");
         }

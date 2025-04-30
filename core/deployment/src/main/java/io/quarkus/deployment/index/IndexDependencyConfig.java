@@ -3,27 +3,23 @@ package io.quarkus.deployment.index;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class IndexDependencyConfig {
+public interface IndexDependencyConfig {
 
     /**
      * The maven groupId of the artifact.
      */
-    @ConfigItem
-    public String groupId;
+    String groupId();
 
     /**
-     * The maven artifactId of the artifact.
+     * The maven artifactId of the artifact (optional).
      */
-    @ConfigItem
-    public String artifactId;
+    Optional<String> artifactId();
 
     /**
-     * The maven classifier of the artifact.
+     * The maven classifier of the artifact (optional).
      */
-    @ConfigItem
-    public Optional<String> classifier;
+    Optional<String> classifier();
 
 }

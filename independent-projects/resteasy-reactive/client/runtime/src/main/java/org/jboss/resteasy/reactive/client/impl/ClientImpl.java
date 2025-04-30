@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CAPTURE_STACKTRACE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
@@ -33,6 +34,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.handlers.AdvancedRedirectHandler;
 import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -48,6 +50,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.TimeoutStream;
+import io.vertx.core.Timer;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -59,6 +62,7 @@ import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientBuilder;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
@@ -68,6 +72,8 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.http.WebsocketVersion;
 import io.vertx.core.net.NetClient;
@@ -83,7 +89,7 @@ public class ClientImpl implements Client {
     private static final Logger log = Logger.getLogger(ClientImpl.class);
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-    private static final int DEFAULT_CONNECTION_POOL_SIZE = 20;
+    private static final int DEFAULT_CONNECTION_POOL_SIZE = 50;
 
     final ClientContext clientContext;
     final boolean closeVertx;
@@ -186,12 +192,18 @@ public class ClientImpl implements Client {
             options.setShared(true);
         }
 
-        httpClient = this.vertx.createHttpClient(options);
-
-        RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
-        if (redirectHandler != null) {
-            httpClient.redirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+        var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(options.getPoolOptions());
+        AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);
+        if (advancedRedirectHandler != null) {
+            httpClientBuilder.withRedirectHandler(new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler));
+        } else {
+            RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
+            if (redirectHandler != null) {
+                httpClientBuilder.withRedirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+            }
         }
+
+        httpClient = httpClientBuilder.build();
 
         if (loggingScope != LoggingScope.NONE) {
             Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();
@@ -201,7 +213,23 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(followRedirects, loggingScope, clientContext.getMultipartResponsesData(), clientLogger);
+        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(),
+                options.getMaxChunkSize(),
+                followRedirects,
+                loggingScope,
+                clientContext.getMultipartResponsesData(), clientLogger);
+    }
+
+    public HttpClient getVertxHttpClient() {
+        return httpClient;
+    }
+
+    private boolean isCaptureStacktrace(ConfigurationImpl configuration) {
+        Object captureStacktraceObj = configuration.getProperty(CAPTURE_STACKTRACE);
+        if (captureStacktraceObj == null) {
+            return false;
+        }
+        return (boolean) captureStacktraceObj;
     }
 
     public ClientContext getClientContext() {
@@ -217,6 +245,7 @@ public class ClientImpl implements Client {
         if (closeVertx) {
             vertx.close();
         }
+        log.debug("Client is closed");
     }
 
     void abortIfClosed() {
@@ -410,6 +439,16 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public WebSocketClient createWebSocketClient(WebSocketClientOptions options) {
+            return getDelegate().createWebSocketClient(options);
+        }
+
+        @Override
+        public HttpClientBuilder httpClientBuilder() {
+            return getDelegate().httpClientBuilder();
+        }
+
+        @Override
         public HttpClient createHttpClient(HttpClientOptions httpClientOptions) {
             return new LazyHttpClient(new Supplier<HttpClient>() {
                 @Override
@@ -467,6 +506,11 @@ public class ClientImpl implements Client {
         @Override
         public SharedData sharedData() {
             return getDelegate().sharedData();
+        }
+
+        @Override
+        public Timer timer(long delay, TimeUnit unit) {
+            return getDelegate().timer(delay, unit);
         }
 
         @Override
@@ -647,18 +691,21 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, ordered, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered) {
             return getDelegate().executeBlocking(blockingCodeHandler, ordered);
         }
@@ -836,8 +883,23 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public Future<Void> updateSSLOptions(SSLOptions options) {
+            public Future<Boolean> updateSSLOptions(SSLOptions options) {
                 return getDelegate().updateSSLOptions(options);
+            }
+
+            @Override
+            public void updateSSLOptions(SSLOptions options, Handler<AsyncResult<Boolean>> handler) {
+                getDelegate().updateSSLOptions(options, handler);
+            }
+
+            @Override
+            public Future<Boolean> updateSSLOptions(SSLOptions options, boolean force) {
+                return getDelegate().updateSSLOptions(options, force);
+            }
+
+            @Override
+            public void updateSSLOptions(SSLOptions options, boolean force, Handler<AsyncResult<Boolean>> handler) {
+                getDelegate().updateSSLOptions(options, force, handler);
             }
 
             @Override

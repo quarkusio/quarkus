@@ -1,8 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import static io.quarkus.gradle.tasks.EffectiveConfig.*;
-import static java.util.Collections.singleton;
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -15,11 +12,9 @@ import java.util.Set;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import io.smallrye.config.SmallRyeConfig;
 
@@ -38,58 +33,30 @@ public class EffectiveConfigTest {
 
         // Cannot do an exact match, because `map` contains both the "raw" environment variables AND the
         // "property-key-ish" entries - i.e. environment appears "twice".
-        soft.assertThat(effectiveConfig.configMap()).containsAllEntriesOf(expect);
+        soft.assertThat(effectiveConfig.getValues()).containsAllEntriesOf(expect);
     }
 
     @Test
     void fromProjectProperties() {
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withProjectProperties(Map.of("quarkus.foo", "bar")).build();
 
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "bar");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }
 
     @Test
     void fromForcedProperties() {
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withTaskProperties(Map.of("quarkus.foo", "bar")).build();
 
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "bar");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "app-props-and-yaml",
-            "app-props-and-yaml-and-yml",
-            "app-yaml-and-yml",
-            "single-app-props",
-            "single-app-yaml",
-            "single-app-yml"
-    })
-    void appProps(String variant) throws Exception {
-        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/effectiveConfig/" + variant);
-        List<URL> urls = new ArrayList<>();
-        List<ConfigSource> configSources = new ArrayList<>();
-        configSourcesForApplicationProperties(singleton(new File(url.toURI())), urls::add, configSources::add, 250,
-                new String[] {
-                        "application.properties",
-                        "application.yaml",
-                        "application.yml"
-                });
-        SmallRyeConfig config = buildConfig("prod", configSources);
+    @Test
+    @Disabled("To be fixed via https://github.com/quarkusio/quarkus/issues/38007")
+    void crypto() {
+        EffectiveConfig effectiveConfig = EffectiveConfig.builder()
+                .withTaskProperties(Map.of("quarkus.foo", "${aes-gcm-nopadding::superSecret}")).build();
 
-        Map<String, String> expected = new HashMap<>();
-        if (variant.contains("-yml")) {
-            expected.put("quarkus.prop.yml", "yml");
-        }
-        if (variant.contains("-yaml")) {
-            expected.put("quarkus.prop.yaml", "yaml");
-        }
-        if (variant.contains("-props")) {
-            expected.put("quarkus.prop.properties", "hello");
-        }
-
-        soft.assertThat(urls).hasSize(expected.size() * 2); // "no profile" + "prod" profile
-
-        soft.assertThat(generateFullConfigMap(config)).containsAllEntriesOf(expected);
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "superSecret");
     }
 
     @Test
@@ -102,12 +69,13 @@ public class EffectiveConfigTest {
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        soft.assertThat(effectiveConfig.applicationPropsSources()).containsExactly(
-                url1.toURI().resolve("application.properties").toURL(),
-                url2.toURI().resolve("application.yaml").toURL(),
-                url1.toURI().resolve("application-prod.properties").toURL(),
-                url2.toURI().resolve("application-prod.yaml").toURL());
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "overloaded");
+        SmallRyeConfig config = effectiveConfig.getConfig();
+        List<String> sourceNames = new ArrayList<>();
+        config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url2.getPath()));
+        // The YAML source is always higher in ordinal than the properties source
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml");
     }
 
     @Test
@@ -122,14 +90,14 @@ public class EffectiveConfigTest {
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        soft.assertThat(effectiveConfig.applicationPropsSources()).containsExactly(
-                url1.toURI().resolve("application.properties").toURL(),
-                url2.toURI().resolve("application.yaml").toURL(),
-                url3.toURI().resolve("application.properties").toURL(),
-                url1.toURI().resolve("application-prod.properties").toURL(),
-                url2.toURI().resolve("application-prod.yaml").toURL(),
-                url3.toURI().resolve("application-prod.properties").toURL());
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "overloaded");
+        SmallRyeConfig config = effectiveConfig.getConfig();
+        List<String> sourceNames = new ArrayList<>();
+        config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url2.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url3.getPath()));
+        // The YAML source is always higher in ordinal than the properties source
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml");
     }
 
     @Test
@@ -138,23 +106,25 @@ public class EffectiveConfigTest {
         URL url2 = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/effectiveConfig/overload/2/");
         URL url3 = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/effectiveConfig/overload/3/");
         URL url4 = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/effectiveConfig/overload/4/");
+        URL url5 = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/effectiveConfig/overload/5/");
         Set<File> source = new LinkedHashSet<>();
-        source.add(new File(url4.toURI()));
         source.add(new File(url1.toURI()));
         source.add(new File(url2.toURI()));
         source.add(new File(url3.toURI()));
+        source.add(new File(url4.toURI()));
+        source.add(new File(url5.toURI()));
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        soft.assertThat(effectiveConfig.applicationPropsSources()).containsExactly(
-                url4.toURI().resolve("application.properties").toURL(),
-                url1.toURI().resolve("application.properties").toURL(),
-                url2.toURI().resolve("application.yaml").toURL(),
-                url3.toURI().resolve("application.properties").toURL(),
-                url4.toURI().resolve("application-prod.properties").toURL(),
-                url1.toURI().resolve("application-prod.properties").toURL(),
-                url2.toURI().resolve("application-prod.yaml").toURL(),
-                url3.toURI().resolve("application-prod.properties").toURL());
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "but-this-one");
+        SmallRyeConfig config = effectiveConfig.getConfig();
+        List<String> sourceNames = new ArrayList<>();
+        config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url2.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url3.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url4.getPath()));
+        soft.assertThat(sourceNames).anyMatch(s -> s.contains(url5.getPath()));
+        // The YAML source is always higher in ordinal than the properties source, even for profile property names
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml-prod");
     }
 }

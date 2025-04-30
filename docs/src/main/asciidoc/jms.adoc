@@ -8,7 +8,8 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: This guide demonstrates how your Quarkus application can use JMS messaging with AMQP 1.0 using Apache Qpid JMS, or using Apache ActiveMQ Artemis JMS.
 :extension-status: preview
-
+:topics: messaging,jms,artemis,qpid,activemq
+:extensions: org.amqphub.quarkus:quarkus-qpid-jms,io.quarkiverse.artemis:quarkus-artemis-jms
 
 This guide demonstrates how your Quarkus application can use JMS messaging via the
 Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.
@@ -30,9 +31,9 @@ The data can be fetched from a browser using a fetch button from a Jakarta REST 
 
 The guide can be used either via the Apache Qpid JMS AMQP client as detailed immediately below, or
 alternatively with the Apache ActiveMQ Artemis JMS client given some different configuration
-as <<artemis-jms, detailed later>>.
+as <<artemis-jms,detailed later>>.
 
-[#qpid-jms-amqp]
+[[qpid-jms-amqp]]
 == Qpid JMS - AMQP
 
 In the detailed steps below we will use the https://qpid.apache.org/components/jms/[Apache Qpid JMS]
@@ -54,7 +55,7 @@ or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/ma
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
-:create-app-extensions: resteasy-reactive,qpid-jms
+:create-app-extensions: rest,qpid-jms
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the quarkus-qpid-jms extension:
@@ -74,7 +75,7 @@ This command generates a new project importing the quarkus-qpid-jms extension:
 implementation("org.amqphub.quarkus:quarkus-qpid-jms")
 ----
 
-[#starting-the-broker]
+[[starting-the-broker]]
 === Starting the broker
 
 Then, we need an AMQP broker. In this case we will use an Apache ActiveMQ Artemis server.
@@ -82,7 +83,7 @@ You can follow the instructions from the https://activemq.apache.org/components/
 
 [source,bash]
 ----
-docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:0.1.4
+docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:1.0.25
 ----
 
 === The price producer
@@ -293,7 +294,7 @@ quarkus.qpid-jms.password=quarkus
 
 More detail about the configuration are available in the https://github.com/amqphub/quarkus-qpid-jms#configuration[Quarkus Qpid JMS] documentation.
 
-[#get-it-running]
+[[get-it-running]]
 === Get it running
 
 If you followed the instructions, you should have the Artemis server running.
@@ -325,12 +326,12 @@ Open `http://localhost:8080/prices.html` in your browser.
 '''
 
 
-[#artemis-jms]
+[[artemis-jms]]
 == Artemis JMS
 
 The above steps detailed using the Qpid JMS AMQP client, however the guide can also be used
 with the Artemis JMS client. Many of the individual steps are exactly as previously
-<<qpid-jms-amqp, detailed above for Qpid JMS>>. The individual component code is the same.
+<<qpid-jms-amqp,detailed above for Qpid JMS>>. The individual component code is the same.
 The only differences are in the dependency for the initial project creation, and the
 configuration properties used. These changes are detailed below and should be substituted
 for the equivalent step during the sequence above.
@@ -341,14 +342,14 @@ You can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The Artemis JMS solution is located in the `jms-quickstart` {quickstarts-tree-url}/jms-quickstart[directory].
+The Artemis JMS solution is located in the `jms-quickstart` link:{quickstarts-tree-url}/jms-quickstart[directory].
 
 === Creating the Maven Project
 
 Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
-:create-app-extensions: resteasy-reactive,artemis-jms
+:create-app-extensions: rest,artemis-jms
 include::{includes}/devtools/create-app.adoc[]
 
 This creates a new project importing the quarkus-artemis-jms extension:
@@ -389,5 +390,5 @@ With the Artemis properties configured, you can resume the steps above from <<ge
 
 === Configuration Reference
 
-To know more about how to configure the Artemis JMS client, have a look at https://quarkiverse.github.io/quarkiverse-docs/quarkus-artemis/dev/index.html[the documentation of the extension].
+To know more about how to configure the Artemis JMS client, have a look at https://docs.quarkiverse.io/quarkus-artemis/dev/index.html[the documentation of the extension].
 

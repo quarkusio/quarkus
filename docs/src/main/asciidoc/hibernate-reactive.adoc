@@ -4,13 +4,25 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Hibernate Reactive
-
 include::_attributes.adoc[]
 :config-file: application.properties
 :reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
+:extension-status: preview
+:topics: data,hibernate-reactive,sql
+:extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
 
 link:https://hibernate.org/reactive/[Hibernate Reactive] is a reactive API for Hibernate ORM, supporting non-blocking database drivers
 and a reactive style of interaction with the database.
+
+[NOTE]
+====
+Hibernate Reactive is not a replacement for xref:hibernate-orm.adoc[Hibernate ORM] or the future of Hibernate ORM.
+It is a different stack tailored for reactive use cases where you need high-concurrency.
+
+Also, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use Quarkus REST with Hibernate ORM,
+and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
+====
 
 [NOTE]
 ====
@@ -19,6 +31,8 @@ xref:hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what
 for Hibernate Reactive.
 ====
 
+include::{includes}/extension-status.adoc[]
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -26,7 +40,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-reactive-quickstart` {quickstarts-tree-url}/hibernate-reactive-quickstart[directory].
+The solution is located in the `hibernate-reactive-quickstart` link:{quickstarts-tree-url}/hibernate-reactive-quickstart[directory].
 
 [[hr-getting-started]]
 == Setting up and configuring Hibernate Reactive
@@ -90,7 +104,7 @@ quarkus.datasource.password = quarkus_test
 quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 <1> The only different property from a Hibernate ORM configuration
@@ -98,7 +112,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 Note that these configuration properties are not the same ones as in your typical Hibernate Reactive configuration file.
 They will often map to Hibernate Reactive configuration properties but could have different names and don't necessarily map 1:1 to each other.
 
-Also, Quarkus will set many Hibernate Reactive configuration settings automatically, and will often use more modern defaults.
+Blocking (non-reactive) and reactive configuration xref:orm-and-reactive-extension-simultaneously[can be mixed together in the same project].
 
 WARNING: Configuring Hibernate Reactive using the standard `persistence.xml` configuration file is not supported.
 
@@ -177,7 +191,7 @@ and will have it use the default datasource.
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
 Hibernate Reactive uses the same properties you would use for Hibernate ORM. You will notice that some properties
-contain `jdbc` in the name but there is not JDBC in Hibernate Reactive, these are simply legacy property names.
+contain `jdbc` in the name but there is no JDBC in Hibernate Reactive, these are simply legacy property names.
 
 include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
@@ -195,6 +209,59 @@ docker run --rm --name postgres-quarkus-hibernate -e POSTGRES_USER=quarkus_test 
 This will start a non-durable empty database: ideal for a quick experiment!
 ====
 
+[[orm-and-reactive-extension-simultaneously]]
+=== Hibernate ORM and Reactive extensions simultaneously
+
+If you add both Hibernate ORM and Hibernate Reactive extensions to your Quarkus app, they can be mixed together in the same project.
+
+This is useful if your app normally uses Hibernate ORM (which is blocking), but you want to try Hibernate Reactive to see if it works better for your case.
+
+By adding the second extension, you can use the reactive API in another part of your code - without needing to create a separate app.
+
+NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence context, so it's recommended you stick to one or the other in a given method. For example use Hibernate ORM in blocking REST endpoints, and use Hibernate Reactive in reactive REST endpoints.
+
+* To use the both extension simultaneously, add both extension to the `pom.xml` file:
++
+[source,xml]
+----
+        <!-- Hibernate reactive -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-pg-client</artifactId>
+        </dependency>
+
+        <!-- Hibernate ORM -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+----
+
+* Also update the `applications.properties` file:
+[source,properties]
+----
+%prod.quarkus.datasource.reactive.url=postgresql:///your_database
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
+----
+
+* The presence of the JDBC driver will enable Hibernate ORM. If you want to disable it, and only use Hibernate Reactive, you can use:
++
+[source,properties]
+----
+quarkus.hibernate-orm.blocking=false
+----
+
+Quarkus will set many Hibernate Reactive configuration settings automatically, and will often use more modern defaults.
+
+
 [[hr-cdi-integration]]
 ==== CDI integration
 
@@ -209,6 +276,22 @@ Mutiny.SessionFactory sessionFactory;
 This will inject the `Mutiny.SessionFactory` of the default persistence unit.
 
 NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bean for `Mutiny.Session`. However, the lifecycle of a reactive session does not fit the lifecycle of the CDI request context. Therefore, this bean is removed in Quarkus 3.0.
+
+[[flyway]]
+== Automatically transitioning to Flyway to Manage Schemas
+
+Hibernate Reactive can be used in the same application as Flyway.
+See xref:flyway.adoc#reactive-datasources[this section of the Flyway extension documentation]
+for details regarding configuration of Flyway in a reactive application.
+
+[TIP]
+====
+If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode,
+Quarkus provides a simple way to initialize your Flyway configuration
+using the schema generated automatically by Hibernate Reactive.
+
+See xref:hibernate-orm.adoc#flyway[the Hibernate ORM guide] for more details.
+====
 
 [[testing]]
 === Testing
@@ -283,13 +366,26 @@ know what is being done.
 
 Here's a list of things to pay attention when using Hibernate Reactive in Quarkus:
 
-* it's not possible to configure multiple persistence units at the moment
-* it's not configurable via a `persistence.xml` file
-* integration with the Envers extension is not supported
-* transaction demarcation cannot be done using `jakarta.transaction.Transactional`
+* Hibernate Reactive is not configurable via a `persistence.xml` file.
+* This extension only considers the default persistence unit at the moment:
+it's not possible to configure multiple persistence units,
+or even a single named persistence unit.
+* This extension does not support xref:hibernate-orm.adoc#database-approach[database-based multitenancy]
+or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the moment.
+xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
+See https://github.com/quarkusio/quarkus/issues/15959.
+* Integration with the Envers extension is not supported.
+* Transaction demarcation cannot be done using `jakarta.transaction.Transactional` or `QuarkusTransaction`;
+if you use xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache],
+consider xref:hibernate-reactive-panache.adoc#transactions[using `@WithTransaction` or `Panache.withTransaction()`] instead.
 
 == Simplifying Hibernate Reactive with Panache
 
 The xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] extension facilitates the usage of Hibernate Reactive
 by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
 
+== Validation modes and Hibernate Validator integration
+
+To find out more on how the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
+influence your Hibernate Reactive application see the xref:hibernate-orm.adoc#validator_integration[corresponding Hibernate ORM guide],
+as these modes work the same in both cases.

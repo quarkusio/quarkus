@@ -11,10 +11,10 @@ language:
         guide: https://quarkus.io/guides/maven-tooling
         guide-native: https://quarkus.io/guides/building-native-image
         cmd:
-          dev: compile quarkus:dev
+          dev: quarkus:dev
           package: package
-          package-uber-jar: package -Dquarkus.package.type=uber-jar
-          package-legacy-jar: package -Dquarkus.package.type=legacy-jar
+          package-uber-jar: package -Dquarkus.package.jar.type=uber-jar
+          package-legacy-jar: package -Dquarkus.package.jar.type=legacy-jar
           package-native: package -Dnative
           package-native-container: package -Dnative -Dquarkus.native.container-build=true
           build-ci: verify -B

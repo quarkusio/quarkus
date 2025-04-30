@@ -7,7 +7,7 @@
 #
 
 # The Java version to install when it's not installed on the system yet
-javaVersion=${JBANG_DEFAULT_JAVA_VERSION:-11}
+javaVersion=${JBANG_DEFAULT_JAVA_VERSION:-17}
 
 absolute_path() {
   # if the given path to the jbang launcher is absolute (i.e. it is either starting with / or a
@@ -126,7 +126,7 @@ if [[ $os == windows && -f "$abs_jbang_dir/jbang.cmd" && "$(uname -s)" == CYGWIN
 fi
 
 if [[ -z "$JBANG_JDK_VENDOR" ]]; then
-  if [[ "$javaVersion" -eq 8 || "$javaVersion" -eq 11 || "$javaVersion" -ge 17 ]]; then
+  if [[ "$javaVersion" -eq 8 || "$javaVersion" -eq 11 || "$javaVersion" -eq 17 || "$javaVersion" -eq 21 ]]; then
     distro="temurin";
   else
     distro="aoj"; fi

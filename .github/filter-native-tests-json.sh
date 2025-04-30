@@ -13,10 +13,14 @@ PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 
 JSON=$(cat ${PRG_PATH}/native-tests.json)
 
-# Step 0: print unfiltered json and exit in case the parameter is empty (assumption: full build)
-if [ -z "$1" ]
+# Step 0: print unfiltered json and exit in case the parameter is '_all_' (full build) or print nothing if empty (no changes)
+if [ "$1" == '_all_' ]
 then
   echo "${JSON}"
+  exit 0
+elif [ -z "$1" ]
+then
+  echo ''
   exit 0
 fi
 

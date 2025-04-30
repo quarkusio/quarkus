@@ -29,6 +29,10 @@ public class CodeGenerationGroup {
             "--no-code" }, description = "Include starter code provided by extensions or generate an empty project", negatable = true)
     public boolean includeCode = true;
 
+    @CommandLine.Option(names = {
+            "--no-dockerfiles" }, description = "Include standard dockerfiles", negatable = true)
+    public boolean includeDockerfiles = true;
+
     @CommandLine.Option(names = { "-c",
             "--app-config" }, description = "Configuration attributes to be set in the application.properties/yml file. Specify as 'key1=value1,key2=value2'")
     void setAppConfig(String config) {
@@ -46,6 +50,7 @@ public class CodeGenerationGroup {
         return "CodeGenerationGroup ["
                 + "includeCode=" + includeCode
                 + ", includeWrapper=" + includeWrapper
+                + ", includeDockerfiles=" + includeDockerfiles
                 + ", packageName=" + packageName
                 + "]";
     }

@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: management,observability
+:extensions: io.quarkus:quarkus-vertx-http
 
 By default, Quarkus exposes the _management_ endpoints under `/q` on the main HTTP server.
 The same HTTP server provides the application endpoints and the management endpoints.
@@ -38,14 +40,29 @@ NOTE: The management interface is disabled when no extensions relying on it (suc
 By default, the management interface is exposed on the interface: `0.0.0.0` (all interfaces) and on the port `9000` (`9001` in test mode).
 It does not use TLS (`https`) by default.
 
-You can configure the host, ports, and TLS certificates using the following properties:
+You can configure the host, ports, and TLS configuration name using the following properties:
 
 * `quarkus.management.host` - the interface / host
 * `quarkus.management.port` - the port
 * `quarkus.management.test-port` - the port to use in test mode
-* `quarkus.management.ssl` - the TLS configuration, xref:http-reference#ssl[same as for the main HTTP server].
+* `quarkus.management.tls-configuration-name` - the TLS configuration name, xref:http-reference.adoc#using-the-tls-centralized-configuration[same as for the main HTTP server].
 
 Here is a configuration example exposing the management interface on _https://localhost:9002_:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host=localhost
+quarkus.management.port=9002
+quarkus.management.tls-configuration-name=management
+
+# Your TLS registry configuration
+...
+----
+
+With this configuration, TLS is enabled and configured as defined in the `management` configuration of the TLS registry.
+
+You can also configure the management interface with the legacy SSL configuration, as for (xref:http-reference.adoc#ssl[the main HTTP server]):
 
 [source, properties]
 ----
@@ -55,6 +72,20 @@ quarkus.management.port=9002
 quarkus.management.ssl.certificate.key-store-file=server-keystore.jks
 quarkus.management.ssl.certificate.key-store-password=secret
 ----
+
+Key store, trust store and certificate files can be reloaded periodically.
+Configure the `quarkus.management.ssl.certificate.reload-period` property to specify the interval at which the certificates should be reloaded:
+
+[source, properties]
+----
+quarkus.http.management.certificate.files=/mount/certs/tls.crt
+quarkus.http.management.certificate.key-files=/mount/certs/tls.key
+quarkus.http.management.certificate.reload-period=1h
+----
+
+The files are reloaded from the same location as they were initially loaded from.
+If there is no content change, the reloading is a no-op.
+It the reloading fails, the server will continue to use the previous certificates.
 
 IMPORTANT: Unlike the main HTTP server, the management interface does not handle _http_ and _https_ at the same time.
 If _https_ is configured, plain HTTP requests will be rejected.
@@ -146,10 +177,7 @@ More details about the `Router` API can be found on https://vertx.io/docs/vertx-
 
 == Management Interface Configuration
 
-include::{generated-dir}/config/quarkus-management-management-management-interface-build-time-config.adoc[leveloffset=+1, opts=optional]
-
-include::{generated-dir}/config/quarkus-management-management-management-interface-configuration.adoc[leveloffset=+1, opts=optional]
-
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.management.adoc[leveloffset=+1, opts=optional]
 
 [[reverse-proxy]]
 == Running behind a reverse proxy
@@ -211,6 +239,38 @@ Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, 
 
 == Security
 
+Security for the management endpoints exposed in the separate HTTP server needs to be enabled explicitly like in the example below:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.auth.enabled=true
+----
+
+Once enabled, you can use same authentication mechanism you have already configured for the main server, or use a different one.
+All of these mechanisms are detailed in the xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus] guide.
+
+=== Use HTTP Security Policy to enable path-based authentication
+
+The following configuration example demonstrates how you can enforce a single selectable authentication mechanism for a given request path:
+
+[source,properties]
+----
+quarkus.management.auth.permission.metrics.paths=/q/metrics/*
+quarkus.management.auth.permission.metrics.policy=authenticated
+quarkus.management.auth.permission.metrics.auth-mechanism=basic <1>
+
+quarkus.management.auth.permission.health.paths=/q/health/*
+quarkus.management.auth.permission.health.policy=authenticated
+quarkus.management.auth.permission.health.auth-mechanism=bearer <2>
+----
+<1> The metric endpoints will be only accessible with the <<basic-auth>>.
+<2> If the Quarkus OIDC extension is present, the health endpoints will be authenticated
+by the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
+
+[[basic-auth]]
+=== Basic authentication
+
 You can enable _basic_ authentication using the following properties:
 
 [source, properties]
@@ -244,3 +304,24 @@ quarkus.management.auth.permission.metrics.policy=authenticated
 ----
 
 More details about Basic authentication in Quarkus can be found in the xref:security-basic-authentication-howto.adoc[Basic authentication guide].
+
+== Injecting management URL in tests
+
+When testing your application, you can inject the management URL using the `@TestHTTPResource` annotation:
+
+[source,java]
+----
+@TestHTTPResource(value="/management", management=true)
+URL management;
+----
+
+The `management` attribute is set to `true` to indicate that the injected URL is for the management interface.
+The `context-root` is automatically added.
+Thus, in the previous example, the injected URL is `http://localhost:9001/q/management`.
+
+`@TestHTTPResource` is particularly useful when setting the management `test-port` to 0, which indicates that the system will assign a random port to the management interface:
+
+[source, properties]
+----]
+quarkus.management.test-port=0
+----

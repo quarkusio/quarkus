@@ -9,7 +9,7 @@ public interface ClassLoadingResource {
      * A lifecycle hook that should be called when the ClassLoader to which this resource belongs to
      * is constructed
      */
-    void init(ClassLoader runnerClassLoader);
+    void init();
 
     byte[] getResourceData(String resource);
 

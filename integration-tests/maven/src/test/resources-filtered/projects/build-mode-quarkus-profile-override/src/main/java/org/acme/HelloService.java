@@ -8,11 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @IfBuildProfile("foo")
 @ApplicationScoped
 public class HelloService {
-
-    @ConfigProperty(name = "name")
-    String name;
-
     public String name() {
-        return name;
+        return "from foo";
     }
 }

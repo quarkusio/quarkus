@@ -58,11 +58,13 @@ public class RequestDispatcher {
             HttpRequest vertxReq, HttpResponse vertxResp, boolean handleNotFound, Throwable throwable) throws IOException {
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
+        boolean providerFactoryPushedToThreadLocal = false;
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
             ResteasyProviderFactory defaultInstance = ResteasyProviderFactory.getInstance();
             if (defaultInstance instanceof ThreadLocalResteasyProviderFactory) {
                 ThreadLocalResteasyProviderFactory.push(providerFactory);
+                providerFactoryPushedToThreadLocal = true;
             }
 
             try {
@@ -88,8 +90,7 @@ public class RequestDispatcher {
             }
         } finally {
             try {
-                ResteasyProviderFactory defaultInstance = ResteasyProviderFactory.getInstance();
-                if (defaultInstance instanceof ThreadLocalResteasyProviderFactory) {
+                if (providerFactoryPushedToThreadLocal) {
                     ThreadLocalResteasyProviderFactory.pop();
                 }
             } finally {

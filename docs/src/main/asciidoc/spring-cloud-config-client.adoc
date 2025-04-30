@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: Quarkus provides a compatibility layer for Spring Cloud Config in the form of the spring-cloud-config-client extension.
+:topics: spring,cloud,configuration,compatibility
+:extensions: io.quarkus:quarkus-spring-cloud-config-client
 
 This guide explains how your Quarkus application can read configuration properties at runtime from the https://cloud.spring.io/spring-cloud-config[Spring Cloud Config Server].
 
@@ -28,7 +30,7 @@ The end result of that process is a running Config Server that will provide the 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-cloud-config-quickstart
-:create-app-extensions: resteasy-reactive,spring-cloud-config-client
+:create-app-extensions: rest,spring-cloud-config-client
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-cloud-config-client` extension.
@@ -121,6 +123,12 @@ quarkus.spring-cloud-config.enabled=true
 # configure the URL where the Config Server listens to HTTP requests - this could have been left out since http://localhost:8888 is the default
 quarkus.spring-cloud-config.url=http://localhost:8888
 ----
+
+[TIP]
+====
+If you are using Gradle, the Gradle setting `rootProject.name` has precedence over `quarkus.application.name`
+so be sure to set the Gradle property to the application name you want the Spring Cloud Config server to see.
+====
 
 == Package and run the application
 

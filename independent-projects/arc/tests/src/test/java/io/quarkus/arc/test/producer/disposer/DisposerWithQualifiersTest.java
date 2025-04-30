@@ -60,6 +60,11 @@ public class DisposerWithQualifiersTest {
         void disposeBar(@Disposes @Bar String str) {
             destroyed.add(str);
         }
+
+        // this one should be ignored too
+        void disposeDefault(@Disposes String str) {
+            destroyed.add(str);
+        }
     }
 
     @Singleton

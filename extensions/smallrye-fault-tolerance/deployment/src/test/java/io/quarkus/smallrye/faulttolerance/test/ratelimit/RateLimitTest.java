@@ -2,6 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.ratelimit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
@@ -26,6 +27,7 @@ public class RateLimitTest {
         assertEquals(3, rateLimit.hello());
         assertEquals(4, rateLimit.hello());
         assertEquals(5, rateLimit.hello());
-        assertThrows(RateLimitException.class, () -> rateLimit.hello());
+        RateLimitException rateLimitException = assertThrows(RateLimitException.class, () -> rateLimit.hello());
+        assertTrue(rateLimitException.getRetryAfterMillis() > 0);
     }
 }

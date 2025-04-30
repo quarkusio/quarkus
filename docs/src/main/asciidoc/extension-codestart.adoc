@@ -7,12 +7,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Provide users with initial code for extensions when generating Quarkus applications on code.quarkus.io and all the Quarkus tooling. This guide explains how to create and configure a Codestart for an extension.
+:topics: extensions,codestarts
 
 This guide explains how to create and configure a Quarkus Codestart for an extension.
 
 == Description
 
-"Extension Codestarts" is the name we give to our Quarkus extension quickstart code generation system. It aims to provide a personalized getting started experience with Quarkus.
+"Extension Codestarts" is the name we give to our Quarkus extension "getting started" code generation system. It aims to provide a personalized getting started experience with Quarkus.
 A Quarkus extension is able to provide one or more well-defined codestarts which will contain the resources and code required/recommended to start using that particular extension.
 
 Extension codestarts are applied by default when using the Quarkus tooling (if the chosen extensions contain any):
@@ -61,7 +62,7 @@ Each codestart consists of:
 
 - In the Quarkus core repository, the extension codestarts are all in the same https://github.com/quarkusio/quarkus/tree/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[module, window="_blank"].
 
-- RESTEasy Reactive, RESTEasy and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
+- Quarkus REST (formerly RESTEasy Reactive), RESTEasy and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
 
 - For other extensions, the codestart will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact).
 
@@ -193,7 +194,7 @@ tags: extension-codestart
 metadata:
   title: Aloha
   description: Start to code with the Aloha extension.
-  related-guide-section: https://quarkiverse.github.io/quarkiverse-docs/quarkus-aloha/dev/
+  related-guide-section: https://docs.quarkiverse.io/quarkus-aloha/dev/
   path: /aloha # (optional) for web extensions providing HTTP resources
 ----
 
@@ -315,7 +316,7 @@ public class AlohaCodestartTest {
 
 * The codestarts are all grouped in a https://github.com/quarkusio/quarkus/tree/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[specific module, window="_blank"].
 * No extra Maven configuration is needed.
-* The https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy-reactive/quarkus-resteasy-reactive-qute/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L18[extension metadata, window="_blank"] references the artifact containing all the core codestarts.
+* The https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy-reactive/rest-qute/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L18[extension metadata, window="_blank"] references the artifact containing all the core codestarts.
 * The tests are also https://github.com/quarkusio/quarkus/tree/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus[grouped, window="_blank"]. You don't need to test the build as there is a specific grouped https://github.com/quarkusio/quarkus/blob/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartBuildIT.java[test, window="_blank"] for it. e.g.:
 +
 [source,java]
@@ -346,14 +347,14 @@ public class ConfigYamlCodestartTest {
 
 == Specific topics
 
-[#org-acme-package]
+[[org-acme-package]]
 === `org.acme` placeholder for package name
 
 You have to use `org.acme` as the package name in your extension codestart sources. In the generated project, the user specified package (or Group) will be used (and automatically replace `org.acme`).
 
 The package will be automatically replaced in all the source files (.java, .kt, .scala). The package directory will also be automatically adjusted. If for some reason, another type of file needs the user package name then you should use a <<qute-templates>> for it and the `{project.package-name}` data placeholder (https://github.com/quarkusio/quarkus/blob/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts/grpc-codestart/base/src/main/proto/hello.tpl.qute.proto#L4[find an example in the grpc proto file, window="_blank"]).
 
-[#codestart-yml]
+[[codestart-yml]]
 === codestart.yml
 
 [source,yaml]
@@ -375,7 +376,7 @@ metadata:
   path: /some-path
 ----
 
-[#directory-structure]
+[[directory-structure]]
 === Directory Structure
 
 NOTE: `codestart.yml` is the only required file.
@@ -427,7 +428,7 @@ maven-surefire-plugin.version = Maven Surefire plugin version
 * certain common files, such as `readme.md`, `src/main/resources/application.yml`, `src/main/resources/META-INF/resources/index.html` are generated from the collected fragments found in the selected codestarts for the project
 * other files are copied.
 
-[#qute-templates]
+[[qute-templates]]
 === Templates (Qute)
 
 Codestarts may use Qute templates `MyClass.tpl.qute.java` for dynamic rendering.
@@ -439,7 +440,7 @@ Those templates are able to use data which contains:
 * The user input
 * Some dynamically generated data (e.g. `dependencies` and `test-dependencies`)
 
-[#readme-md]
+[[readme-md]]
 === README.md
 
 You may add a `README.md` or `README.tpl.qute.md` in the `base` directory, it will be appended to the others.
@@ -455,7 +456,7 @@ base/README.tpl.qute.md
 
 NOTE: The `{#include readme-header /}` will use a template located in the Quarkus project codestart which displays standard info from the `codestart.yml` metadata.
 
-[#app-config]
+[[app-config]]
 === application config application.yml
 
 As a convention, you should always provide the Quarkus configuration as a yaml file (`base/src/main/resources/application.yml`).
@@ -465,7 +466,7 @@ It is going to be:
 * merged with the other extension codestarts configs
 * automatically converted to the selected config type (yaml or properties) at generation time depending on the selected extensions
 
-[#index-html]
+[[index-html]]
 === index.html and web extension codestarts
 
 Extension codestarts may provide a snippet for the generated index.html by adding this file:
@@ -478,7 +479,7 @@ base/src/main/resources/META-INF/resources/index.entry.qute.html:
 
 NOTE: The `{#include index-entry /}` will use a template located in the Quarkus project codestart which displays standard info from the `codestart.yml` metadata.
 
-[#integration-test]
+[[integration-test]]
 === Integration test
 
 An extension is available to help test extension codestarts `QuarkusCodestartTest`:
@@ -503,7 +504,7 @@ The extension provides helpers to test that the projects build `buildAllProjects
 
 The https://github.com/quarkusio/quarkus/blob/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/ConfigYamlCodestartTest.java[ ConfigYamlCodestartTest, window="_blank"] is a good example in Quarkus core.
 
-[#snapshot-testing]
+[[snapshot-testing]]
 ==== Snapshot testing
 
 Snapshot testing is a way to make sure the content generated by a test doesn't change from one revision to another, i.e. between commits. That means, the generated content for each commit needs to be immutable and deterministic (this is the reason for using mocked data). To be able to perform such checks, we auto-generate snapshots of the generated content  and commit them as the references of the expected output for subsequent test runs. When the templates change, we also commit the induced snapshots changes. This way, during the review, we can make sure the applied code changes have the expected effects on the generated output.
@@ -530,6 +531,53 @@ NOTE: In order to first generate or update existing snapshots files on your loca
 It is going to be merged with the other codestarts config and automatically converted to the selected config type (yaml or properties).
 * You can start with java and add kotlin later in another PR (create an issue so you don't forget).
 * If you have a question, ping me @ia3andy on https://quarkusio.zulipchat.com/.
+
+=== Platform codestarts data
+
+This chapter is relevant for https://quarkus.io/guides/platform[Quarkus platform] developers who want to provide codestart data in the https://quarkus.io/guides/platform#platform-descriptor[platform metadata].
+
+While typically codestart data is configured in <<codestart-yml>> files, platform developers may also provide codestart data in a platform descriptor with the purpose of customizing certain values.
+
+For example, given a `codestart.yml` such as
+[source,yaml]
+----
+name: quarkus-magic-codestart
+ref: quarkus-magic
+type: code
+tags: extension-codestart
+metadata:
+  title: Quarkus Magic
+  description: Quarkus magic
+language:
+  base:
+    data:
+      magic:
+        source: codestart.yml
+----
+
+The value of `magic.source` can be customized in a platform descriptor like this
+[source,yaml]
+----
+{
+  "id" : "org.acme.platform:acme-bom-quarkus-platform-descriptor:7.0.7:json:7.0.7",
+  "platform" : true,
+  "bom" : "org.acme.platform:acme-magic-bom::pom:7.0.7",
+  "metadata" : {
+    "project" : { <1>
+      "codestart-data" : { <2>
+        "quarkus-magic-codestart" : { <3>
+          "magic" : {
+            "source" : "acme-platform"
+          }
+        }
+      }
+    },
+...
+----
+
+<1> `project` groups metadata that is relevant for project creation tools
+<2> `codestart-data` is a source of data for various codestarts
+<3> a name of the codestart to which the data nested under it should be passed
 
 == The generator sources
 

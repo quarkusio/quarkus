@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
+import io.quarkus.extest.runtime.config.DoNotRecordEnvConfigSource;
 import io.quarkus.extest.runtime.config.MyEnum;
 import io.quarkus.extest.runtime.config.NestedConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
@@ -52,9 +53,9 @@ public class ConfiguredBeanTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ConfiguredBean.class)
-                    // Don't change this to types, because of classloader class cast exception.
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource")
+                    .addAsServiceProvider(ConfigSource.class,
+                            OverrideBuildTimeConfigSource.class,
+                            DoNotRecordEnvConfigSource.class)
                     .addAsResource("application.properties"));
 
     @Inject
@@ -333,10 +334,10 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testConfigDefaultValuesSourceOrdinal() {
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
-        assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
+        assertEquals(Integer.MIN_VALUE, defaultValues.getOrdinal());
 
         ConfigSource applicationProperties = null;
         for (ConfigSource configSource : config.getConfigSources()) {
@@ -348,21 +349,35 @@ public class ConfiguredBeanTest {
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 
-        assertEquals("1234", defaultValues.getValue("%test.my.prop"));
-        assertNull(defaultValues.getValue("my.prop"));
+        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        assertEquals("9999", applicationProperties.getValue("%test.my.prop"));
+        assertEquals("1234", defaultValues.getValue("my.prop"));
         assertEquals("1234", applicationProperties.getValue("my.prop"));
+
+        assertEquals("9999", config.getRawValue("my.prop"));
     }
 
     @Test
     public void testProfileDefaultValuesSource() {
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
 
         assertEquals("1234", defaultValues.getValue("%prod.my.prop"));
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
-        assertEquals("1234", defaultValues.getValue("%test.my.prop"));
-        assertEquals("1234", config.getValue("my.prop", String.class));
+        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        // this runs with the test profile
+        assertEquals("9999", config.getValue("my.prop", String.class));
+
+        // runtime properties coming from env must not be recorded
+        assertNull(defaultValues.getValue("should.not.be.recorded"));
+        assertNull(defaultValues.getValue("SHOULD_NOT_BE_RECORDED"));
+        assertNull(defaultValues.getValue("quarkus.rt.do-not-record"));
+        assertEquals("value", config.getRawValue("quarkus.rt.do-not-record"));
+        assertNull(defaultValues.getValue("quarkus.mapping.rt.do-not-record"));
+        assertNull(defaultValues.getValue("%prod.quarkus.mapping.rt.do-not-record"));
+        assertNull(defaultValues.getValue("%dev.quarkus.mapping.rt.do-not-record"));
+        assertEquals("value", config.getRawValue("quarkus.mapping.rt.do-not-record"));
     }
 
     @Test
@@ -388,7 +403,7 @@ public class ConfiguredBeanTest {
         assertEquals("5678", anotherPrefixConfig.prop);
         assertEquals("5678", anotherPrefixConfig.map.get("prop"));
 
-        Optional<ConfigSource> runTimeDefaults = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> runTimeDefaults = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(runTimeDefaults.isPresent());
         // java.version should not be recorded
         assertFalse(runTimeDefaults.get().getPropertyNames().contains("java.version"));
@@ -402,7 +417,7 @@ public class ConfiguredBeanTest {
         assertEquals("quarkus.bt.bt-config-value", btConfigValue.getName());
         assertEquals("value", btConfigValue.getValue());
 
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
 

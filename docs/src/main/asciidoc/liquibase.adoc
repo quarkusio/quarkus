@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers how to use the Liquibase extension to manage your schema migrations.
 :change-log: src/main/resources/db/changeLog.xml
 :config-file: application.properties
+:topics: data,schema-migration,liquibase
+:extensions: io.quarkus:quarkus-liquibase
 
 https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management.
 
@@ -21,7 +23,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `liquibase-quickstart` {quickstarts-tree-url}/liquibase-quickstart[directory].
+The solution is located in the `liquibase-quickstart` link:{quickstarts-tree-url}/liquibase-quickstart[directory].
 
 == Setting up support for Liquibase
 
@@ -237,18 +239,37 @@ once and then start the actual application without Liquibase. To support this us
 the generated manifests contain a Kubernetes initialization `Job` for Liquibase.
 The `Job` performs initialization and the actual `Pod`, will starts once the `Job` is successfully completed.
 
+=== Disabling
+
 The feature is enabled by default and can be globally disabled, using:
 
 [source,properties]
 ----
-quarkus.kubernetes.externalize-init=false
+quarkus.kubernetes.init-task-defaults.enabled=false
 ----
 
 or on OpenShift:
 
 [source,properties]
 ----
-quarkus.openshift.externalize-init=false
+quarkus.openshift.init-task-defaults.enabled=false
+----
+
+=== Using a custom image that controls waiting for the Job
+
+To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-root-v1.7` you can use:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
+----
+
+or on OpenShift:
+
+
+[source,properties]
+----
+quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
 **Note**: In this context globally means `for all extensions that support init task externalization`.

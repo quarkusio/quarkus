@@ -72,6 +72,7 @@ export class QwcFaultToleranceMethods extends LitElement {
         return html`
             <vaadin-vertical-layout>
                 ${guardedMethod.ApplyFaultTolerance ? this._renderApplyFaultTolerance(guardedMethod.ApplyFaultTolerance) : html``}
+                ${guardedMethod.ApplyGuard ? this._renderApplyGuard(guardedMethod.ApplyGuard) : html``}
                 ${guardedMethod.Asynchronous ? html`<span>@Asynchronous</span>` : html``}
                 ${guardedMethod.AsynchronousNonBlocking ? html`<span>@AsynchronousNonBlocking</span>` : html``}
                 ${guardedMethod.Blocking ? html`<span>@Blocking</span>` : html``}
@@ -85,6 +86,8 @@ export class QwcFaultToleranceMethods extends LitElement {
                 ${guardedMethod.ExponentialBackoff ? this._renderExponentialBackoff(guardedMethod.ExponentialBackoff) : html``}
                 ${guardedMethod.FibonacciBackoff ? this._renderFibonacciBackoff(guardedMethod.FibonacciBackoff) : html``}
                 ${guardedMethod.CustomBackoff ? this._renderCustomBackoff(guardedMethod.CustomBackoff) : html``}
+                ${guardedMethod.RetryWhen ? this._renderRetryWhen(guardedMethod.RetryWhen) : html``}
+                ${guardedMethod.BeforeRetry ? this._renderBeforeRetry(guardedMethod.BeforeRetry) : html``}
                 ${guardedMethod.Timeout ? this._renderTimeout(guardedMethod.Timeout) : html``}
             </vaadin-vertical-layout>
         `;
@@ -93,6 +96,12 @@ export class QwcFaultToleranceMethods extends LitElement {
     _renderApplyFaultTolerance(applyFaultTolerance) {
         return html`
             <span>@ApplyFaultTolerance("${applyFaultTolerance.value}")</span>
+        `;
+    }
+
+    _renderApplyGuard(applyGuard) {
+        return html`
+            <span>@ApplyGuard("${applyGuard.value}")</span>
         `;
     }
 
@@ -175,6 +184,24 @@ export class QwcFaultToleranceMethods extends LitElement {
             <span>
                 &rarrhk;
                 @CustomBackoff(${customBackoff.value})
+            </span>
+        `;
+    }
+
+    _renderRetryWhen(retryWhen) {
+        return html`
+            <span>
+                &rarrhk;
+                @RetryWhen(result = ${retryWhen.result}, exception = ${retryWhen.exception})
+            </span>
+        `;
+    }
+
+    _renderBeforeRetry(beforeRetry) {
+        return html`
+            <span>
+                &rarrhk;
+                @BeforeRetry(value = ${beforeRetry.value}, methodName = ${beforeRetry.methodName})
             </span>
         `;
     }

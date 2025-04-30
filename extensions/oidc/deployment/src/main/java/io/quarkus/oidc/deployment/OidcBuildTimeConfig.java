@@ -1,30 +1,34 @@
 package io.quarkus.oidc.deployment;
 
 import io.quarkus.oidc.runtime.OidcConfig;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build time configuration for OIDC.
  */
+@ConfigMapping(prefix = "quarkus.oidc")
 @ConfigRoot
-public class OidcBuildTimeConfig {
+public interface OidcBuildTimeConfig {
     /**
      * If the OIDC extension is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
-     * Dev UI configuration.
+     * OIDC Dev UI configuration which is effective in dev mode only.
      */
-    @ConfigItem
-    public DevUiConfig devui;
+    @ConfigDocSection
+    DevUiConfig devui();
+
     /**
      * Enable the registration of the Default TokenIntrospection and UserInfo Cache implementation bean.
-     * Note it only allows to use the default implementation, one needs to configure it in order to activate it,
-     * please see {@link OidcConfig#tokenCache}.
+     * Note: This only enables the default implementation. It requires configuration to be activated.
+     * See {@link OidcConfig#tokenCache}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean defaultTokenCacheEnabled;
+    @WithDefault("true")
+    boolean defaultTokenCacheEnabled();
 }

@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.annotations.StaticInitSafe;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public final class ConfigMappingBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
@@ -24,6 +25,10 @@ public final class ConfigMappingBuildItem extends MultiBuildItem {
 
     public boolean isStaticInitSafe() {
         return configClass.isAnnotationPresent(StaticInitSafe.class);
+    }
+
+    public ConfigClass toConfigClass() {
+        return ConfigClass.configClass(configClass, prefix);
     }
 
     @Override

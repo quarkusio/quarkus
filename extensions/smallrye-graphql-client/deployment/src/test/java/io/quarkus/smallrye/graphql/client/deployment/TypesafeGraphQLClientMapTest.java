@@ -2,22 +2,20 @@ package io.quarkus.smallrye.graphql.client.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
-import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuilder;
 
 /**
  * Verify the support of Map usage. The server-side endpoint contains queries that return maps,
@@ -31,17 +29,8 @@ public class TypesafeGraphQLClientMapTest {
                     .addClasses(MapClientApi.class, MapApi.class, Foo.class, ComplexToComplexMapWrapper.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
-    @TestHTTPResource
-    URL url;
-
-    private static MapClientApi client;
-
-    @BeforeEach
-    public void prepare() {
-        client = new VertxTypesafeGraphQLClientBuilder()
-                .endpoint(url.toString() + "graphql")
-                .build(MapClientApi.class);
-    }
+    @Inject
+    private MapClientApi client;
 
     @GraphQLApi
     public static class MapApi {

@@ -8,15 +8,15 @@ public interface Dependency extends ArtifactCoords {
     String SCOPE_COMPILE = "compile";
     String SCOPE_IMPORT = "import";
 
-    public static Dependency of(String groupId, String artifactId) {
+    static Dependency of(String groupId, String artifactId) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, null);
     }
 
-    public static Dependency of(String groupId, String artifactId, String version) {
+    static Dependency of(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, version);
     }
 
-    public static Dependency pomImport(String groupId, String artifactId, String version) {
+    static Dependency pomImport(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_POM, version, SCOPE_IMPORT, false);
     }
 
@@ -60,7 +60,56 @@ public interface Dependency extends ArtifactCoords {
         return isFlagSet(DependencyFlags.CLASSLOADER_PARENT_FIRST);
     }
 
+    /**
+     * Checks whether a dependency has a given flag set.
+     * If the value of the {@code flag} argument combines multiple flags,
+     * the implementation will return {@code true} only if the dependency
+     * has all the flags set.
+     *
+     * @param flag flag (or flags) to check
+     * @return true if the flag is set, otherwise false
+     */
     default boolean isFlagSet(int flag) {
-        return (getFlags() & flag) > 0;
+        return (getFlags() & flag) == flag;
+    }
+
+    /**
+     * Checks whether a dependency has any of the flags combined in the value of {@code flags} set.
+     *
+     * @param flags flags to check
+     * @return true, if any of the flags is set, otherwise - false
+     */
+    default boolean isAnyFlagSet(int flags) {
+        return (getFlags() & flags) > 0;
+    }
+
+    /**
+     * Checks whether any of the flags are set on a dependency
+     *
+     * @param flags flags to check
+     * @return true if any of the flags are set, otherwise false
+     */
+    default boolean hasAnyFlag(int... flags) {
+        for (var flag : flags) {
+            if (isFlagSet(flag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks whether all the passed in flags are set on a dependency
+     *
+     * @param flags flags to check
+     * @return true if all the passed in flags are set on a dependency, otherwise false
+     */
+    default boolean hasAllFlags(int... flags) {
+        for (var flag : flags) {
+            if (!isFlagSet(flag)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -15,34 +15,28 @@ public interface ArcInvocationContext extends InvocationContext {
     /**
      * This key can be used to obtain the interceptor bindings from the context data.
      */
+    @Deprecated
     String KEY_INTERCEPTOR_BINDINGS = "io.quarkus.arc.interceptorBindings";
 
-    /**
-     *
-     * @return the interceptor bindings
-     */
+    @Override
     Set<Annotation> getInterceptorBindings();
 
     /**
-     *
-     * @param annotationType
-     * @return the first interceptor binding found, or {@code null}
+     * @deprecated use {@link #getInterceptorBinding(Class)}
      */
+    @Deprecated
     <T extends Annotation> T findIterceptorBinding(Class<T> annotationType);
 
     /**
-     *
-     * @param annotationType
-     * @return the list of interceptor bindings of the given annotation type
+     * @deprecated use {@link #getInterceptorBindings(Class)}
      */
+    @Deprecated
     <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType);
 
     /**
-     *
-     * @param context
-     * @param annotationType
-     * @return the first interceptor binding found, or {@code null}
+     * @deprecated use {@link #getInterceptorBinding(Class)}
      */
+    @Deprecated
     static <T extends Annotation> T findIterceptorBinding(InvocationContext context, Class<T> annotationType) {
         if (context instanceof ArcInvocationContext) {
             return ((ArcInvocationContext) context).findIterceptorBinding(annotationType);
@@ -51,11 +45,9 @@ public interface ArcInvocationContext extends InvocationContext {
     }
 
     /**
-     *
-     * @param context
-     * @param annotationType
-     * @return the list of interceptor bindings of the given annotation type
+     * @deprecated use {@link #getInterceptorBindings(Class)}
      */
+    @Deprecated
     static <T extends Annotation> List<T> findIterceptorBindings(InvocationContext context, Class<T> annotationType) {
         if (context instanceof ArcInvocationContext) {
             return ((ArcInvocationContext) context).findIterceptorBindings(annotationType);

@@ -18,11 +18,14 @@ import io.quarkus.infinispan.client.CacheInvalidateAll.List;
  * This annotation can be combined with {@link CacheResult} annotation on a single method. Caching operations will always
  * be executed in the same order: {@link CacheInvalidateAll} first, then {@link CacheInvalidate} and finally
  * {@link CacheResult}.
+ *
+ * @deprecated Use Infinispan Cache Extension
  */
 @InterceptorBinding
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(List.class)
+@Deprecated(forRemoval = true)
 public @interface CacheInvalidateAll {
 
     /**

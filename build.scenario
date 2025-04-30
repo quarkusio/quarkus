@@ -1,0 +1,40 @@
+clean_install {
+    tasks = ["clean","install","-Dquickly", "-T6"]
+    cleanup-tasks = ["clean"]
+    maven {
+        targets = ["clean","install","-Dquickly", "-T6"]
+    }
+    warm-ups = 1
+    iterations = 3
+}
+
+clean_install_no_scan {
+    tasks = ["clean","install","-Dquickly", "-T6", "-Dscan=false"]
+    cleanup-tasks = ["clean"]
+    maven {
+        targets = ["clean","install","-Dquickly", "-T6", "-Dscan=false"]
+    }
+    warm-ups = 1
+    iterations = 3
+}
+
+clean_install_no_cache {
+    tasks = ["clean","install","-Dquickly", "-T6", "-Dno-build-cache"]
+    cleanup-tasks = ["clean"]
+    maven {
+        targets = ["clean","install","-Dquickly", "-T6", "-Dno-build-cache"]
+    }
+    warm-ups = 1
+    iterations = 3
+}
+
+clean_install_no_cache_no_scan {
+    tasks = ["clean","install","-Dquickly", "-T6", "-Dno-build-cache", "-Dscan=false"]
+    cleanup-tasks = ["clean"]
+    maven {
+        targets = ["clean","install","-Dquickly", "-T6", "-Dno-build-cache", "-Dscan=false"]
+    }
+    warm-ups = 1
+    iterations = 3
+}
+

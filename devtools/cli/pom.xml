@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <quarkus.package.type>uber-jar</quarkus.package.type>
+        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
     </properties>
 
     <artifactId>quarkus-cli</artifactId>
@@ -42,6 +42,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-qute</artifactId>
+        </dependency>
         <!--
         Somehow, we need this as otherwise you end up with:
         java.lang.ClassNotFoundException: io.netty.handler.codec.http2.DefaultHttp2FrameWriter
@@ -71,6 +75,11 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.config</groupId>
+            <artifactId>smallrye-config-crypto</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- This dependency is here to make sure the build order is correct-->
@@ -126,13 +135,26 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-qute-deployment</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
-                <filtering>true</filtering>
+                <filtering>false</filtering>
             </testResource>
         </testResources>
         <plugins>
@@ -199,7 +221,7 @@
                 </plugins>
             </build>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

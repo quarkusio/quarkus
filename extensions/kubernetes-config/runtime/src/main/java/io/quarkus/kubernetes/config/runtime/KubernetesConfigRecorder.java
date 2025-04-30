@@ -9,8 +9,6 @@ public class KubernetesConfigRecorder {
 
     private static final Logger log = Logger.getLogger(KubernetesConfigRecorder.class);
 
-    private static final String CONFIG_ENABLED_PROPERTY_NAME = "quarkus.kubernetes-config.enabled";
-
     public void warnAboutSecrets(KubernetesConfigBuildTimeConfig buildTimeConfig, KubernetesConfigSourceConfig config) {
         if (config.secrets().isPresent()
                 && !config.secrets().get().isEmpty()

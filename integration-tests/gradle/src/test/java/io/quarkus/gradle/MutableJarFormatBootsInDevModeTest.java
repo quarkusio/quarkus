@@ -14,7 +14,7 @@ import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTestBase {
 
@@ -32,6 +32,8 @@ public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTest
 
         File output = new File(projectDir, "build/output.log");
         output.createNewFile();
+        DevModeClient devModeClient = new DevModeClient();
+
         Process process = launch(jar, output, Collections.singletonMap("QUARKUS_LAUNCH_DEVMODE", "true"));
         try {
             //Wait until server up
@@ -39,7 +41,7 @@ public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTest
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
                         .atMost(1, TimeUnit.MINUTES)
-                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
+                        .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -48,7 +50,7 @@ public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTest
             assertThat(logs).contains("INFO").contains("cdi, resteasy");
 
             // test that the application name and version are properly set
-            assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello");
+            assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("hello");
         } finally {
             process.destroy();
         }

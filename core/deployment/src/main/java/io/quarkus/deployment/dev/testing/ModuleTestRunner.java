@@ -40,7 +40,7 @@ public class ModuleTestRunner {
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
 
         var old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
+        Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
         try {
             synchronized (this) {
                 if (runner != null) {
@@ -56,6 +56,7 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
+                        .setSpecificSelection(testSupport.specificSelection)
                         .setIncludeEngines(testSupport.includeEngines)
                         .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
@@ -84,7 +85,7 @@ public class ModuleTestRunner {
                 @Override
                 public void run() {
                     var old = Thread.currentThread().getContextClassLoader();
-                    Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
+                    Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
                     try {
                         prepared.run();
                     } finally {

@@ -3,14 +3,18 @@ package io.quarkus.deployment.dev;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.objectweb.asm.ClassReader;
 
 import io.quarkus.paths.PathCollection;
 
@@ -28,7 +32,18 @@ public interface CompilationProvider extends Closeable {
 
     void compile(Set<File> files, Context context);
 
-    Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath);
+    default Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
+        Path sourceFilePath;
+        final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
+        try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
+            final ClassReader reader = new ClassReader(inputStream);
+            reader.accept(visitor, 0);
+            sourceFilePath = visitor.getSourceFileForClass(classFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return sourceFilePath;
+    }
 
     @Override
     default void close() throws IOException {
@@ -50,6 +65,10 @@ public interface CompilationProvider extends Closeable {
         private final String targetJvmVersion;
         private final List<String> compilePluginArtifacts;
         private final List<String> compilerPluginOptions;
+        private final boolean ignoreModuleInfo;
+        private final File generatedSourcesDirectory;
+        private final Set<File> annotationProcessorPaths;
+        private final List<String> annotationProcessors;
 
         public Context(
                 String name,
@@ -64,7 +83,11 @@ public interface CompilationProvider extends Closeable {
                 String sourceJavaVersion,
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
-                List<String> compilerPluginOptions) {
+                List<String> compilerPluginOptions,
+                File generatedSourcesDirectory,
+                Set<File> annotationProcessorPaths,
+                List<String> annotationProcessors,
+                String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;
             this.reloadableClasspath = reloadableClasspath;
@@ -78,6 +101,10 @@ public interface CompilationProvider extends Closeable {
             this.targetJvmVersion = targetJvmVersion;
             this.compilePluginArtifacts = compilePluginArtifacts;
             this.compilerPluginOptions = compilerPluginOptions;
+            this.ignoreModuleInfo = Boolean.parseBoolean(ignoreModuleInfo);
+            this.generatedSourcesDirectory = generatedSourcesDirectory;
+            this.annotationProcessorPaths = annotationProcessorPaths;
+            this.annotationProcessors = annotationProcessors;
         }
 
         public String getName() {
@@ -90,6 +117,14 @@ public interface CompilationProvider extends Closeable {
 
         public Set<File> getReloadableClasspath() {
             return reloadableClasspath;
+        }
+
+        public Set<File> getAnnotationProcessorPaths() {
+            return annotationProcessorPaths;
+        }
+
+        public List<String> getAnnotationProcessors() {
+            return annotationProcessors;
         }
 
         public File getProjectDirectory() {
@@ -131,5 +166,15 @@ public interface CompilationProvider extends Closeable {
         public List<String> getCompilerPluginOptions() {
             return compilerPluginOptions;
         }
+
+        public boolean ignoreModuleInfo() {
+            return ignoreModuleInfo;
+        }
+
+        public File getGeneratedSourcesDirectory() {
+            return generatedSourcesDirectory;
+        }
+
     }
+
 }

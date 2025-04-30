@@ -8,6 +8,7 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,17 +29,18 @@ public class MethodSourceTest {
     public void testParameterResolver(UnusedBean.DummyInput dummyInput, Matcher<String> matcher) {
         UnusedBean.DummyResult dummyResult = unusedBean.dummy(dummyInput);
         assertThat(dummyResult.getResult(), matcher);
+
+        // Can we get config?
+        ConfigProvider.getConfig();
     }
 
     private static Collection<Arguments> provideDummyInput() {
         return List.of(
                 Arguments.of(
-                        // note: List.of(...) or Arrays.asList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
                         new UnusedBean.DummyInput("whatever",
                                 new UnusedBean.NestedDummyInput(new ArrayList<>(List.of(1, 2, 3)))),
                         CoreMatchers.is("whatever/6")),
                 Arguments.of(
-                        // note: Collections.emptyList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
                         new UnusedBean.DummyInput("hi", new UnusedBean.NestedDummyInput(new ArrayList<>())),
                         CoreMatchers.is("hi/0")));
     }

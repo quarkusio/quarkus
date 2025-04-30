@@ -35,37 +35,32 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.3</proposed-maven-version>
-        <maven-wrapper.version>3.2.0</maven-wrapper.version>
-        <gradle-wrapper.version>8.1.1</gradle-wrapper.version>
+        <proposed-maven-version>3.9.9</proposed-maven-version>
+        <maven-wrapper.version>3.3.2</maven-wrapper.version>
+        <gradle-wrapper.version>8.13</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
-        <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <compiler-plugin.version>3.14.0</compiler-plugin.version>
         <kotlin.version>1.6.0</kotlin.version>
-        <scala.version>2.12.13</scala.version>
+        <scala.version>2.13.12</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <assertj.version>3.24.2</assertj.version>
-        <jackson-bom.version>2.15.2</jackson-bom.version>
-        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
-        <junit.version>5.9.3</junit.version>
-        <commons-compress.version>1.23.0</commons-compress.version>
-        <jboss-logging.version>3.5.1.Final</jboss-logging.version>
-        <mockito.version>5.3.1</mockito.version>
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0</version.surefire.plugin>
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <assertj.version>3.27.3</assertj.version>
+        <jackson-bom.version>2.18.3</jackson-bom.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+        <junit5.version>5.12.2</junit5.version>
+        <commons-compress.version>1.27.1</commons-compress.version>
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <mockito.version>5.17.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
-        <maven-model-helper.version>25</maven-model-helper.version>
-        <jandex.version>3.1.2</jandex.version>
+        <maven-model-helper.version>37</maven-model-helper.version>
+        <jandex.version>3.3.0</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
+        <awaitility.version>4.3.0</awaitility.version>
+        <java-properties.version>0.0.7</java-properties.version>
     </properties>
     <modules>
         <module>registry-client</module>
@@ -103,6 +98,15 @@
                 <version>${mockito.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit5.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
 
             <dependency>
@@ -182,10 +186,9 @@
                 <version>${jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
+                <groupId>org.codejive</groupId>
+                <artifactId>java-properties</artifactId>
+                <version>${java-properties.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -209,14 +212,6 @@
     </distributionManagement>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -231,6 +226,7 @@
                 <executions>
                     <execution>
                         <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <configuration>
                             <rules>
                                 <externalRules>
@@ -252,45 +248,12 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${version.surefire.plugin}</version>
                 <configuration>
                     <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                     <systemPropertyVariables combine.self="override"/>
                     <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                     <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                     <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code.formatter</groupId>
-                <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.23.0</version>
-                <dependencies>
-                    <dependency>
-                        <artifactId>quarkus-ide-config</artifactId>
-                        <groupId>io.quarkus</groupId>
-                        <version>${project.version}</version>
-                    </dependency>
-                  </dependencies>
-                <configuration>
-                    <!-- store outside of target to speed up formatting when mvn clean is used -->
-                    <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
-                    <configFile>eclipse-format.xml</configFile>
-                    <lineEnding>LF</lineEnding>
-                    <skip>${format.skip}</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code</groupId>
-                <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.9.0</version>
-                <configuration>
-                    <!-- store outside of target to speed up formatting when mvn clean is used -->
-                    <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                    <groups>java.,javax.,jakarta.,org.,com.</groups>
-                    <staticGroups>*</staticGroups>
-                    <skip>${format.skip}</skip>
-                    <removeUnused>true</removeUnused>
                 </configuration>
             </plugin>
         </plugins>
@@ -343,73 +306,6 @@
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
             </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you
-                            need to add and edit the following profile:
-                            <profile>
-                                <id>release</id>
-                                <properties>
-                                    <gpg.useagent>false</gpg.useagent>
-                                    <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                    <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                                </properties>
-                            </profile>
-                        -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>format</id>

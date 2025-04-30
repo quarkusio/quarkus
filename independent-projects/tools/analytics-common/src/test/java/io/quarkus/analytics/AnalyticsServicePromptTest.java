@@ -66,25 +66,36 @@ class AnalyticsServicePromptTest extends AnalyticsServiceTestBase {
 
     @Test
     void testConsoleQuestion_promptTimeout() throws IOException {
-        System.setProperty("quarkus.analytics.prompt.timeout", "0");
-        assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
-        service.buildAnalyticsUserInput((String prompt) -> {
-            assertEquals(ACCEPTANCE_PROMPT, prompt);
-            return "n";
-        });
-        assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
-        System.clearProperty("quarkus.analytics.prompt.timeout");
+        try {
+            System.setProperty("quarkus.analytics.prompt.timeout", "0");
+            assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
+            service.buildAnalyticsUserInput((String prompt) -> {
+                assertEquals(ACCEPTANCE_PROMPT, prompt);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return "n";
+            });
+            assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
+        } finally {
+            System.clearProperty("quarkus.analytics.prompt.timeout");
+        }
     }
 
     @Test
     void testConsoleQuestion_AnalyticsDisabled() throws IOException {
-        System.setProperty("quarkus.analytics.disabled", "true");
-        assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
-        service.buildAnalyticsUserInput((String prompt) -> {
-            fail("Prompt should be disabled");
-            return "n";
-        });
-        assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
-        System.clearProperty("quarkus.analytics.disabled");
+        try {
+            System.setProperty("quarkus.analytics.disabled", "true");
+            assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
+            service.buildAnalyticsUserInput((String prompt) -> {
+                fail("Prompt should be disabled");
+                return "n";
+            });
+            assertFalse(fileLocations.getLocalConfigFile().toFile().exists());
+        } finally {
+            System.clearProperty("quarkus.analytics.disabled");
+        }
     }
 }

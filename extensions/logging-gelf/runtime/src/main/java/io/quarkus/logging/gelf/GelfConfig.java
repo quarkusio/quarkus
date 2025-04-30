@@ -6,44 +6,46 @@ import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = "log.handler.gelf")
-public class GelfConfig {
+@ConfigMapping(prefix = "quarkus.log.handler.gelf")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface GelfConfig {
     /**
      * Determine whether to enable the GELF logging handler
      */
-    @ConfigItem
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * Hostname/IP-Address of the Logstash/Graylog Host
      * By default it uses UDP, prepend tcp: to the hostname to switch to TCP, example: "tcp:localhost"
      */
-    @ConfigItem(defaultValue = "localhost")
-    public String host;
+    @WithDefault("localhost")
+    String host();
 
     /**
      * The port
      */
-    @ConfigItem(defaultValue = "12201")
-    public int port;
+    @WithDefault("12201")
+    int port();
 
     /**
      * GELF version: 1.0 or 1.1
      */
-    @ConfigItem(defaultValue = "1.1")
-    public String version;
+    @WithDefault("1.1")
+    String version();
 
     /**
      * Whether to post Stack-Trace to StackTrace field.
      *
      * @see #stackTraceThrowableReference to customize the way the Stack-Trace is handled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean extractStackTrace;
+    @WithDefault("true")
+    boolean extractStackTrace();
 
     /**
      * Only used when `extractStackTrace` is `true`.
@@ -53,32 +55,32 @@ public class GelfConfig {
      * Negative throwable reference walk the exception chain from the root cause side: -1 will extract the root cause,
      * -2 the exception wrapping the root cause, ...
      */
-    @ConfigItem
-    public int stackTraceThrowableReference;
+    @WithDefault("0")
+    int stackTraceThrowableReference();
 
     /**
      * Whether to perform Stack-Trace filtering
      */
-    @ConfigItem
-    public boolean filterStackTrace;
+    @WithDefault("false")
+    boolean filterStackTrace();
 
     /**
      * Java date pattern, see {@link java.text.SimpleDateFormat}
      */
-    @ConfigItem(defaultValue = "yyyy-MM-dd HH:mm:ss,SSS")
-    public String timestampPattern;
+    @WithDefault("yyyy-MM-dd HH:mm:ss,SSS")
+    String timestampPattern();
 
     /**
      * The logging-gelf log level.
      */
-    @ConfigItem(defaultValue = "ALL")
-    public Level level;
+    @WithDefault("ALL")
+    Level level();
 
     /**
      * Name of the facility.
      */
-    @ConfigItem(defaultValue = "jboss-logmanager")
-    public String facility;
+    @WithDefault("jboss-logmanager")
+    String facility();
 
     /**
      * Post additional fields.
@@ -89,46 +91,62 @@ public class GelfConfig {
      * quarkus.log.handler.gelf.additional-field.field1.type=String
      * </pre>
      */
-    @ConfigItem
-    @ConfigDocMapKey("field-name")
     @ConfigDocSection
-    public Map<String, AdditionalFieldConfig> additionalField;
+    @ConfigDocMapKey("field-name")
+    Map<String, AdditionalFieldConfig> additionalField();
 
     /**
      * Whether to include all fields from the MDC.
      */
-    @ConfigItem
-    public boolean includeFullMdc;
+    @WithDefault("false")
+    boolean includeFullMdc();
+
+    /**
+     * Send additional fields whose values are obtained from MDC. Name of the Fields are comma-separated. Example:
+     * mdcFields=Application,Version,SomeOtherFieldName
+     */
+    Optional<String> mdcFields();
+
+    /**
+     * Dynamic MDC Fields allows you to extract MDC values based on one or more regular expressions. Multiple regexes are
+     * comma-separated. The name of the MDC entry is used as GELF field name.
+     */
+    Optional<String> dynamicMdcFields();
+
+    /**
+     * Pattern-based type specification for additional and MDC fields. Key-value pairs are comma-separated. Example:
+     * my_field.*=String,business\..*\.field=double
+     */
+    Optional<String> dynamicMdcFieldTypes();
 
     /**
      * Maximum message size (in bytes).
      * If the message size is exceeded, the appender will submit the message in multiple chunks.
      */
-    @ConfigItem(defaultValue = "8192")
-    public int maximumMessageSize;
+    @WithDefault("8192")
+    int maximumMessageSize();
 
     /**
      * Include message parameters from the log event
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean includeLogMessageParameters;
+    @WithDefault("true")
+    boolean includeLogMessageParameters();
 
     /**
      * Include source code location
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean includeLocation;
+    @WithDefault("true")
+    boolean includeLocation();
 
     /**
      * Origin hostname
      */
-    @ConfigItem
-    public Optional<String> originHost;
+    Optional<String> originHost();
 
     /**
      * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the value
      * “unknown” will be used as hostname
      */
-    @ConfigItem
-    public boolean skipHostnameResolution;
+    @WithDefault("false")
+    boolean skipHostnameResolution();
 }

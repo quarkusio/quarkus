@@ -1,9 +1,9 @@
 package io.quarkus.logging;
 
 import static io.quarkus.logging.LoggingTestsHelper.getHandler;
+import static io.smallrye.common.net.HostName.getQualifiedHostName;
+import static io.smallrye.common.os.Process.getProcessName;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.wildfly.common.net.HostName.getQualifiedHostName;
-import static org.wildfly.common.os.Process.getProcessName;
 
 import java.util.logging.Formatter;
 import java.util.logging.Handler;

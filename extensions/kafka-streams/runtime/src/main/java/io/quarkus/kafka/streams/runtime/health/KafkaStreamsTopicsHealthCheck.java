@@ -35,8 +35,8 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
 
     @PostConstruct
     public void init() {
-        if (kafkaStreamsRuntimeConfig.topicsTimeout.compareTo(Duration.ZERO) > 0) {
-            trimmedTopics = kafkaStreamsRuntimeConfig.topics
+        if (kafkaStreamsRuntimeConfig.topicsTimeout().compareTo(Duration.ZERO) > 0) {
+            trimmedTopics = kafkaStreamsRuntimeConfig.topics()
                     .orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
                     .stream()
                     .map(String::trim)
@@ -49,7 +49,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
         if (trimmedTopics != null) {
             try {
-                Set<String> missingTopics = manager.getMissingTopics(trimmedTopics, kafkaStreamsRuntimeConfig.topicsTimeout);
+                Set<String> missingTopics = manager.getMissingTopics(trimmedTopics, kafkaStreamsRuntimeConfig.topicsTimeout());
                 List<String> availableTopics = new ArrayList<>(trimmedTopics);
                 availableTopics.removeAll(missingTopics);
 

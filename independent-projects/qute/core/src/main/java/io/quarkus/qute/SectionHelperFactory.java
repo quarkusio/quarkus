@@ -14,9 +14,18 @@ import io.quarkus.qute.TemplateNode.Origin;
  * Factory to create a new {@link SectionHelper} based on the {@link SectionInitContextImpl}.
  *
  * @see EngineBuilder#addSectionHelper(SectionHelperFactory)
+ * @see EngineConfiguration
  */
 public interface SectionHelperFactory<T extends SectionHelper> {
 
+    // The validation of expressions with the metadata hint may be relaxed in some cases
+    String HINT_METADATA = "<metadata>";
+
+    /**
+     * The name of the main block.
+     *
+     * @see SectionBlock
+     */
     String MAIN_BLOCK_NAME = "$main";
 
     /**
@@ -156,9 +165,12 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         String getLabel();
 
         /**
-         * Undeclared params with default values are included.
+         * An unmodifiable ordered map of parsed parameters.
+         * <p>
+         * Note that the order does not necessary reflect the original positions of the parameters but the parsing order.
          *
          * @return the map of parameters
+         * @see SectionHelperFactory#getParameters()
          */
         Map<String, String> getParameters();
 
@@ -169,6 +181,14 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         default boolean hasParameter(String name) {
             return getParameters().containsKey(name);
         }
+
+        /**
+         *
+         * @param position
+         * @return the parameter for the specified position, or {@code null} if no such parameter exists
+         * @see SectionBlock#getParameter(int)
+         */
+        String getParameter(int position);
 
         /**
          * Parse and register an expression for the specified parameter.
@@ -193,7 +213,14 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          *
+         * @return the section name
+         */
+        String getName();
+
+        /**
+         *
          * @return the parameters of the main block
+         * @see SectionBlock#parameters
          */
         default public Map<String, String> getParameters() {
             return getBlocks().get(0).parameters;
@@ -214,6 +241,15 @@ public interface SectionHelperFactory<T extends SectionHelper> {
          */
         default public String getParameter(String name) {
             return getParameters().get(name);
+        }
+
+        /**
+         *
+         * @return the parameter for the specified position
+         * @see SectionBlock#getParameter(int)
+         */
+        default public String getParameter(int position) {
+            return getBlocks().get(0).getParameter(position);
         }
 
         /**

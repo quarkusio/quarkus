@@ -6,11 +6,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,13 +32,14 @@ class GeneratedResourceBuildItemTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setExpectExit(true)
-            .overrideConfigKey("quarkus.package.type", "uber-jar")
+            .overrideConfigKey("quarkus.package.jar.type", "uber-jar")
             .setForcedDependencies(List.of(
                     Dependency.of("org.apache.cxf", "cxf-rt-bindings-xml", "3.4.3"),
                     Dependency.of("org.apache.cxf", "cxf-rt-bindings-soap", "3.4.3")));
 
     @Test
-    public void testXMLResourceWasMerged() throws IOException {
+    public void testXMLResourceWasMerged() {
+        Assumptions.assumeTrue(isOnline());
         assertThat(runner.getStartupConsoleOutput()).contains("RESOURCES: 1",
                 "<entry key=\"xml-javax.wsdl.Port\">org.apache.cxf.binding.xml.wsdl11.HttpAddressPlugin</entry>",
                 "<entry key=\"xml-javax.wsdl.Binding\">org.apache.cxf.binding.xml.wsdl11.XmlBindingPlugin</entry>",
@@ -56,6 +60,15 @@ class GeneratedResourceBuildItemTest {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 reader.lines().forEach(System.out::println);
             }
+        }
+    }
+
+    boolean isOnline() {
+        try {
+            InetAddress resolved = InetAddress.getByName("sun.com");
+            return resolved != null;
+        } catch (UnknownHostException e) {
+            return false;
         }
     }
 }

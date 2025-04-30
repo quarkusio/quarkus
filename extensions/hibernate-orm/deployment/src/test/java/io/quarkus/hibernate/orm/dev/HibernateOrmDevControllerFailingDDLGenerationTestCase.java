@@ -2,12 +2,15 @@ package io.quarkus.hibernate.orm.dev;
 
 import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+@Tag(TestTags.DEVMODE)
 public class HibernateOrmDevControllerFailingDDLGenerationTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

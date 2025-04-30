@@ -13,10 +13,10 @@ import java.util.stream.Stream;
 
 class PathTreeVisit implements PathVisit {
 
-    static void walk(Path root, Path rootDir, PathFilter pathFilter, Map<String, String> multiReleaseMapping,
+    static void walk(Path root, Path rootDir, Path walkDir, PathFilter pathFilter, Map<String, String> multiReleaseMapping,
             PathVisitor visitor) {
         final PathTreeVisit visit = new PathTreeVisit(root, rootDir, pathFilter, multiReleaseMapping);
-        try (Stream<Path> files = Files.walk(rootDir)) {
+        try (Stream<Path> files = Files.walk(walkDir)) {
             final Iterator<Path> i = files.iterator();
             while (i.hasNext()) {
                 if (!visit.setCurrent(i.next())) {
@@ -89,7 +89,7 @@ class PathTreeVisit implements PathVisit {
     @Override
     public String getRelativePath(String separator) {
         if (relativePath == null) {
-            return PathUtils.asString(baseDir.relativize(current), separator);
+            return PathTreeUtils.asString(baseDir.relativize(current), separator);
         }
         if (!current.getFileSystem().getSeparator().equals(separator)) {
             return relativePath.replace(current.getFileSystem().getSeparator(), separator);

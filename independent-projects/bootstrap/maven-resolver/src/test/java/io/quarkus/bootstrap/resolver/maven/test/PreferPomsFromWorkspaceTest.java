@@ -12,18 +12,14 @@ import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 
 public class PreferPomsFromWorkspaceTest extends BootstrapMavenContextTestBase {
 
-    @Override
-    protected void initBootstrapMavenContextConfig(BootstrapMavenContextConfig<?> config) {
-        config.setPreferPomsFromWorkspace(true);
-    }
-
     @Test
     public void preferPomsFromWorkspace() throws Exception {
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-alternate-pom/root/module2");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-alternate-pom/root/module2",
+                BootstrapMavenContext.config().setPreferPomsFromWorkspace(true));
+
         final Artifact artifact = new DefaultArtifact(mvn.getCurrentProject().getGroupId(),
                 mvn.getCurrentProject().getArtifactId(), null, "pom", mvn.getCurrentProject().getVersion());
         final ArtifactDescriptorResult descriptor = mvn.getRepositorySystem().readArtifactDescriptor(

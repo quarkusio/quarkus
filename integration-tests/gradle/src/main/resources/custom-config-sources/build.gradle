@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation "io.quarkus:quarkus-grpc" // Need a `CodeGenProvider` on the class path for this test!
+    compileOnly "io.smallrye.config:smallrye-config-core"
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}

@@ -2,33 +2,36 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "rabbitmq", phase = ConfigPhase.BUILD_TIME)
-public class RabbitMQBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.rabbitmq")
+public interface RabbitMQBuildTimeConfig {
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start a RabbitMQ broker in dev and test mode.
+     * Dev Services.
+     * <p>
+     * DevServices allows Quarkus to start a RabbitMQ broker in dev and test mode automatically.
      */
-    @ConfigItem
-    public RabbitMQDevServicesBuildTimeConfig devservices;
+    @ConfigDocSection(generated = true)
+    RabbitMQDevServicesBuildTimeConfig devservices();
 
     /**
      * The credentials provider name.
      */
-    @ConfigItem
-    public Optional<String> credentialsProvider = Optional.empty();
+    Optional<String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
      * <p>
-     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
-     * CredentialsProvider beans are available.
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
      * <p>
-     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    public Optional<String> credentialsProviderName = Optional.empty();
+    Optional<String> credentialsProviderName();
 }

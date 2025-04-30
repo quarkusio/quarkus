@@ -13,7 +13,7 @@ public class {class-name-base}Test {
     // Start unit test with your extension loaded
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-        .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
     public void writeYourOwnUnitTest() {

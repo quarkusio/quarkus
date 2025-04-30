@@ -150,6 +150,7 @@ public class TestResource {
 
     @GET
     @Path("/rx")
+    @Produces("text/plain")
     public Single<String> rx() {
         return Single.just("Hello");
     }

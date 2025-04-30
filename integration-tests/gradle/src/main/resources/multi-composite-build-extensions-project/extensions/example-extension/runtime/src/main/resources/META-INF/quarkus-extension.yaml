@@ -1,0 +1,12 @@
+---
+name: Quarkus Example Extension
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  config:
+    - "quarkus.example.extension."
+  keywords:
+    - "logzio"
+    - "logging"
+  categories:
+    - "logging"
+description: "Quarkus example extension"

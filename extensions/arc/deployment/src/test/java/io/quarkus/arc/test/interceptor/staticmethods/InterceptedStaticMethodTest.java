@@ -2,9 +2,12 @@ package io.quarkus.arc.test.interceptor.staticmethods;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -18,15 +21,12 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InterceptorBinding;
 import jakarta.interceptor.InvocationContext;
 
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.AnnotationTransformation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opentest4j.AssertionFailedError;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -36,8 +36,9 @@ public class InterceptedStaticMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InterceptMe.class, Simple.class, AnotherSimple.class, SimpleInterceptor.class))
+            .withApplicationRoot(root -> root
+                    .addClasses(InterceptMe.class, NotNull.class, WithClassPolicy.class, Simple.class, AnotherSimple.class,
+                            SimpleInterceptor.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -49,23 +50,10 @@ public class InterceptedStaticMethodTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-                            @Override
-                            public boolean appliesTo(Kind kind) {
-                                return AnnotationTarget.Kind.METHOD == kind;
-                            }
-
-                            @Override
-                            public void transform(TransformationContext context) {
-                                MethodInfo method = context.getTarget().asMethod();
-                                if (method.declaringClass().name().toString()
-                                        .endsWith("AnotherSimple")) {
-                                    context.transform().add(InterceptMe.class).done();
-                                }
-                            }
-
-                        }));
+                        context.produce(new AnnotationsTransformerBuildItem(
+                                AnnotationTransformation.forMethods()
+                                        .whenMethod(AnotherSimple.class, "ping")
+                                        .transform(tc -> tc.add(InterceptMe.class))));
                     }
                 }).produces(AnnotationsTransformerBuildItem.class).build();
             }
@@ -83,8 +71,9 @@ public class InterceptedStaticMethodTest {
 
     public static class Simple {
 
+        @WithClassPolicy
         @InterceptMe
-        public static String ping(String val) {
+        public static String ping(@NotNull String val) {
             return val.toUpperCase();
         }
 
@@ -120,6 +109,16 @@ public class InterceptedStaticMethodTest {
                 throw new AssertionFailedError("Not a static method!");
             }
             assertNull(ctx.getTarget());
+            // verify annotations can be inspected
+            if (ctx.getMethod().getDeclaringClass().getName().equals(Simple.class.getName())) {
+                assertEquals(1, ctx.getMethod().getAnnotations().length);
+                assertTrue(ctx.getMethod().isAnnotationPresent(InterceptMe.class));
+                assertFalse(ctx.getMethod().isAnnotationPresent(WithClassPolicy.class));
+                assertFalse(ctx.getMethod().isAnnotationPresent(NotNull.class));
+                if (ctx.getMethod().getName().equals("ping")) {
+                    assertTrue(ctx.getMethod().getParameters()[0].isAnnotationPresent(NotNull.class));
+                }
+            }
             Object ret = ctx.proceed();
             if (ret != null) {
                 if (ret instanceof String) {
@@ -141,6 +140,16 @@ public class InterceptedStaticMethodTest {
     @Target({ TYPE, METHOD })
     @Retention(RUNTIME)
     @interface InterceptMe {
+
+    }
+
+    @Retention(RUNTIME)
+    @interface NotNull {
+
+    }
+
+    @Retention(CLASS)
+    @interface WithClassPolicy {
 
     }
 

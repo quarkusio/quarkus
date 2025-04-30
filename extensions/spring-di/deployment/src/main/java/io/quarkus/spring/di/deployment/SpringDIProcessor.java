@@ -37,6 +37,7 @@ import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 /**
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
  * Arc's handling of annotation mapping (by creating an extra abstraction layer on top of the Jandex index)
  * suits this sort of handling perfectly.
  */
+@BuildSteps(onlyIf = SpringDiEnabled.class)
 public class SpringDIProcessor {
 
     private static final DotName SPRING_SCOPE_ANNOTATION = DotName.createSimple("org.springframework.context.annotation.Scope");
@@ -397,8 +399,12 @@ public class SpringDIProcessor {
                 }
                 addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
             } else if (fieldInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
-                // Mix case of JSR-303 support in Spring
-                addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+                boolean isSpringBean = fieldInfo.declaringClass().annotations().stream()
+                        .anyMatch(ai -> stereotypeScopes.keySet().contains(ai.name()));
+                if (isSpringBean) {
+                    // Mix case of JSR-303 support in Spring
+                    addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+                }
             } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
                 final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
                 addSpringValueAnnotations(target, annotation, true, annotationsToAdd);
@@ -520,7 +526,7 @@ public class SpringDIProcessor {
         }
         if (beanName == null || beanName.isEmpty()) {
             final AnnotationValue beanValueAnnotationValue = annotationInstance.value();
-            if (beanNameAnnotationValue != null) {
+            if (beanValueAnnotationValue != null) {
                 beanName = determineName(beanValueAnnotationValue);
             }
         }

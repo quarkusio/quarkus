@@ -13,7 +13,7 @@ import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
 
@@ -30,6 +30,8 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
 
         File output = new File(projectDir, "application/build/output.log");
         output.createNewFile();
+        DevModeClient devModeClient = new DevModeClient();
+
         Process process = launch(jar, output);
         try {
             // Wait until server up
@@ -37,7 +39,7 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
                         .atMost(1, TimeUnit.MINUTES)
-                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
+                        .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 

@@ -5,9 +5,13 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.rest.client.wronghost.BadHostServiceTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@QuarkusTestResource(value = SelfSignedServiceTestResource.class, restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = BadHostServiceTestResource.class, restrictToAnnotatedClass = true)
 public class ExternalSelfSignedTestCase {
 
     @Test

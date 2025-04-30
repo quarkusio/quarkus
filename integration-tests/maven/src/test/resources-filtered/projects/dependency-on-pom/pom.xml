@@ -10,9 +10,10 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
     <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
+    <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+    <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>11</maven.compiler.target>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -52,6 +53,10 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>\${compiler-plugin.version}</version>
+      </plugin>
+      <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
@@ -71,7 +76,7 @@
     <profile>
       <id>native</id>
       <properties>
-        <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
       </properties>
     </profile>
   </profiles>

@@ -28,7 +28,7 @@ public class KubernetesWithQuarkusAppNameTest {
             .withConfigurationResource("kubernetes-with-quarkus-app-name.properties")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-container-image-s2i", Version.getVersion())));
+                    Dependency.of("io.quarkus", "quarkus-container-image-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -53,7 +53,7 @@ public class KubernetesWithQuarkusAppNameTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
         assertThat(openshiftList).allSatisfy(h -> {
-            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-11");
+            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-17");
             assertThat(h.getMetadata().getLabels()).contains(entry("app.kubernetes.io/name", "ofoo"),
                     entry("app.kubernetes.io/version", "1.0-openshift"));
         });

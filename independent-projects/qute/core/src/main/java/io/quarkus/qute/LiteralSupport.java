@@ -23,9 +23,8 @@ class LiteralSupport {
         if (literal == null || literal.isEmpty()) {
             return value;
         }
-        char firstChar = literal.charAt(0);
-        if (isStringLiteralSeparator(firstChar) && literal.charAt(literal.length() - 1) == firstChar) {
-            value = literal.substring(1, literal.length() - 1);
+        if (isStringLiteral(literal)) {
+            value = extractStringValue(literal);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
         } else if (literal.equals("false")) {
@@ -33,6 +32,7 @@ class LiteralSupport {
         } else if (literal.equals("null")) {
             value = null;
         } else {
+            char firstChar = literal.charAt(0);
             if (Character.isDigit(firstChar) || firstChar == '-' || firstChar == '+') {
                 if (INTEGER_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
@@ -74,7 +74,27 @@ class LiteralSupport {
      *         <code>false</code> otherwise
      */
     static boolean isStringLiteralSeparator(char character) {
-        return character == '"' || character == '\'';
+        return isStringLiteralSeparatorSingle(character) || isStringLiteralSeparatorDouble(character);
+    }
+
+    static boolean isStringLiteralSeparatorSingle(char character) {
+        return character == '\'';
+    }
+
+    static boolean isStringLiteralSeparatorDouble(char character) {
+        return character == '"';
+    }
+
+    static String extractStringValue(String strLiteral) {
+        return strLiteral.substring(1, strLiteral.length() - 1);
+    }
+
+    static boolean isStringLiteral(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        char firstChar = value.charAt(0);
+        return isStringLiteralSeparator(firstChar) && value.charAt(value.length() - 1) == firstChar;
     }
 
 }

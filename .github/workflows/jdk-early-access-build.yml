@@ -59,7 +59,7 @@ jobs:
           release: ${{ matrix.version }}
       - name: Set up JDK from other provider than jdk.java.net
         if: matrix.dist != 'jdk.java.net'
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: ${{ matrix.dist }}
           java-version: ${{ matrix.version }}
@@ -72,7 +72,7 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
       - name: Reclaim Disk Space
@@ -84,7 +84,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
@@ -117,7 +117,7 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-linux-jvm${{ matrix.version }}
@@ -127,14 +127,10 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=15867 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 15867

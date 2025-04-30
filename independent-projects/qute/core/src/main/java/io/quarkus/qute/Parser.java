@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
@@ -126,9 +127,19 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Template parse() {
 
-        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this)
+        SectionNode.Builder rootBuilder = SectionNode.builder(ROOT_HELPER_NAME, syntheticOrigin(), this, this)
                 .setEngine(engine)
-                .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
+                .setHelperFactory(ROOT_SECTION_HELPER_FACTORY);
+        sectionStack.addFirst(rootBuilder);
+
+        // Add synthetic nodes for param declarations added by parser hooks
+        Map<String, String> bindings = scopeStack.peek().getBindings();
+        if (bindings != null && !bindings.isEmpty()) {
+            for (Entry<String, String> e : bindings.entrySet()) {
+                rootBuilder.currentBlock().addNode(
+                        new ParameterDeclarationNode(e.getValue(), e.getKey(), null, syntheticOrigin()));
+            }
+        }
 
         long start = System.nanoTime();
         Reader r = reader;
@@ -155,7 +166,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 } else {
                     String reason = null;
                     ErrorCode code = null;
-                    if (state == State.TAG_INSIDE_STRING_LITERAL) {
+                    if (state == State.TAG_INSIDE_STRING_LITERAL_SINGLE || state == State.TAG_INSIDE_STRING_LITERAL_DOUBLE) {
                         reason = "unterminated string literal";
                         code = ParserError.UNTERMINATED_STRING_LITERAL;
                     } else if (state == State.TAG_INSIDE) {
@@ -239,8 +250,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             case TAG_INSIDE:
                 tag(character);
                 break;
-            case TAG_INSIDE_STRING_LITERAL:
-                tagStringLiteral(character);
+            case TAG_INSIDE_STRING_LITERAL_SINGLE:
+                tagStringLiteralSingle(character);
+                break;
+            case TAG_INSIDE_STRING_LITERAL_DOUBLE:
+                tagStringLiteralDouble(character);
                 break;
             case COMMENT:
                 comment(character);
@@ -329,7 +343,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     private void tag(char character) {
         if (LiteralSupport.isStringLiteralSeparator(character)) {
-            state = State.TAG_INSIDE_STRING_LITERAL;
+            state = LiteralSupport.isStringLiteralSeparatorSingle(character) ? State.TAG_INSIDE_STRING_LITERAL_SINGLE
+                    : State.TAG_INSIDE_STRING_LITERAL_DOUBLE;
             buffer.append(character);
         } else if (character == END_DELIMITER) {
             flushTag();
@@ -338,8 +353,15 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
     }
 
-    private void tagStringLiteral(char character) {
-        if (LiteralSupport.isStringLiteralSeparator(character)) {
+    private void tagStringLiteralSingle(char character) {
+        if (LiteralSupport.isStringLiteralSeparatorSingle(character)) {
+            state = State.TAG_INSIDE;
+        }
+        buffer.append(character);
+    }
+
+    private void tagStringLiteralDouble(char character) {
+        if (LiteralSupport.isStringLiteralSeparatorDouble(character)) {
             state = State.TAG_INSIDE;
         }
         buffer.append(character);
@@ -376,20 +398,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 || character == UNDERSCORE
                 || Character.isDigit(character)
                 || Character.isAlphabetic(character);
-    }
-
-    static boolean isValidIdentifier(String value) {
-        int offset = 0;
-        int length = value.length();
-        while (offset < length) {
-            int c = value.codePointAt(offset);
-            if (!Character.isWhitespace(c)) {
-                offset += Character.charCount(c);
-                continue;
-            }
-            return false;
-        }
-        return true;
     }
 
     private boolean isLineSeparatorStart(char character) {
@@ -697,42 +705,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             LOGGER.debugf(builder.toString());
         }
 
+        List<String> parametersPositions = new ArrayList<>(paramValues.size());
+
         // Process named params first
-        for (Iterator<String> it = paramValues.iterator(); it.hasNext();) {
-            String param = it.next();
+        for (String param : paramValues) {
             int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
             if (equalsPosition != -1) {
                 // Named param
-                params.put(param.substring(0, equalsPosition), param.substring(equalsPosition + 1,
-                        param.length()));
-                it.remove();
+                String val = param.substring(equalsPosition + 1, param.length());
+                params.put(param.substring(0, equalsPosition), val);
+                parametersPositions.add(val);
+            } else {
+                parametersPositions.add(null);
             }
         }
 
-        Predicate<String> included = params::containsKey;
         // Then process positional params
-        if (actualSize < factoryParams.size()) {
-            // The number of actual params is less than factory params
-            // We need to choose the best fit for positional params
-            for (String param : paramValues) {
-                Parameter found = findFactoryParameter(param, factoryParams, included, true);
-                if (found != null) {
-                    params.put(found.name, param);
-                }
-            }
-        } else {
-            // The number of actual params is greater or equals to factory params
-            int generatedIdx = 0;
-            for (String param : paramValues) {
-                // Positional param
-                Parameter found = findFactoryParameter(param, factoryParams, included, false);
-                if (found != null) {
-                    params.put(found.name, param);
-                } else {
-                    params.put("" + generatedIdx++, param);
-                }
-            }
-        }
+        // When the number of actual params is less than factory params then we need to choose the best fit for positional params
+        processPositionalParams(paramValues, parametersPositions, factoryParams, params, actualSize < factoryParams.size());
 
         // Use the default values if needed
         for (Parameter param : factoryParams) {
@@ -757,8 +747,26 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     .build();
         }
 
-        for (Entry<String, String> e : params.entrySet()) {
-            block.addParameter(e.getKey(), e.getValue());
+        params.entrySet().forEach(block::addParameter);
+        block.setParametersPositions(parametersPositions);
+    }
+
+    private void processPositionalParams(List<String> paramValues, List<String> parametersPositions,
+            List<Parameter> factoryParams, Map<String, String> params, boolean noDefaultValueTakesPrecedence) {
+        int generatedIdx = 0;
+        int idx = 0;
+        Predicate<String> included = params::containsKey;
+        for (String param : paramValues) {
+            if (parametersPositions.isEmpty() || parametersPositions.get(idx) == null) {
+                Parameter found = findFactoryParameter(param, factoryParams, included, noDefaultValueTakesPrecedence);
+                if (found != null) {
+                    params.put(found.name, param);
+                } else {
+                    params.put("" + generatedIdx++, param);
+                }
+                parametersPositions.set(idx, param);
+            }
+            idx++;
         }
     }
 
@@ -809,52 +817,67 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     static <B extends ErrorInitializer & WithOrigin> Iterator<String> splitSectionParams(String content, B block) {
 
-        boolean stringLiteral = false;
+        boolean stringLiteralSingle = false;
+        boolean stringLiteralDouble = false;
         short composite = 0;
         byte brackets = 0;
-        boolean space = false;
+        boolean whitespace = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
 
         for (int i = 0; i < content.length(); i++) {
             char c = content.charAt(i);
-            if (c == ' ') {
-                if (!space) {
-                    if (!stringLiteral && composite == 0 && brackets == 0) {
+            if (Character.isWhitespace(c)) {
+                if (!whitespace) {
+                    if (!stringLiteralSingle
+                            && !stringLiteralDouble
+                            && composite == 0
+                            && brackets == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
                         }
-                        space = true;
+                        whitespace = true;
                     } else {
                         buffer.append(c);
                     }
                 }
             } else {
                 if (composite == 0
-                        && LiteralSupport.isStringLiteralSeparator(c)) {
-                    stringLiteral = !stringLiteral;
-                } else if (!stringLiteral
-                        && isCompositeStart(c) && (i == 0 || space || composite > 0
+                        && !stringLiteralDouble
+                        && LiteralSupport.isStringLiteralSeparatorSingle(c)) {
+                    stringLiteralSingle = !stringLiteralSingle;
+                } else if (composite == 0
+                        && !stringLiteralSingle
+                        && LiteralSupport.isStringLiteralSeparatorDouble(c)) {
+                    stringLiteralDouble = !stringLiteralDouble;
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
+                        && isCompositeStart(c)
+                        && (i == 0 || whitespace || composite > 0
                                 || (buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == '!'))) {
                     composite++;
-                } else if (!stringLiteral
-                        && isCompositeEnd(c) && composite > 0) {
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
+                        && isCompositeEnd(c)
+                        && composite > 0) {
                     composite--;
-                } else if (!stringLiteral
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
                         && Parser.isLeftBracket(c)) {
                     brackets++;
-                } else if (!stringLiteral
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
                         && Parser.isRightBracket(c) && brackets > 0) {
                     brackets--;
                 }
-                space = false;
+                whitespace = false;
                 buffer.append(c);
             }
         }
 
         if (buffer.length() > 0) {
-            if (stringLiteral || composite > 0) {
+            if (stringLiteralSingle || stringLiteralDouble || composite > 0) {
                 throw block.error("unterminated string literal or composite parameter detected for [{content}]")
                         .argument("content", content)
                         .code(ParserError.UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER)
@@ -864,10 +887,16 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             parts.add(buffer.toString());
         }
 
-        // Try to find/replace "standalone" equals signs used as param names separators
-        // This allows for more lenient parsing of named section parameters, e.g. item.name = 'foo' instead of item.name='foo'
+        // Try to find/replace/merge:
+        // 1. "standalone" equals signs used as param names separators
+        // 2. parts that start/end with an equal sign followed/preceded by a valid Java identifier
+        // This allows for more lenient parsing of named section parameters
+        // e.g. `item = 'foo'` or `item= 'foo'` instead of `item='foo'`
         for (ListIterator<String> it = parts.listIterator(); it.hasNext();) {
-            if (it.next().equals("=") && it.previousIndex() != 0 && it.hasNext()) {
+            String next = it.next();
+            if (next.equals("=")
+                    && it.previousIndex() != 0
+                    && it.hasNext()) {
                 // move cursor back
                 it.previous();
                 String merged = parts.get(it.previousIndex()) + it.next() + it.next();
@@ -879,11 +908,32 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 it.remove();
                 it.previous();
                 it.remove();
+            } else if (next.endsWith("=")
+                    && it.hasNext()
+                    && EQUAL_ENDS_PATTERN.matcher(next).matches()) {
+                String merged = next + it.next();
+                // replace the element with the merged value
+                it.set(merged);
+                // move cursor back and remove the element that ended with equals
+                it.previous();
+                it.previous();
+                it.remove();
+            } else if (next.startsWith("=")
+                    && it.hasPrevious()
+                    && EQUAL_STARTS_PATTERN.matcher(next).matches()) {
+                String merged = next + it.previous();
+                // replace the element with the merged value
+                it.set(merged);
+                // move cursor back and remove the element that started with equals
+                it.next();
+                it.remove();
             }
         }
-
         return parts.iterator();
     }
+
+    static final Pattern EQUAL_ENDS_PATTERN = Pattern.compile(".*[a-zA-Z0-9_$]=$");
+    static final Pattern EQUAL_STARTS_PATTERN = Pattern.compile("^=[a-zA-Z0-9_$].*");
 
     static boolean isCompositeStart(char character) {
         return character == START_COMPOSITE_PARAM;
@@ -921,7 +971,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
         TEXT,
         TAG_INSIDE,
-        TAG_INSIDE_STRING_LITERAL,
+        TAG_INSIDE_STRING_LITERAL_SINGLE,
+        TAG_INSIDE_STRING_LITERAL_DOUBLE,
         TAG_CANDIDATE,
         COMMENT,
         ESCAPE,
@@ -1013,13 +1064,15 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 value = literal.toString();
             } else {
                 throw TemplateException.builder()
-                        .message((literal == null ? "Null" : "Non-literal")
-                                + " value used in bracket notation [{value}] {origin}")
+                        .message((literal == null ? "Null value" : "Non-literal value [{value}]")
+                                + " used in bracket notation in expression \\{{expr}\\}{#if origin.hasNonGeneratedTemplateId??} in{origin}{/if}")
                         .argument("value", value)
+                        .argument("expr", exprValue)
+                        .origin(origin)
                         .build();
             }
         } else {
-            if (!isValidIdentifier(value)) {
+            if (!Identifiers.isValid(value)) {
                 throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
                         .argument("value", value)
                         .build();
@@ -1064,6 +1117,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Origin origin(int lineCharacterOffset) {
         return new OriginImpl(line, lineCharacter - lineCharacterOffset, lineCharacter, templateId, generatedId, variant);
+    }
+
+    Origin syntheticOrigin() {
+        return new OriginImpl(-1, -1, -1, templateId, generatedId, variant);
     }
 
     private List<List<TemplateNode>> readLines(SectionNode rootNode) {
@@ -1284,12 +1341,21 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private static final BlockNode BLOCK_NODE = new BlockNode();
     static final CommentNode COMMENT_NODE = new CommentNode();
 
+    static boolean isDummyNode(TemplateNode node) {
+        return node == COMMENT_NODE || node == BLOCK_NODE;
+    }
+
     // A dummy node for section blocks, it's only used when removing standalone lines
     private static class BlockNode implements TemplateNode {
 
         @Override
         public CompletionStage<ResultNode> resolve(ResolutionContext context) {
             throw new IllegalStateException();
+        }
+
+        @Override
+        public Kind kind() {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1304,6 +1370,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
         @Override
         public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Kind kind() {
             throw new UnsupportedOperationException();
         }
 

@@ -14,7 +14,7 @@
     <description>Hibernate Reactive related tests running with the MS SQL Server database</description>
 
     <properties>
-        <reactive-mssql.url>vertx-reactive:mssql://localhost:3306/hibernate_orm_test</reactive-mssql.url>
+        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
     </properties>
 
     <dependencies>
@@ -28,17 +28,18 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
+            <artifactId>quarkus-rest-jsonb</artifactId>
         </dependency>
 
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -81,7 +82,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -187,7 +188,7 @@
             </activation>
             <properties>
                 <!-- Careful: SQL Server refuses to work with trivial passwords. -->
-                <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
+                <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
             </properties>
             <build>
                 <plugins>
@@ -201,11 +202,11 @@
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <ports>
-                                            <port>1433:1433</port>
+                                            <port>1435:1433</port>
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <SA_PASSWORD>ActuallyRequired11Complexity</SA_PASSWORD>
+                                            <MSSQL_SA_PASSWORD>yourStrong(!)Password</MSSQL_SA_PASSWORD>
                                         </env>
                                         <log>
                                             <prefix>MS SQL Server:</prefix>

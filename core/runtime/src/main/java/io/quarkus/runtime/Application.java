@@ -6,12 +6,12 @@ import java.util.concurrent.locks.Lock;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
-import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application

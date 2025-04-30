@@ -19,13 +19,13 @@ public class QuarkusConfigTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", is(notNullValue()))
-                .body("configSourceName", equalTo("DefaultValuesConfigSource"));
+                .body("configSourceName", equalTo("QuarkusUUIDConfigSource"));
 
         given()
                 .get("/config/uuid")
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", is(notNullValue()))
-                .body("configSourceName", equalTo("DefaultValuesConfigSource"));
+                .body("configSourceName", equalTo("QuarkusUUIDConfigSource"));
     }
 }

@@ -16,7 +16,7 @@
             <groupId>org.mvnpm.at.vaadin</groupId>
             <artifactId>router</artifactId>
             <scope>runtime</scope>
-        </dependency>    
+        </dependency>
         <dependency>
             <groupId>org.mvnpm</groupId>
             <artifactId>path-to-regexp</artifactId>
@@ -24,289 +24,9 @@
         </dependency>
         <!-- Vaadin Web components -->
         <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>app-layout</artifactId>
+            <groupId>org.mvnpm.at.mvnpm</groupId>
+            <artifactId>vaadin-webcomponents</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>avatar-group</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>icons</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>login</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>integer-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>accordion</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>avatar</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>horizontal-layout</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>button</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>combo-box</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>confirm-dialog</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>checkbox</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>checkbox-group</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>component-base</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>context-menu</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>custom-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>date-picker</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>date-time-picker</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>time-picker</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>details</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>dialog</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>email-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>password-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>number-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>field-base</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>grid</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>input-container</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>item</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>list-box</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>lit-renderer</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>menu-bar</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>message-list</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>message-input</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>multi-select-combo-box</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>radio-group</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>overlay</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>progress-bar</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>split-layout</artifactId>
-            
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>text-area</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>tooltip</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vaadin-material-styles</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vaadin-themable-mixin</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vertical-layout</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>tabs</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>scroller</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>text-field</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>form-layout</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>tabsheet</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>select</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>notification</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>upload</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>virtual-list</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <!-- There is a cyclic dependency on icon -->
-        <!-- TODO: Detect and fix in mvnpm -->
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>icon</artifactId>
-            <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mvnpm.at.vaadin</groupId>
-                    <artifactId>vaadin-lumo-styles</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vaadin-lumo-styles</artifactId>
-            <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mvnpm.at.vaadin</groupId>
-                    <artifactId>icon</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mvnpm.at.vaadin</groupId>
@@ -333,7 +53,7 @@
             <artifactId>dedupe-mixin</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Lit -->
         <dependency>
             <groupId>org.mvnpm</groupId>
@@ -370,21 +90,70 @@
             <artifactId>lit-element-state</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Apache echarts -->
         <dependency>
             <groupId>org.mvnpm</groupId>
             <artifactId>echarts</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Code editor -->
         <dependency>
-            <groupId>org.mvnpm.at.vanillawc</groupId>
-            <artifactId>wc-codemirror</artifactId>
+            <groupId>org.mvnpm.at.mvnpm</groupId>
+            <artifactId>codeblock</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
+        <!-- Qomponent -->
+        <dependency>
+            <groupId>org.mvnpm.at.mvnpm</groupId>
+            <artifactId>qomponent</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm.at.qomponent</groupId>
+            <artifactId>qui-directory-tree</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Markdown it -->
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>markdown-it</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>argparse</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>entities</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>linkify-it</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>mdurl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>punycode.js</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>uc.micro</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Polyfill for importmaps -->
         <dependency>
             <groupId>org.mvnpm</groupId>

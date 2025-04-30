@@ -14,8 +14,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ProcessUtil;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRunner {
 
@@ -28,11 +28,11 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     protected NativeImageBuildContainerRunner(NativeConfig nativeConfig) {
         this.nativeConfig = nativeConfig;
-        containerRuntime = nativeConfig.containerRuntime().orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
+        containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
 
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
 
-        containerName = "build-native-" + RandomStringUtils.random(5, true, false);
+        containerName = "build-native-" + RandomStringUtils.insecure().next(5, true, false);
     }
 
     @Override
@@ -49,8 +49,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
             // will appear to block and no output will be shown
             String effectiveBuilderImage = nativeConfig.builderImage().getEffectiveImage();
             var builderImagePull = nativeConfig.builderImage().pull();
-            log.infof("Checking status of builder image '%s'", effectiveBuilderImage);
             if (builderImagePull != NativeConfig.ImagePullStrategy.ALWAYS) {
+                log.infof("Checking status of builder image '%s'", effectiveBuilderImage);
                 Process imageInspectProcess = null;
                 try {
                     final ProcessBuilder pb = new ProcessBuilder(
@@ -82,27 +82,53 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                     }
                 }
             }
-            Process pullProcess = null;
+
             try {
-                final ProcessBuilder pb = new ProcessBuilder(
-                        Arrays.asList(containerRuntime.getExecutableName(), "pull", effectiveBuilderImage));
-                pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
-                if (pullProcess.waitFor() != 0) {
-                    throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
+                log.infof("Pulling builder image '%s'", effectiveBuilderImage);
+                pull(effectiveBuilderImage, processInheritIODisabled);
+            } catch (Exception e) {
+                log.infof("Retrying in 5 seconds");
+                try {
+                    Thread.sleep(5_000L);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
                 }
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
-            } finally {
-                if (pullProcess != null) {
-                    pullProcess.destroy();
-                }
+                log.infof("Pulling builder image '%s' (take 2)", effectiveBuilderImage);
+                pull(effectiveBuilderImage, processInheritIODisabled);
+            }
+        }
+    }
+
+    private void pull(String effectiveBuilderImage, boolean processInheritIODisabled) {
+        Process pullProcess = null;
+        try {
+            final ProcessBuilder pb = new ProcessBuilder(
+                    Arrays.asList(containerRuntime.getExecutableName(), "pull", effectiveBuilderImage));
+            pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
+            if (pullProcess.waitFor() != 0) {
+                throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
+        } finally {
+            if (pullProcess != null) {
+                pullProcess.destroy();
             }
         }
     }
 
     @Override
     protected String[] getGraalVMVersionCommand(List<String> args) {
-        return buildCommand("run", Collections.singletonList("--rm"), args);
+        List<String> containerRuntimeArgs;
+        if (nativeConfig.containerRuntimeOptions().isPresent()) {
+            List<String> runtimeOptions = nativeConfig.containerRuntimeOptions().get();
+            containerRuntimeArgs = new ArrayList<>(runtimeOptions.size() + 1);
+            containerRuntimeArgs.addAll(runtimeOptions);
+            containerRuntimeArgs.add("--rm");
+        } else {
+            containerRuntimeArgs = Collections.singletonList("--rm");
+        }
+        return buildCommand("run", containerRuntimeArgs, args);
     }
 
     @Override

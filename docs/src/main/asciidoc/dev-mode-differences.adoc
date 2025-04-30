@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: How dev mode differs from a production application
+:topics: internals,dev-mode
 
 This document explains how the dev mode in Quarkus differs from a production application.
 
@@ -31,7 +32,7 @@ In keeping with the mantra of providing developer joy, Quarkus provides a host o
 
 === Live reload
 
-This mightily important feature needs no introduction and has already been mentioned in the <<architectural-differences, architectural differences>> section.
+This mightily important feature needs no introduction and has already been mentioned in the <<architectural-differences,architectural differences>> section.
 
 === Dev UI
 
@@ -44,13 +45,6 @@ Examples of such operations are:
 * Clearing of caches
 * Running scheduled operations
 * Building a container
-
-[TIP]
-====
-A new Dev UI has been implemented in Quarkus 3.x.
-Not all the features are available yet.
-You can still access the previous version of the Dev UI using: http://localhost:8080/q/dev-v1/.
-====
 
 === Error pages
 
@@ -103,6 +97,11 @@ In contrast, in a production application the main objective for Quarkus is to co
 Thus, when running the production application, build time operations are not performed (by definition) and various infrastructure classes needed at build time are not present at all at runtime.
 Furthermore, the purpose built ClassLoader that comes with the xref:maven-tooling.adoc#fast-jar[fast-jar] package type ensures that class lookup is done as fast as possible while also keeping
 the minimum amount of jars in memory.
+
+[NOTE]
+====
+Since optimal performance is never an objective of dev mode, in the interest of improving startup time, the JVM's C2 compiler is disabled in dev mode.
+====
 
 == Security implications
 

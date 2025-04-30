@@ -62,15 +62,15 @@ public final class BeanUtils {
     public static String getDatabaseName(MongoEntity mongoEntity, String clientBeanName) {
         MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
         MongoClientConfig matchingMongoClientConfig = mongoClients.getMatchingMongoClientConfig(clientBeanName);
-        if (matchingMongoClientConfig.database.isPresent()) {
-            return matchingMongoClientConfig.database.get();
+        if (matchingMongoClientConfig.database().isPresent()) {
+            return matchingMongoClientConfig.database().get();
         }
 
         if (!clientBeanName.equals(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
             MongoClientConfig defaultMongoClientConfig = mongoClients
                     .getMatchingMongoClientConfig(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME);
-            if (defaultMongoClientConfig.database.isPresent()) {
-                return defaultMongoClientConfig.database.get();
+            if (defaultMongoClientConfig.database().isPresent()) {
+                return defaultMongoClientConfig.database().get();
             }
         }
 

@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :categories: command-line
 :summary: Easy Quarkus-based scripting with jbang.
 :extension-status: preview
+:topics: scripting,jbang
 
 Quarkus provides integration with https://jbang.dev[jbang] which allows you to write Java scripts/applications requiring no Maven nor Gradle to get running.
 
@@ -31,7 +32,7 @@ Normally we would link to a Git repository to clone but in this case there is no
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS {quarkus-platform-groupid}:quarkus-bom:{quarkus-version}@pom
-//DEPS io.quarkus:quarkus-resteasy-reactive
+//DEPS io.quarkus:quarkus-rest
 //JAVAC_OPTIONS -parameters
 //JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
 
@@ -42,7 +43,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import org.jboss.logging.Logger;
 
 @Path("/hello")
 @ApplicationScoped
@@ -112,17 +112,17 @@ The next lines
 
 [source,java]
 ----
-// //DEPS <dependency1> <dependency2>
+//DEPS <dependency1> <dependency2>
 ----
 
 illustrate how you add dependencies to this script. This is a feature of JBang.
 
-Go ahead and update this line to include the `quarkus-bom` and the `quarkus-resteasy-reactive` dependency like so:
+Go ahead and update this line to include the `quarkus-bom` and the `quarkus-rest` dependency like so:
 
 [source,java,subs=attributes+]
 ----
 //DEPS {quarkus-platform-groupid}:quarkus-bom:{quarkus-version}@pom
-//DEPS io.quarkus:quarkus-resteasy-reactive
+//DEPS io.quarkus:quarkus-rest
 ----
 
 Now, run `jbang quarkusapp.java` and you will see JBang resolving this dependency and building the jar with help from Quarkus' JBang integration.
@@ -136,9 +136,9 @@ $ jbang quarkusapp.java
 [jbang] Dependencies resolved
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration
-Aug 30, 2020 5:40:55 AM org.jboss.threads.Version <clinit>
-INFO: JBoss Threads version 3.1.1.Final
-Aug 30, 2020 5:40:56 AM io.quarkus.deployment.QuarkusAugmentor run
+Mar 22, 2023 9:47:51 A.M. org.jboss.threads.Version <clinit>
+INFO: JBoss Threads version 3.5.0.Final
+Mar 22, 2023 9:47:51 A.M. io.quarkus.deployment.QuarkusAugmentor run
 INFO: Quarkus augmentation completed in 722ms
 Hello World
 ----
@@ -148,13 +148,9 @@ For now the application does nothing new.
 [TIP]
 .How do I edit this file and get content assist?
 ====
-As there is nothing but a `.java` file, most IDE's don't handle content assist well.
-To work around that you can run `jbang edit quarkusapp.java`, this will print out a directory that will have a temporary project setup you can use in your IDE.
+To edit the JBang script in an IDE/editor with content assist you can run `jbang edit quarkusapp.java` or `jbang edit quarkusapp.java`.
 
-On Linux/macOS you can run `<idecommand> `jbang edit quarkusapp.java``.
-
-If you add dependencies while editing, you can get JBang to automatically refresh
-the IDE project using `jbang edit --live=<idecommand> quarkusapp.java`.
+For more information please refer to the https://www.jbang.dev/documentation/guide/latest/editing.html[the JBang documentation].
 ====
 
 
@@ -204,17 +200,17 @@ $ jbang quarkusapp.java
 
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration
-Aug 30, 2020 5:49:01 AM org.jboss.threads.Version <clinit>
-INFO: JBoss Threads version 3.1.1.Final
-Aug 30, 2020 5:49:02 AM io.quarkus.deployment.QuarkusAugmentor run
-INFO: Quarkus augmentation completed in 681ms
+Mar 22, 2023 9:48:39 A.M. org.jboss.threads.Version <clinit>
+INFO: JBoss Threads version 3.5.0.Final
+Mar 22, 2023 9:48:39 A.M. io.quarkus.deployment.QuarkusAugmentor run
+INFO: Quarkus augmentation completed in 521ms
 __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
-2020-08-30 05:49:03,255 INFO  [io.quarkus] (main) Quarkus {quarkus-version} on JVM started in 0.638s. Listening on: http://0.0.0.0:8080
-2020-08-30 05:49:03,272 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 05:49:03,272 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+2023-03-22 09:48:39,891 INFO  [io.quarkus] (main) quarkus 999-SNAPSHOT on JVM (powered by Quarkus {quarkus-version}) started in 0.283s. Listening on: http://0.0.0.0:8080
+2023-03-22 09:48:39,904 INFO  [io.quarkus] (main) Profile prod activated.
+2023-03-22 09:48:39,904 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
 
 Once started, you can request the provided endpoint:
@@ -234,9 +230,9 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 ====
 
 [TIP]
-.Why is `quarkus-resteasy-reactive` not resolved?
+.Why is `quarkus-rest` not resolved?
 ====
-In this second run you should not see a line saying it is resolving `quarkus-resteasy-reactive` as JBang caches the dependency resolution between runs.
+In this second run you should not see a line saying it is resolving `quarkus-rest` as JBang caches the dependency resolution between runs.
 If you want to clear the caches to force resolution use `jbang cache clear`.
 ====
 
@@ -245,7 +241,7 @@ If you want to clear the caches to force resolution use `jbang cache clear`.
 Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
 You can learn more about it in the xref:cdi-reference.adoc[Contexts and Dependency Injection guide].
 
-ArC comes as a dependency of `quarkus-resteasy-reactive` so you already have it handy.
+ArC comes as a dependency of `quarkus-rest` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 
@@ -281,7 +277,8 @@ Edit the `quarksapp` class to inject the `GreetingService` and create a new endp
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
+//DEPS io.quarkus.platform:quarkus-bom:{quarkus-version}@pom
+//DEPS io.quarkus:quarkus-rest
 
 import io.quarkus.runtime.Quarkus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -297,7 +294,7 @@ public class quarkusapp {
 
     @GET
     public String sayHello() {
-        return "hello from Quarkus with jbang.dev";
+        return "hello";
     }
 
     public static void main(String[] args) {
@@ -334,7 +331,7 @@ hello null
 
 Now that is unexpected, why is it returning `hello null` and not `hello quarkus`?
 
-The reason is that RESTEasy Reactive relies on the `-parameters` compiler flag to be set to be able to map `{name}` to the `name` parameter.
+The reason is that Quarkus REST (formerly RESTEasy Reactive) relies on the `-parameters` compiler flag to be set to be able to map `{name}` to the `name` parameter.
 
 We fix that by adding the following comment instruction to the file:
 
@@ -378,49 +375,66 @@ With that in place running `jbang quarkusapp.java` will log and render as expect
 
 == Configuring Application
 
-You can use `//Q:CONFIG <property>=<value>` to set up static configuration for your application.
+To configure the application you can use the `application.properties` file as usual, but you need to _add_ it to the script:
 
-I.e. if you wanted to add the `smallrye-openapi` and `swagger-ui` extensions and have the Swagger UI always show up you would add the following:
-
-[source,java,subs=attributes+]
+[source,java]
 ----
-//DEPS io.quarkus:quarkus-smallrye-openapi:{quarkus-version}
-//DEPS io.quarkus:quarkus-swagger-ui:{quarkus-version}
-//Q:CONFIG quarkus.swagger-ui.always-include=true
+//FILES application.properties
+
+// ...
+@ConfigProperty(name = "prefix", defaultValue = "WG -")
+String prefix;
 ----
 
-Now during build the `quarkus.swagger-ui.always-include` will be generated into the resulting jar and `http://0.0.0.0:8080/q/swagger-ui` will be available when run.
+This will make the `application.properties` file available to the script, and process the configuration as usual.
+
+You can also use the `application.yaml` file.
+For this, you need to _add_ it to the `application.yaml` file to the script and include the `quarkus-config-yaml` dependency:
+
+[source,java]
+----
+//DEPS io.quarkus:quarkus-config-yaml
+//FILES application.yaml
+----
+
+NOTE: The path to the `application.properties` and `application.yaml` files are relative to the script file.
 
 == Running as a native application
 
-If you have the `native-image` binary installed and `GRAALVM_HOME` set, you can get the native executable built and run using `jbang --native quarkusapp.java`:
+If you have the `native-image` binary installed and `GRAALVM_HOME` set, or a container runtime (e.g., podman or docker) installed on Linux, you can get the native executable built and run using `jbang --native quarkusapp.java`:
 
 [source,shell,subs=attributes+]
 ----
 $ jbang --native quarkusapp.java
-
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration
-Aug 30, 2020 6:21:15 AM org.jboss.threads.Version <clinit>
-INFO: JBoss Threads version 3.1.1.Final
-Aug 30, 2020 6:21:16 AM io.quarkus.deployment.pkg.steps.JarResultBuildStep buildNativeImageThinJar
-INFO: Building native image source jar: /var/folders/yb/sytszfld4sg8vwr1h0w20jlw0000gn/T/quarkus-jbang3291688251685023074/quarkus-application-native-image-source-jar/quarkus-application-runner.jar
-Aug 30, 2020 6:21:16 AM io.quarkus.deployment.pkg.steps.NativeImageBuildStep build
-INFO: Building native image from /var/folders/yb/sytszfld4sg8vwr1h0w20jlw0000gn/T/quarkus-jbang3291688251685023074/quarkus-application-native-image-source-jar/quarkus-application-runner.jar
-Aug 30, 2020 6:21:16 AM io.quarkus.deployment.pkg.steps.NativeImageBuildStep checkGraalVMVersion
-INFO: Running Quarkus native-image plugin on GraalVM Version 20.1.0 (Java Version 11.0.7)
-Aug 30, 2020 6:21:16 AM io.quarkus.deployment.pkg.steps.NativeImageBuildStep build
-INFO: /Users/max/.sdkman/candidates/java/20.1.0.r11-grl/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dsun.nio.ch.maxUpdateArraySize=100 -J-Dvertx.logger-delegate-factory-class-name=io.quarkus.vertx.core.runtime.VertxLogDelegateFactory -J-Dvertx.disableDnsResolver=true -J-Dio.netty.leakDetection.level=DISABLED -J-Dio.netty.allocator.maxOrder=1 -J-Duser.language=en -J-Dfile.encoding=UTF-8 --initialize-at-build-time= -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy\$BySpaceAndTime -H:+JNI -jar quarkus-application-runner.jar -H:FallbackThreshold=0 -H:+ReportExceptionStackTraces -H:-AddAllCharsets -H:EnableURLProtocols=http --no-server -H:-UseServiceLoaderFeature -H:+StackTrace quarkus-application-runner
-
-Aug 30, 2020 6:22:31 AM io.quarkus.deployment.QuarkusAugmentor run
-INFO: Quarkus augmentation completed in 76010ms
+Mar 22, 2023 9:58:47 A.M. org.jboss.threads.Version <clinit>
+INFO: JBoss Threads version 3.5.0.Final
+Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.JarResultBuildStep buildNativeImageThinJar
+INFO: Building native image source jar: /tmp/quarkus-jbang8082065952748314720/quarkus-application-native-image-source-jar/quarkus-application-runner.jar
+Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildStep build
+INFO: Building native image from /tmp/quarkus-jbang8082065952748314720/quarkus-application-native-image-source-jar/quarkus-application-runner.jar
+Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildStep getNativeImageBuildRunner
+WARN: Cannot find the `native-image` in the GRAALVM_HOME, JAVA_HOME and System PATH. Attempting to fall back to container build.
+Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildContainerRunner <init>
+INFO: Using docker to run the native image builder
+Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildContainerRunner setup
+INFO: Checking image status quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17
+Mar 22, 2023 9:58:51 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildStep checkGraalVMVersion
+INFO: Running Quarkus native-image plugin on native-image 22.3.1.0-Final Mandrel Distribution (Java Version 17.0.6+10)
+Mar 22, 2023 9:58:51 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildRunner build
+INFO: docker run --env LANG=C --rm --user 1000:1000 -v /tmp/quarkus-jbang8082065952748314720/quarkus-application-native-image-source-jar:/project:z --name build-native-XaZUc quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 -J-Dsun.nio.ch.maxUpdateArraySize=100 -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dlogging.initial-configurator.min-level=500 -J-Dvertx.logger-delegate-factory-class-name=io.quarkus.vertx.core.runtime.VertxLogDelegateFactory -J-Dvertx.disableDnsResolver=true -J-Dio.netty.noUnsafe=true -J-Dio.netty.leakDetection.level=DISABLED -J-Dio.netty.allocator.maxOrder=3 -J-Duser.language=en -J-Duser.country=IE -J-Dfile.encoding=UTF-8 --features=io.quarkus.runner.Feature,io.quarkus.runtime.graal.DisableLoggingFeature -J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED -J--add-opens=java.base/java.text=ALL-UNNAMED -J--add-opens=java.base/java.io=ALL-UNNAMED -J--add-opens=java.base/java.lang.invoke=ALL-UNNAMED -J--add-opens=java.base/java.util=ALL-UNNAMED -H:+CollectImageBuildStatistics -H:ImageBuildStatisticsFile=quarkus-application-runner-timing-stats.json -H:BuildOutputJSONFile=quarkus-application-runner-build-output-stats.json -H:+AllowFoldMethods -J-Djava.awt.headless=true --no-fallback --link-at-build-time -H:+ReportExceptionStackTraces -H:-AddAllCharsets --enable-url-protocols=http -H:NativeLinkerOption=-no-pie -H:-UseServiceLoaderFeature -H:+StackTrace -J--add-exports=org.graalvm.sdk/org.graalvm.nativeimage.impl=ALL-UNNAMED --exclude-config io\.netty\.netty-codec /META-INF/native-image/io\.netty/netty-codec/generated/handlers/reflect-config\.json --exclude-config io\.netty\.netty-handler /META-INF/native-image/io\.netty/netty-handler/generated/handlers/reflect-config\.json quarkus-application-runner -jar quarkus-application-runner.jar
+Mar 22, 2023 9:37:56 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildRunner runCommand
+INFO: docker run --env LANG=C --rm --user 1000:1000 -v /tmp/quarkus-jbang9315448339582904220/quarkus-application-native-image-source-jar:/project:z --entrypoint /bin/bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 -c objcopy --strip-debug quarkus-application-runner
+Mar 22, 2023 9:37:57 A.M. io.quarkus.deployment.QuarkusAugmentor run
+INFO: Quarkus augmentation completed in 31729ms
 __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
-2020-08-30 06:22:32,012 INFO  [io.quarkus] (main) Quarkus {quarkus-version} native started in 0.017s. Listening on: http://0.0.0.0:8080
-2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+2023-03-22 09:37:57,471 INFO  [io.quarkus] (main) quarkus 999-SNAPSHOT native (powered by {quarkus-version}) started in 0.009s. Listening on: http://0.0.0.0:8080
+2023-03-22 09:37:57,472 INFO  [io.quarkus] (main) Profile prod activated.
+2023-03-22 09:37:57,472 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
 
 This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant thanks to JBang cache:
@@ -432,10 +446,27 @@ __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
-2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Quarkus {quarkus-version} native started in 0.015s. Listening on: http://0.0.0.0:8080
-2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+2023-03-22 09:38:45,450 INFO  [io.quarkus] (main) quarkus 999-SNAPSHOT native (powered by {quarkus-version}) started in 0.009s. Listening on: http://0.0.0.0:8080
+2023-03-22 09:38:45,450 INFO  [io.quarkus] (main) Profile prod activated.
+2023-03-22 09:38:45,450 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
+
+=== Using Qute
+
+You can use the xref:./qute.adoc[Qute templating engine] in your JBang script by adding the `quarkus-qute` dependency.
+You also need to include the `templates` directory in the script:
+[source,java]
+----
+//DEPS io.quarkus:quarkus-qute
+//FILES templates/=templates/*
+
+// ...
+
+ @Inject
+ Template template; // Locate and load the `templates/template.html` file
+----
+
+If your `templates` directory includes sub-directories, use `templates/=templates/**/*` instead.
 
 === Conclusion
 

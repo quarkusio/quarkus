@@ -9,8 +9,11 @@ import java.util.function.Supplier;
 
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
+import io.quarkus.cli.build.BuildSystemRunner.BuildCommandArgs;
+import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
+import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
@@ -24,6 +27,14 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
     DebugOptions debugOptions = new DebugOptions();
 
+    @CommandLine.Option(names = "--once", description = "Run the test suite with continuous mode disabled.")
+    boolean runOnce = false;
+
+    @CommandLine.Option(names = "--filter", description = { "Run a subset of the test suite that matches the given filter.",
+            "If continuous testing is enabled then the value is a regular expression that is matched against the test class name.",
+            "If continuous testing is disabled then the value is passed as-is to the underlying build tool." })
+    String filter;
+
     @Parameters(description = "Parameters passed to the application.")
     List<String> params = new ArrayList<>();
 
@@ -34,11 +45,28 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
+
+            if (runOnce) {
+                BuildOptions buildOptions = new BuildOptions();
+                buildOptions.clean = testOptions.clean;
+                buildOptions.offline = testOptions.offline;
+                buildOptions.skipTests = !testOptions.runTests;
+                BuildCommandArgs commandArgs = runner.prepareTest(buildOptions, new RunModeOption(), params, filter);
+                if (testOptions.isDryRun()) {
+                    dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs, false);
+                    return CommandLine.ExitCode.OK;
+                }
+                return runner.run(commandArgs);
+            }
+
+            if (filter != null) {
+                params.add("-Dquarkus.test.include-pattern=" + filter);
+            }
             List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
                     false, testOptions, debugOptions, params);
 
             if (testOptions.isDryRun()) {
-                dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
+                dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get(), true);
                 return CommandLine.ExitCode.OK;
             }
             int ret = 1;
@@ -55,8 +83,8 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
         }
     }
 
-    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
-        output.printText("\nRun current project in test mode\n",
+    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args, boolean isContinuous) {
+        output.printText("\nRun current project in" + (isContinuous ? " continuous" : "") + " test mode\n",
                 "\t" + projectRoot().toString());
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Build tool", buildTool.name());

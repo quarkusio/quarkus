@@ -16,6 +16,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.sortedset.Range;
@@ -386,7 +388,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrangestorebylex() {
-        setOfStrings.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
+        setOfStrings.zadd(key, Map.of("a", 1.0, "b", 1.0, "c", 1.0, "d", 1.0));
         assertThat(setOfStrings.zrangestorebylex("key1", key, new Range<>("b", "d"), new ZRangeArgs().limit(0, 4)))
                 .isEqualTo(3);
         assertThat(setOfStrings.zrange("key1", 0, 1)).isEqualTo(List.of("b", "c"));
@@ -487,7 +489,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrevrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zrangebylex(key, Range.unbounded(), new ZRangeArgs().rev())).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value", "zzz"), new ZRangeArgs().rev())).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value98", true, "value99", true),
@@ -746,7 +748,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
     @Test
     void zlexcount() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zlexcount(key, new Range<>("-", "+"))).isEqualTo(100);
         assertThat(setOfStrings.zlexcount(key, new Range<>("value", "zzz"))).isEqualTo(100);
 
@@ -852,7 +854,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
 
         assertThat(setOfStrings.zrangebylex(key, new Range<>("-", "+"))).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("-", "+"), new ZRangeArgs().limit(10, 10))).hasSize(10);
@@ -868,10 +870,10 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zremrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zremrangebylex(key, new Range<>("aaa", false, "zzz", true))).isEqualTo(100);
 
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zremrangebylex(key, new Range<>("aaa", "zzz"))).isEqualTo(100);
     }
 
@@ -965,6 +967,13 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         }
     }
 
+    private void populateManyStringEntriesForLex() {
+        for (int i = 0; i < 100; i++) {
+            setOfStrings.zadd(key + 1, 1.0, value + i);
+            setOfStrings.zadd(key, 1.0, value + i);
+        }
+    }
+
     @Test
     @RequiresRedis6OrHigher
     void sort() {
@@ -989,5 +998,19 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         ListCommands<String, String> listCommands = ds.list(String.class, String.class);
         assertThat(listCommands.lrange("dest1", 0, -1)).containsExactly("a", "b", "e", "f");
         assertThat(listCommands.lpop("dest2", 100)).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+    }
+
+    @Test
+    void zaddWithTypeReference() {
+        var set = ds.sortedSet(new TypeReference<List<Place>>() {
+            // Empty on purpose
+        });
+        assertThat(set.zadd(key, 1.0, List.of(Place.crussol, Place.suze))).isTrue();
+        assertThat(set.zadd(key, 1.0, List.of(Place.crussol, Place.suze))).isFalse();
+
+        assertThat(set.zrange(key, 0, -1)).isEqualTo(List.of(List.of(Place.crussol, Place.suze)));
+        assertThat(set.zadd(key, new ScoredValue<>(List.of(Place.grignan), 2.0), new ScoredValue<>(List.of(Place.suze), 3.0)))
+                .isEqualTo(2);
+        assertThat(set.zrange(key, 0, -1)).hasSize(3);
     }
 }

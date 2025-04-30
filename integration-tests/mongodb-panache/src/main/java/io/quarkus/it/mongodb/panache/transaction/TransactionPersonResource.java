@@ -1,5 +1,7 @@
 package io.quarkus.it.mongodb.panache.transaction;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.core.Response;
 
 import com.mongodb.client.MongoClient;
 
+import io.quarkus.mongodb.panache.Panache;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/transaction")
@@ -42,6 +45,7 @@ public class TransactionPersonResource {
     @Transactional
     public Response addPerson(TransactionPerson person) {
         person.persist();
+        assertNotNull(Panache.getSession(TransactionPerson.class));
         return Response.created(URI.create("/transaction/" + person.id.toString())).build();
     }
 

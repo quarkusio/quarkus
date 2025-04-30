@@ -1,15 +1,19 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "amqp", phase = ConfigPhase.BUILD_TIME)
-public class AmqpBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.amqp")
+public interface AmqpBuildTimeConfig {
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start an AMQP broker in dev and test mode.
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start an AMQP broker in dev and test mode.
      */
-    @ConfigItem
-    public AmqpDevServicesBuildTimeConfig devservices;
+    @ConfigDocSection(generated = true)
+    AmqpDevServicesBuildTimeConfig devservices();
 }

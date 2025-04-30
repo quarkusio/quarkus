@@ -21,7 +21,7 @@ import io.vertx.core.Vertx;
 
 public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
-    private DefaultUniAsserter uniAsserter;
+    private UniAsserter uniAsserter;
 
     @Override
     public boolean handlesMethodParamType(String paramClassName) {
@@ -32,10 +32,14 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     public Object methodParamInstance(String paramClassName) {
         if (!handlesMethodParamType(paramClassName)) {
             throw new IllegalStateException(
-                    "RunOnVertxContextTestMethodInvoker does not handle '" + paramClassName + "' method param types");
+                    this.getClass().getName() + " does not handle '" + paramClassName + "' method param types");
         }
-        uniAsserter = new DefaultUniAsserter();
+        uniAsserter = createUniAsserter();
         return uniAsserter;
+    }
+
+    protected UniAsserter createUniAsserter() {
+        return new DefaultUniAsserter();
     }
 
     @Override
@@ -152,16 +156,16 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
-        private final DefaultUniAsserter uniAsserter;
+        private final UnwrappableUniAsserter uniAsserter;
         private final CompletableFuture<Object> future;
 
         public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                DefaultUniAsserter uniAsserter, CompletableFuture<Object> future) {
+                UniAsserter uniAsserter, CompletableFuture<Object> future) {
             this.testInstance = testInstance;
             this.future = future;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
-            this.uniAsserter = uniAsserter;
+            this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
         }
 
         @Override
@@ -184,7 +188,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             try {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
                 if (uniAsserter != null) {
-                    uniAsserter.execution.subscribe().with(new Consumer<Object>() {
+                    uniAsserter.asUni().subscribe().with(new Consumer<Object>() {
                         @Override
                         public void accept(Object o) {
                             onTerminate.run();
@@ -209,23 +213,20 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     }
 
     public static class RunTestMethodOnVertxBlockingContextHandler implements Handler<Promise<Object>> {
-        private static final Runnable DO_NOTHING = new Runnable() {
-            @Override
-            public void run() {
-            }
+        private static final Runnable DO_NOTHING = () -> {
         };
 
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
-        private final DefaultUniAsserter uniAsserter;
+        private final UnwrappableUniAsserter uniAsserter;
 
         public RunTestMethodOnVertxBlockingContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                DefaultUniAsserter uniAsserter) {
+                UniAsserter uniAsserter) {
             this.testInstance = testInstance;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
-            this.uniAsserter = uniAsserter;
+            this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
         }
 
         @Override
@@ -248,7 +249,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             try {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
                 if (uniAsserter != null) {
-                    uniAsserter.execution.subscribe().with(new Consumer<Object>() {
+                    uniAsserter.asUni().subscribe().with(new Consumer<Object>() {
                         @Override
                         public void accept(Object o) {
                             onTerminate.run();

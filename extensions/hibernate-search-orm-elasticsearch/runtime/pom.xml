@@ -26,26 +26,21 @@
             <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-backend-elasticsearch</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-search-backend-elasticsearch-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-mapper-orm-orm6</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>jakarta.activation</groupId>
-                    <artifactId>jakarta.activation-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>hibernate-search-mapper-orm</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -67,15 +62,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

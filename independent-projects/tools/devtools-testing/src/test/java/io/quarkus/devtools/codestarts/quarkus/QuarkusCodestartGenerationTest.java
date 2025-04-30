@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.FakeExtensionCatalog;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -38,7 +39,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateDefault(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .noCode()
                 .noDockerfiles()
                 .noBuildToolWrapper()
@@ -60,9 +61,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/java")).exists().isEmptyDirectory();
     }
 
+    private static QuarkusCodestartProjectInputBuilder newInputBuilder() {
+        return QuarkusCodestartProjectInput.builder().defaultCodestart(FakeExtensionCatalog.getDefaultCodestart());
+    }
+
     @Test
     void generateRESTEasyJavaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
@@ -79,29 +84,11 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/com/andy/BonjourResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/BonjourResourceIT.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html");
-    }
-
-    @Test
-    void verifyIndexExtensionList(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getGenerationTestInputData())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jackson"))
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jsonb"))
-                .build();
-        final Path projectDir = testDirPath.resolve("verify-index-extensions-list");
-        getCatalog().createProject(input).generate(projectDir);
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html")
-                .satisfies(checkContains("RESTEasy JAX-RS"))
-                .satisfies(checkContains("RESTEasy Jackson"))
-                .satisfies(checkContains("RESTEasy JSON-B"));
     }
 
     @Test
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .addExtension(ArtifactCoords.fromString("io.quarkus:quarkus-resteasy:1.8"))
@@ -114,20 +101,20 @@ class QuarkusCodestartGenerationTest {
         checkMaven(projectDir);
         assertThatMatchSnapshot(testInfo, projectDir, "pom.xml")
                 .satisfies(checkContains("<dependency>\n" +
-                        "      <groupId>commons-io</groupId>\n" +
-                        "      <artifactId>commons-io</artifactId>\n" +
-                        "      <version>2.5</version>\n" +
-                        "    </dependency>\n"))
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "            <version>1.8</version>\n" +
+                        "        </dependency>"))
                 .satisfies(checkContains("<dependency>\n" +
-                        "      <groupId>io.quarkus</groupId>\n" +
-                        "      <artifactId>quarkus-resteasy</artifactId>\n" +
-                        "      <version>1.8</version>\n" +
-                        "    </dependency>\n"));
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "            <version>1.8</version>\n" +
+                        "        </dependency>"));
     }
 
     @Test
     void generateRESTEasyKotlinCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
@@ -160,7 +147,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateRESTEasyScalaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
@@ -193,7 +180,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenDefaultJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-default-java");
@@ -211,7 +198,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateGradleDefaultJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
                 .build();
@@ -230,7 +217,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenResteasyJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getGenerationTestInputData())
                 .build();
@@ -249,7 +236,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenConfigYamlJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .addData(getGenerationTestInputData())
                 .build();
@@ -264,10 +251,10 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     public void generateGradleWrapperGithubAction(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -275,16 +262,32 @@ class QuarkusCodestartGenerationTest {
         checkGradle(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
-                .satisfies(checkContains("run: ./gradlew build"));
+                .satisfies(
+                        checkContains("cache: gradle"),
+                        checkContains("run: ./gradlew build"));
+    }
+
+    @Test
+    public void generateMavenGithubAction(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = newInputBuilder()
+                .buildTool(BuildTool.MAVEN)
+                .addData(getGenerationTestInputData())
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
+                .build();
+        Path projectDir = testDirPath.resolve("maven-github");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
+                .satisfies(checkContains("cache: maven"));
     }
 
     @Test
     public void generateGradleNoWrapperGithubAction(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-nowrapper-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -292,8 +295,9 @@ class QuarkusCodestartGenerationTest {
         checkGradle(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
-                .satisfies(checkContains("uses: eskatos/gradle-command-action@v1"))
-                .satisfies(checkContains("arguments: build"));
+                .satisfies(
+                        checkContains("uses: gradle/actions/setup-gradle"),
+                        checkContains("cache: gradle"));
     }
 
     private void checkDockerfiles(Path projectDir, BuildTool buildTool) {
@@ -315,20 +319,20 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
-                .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
+                .satisfies(checkContains("./mvnw package -Dquarkus.package.jar.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Dnative"))
-                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
+                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./mvnw package -Dnative"))
@@ -341,23 +345,23 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
-                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.jar.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
-                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
+                .satisfies(checkContains("./gradlew build -Dquarkus.native.enabled=true"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
-                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
+                .satisfies(checkContains("./gradlew build -Dquarkus.native.enabled=true"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }

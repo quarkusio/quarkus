@@ -2,15 +2,16 @@ package io.quarkus.infinispan.client.runtime;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class InfinispanDevServicesConfig {
+public interface InfinispanDevServicesConfig {
 
     /**
      * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
@@ -19,16 +20,24 @@ public class InfinispanDevServicesConfig {
      * When DevServices is enabled Quarkus will attempt to automatically configure and start
      * a database when running in Dev or Test mode and when Docker is running.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
+     * When the configuration is empty, an Infinispan default client is automatically created to connect
+     * to the running dev service. However, there are scenarios where creating this client is unnecessary,
+     * yet we still need to spin up an Infinispan Server. In such cases, this property serves to determine
+     * whether the client should be created by default or not by the extension.
+     */
+    @WithDefault("true")
+    boolean createDefaultClient();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public OptionalInt port;
+    OptionalInt port();
 
     /**
      * Indicates if the Infinispan server managed by Quarkus Dev Services is shared.
@@ -41,8 +50,8 @@ public class InfinispanDevServicesConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-infinispan} label attached to the started container.
@@ -54,15 +63,14 @@ public class InfinispanDevServicesConfig {
      * <p>
      * This property is used when you need multiple shared Infinispan servers.
      */
-    @ConfigItem(defaultValue = InfinispanClientUtil.DEFAULT_INFINISPAN_DEV_SERVICE_NAME)
-    public String serviceName;
+    @WithDefault(InfinispanClientUtil.DEFAULT_INFINISPAN_DEV_SERVICE_NAME)
+    String serviceName();
 
     /**
      * The image to use.
      * Note that only official Infinispan images are supported.
      */
-    @ConfigItem
-    public Optional<String> imageName = Optional.empty();
+    Optional<String> imageName();
 
     /**
      * List of the artifacts to automatically download and add to the Infinispan server libraries.
@@ -72,8 +80,7 @@ public class InfinispanDevServicesConfig {
      * <p>
      * If an invalid value is passed, the Infinispan server will throw an error when trying to start.
      */
-    @ConfigItem
-    public Optional<List<String>> artifacts;
+    Optional<List<String>> artifacts();
 
     /**
      * Add a site name to start the Infinispan Server Container with Cross Site Replication enabled (ex. lon).
@@ -84,8 +91,7 @@ public class InfinispanDevServicesConfig {
      * https://infinispan.org/docs/stable/titles/xsite/xsite.html
      * Configure {@link #mcastPort} to avoid forming a cluster with any other running Infinispan Server container.
      */
-    @ConfigItem
-    public Optional<String> site;
+    Optional<String> site();
 
     /**
      * If you are running an Infinispan Server already in docker, if the containers use the same mcastPort they will form a
@@ -96,53 +102,32 @@ public class InfinispanDevServicesConfig {
      * see
      * https://github.com/infinispan/infinispan-simple-tutorials/blob/main/infinispan-remote/cross-site-replication/docker-compose/
      */
-    @ConfigItem
-    public OptionalInt mcastPort;
+    OptionalInt mcastPort();
 
     /**
      * Runs the Infinispan Server container with tracing enabled. Traces are disabled by default
      */
-    @ConfigItem(name = "tracing.enabled", defaultValue = "false")
-    public Optional<Boolean> tracing;
+    @WithName("tracing.enabled")
+    @WithDefault("false")
+    @Deprecated(forRemoval = true)
+    Optional<Boolean> tracing();
 
     /**
      * Sets Infinispan Server otlp endpoint. Default value is http://localhost:4317
      */
-    @ConfigItem(name = "tracing.exporter.otlp.endpoint", defaultValue = "http://localhost:4317")
-    public Optional<String> exporterOtlpEndpoint;
+    @WithName("tracing.exporter.otlp.endpoint")
+    @WithDefault("http://localhost:4317")
+    @Deprecated(forRemoval = true)
+    Optional<String> exporterOtlpEndpoint();
 
     /**
      * Environment variables that are passed to the container.
      */
-    @ConfigItem
-    public Map<String, String> containerEnv;
+    @ConfigDocMapKey("environment-variable-name")
+    Map<String, String> containerEnv();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        InfinispanDevServicesConfig that = (InfinispanDevServicesConfig) o;
-        return enabled == that.enabled &&
-                Objects.equals(port, that.port) &&
-                Objects.equals(shared, that.shared) &&
-                Objects.equals(serviceName, that.serviceName) &&
-                Objects.equals(imageName, that.imageName) &&
-                Objects.equals(artifacts, this.artifacts) &&
-                Objects.equals(containerEnv, that.containerEnv);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName, imageName, artifacts, containerEnv);
-    }
-
-    @Override
-    public String toString() {
-        return "InfinispanDevServicesConfig{" + "enabled=" + enabled + ", port=" + port + ", shared=" + shared
-                + ", serviceName='" + serviceName + '\'' + ", imageName=" + imageName + ", artifacts=" + artifacts
-                + ", site=" + site + ", mcastPort=" + mcastPort + ", tracing=" + tracing + ", exporterOtlpEndpoint="
-                + exporterOtlpEndpoint + '}';
-    }
+    /**
+     * Infinispan Server configuration chunks to be passed to the container.
+     */
+    Optional<List<String>> configFiles();
 }

@@ -44,6 +44,7 @@ import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.extension.gradle.dsl.Capability;
 import io.quarkus.extension.gradle.dsl.RemovedResource;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
@@ -109,16 +110,10 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deploymentArtifact);
 
-        List<String> conditionalDependencies = quarkusExtensionConfiguration.getConditionalDependencies().get();
-        if (conditionalDependencies != null && !conditionalDependencies.isEmpty()) {
-            final StringBuilder buf = new StringBuilder();
-            int i = 0;
-            buf.append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
-            while (i < conditionalDependencies.size()) {
-                buf.append(' ').append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
-            }
-            props.setProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
-        }
+        setConditionalDepsProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES,
+                quarkusExtensionConfiguration.getConditionalDependencies().get(), props);
+        setConditionalDepsProperty(BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES,
+                quarkusExtensionConfiguration.getConditionalDevDependencies().get(), props);
 
         List<String> dependencyConditions = quarkusExtensionConfiguration.getDependencyConditions().get();
         if (dependencyConditions != null && !dependencyConditions.isEmpty()) {
@@ -219,6 +214,18 @@ public class ExtensionDescriptorTask extends DefaultTask {
             throw new GradleException(
                     "Failed to persist extension descriptor " + metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME),
                     e);
+        }
+    }
+
+    private static void setConditionalDepsProperty(String propName, List<String> conditionalDependencies, Properties props) {
+        if (conditionalDependencies != null && !conditionalDependencies.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            int i = 0;
+            buf.append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
+            while (i < conditionalDependencies.size()) {
+                buf.append(' ').append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
+            }
+            props.setProperty(propName, buf.toString());
         }
     }
 

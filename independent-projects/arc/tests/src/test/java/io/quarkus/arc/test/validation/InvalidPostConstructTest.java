@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.validation;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,7 +24,11 @@ public class InvalidPostConstructTest {
     public void testFailure() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains(
+                "@PostConstruct lifecycle callback method declared in a target class must have a return type of void"));
+        assertTrue(error.getMessage().contains("invalid()"));
+        assertTrue(error.getMessage().contains("InvalidPostConstructTest$InvalidBean"));
     }
 
     @ApplicationScoped

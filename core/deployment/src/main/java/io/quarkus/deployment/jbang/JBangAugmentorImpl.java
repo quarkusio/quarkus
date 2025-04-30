@@ -40,102 +40,109 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
     @Override
     public void accept(CuratedApplication curatedApplication, Map<String, Object> resultMap) {
 
-        QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
+        QuarkusClassLoader classLoader = curatedApplication.getOrCreateAugmentClassLoader();
 
-        QuarkusBootstrap quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
-        QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
-                .setRoot(quarkusBootstrap.getApplicationRoot())
-                .setClassLoader(classLoader)
-                .addFinal(ApplicationClassNameBuildItem.class)
-                .setTargetDir(quarkusBootstrap.getTargetDirectory())
-                .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
-                .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
-                .setEffectiveModel(curatedApplication.getApplicationModel());
-        if (quarkusBootstrap.getBaseName() != null) {
-            builder.setBaseName(quarkusBootstrap.getBaseName());
-        }
-        if (quarkusBootstrap.getOriginalBaseName() != null) {
-            builder.setOriginalBaseName(quarkusBootstrap.getOriginalBaseName());
-        }
+        try (QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader()) {
+            QuarkusBootstrap quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
+            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
+                    .setRoot(quarkusBootstrap.getApplicationRoot())
+                    .setClassLoader(classLoader)
+                    .addFinal(ApplicationClassNameBuildItem.class)
+                    .setTargetDir(quarkusBootstrap.getTargetDirectory())
+                    .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
+                    .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
+                    .setRuntimeProperties(quarkusBootstrap.getRuntimeProperties())
+                    .setEffectiveModel(curatedApplication.getApplicationModel());
+            if (quarkusBootstrap.getBaseName() != null) {
+                builder.setBaseName(quarkusBootstrap.getBaseName());
+            }
+            if (quarkusBootstrap.getOriginalBaseName() != null) {
+                builder.setOriginalBaseName(quarkusBootstrap.getOriginalBaseName());
+            }
 
-        boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
-        builder.setAuxiliaryApplication(auxiliaryApplication);
-        builder.setAuxiliaryDevModeType(
-                curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly() ? DevModeType.TEST_ONLY
-                        : (auxiliaryApplication ? DevModeType.LOCAL : null));
-        builder.setLaunchMode(LaunchMode.NORMAL);
-        builder.setRebuild(quarkusBootstrap.isRebuild());
-        builder.setLiveReloadState(
-                new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
-        for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
-            //this gets added to the class path either way
-            //but we only need to add it to the additional app archives
-            //if it is forced as an app archive
-            if (i.isForceApplicationArchive()) {
-                builder.addAdditionalApplicationArchive(i.getResolvedPaths());
-            }
-        }
-        builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
-            @Override
-            public void accept(BuildChainBuilder builder) {
-                final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabledBuildItem());
-                });
-                stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
-            }
-        });
-        builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());
-        builder.addFinal(GeneratedClassBuildItem.class);
-        builder.addFinal(MainClassBuildItem.class);
-        builder.addFinal(GeneratedResourceBuildItem.class);
-        builder.addFinal(TransformedClassesBuildItem.class);
-        builder.addFinal(DeploymentResultBuildItem.class);
-        boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"));
-        boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
-        if (nativeRequested) {
-            builder.addFinal(NativeImageBuildItem.class);
-        }
-        if (containerBuildRequested) {
-            //TODO: this is a bit ugly
-            //we don't necessarily need these artifacts
-            //but if we include them it does mean that you can auto create docker images
-            //and deploy to kube etc
-            //for an ordinary build with no native and no docker this is a waste
-            builder.addFinal(ArtifactResultBuildItem.class);
-        }
-
-        try {
-            BuildResult buildResult = builder.build().run();
-            Map<String, byte[]> result = new HashMap<>();
-            for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
-                result.put(i.getName().replace(".", "/") + ".class", i.getClassData());
-            }
-            for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-                result.put(i.getName(), i.getClassData());
-            }
-            for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
-                    .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {
-                for (TransformedClassesBuildItem.TransformedClass transformed : entry.getValue()) {
-                    if (transformed.getData() != null) {
-                        result.put(transformed.getFileName(), transformed.getData());
-                    } else {
-                        log.warn("Unable to remove resource " + transformed.getFileName()
-                                + " as this is not supported in JBangf");
-                    }
+            boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
+            builder.setAuxiliaryApplication(auxiliaryApplication);
+            builder.setAuxiliaryDevModeType(
+                    curatedApplication.getQuarkusBootstrap().isHostApplicationIsTestOnly() ? DevModeType.TEST_ONLY
+                            : (auxiliaryApplication ? DevModeType.LOCAL : null));
+            builder.setLaunchMode(LaunchMode.NORMAL);
+            builder.setRebuild(quarkusBootstrap.isRebuild());
+            builder.setLiveReloadState(
+                    new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
+            for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
+                //this gets added to the class path either way
+                //but we only need to add it to the additional app archives
+                //if it is forced as an app archive
+                if (i.isForceApplicationArchive()) {
+                    builder.addAdditionalApplicationArchive(i.getResolvedPaths());
                 }
             }
-            resultMap.put("files", result);
-            final List<String> javaargs = new ArrayList<>();
-            javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            javaargs.add(
-                    "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
-            resultMap.put("java-args", javaargs);
-            resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
+            builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+                @Override
+                public void accept(BuildChainBuilder builder) {
+                    final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
+                        ctx.produce(new ProcessInheritIODisabledBuildItem());
+                    });
+                    stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
+                }
+            });
+            builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());
+            builder.addFinal(GeneratedClassBuildItem.class);
+            builder.addFinal(MainClassBuildItem.class);
+            builder.addFinal(GeneratedResourceBuildItem.class);
+            builder.addFinal(TransformedClassesBuildItem.class);
+            builder.addFinal(DeploymentResultBuildItem.class);
+            // note: quarkus.package.type is deprecated
+            boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"))
+                    || "true".equals(System.getProperty("quarkus.native.enabled"));
+            boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
             if (nativeRequested) {
-                resultMap.put("native-image", buildResult.consume(NativeImageBuildItem.class).getPath());
+                builder.addFinal(NativeImageBuildItem.class);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (containerBuildRequested) {
+                //TODO: this is a bit ugly
+                //we don't necessarily need these artifacts
+                //but if we include them it does mean that you can auto create docker images
+                //and deploy to kube etc
+                //for an ordinary build with no native and no docker this is a waste
+                builder.addFinal(ArtifactResultBuildItem.class);
+            }
+
+            try {
+                BuildResult buildResult = builder.build().run();
+                Map<String, byte[]> result = new HashMap<>();
+                for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
+                    result.put(i.getName().replace(".", "/") + ".class", i.getClassData());
+                }
+                for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
+                    result.put(i.getName(), i.getData());
+                }
+                for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
+                        .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {
+                    for (TransformedClassesBuildItem.TransformedClass transformed : entry.getValue()) {
+                        if (transformed.getData() != null) {
+                            result.put(transformed.getFileName(), transformed.getData());
+                        } else {
+                            log.warn("Unable to remove resource " + transformed.getFileName()
+                                    + " as this is not supported in JBangf");
+                        }
+                    }
+                }
+                resultMap.put("files", result);
+                final List<String> javaargs = new ArrayList<>();
+                javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+                javaargs.add(
+                        "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
+                resultMap.put("java-args", javaargs);
+                resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
+                if (nativeRequested) {
+                    resultMap.put("native-image", buildResult.consume(NativeImageBuildItem.class).getPath());
+                }
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

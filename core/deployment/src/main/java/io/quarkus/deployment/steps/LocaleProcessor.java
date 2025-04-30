@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -60,6 +61,23 @@ public class LocaleProcessor {
     }
 
     /**
+     * These exports are only required for GraalVM for JDK < 24, but don't cause any issues for newer versions.
+     * To be removed once we drop support for GraalVM for JDK < 24.
+     */
+    @BuildStep(onlyIf = NativeBuild.class)
+    void setDefaults(BuildProducer<NativeImageSystemPropertyBuildItem> buildtimeSystemProperties,
+            NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        String language = nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
+        if (!language.isEmpty()) {
+            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.language", language));
+        }
+        String country = nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
+        if (!country.isEmpty()) {
+            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.country", country));
+        }
+    }
+
+    /**
      * We activate additional resources in native-image executable only if user opts
      * for anything else than what is already the system default.
      */
@@ -80,9 +98,10 @@ public class LocaleProcessor {
                     (nativeConfig.userCountry().isPresent()
                             && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry().get()))
                     ||
-                    !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale)
+                    (localesBuildTimeConfig.defaultLocale().isPresent() &&
+                            !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale().get()))
                     ||
-                    localesBuildTimeConfig.locales.stream().anyMatch(l -> !Locale.getDefault().equals(l));
+                    localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
     }
 
@@ -93,9 +112,14 @@ public class LocaleProcessor {
      * @param localesBuildTimeConfig
      * @return User language set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-language' or
      *         effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if none of the aforementioned is set.
+     * @Deprecated
      */
+    @Deprecated
     public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = localesBuildTimeConfig.defaultLocale.getLanguage();
+        String language = System.getProperty("user.language", "en");
+        if (localesBuildTimeConfig.defaultLocale().isPresent()) {
+            language = localesBuildTimeConfig.defaultLocale().get().getLanguage();
+        }
         if (nativeConfig.userLanguage().isPresent()) {
             log.warn(DEPRECATED_USER_LANGUAGE_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -112,9 +136,14 @@ public class LocaleProcessor {
      * @return User country set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-country' or
      *         effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY (could be an empty string) if none of the aforementioned is
      *         set.
+     * @Deprecated
      */
+    @Deprecated
     public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String country = localesBuildTimeConfig.defaultLocale.getCountry();
+        String country = System.getProperty("user.country", "");
+        if (localesBuildTimeConfig.defaultLocale().isPresent()) {
+            country = localesBuildTimeConfig.defaultLocale().get().getCountry();
+        }
         if (nativeConfig.userCountry().isPresent()) {
             log.warn(DEPRECATED_USER_COUNTRY_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -124,26 +153,33 @@ public class LocaleProcessor {
     }
 
     /**
-     * Additional locales to be included in native-image executable.
+     * Locales to be included in native-image executable.
      *
      * @param nativeConfig
      * @param localesBuildTimeConfig
      * @return A comma separated list of IETF BCP 47 language tags, optionally with ISO 3166-1 alpha-2 country codes.
+     *         As a special case a string "all" making the native-image to include all available locales.
      */
     public static String nativeImageIncludeLocales(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
         // We start with what user sets as needed locales
-        final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales);
-        // We subtract what we already declare for native-image's user.language or user.country.
-        // Note the deprecated options still count.
-        additionalLocales.remove(localesBuildTimeConfig.defaultLocale);
+        final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales());
+
+        if (additionalLocales.contains(Locale.ROOT)) {
+            return "all";
+        }
+
+        // GraalVM for JDK 24 doesn't include the default locale used at build time. We must explicitly include the
+        // specified locales - including the build-time locale if set by the user.
+        // Note the deprecated options still count and take precedence.
         if (nativeConfig.userCountry().isPresent() && nativeConfig.userLanguage().isPresent()) {
-            additionalLocales.remove(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
+            additionalLocales.add(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
         } else if (nativeConfig.userLanguage().isPresent()) {
-            additionalLocales.remove(new Locale(nativeConfig.userLanguage().get()));
+            additionalLocales.add(new Locale(nativeConfig.userLanguage().get()));
+        } else if (localesBuildTimeConfig.defaultLocale().isPresent()) {
+            additionalLocales.add(localesBuildTimeConfig.defaultLocale().get());
         }
 
         return additionalLocales.stream()
-                .filter(l -> !Locale.getDefault().equals(l))
                 .map(l -> l.getLanguage() + (l.getCountry().isEmpty() ? "" : "-" + l.getCountry()))
                 .collect(Collectors.joining(","));
     }

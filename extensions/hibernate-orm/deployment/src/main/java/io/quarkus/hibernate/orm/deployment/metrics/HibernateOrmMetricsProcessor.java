@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -28,12 +29,13 @@ public final class HibernateOrmMetricsProcessor {
     public void metrics(HibernateOrmConfig config,
             HibernateMetricsRecorder metricsRecorder,
             List<PersistenceProviderSetUpBuildItem> persistenceUnitsStarted,
+            List<JdbcDataSourceSchemaReadyBuildItem> jdbcDataSourceSchemaReadyBuildItems,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<MetricsFactoryConsumerBuildItem> datasourceMetrics) {
 
         // IF Hibernate metrics and Hibernate statistics are enabled
         // then define a consumer. It will only be invoked if metrics is enabled
-        if (config.metricsEnabled && config.statistics.orElse(true) && metricsConfiguration.isPresent()) {
+        if (config.metrics().enabled() && config.statistics().orElse(true) && metricsConfiguration.isPresent()) {
             datasourceMetrics.produce(new MetricsFactoryConsumerBuildItem(metricsRecorder.consumeMetricsFactory()));
         }
     }

@@ -1,18 +1,21 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
+import static io.opentelemetry.instrumentation.api.semconv.http.HttpServerRouteSource.SERVER_FILTER;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.incubating.HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE;
+import static io.opentelemetry.semconv.incubating.HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import jakarta.annotation.Nullable;
-
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -20,17 +23,17 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteBiGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteHolder;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerRoute;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerRouteBiGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -43,15 +46,19 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
+import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
 
 public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest, HttpResponse> {
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
 
-    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
-        serverInstrumenter = getServerInstrumenter(openTelemetry);
-        clientInstrumenter = getClientInstrumenter(openTelemetry);
+    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig,
+            final OTelBuildConfig buildConfig) {
+        serverInstrumenter = getServerInstrumenter(openTelemetry, runtimeConfig, buildConfig);
+        clientInstrumenter = getClientInstrumenter(openTelemetry, runtimeConfig);
     }
 
     @Override
@@ -98,9 +105,34 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
-        HttpRouteHolder.updateHttpRoute(spanOperation.getSpanContext(), FILTER, RouteGetter.ROUTE_GETTER,
+        HttpServerRoute.update(spanOperation.getSpanContext(), SERVER_FILTER, RouteGetter.ROUTE_GETTER,
                 ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
+    }
+
+    @Override
+    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(Context context,
+            SpanKind kind,
+            TracingPolicy policy,
+            R request,
+            String operation,
+            BiConsumer<String, String> headers,
+            TagExtractor<R> tagExtractor) {
+        OpenTelemetryVertxTracer.SpanOperation spanOperation = InstrumenterVertxTracer.super.sendRequest(context, kind, policy,
+                request,
+                operation, headers, tagExtractor);
+        if (spanOperation != null) {
+            Context runningCtx = spanOperation.getContext();
+            if (VertxContext.isDuplicatedContext(runningCtx)) {
+                String pathTemplate = runningCtx.getLocal("ClientUrlPathTemplate");
+                if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                    Span.fromContext(spanOperation.getSpanContext())
+                            .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);
+                }
+            }
+        }
+
+        return spanOperation;
     }
 
     @Override
@@ -109,41 +141,53 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         return WriteHeadersHttpRequest.request(request, headers);
     }
 
-    private static Instrumenter<HttpRequest, HttpResponse> getServerInstrumenter(final OpenTelemetry openTelemetry) {
-        ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
+    static Instrumenter<HttpRequest, HttpResponse> getServerInstrumenter(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig, final OTelBuildConfig buildConfig) {
+        final ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
 
-        InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
+        final InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 HttpSpanNameExtractor.create(serverAttributesExtractor));
 
-        return serverBuilder
+        serverBuilder
+                .setEnabled(!runtimeConfig.sdkDisabled())
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(
-                        HttpServerAttributesExtractor.create(serverAttributesExtractor, new HttpServerNetAttributesGetter()))
+                        HttpServerAttributesExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
-                .addContextCustomizer(HttpRouteHolder.create(serverAttributesExtractor))
-                .buildServerInstrumenter(new HttpRequestTextMapGetter());
+                .addContextCustomizer(HttpServerRoute.create(serverAttributesExtractor));
+
+        if (buildConfig.metrics().enabled().orElse(false) &&
+                !runtimeConfig.sdkDisabled() &&
+                runtimeConfig.instrument().httpServerMetrics()) {
+            serverBuilder.addOperationMetrics(HttpServerMetrics.get());
+        }
+
+        return serverBuilder.buildServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
-    private static Instrumenter<HttpRequest, HttpResponse> getClientInstrumenter(final OpenTelemetry openTelemetry) {
+    static Instrumenter<HttpRequest, HttpResponse> getClientInstrumenter(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig) {
         ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
-        ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
-        HttpClientNetAttributeGetter httpClientNetAttributeGetter = new HttpClientNetAttributeGetter();
+        HttpClientAttributesExtractor httpClientAttributesExtractor = new HttpClientAttributesExtractor();
 
         InstrumenterBuilder<HttpRequest, HttpResponse> clientBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
-                new ClientSpanNameExtractor(clientAttributesExtractor));
+                new ClientSpanNameExtractor(httpClientAttributesExtractor));
+
+        clientBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         return clientBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(HttpClientAttributesExtractor.create(
-                        clientAttributesExtractor, httpClientNetAttributeGetter))
+                .addAttributesExtractor(
+                        io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor.create(
+                                httpClientAttributesExtractor))
                 .buildClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
-    private static class RouteGetter implements HttpRouteBiGetter<HttpRequestSpan, HttpResponse> {
+    private static class RouteGetter implements HttpServerRouteBiGetter<HttpRequestSpan, HttpResponse> {
         static final RouteGetter ROUTE_GETTER = new RouteGetter();
 
         @Override
@@ -156,7 +200,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 route = requestSpan.getContext().getLocal("VertxRoute");
             }
 
-            if (route != null && route.length() > 1) {
+            if (route != null && route.length() >= 1) {
                 return route;
             }
 
@@ -170,39 +214,57 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private static class ServerAttributesExtractor implements HttpServerAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String getFlavor(final HttpRequest request) {
-            if (request instanceof HttpServerRequest) {
-                HttpVersion version = ((HttpServerRequest) request).version();
-                if (version != null) {
-                    switch (version) {
-                        case HTTP_1_0:
-                            return "1.0";
-                        case HTTP_1_1:
-                            return "1.1";
-                        case HTTP_2:
-                            return "2.0";
-                        default:
-                            // Will be executed once Vert.x supports other versions
-                            // At that point version transformation will be needed for OTel semantics
-                            return version.alpnName();
-                    }
-                }
+        public String getNetworkProtocolName(HttpRequest request, HttpResponse response) {
+            return "http";
+        }
+
+        @Override
+        public String getNetworkPeerAddress(HttpRequest httpRequest, HttpResponse httpResponse) {
+            if (httpRequest instanceof HttpServerRequest) {
+                return VertxUtil.extractRemoteHostname((HttpServerRequest) httpRequest);
             }
             return null;
         }
 
         @Override
-        public String getTarget(final HttpRequest request) {
-            return request.uri();
-        }
-
-        @Override
-        public String getRoute(final HttpRequest request) {
+        public Integer getNetworkPeerPort(HttpRequest httpRequest, HttpResponse httpResponse) {
+            if (httpRequest instanceof HttpServerRequest) {
+                Long remoteHostPort = VertxUtil.extractRemoteHostPort((HttpServerRequest) httpRequest);
+                if (remoteHostPort == null) {
+                    return null;
+                }
+                return remoteHostPort.intValue();
+            }
             return null;
         }
 
         @Override
-        public String getScheme(final HttpRequest request) {
+        public String getUrlPath(final HttpRequest request) {
+            try {
+                URI uri = new URI(request.uri());
+                return uri.getPath();
+            } catch (URISyntaxException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public String getUrlQuery(HttpRequest request) {
+            try {
+                URI uri = new URI(request.uri());
+                return uri.getQuery();
+            } catch (URISyntaxException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public String getHttpRoute(final HttpRequest request) {
+            return null;
+        }
+
+        @Override
+        public String getUrlScheme(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 return ((HttpServerRequest) request).scheme();
             }
@@ -210,36 +272,23 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public String getMethod(final HttpRequest request) {
+        public String getHttpRequestMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> getRequestHeader(final HttpRequest request, final String name) {
+        public List<String> getHttpRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getHttpResponseStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse != null ? httpResponse.statusCode() : null;
         }
 
         @Override
-        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getHttpResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response != null ? response.headers().getAll(name) : Collections.emptyList();
-        }
-
-        private static Long getContentLength(final MultiMap headers) {
-            String contentLength = headers.get(HttpHeaders.CONTENT_LENGTH);
-            if (contentLength != null && contentLength.length() > 0) {
-                try {
-                    return Long.valueOf(contentLength);
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            } else {
-                return null;
-            }
         }
     }
 
@@ -253,7 +302,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             if (httpRequest instanceof HttpServerRequest) {
                 String clientIp = VertxUtil.extractClientIP((HttpServerRequest) httpRequest);
                 if (clientIp != null) {
-                    attributes.put(HTTP_CLIENT_IP, clientIp);
+                    attributes.put(CLIENT_ADDRESS, clientIp);
                 }
             }
         }
@@ -265,56 +314,25 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 final HttpRequest httpRequest,
                 final HttpResponse httpResponse,
                 final Throwable error) {
-
-        }
-    }
-
-    private static class HttpServerNetAttributesGetter implements NetServerAttributesGetter<HttpRequest> {
-        @Nullable
-        @Override
-        public String getTransport(HttpRequest httpRequest) {
-            return null;
-        }
-
-        @Nullable
-        @Override
-        public String getHostName(HttpRequest httpRequest) {
-            if (httpRequest instanceof HttpServerRequest) {
-                return VertxUtil.extractRemoteHostname((HttpServerRequest) httpRequest);
+            if (httpRequest != null) {
+                attributes.put(HTTP_REQUEST_BODY_SIZE, getContentLength(httpRequest.headers()));
             }
-            return null;
+            if (httpResponse != null) {
+                attributes.put(HTTP_RESPONSE_BODY_SIZE, getContentLength(httpResponse.headers()));
+            }
         }
 
-        @Nullable
-        @Override
-        public Integer getHostPort(HttpRequest httpRequest) {
-            if (httpRequest instanceof HttpServerRequest) {
-                Long remoteHostPort = VertxUtil.extractRemoteHostPort((HttpServerRequest) httpRequest);
-                if (remoteHostPort == null) {
+        private static Long getContentLength(final MultiMap headers) {
+            String contentLength = headers.get(HttpHeaders.CONTENT_LENGTH);
+            if (contentLength != null && contentLength.length() > 0) {
+                try {
+                    return Long.valueOf(contentLength);
+                } catch (NumberFormatException e) {
                     return null;
                 }
-                return remoteHostPort.intValue();
+            } else {
+                return null;
             }
-            return null;
-        }
-    }
-
-    private static class HttpClientNetAttributeGetter implements NetClientAttributesGetter<HttpRequest, HttpResponse> {
-        @Override
-        public String getTransport(HttpRequest httpClientRequest, HttpResponse httpClientResponse) {
-            return SemanticAttributes.NetTransportValues.IP_TCP;
-        }
-
-        @javax.annotation.Nullable
-        @Override
-        public String getPeerName(HttpRequest httpRequest) {
-            return httpRequest.remoteAddress().hostName();
-        }
-
-        @javax.annotation.Nullable
-        @Override
-        public Integer getPeerPort(HttpRequest httpRequest) {
-            return httpRequest.remoteAddress().port();
         }
     }
 
@@ -334,35 +352,50 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
     }
 
-    private static class ClientAttributesExtractor implements HttpClientAttributesGetter<HttpRequest, HttpResponse> {
+    private static class HttpClientAttributesExtractor implements HttpClientAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String getUrl(final HttpRequest request) {
+        public String getUrlFull(final HttpRequest request) {
             return request.absoluteURI();
         }
 
         @Override
-        public String getFlavor(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public String getMethod(final HttpRequest request) {
+        public String getHttpRequestMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> getRequestHeader(final HttpRequest request, final String name) {
+        public List<String> getHttpRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getHttpResponseStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse.statusCode();
         }
 
         @Override
-        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getHttpResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response.headers().getAll(name);
+        }
+
+        @Override
+        public String getServerAddress(HttpRequest httpRequest) {
+            return httpRequest.remoteAddress().hostName();
+        }
+
+        @Override
+        public Integer getServerPort(HttpRequest httpRequest) {
+            return httpRequest.remoteAddress().port();
+        }
+
+        @Override
+        public String getNetworkProtocolName(final HttpRequest request, final HttpResponse response) {
+            return "http";
+        }
+
+        @Override
+        public String getNetworkProtocolVersion(final HttpRequest request, final HttpResponse response) {
+            return getHttpVersion(request);
         }
     }
 
@@ -370,7 +403,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         private final SpanNameExtractor<HttpRequest> http;
 
-        ClientSpanNameExtractor(ClientAttributesExtractor clientAttributesExtractor) {
+        ClientSpanNameExtractor(HttpClientAttributesExtractor clientAttributesExtractor) {
             this.http = HttpSpanNameExtractor.create(clientAttributesExtractor);
         }
 
@@ -527,5 +560,26 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         static WriteHeadersHttpRequest request(HttpRequest httpRequest, BiConsumer<String, String> headers) {
             return new WriteHeadersHttpRequest(httpRequest, headers);
         }
+    }
+
+    private static String getHttpVersion(HttpRequest request) {
+        if (request instanceof HttpServerRequest) {
+            HttpVersion version = ((HttpServerRequest) request).version();
+            if (version != null) {
+                switch (version) {
+                    case HTTP_1_0:
+                        return "1.0";
+                    case HTTP_1_1:
+                        return "1.1";
+                    case HTTP_2:
+                        return "2.0";
+                    default:
+                        // Will be executed once Vert.x supports other versions
+                        // At that point version transformation will be needed for OTel semantics
+                        return version.alpnName();
+                }
+            }
+        }
+        return null;
     }
 }

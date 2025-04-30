@@ -6,6 +6,7 @@ import org.eclipse.microprofile.context.spi.ThreadContextController;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
 
+import io.opentelemetry.api.trace.Span;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 public class OpenTelemetryMpContextPropagationProvider implements ThreadContextProvider {
@@ -15,7 +16,7 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
 
         io.opentelemetry.context.Context context = QuarkusContextStorage.INSTANCE.current();
 
-        // Use anonymous classes instad of lambdas for the native image
+        // Use anonymous classes instead of lambdas for the native image
         return new ThreadContextSnapshot() {
 
             @Override
@@ -26,7 +27,10 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
                     return new ThreadContextController() {
                         @Override
                         public void endContext() throws IllegalStateException {
-                            QuarkusContextStorage.INSTANCE.attach(currentContext);
+                            Span span = Span.fromContext(currentContext);
+                            if (span != null && span.isRecording()) {
+                                QuarkusContextStorage.INSTANCE.attach(currentContext);
+                            }
                         }
                     };
                 }
@@ -43,14 +47,14 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
 
     @Override
     public ThreadContextSnapshot clearedContext(Map<String, String> props) {
-        // Use anonymous classes instad of lambdas for the native image
+        // Use anonymous classes instead of lambdas for the native image
         return new ThreadContextSnapshot() {
             @Override
             public ThreadContextController begin() {
                 return new ThreadContextController() {
                     @Override
                     public void endContext() throws IllegalStateException {
-                        // nothring to do
+                        // nothing to do
                     }
                 };
             }

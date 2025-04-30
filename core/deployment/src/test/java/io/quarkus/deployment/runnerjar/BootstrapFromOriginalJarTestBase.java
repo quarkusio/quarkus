@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -72,27 +71,39 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)
-                .setAppModelResolver(resolver)
-                .setTest(isBootstrapForTestMode());
+                .setAppModelResolver(resolver);
 
-        if (createWorkspace()) {
+        switch (getBootstrapMode()) {
+            case PROD:
+                break;
+            case TEST:
+                bootstrap.setTest(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported bootstrap mode " + getBootstrapMode());
+        }
+
+        if (createWorkspace() || !wsModules.isEmpty()) {
             System.setProperty("basedir", ws.toAbsolutePath().toString());
             final Model appPom = appJar.getPomModel();
 
-            final List<Dependency> bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
-                    : appPom.getDependencyManagement().getDependencies()).stream()
-                    .filter(d -> "import".equals(d.getScope())
-                            && d.getGroupId().equals(appPom.getGroupId()))
-                    .collect(Collectors.toList());
-
-            final List<Dependency> depModules = appPom.getDependencies().stream()
-                    .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
-                            (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
-                    .collect(Collectors.toList());
+            List<Dependency> bomModules = List.of();
+            List<Dependency> depModules = List.of();
+            if (createWorkspace()) {
+                bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
+                        : appPom.getDependencyManagement().getDependencies()).stream()
+                        .filter(d -> "import".equals(d.getScope())
+                                && d.getGroupId().equals(appPom.getGroupId()))
+                        .toList();
+                depModules = appPom.getDependencies().stream()
+                        .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
+                                (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
+                        .toList();
+            }
 
             final Path appModule;
             final Path appPomXml;
-            if (depModules.isEmpty() && bomModules.isEmpty() || appPom.getParent() != null) {
+            if (depModules.isEmpty() && bomModules.isEmpty() && wsModules.isEmpty() || appPom.getParent() != null) {
                 appModule = ws;
                 appPomXml = ws.resolve("pom.xml");
                 ModelUtils.persistModel(appPomXml, appPom);
@@ -130,31 +141,32 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                 ModelUtils.persistModel(appPomXml, appPom);
 
                 // dependency modules
-                final Map<ArtifactKey, String> managedVersions = new HashMap<>();
-                collectManagedDeps(appPom, managedVersions);
-                for (Dependency moduleDep : depModules) {
-                    parentPom.getModules().add(moduleDep.getArtifactId());
-                    final String moduleVersion = moduleDep.getVersion() == null
-                            ? managedVersions.get(ArtifactKey.of(moduleDep.getGroupId(), moduleDep.getArtifactId(),
-                                    moduleDep.getClassifier(), moduleDep.getType()))
-                            : moduleDep.getVersion();
-                    Model modulePom = ModelUtils.readModel(resolver
-                            .resolve(ArtifactCoords.pom(moduleDep.getGroupId(), moduleDep.getArtifactId(), moduleVersion))
-                            .getResolvedPaths().getSinglePath());
-                    modulePom.setParent(parent);
-                    final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
-                    ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
-                    final Path resolvedJar = resolver
-                            .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
-                                    moduleDep.getClassifier(), moduleDep.getType(), modulePom.getVersion()))
-                            .getResolvedPaths()
-                            .getSinglePath();
-                    final Path moduleTargetDir = moduleDir.resolve("target");
-                    ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
-                    IoUtils.copy(resolvedJar,
-                            moduleTargetDir.resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
+                if (!depModules.isEmpty()) {
+                    final Map<ArtifactKey, String> managedVersions = new HashMap<>();
+                    collectManagedDeps(appPom, managedVersions);
+                    for (Dependency moduleDep : depModules) {
+                        parentPom.getModules().add(moduleDep.getArtifactId());
+                        final String moduleVersion = moduleDep.getVersion() == null
+                                ? managedVersions.get(ArtifactKey.of(moduleDep.getGroupId(), moduleDep.getArtifactId(),
+                                        moduleDep.getClassifier(), moduleDep.getType()))
+                                : moduleDep.getVersion();
+                        Model modulePom = ModelUtils.readModel(resolver
+                                .resolve(ArtifactCoords.pom(moduleDep.getGroupId(), moduleDep.getArtifactId(), moduleVersion))
+                                .getResolvedPaths().getSinglePath());
+                        modulePom.setParent(parent);
+                        final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
+                        ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
+                        final Path resolvedJar = resolver
+                                .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
+                                        moduleDep.getClassifier(), moduleDep.getType(), modulePom.getVersion()))
+                                .getResolvedPaths()
+                                .getSinglePath();
+                        final Path moduleTargetDir = moduleDir.resolve("target");
+                        ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
+                        IoUtils.copy(resolvedJar,
+                                moduleTargetDir.resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
+                    }
                 }
-
                 for (TsArtifact module : wsModules) {
                     parentPom.getModules().add(module.getArtifactId());
                     Model modulePom = module.getPomModel();

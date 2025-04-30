@@ -11,9 +11,11 @@ import org.eclipse.microprofile.health.Readiness;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.datasource.runtime.DataSourcesHealthSupport;
+import io.quarkus.datasource.runtime.DataSourceSupport;
+import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.reactive.datasource.runtime.ReactiveDatasourceHealthCheck;
-import io.vertx.pgclient.PgPool;
+import io.quarkus.reactive.pg.client.runtime.PgPoolSupport;
+import io.vertx.sqlclient.Pool;
 
 @Readiness
 @ApplicationScoped
@@ -26,13 +28,19 @@ class ReactivePgDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
     @PostConstruct
     protected void init() {
         ArcContainer container = Arc.container();
-        DataSourcesHealthSupport excluded = container.instance(DataSourcesHealthSupport.class).get();
-        Set<String> excludedNames = excluded.getExcludedNames();
-        for (InstanceHandle<PgPool> handle : container.select(PgPool.class, Any.Literal.INSTANCE).handles()) {
-            String poolName = getPoolName(handle.getBean());
-            if (!excludedNames.contains(poolName)) {
-                addPool(poolName, handle.get());
+        DataSourceSupport dataSourceSupport = container.instance(DataSourceSupport.class).get();
+        Set<String> excludedNames = dataSourceSupport.getHealthCheckExcludedNames();
+        PgPoolSupport pgPoolSupport = container.instance(PgPoolSupport.class).get();
+        Set<String> pgPoolNames = pgPoolSupport.getPgPoolNames();
+        for (InstanceHandle<Pool> handle : container.select(Pool.class, Any.Literal.INSTANCE).handles()) {
+            if (!handle.getBean().isActive()) {
+                continue;
             }
+            String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
+            if (!pgPoolNames.contains(poolName) || excludedNames.contains(poolName)) {
+                continue;
+            }
+            addPool(poolName, handle.get());
         }
     }
 

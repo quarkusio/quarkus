@@ -16,7 +16,7 @@ public class AnnotationsTransformerSpecificBuildersTest extends AbstractTransfor
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(Seven.class, One.class, IWantToBeABean.class)
-            .annotationsTransformers(
+            .annotationTransformations(
                     AnnotationsTransformer.appliedToClass()
                             .whenContainsAny(Dependent.class)
                             .whenClass(c -> c.name().toString().equals(One.class.getName()))

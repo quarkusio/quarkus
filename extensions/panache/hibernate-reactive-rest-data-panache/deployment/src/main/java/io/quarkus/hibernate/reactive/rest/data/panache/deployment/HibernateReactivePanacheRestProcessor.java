@@ -73,11 +73,10 @@ class HibernateReactivePanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index, classInfo);
+        for (ClassInfo resourceInterface : index.getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
+            validateResource(index, resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String entityType = generics.get(0).name().toString();
             String idType = generics.get(1).name().toString();
 
@@ -105,11 +104,10 @@ class HibernateReactivePanacheRestProcessor {
         ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index, classInfo);
+        for (ClassInfo resourceInterface : index.getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
+            validateResource(index, resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String repositoryClassName = generics.get(0).name().toString();
             String entityType = generics.get(1).name().toString();
             String idType = generics.get(2).name().toString();

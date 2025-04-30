@@ -16,13 +16,10 @@ import io.quarkus.it.mongodb.panache.person.PersonEntity;
 import io.quarkus.it.mongodb.panache.person.PersonRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.panache.mock.PanacheMock;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
-import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 
 @QuarkusTest
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
 public class MongodbPanacheMockingTest {
 
     @Test

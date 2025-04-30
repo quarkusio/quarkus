@@ -1,0 +1,640 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= OpenID Connect (OIDC) and OAuth2 dynamic client registration
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: security
+:topics: security,oidc,client
+:extensions: io.quarkus:quarkus-oidc-client-registration
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
+
+Typically, you have to register an OIDC client (application) manually in your OIDC provider's dashboard.
+During this process, you specify the human readable application name, allowed redirect and post logout URLs, and other properties.
+After the registration has been completed, you copy the generated client id and secret to your Quarkus OIDC application properties.
+
+OpenID Connect and OAuth2 dynamic client registration allows you to register OIDC clients dynamically, and manage individual client registrations.
+You can read more about it in the https://openid.net/specs/openid-connect-registration-1_0.html[OIDC client registration] and https://datatracker.ietf.org/doc/html/rfc7592[OAuth2 Dynamic Client Registration Management Protocol] specification documents.
+
+You can use Quarkus `quarkus-oidc-client-registration` extension to register one or more clients using OIDC client registration configurations and read, update and delete metadata of the registered clients.
+
+xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver] can be used to create OIDC tenant configurations using the metadata of the registered clients.
+
+[IMPORTANT]
+====
+Currently, Quarkus `quarkus-oidc-client-registration` extension has an `experimental` status.
+Dynamic client registration API provided by this extension may change while this extension has an experiemental status.
+====
+
+== OIDC Client Registration
+
+Add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client-registration</artifactId>
+</dependency>
+----
+
+The `quarkus-oidc-client-registration` extension allows register one or more clients using OIDC client registration configurations, either on start-up or on demand, and read, update and delete metadata of the registered clients.
+
+You can register and manage client registrations from the custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver].
+
+Alternatively, you can register clients without even using OIDC. For example, it can be a command line tool which registers clients and passes metadata of the registered clients to Quarkus services which require them.
+
+Each OIDC client registration configuration represents an OIDC client registration endpoint which can accept many individual client registrations.
+
+[[register-clients-on-startup]]
+=== Register clients on start-up
+
+You start with declaring one or more OIDC client registration configurations, for example:
+
+[source,properties]
+----
+# Default OIDC client registration which auto-discovers a standard client registration endpoint.
+# It does not require an initial registration token.
+
+quarkus.oidc-client-registration.auth-server-url=${quarkus.oidc.auth-server-url}
+quarkus.oidc-client-registration.metadata.client-name=Default Client
+quarkus.oidc-client-registration.metadata.redirect-uri=http://localhost:8081/protected
+
+# Named OIDC client registration which configures a registration endpoint path:
+# It require an initial registration token for a client registration to succeed.
+
+quarkus.oidc-client-registration.tenant-client.registration-path=${quarkus.oidc.auth-server-url}/clients-registrations/openid-connect
+quarkus.oidc-client-registration.tenant-client.metadata.client-name=Tenant Client
+quarkus.oidc-client-registration.tenant-client.metadata.redirect-uri=http://localhost:8081/protected/tenant
+quarkus.oidc-client-registration.initial-token=${initial-registration-token}
+----
+
+The above configuration will lead to two new client registrations created in your OIDC provider.
+
+You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies[Keycloak client registration policies].
+
+The next step is to inject either `quarkus.oidc.client.registration.OidcClientRegistration` if only a single default client registration is done, or `quarkus.oidc.client.registration.OidcClientRegistrations` if more than one registration is configured, and use metadata of the clients registered with these configurations.
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.client.registration.ClientMetadata;
+import io.quarkus.oidc.client.registration.OidcClientRegistration;
+import io.quarkus.oidc.client.registration.OidcClientRegistrations;
+import io.quarkus.oidc.client.registration.RegisteredClient;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    OidcClientRegistration clientReg;
+
+    @Inject
+    OidcClientRegistrations clientRegs;
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
+            OidcRequestContext<OidcTenantConfig> requestContext) {
+
+        if (routingContext.request().path().endsWith("/protected")) {
+            // Use the registered client created from the default OIDC client registration
+            return clientReg.registeredClient().onItem().transform(client -> createTenantConfig("registered-client", client));
+        } else if (routingContext.request().path().endsWith("/protected/tenant")) {
+            // Use the registered client created from the named 'tenant-client' OIDC client registration
+            OidcClientRegistration tenantClientReg = clientRegs.getClientRegistration("tenant-client");
+            return tenantClientReg.registeredClient().onItem().transform(client -> createTenantConfig("registered-client-tenant", client));
+        }
+        return null;
+    }
+
+    // Convert metadata of registered clients to OidcTenantConfig
+    private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
+        ClientMetadata metadata = client.getMetadata();
+
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
+        return oidcConfig;
+    }
+}
+----
+
+[[register-clients-on-demand]]
+=== Register clients on demand
+
+You can register new clients on demand.
+You can add new clients to the existing, already configured `OidcClientConfiguration` or to a newly created `OidcClientConfiguration`.
+
+Start from configuring one or more OIDC client registrations:
+
+[source,properties]
+----
+quarkus.oidc-client-registration.auth-server-url=${quarkus.oidc.auth-server-url}
+----
+
+The above configuration is sufficient for registering new clients using this configuration. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.client.registration.ClientMetadata;
+import io.quarkus.oidc.client.registration.OidcClientRegistration;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    OidcClientRegistration clientReg;
+
+    @Inject
+    @ConfigProperty(name = "quarkus.oidc.auth-server-url")
+    String authServerUrl;
+
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
+            OidcRequestContext<OidcTenantConfig> requestContext) {
+        if (routingContext.request().path().endsWith("/protected/oidc-client-reg-existing-config")) {
+            // New client registration done dynamically at the request time using the configured client registration
+            ClientMetadata metadata = createMetadata("http://localhost:8081/protected/dynamic-tenant",
+                    "Dynamic Tenant Client");
+
+            return clientReg.registerClient(metadata).onItem().transform(r ->
+                  createTenantConfig("registered-client-dynamically", r));
+        }
+        return null;
+    }
+
+    // Create metadata of registered clients to OidcTenantConfig
+    private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
+        return oidcConfig;
+    }
+
+    protected static ClientMetadata createMetadata(String redirectUri, String clientName) {
+        return ClientMetadata.builder()
+                .setRedirectUri(redirectUri)
+                .setClientName(clientName)
+                .build();
+    }
+}
+----
+
+Alternatively, you can use `OidcClientRegistrations` to prepare a new `OidcClientRegistration` and use `OidcClientRegistration` to register a client. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.client.registration.ClientMetadata;
+import io.quarkus.oidc.client.registration.OidcClientRegistration;
+import io.quarkus.oidc.client.registration.OidcClientRegistrations;
+import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    OidcClientRegistrations clientRegs;
+
+    @Inject
+    @ConfigProperty(name = "quarkus.oidc.auth-server-url")
+    String authServerUrl;
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
+            OidcRequestContext<OidcTenantConfig> requestContext) {
+        if (routingContext.request().path().endsWith("/protected/new-oidc-client-reg")) {
+            // New client registration done dynamically at the request time
+
+            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig
+                    .authServerUrl(authServerUrl)
+                    .metadata("Dynamic Client", "http://localhost:8081/protected/new-oidc-client-reg")
+                    .build();
+
+            return clientRegs.newClientRegistration(clientRegConfig)
+                    .onItem().transform(reg ->
+                    createTenantConfig("registered-client-dynamically", reg.registeredClient());
+        }
+
+        return null;
+    }
+
+    // Create metadata of registered clients to OidcTenantConfig
+    private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
+        return oidcConfig;
+    }
+
+    protected static ClientMetadata createMetadata(String redirectUri, String clientName) {
+        return ClientMetadata.builder()
+                .setRedirectUri(redirectUri)
+                .setClientName(clientName)
+                .build();
+    }
+}
+----
+
+[[managing-registered-clients]]
+=== Managing registered clients
+
+`io.quarkus.oidc.client.registration.RegisteredClient` represents a registered client and can be used to read and update its metadata.
+It can also be used to delete this client.
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.client.registration.OidcClientRegistration;
+import io.quarkus.oidc.client.registration.RegisteredClient;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    OidcClientRegistration clientReg;
+
+    RegisteredClient registeredClient;
+
+    void onStartup(@Observes StartupEvent event) {
+
+        // Default OIDC client registration, client has already been registered at startup, `await()` will return immediately.
+        registeredClient = clientReg.registeredClient().await().indefinitely();
+
+        // Read the latest client metadata
+        registeredClient = registeredClient.read().await().indefinitely();
+    }
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
+            OidcRequestContext<OidcTenantConfig> requestContext) {
+
+        if (routingContext.request().path().endsWith("/protected")) {
+            // Use the registered client created from the default OIDC client registration
+
+            return createTenantConfig("registered-client", registeredClient));
+        }
+        return null;
+    }
+
+    // Convert metadata of registered clients to OidcTenantConfig
+    private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
+        ClientMetadata metadata = client.getMetadata();
+
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
+        return oidcConfig;
+    }
+}
+----
+
+[[avoiding-duplicate-registrations]]
+=== Avoiding duplicate registrations
+
+When you register clients in startup, as described in the <<register-clients-on-startup>> section, you will most likely want to avoid creating duplicate registrations after a restart.
+
+In this case, you should configure OIDC client registration to perform the registration at the request time, as opposed to at the startup time:
+
+[source,properties]
+----
+quarkus.oidc-client-registration.register-early=false
+----
+
+The next thing you should do is to persist the already registered client's registration URI and registration token at the shutdown time, you can get them from the `io.quarkus.oidc.client.registration.RegisteredClient` instance.
+
+Finally, at the startup time, you should restore the already registered client instead of registering it again.
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.client.registration.OidcClientRegistration;
+import io.quarkus.oidc.client.registration.RegisteredClient;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    OidcClientRegistration clientReg;
+
+    RegisteredClient registeredClient;
+
+    void onStartup(@Observes StartupEvent event) {
+
+        String registrationUri = readRegistrationUriFromDatabase("Registered Client");
+        String registrationToken = readRegistrationTokenFromDatabase("Registered Client");
+
+        if (registrationUri != null && registrationToken != null) {
+            // Read an already registered client
+            registeredClient = clientReg.readClient(registrationUri, registrationToken).await().indefinitely();
+        } else {
+            // Register a new client
+            registeredClient = clientReg.registeredClient().await().indefinitely();
+        }
+
+    }
+
+    void onShutdown(@Observes ShutdownEvent event) {
+
+        saveRegistrationUriToDatabase("Registered Client", registeredClient.registrationUri());
+        saveRegistrationTokenToDatabase("Registered Client", registeredClient.registrationToken());
+
+    }
+
+    String readRegistrationUriFromDatabase(String clientName) {
+        // implementation is not shown for brevity
+    }
+    String readRegistrationTokenFromDatabase(String clientName) {
+        // implementation is not shown for brevity
+    }
+    void saveRegistrationUriToDatabase(String clientName, String registrationUri) {
+        // implementation is not shown for brevity
+    }
+    void saveRegistrationTokenToDatabase(String clientName, String registrationToken) {
+        // implementation is not shown for brevity
+    }
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
+            OidcRequestContext<OidcTenantConfig> requestContext) {
+
+        if (routingContext.request().path().endsWith("/protected")) {
+            // Use the registered client created from the default OIDC client registration
+
+            return createTenantConfig("registered-client", registeredClient));
+        }
+        return null;
+    }
+
+    // Convert metadata of registered clients to OidcTenantConfig
+    private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
+        ClientMetadata metadata = client.getMetadata();
+
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
+        return oidcConfig;
+    }
+}
+----
+
+If you register clients dynamically, on demand, as described in the <<register-clients-on-demand>> section, the problem of the duplicate client registration should not arise.
+You can persist the already registered client's registration URI and registration token if necessary though and check them too to avoid any duplicate reservation risk.
+
+[[oidc-client-registration-oidc-request-filters]]
+== OIDC request filters
+
+You can filter OIDC client registration and registered client requests registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+
+You can have a single filter intercepting all the OIDC registration and registered client requests, or use an `@OidcEndpoint` annotation to apply this filter to either OIDC registration or registered client endpoint responses only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.core.json.JsonObject;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION) <1>
+public class ClientRegistrationRequestFilter implements OidcRequestFilter {
+    private static final Logger LOG = Logger.getLogger(ClientRegistrationRequestFilter.class);
+
+    @Override
+    public void filter(OidcRequestContext rc) {
+        JsonObject body = rc.requestBody().toJsonObject();
+        if ("Default Client".equals(body.getString("client_name"))) { <2>
+            LOG.debug("'Default Client' registration request");
+        }
+    }
+
+}
+----
+<1> Restrict this filter to requests targeting the OIDC client registration endpoint only.
+<2> Check the 'client_name' property in the request metadata JSON.
+
+`OidcRequestContextProperties` can be used to access request properties.
+Currently, you can use a `client_id` key to access the client tenant id and a `grant_type` key to access the grant type which the OIDC client uses to acquire tokens.
+
+[[oidc-client-registration-oidc-response-filters]]
+== OIDC response filters
+
+You can filter responses to OIDC client registration and registered client requests by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body in order to log them or perform other actions.
+
+You can have a single filter intercepting responses to all the OIDC registration and registered client requests, or use an `@OidcEndpoint` annotation to apply this filter to responses from either OIDC registration or registered client endpoint only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.vertx.core.json.JsonObject;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION) <1>
+public class ClientRegistrationResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(ClientRegistrationResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        JsonObject body = rc.responseBody().toJsonObject();
+        if (contentType.startsWith("application/json")
+                && "Default Client".equals(body.getString("client_name"))) { <3>
+            LOG.debug("'Default Client' has been registered");
+        }
+    }
+
+}
+
+----
+<1> Restrict this filter to requests targeting the OIDC client registration endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Check the 'client_name' property in the response metadata JSON.
+
+or
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.REGISTERED_CLIENT) <1>
+public class RegisteredClientResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(RegisteredClientResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.startsWith("application/json")
+                && "Default Client Updated".equals(rc.responseBody().toJsonObject().getString("client_name"))) { <3>
+            LOG.debug("Registered 'Default Client' has had its name updated to 'Default Client Updated'");
+        }
+    }
+
+}
+
+----
+<1> Restrict this filter to requests targeting the registered OIDC client endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Confirm the client name property was updated.
+
+[[configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-oidc-client-registration.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* https://openid.net/specs/openid-connect-registration-1_0.html[OIDC client registration]
+* https://datatracker.ietf.org/doc/html/rfc7592[OAuth2 Dynamic Client Registration Management Protocol]
+* https://www.keycloak.org/docs/latest/securing_apps/#_client_registration[Keycloak Dynamic Client Registration Service]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
+* xref:security-overview.adoc[Quarkus Security overview]

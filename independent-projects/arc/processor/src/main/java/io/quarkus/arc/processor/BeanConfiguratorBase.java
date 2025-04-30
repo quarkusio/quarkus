@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -20,10 +23,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -40,6 +45,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected String identifier;
     protected final DotName implClazz;
     protected final Set<Type> types;
+    protected final Set<Type> registeredTypeClosures;
+    protected final Set<Type> typesToRemove;
     protected final Set<AnnotationInstance> qualifiers;
     protected ScopeInfo scope;
     protected Boolean alternative;
@@ -54,10 +61,15 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected String targetPackageName;
     protected Integer priority;
     protected final Set<TypeAndQualifiers> injectionPoints;
+    protected Integer startupPriority;
+    protected InterceptionProxyInfo interceptionProxy;
+    protected Consumer<MethodCreator> checkActiveConsumer;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
         this.types = new HashSet<>();
+        this.registeredTypeClosures = new HashSet<>();
+        this.typesToRemove = new HashSet<>();
         this.qualifiers = new HashSet<>();
         this.stereotypes = new ArrayList<>();
         this.removable = true;
@@ -72,8 +84,13 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS read(BeanConfiguratorBase<?, ?> base) {
         super.read(base);
+        identifier = base.identifier;
         types.clear();
         types.addAll(base.types);
+        registeredTypeClosures.clear();
+        registeredTypeClosures.addAll(base.registeredTypeClosures);
+        typesToRemove.clear();
+        typesToRemove.addAll(base.typesToRemove);
         qualifiers.clear();
         qualifiers.addAll(base.qualifiers);
         scope = base.scope;
@@ -93,6 +110,9 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         priority = base.priority;
         injectionPoints.clear();
         injectionPoints.addAll(base.injectionPoints);
+        startupPriority = base.startupPriority;
+        interceptionProxy = base.interceptionProxy;
+        checkActiveConsumer = base.checkActiveConsumer;
         return self();
     }
 
@@ -120,6 +140,74 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS addType(Class<?> type) {
         return addType(DotName.createSimple(type.getName()));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param typeName {@link DotName} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(DotName typeName) {
+        return addTypeClosure(Type.create(typeName, Kind.CLASS));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Class<?> type) {
+        return addTypeClosure(Type.create(type));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type {@link Type} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Type type) {
+        this.registeredTypeClosures.add(type);
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Class<?>... types) {
+        for (Class<?> classType : types) {
+            removeTypes(Type.create(classType));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(DotName... types) {
+        for (DotName name : types) {
+            removeTypes(Type.create(name, Kind.CLASS));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Type... types) {
+        Collections.addAll(this.typesToRemove, types);
+        return self();
     }
 
     public THIS addQualifier(Class<? extends Annotation> annotationClass) {
@@ -254,6 +342,93 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return self();
     }
 
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @param priority priority of the generated synthetic observer, to affect eager init ordering
+     * @return self
+     */
+    public THIS startup(int priority) {
+        this.startupPriority = priority;
+        return self();
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @return self
+     */
+    public THIS startup() {
+        return startup(ObserverMethod.DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * The class of the provider type is scanned for interceptor binding annotations.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @return self
+     */
+    public THIS injectInterceptionProxy() {
+        return injectInterceptionProxy((DotName) null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(Class<?> bindingsSource) {
+        return injectInterceptionProxy(bindingsSource != null ? DotName.createSimple(bindingsSource) : null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(DotName bindingsSource) {
+        if (interceptionProxy != null) {
+            throw new DefinitionException("Calling injectInterceptionProxy() more than once is invalid");
+        }
+        interceptionProxy = new InterceptionProxyInfo(bindingsSource);
+        return self();
+    }
+
     public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {
         return creator(mc -> {
             // return new FooBeanCreator().create(syntheticCreationalContext)
@@ -299,6 +474,37 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
         this.destroyerConsumer = methodCreatorConsumer;
+        return cast(this);
+    }
+
+    /**
+     * Configures the class of the "check active" procedure.
+     *
+     * @see #checkActive(Consumer)
+     */
+    public THIS checkActive(Class<? extends Supplier<ActiveResult>> checkActiveClazz) {
+        return checkActive(mc -> {
+            // return new FooActiveResultSupplier().get()
+            ResultHandle supplierHandle = mc.newInstance(MethodDescriptor.ofConstructor(checkActiveClazz));
+            mc.returnValue(mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                    supplierHandle));
+        });
+    }
+
+    /**
+     * Configures the procedure that generates the bytecode for checking whether this bean is active or not.
+     * Usually, this method should not be called, because most beans are always active. However, certain
+     * synthetic beans may be inactive from time to time -- as determined by this procedure. If a bean
+     * is inactive, injecting it or looking it up ends with {@code InactiveBeanException}.
+     * <p>
+     * The procedure is expected to return an {@link io.quarkus.arc.ActiveResult ActiveResult}, which
+     * for inactive beans must include an explanation (why is this bean not active) and optionally also
+     * a cause (in case the bean is inactive because another bean is also inactive).
+     *
+     * @return the procedure that generates the bytecode for checking whether this bean is active or not
+     */
+    public THIS checkActive(Consumer<MethodCreator> methodCreatorConsumer) {
+        this.checkActiveConsumer = methodCreatorConsumer;
         return cast(this);
     }
 

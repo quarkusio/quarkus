@@ -22,11 +22,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 @DisableForNative
 class BuildIT extends MojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     private RunningInvoker running;
     private File testDir;
@@ -120,7 +121,7 @@ class BuildIT extends MojoTestBase {
     @Test
     void testModuleWithOverriddenBuildProfile() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-override");
-        build(String.format("-D%s=foo", ProfileManager.QUARKUS_PROFILE_PROP));
+        build(String.format("-D%s=foo", "quarkus.profile"));
         launch();
     }
 
@@ -181,7 +182,32 @@ class BuildIT extends MojoTestBase {
                 assertThat(section.getValue("visibility")).isEqualTo("private");
             }
         }
+    }
 
+    @Test
+    void testIdeDevModeBuildPropsPropagation() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/ide-dev-mode-build-props");
+        build();
+    }
+
+    @Test
+    void testMavenExtensionManipulatingPom()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/maven-extension-manipulating-pom/mvn-ext",
+                "projects/maven-extension-manipulating-pom/mvn-ext-processed");
+        build("install");
+        testDir = initProject("projects/maven-extension-manipulating-pom/app",
+                "projects/maven-extension-manipulating-pom/app-processed");
+        build();
+    }
+
+    @Test
+    void testFlattenMavenPlugin()
+            throws MavenInvocationException, IOException, InterruptedException {
+        // in this case the flatten plugin is expected to strip down dependencyManagement and test scoped dependencies
+        // which would break Quarkus bootstrap
+        testDir = initProject("projects/flatten-maven-plugin", "projects/flatten-maven-plugin-processed");
+        build();
     }
 
     private void launch() throws IOException {
@@ -206,7 +232,7 @@ class BuildIT extends MojoTestBase {
                         List.of())
                 .start();
         try {
-            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse(path));
+            Assertions.assertEquals(expectedMessage, devModeClient.getHttpResponse(path));
         } finally {
             process.destroy();
         }
@@ -222,11 +248,7 @@ class BuildIT extends MojoTestBase {
 
         final List<String> args = new ArrayList<>(2);
         args.add("package");
-        if (arg.length > 0) {
-            for (String a : arg) {
-                args.add(a);
-            }
-        }
+        Collections.addAll(args, arg);
         MavenProcessInvocationResult result = running.execute(args, Collections.emptyMap());
         int exitCode = result.getProcess().waitFor();
         if (exitCode != 0) {

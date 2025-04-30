@@ -5,17 +5,18 @@ import static io.quarkus.vertx.mdc.VerticleDeployer.VERTICLE_PORT;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -25,14 +26,15 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpRequest;
@@ -43,7 +45,7 @@ import io.vertx.ext.web.client.predicate.ResponsePredicate;
 /*
 This test was mostly based on https://github.com/reactiverse/reactiverse-contextual-logging/blob/39e691d3a8fd78d19ee120cab8d8b38a4ef67813/src/test/java/io/reactiverse/contextual/logging/ContextualLoggingIT.java
  */
-
+@DisabledOnOs(OS.WINDOWS)
 public class VertxMDCTest {
     private static final Logger LOGGER = Logger.getLogger(VertxMDCTest.class);
 
@@ -61,102 +63,102 @@ public class VertxMDCTest {
 
     @Inject
     InMemoryLogHandler inMemoryLogHandler;
-
+    @Inject
+    InMemoryLogHandlerProducer producer;
     @Inject
     VerticleDeployer verticleDeployer;
 
-    static final CountDownLatch countDownLatch = new CountDownLatch(1);
-    static final AtomicReference<Throwable> errorDuringExecution = new AtomicReference<>();
-
-    @Test
+    @RepeatedTest(10)
     void mdc() throws Throwable {
-        List<String> requestIds = IntStream.range(0, 10)
+
+        InMemoryLogHandler.reset();
+        await().until(() -> producer.isInitialized());
+        await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
+        await().until(() -> {
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).anyMatch(h -> h == inMemoryLogHandler);
+        });
+        ;
+
+        List<String> requestIds = IntStream.range(0, 1)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .collect(toList());
 
-        sendRequests(requestIds, onSuccess(v -> {
-            try {
-                Map<String, List<String>> allMessagesById = inMemoryLogHandler.logRecords()
-                        .stream()
-                        .map(line -> line.split(" ### "))
-                        .peek(split -> assertEquals(split[0], split[2]))
-                        .collect(groupingBy(split -> split[0],
-                                mapping(split -> split[1], toList())));
+        CountDownLatch done = new CountDownLatch(1);
+        sendRequests(requestIds, done);
 
-                assertEquals(requestIds.size(), allMessagesById.size());
-                assertTrue(requestIds.containsAll(allMessagesById.keySet()));
+        Assertions.assertTrue(done.await(20, TimeUnit.SECONDS));
 
-                List<String> expected = Stream.<String> builder()
-                        .add("Received HTTP request")
-                        .add("Timer fired")
-                        .add("Blocking task executed")
-                        .add("Received Web Client response")
-                        .build()
-                        .collect(toList());
+        await().untilAsserted(() -> {
+            Map<String, List<String>> allMessagesById = inMemoryLogHandler.logRecords()
+                    .stream()
+                    .map(line -> line.split(" ### "))
+                    .peek(split -> assertEquals(split[0], split[2]))
+                    .collect(groupingBy(split -> split[0],
+                            mapping(split -> split[1], toList())));
 
-                for (List<String> messages : allMessagesById.values()) {
-                    assertEquals(expected, messages);
-                }
-            } catch (Throwable t) {
-                errorDuringExecution.set(t);
-            } finally {
-                countDownLatch.countDown();
+            assertEquals(requestIds.size(), allMessagesById.size());
+            assertTrue(requestIds.containsAll(allMessagesById.keySet()));
+
+            List<String> expected = Stream.<String> builder()
+                    .add("Received HTTP request")
+                    .add("Timer fired")
+                    .add("Blocking task executed")
+                    .add("Received Web Client response")
+                    .build()
+                    .collect(toList());
+
+            for (List<String> messages : allMessagesById.values()) {
+                assertEquals(expected, messages);
             }
-        }));
-
-        countDownLatch.await();
-
-        Throwable throwable = errorDuringExecution.get();
-        if (throwable != null) {
-            throw throwable;
-        }
+        });
     }
 
-    @Test
+    @RepeatedTest(10)
     public void mdcNonVertxThreadTest() {
+        InMemoryLogHandler.reset();
+        await().until(() -> producer.isInitialized());
+        await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
+        await().until(() -> {
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).anyMatch(h -> h == inMemoryLogHandler);
+        });
+        ;
+
         String mdcValue = "Test MDC value";
         MDC.put("requestId", mdcValue);
-        LOGGER.info("Test 1");
 
-        assertThat(inMemoryLogHandler.logRecords(),
-                hasItem(mdcValue + " ### Test 1"));
+        await().untilAsserted(() -> {
+            LOGGER.info("Test 1");
+            assertThat(inMemoryLogHandler.logRecords(), hasItem(mdcValue + " ### Test 1"));
+        });
 
         MDC.remove("requestId");
-        LOGGER.info("Test 2");
 
-        assertThat(inMemoryLogHandler.logRecords(),
-                hasItem(" ### Test 2"));
+        await().untilAsserted(() -> {
+            LOGGER.info("Test 2");
+            assertThat(inMemoryLogHandler.logRecords(), hasItem(" ### Test 2"));
+        });
 
-        mdcValue = "New test MDC value";
-        MDC.put("requestId", mdcValue);
-        LOGGER.info("Test 3");
+        String mdcValue2 = "New test MDC value";
+        MDC.put("requestId", mdcValue2);
 
-        assertThat(inMemoryLogHandler.logRecords(),
-                hasItem(mdcValue + " ### Test 3"));
+        await().untilAsserted(() -> {
+            LOGGER.info("Test 3");
+            assertThat(inMemoryLogHandler.logRecords(), hasItem(mdcValue2 + " ### Test 3"));
+        });
     }
 
-    protected <T> Handler<AsyncResult<T>> onSuccess(Consumer<T> consumer) {
-        return result -> {
-            if (result.failed()) {
-                errorDuringExecution.set(result.cause());
-                countDownLatch.countDown();
-            } else {
-                consumer.accept(result.result());
-            }
-        };
-    }
-
-    @SuppressWarnings({ "rawtypes" })
-    private void sendRequests(List<String> ids, Handler<AsyncResult<Void>> handler) {
+    private void sendRequests(List<String> ids, CountDownLatch done) {
         WebClient webClient = WebClient.create(vertx, new WebClientOptions().setDefaultPort(VERTICLE_PORT));
 
         HttpRequest<Buffer> request = webClient.get("/")
                 .expect(ResponsePredicate.SC_OK);
 
-        List<Future> futures = ids.stream()
+        List<? extends Future<?>> futures = ids.stream()
                 .map(id -> request.putHeader(REQUEST_ID_HEADER, id).send())
                 .collect(toList());
 
-        CompositeFuture.all(futures).<Void> mapEmpty().onComplete(handler);
+        Future.all(futures).mapEmpty().onComplete(x -> {
+            done.countDown();
+        });
     }
 }

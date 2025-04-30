@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
- *
+ * The resolution context holds the current context object.
  */
 public interface ResolutionContext {
 
@@ -46,11 +46,20 @@ public interface ResolutionContext {
     ResolutionContext getParent();
 
     /**
+     * If no extending block exists for the given name then the parent context (if present) is queried.
      *
      * @param name
-     * @return the extending block for the specified name or null
+     * @return the extending block for the specified name or {@code null}
      */
     SectionBlock getExtendingBlock(String name);
+
+    /**
+     * Unlike {@link #getExtendingBlock(String)} this method never queries the parent context.
+     *
+     * @param name
+     * @return the extending block for the specified name or {@code null}
+     */
+    SectionBlock getCurrentExtendingBlock(String name);
 
     /**
      *
@@ -59,6 +68,11 @@ public interface ResolutionContext {
      * @see TemplateInstance#getAttribute(String)
      */
     Object getAttribute(String key);
+
+    /**
+     * @return the current template
+     */
+    Template getTemplate();
 
     /**
      *

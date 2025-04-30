@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -25,18 +27,24 @@ public class ExecUtil {
 
     private static final int PROCESS_CHECK_INTERVAL = 500;
 
-    private static class HandleOutput implements Runnable {
+    public static class HandleOutput implements Runnable {
 
         private final InputStream is;
         private final Optional<Logger.Level> logLevel;
+        private final Logger logger;
 
-        HandleOutput(InputStream is) {
+        public HandleOutput(InputStream is) {
             this(is, null);
         }
 
-        HandleOutput(InputStream is, Logger.Level logLevel) {
+        public HandleOutput(InputStream is, Logger.Level logLevel) {
+            this(is, logLevel, LOG);
+        }
+
+        public HandleOutput(InputStream is, Logger.Level logLevel, Logger logger) {
             this.is = is;
             this.logLevel = Optional.ofNullable(logLevel);
+            this.logger = logger;
         }
 
         @Override
@@ -44,10 +52,10 @@ public class ExecUtil {
             try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                     final String l = line;
-                    logLevel.ifPresentOrElse(level -> LOG.log(level, l), () -> System.out.println(l));
+                    logLevel.ifPresentOrElse(level -> logger.log(level, l), () -> System.out.println(l));
                 }
             } catch (IOException e) {
-                logLevel.ifPresentOrElse(level -> LOG.log(level, "Failed to handle output", e), () -> e.printStackTrace());
+                logLevel.ifPresentOrElse(level -> logger.log(level, "Failed to handle output", e), () -> e.printStackTrace());
             }
         }
     }
@@ -112,19 +120,41 @@ public class ExecUtil {
      */
     public static boolean exec(File directory, Function<InputStream, Runnable> outputFilterFunction, String command,
             String... args) {
+        return execProcess(startProcess(directory, command, args), outputFilterFunction) == 0;
+    }
+
+    public static int execProcess(Process process, Function<InputStream, Runnable> outputFilterFunction) {
         try {
             Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
                     : DEFAULT_LOGGING;
-            Process process = startProcess(directory, command, args);
             Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
             t.setName("Process stdout");
             t.setDaemon(true);
             t.start();
             process.waitFor();
-            destroyProcess(process);
-            return process.exitValue() == 0;
+            return process.exitValue();
         } catch (InterruptedException e) {
-            return false;
+            return -1;
+        } finally {
+            destroyProcess(process);
+        }
+    }
+
+    public static int execProcessWithTimeout(Process process, Function<InputStream, Runnable> outputFilterFunction,
+            Duration timeout) {
+        try {
+            Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
+                    : DEFAULT_LOGGING;
+            Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
+            t.setName("Process stdout");
+            t.setDaemon(true);
+            t.start();
+            process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            return process.exitValue();
+        } catch (InterruptedException e) {
+            return -1;
+        } finally {
+            destroyProcess(process);
         }
     }
 
@@ -141,20 +171,7 @@ public class ExecUtil {
      */
     public static boolean execWithTimeout(File directory, Function<InputStream, Runnable> outputFilterFunction,
             Duration timeout, String command, String... args) {
-        try {
-            Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
-                    : DEFAULT_LOGGING;
-            Process process = startProcess(directory, command, args);
-            Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
-            t.setName("Process stdout");
-            t.setDaemon(true);
-            t.start();
-            process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
-            destroyProcess(process);
-            return process.exitValue() == 0;
-        } catch (InterruptedException e) {
-            return false;
-        }
+        return execProcessWithTimeout(startProcess(directory, command, args), outputFilterFunction, timeout) == 0;
     }
 
     /**
@@ -207,25 +224,47 @@ public class ExecUtil {
      * Start a process executing given command with arguments within the specified directory.
      *
      * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
+     * @param command The command and args
+     * @param environment The command environment
      * @return the process
      */
-    public static Process startProcess(File directory, String command, String... args) {
+    public static Process startProcess(File directory, Map<String, String> environment, String command, String... args) {
         try {
             String[] cmd = new String[args.length + 1];
             cmd[0] = command;
             if (args.length > 0) {
                 System.arraycopy(args, 0, cmd, 1, args.length);
             }
-            return new ProcessBuilder()
+            ProcessBuilder processBuilder = new ProcessBuilder()
                     .directory(directory)
                     .command(cmd)
-                    .redirectErrorStream(true)
-                    .start();
+                    .redirectErrorStream(true);
+            if (environment != null && !environment.isEmpty()) {
+                Map<String, String> env = processBuilder.environment();
+                environment.forEach((key, value) -> {
+                    if (value == null) {
+                        env.remove(key);
+                    } else {
+                        env.put(key, value);
+                    }
+                });
+            }
+            return processBuilder.start();
         } catch (IOException e) {
             throw new RuntimeException("Input/Output error while executing command.", e);
         }
+    }
+
+    /**
+     * Start a process executing given command with arguments within the specified directory.
+     *
+     * @param directory The directory
+     * @param command The command
+     * @param args The command arguments
+     * @return the process
+     */
+    public static Process startProcess(File directory, String command, String... args) {
+        return startProcess(directory, Collections.emptyMap(), command, args);
     }
 
     /**

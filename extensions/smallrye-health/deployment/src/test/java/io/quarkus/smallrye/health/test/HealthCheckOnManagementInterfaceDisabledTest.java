@@ -2,8 +2,10 @@ package io.quarkus.smallrye.health.test;
 
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -15,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class HealthCheckOnManagementInterfaceDisabledTest {
+class HealthCheckOnManagementInterfaceDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -24,17 +26,17 @@ public class HealthCheckOnManagementInterfaceDisabledTest {
             .overrideConfigKey("quarkus.management.enabled", "false");
 
     @Test
-    public void testHealth() {
+    void testHealth() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/live").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
-                            "checks.name", containsInAnyOrder("my-check"));
+                            "checks.name", hasItems("my-check"));
             when().get("/q/health/live").then()
                     .body("status", is("DOWN"),
                             "checks.status", contains("DOWN"),
-                            "checks.name", containsInAnyOrder("my-check"));
+                            "checks.name", hasItems("my-check"));
         } finally {
             RestAssured.reset();
         }
@@ -43,11 +45,11 @@ public class HealthCheckOnManagementInterfaceDisabledTest {
     @Liveness
     static class MyCheck implements HealthCheck {
 
-        volatile int counter = 0;
+        final AtomicInteger counter = new AtomicInteger(0);
 
         @Override
         public HealthCheckResponse call() {
-            if (++counter > 1) {
+            if (counter.incrementAndGet() > 1) {
                 return HealthCheckResponse.builder().down().name("my-check").build();
             }
             return HealthCheckResponse.builder().up().name("my-check").build();

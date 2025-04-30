@@ -1,6 +1,13 @@
 package io.quarkus.arc.test.interceptors.bindings.transitive;
 
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.annotation.Annotation;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,10 +24,10 @@ public class TransitiveInterceptorBindingTest {
 
     @Test
     public void testInterceptorsAreInvoked() {
-        Assertions.assertTrue(Arc.container().instance(MethodLevelInterceptedBean.class).isAvailable());
-        Assertions.assertTrue(Arc.container().instance(ClassLevelInterceptedBean.class).isAvailable());
-        Assertions.assertTrue(Arc.container().instance(TwoLevelsDeepClassLevelInterceptedBean.class).isAvailable());
-        Assertions.assertTrue(Arc.container().instance(NotInterceptedBean.class).isAvailable());
+        assertTrue(Arc.container().instance(MethodLevelInterceptedBean.class).isAvailable());
+        assertTrue(Arc.container().instance(ClassLevelInterceptedBean.class).isAvailable());
+        assertTrue(Arc.container().instance(TwoLevelsDeepClassLevelInterceptedBean.class).isAvailable());
+        assertTrue(Arc.container().instance(NotInterceptedBean.class).isAvailable());
         MethodLevelInterceptedBean methodLevelInterceptedBean = Arc.container().instance(MethodLevelInterceptedBean.class)
                 .get();
         ClassLevelInterceptedBean classLevelInterceptedBean = Arc.container().instance(ClassLevelInterceptedBean.class).get();
@@ -28,27 +35,49 @@ public class TransitiveInterceptorBindingTest {
                 .instance(TwoLevelsDeepClassLevelInterceptedBean.class).get();
         NotInterceptedBean notIntercepted = Arc.container().instance(NotInterceptedBean.class).get();
 
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 0);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 0);
+        assertEquals(0, CounterInterceptor.timesInvoked);
+        assertEquals(0, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(); // empty
         methodLevelInterceptedBean.oneLevelDeepBinding();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 1);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 1);
+        assertEquals(1, CounterInterceptor.timesInvoked);
+        assertEquals(1, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(SomeAnnotation.class, CounterBinding.class);
         methodLevelInterceptedBean.twoLevelsDeepBinding();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 2);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 2);
+        assertEquals(2, CounterInterceptor.timesInvoked);
+        assertEquals(2, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(AnotherAnnotation.class, SomeAnnotation.class, CounterBinding.class);
         classLevelInterceptedBean.ping();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 3);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 3);
+        assertEquals(3, CounterInterceptor.timesInvoked);
+        assertEquals(3, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(SomeAnnotation.class, CounterBinding.class);
         deeperHierarchyBean.ping();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 4);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 4);
+        assertEquals(4, CounterInterceptor.timesInvoked);
+        assertEquals(4, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(AnotherAnnotation.class, SomeAnnotation.class, CounterBinding.class);
+        CounterInterceptor.lastBindings = new HashSet<>();
+        TransitiveCounterInterceptor.lastBindings = new HashSet<>();
         // following two invocations use @NotABinding which should not trigger interception
         notIntercepted.ping();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 4);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 4);
+        assertEquals(4, CounterInterceptor.timesInvoked);
+        assertEquals(4, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(); // empty
         methodLevelInterceptedBean.shouldNotBeIntercepted();
-        Assertions.assertTrue(CounterInterceptor.timesInvoked == 4);
-        Assertions.assertTrue(TransitiveCounterInterceptor.timesInvoked == 4);
+        assertEquals(4, CounterInterceptor.timesInvoked);
+        assertEquals(4, TransitiveCounterInterceptor.timesInvoked);
+        assertBindings(); // empty
     }
 
+    @SafeVarargs
+    static void assertBindings(Class<? extends Annotation>... bindings) {
+        assertBindings(CounterInterceptor.lastBindings, bindings);
+        assertBindings(TransitiveCounterInterceptor.lastBindings, bindings);
+    }
+
+    private static void assertBindings(Set<Annotation> actualBindings, Class<? extends Annotation>[] expectedBindings) {
+        assertNotNull(actualBindings);
+        assertEquals(expectedBindings.length, actualBindings.size());
+        for (Class<? extends Annotation> expectedBinding : expectedBindings) {
+            assertTrue(actualBindings.stream().anyMatch(it -> it.annotationType() == expectedBinding));
+        }
+    }
 }

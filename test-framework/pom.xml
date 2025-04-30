@@ -14,19 +14,14 @@
     <name>Quarkus - Test Framework</name>
     <packaging>pom</packaging>
 
-    <properties>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
-    </properties>
-
     <modules>
         <module>common</module>
         <module>h2</module>
         <module>grpc</module>
         <module>derby</module>
         <module>kubernetes-client</module>
-        <module>openshift-client</module>
+        <module>junit5-config</module>
         <module>junit5-internal</module>
-        <module>junit5-properties</module>
         <module>junit5</module>
         <module>junit5-component</module>
         <module>junit5-mockito</module>
@@ -46,9 +41,39 @@
         <module>keycloak-server</module>
         <module>jacoco</module>
         <module>mongodb</module>
-        <module>infinispan-client</module>
         <module>kafka-companion</module>
         <module>google-cloud-functions</module>
+        <module>observability</module>
     </modules>
 
+    <build>
+        <plugins>
+            <!--
+                This is a test dependency and as such some test libraries don't have the test scope
+                which is perfectly fine.
+                We override the enforcer rules to avoid testing that.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
+                        <configuration>
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

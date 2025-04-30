@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
-import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -86,7 +86,7 @@ public class QuarkusJBangCodestartProjectInputBuilder extends CodestartProjectIn
     public QuarkusJBangCodestartProjectInput build() {
         if (!this.containsData("java")) {
             this.addData(NestedMaps
-                    .unflatten(Map.of("java.version", String.valueOf(CreateProjectHelper.determineBestJavaLtsVersion()))));
+                    .unflatten(Map.of("java.version", String.valueOf(JavaVersion.determineBestJavaLtsVersion()))));
         }
         return new QuarkusJBangCodestartProjectInput(this);
     }

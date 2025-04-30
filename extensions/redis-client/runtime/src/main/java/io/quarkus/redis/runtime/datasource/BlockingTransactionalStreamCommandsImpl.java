@@ -10,6 +10,7 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -180,5 +181,20 @@ public class BlockingTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     @Override
     public void xtrim(K key, XTrimArgs args) {
         reactive.xtrim(key, args).await().atMost(timeout);
+    }
+
+    @Override
+    public void xpending(K key, String group) {
+        reactive.xpending(key, group).await().atMost(timeout);
+    }
+
+    @Override
+    public void xpending(K key, String group, StreamRange range, int count) {
+        reactive.xpending(key, group, range, count).await().atMost(timeout);
+    }
+
+    @Override
+    public void xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        reactive.xpending(key, group, range, count, args).await().atMost(timeout);
     }
 }

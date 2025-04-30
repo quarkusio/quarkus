@@ -37,10 +37,15 @@
             <artifactId>quarkus-kubernetes-service-binding</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>kafka-oauth-common</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-caffeine</artifactId>
+            <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
 
         <dependency>
@@ -54,16 +59,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-            <!-- avoid the native compilation to fail because this would pull netty, without the extension -->
-            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -92,15 +90,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

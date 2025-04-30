@@ -1,40 +1,40 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class DataSourcesBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface DataSourcesBuildTimeConfig {
 
     /**
-     * The default datasource.
+     * Datasources.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public DataSourceBuildTimeConfig defaultDataSource;
-
-    /**
-     * Additional named datasources.
-     */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceBuildTimeConfig> namedDataSources;
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceBuildTimeConfig> dataSources();
 
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether or not a health check is published in case the smallrye-health extension is present.
      * <p>
      * This is a global setting and is not specific to a datasource.
      */
-    @ConfigItem(name = "health.enabled", defaultValue = "true")
-    public boolean healthEnabled;
+    @WithName("health.enabled")
+    @WithDefault("true")
+    boolean healthEnabled();
 
     /**
      * Whether or not datasource metrics are published in case a metrics extension is present.
@@ -44,8 +44,9 @@ public class DataSourcesBuildTimeConfig {
      * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level to
      * enable collection of metrics for that datasource.
      */
-    @ConfigItem(name = "metrics.enabled")
-    public boolean metricsEnabled;
+    @WithName("metrics.enabled")
+    @WithDefault("false")
+    boolean metricsEnabled();
 
     /**
      * Only here to detect configuration errors.
@@ -55,7 +56,7 @@ public class DataSourcesBuildTimeConfig {
      * @deprecated
      */
     @Deprecated
-    public Optional<String> url;
+    Optional<String> url();
 
     /**
      * Only here to detect configuration errors.
@@ -63,14 +64,11 @@ public class DataSourcesBuildTimeConfig {
      * @deprecated
      */
     @Deprecated
-    public Optional<String> driver;
+    Optional<String> driver();
 
-    public DataSourceBuildTimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource;
-        }
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = namedDataSources.get(dataSourceName);
-        return Objects.requireNonNullElseGet(dataSourceBuildTimeConfig, DataSourceBuildTimeConfig::new);
+    default boolean hasNamedDataSources() {
+        return dataSources().keySet().size() > 1
+                || (!dataSources().isEmpty()
+                        && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
     }
-
 }

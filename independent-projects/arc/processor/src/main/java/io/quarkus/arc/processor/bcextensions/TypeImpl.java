@@ -1,108 +1,114 @@
 package io.quarkus.arc.processor.bcextensions;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.lang.model.AnnotationInfo;
 import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
-abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> implements Type {
-    final org.jboss.jandex.IndexView jandexIndex;
-    final AllAnnotationOverlays annotationOverlays;
+abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends AnnotationTargetImpl implements Type {
     final JandexType jandexType;
 
-    TypeImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays, JandexType jandexType) {
-        this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+    TypeImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
+            JandexType jandexType) {
+        super(jandexIndex, annotationOverlay, org.jboss.jandex.EquivalenceKey.of(jandexType));
         this.jandexType = jandexType;
     }
 
-    static Type fromJandexType(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    static Type fromJandexType(org.jboss.jandex.IndexView jandexIndex,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.Type jandexType) {
-        switch (jandexType.kind()) {
-            case VOID:
-                return new VoidTypeImpl(jandexIndex, annotationOverlays, jandexType.asVoidType());
-            case PRIMITIVE:
-                return new PrimitiveTypeImpl(jandexIndex, annotationOverlays, jandexType.asPrimitiveType());
-            case CLASS:
-                return new ClassTypeImpl(jandexIndex, annotationOverlays, jandexType.asClassType());
-            case ARRAY:
-                return new ArrayTypeImpl(jandexIndex, annotationOverlays, jandexType.asArrayType());
-            case PARAMETERIZED_TYPE:
-                return new ParameterizedTypeImpl(jandexIndex, annotationOverlays, jandexType.asParameterizedType());
-            case TYPE_VARIABLE:
-                return new TypeVariableImpl(jandexIndex, annotationOverlays, jandexType.asTypeVariable());
-            case UNRESOLVED_TYPE_VARIABLE:
-                return new UnresolvedTypeVariableImpl(jandexIndex, annotationOverlays, jandexType.asUnresolvedTypeVariable());
-            case WILDCARD_TYPE:
-                return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType.asWildcardType());
-            default:
-                throw new IllegalArgumentException("Unknown type " + jandexType);
-        }
+        return switch (jandexType.kind()) {
+            case VOID -> new VoidTypeImpl(jandexIndex, annotationOverlay, jandexType.asVoidType());
+            case PRIMITIVE -> new PrimitiveTypeImpl(jandexIndex, annotationOverlay, jandexType.asPrimitiveType());
+            case CLASS -> new ClassTypeImpl(jandexIndex, annotationOverlay, jandexType.asClassType());
+            case ARRAY -> new ArrayTypeImpl(jandexIndex, annotationOverlay, jandexType.asArrayType());
+            case PARAMETERIZED_TYPE ->
+                new ParameterizedTypeImpl(jandexIndex, annotationOverlay, jandexType.asParameterizedType());
+            case TYPE_VARIABLE -> new TypeVariableImpl(jandexIndex, annotationOverlay, jandexType.asTypeVariable());
+            case UNRESOLVED_TYPE_VARIABLE ->
+                new UnresolvedTypeVariableImpl(jandexIndex, annotationOverlay, jandexType.asUnresolvedTypeVariable());
+            case WILDCARD_TYPE -> new WildcardTypeImpl(jandexIndex, annotationOverlay, jandexType.asWildcardType());
+            default -> throw new IllegalArgumentException("Unknown type " + jandexType);
+        };
     }
 
     @Override
     public boolean hasAnnotation(Class<? extends Annotation> annotationType) {
-        return jandexType.hasAnnotation(DotName.createSimple(annotationType.getName()));
+        DotName annotationName = DotName.createSimple(annotationType);
+        for (org.jboss.jandex.AnnotationInstance annotation : jandexType.annotations()) {
+            if (annotation.runtimeVisible() && annotation.name().equals(annotationName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean hasAnnotation(Predicate<AnnotationInfo> predicate) {
-        return jandexType.annotations()
-                .stream()
-                .anyMatch(it -> predicate.test(new AnnotationInfoImpl(jandexIndex, annotationOverlays, it)));
+        for (org.jboss.jandex.AnnotationInstance annotation : jandexType.annotations()) {
+            if (annotation.runtimeVisible()
+                    && predicate.test(new AnnotationInfoImpl(jandexIndex, annotationOverlay, annotation))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public <T extends Annotation> AnnotationInfo annotation(Class<T> annotationType) {
-        return new AnnotationInfoImpl(jandexIndex, annotationOverlays,
-                jandexType.annotation(DotName.createSimple(annotationType.getName())));
+        org.jboss.jandex.AnnotationInstance jandexAnnotation = jandexType.annotation(DotName.createSimple(annotationType));
+        if (jandexAnnotation == null || !jandexAnnotation.runtimeVisible()) {
+            return null;
+        }
+        return new AnnotationInfoImpl(jandexIndex, annotationOverlay, jandexAnnotation);
     }
 
     @Override
     public <T extends Annotation> Collection<AnnotationInfo> repeatableAnnotation(Class<T> annotationType) {
-        return jandexType.annotationsWithRepeatable(DotName.createSimple(annotationType.getName()), jandexIndex)
-                .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+        List<AnnotationInfo> result = new ArrayList<>();
+        for (org.jboss.jandex.AnnotationInstance annotation : jandexType.annotationsWithRepeatable(
+                DotName.createSimple(annotationType), jandexIndex)) {
+            if (annotation.runtimeVisible()) {
+                result.add(new AnnotationInfoImpl(jandexIndex, annotationOverlay, annotation));
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
     public Collection<AnnotationInfo> annotations(Predicate<AnnotationInfo> predicate) {
-        return jandexType.annotations()
-                .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
-                .filter(predicate)
-                .collect(Collectors.toUnmodifiableList());
+        List<AnnotationInfo> result = new ArrayList<>();
+        for (org.jboss.jandex.AnnotationInstance annotation : jandexType.annotations()) {
+            if (annotation.runtimeVisible()) {
+                AnnotationInfo annotationInfo = new AnnotationInfoImpl(jandexIndex, annotationOverlay, annotation);
+                if (predicate.test(annotationInfo)) {
+                    result.add(annotationInfo);
+                }
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
     public Collection<AnnotationInfo> annotations() {
-        return annotations(it -> true);
+        List<AnnotationInfo> result = new ArrayList<>();
+        for (org.jboss.jandex.AnnotationInstance annotation : jandexType.annotations()) {
+            if (annotation.runtimeVisible()) {
+                result.add(new AnnotationInfoImpl(jandexIndex, annotationOverlay, annotation));
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
     public String toString() {
         return jandexType.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof TypeImpl))
-            return false;
-        TypeImpl<?> type = (TypeImpl<?>) o;
-        return Objects.equals(jandexType, type.jandexType);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jandexType);
     }
 }

@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
+    private static final List<Locale> LANGUAGE_WILDCARD = List.of(new Locale("*"));
 
     private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override
@@ -114,9 +115,8 @@ public class HeaderUtil {
 
     public static MediaType getMediaType(MultivaluedMap<String, ? extends Object> headers) {
         Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (first instanceof String) {
-            String contentType = (String) first;
-            return MediaType.valueOf(contentType);
+        if (first instanceof String contentType) {
+            return MediaTypeHelper.valueOf(contentType);
         } else {
             return (MediaType) first;
         }
@@ -150,8 +150,7 @@ public class HeaderUtil {
             return Collections.emptyMap();
         Map<String, Cookie> cookies = new HashMap<String, Cookie>();
         for (Object obj : list) {
-            if (obj instanceof Cookie) {
-                Cookie cookie = (Cookie) obj;
+            if (obj instanceof Cookie cookie) {
                 cookies.put(cookie.getName(), cookie);
             } else {
                 String str = headerToString(obj);
@@ -170,8 +169,7 @@ public class HeaderUtil {
         }
         Map<String, NewCookie> cookies = new HashMap<>();
         for (Object obj : list) {
-            if (obj instanceof NewCookie) {
-                NewCookie cookie = (NewCookie) obj;
+            if (obj instanceof NewCookie cookie) {
                 cookies.put(cookie.getName(), cookie);
             } else {
                 String str = HeaderUtil.headerToString(obj);
@@ -203,7 +201,7 @@ public class HeaderUtil {
         }
         StringBuilder sb = new StringBuilder();
         for (Object s : list) {
-            if (sb.length() > 0) {
+            if (!sb.isEmpty()) {
                 sb.append(",");
             }
             sb.append(headerToString(s));
@@ -267,13 +265,13 @@ public class HeaderUtil {
         if (accepts == null || accepts.isEmpty()) {
             return Collections.singletonList(MediaType.WILDCARD_TYPE);
         }
-        List<MediaType> list = new ArrayList<MediaType>();
+        List<MediaType> list = new ArrayList<>();
         for (Object obj : accepts) {
             if (obj instanceof MediaType) {
                 list.add((MediaType) obj);
                 continue;
             }
-            String accept = null;
+            String accept;
             if (obj instanceof String) {
                 accept = (String) obj;
             } else {
@@ -283,10 +281,10 @@ public class HeaderUtil {
                 StringTokenizer tokenizer = new StringTokenizer(accept, ",");
                 while (tokenizer.hasMoreElements()) {
                     String item = tokenizer.nextToken().trim();
-                    list.add(MediaType.valueOf(item));
+                    list.add(MediaTypeHelper.valueOf(item));
                 }
             } else {
-                list.add(MediaType.valueOf(accept.trim()));
+                list.add(MediaTypeHelper.valueOf(accept.trim()));
             }
         }
         MediaTypeHelper.sortByWeight(list);
@@ -296,7 +294,7 @@ public class HeaderUtil {
     public static List<Locale> getAcceptableLanguages(MultivaluedMap<String, ? extends Object> headers) {
         List<?> accepts = headers.get(HttpHeaders.ACCEPT_LANGUAGE);
         if (accepts == null || accepts.isEmpty())
-            return Collections.emptyList();
+            return LANGUAGE_WILDCARD;
         List<WeightedLanguage> languages = new ArrayList<WeightedLanguage>();
         for (Object obj : accepts) {
             if (obj instanceof Locale) {
@@ -315,7 +313,7 @@ public class HeaderUtil {
             }
         }
         Collections.sort(languages);
-        List<Locale> list = new ArrayList<Locale>(languages.size());
+        List<Locale> list = new ArrayList<>(languages.size());
         for (WeightedLanguage language : languages)
             list.add(language.getLocale());
         return list;

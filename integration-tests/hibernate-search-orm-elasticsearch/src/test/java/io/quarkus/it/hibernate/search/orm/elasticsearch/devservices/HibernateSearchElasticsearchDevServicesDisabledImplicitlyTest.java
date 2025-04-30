@@ -3,7 +3,6 @@ package io.quarkus.it.hibernate.search.orm.elasticsearch.devservices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -31,10 +30,13 @@ public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
                     "quarkus.hibernate-search-orm.elasticsearch.hosts", EXPLICIT_HOSTS,
                     // Ensure we can work offline, because the host we set just above does not actually exist.
                     "quarkus.hibernate-search-orm.schema-management.strategy", "none",
-                    // This version does not matter as long as it's supported by Hibernate Search:
-                    // it won't be checked in this test anyway.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "7.6",
-                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false");
+                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false",
+                    // When disabling the version check we need to set a more precise version
+                    // than what we have in application.properties.
+                    // But here it doesn't matter as we won't send a request to Elasticsearch anyway,
+                    // so we're free to put anything.
+                    // Just make sure to set something consistent with what we have in application.properties.
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.15");
         }
 
         @Override
@@ -43,12 +45,6 @@ public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
             // that way, we can control whether quarkus.hibernate-search-orm.elasticsearch.hosts is set or not.
             // In this test, we DO set quarkus.hibernate-search-orm.elasticsearch.hosts (see above).
             return "someotherprofile";
-        }
-
-        @Override
-        public List<TestResourceEntry> testResources() {
-            // Enables injection of DevServicesContext
-            return List.of(new TestResourceEntry(DevServicesContextSpy.class));
         }
     }
 

@@ -4,22 +4,24 @@ import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
 /**
  * Stork configuration root.
  */
+@ConfigMapping(prefix = "quarkus.stork")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class StorkConfiguration {
+public interface StorkConfiguration {
 
     /**
-     * ServiceDiscovery configuration for the service
+     * Configuration for the service
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocSection
     @ConfigDocMapKey("service-name")
-    public Map<String, ServiceConfiguration> serviceConfiguration;
+    Map<String, ServiceConfiguration> serviceConfiguration();
 
 }

@@ -26,6 +26,7 @@ Exif
 FAQ
 Fedora™ Project
 Fortran
+Fluentd
 FQDN
 GB
 Gbps
@@ -38,6 +39,7 @@ GNU
 GPL
 GraalVM
 Gradle
+Graylog
 gRPC
 GRUB
 GTK+
@@ -60,9 +62,11 @@ IPsec
 ISeries
 ISO
 ISO image
+Istio service mesh
 Itanium
 Itanium 2
 JBoss Community
+JBoss Logging
 JetBrains
 JUnit
 JVM
@@ -72,6 +76,7 @@ Kickstart
 KVM
 LAN
 Linux
+Logstash
 Mandrel
 MicroProfile
 Microsoft

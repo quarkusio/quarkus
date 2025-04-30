@@ -2,21 +2,20 @@ package io.quarkus.qute;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 class ResolutionContextImpl implements ResolutionContext {
 
     private final Object data;
     private final Evaluator evaluator;
     private final Map<String, SectionBlock> extendingBlocks;
-    private final Function<String, Object> attributeFun;
+    private final TemplateInstance templateInstance;
 
     ResolutionContextImpl(Object data,
-            Evaluator evaluator, Map<String, SectionBlock> extendingBlocks, Function<String, Object> attributeFun) {
+            Evaluator evaluator, Map<String, SectionBlock> extendingBlocks, TemplateInstance templateInstance) {
         this.data = data;
         this.evaluator = evaluator;
         this.extendingBlocks = extendingBlocks;
-        this.attributeFun = attributeFun;
+        this.templateInstance = templateInstance;
     }
 
     @Override
@@ -53,13 +52,27 @@ class ResolutionContextImpl implements ResolutionContext {
     }
 
     @Override
+    public SectionBlock getCurrentExtendingBlock(String name) {
+        return getExtendingBlock(name);
+    }
+
+    @Override
     public Object getAttribute(String key) {
-        return attributeFun.apply(key);
+        return templateInstance.getAttribute(key);
+    }
+
+    @Override
+    public Template getTemplate() {
+        return templateInstance.getTemplate();
     }
 
     @Override
     public Evaluator getEvaluator() {
         return evaluator;
+    }
+
+    TemplateInstance getTemplateInstance() {
+        return templateInstance;
     }
 
     static class ChildResolutionContext implements ResolutionContext {
@@ -117,13 +130,35 @@ class ResolutionContextImpl implements ResolutionContext {
         }
 
         @Override
+        public SectionBlock getCurrentExtendingBlock(String name) {
+            if (extendingBlocks != null) {
+                return extendingBlocks.get(name);
+            }
+            return null;
+        }
+
+        @Override
         public Object getAttribute(String key) {
             return parent.getAttribute(key);
         }
 
         @Override
+        public Template getTemplate() {
+            return parent.getTemplate();
+        }
+
+        @Override
         public Evaluator getEvaluator() {
             return evaluator;
+        }
+
+        TemplateInstance getTemplateInstance() {
+            if (parent instanceof ResolutionContextImpl rc) {
+                return rc.getTemplateInstance();
+            } else if (parent instanceof ChildResolutionContext child) {
+                return child.getTemplateInstance();
+            }
+            throw new IllegalStateException();
         }
 
     }

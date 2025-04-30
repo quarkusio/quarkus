@@ -18,17 +18,16 @@ public class SmallRyeGraphQLDevUIProcessor {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         // Generated GraphQL Schema
+        String schemaPath = "/" + graphQLConfig.rootPath() + "/schema.graphql";
         PageBuilder schemaPage = Page.externalPageBuilder("GraphQL Schema")
                 .icon("font-awesome-solid:diagram-project")
-                .url("/" + graphQLConfig.rootPath + "/schema.graphql");
+                .url(schemaPath, schemaPath);
 
         // GraphiQL UI
-        String uiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
+        String uiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui().rootPath());
         PageBuilder uiPage = Page.externalPageBuilder("GraphQL UI")
                 .icon("font-awesome-solid:table-columns")
-                .staticLabel("<a style='color: var(--lumo-contrast-80pct);' href='" + uiPath
-                        + "' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>")
-                .url(uiPath + "/index.html?embed=true");
+                .url(uiPath + "/index.html?embed=true", uiPath);
 
         // Learn
         PageBuilder learnLink = Page.externalPageBuilder("Learn more about GraphQL")
@@ -36,8 +35,8 @@ public class SmallRyeGraphQLDevUIProcessor {
                 .doNotEmbed()
                 .url("https://graphql.org/");
 
-        cardPageBuildItem.addPage(schemaPage);
         cardPageBuildItem.addPage(uiPage);
+        cardPageBuildItem.addPage(schemaPage);
         cardPageBuildItem.addPage(learnLink);
 
         return cardPageBuildItem;

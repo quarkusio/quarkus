@@ -8,23 +8,24 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-public class ExtensionDependency {
+public abstract class ExtensionDependency<T> {
 
     private final ModuleVersionIdentifier extensionId;
-    protected final ArtifactCoords deploymentModule;
+    private final T deploymentModule;
     private final List<Dependency> conditionalDependencies;
+    private final List<Dependency> conditionalDevDeps;
     private final List<ArtifactKey> dependencyConditions;
     private boolean isConditional;
 
-    public ExtensionDependency(ModuleVersionIdentifier extensionId, ArtifactCoords deploymentModule,
-            List<Dependency> conditionalDependencies,
+    public ExtensionDependency(ModuleVersionIdentifier extensionId, T deploymentModule,
+            List<Dependency> conditionalDependencies, List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
         this.deploymentModule = deploymentModule;
         this.conditionalDependencies = conditionalDependencies;
+        this.conditionalDevDeps = conditionalDevDeps;
         this.dependencyConditions = dependencyConditions;
     }
 
@@ -41,12 +42,16 @@ public class ExtensionDependency {
                         .withDependencies(d -> d.add(DependencyUtils.asDependencyNotation(dependency))))));
     }
 
-    public String asDependencyNotation() {
-        return String.join(":", this.extensionId.getGroup(), this.extensionId.getName(), this.extensionId.getVersion());
+    private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {
+        final Dependency dep = findConditionalDependency(capability, conditionalDependencies);
+        if (dep != null) {
+            return dep;
+        }
+        return findConditionalDependency(capability, conditionalDevDeps);
     }
 
-    private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {
-        for (Dependency conditionalDependency : conditionalDependencies) {
+    private static Dependency findConditionalDependency(ModuleVersionIdentifier capability, List<Dependency> deps) {
+        for (Dependency conditionalDependency : deps) {
             if (conditionalDependency.getGroup().equals(capability.getGroup())
                     && conditionalDependency.getName().equals(capability.getName())) {
                 return conditionalDependency;
@@ -83,7 +88,11 @@ public class ExtensionDependency {
         return conditionalDependencies;
     }
 
-    public ArtifactCoords getDeploymentModule() {
+    public List<Dependency> getConditionalDevDependencies() {
+        return conditionalDevDeps;
+    }
+
+    public T getDeploymentModule() {
         return deploymentModule;
     }
 
@@ -101,7 +110,7 @@ public class ExtensionDependency {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        ExtensionDependency that = (ExtensionDependency) o;
+        ExtensionDependency<?> that = (ExtensionDependency<?>) o;
         return Objects.equals(extensionId, that.extensionId)
                 && Objects.equals(conditionalDependencies, that.conditionalDependencies)
                 && Objects.equals(dependencyConditions, that.dependencyConditions);

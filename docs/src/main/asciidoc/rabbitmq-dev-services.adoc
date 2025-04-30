@@ -4,14 +4,16 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for RabbitMQ
-
 include::_attributes.adoc[]
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
 Dev Services for RabbitMQ automatically starts a RabbitMQ broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
 The application is configured automatically.
 
-== Enabling / Disabling Dev Services for RabbitMQ
+== Enabling / disabling Dev Services for RabbitMQ
 
 Dev Services for RabbitMQ is automatically enabled unless:
 
@@ -20,15 +22,15 @@ Dev Services for RabbitMQ is automatically enabled unless:
 - all the Reactive Messaging RabbitMQ channels have the `host` or `port` attributes set
 
 Dev Services for RabbitMQ relies on Docker to start the broker.
-If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
-You can configure the broker access using the `rabbitmq-host`, `rabbitmq-port`, `rabbitmq-username` and `rabbitmq-password` properties.
+If your environment does not support Docker, you must start the broker manually, or connect to an already running broker.
+You can configure the broker access by using the `rabbitmq-host`, `rabbitmq-port`, `rabbitmq-username` and `rabbitmq-password` properties.
 
 == Shared broker
 
-Most of the time you need to share the broker between applications.
+Most of the time you want to share the broker between applications.
 Dev Services for RabbitMQ implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single broker.
 
-NOTE: Dev Services for RabbitMQ starts the container with the `quarkus-dev-service-rabbitmq` label which is used to identify the container.
+NOTE: Dev Services for RabbitMQ starts the container with the `quarkus-dev-service-rabbitmq` label, which is used to identify the container.
 
 If you need multiple (shared) brokers, you can configure the `quarkus.rabbitmq.devservices.service-name` attribute and indicate the broker name.
 It looks for a container with the same value, or starts a new one if none can be found.
@@ -46,7 +48,7 @@ You can set the port by configuring the `quarkus.rabbitmq.devservices.port` prop
 == Configuring the image
 
 Dev Services for RabbitMQ uses official images available at https://hub.docker.com/_/rabbitmq.
-You can configure the image and version using the `quarkus.rabbitmq.devservices.image-name` property:
+You can configure the image and version with the `quarkus.rabbitmq.devservices.image-name` property:
 
 [source, properties]
 ----
@@ -56,14 +58,24 @@ quarkus.rabbitmq.devservices.image-name=rabbitmq:latest
 == Access the management UI
 
 By default, Dev Services for RabbitMQ use the official image with the `management` tag. This means you have the https://github.com/docker-library/docs/tree/master/rabbitmq#management-plugin[management plugin] available. You can use the xref:dev-ui.adoc[Dev UI] to find the HTTP port randomly affected
-or configure a static one via `quarkus.rabbitmq.devservices.http-port`.
+or configure a static one by using `quarkus.rabbitmq.devservices.http-port`.
 
-== Predefined Topology
+== Predefined topology
 
-Dev Services for RabbitMQ supports defining topology upon broker start. You can define Exchanges, Queues, and
-Bindings using standard Quarkus configuration.
+Dev Services for RabbitMQ supports defining topology upon broker start. You can define Virtual Hosts, Exchanges, Queues,
+and Bindings through standard Quarkus configuration.
 
-=== Defining Exchanges
+=== Defining virtual hosts
+
+RabbitMQ uses a default virtual host of `/`. To define additional RabbitMQ virtual hosts, provide the names
+of the virtual hosts in the `quarkus.rabbitmq.devservices.vhosts` key:
+
+[source, properties]
+----
+quarkus.rabbitmq.devservices.vhosts=my-vhost-1,my-vhost-2
+----
+
+=== Defining exchanges
 
 To define a RabbitMQ exchange you provide the exchange's name after the `quarkus.rabbitmq.devservices.exchanges` key,
 followed by one (or more) of the exchange's properties:
@@ -73,16 +85,17 @@ followed by one (or more) of the exchange's properties:
 quarkus.rabbitmq.devservices.exchanges.my-exchange.type=topic            # defaults to 'direct'
 quarkus.rabbitmq.devservices.exchanges.my-exchange.auto-delete=false     # defaults to 'false'
 quarkus.rabbitmq.devservices.exchanges.my-exchange.durable=true          # defaults to 'false'
+quarkus.rabbitmq.devservices.exchanges.my-exchange.vhost=my-vhost        # defaults to '/'
 ----
 
-Additionally, any additional arguments may be provided to the exchange's definition by using the `arguments` key:
+Additionally, any additional arguments can be provided to the exchange's definition by using the `arguments` key:
 
 [source, properties]
 ----
 quarkus.rabbitmq.devservices.exchanges.my-exchange.arguments.alternate-exchange=another-exchange
 ----
 
-=== Defining Queues
+=== Defining queues
 
 To define a RabbitMQ queue you provide the queue's name after the `quarkus.rabbitmq.devservices.queues` key,
 followed by one (or more) of the queue's properties:
@@ -91,16 +104,17 @@ followed by one (or more) of the queue's properties:
 ----
 quarkus.rabbitmq.devservices.queues.my-queue.auto-delete=false          # defaults to 'false'
 quarkus.rabbitmq.devservices.queues.my-queue.durable=true               # defaults to 'false'
+quarkus.rabbitmq.devservices.queues.my-queue.vhost=my-vhost             # defaults to '/'
 ----
 
-Additionally, any additional arguments may be provided to the queue's definition by using the `arguments` key:
+Additionally, any additional arguments can be provided to the queue's definition by using the `arguments` key:
 
 [source, properties]
 ----
 quarkus.rabbitmq.devservices.queues.my-queue.arguments.x-dead-letter-exchange=another-exchange
 ----
 
-=== Defining Bindings
+=== Defining bindings
 
 To define a RabbitMQ binding you provide the binding's name after the `quarkus.rabbitmq.devservices.bindings` key,
 followed by one (or more) of the binding's properties:
@@ -111,14 +125,20 @@ quarkus.rabbitmq.devservices.bindings.a-binding.source=my-exchange      # defaul
 quarkus.rabbitmq.devservices.bindings.a-binding.routing-key=some-key    # defaults to '#'
 quarkus.rabbitmq.devservices.bindings.a-binding.destination=my-queue    # defaults to name of binding
 quarkus.rabbitmq.devservices.bindings.a-binding.destination-type=queue  # defaults to 'queue'
+quarkus.rabbitmq.devservices.bindings.a-binding.vhost=my-vhost          # defaults to '/'
 ----
 
 NOTE: The name of the binding is only used for the purposes of the Dev Services configuration and is not part of the
 binding defined in RabbitMQ.
 
-Additionally, any additional arguments may be provided to the binding's definition by using the `arguments` key:
+Additionally, any additional arguments can be provided to the binding's definition by using the `arguments` key:
 
 [source, properties]
 ----
 quarkus.rabbitmq.devservices.bindings.a-binding.arguments.non-std-option=value
 ----
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-messaging-rabbitmq_quarkus.rabbitmq.devservices.adoc[opts=optional, leveloffset=+1]

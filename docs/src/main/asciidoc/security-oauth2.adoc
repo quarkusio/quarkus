@@ -6,8 +6,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OAuth2 RBAC
 include::_attributes.adoc[]
 :categories: security
+:keywords: oauth
 :summary: This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the Jakarta REST endpoints.
 :extension-name: Elytron Security OAuth2
+:topics: security,oauth2,identity-providers
+:extensions: io.quarkus:quarkus-elytron-security-oauth2
 
 This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the Jakarta REST (formerly known as JAX-RS) endpoints.
 
@@ -19,8 +22,6 @@ This extension provides a light-weight support for using the opaque Bearer Token
 If the OAuth2 Authentication server provides JWT Bearer Tokens, consider using either xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow. For more information, see the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide.
 
-include::{includes}/extension-status.adoc[]
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -28,7 +29,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: git clone https://github.com/quarkusio/quarkus-quickstarts.git, or download an archive.
 
-The solution is located in the `security-oauth2-quickstart` {quickstarts-tree-url}/security-oauth2-quickstart[directory].
+The solution is located in the `security-oauth2-quickstart` link:{quickstarts-tree-url}/security-oauth2-quickstart[directory].
 It contains a very simple UI to use the Jakarta REST resources created here, too.
 
 == Creating the Maven project
@@ -36,7 +37,7 @@ It contains a very simple UI to use the Jakarta REST resources created here, too
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-oauth2-quickstart
-:create-app-extensions: resteasy-reactive-jackson,security-oauth2
+:create-app-extensions: rest-jackson,security-oauth2
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project and imports the `elytron-security-oauth2` extension, which includes the OAuth2 opaque token support.
@@ -289,7 +290,7 @@ And executed using `java -jar target/quarkus-app/quarkus-run.jar`:
 ...
 $ java -jar target/quarkus-app/quarkus-run.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, security-oauth2]
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, security-oauth2]
 ----
 
 You can also generate the native executable with:
@@ -317,7 +318,7 @@ include::{includes}/devtools/build-native.adoc[]
 
 $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, security-oauth2]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, security-oauth2]
 ----
 
 [[integration-testing]]
@@ -332,20 +333,20 @@ First, Wiremock needs to be added as a test dependency. For a Maven project that
 .pom.xml
 ----
 <dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
+    <groupId>org.wiremock</groupId>
+    <artifactId>wiremock</artifactId>
     <scope>test</scope>
     <version>${wiremock.version}</version> // <1>
 </dependency>
 ----
-<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("com.github.tomakehurst:wiremock-jre8:${wiremock.version}") <1>
+testImplementation("org.wiremock:wiremock:${wiremock.version}") <1>
 ----
-<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
 
 In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
 annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
@@ -417,7 +418,7 @@ class TokenSecuredResourceTest {
     void testPermitAll() {
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN) // <3>
+                .header("Authorization", "Bearer " + BEARER_TOKEN) // <3>
                 .get("/secured/permit-all")
                 .then()
                 .statusCode(200)
@@ -428,7 +429,7 @@ class TokenSecuredResourceTest {
     void testRolesAllowed() {
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
                 .get("/secured/roles-allowed")
                 .then()
                 .statusCode(200)

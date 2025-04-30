@@ -11,6 +11,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started,testing,tooling
 
 
 Learn how to test your Quarkus Application.
@@ -39,7 +40,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-testing` {quickstarts-tree-url}/getting-started-testing[directory].
+The solution is located in the `getting-started-testing` link:{quickstarts-tree-url}/getting-started-testing[directory].
 
 This guide assumes you already have the completed application from the `getting-started` directory.
 
@@ -368,6 +369,8 @@ public class GreetingServiceTest {
 ----
 <1> The `GreetingService` bean will be injected into the test
 
+TIP: If you want to inject/test a `@SessionScoped` bean then it's very likely that the session context is not active and you would receive the `ContextNotActiveException` when a method of the injected bean is invoked. However, it's possible to use the `@io.quarkus.test.ActivateSessionContext` interceptor binding to activate the session context for a specific business method. Please read the javadoc for futher limitations.
+
 == Applying Interceptors to Tests
 
 As mentioned above Quarkus tests are actually full CDI beans, and as such you can apply CDI interceptors as you would
@@ -426,7 +429,7 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
-Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`. 
+Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`.
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 
@@ -454,9 +457,6 @@ org.acme.getting.started.testing.MyQuarkusTestBeforeEachCallback
 
 TIP: It is possible to read annotations from the test class or method to control what the callback shall be doing.
 
-WARNING: While it is possible to use JUnit Jupiter callback interfaces like `BeforeEachCallback`, you might run into classloading issues because Quarkus has
-         to run tests in a custom classloader which JUnit is not aware of.
-
 [[testing_different_profiles]]
 == Testing Different Profiles
 
@@ -471,24 +471,10 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
-The behavior of this `ClassOrderer` is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
-It can also be disabled entirely by setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one. +
-Please note that as of JUnit 5.8.2 link:https://github.com/junit-team/junit5/issues/2794[only a single `junit-platform.properties` is picked up and a warning is logged if more than one is found].
-If you encounter such warnings, you can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
-    <scope>test</scope>
-    <exclusions>
-        <exclusion>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-properties</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-----
+The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
+`quarkus.test.class-orderer`. The property accepts the FQCN of the `ClassOrderer` to use. If the class cannot be found,
+it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all. It can also be disabled entirely by
+setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one.
 
 === Writing a Profile
 
@@ -502,6 +488,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import jakarta.enterprise.inject.Produces;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
@@ -600,9 +588,15 @@ public class MockGreetingProfile implements QuarkusTestProfile { <1>
     public boolean disableApplicationLifecycleObservers() {
         return false;
     }
+
+    @Produces <2>
+    public ExternalService mockExternalService() {
+       return new ExternalService("mock");
+    }
 }
 ----
 <1> All these methods have default implementations so just override the ones you need to override.
+<2> If a test profile implementation declares a CDI bean (via producer method/field or nested static class) then this bean is only taken into account if the test profile is used, i.e. it's ignored for any other test profile.
 
 Now we have defined our profile we need to include it on our test class.
 We do this by annotating the test class with `@TestProfile(MockGreetingProfile.class)`.
@@ -631,14 +625,14 @@ public class Profiles {
     public static class SingleTag implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return Collections.singleton("test1");
+            return Set.of("test1");
         }
     }
 
     public static class MultipleTags implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return new HashSet<>(Arrays.asList("test1", "test2"));
+            return Set.of("test1", "test2");
         }
     }
 }
@@ -707,6 +701,11 @@ match the value of `quarkus.test.profile.tags`.
 * `quarkus.test.profile.tags=test1,test3`: This case results in the same tests being executed as the previous case.
 * `quarkus.test.profile.tags=test2,test3`: In this case only `MultipleTagsTest` will be run because `MultipleTagsTest` is the only `QuarkusTestProfile` implementation whose `tags` method
 matches the value of `quarkus.test.profile.tags`.
+
+== Nested Tests
+
+JUnit 5 https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested[@Nested tests] are useful for structuring more complex test scenarios.
+However, note that it is not possible to assign different test profiles or resources to nested tests within the same parent class.
 
 == Mock Support
 
@@ -834,7 +833,20 @@ So if you need to call methods such as `verify` you should hang on to the mock i
 ==== Further simplification with `@InjectMock`
 
 Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.
-This functionality is available with the `@io.quarkus.test.InjectMock` annotation if the `quarkus-junit5-mockito` dependency is present.
+
+[IMPORTANT]
+====
+This functionality is available with the `@io.quarkus.test.InjectMock` annotation **only if** the `quarkus-junit5-mockito` dependency is present:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+====
 
 Using `@InjectMock`, the previous example could be written as follows:
 
@@ -1011,7 +1023,7 @@ public class SpyGreetingServiceTest {
 
 ==== Using `@InjectMock` with `@RestClient`
 
-The `@RegisterRestClient` registers the implementation of the rest-client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.
+The `@RegisterRestClient` registers the implementation of the REST Client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.
 
 [source,java]
 ----
@@ -1061,25 +1073,29 @@ If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache
 
 If you are using Quarkus Security, check out the xref:security-testing.adoc[Testing Security] section for information on how to easily test security features of the application.
 
-[#quarkus-test-resource]
+[[quarkus-test-resource]]
 == Starting services before the Quarkus application starts
 
 A very common need is to start some services on which your Quarkus application depends, before the Quarkus application starts for testing. To address this need, Quarkus provides `@io.quarkus.test.common.QuarkusTestResource` and `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
 
 By simply annotating any test in the test suite with `@QuarkusTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
-A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
+A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests.
 
 NOTE: Test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
 remove duplicates. If you want to only enable a test resource on a single test class or test profile, you can use `@QuarkusTestResource(restrictToAnnotatedClass = true)`.
+
+NOTE: When using multiple test resources, they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
 
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus/blob/main/test-framework/keycloak-server/src/main/java/io/quarkus/test/keycloak/server/KeycloakTestResourceLifecycleManager.java[here]),
 or starting a mock HTTP server using https://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
 
+NOTE: As `QuarkusTestResourceLifecycleManager` is not a CDI Bean, classes that implement it can't have fields injected with `@Inject`. You can use `String propertyName = ConfigProvider.getConfig().getValue("quarkus.my-config-group.myconfig", String.class);`
+
 
 === Altering the test class
-When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject the something into the test class, the `inject` methods can be used.
+When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject something into the test class, the `inject` methods can be used.
 If for example you have a test like the following:
 
 [source,java]
@@ -1210,7 +1226,20 @@ public @interface WithRepeatableTestResource {
 }
 ----
 
+=== Usage of `@WithTestResource`
 
+While test resources provided by `@QuarkusTestResource` are available either globally or restricted to the annotated test class (`restrictToAnnotatedClass`), the annotation `@WithTestResource` allows to additionally group tests by test resources for execution.
+`@WithTestResource` has a `scope` property that takes a `TestResourceScope` enum value:
+
+- `TestResourceScope.MATCHING_RESOURCES` (default): Quarkus will group tests with the same test resources and run them together. After a group has been executed, all test resources will be stopped, and the next group will be executed.
+- `TestResourceScope.RESTRICTED_TO_CLASS`: The test resource is available only for the annotated test class and will be stopped after the test class has been executed.
+- `TestResourceScope.GLOBAL`: Test resources apply to all tests in the test suite
+
+Quarkus needs to restart if one of the following is true:
+
+- At least one of the test resources of the current test is restricted to the test class
+- At least one of the test resources of the next test is restricted to the test class
+- Different `MATCHING_RESOURCES` scoped test resources are being used
 
 == Hang Detection
 
@@ -1231,14 +1260,14 @@ guide except injecting into tests (and the native executable runs in a separate 
 
 This is covered in the xref:building-native-image.adoc[Native Executable Guide].
 
-[#quarkus-integration-test]
+[[quarkus-integration-test]]
 == Using `@QuarkusIntegrationTest`
 
 `@QuarkusIntegrationTest` should be used to launch and test the artifact produced by the Quarkus build, and supports testing a jar (of whichever type), a native image or container image.
 Put simply, this means that if the result of a Quarkus build (`mvn package` or `gradle build`) is a jar, that jar will be launched as `java -jar ...` and tests run against it.
 If instead a native image was built, then the application is launched as `./application ...` and again the tests run against the running application.
-Finally, if a container image was created during the build (by including the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions and having the
-`quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` executable being present).
+Finally, if a container image was created during the build (by including the `quarkus-container-image-jib`, `quarkus-container-image-docker`, or `container-image-podman` extensions and having the
+`quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` or `podman` executable being present).
 
 This is a black box test that supports the same set features and has the same limitations.
 
@@ -1301,6 +1330,12 @@ More information can be found in the link:building-native-image#testing-the-nati
 [IMPORTANT]
 ====
 When the application is tested using `@QuarkusIntegrationTest` it is launched using the `prod` configuration profile, but this can be changed using the `quarkus.test.integration-test-profile` property.
+====
+
+[IMPORTANT]
+====
+While adding test-specific configuration properties using `src/test/resources/application.properties` (note there's `test`, not `main`)
+is possible for unit tests, it's not possible for integration tests.
 ====
 
 === Launching containers
@@ -1396,7 +1431,7 @@ An example use of this could be the following Maven command, that forces `@Quark
 ./mvnw verify -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
 ----
 
-To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true`.
+To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true` and `quarkus.http.test-ssl-port` to the target HTTPS port.
 
 == Mixing `@QuarkusTest` with other type of tests
 
@@ -1442,6 +1477,87 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
     </configuration>
 </plugin>
 ----
+
+[NOTE]
+--
+Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.  
+
+For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
+
+For Gradle, this means the two types of tests should belong to different source sets.
+
+.Source set configuration example  
+[%collapsible]
+====
+[source,kotlin,subs=attributes+]
+----
+/** custom source sets
+ *
+ * io.quarkus.gradle.QuarkusPlugin
+ * io.quarkus.test.junit.IntegrationTestUtil
+ *
+ * to work around
+ *  https://github.com/quarkusio/quarkus/issues/43796
+ *  https://github.com/quarkusio/quarkus/issues/43804
+ */
+
+sourceSets {
+    create("intTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+    create("e2eTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+configurations {
+    getByName("intTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("intTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+    getByName("e2eTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("e2eTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+}
+
+tasks.register<Test>("intTest") {
+    group = "verification"
+    description = "Runs integration tests"
+
+    testClassesDirs = sourceSets["intTest"].output.classesDirs
+    classpath = sourceSets["intTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+    systemProperty("quarkus.profile", "intTest")
+}
+
+tasks.register<Test>("e2eTest") {
+    group = "verification"
+    description = "Runs e2e tests"
+
+    val quarkusBuild = tasks.getByName("quarkusBuild")
+    dependsOn(quarkusBuild)
+
+    testClassesDirs = sourceSets["e2eTest"].output.classesDirs
+    classpath = sourceSets["e2eTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+}
+
+idea.module {
+    testSources.from(sourceSets["intTest"].kotlin.srcDirs)
+    testSources.from(sourceSets["e2eTest"].kotlin.srcDirs)
+}
+----
+====
+--
 
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
@@ -1510,14 +1626,12 @@ This can be used by `QuarkusTestResourceLifecycleManager` that need to launch ad
 
 == Testing Components
 
-IMPORTANT: This feature is experimental and the API may change in the future.
+Quarkus provides the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies.
+This JUnit extension is available in the `quarkus-junit5-component` dependency.
 
-In Quarkus, the component model is built on top CDI.
-Therefore, Quarkus provides the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies.
-This extension is available in the `quarkus-junit5-component` dependency.
+Let's have a component `Foo` - a CDI bean with two injection points.
 
-Let's have a component `Foo`:
-
+.`Foo` component
 [source, java]
 ----
 package org.acme;
@@ -1530,8 +1644,8 @@ public class Foo {
 
     @Inject
     Charlie charlie; <2>
-    
-    @ConfigProperty(name = "bar") 
+
+    @ConfigProperty(name = "bar")
     boolean bar; <3>
 
     public String ping() {
@@ -1541,10 +1655,11 @@ public class Foo {
 ----
 <1> `Foo` is an `@ApplicationScoped` CDI bean.
 <2> `Foo` depends on `Charlie` which declares a method `ping()`.
-<3> `Foo` depends on the config property `bar`.
+<3> `Foo` depends on the config property `bar`. `@Inject` is not needed for this injection point because it also declares a CDI qualifier - this is a Quarkus-specific feature.
 
 Then a component test could look like:
 
+.Simple component test
 [source, java]
 ----
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1576,161 +1691,7 @@ public class FooTest {
 <1> The `QuarkusComponentTest` annotation registers the JUnit extension.
 <2> Sets a configuration property for the test.
 <3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
-<4> The test also injects `Charlie`, a dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
+<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisfied_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
-If you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programatically.
-The test above could be rewritten like:
-
-[source, java]
-----
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import jakarta.inject.Inject;
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.component.QuarkusComponentTestExtension;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-public class FooTest {
-
-    @RegisterExtension <1>
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension().configProperty("bar","true");
-
-    @Inject
-    Foo foo;
-
-    @InjectMock
-    Charlie charlieMock;
-
-    @Test
-    public void testPing() {
-        Mockito.when(charlieMock.ping()).thenReturn("OK");
-        assertEquals("OK", foo.ping());
-    }
-}
-----
-<1> The `QuarkusComponentTestExtension` is configured in a static field of the test class.
-
-=== Lifecycle
-
-So what exactly does the `QuarkusComponentTest` do?
-It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object] during the `before all` test phase. 
-The container is stopped and the config is released during the `after all` test phase.
-The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created and unset before a test instance is destroyed.
-Finally, the CDI request context is activated and terminated per each test method.
-
-NOTE: By default, a new test instance is created for each test method. Therefore, a new CDI container is started for each test method. However, if the test class is annotated with `@org.junit.jupiter.api.TestInstance` and the test instance lifecycle is set to `org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS` then the CDI container will be shared across all test method executions of a given test class.
-
-=== Auto Mocking Unsatisfied Dependencies
-
-Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. 
-Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
-The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers. 
-The injected reference is an _unconfigured_ Mockito mock.
-You can inject the mock in your test and leverage the Mockito API to configure the behavior.
-
-=== Custom Mocks For Unsatisfied Dependencies
-
-Sometimes you need the full control over the bean attributes and maybe even configure the default mock behavior.
-You can use the mock configurator API via the `QuarkusComponentTestExtension#mock()` method.
-
-=== Configuration
-
-A dedicated `SmallRyeConfig` is registered during the `before all` test phase.
-Moreover, it's possible to set the configuration properties via the `QuarkusComponentTestExtension#configProperty(String, String)` method or the `@TestConfigProperty` annotation.
-If you only need to use the default values for missing config properties, then the `QuarkusComponentTestExtension#useDefaultConfigProperties()` or `@QuarkusComponentTest#useDefaultConfigProperties()` might come in useful.
-
-=== Mocking CDI Interceptors
-
-If a tested component class declares an interceptor binding then you might need to mock the interception too.
-There are two ways to accomplish this task.
-First, you can define an interceptor class as a static nested class of the test class.
-
-[source, java]
-----
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import jakarta.inject.Inject;
-import io.quarkus.test.component.QuarkusComponentTest;
-import org.junit.jupiter.api.Test;
-
-@QuarkusComponentTest
-public class FooTest {
-
-    @Inject
-    Foo foo;
-
-    @Test
-    public void testPing() {
-        assertEquals("OK", foo.ping());
-    }
-    
-    @ApplicationScoped
-    static class Foo {
-       
-       @SimpleBinding <1>
-       String ping() {
-         return "ok";
-       }
-    
-    }
-    
-    @SimpleBinding
-    @Interceptor
-    static class SimpleInterceptor { <2>
-
-        @AroundInvoke
-        Object aroundInvoke(InvocationContext context) throws Exception {
-            return context.proceed().toString().toUpperCase();
-        }
-
-    }
-}
-----
-<1> `@SimpleBinding` is an interceptor binding.
-<2> The interceptor class is automatically considered a tested component.
-
-NOTE: Static nested classed declared on a test class that is annotated with `@QuarkusComponentTest` are excluded from bean discovery when running a `@QuarkusTest` in order to prevent unintentional CDI conflicts.
-
-Furthermore, you can also declare a "test interceptor method" directly on the test class.
-This method is then invoked in the relevant interception phase.
-
-[source, java]
-----
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import jakarta.inject.Inject;
-import io.quarkus.test.component.QuarkusComponentTest;
-import org.junit.jupiter.api.Test;
-
-@QuarkusComponentTest
-public class FooTest {
-
-    @Inject
-    Foo foo;
-
-    @Test
-    public void testPing() {
-        assertEquals("OK", foo.ping());
-    }
-
-    @SimpleBinding <1>
-    @AroundInvoke <2>
-    Object aroundInvoke(InvocationContext context) throws Exception {
-       return context.proceed().toString().toUpperCase();
-    }
-
-    @ApplicationScoped
-    static class Foo {
-       
-       @SimpleBinding <1>
-       String ping() {
-         return "ok";
-       }
-    
-    }
-}
-----
-<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types. 
-<2> Defines the interception type.
+You can find more examples and hints in the xref:testing-components.adoc[testing components reference guide].

@@ -3,12 +3,14 @@ package io.quarkus.micrometer.runtime.config.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "micrometer.binder.http-server", phase = ConfigPhase.RUN_TIME)
-public class HttpServerConfig {
+@ConfigMapping(prefix = "quarkus.micrometer.binder.http-server")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface HttpServerConfig {
     /**
      * Comma-separated list of regular expressions used to specify uri
      * labels in http metrics.
@@ -28,15 +30,13 @@ public class HttpServerConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem
-    public Optional<List<String>> matchPatterns = Optional.empty();
+    Optional<List<String>> matchPatterns();
 
     /**
      * Comma-separated list of regular expressions defining uri paths
      * that should be ignored (not measured).
      */
-    @ConfigItem
-    public Optional<List<String>> ignorePatterns = Optional.empty();
+    Optional<List<String>> ignorePatterns();
 
     /**
      * Suppress non-application uris from metrics collection.
@@ -47,23 +47,25 @@ public class HttpServerConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean suppressNonApplicationUris;
+    @WithDefault("true")
+    boolean suppressNonApplicationUris();
+
+    /**
+     * Suppress 4xx errors from metrics collection for unmatched templates.
+     * This configuration exists to limit cardinality explosion from caller side error. Does not apply to 404 errors.
+     *
+     * Suppressing 4xx errors is disabled by default.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("false")
+    boolean suppress4xxErrors();
 
     /**
      * Maximum number of unique URI tag values allowed. After the max number of
      * tag values is reached, metrics with additional tag values are denied by
      * filter.
      */
-    @ConfigItem(defaultValue = "100")
-    public int maxUriTags;
-
-    public void mergeDeprecatedConfig(VertxConfig config) {
-        if (!ignorePatterns.isPresent()) {
-            ignorePatterns = config.ignorePatterns;
-        }
-        if (!matchPatterns.isPresent()) {
-            matchPatterns = config.matchPatterns;
-        }
-    }
+    @WithDefault("100")
+    int maxUriTags();
 }

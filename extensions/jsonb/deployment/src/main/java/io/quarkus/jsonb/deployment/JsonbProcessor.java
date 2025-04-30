@@ -3,6 +3,7 @@ package io.quarkus.jsonb.deployment;
 import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
+import java.beans.ConstructorProperties;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,8 +16,8 @@ import jakarta.json.bind.annotation.JsonbTypeDeserializer;
 import jakarta.json.bind.annotation.JsonbTypeSerializer;
 import jakarta.json.bind.serializer.JsonbDeserializer;
 import jakarta.json.bind.serializer.JsonbSerializer;
+import jakarta.json.bind.spi.JsonbProvider;
 
-import org.eclipse.yasson.JsonBindingProvider;
 import org.eclipse.yasson.spi.JsonbComponentInstanceCreator;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -63,13 +64,14 @@ public class JsonbProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CombinedIndexBuildItem combinedIndexBuildItem) {
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(JsonBindingProvider.class.getName()).build());
 
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("yasson-messages"));
 
         serviceProvider.produce(new ServiceProviderBuildItem(JsonbComponentInstanceCreator.class.getName(),
                 QuarkusJsonbComponentInstanceCreator.class.getName()));
+
+        // Accessed in jakarta.json.bind.spi.JsonbProvider.provider()
+        serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JsonbProvider.class.getName()));
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
         additionalBeans.produce(new AdditionalBeanBuildItem(JsonbProducer.class));
@@ -91,8 +93,13 @@ public class JsonbProcessor {
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder("java.lang.String").build());
 
+        // register `java.beans.ConstructorProperties` as it's accessed through `io.quarkus.jsonb.JsonbProducer.jsonb`
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ConstructorProperties.class).build());
+
         // Necessary for Yasson versions using MethodHandles (2.0+)
-        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "putReference", Object.class,
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem(
+                getClass().getName(),
+                "jdk.internal.misc.Unsafe", "putReference", Object.class,
                 long.class, Object.class));
     }
 

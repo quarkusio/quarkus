@@ -33,8 +33,16 @@ public class MyService {
         return name != null;
     }
 
-    public Boolean isActive() {
+    public boolean isActive() {
         return true;
+    }
+
+    public Boolean isActiveObject() {
+        return true;
+    }
+
+    public Boolean isActiveObjectNull() {
+        return null;
     }
 
     public boolean hasItems() {
@@ -43,6 +51,10 @@ public class MyService {
 
     public MyEnum myEnum() {
         return MyEnum.BAR;
+    }
+
+    public MyEnum myEnumNull() {
+        return null;
     }
 
     public List<String> getList(int limit, String dummy) {

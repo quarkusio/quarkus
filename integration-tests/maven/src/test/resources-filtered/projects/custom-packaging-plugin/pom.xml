@@ -15,8 +15,9 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
     <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+    <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
   </properties>
 
   <dependencyManagement>
@@ -33,6 +34,10 @@
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>\${compiler-plugin.version}</version>
+      </plugin>
       <plugin>
         <artifactId>maven-plugin-plugin</artifactId>
         <version>3.7.1</version>

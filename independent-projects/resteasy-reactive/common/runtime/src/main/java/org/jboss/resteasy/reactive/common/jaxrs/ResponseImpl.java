@@ -88,19 +88,18 @@ public class ResponseImpl extends Response {
         checkClosed();
         // this check seems very ugly, but it seems to be needed by the TCK
         // this will likely require a better solution
-        if (entity instanceof GenericEntity) {
-            GenericEntity<?> genericEntity = (GenericEntity<?>) entity;
+        if (entity instanceof GenericEntity genericEntity) {
             if (genericEntity.getRawType().equals(genericEntity.getType())) {
                 return ((GenericEntity<?>) entity).getEntity();
             }
         }
-        return entity;
+        return entity == null ? entityStream : entity;
     }
 
     protected void setEntity(Object entity) {
         this.entity = entity;
-        if (entity instanceof InputStream) {
-            this.entityStream = (InputStream) entity;
+        if (entity instanceof InputStream inputStream) {
+            this.entityStream = inputStream;
         }
     }
 

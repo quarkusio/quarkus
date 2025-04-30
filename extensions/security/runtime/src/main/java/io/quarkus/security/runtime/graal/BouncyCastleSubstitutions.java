@@ -95,10 +95,6 @@ final class Target_org_bouncycastle_jcajce_provider_BouncyCastleFipsProvider {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
     private SecureRandom entropySource;
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
-    private SecureRandom providerDefaultRandom;
 }
 
 @com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.math.ec.ECPoint", onlyWith = BouncyCastleCryptoFips.class)

@@ -8,15 +8,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.service.ServiceRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
@@ -30,15 +30,12 @@ public class NoJtaTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    SessionFactory sessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
-
-    @Inject
     Mutiny.SessionFactory factory;
 
     @Test
     @RunOnVertxContext
     public void test(UniAsserter asserter) {
-        ServiceRegistryImplementor serviceRegistry = sessionFactory.unwrap(SessionFactoryImplementor.class)
+        ServiceRegistry serviceRegistry = ((MutinySessionFactoryImpl) ClientProxy.unwrap(factory))
                 .getServiceRegistry();
 
         // Two assertions are necessary, because these values are influenced by separate configuration

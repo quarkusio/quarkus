@@ -131,6 +131,22 @@ class BeanResolverImpl implements BeanResolver {
         return resolved.isEmpty() ? Collections.emptyList() : resolved;
     }
 
+    List<BeanInfo> findUnrestrictedTypeMatching(TypeAndQualifiers typeAndQualifiers) {
+        List<BeanInfo> resolved = new ArrayList<>();
+        for (BeanInfo b : beanDeployment.getBeans()) {
+            if (!Beans.hasQualifiers(b, typeAndQualifiers.qualifiers)) {
+                continue;
+            }
+            for (Type type : b.getUnrestrictedTypes()) {
+                if (matches(typeAndQualifiers.type, type)) {
+                    resolved.add(b);
+                    break;
+                }
+            }
+        }
+        return resolved.isEmpty() ? Collections.emptyList() : resolved;
+    }
+
     Collection<BeanInfo> potentialBeans(Type type) {
         if ((type.kind() == CLASS || type.kind() == PARAMETERIZED_TYPE) && !type.name().equals(DotNames.OBJECT)) {
             return beanDeployment.getBeansByRawType(type.name());

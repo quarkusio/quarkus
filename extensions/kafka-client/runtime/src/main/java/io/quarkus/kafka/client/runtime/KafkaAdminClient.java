@@ -1,6 +1,13 @@
 package io.quarkus.kafka.client.runtime;
 
-import java.util.*;
+import static io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer.TLS_CONFIG_NAME_KEY;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -15,7 +22,7 @@ import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaCreateTopicRequest;
 import io.smallrye.common.annotation.Identifier;
 
 @ApplicationScoped
@@ -33,8 +40,10 @@ public class KafkaAdminClient {
         Map<String, Object> conf = new HashMap<>();
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, DEFAULT_ADMIN_CLIENT_TIMEOUT);
         for (Map.Entry<String, Object> entry : config.entrySet()) {
-            if (AdminClientConfig.configNames().contains(entry.getKey())) {
-                conf.put(entry.getKey(), entry.getValue().toString());
+            String key = entry.getKey();
+            // include TLS config name if it has been configured
+            if (TLS_CONFIG_NAME_KEY.equals(key) || AdminClientConfig.configNames().contains(key)) {
+                conf.put(key, entry.getValue().toString());
             }
         }
         client = AdminClient.create(conf);
@@ -61,23 +70,23 @@ public class KafkaAdminClient {
                 .values();
     }
 
-    public boolean deleteTopic(String name) {
+    public boolean deleteTopic(final String name) {
         Collection<String> topics = new ArrayList<>();
         topics.add(name);
         DeleteTopicsResult dtr = client.deleteTopics(topics);
         return dtr.topicNameValues() != null;
     }
 
-    public boolean createTopic(KafkaCreateTopicRequest kafkaCreateTopicRq) {
+    public boolean createTopic(final KafkaCreateTopicRequest kafkaCreateTopicRq) {
         var partitions = Optional.ofNullable(kafkaCreateTopicRq.getPartitions()).orElse(1);
         var replications = Optional.ofNullable(kafkaCreateTopicRq.getReplications()).orElse((short) 1);
         var newTopic = new NewTopic(kafkaCreateTopicRq.getTopicName(), partitions, replications);
-
+        newTopic.configs(Optional.ofNullable(kafkaCreateTopicRq.getConfigs()).orElse(Map.of()));
         CreateTopicsResult ctr = client.createTopics(List.of(newTopic));
         return ctr.values() != null;
     }
 
-    public ListConsumerGroupOffsetsResult listConsumerGroupOffsets(String groupId) {
+    public ListConsumerGroupOffsetsResult listConsumerGroupOffsets(final String groupId) {
         return client.listConsumerGroupOffsets(groupId);
     }
 
@@ -87,7 +96,7 @@ public class KafkaAdminClient {
         return client.describeAcls(filter, options).values().get();
     }
 
-    public Map<String, TopicDescription> describeTopics(Collection<String> topicNames)
+    public Map<String, TopicDescription> describeTopics(final Collection<String> topicNames)
             throws InterruptedException, ExecutionException {
         return client.describeTopics(topicNames)
                 .allTopicNames()

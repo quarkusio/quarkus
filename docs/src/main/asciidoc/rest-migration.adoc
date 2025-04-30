@@ -1,0 +1,248 @@
+////
+This file is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Migrating to Quarkus REST (formerly RESTEasy Reactive)
+include::_attributes.adoc[]
+:categories: web
+:topics: rest,rest-client,resteasy-reactive
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+
+Migrating from RESTEasy Classic to Quarkus REST (formerly RESTEasy Reactive) is straightforward in most cases, however there are a few cases that require some attention.
+This document provides a list of issues users attempting the migration should be aware of.
+
+NOTE: The reference documentation of Quarkus REST can be found xref:rest.adoc[here].
+
+== Server
+
+The server part of Quarkus REST (`quarkus-rest` and its dependencies) provide an implementation of the Jakarta REST specification, but leverage Quarkus' build time processing
+and the unified I/O model provided by Vert.x.
+
+=== Dependencies
+
+The following table matches the legacy RESTEasy dependencies with the new Quarkus REST ones.
+
+|===
+|Legacy |Quarkus REST
+
+|`quarkus-resteasy`
+|`quarkus-rest`
+
+|`quarkus-resteasy-jackson`
+|`quarkus-rest-jackson`
+
+|`quarkus-resteasy-jsonb`
+|`quarkus-rest-jsonb`
+
+|`quarkus-resteasy-jaxb`
+|`quarkus-rest-jaxb`
+
+|`quarkus-resteasy-qute`
+|`quarkus-rest-qute`
+
+|===
+
+NOTE: The `quarkus-resteasy-mutiny` does not have a corresponding dependency, as Quarkus REST provides Mutiny integration out of the box.
+
+=== Annotations
+
+Quarkus REST does not support the various custom annotation under the `org.jboss.resteasy.annotations` package.
+
+The following table matches the legacy RESTEasy annotations with the new Quarkus REST ones.
+
+|===
+|Legacy |Quarkus REST |Comments
+
+|`org.jboss.resteasy.annotations.jaxrs.PathParam`
+|`org.jboss.resteasy.reactive.RestPath`
+|This annotation is not necessary when the path part matches the method parameter name
+
+|`org.jboss.resteasy.annotations.jaxrs.QueryParam`
+|`org.jboss.resteasy.reactive.RestQuery`
+|
+
+|`org.jboss.resteasy.annotations.jaxrs.FormParam`
+|`org.jboss.resteasy.reactive.RestForm`
+|
+
+|`org.jboss.resteasy.annotations.jaxrs.HeaderParam`
+|`org.jboss.resteasy.reactive.RestHeader`
+|
+
+|`org.jboss.resteasy.annotations.jaxrs.CookieParam`
+|`org.jboss.resteasy.reactive.RestCookie`
+|
+
+|`org.jboss.resteasy.annotations.jaxrs.MatrixParam`
+|`org.jboss.resteasy.reactive.RestMatrix`
+|
+
+|`org.jboss.resteasy.annotations.cache.Cache`
+|`org.jboss.resteasy.reactive.Cache`
+|
+
+|`org.jboss.resteasy.annotations.cache.NoCache`
+|`org.jboss.resteasy.reactive.NoCache`
+|
+
+|`org.jboss.resteasy.annotations.SseElementType`
+|`org.jboss.resteasy.reactive.RestStreamElementType`
+|
+
+|`org.jboss.resteasy.annotations.Separator`
+|`org.jboss.resteasy.reactive.Separator`
+|
+
+|===
+
+NOTE: The previous table does not include the `org.jboss.resteasy.annotations.Form` annotation because there is no Quarkus REST specific replacement for it.
+Users are instead encouraged to use the Jakarta REST standard `jakarta.ws.rs.BeanParam` annotation which is supported on both the server and the client.
+
+=== Jakarta REST providers
+
+Although Quarkus REST provides the same spec compliant behavior as RESTEasy Classic does, it does not include the same exact provider implementations at runtime.
+
+The most common case where the difference in providers might result in different behavior, is the included `jakarta.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev-ui/io.quarkus.quarkus-rest/exception-mappers.
+
+==== Service Loading
+
+RESTEasy Classic supports determining providers at build time using Java's Service Loader. In order to ensure that all providers are determined at build time,
+Quarkus REST does not support this feature. Instead, users that have providers in application dependencies are encouraged to index those dependencies
+using one of the methods described in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
+
+=== Multipart support
+HTTP Multipart support in Quarkus REST does **not** reuse the same types or annotations as RESTEasy Classic and thus users are encouraged to read <<rest.adoc#multipart,this>> part of the reference documentation.
+
+NOTE: Users migrating multipart resources to Quarkus REST should be aware of the configuration parameter `quarkus.http.limits.max-form-attribute-size`, as this poses an upper limit to the size of each part.
+Any request with a part size exceeding this configuration value will result in HTTP status code 413.
+
+=== Default media types
+
+Quarkus uses smart defaults when determining the media type of Jakarta REST methods in order to simplify common use cases.
+The difference between `quarkus-rest` and `quarkus-resteasy` is the use of `text/plain` as the default media type instead of `text/html`
+when the method returns a `String`.
+
+=== Injection of `@SessionScoped` beans
+
+`@SessionScoped` beans are currently not supported. Should you really need this functionality, you'll need to use RESTEasy Classic instead of RESTEasy Reactive.
+
+=== Servlets
+
+Quarkus REST does **not** support servlets.
+If your project depends on servlets you have to migrate them.
+A servlet-based JAX-RS implementation must support injections of these types with the `@Context` annotation: `ServletConfig`, `ServletContext`, `HttpServletRequest` and `HttpServletResponse`.
+Since Quarkus REST is not servlet-based these injections will not work.
+
+It is not always obvious that this will fail especially if you depend on an extension like `quarkus-undertow` which supplies the interfaces.
+For example, if you write this you could compile it but get an exception on calling it:
+
+[source, java]
+----
+@Path("/reactive")
+public class ReactiveResource {
+
+    @Context
+    HttpServletRequest httpServletRequest;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String servletContextPath() {
+
+        String contextPath = httpServletRequest.getContextPath();
+
+        return "My context path is: " + contextPath;
+    }
+}
+----
+
+The same is true for your third-party libraries.
+If they happen to depend on servlets you need to find a migration path for them.
+
+=== Log authentication and authorization failures
+
+The Quarkus REST endpoint security checks are performed before xref:cdi.adoc#interceptors[CDI interceptors] are invoked.
+The safest approach to log Quarkus Security authentication exceptions is to ensure that proactive authentication is enabled and to use Vert.x HTTP route failure handlers.
+For more information, see the xref:security-proactive-authentication.adoc#customize-auth-exception-responses[Customize authentication exception responses] section of the Proactive authentication guide.
+
+== Client
+
+The REST Client (`quarkus-rest-client` and its dependencies) replaces the legacy RESTEasy Classic-based `quarkus-resteasy-client` and leverages Quarkus' build time processing
+and the unified I/O model provided by Vert.x.
+
+=== Dependencies
+
+The following table matches the legacy RESTEasy Classic-based REST Client dependencies with the new REST Client ones.
+
+|===
+|Legacy |Quarkus REST
+
+|`quarkus-resteasy-client`
+|`quarkus-rest-client`
+
+|`quarkus-resteasy-client-jackson`
+|`quarkus-rest-client-jackson`
+
+|`quarkus-resteasy-client-jsonb`
+|`quarkus-rest-client-jsonb`
+
+|`quarkus-resteasy-client-jaxb`
+|`quarkus-rest-client-jaxb`
+
+|`quarkus-resteasy-client-mutiny`
+|No replacement, natively supports Mutiny
+
+|===
+
+=== Keycloak admin client
+
+When using `quarkus-rest-client`, users can use the `quarkus-keycloak-admin-rest-client` to administer the target Keycloak instance
+by leveraging the rest client.
+
+When using `quarkus-resteasy-client` however, users must use `quarkus-keycloak-admin-resteasy-client` to access the same functionality
+and use the legacy RESTEasy Classic-based REST Client.
+
+=== OIDC
+
+When using `quarkus-rest-client`, users can use the `quarkus-rest-client-oidc-filter` extension to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers.
+
+When using `quarkus-resteasy-client` however, users must use `quarkus-resteasy-client-oidc-filter` to access the same functionality.
+
+Similarly, `quarkus-rest-client-oidc-token-propagation` allows user of the legacy REST to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
+
+When using `quarkus-resteasy-client` however, users must use `quarkus-resteasy-client-oidc-token-propagation` to access the same functionality.
+
+=== Custom extensions
+
+This is an advanced section that only needs to be read by users who have developed custom extensions that depend on Jakarta REST and / or REST Client functionality.
+
+==== Dependencies
+
+A first concern is whether custom extensions should depend on Quarkus REST explicitly, or alternatively support both RESTEasy flavors and leave it to the user to decide.
+If the extension is some general purpose extension, it probably makes sense to choose the latter option, while the former option is easiest to adopt when the custom
+extension is used by a specific set of users / applications.
+
+When opting for supporting both extensions, the deployment module of the custom extension will usually depend on the SPI modules - `quarkus-jaxrs-spi-deployment`, `quarkus-resteasy-common-spi`, `quarkus-rest-spi-deployment`,
+while the runtime modules will have `optional` dependencies on the runtime modules of both RESTEasy flavors.
+
+A couple good examples of how Quarkus uses this strategy to support both RESTEasy flavors in the core repository can be seen https://github.com/quarkusio/quarkus/pull/21089[here] and https://github.com/quarkusio/quarkus/pull/20874[here].
+
+In general, it should not be needed to have two different versions of the custom extension to support both flavors. Such a choice is only strictly necessary if it is desired for the extension consumers (i.e. Quarkus applications) to not have to select a RESTEasy version themselves.
+
+==== Resource and Provider discovery
+
+Custom extensions that contain Jakarta REST Resources, Providers or REST Client interfaces in their runtime modules and depend on Jandex indexing for
+their discovery (for example because they have an empty `META-INF/beans.xml` file) don't have to perform any additional setup to make
+these discoverable by Quarkus REST.
+
+==== Provider registration via Build Items
+
+Extensions that register providers via build items use the `io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem` build item in RESTEasy Classic.
+With Quarkus REST however, extensions need to use specific build items, such as `io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem` and `io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem`.
+
+==== REST Client
+
+Any code that is run as part of a Quarkus application that used the RESTEasy Client, can safely use the REST Client, as all necessary setup for it has been done at the application's static-init phase.
+
+
+

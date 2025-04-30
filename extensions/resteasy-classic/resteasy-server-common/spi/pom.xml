@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-server-common-spi</artifactId>
-    <name>Quarkus - RESTEasy - Server common - SPI</name>
+    <name>Quarkus - RESTEasy Classic - Server common - SPI</name>
     <description>Extensions that provides RESTEasy Server related BuildItems</description>
 
     <dependencies>

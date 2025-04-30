@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
@@ -32,7 +31,11 @@ public class UriInfoImpl implements UriInfo {
 
     private final ResteasyReactiveRequestContext currentRequest;
     private MultivaluedMap<String, String> queryParams;
+
+    // marker for which target the pathParams where created, may be null when getPathParams was never called
+    private RuntimeResource pathParamsTargetMarker;
     private MultivaluedMap<String, String> pathParams;
+
     private URI requestUri;
 
     public UriInfoImpl(ResteasyReactiveRequestContext currentRequest) {
@@ -55,6 +58,9 @@ public class UriInfoImpl implements UriInfo {
         if (prefix.isEmpty())
             return path;
         // else skip the prefix
+        if (path.length() == prefix.length()) {
+            return "/";
+        }
         return path.substring(prefix.length());
     }
 
@@ -147,14 +153,12 @@ public class UriInfoImpl implements UriInfo {
     public MultivaluedMap<String, String> getPathParameters(boolean decode) {
         if (!decode)
             throw encodedNotSupported();
-        if (pathParams == null) {
-            pathParams = new QuarkusMultivaluedHashMap<>();
-            RuntimeResource target = currentRequest.getTarget();
-            if (target != null) { // a target can be null if this happens in a filter that runs before the target is set
-                for (Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
-                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
-                }
-            }
+        // pathParams have to be recreated when the target changes.
+        // this happens e.g. when the ResteasyReactiveRequestContext#restart is called for sub resources
+        // The sub resource, can have additional path params that are not present on the locator
+        if (pathParams == null && pathParamsTargetMarker == null || pathParamsTargetMarker != currentRequest.getTarget()) {
+            pathParams = currentRequest.getAllPathParameters(false);
+            pathParamsTargetMarker = currentRequest.getTarget();
         }
         return new UnmodifiableMultivaluedMap<>(pathParams);
     }

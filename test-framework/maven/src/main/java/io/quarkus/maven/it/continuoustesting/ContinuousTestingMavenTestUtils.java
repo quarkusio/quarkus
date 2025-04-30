@@ -1,47 +1,46 @@
 package io.quarkus.maven.it.continuoustesting;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 
 /**
  * Utilities for testing the test runner itself
  */
 public class ContinuousTestingMavenTestUtils {
 
-    static final URL DEFAULT;
-
-    static {
-        try {
-            DEFAULT = new URL("http://localhost:8080/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/status");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final int DEFAULT_PORT = 8080;
 
     long runtToWaitFor = 1;
-    ObjectMapper objectMapper = new ObjectMapper();
-    final URL url;
+    final String host;
 
-    public ContinuousTestingMavenTestUtils() {
-        this(DEFAULT);
+    protected static String getDefaultHost(int port) {
+        return "http://localhost:" + port;
     }
 
-    public ContinuousTestingMavenTestUtils(URL url) {
-        this.url = url;
+    public ContinuousTestingMavenTestUtils() {
+        this(getDefaultHost(DEFAULT_PORT));
+    }
+
+    public ContinuousTestingMavenTestUtils(int port) {
+        this(getDefaultHost(port));
+    }
+
+    public ContinuousTestingMavenTestUtils(String host) {
+        this.host = host;
     }
 
     public TestStatus waitForNextCompletion() {
         try {
             Awaitility.waitAtMost(2, TimeUnit.MINUTES).pollInterval(200, TimeUnit.MILLISECONDS).until(() -> {
-                TestStatus ts = objectMapper.readValue(url, TestStatus.class);
+                TestStatus ts = getTestStatus();
                 if (ts.getLastRun() > runtToWaitFor) {
                     throw new RuntimeException(
                             "Waiting for run " + runtToWaitFor + " but run " + ts.getLastRun() + " has already occurred");
@@ -57,12 +56,12 @@ public class ContinuousTestingMavenTestUtils {
                 }
                 return runComplete;
             });
-            return objectMapper.readValue(url, TestStatus.class);
+            return getTestStatus();
         } catch (Exception e) {
             TestStatus ts;
             try {
-                ts = objectMapper.readValue(url, TestStatus.class);
-            } catch (IOException ex) {
+                ts = getTestStatus();
+            } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
             throw new ConditionTimeoutException("Failed to wait for test run " + runtToWaitFor + " " + ts, e);
@@ -70,31 +69,49 @@ public class ContinuousTestingMavenTestUtils {
     }
 
     public static String appProperties(String... props) {
-        return "quarkus.test.continuous-testing=enabled\nquarkus.test.display-test-output=true\nquarkus.console.basic=true\nquarkus.test.disable-console-input=true\n"
+        return "quarkus.test.continuous-testing=enabled\nquarkus.test.display-test-output=true\nquarkus.console.basic=true\nquarkus.console.disable-input=true\n"
                 + String.join("\n", Arrays.asList(props));
+    }
+
+    private TestStatus getTestStatus() {
+        DevUIJsonRPCTest devUIJsonRPCTest = new DevUIJsonRPCTest("devui-continuous-testing", this.host);
+        try {
+
+            TypeReference<Map<String, Long>> typeRef = new TypeReference<Map<String, Long>>() {
+            };
+            Map<String, Long> testStatus = devUIJsonRPCTest.executeJsonRPCMethod(typeRef, "getStatus");
+
+            long lastRun = testStatus.getOrDefault("lastRun", -1L);
+            long running = testStatus.getOrDefault("running", -1L);
+            long testsRun = testStatus.getOrDefault("testsRun", -1L);
+            long testsPassed = testStatus.getOrDefault("testsPassed", -1L);
+            long testsFailed = testStatus.getOrDefault("testsFailed", -1L);
+            long testsSkipped = testStatus.getOrDefault("testsSkipped", -1L);
+            long totalTestsPassed = testStatus.getOrDefault("totalTestsPassed", -1L);
+            long totalTestsFailed = testStatus.getOrDefault("totalTestsFailed", -1L);
+            long totalTestsSkipped = testStatus.getOrDefault("totalTestsSkipped", -1L);
+
+            return new TestStatus(lastRun, running, testsRun, testsPassed, testsFailed, testsSkipped, totalTestsPassed,
+                    totalTestsFailed, totalTestsSkipped);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static class TestStatus {
 
         private long lastRun;
-
         private long running;
-
         private long testsRun = -1;
-
         private long testsPassed = -1;
-
         private long testsFailed = -1;
-
         private long testsSkipped = -1;
-
         private long totalTestsPassed = -1;
-
         private long totalTestsFailed = -1;
-
         private long totalTestsSkipped = -1;
 
         public TestStatus() {
+            super();
         }
 
         public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed, long testsSkipped,
@@ -108,101 +125,86 @@ public class ContinuousTestingMavenTestUtils {
             this.totalTestsPassed = totalTestsPassed;
             this.totalTestsFailed = totalTestsFailed;
             this.totalTestsSkipped = totalTestsSkipped;
-
         }
 
         public long getLastRun() {
             return lastRun;
         }
 
-        public TestStatus setLastRun(long lastRun) {
+        public void setLastRun(long lastRun) {
             this.lastRun = lastRun;
-            return this;
         }
 
         public long getRunning() {
             return running;
         }
 
-        public TestStatus setRunning(long running) {
+        public void setRunning(long running) {
             this.running = running;
-            return this;
         }
 
         public long getTestsRun() {
             return testsRun;
         }
 
-        public TestStatus setTestsRun(long testsRun) {
+        public void setTestsRun(long testsRun) {
             this.testsRun = testsRun;
-            return this;
         }
 
         public long getTestsPassed() {
             return testsPassed;
         }
 
-        public TestStatus setTestsPassed(long testsPassed) {
+        public void setTestsPassed(long testsPassed) {
             this.testsPassed = testsPassed;
-            return this;
         }
 
         public long getTestsFailed() {
             return testsFailed;
         }
 
-        public TestStatus setTestsFailed(long testsFailed) {
+        public void setTestsFailed(long testsFailed) {
             this.testsFailed = testsFailed;
-            return this;
         }
 
         public long getTestsSkipped() {
             return testsSkipped;
         }
 
-        public TestStatus setTestsSkipped(long testsSkipped) {
+        public void setTestsSkipped(long testsSkipped) {
             this.testsSkipped = testsSkipped;
-            return this;
         }
 
         public long getTotalTestsPassed() {
             return totalTestsPassed;
         }
 
-        public TestStatus setTotalTestsPassed(long totalTestsPassed) {
+        public void setTotalTestsPassed(long totalTestsPassed) {
             this.totalTestsPassed = totalTestsPassed;
-            return this;
         }
 
         public long getTotalTestsFailed() {
             return totalTestsFailed;
         }
 
-        public TestStatus setTotalTestsFailed(long totalTestsFailed) {
+        public void setTotalTestsFailed(long totalTestsFailed) {
             this.totalTestsFailed = totalTestsFailed;
-            return this;
         }
 
         public long getTotalTestsSkipped() {
             return totalTestsSkipped;
         }
 
-        public TestStatus setTotalTestsSkipped(long totalTestsSkipped) {
+        public void setTotalTestsSkipped(long totalTestsSkipped) {
             this.totalTestsSkipped = totalTestsSkipped;
-            return this;
         }
 
         @Override
         public String toString() {
-            return "TestStatus{" +
-                    "lastRun=" + lastRun +
-                    ", running=" + running +
-                    ", testsRun=" + testsRun +
-                    ", testsPassed=" + testsPassed +
-                    ", testsFailed=" + testsFailed +
-                    ", testsSkipped=" + testsSkipped +
-                    '}';
+            return "TestStatus{" + "lastRun=" + lastRun + ", running=" + running + ", testsRun=" + testsRun + ", testsPassed="
+                    + testsPassed + ", testsFailed=" + testsFailed + ", testsSkipped=" + testsSkipped + ", totalTestsPassed="
+                    + totalTestsPassed + ", totalTestsFailed=" + totalTestsFailed + ", totalTestsSkipped=" + totalTestsSkipped
+                    + '}';
         }
     }
-
 }

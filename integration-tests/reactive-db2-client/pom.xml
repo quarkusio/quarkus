@@ -15,7 +15,7 @@
     <name>Quarkus - Integration Tests - Reactive DB2 Client</name>
 
     <properties>
-        <reactive-db2.url>vertx-reactive:db2://localhost:50000/hreact</reactive-db2.url>
+        <reactive-db2.url>vertx-reactive:db2://localhost:50005/hreact</reactive-db2.url>
     </properties>
 
     <dependencies>
@@ -152,9 +152,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-db2.url>vertx-reactive:db2://localhost:50005/hreact</reactive-db2.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

@@ -280,6 +280,9 @@ public class ConfigurationImpl implements Configuration {
                 resourceReader
                         .setMediaTypeStrings(
                                 consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
+                if (priority != null) {
+                    resourceReader.setPriority(priority);
+                }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
                 resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceReader);
@@ -298,6 +301,9 @@ public class ConfigurationImpl implements Configuration {
                 resourceWriter
                         .setMediaTypeStrings(
                                 produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
+                if (priority != null) {
+                    resourceWriter.setPriority(priority);
+                }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
                 resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceWriter);
@@ -315,6 +321,10 @@ public class ConfigurationImpl implements Configuration {
             Class<?> componentClass = component.getClass();
             Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
             Class<?> key = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+            // in this case we are almost certain a lambda was used so we should fail
+            if ((key == Object.class) && component.getClass().isSynthetic()) {
+                throw new IllegalArgumentException("Registering a ContextResolver via a lambda is not supported");
+            }
             int effectivePriority = priority != null ? priority : determinePriority(component);
             contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>())
                     .add(effectivePriority, (ContextResolver<?>) component);

@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 
 import org.hamcrest.Matchers;
+import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,10 +27,15 @@ public class MultiplePersistenceUnitConfigTest {
 
     @Inject
     EntityManager defaultEntityManager;
+    @Inject
+    Session defaulSession;
 
     @Inject
     @PersistenceUnit("second")
     EntityManager secondEntityManager;
+    @Inject
+    @PersistenceUnit("second")
+    Session secondSession;
 
     @Test
     public void panacheOperations() {
@@ -48,12 +54,19 @@ public class MultiplePersistenceUnitConfigTest {
 
     @Test
     void entityManagerShouldExist() {
-        FirstEntity firstEntity = new FirstEntity();
-        assertNotNull(firstEntity.getEntityManager());
-        assertEquals(firstEntity.getEntityManager(), defaultEntityManager);
+        assertNotNull(FirstEntity.getEntityManager());
+        assertEquals(FirstEntity.getEntityManager(), defaultEntityManager);
 
-        SecondEntity secondEntity = new SecondEntity();
-        assertNotNull(secondEntity.getEntityManager());
-        assertEquals(secondEntity.getEntityManager(), secondEntityManager);
+        assertNotNull(SecondEntity.getEntityManager());
+        assertEquals(SecondEntity.getEntityManager(), secondEntityManager);
+    }
+
+    @Test
+    void sessionShouldExist() {
+        assertNotNull(FirstEntity.getSession());
+        assertEquals(FirstEntity.getSession(), defaulSession);
+
+        assertNotNull(SecondEntity.getSession());
+        assertEquals(SecondEntity.getSession(), secondSession);
     }
 }

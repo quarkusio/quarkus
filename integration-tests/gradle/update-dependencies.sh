@@ -34,6 +34,10 @@ echo ''
 # get the Quarkus artifact ids from all gradle build files in this repo
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
+
+# make sure ordering is not locale-dependent
+export LANG="C"
+
 # note on sed: -deployment deps are added explicitly later and bom is upstream anyway
 ARTIFACT_IDS=$(grep -EhR --include 'build*.gradle*' --exclude-dir=build '[iI]mplementation|api|quarkusDev' "${PRG_PATH}" | \
               grep -Eo 'quarkus-[a-z0-9-]+' | \
@@ -83,7 +87,7 @@ echo ''
 echo 'Sanity check...'
 echo ''
 # sanity check; make sure nothing stupid was added like non-existing deps
-mvn dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" $*
+${PRG_PATH}/../../mvnw -Dscan=false dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" $*
 
 # CI only: verify that no pom.xml was touched (if changes are found, committer forgot to run script or to add changes)
 if [ "${CI:-}" == true ] && [ $(git status -s -u no '*pom.xml' | wc -l) -ne 0 ]

@@ -15,7 +15,7 @@ public class RawOptionalClaimCreator implements BeanCreator<Optional<?>> {
 
     @Override
     public Optional<?> create(CreationalContext<Optional<?>> creationalContext, Map<String, Object> params) {
-        InjectionPoint injectionPoint = InjectionPointProvider.get();
+        InjectionPoint injectionPoint = InjectionPointProvider.getCurrent(creationalContext);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
         }

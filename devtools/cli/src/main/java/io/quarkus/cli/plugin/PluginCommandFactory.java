@@ -40,6 +40,12 @@ public class PluginCommandFactory {
                 return plugin.getLocation().map(l -> new JBangCommand(l, output));
             case executable:
                 return plugin.getLocation().map(l -> new ShellCommand(plugin.getName(), Paths.get(l), output));
+            case extension:
+                if (PluginUtil.checkGACTV(plugin.getLocation()).isPresent()) {
+                    return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+                } else if (plugin.getLocation().filter(l -> l.endsWith(".jar")).isPresent()) {
+                    return plugin.getLocation().map(l -> new JBangCommand(l, output));
+                }
             default:
                 throw new IllegalStateException("Unknown plugin type!");
         }

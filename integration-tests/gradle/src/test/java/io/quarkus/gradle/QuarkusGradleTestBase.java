@@ -2,7 +2,6 @@ package io.quarkus.gradle;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,7 +19,7 @@ import java.util.Properties;
 public class QuarkusGradleTestBase {
 
     protected static File getProjectDir(final String projectName)
-            throws URISyntaxException, IOException, FileNotFoundException {
+            throws URISyntaxException, IOException {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource(projectName);
         if (projectUrl == null) {
             throw new IllegalStateException("Failed to locate test project " + projectName);
@@ -30,13 +29,16 @@ public class QuarkusGradleTestBase {
             throw new IllegalStateException(projectDir + " is not a directory");
         }
 
-        final File projectProps = new File(projectDir, "gradle.properties");
-        if (!projectProps.exists()) {
-            throw new IllegalStateException("Failed to locate " + projectProps);
-        }
         final Properties props = new Properties();
-        try (InputStream is = new FileInputStream(projectProps)) {
-            props.load(is);
+        final File projectProps = new File(projectDir, "gradle.properties");
+        if (projectProps.exists()) {
+            try (InputStream is = new FileInputStream(projectProps)) {
+                props.load(is);
+            }
+        } else {
+            props.setProperty("quarkusPlatformGroupId", "io.quarkus");
+            props.setProperty("quarkusPlatformArtifactId", "quarkus-bom");
+            props.setProperty("org.gradle.logging.level", "INFO");
         }
         final String quarkusVersion = getQuarkusVersion();
         props.setProperty("quarkusPlatformVersion", quarkusVersion);

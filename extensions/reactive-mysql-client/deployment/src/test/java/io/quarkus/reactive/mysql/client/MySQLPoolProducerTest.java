@@ -1,6 +1,5 @@
 package io.quarkus.reactive.mysql.client;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.sqlclient.Pool;
 
 public class MySQLPoolProducerTest {
 
@@ -38,12 +37,10 @@ public class MySQLPoolProducerTest {
     static class BeanUsingBareMySQLClient {
 
         @Inject
-        MySQLPool mysqlClient;
+        Pool mysqlClient;
 
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            mysqlClient.query("SELECT 1").execute(ar -> cf.complete(null));
-            return cf;
+        public CompletionStage<?> verify() {
+            return mysqlClient.query("SELECT 1").execute().toCompletionStage();
         }
     }
 
@@ -51,12 +48,11 @@ public class MySQLPoolProducerTest {
     static class BeanUsingMutinyMySQLClient {
 
         @Inject
-        io.vertx.mutiny.mysqlclient.MySQLPool mysqlClient;
+        io.vertx.mutiny.sqlclient.Pool mysqlClient;
 
         public CompletionStage<Void> verify() {
             return mysqlClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem((Void) null)
                     .subscribeAsCompletionStage();
         }
     }

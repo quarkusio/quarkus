@@ -3,15 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using Transactions in Quarkus
+= Using transactions in Quarkus
 include::_attributes.adoc[]
-:categories: data
-:summary: Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications. Each extension dealing with persistence will integrate with it for you, and you will explicitly interact with transactions via CDI. This guide will walk you through all that.
+:diataxis-type: reference
+:categories: data,getting-started
+:topics: data,jpa,jta,transactions,narayana
+:extensions: io.quarkus:quarkus-narayana-jta
 
-Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications.
-Each extension dealing with persistence will integrate with it for you.
-And you will explicitly interact with transactions via CDI.
-This guide will walk you through all that.
+The `quarkus-narayana-jta` extension provides a Transaction Manager that coordinates and expose transactions to your applications as described in the link: https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
+
+When discussing Quarkus transactions, this guide refers to Jakarta Transactions transaction style and uses only the term _transaction_ to address them.
+
+Also, Quarkus does not support distributed transactions.
+This means that models that propagate transaction context, such as link:https://download.oracle.com/otndocs/jcp/7309-jts-1.0-spec-oth-JSpec/[Java Transaction Service] (JTS), REST-AT, WS-Atomic Transaction, and others, are not supported by the `narayana-jta` extension.
 
 == Setting it up
 
@@ -120,7 +124,7 @@ public class SantaClausService {
 <2> Programmatically decide to set the transaction for rollback.
 
 
-=== Transaction Configuration
+=== Transaction configuration
 
 Advanced configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
 
@@ -137,8 +141,8 @@ The configuration defined on a method takes precedence over the configuration de
 If your `@Transactional`-annotated method returns a reactive value, such as:
 
 - `CompletionStage` (from the JDK)
-- `Publisher` (from  Reactive-Streams)
-- Any type which can be converted to one of the two previous types using Reactive Type Converters
+- `Publisher` (from Reactive-Streams)
+- Any type that can be converted to one of the two previous types using Reactive Type Converters
 
 then the behaviour is a bit different, because the transaction will not be terminated until the
 returned reactive value is terminated. In effect, the returned reactive value will be listened to
@@ -151,7 +155,7 @@ work is really done, and not just until the reactive method returns.
 If you need to propagate your transaction context across your reactive pipeline, please see the
 xref:context-propagation.adoc[Context Propagation guide].
 
-=== Programmatic Approach
+=== Programmatic approach
 
 You can use static methods on `QuarkusTransaction` to define transaction boundaries. This provides two different options,
 a functional approach that allows you to run a lambda within the scope of a transaction, or by using explicit `begin`,
@@ -160,7 +164,6 @@ a functional approach that allows you to run a lambda within the scope of a tran
 [source,java]
 ----
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.narayana.jta.RunOptions;
 
 public class TransactionExample {
 
@@ -187,7 +190,7 @@ public class TransactionExample {
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
-                        return RunOptions.ExceptionResult.COMMIT;
+                        return TransactionExceptionResult.COMMIT;
                     }
                     return TransactionExceptionResult.ROLLBACK;
                 })
@@ -304,6 +307,13 @@ The node name identifier needs to be unique per transaction manager deployment.
 And the node identifier needs to be stable over the transaction manager restarts.
 
 The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
+[NOTE]
+====
+The node name cannot be longer than 28 bytes.
+To automatically shorten names longer than 28 bytes, set `quarkus.transaction-manager.shorten-node-name-if-necessary` to `true`.
+
+Shortening is implemented by hashing the node name, encoding the hash to Base64 and then truncating the result. As with all hashes, the resulting shortened node name could potentially conflict with another shortened node name, but it is https://github.com/quarkusio/quarkus/issues/30491#issuecomment-1537247764[very unlikely].
+====
 
 [[transaction-scope]]
 == Using `@TransactionScoped` to bind CDI beans to the transaction lifecycle
@@ -362,16 +372,55 @@ NOTE: The `event` object represents the transaction ID, and defines `toString()`
 TIP: In listener methods, you can access more information about the transaction in progress by accessing the `TransactionManager`,
 which is a CDI bean and can be ``@Inject``ed.
 
-== Configuring transaction log to be stored in a DataSource
+[[jdbcstore]]
+== Configure storing of Quarkus transaction logs in a database
 
-The Narayana project has the capability to store the transaction logs into a JDBC Datasource; this should be our recommendation for users needing transaction recovery capabilities, especially when running in volatile containers.
+In cloud environments where persistent storage is not available, such as when application containers are unable to use persistent volumes, you can configure the transaction management to store transaction logs in a database by using a Java Database Connectivity (JDBC) datasource.
 
-To enable this capability, you need to set `quarkus.transaction-manager.object-store.type` to `jdbc` explicitly. Also, you can specify a datasource name to be used for the transaction log storage by setting `quarkus.transaction-manager.object-store.datasource`. It will use the default datasource configuration if not specified.
+However, in cloud-native apps, using a database to store transaction logs has additional requirements.
+The `narayana-jta` extension, which manages these transactions, requires stable storage, a unique reusable node identifier, and a steady IP address to work correctly.
+While the JDBC object store provides a stable storage, users must still plan how to meet the other two requirements.
 
-If you enable `quarkus.transaction-manager.object-store.create-table`, the transaction log table will be created automatically if it does not exist.
+Quarkus, after you evaluate whether using a database to store transaction logs is right for you, allows the following JDBC-specific configuration of the object store included in `quarkus.transaction-manager.object-store._<property>_` properties, where _<property>_ can be:
 
-NOTE: When enabling this capability, the transaction node identifier must be set through `quarkus.transaction-manager.node-name`.
+* `type` (_string_): Configure this property to `jdbc` to enable usage of a Quarkus JDBC datasource for storing transaction logs.
+The default value is `file-system`.
 
+* `datasource` (_string_): Specify the name of the datasource for the transaction log storage.
+If no value is provided for the `datasource` property, Quarkus uses the xref:datasource.adoc#configure-datasources[default datasource].
+
+* `create-table` (_boolean_): When set to `true`, the transaction log table gets automatically created if it does not already exist.
+The default value is `false`.
+
+* `drop-table` (_boolean_): When set to `true`, the tables are dropped on startup if they already exist.
+The default value is `false`.
+
+* `table-prefix` (string): Specify the prefix for a related table name.
+The default value is `quarkus_`.
+
+For more configuration information, see the *Narayana JTA - Transaction manager* section of the Quarkus xref:all-config.adoc[All configuration options] reference.
+
+.Additional information:
+
+* Create the transaction log table during the initial setup by setting the `create-table` property to `true`.
+
+* JDBC datasources and ActiveMQ Artemis allow the enlistment and automatically register the `XAResourceRecovery`.
+
+** JDBC datasources is part of `quarkus-agroal`, and it needs to use `quarkus.datasource.jdbc.transactions=XA`.
+** ActiveMQ Artemis is part of `quarkus-pooled-jms`, and it needs to use `quarkus.pooled-jms.transaction=XA`.
+
+* To ensure data integrity in case of application crashes or failures, enable the transaction crash recovery with the `quarkus.transaction-manager.enable-recovery=true` configuration.
+
+[NOTE]
+====
+To work around the current known issue of link:https://issues.redhat.com/browse/AG-209[Agroal having a different view on running transaction checks], set the datasource transaction type for the datasource responsible for writing the transaction logs to `disabled`:
+
+----
+quarkus.datasource.TX_LOG.jdbc.transactions=disabled
+----
+
+This example uses TX_LOG as the datasource name.
+====
 
 == Why always having a transaction manager?
 
@@ -409,6 +458,6 @@ Transactions are also about JMS and other database access, so one API makes more
 It's a mess because I don't know if my Jakarta Persistence persistence unit is using `JTA` or `Resource-level` Transaction::
 
 It's not a mess in Quarkus :)
-Resource-level was introduced to support Jakarta Persistence in a non managed environment.
+Resource-level was introduced to support Jakarta Persistence in a non-managed environment.
 But Quarkus is both lean and a managed environment, so we can safely always assume we are in JTA mode.
 The end result is that the difficulties of running Hibernate ORM + CDI + a transaction manager in Java SE mode are solved by Quarkus.

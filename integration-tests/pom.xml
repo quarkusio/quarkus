@@ -8,6 +8,7 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-tests-parent</artifactId>
@@ -20,7 +21,6 @@
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <!-- modules are in profile test-modules -->
@@ -36,29 +36,36 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-deployment-deps</id>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
-                            <rules>
+                            <!--
+                                This is a test dependency and as such some test libraries don't have the test scope
+                                which is perfectly fine.
+                                We override the enforcer rules to avoid testing that.
+
+                                Also we add the requiresMinimalDeploymentDependency rule.
+                            -->
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
                                 <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-enforcer-rules</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus-staging-maven-plugin.version}</version>
                 <configuration>
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
@@ -70,6 +77,17 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
+                    <executions>
+                        <execution>
+                            <!-- for now this execution will only dump Quarkus application
+                            dependency checksums that could indicate build time classpath changes -->
+                            <id>track-config-changes</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>track-config-changes</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                     <configuration>
                         <noDeps>true</noDeps>
                         <skip>${quarkus.build.skip}</skip>
@@ -85,32 +103,6 @@
                             </junit.quarkus.orderer.secondary-orderer>
                         </systemPropertyVariables>
                     </configuration>
-                </plugin>
-
-                <plugin>
-                <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
-                <groupId>com.gradle</groupId>
-                <artifactId>gradle-enterprise-maven-extension</artifactId>
-                <configuration>
-                    <gradleEnterprise>
-                    <plugins>
-                        <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <inputs>
-                            <fileSets>
-                            <fileSet>
-                                <name>specs</name>
-                                <paths>
-                                <path>${project.basedir}/disable-unbind-executions</path>
-                                </paths>
-                                <normalization>RELATIVE_PATH</normalization>
-                            </fileSet>
-                            </fileSets>
-                        </inputs>
-                        </plugin>
-                    </plugins>
-                    </gradleEnterprise>
-                </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -172,11 +164,13 @@
             <modules>
                 <module>avro-reload</module>
                 <module>awt</module>
+                <module>awt-packaging</module>
                 <module>no-awt</module>
                 <module>bouncycastle</module>
                 <module>bouncycastle-fips</module>
                 <module>bouncycastle-fips-jsse</module>
                 <module>bouncycastle-jsse</module>
+                <module>compose-devservices</module>
                 <module>funqy-amazon-lambda</module>
                 <module>funqy-google-cloud-functions</module>
                 <module>class-transformer</module>
@@ -185,6 +179,7 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
+                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>
@@ -196,6 +191,7 @@
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro-apicurio2</module>
+                <module>kafka-json-schema-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>
@@ -217,21 +213,33 @@
                 <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
+                <module>hibernate-reactive-mariadb</module>
+                <module>hibernate-reactive-mssql</module>
                 <module>hibernate-reactive-mysql</module>
+                <module>hibernate-reactive-mysql-agroal-flyway</module>
+                <module>hibernate-reactive-oracle</module>
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
+                <module>hibernate-reactive-orm-compatibility</module>
                 <module>hibernate-search-orm-elasticsearch</module>
-                <module>hibernate-search-orm-elasticsearch-coordination-outbox-polling</module>
+                <module>hibernate-search-orm-elasticsearch-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
                 <module>hibernate-search-orm-elasticsearch-tenancy</module>
+                <module>hibernate-search-standalone-elasticsearch</module>
+                <module>hibernate-search-standalone-opensearch</module>
                 <module>hibernate-orm-tenancy</module>
+                <module>hibernate-orm-jpamodelgen</module>
+                <module>hibernate-orm-data</module>
                 <module>hibernate-orm-envers</module>
                 <module>vertx-http</module>
+                <module>vertx-http-compressors</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
+                <module>vertx-kotlin</module>
                 <module>websockets</module>
+                <module>websockets-next</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
                 <module>spring-data-jpa</module>
@@ -248,19 +256,29 @@
                 <module>flyway</module>
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
+                <module>observability-lgtm</module>
+                <module>observability-lgtm-prometheus</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
+                <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-dev-services</module>
+                <module>oidc-mtls</module>
+                <module>oidc-dpop</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
+                <module>openapi</module>
+                <module>smallrye-jwt</module>
                 <module>smallrye-jwt-oidc-webapp</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
+                <module>oidc-wiremock-logout</module>
+                <module>oidc-wiremock-providers</module>
                 <module>keycloak-authorization</module>
-                <module>csrf-reactive</module>
+                <module>rest-csrf</module>
                 <module>reactive-db2-client</module>
                 <module>reactive-pg-client</module>
                 <module>reactive-mysql-client</module>
@@ -271,7 +289,10 @@
                 <module>amazon-lambda-s3event</module>
                 <module>amazon-lambda-stream-handler</module>
                 <module>amazon-lambda-http</module>
-                <module>amazon-lambda-rest</module>
+                <module>amazon-lambda-rest-resteasy-reactive</module>
+                <module>amazon-lambda-rest-reactive-routes</module>
+                <module>amazon-lambda-rest-funqy</module>
+                <module>amazon-lambda-rest-servlet</module>
                 <module>amazon-lambda-http-resteasy</module>
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
@@ -292,7 +313,7 @@
                 <module>maven</module>
                 <module>scala</module>
                 <module>kotlin</module>
-                <module>kotlin-serialization</module>
+                <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>
                 <module>mongodb-panache-kotlin</module>
                 <module>mongodb-rest-data-panache</module>
@@ -307,7 +328,8 @@
                 <module>smallrye-metrics</module>
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
-                <module>smallrye-opentracing</module>
+                <module>smallrye-graphql-client-keycloak</module>
+                <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
                 <module>redis-client</module>
@@ -315,42 +337,53 @@
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>qute</module>
-                <module>bootstrap-config</module>
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-pulsar</module>
                 <module>reactive-messaging-mqtt</module>
                 <module>reactive-messaging-rabbitmq</module>
+                <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>reactive-messaging-hibernate-reactive</module>
                 <module>reactive-messaging-hibernate-orm</module>
+                <module>reactive-messaging-context-propagation</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
+                <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
                 <module>simple with space</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
-                <module>webjars-locator</module>
+                <module>web-dependency-locator</module>
                 <module>devmode</module>
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
-                <module>elasticsearch-rest-high-level-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
+                <module>micrometer-security</module>
+                <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
+                <module>opentelemetry-minimal</module>
+                <module>opentelemetry-mongodb-client-instrumentation</module>
+                <module>opentelemetry-quartz</module>
+                <module>opentelemetry-scheduler</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
+                <module>opentelemetry-grpc-only</module>
+                <module>opentelemetry-vertx-exporter</module>
                 <module>opentelemetry-reactive-messaging</module>
+                <module>opentelemetry-redis-instrumentation</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>
@@ -362,10 +395,16 @@
                 <module>logging-panache-kotlin</module>
                 <module>locales</module>
                 <module>redis-devservices</module>
+                <module>jfr-reactive</module>
+                <module>jfr-blocking</module>
+                <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
+                <module>grpc-descriptor-sets</module>
                 <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
+                <module>grpc-cli</module>
+                <module>grpc-tls-p12</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>
                 <module>grpc-mutual-auth</module>
@@ -386,20 +425,10 @@
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
-            </modules>
-        </profile>
-
-        <!-- Java 17 test profile that restricts running in 17+ JVM version -->
-        <profile>
-            <id>java-17</id>
-            <activation>
-                <property>
-                    <name>!no-test-modules</name>
-                </property>
-                <jdk>[17,)</jdk>
-            </activation>
-            <modules>
-                <module>java-17</module>
+                <module>mtls-certificates</module>
+                <!-- Virtual threads test -->
+                <module>virtual-threads</module>
+                <module>mutiny-native-jctools</module>
             </modules>
         </profile>
 
@@ -419,7 +448,7 @@
                 </file>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
             <build>
                 <pluginManagement>
@@ -455,6 +484,17 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>native-ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.native.builder-image.pull>missing</quarkus.native.builder-image.pull>
+            </properties>
         </profile>
 
         <!-- "unbind" all default executions that make no sense for (most) integration-tests -->

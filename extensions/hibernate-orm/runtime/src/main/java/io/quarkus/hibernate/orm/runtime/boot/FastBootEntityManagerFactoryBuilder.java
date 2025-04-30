@@ -28,10 +28,11 @@ import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
-import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
-import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
+import org.hibernate.type.format.FormatMapper;
 
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.JsonFormat;
+import io.quarkus.hibernate.orm.XmlFormat;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -43,26 +44,29 @@ import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierR
 
 public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
 
+    protected final QuarkusPersistenceUnitDescriptor puDescriptor;
     protected final PrevalidatedQuarkusMetadata metadata;
-    protected final String persistenceUnitName;
     protected final StandardServiceRegistry standardServiceRegistry;
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
 
     protected final MultiTenancyStrategy multiTenancyStrategy;
+    protected final boolean shouldApplySchemaMigration;
 
     public FastBootEntityManagerFactoryBuilder(
-            PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
+            QuarkusPersistenceUnitDescriptor puDescriptor,
+            PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy) {
+            Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration) {
+        this.puDescriptor = puDescriptor;
         this.metadata = metadata;
-        this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
         this.multiTenancyStrategy = multiTenancyStrategy;
+        this.shouldApplySchemaMigration = shouldApplySchemaMigration;
     }
 
     @Override
@@ -79,7 +83,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
+            populate(puDescriptor.getName(), optionsBuilder, standardServiceRegistry);
             return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
                     metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
@@ -94,15 +98,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     @Override
     public void generateSchema() {
-        try {
-            SchemaManagementToolCoordinator.process(metadata, standardServiceRegistry, runtimeSettings.getSettings(),
-                    DelayedDropRegistryNotAvailableImpl.INSTANCE);
-        } catch (Exception e) {
-            throw persistenceException("Error performing schema management", e);
-        }
-
-        // release this builder
-        cancel();
+        throw new UnsupportedOperationException(
+                "This isn't used for schema generation - see SessionFactoryObserverForSchemaExport instead");
     }
 
     protected PersistenceException persistenceException(String message, Exception cause) {
@@ -127,7 +124,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     }
 
     private String getExceptionHeader() {
-        return "[PersistenceUnit: " + persistenceUnitName + "] ";
+        return "[PersistenceUnit: " + puDescriptor.getName() + "] ";
     }
 
     protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
@@ -167,7 +164,11 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         //New in ORM 6.2:
         options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
-        options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+
+        // We should avoid running schema migrations multiple times
+        if (shouldApplySchemaMigration) {
+            options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+        }
         //Vanilla ORM registers this one as well; we don't:
         //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
 
@@ -210,6 +211,17 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
                 .singleExtensionInstanceForPersistenceUnit(StatementInspector.class, persistenceUnitName);
         if (!statementInspectorInstance.isUnsatisfied()) {
             options.applyStatementInspector(statementInspectorInstance.get());
+        }
+
+        InjectableInstance<FormatMapper> jsonFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                FormatMapper.class, persistenceUnitName, JsonFormat.Literal.INSTANCE);
+        if (!jsonFormatMapper.isUnsatisfied()) {
+            options.applyJsonFormatMapper(jsonFormatMapper.get());
+        }
+        InjectableInstance<FormatMapper> xmlFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                FormatMapper.class, persistenceUnitName, XmlFormat.Literal.INSTANCE);
+        if (!xmlFormatMapper.isUnsatisfied()) {
+            options.applyXmlFormatMapper(xmlFormatMapper.get());
         }
     }
 

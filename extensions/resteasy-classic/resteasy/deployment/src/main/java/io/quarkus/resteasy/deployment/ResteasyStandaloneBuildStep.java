@@ -3,6 +3,8 @@ package io.quarkus.resteasy.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -28,6 +30,7 @@ import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationRedirectExceptionMapper;
+import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
@@ -35,13 +38,12 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.RouteConstants;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -86,17 +88,16 @@ public class ResteasyStandaloneBuildStep {
     public void boot(ShutdownContextBuildItem shutdown,
             ResteasyStandaloneRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<DefaultRouteBuildItem> defaultRoutes,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             CoreVertxBuildItem vertx,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            HttpBuildTimeConfig vertxConfig,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem,
             ExecutorBuildItem executorBuildItem,
             ResteasyVertxConfig resteasyVertxConfig,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (standalone == null) {
             return;
@@ -105,13 +106,17 @@ public class ResteasyStandaloneBuildStep {
 
         // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
+        Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
+        if (nonJaxRsClassBuildItem.isPresent()) {
+            nonJaxRsClassNameToMethodPaths = nonJaxRsClassBuildItem.get().nonJaxRsPaths;
+        }
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), resteasyVertxConfig, httpBuildTimeConfig);
+                executorBuildItem.getExecutorProxy(), nonJaxRsClassNameToMethodPaths, resteasyVertxConfig, httpBuildTimeConfig);
 
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;
         final boolean noCustomAuthRedirectExMapper;
-        if (vertxConfig.auth.proactive) {
+        if (httpBuildTimeConfig.auth().proactive()) {
             noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                     AuthenticationCompletionExceptionMapper.class.getName(), combinedIndexBuildItem.getIndex());
             noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -129,14 +134,14 @@ public class ResteasyStandaloneBuildStep {
         // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig, noCustomAuthCompletionExMapper,
-                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
+                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, httpBuildTimeConfig.auth().proactive());
         filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
         // Exact match for resources matched to the root path
         routes.produce(
                 RouteBuildItem.builder()
                         .orderedRoute(standalone.deploymentRootPath,
-                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
+                                RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
@@ -146,7 +151,7 @@ public class ResteasyStandaloneBuildStep {
         }
         // Match paths that begin with the deployment path
         routes.produce(RouteBuildItem.builder()
-                .orderedRoute(matchPath, VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
+                .orderedRoute(matchPath, RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET)
                 .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());

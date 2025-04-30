@@ -18,6 +18,7 @@ import java.lang.annotation.Target;
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
@@ -80,6 +81,8 @@ public class ConfiguredAndSharedBeansTest {
         bean.assertSharedThreadContextsAreTheSame();
 
         bean.assertUserDefinedProducersAreRespected();
+
+        bean.assertConfiguredInjectionPointsInConstructor();
     }
 
     @Qualifier
@@ -92,6 +95,22 @@ public class ConfiguredAndSharedBeansTest {
     //no proxy bean just so that we can access fields directly
     @Singleton
     static class SomeBean {
+
+        final ManagedExecutor ctorExecutor1;
+        final ManagedExecutor ctorExecutor2;
+        final ThreadContext ctorThreadContext;
+        final ManagedExecutor ctorExecutor3;
+
+        // c-tor injection, three out of five params should be configured
+        public SomeBean(@ManagedExecutorConfig(maxAsync = 8, maxQueued = 8) ManagedExecutor ctorExecutor1,
+                @ManagedExecutorConfig(maxAsync = 3, maxQueued = 3) ManagedExecutor ctorExecutor2, Foo foo,
+                @ThreadContextConfig(cleared = "CDI") ThreadContext ctorTc,
+                @MyQualifier ManagedExecutor ctorExecutor3) { // this one has custom qualifier, we shouldn't modify it
+            this.ctorExecutor1 = ctorExecutor1;
+            this.ctorExecutor2 = ctorExecutor2;
+            this.ctorThreadContext = ctorTc;
+            this.ctorExecutor3 = ctorExecutor3;
+        }
 
         @Inject
         @ManagedExecutorConfig
@@ -231,6 +250,33 @@ public class ConfiguredAndSharedBeansTest {
             propagated = providersToStringSet(plan.propagatedProviders);
             assertTrue(propagated.isEmpty());
         }
+
+        public void assertConfiguredInjectionPointsInConstructor() {
+            SmallRyeManagedExecutor exec = unwrapExecutor(ctorExecutor1);
+            assertEquals(8, exec.getMaxAsync());
+            assertEquals(8, exec.getMaxQueued());
+
+            exec = unwrapExecutor(ctorExecutor2);
+            assertEquals(3, exec.getMaxAsync());
+            assertEquals(3, exec.getMaxQueued());
+
+            SmallRyeThreadContext context = unwrapThreadContext(ctorThreadContext);
+            ThreadContextProviderPlan plan = context.getPlan();
+            assertEquals(0, plan.unchangedProviders.size());
+            Set<String> propagated = providersToStringSet(plan.propagatedProviders);
+            Set<String> cleared = providersToStringSet(plan.clearedProviders);
+            assertTrue(propagated.isEmpty());
+            assertTrue(cleared.contains(ThreadContext.CDI));
+
+            exec = unwrapExecutor(ctorExecutor3);
+            assertEquals(2, exec.getMaxAsync());
+            assertEquals(-1, exec.getMaxQueued()); // default value
+        }
+    }
+
+    @Dependent
+    static class Foo {
+
     }
 
     @ApplicationScoped

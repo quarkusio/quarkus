@@ -22,6 +22,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
+import org.bson.conversions.Bson;
 import org.jboss.logging.Logger;
 
 import com.mongodb.ReadPreference;
@@ -29,10 +30,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.ReplaceOneModel;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.arc.Arc;
@@ -60,10 +58,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private final Map<String, String> defaultDatabaseName = new ConcurrentHashMap<>();
 
-    protected abstract QueryType createQuery(MongoCollection<?> collection, ClientSession session, Document query,
-            Document sortDoc);
+    protected abstract QueryType createQuery(MongoCollection<?> collection, ClientSession session, Bson query,
+            Bson sortDoc);
 
-    protected abstract UpdateType createUpdate(MongoCollection collection, Class<?> entityClass, Document docUpdate);
+    protected abstract UpdateType createUpdate(MongoCollection collection, Class<?> entityClass, Bson docUpdate);
 
     protected abstract List<?> list(QueryType queryType);
 
@@ -333,9 +331,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return getSession(entity.getClass());
     }
 
-    ClientSession getSession(Class<?> entityClass) {
+    public ClientSession getSession(Class<?> entityClass) {
         ClientSession clientSession = null;
-        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
         InstanceHandle<TransactionSynchronizationRegistry> instance = Arc.container()
                 .instance(TransactionSynchronizationRegistry.class);
         if (instance.isAvailable()) {
@@ -343,11 +340,16 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             if (registry.getTransactionStatus() == Status.STATUS_ACTIVE) {
                 clientSession = (ClientSession) registry.getResource(SESSION_KEY);
                 if (clientSession == null) {
+                    MongoEntity mongoEntity = entityClass == null ? null : entityClass.getAnnotation(MongoEntity.class);
                     return registerClientSession(mongoEntity, registry);
                 }
             }
         }
         return clientSession;
+    }
+
+    public ClientSession getSession() {
+        return getSession(null);
     }
 
     private ClientSession registerClientSession(MongoEntity mongoEntity,
@@ -429,8 +431,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
-        Document docSort = sortToDocument(sort);
+        Bson docQuery = Document.parse(bindQuery);
+        Bson docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, docQuery, docSort);
@@ -525,8 +527,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
-        Document docSort = sortToDocument(sort);
+        Bson docQuery = Document.parse(bindQuery);
+        Bson docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, docQuery, docSort);
@@ -540,20 +542,20 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    public QueryType find(Class<?> entityClass, Document query, Sort sort) {
+    public QueryType find(Class<?> entityClass, Bson query, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
-        Document sortDoc = sortToDocument(sort);
+        Bson sortDoc = sortToDocument(sort);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, query, sortDoc);
     }
 
-    public QueryType find(Class<?> entityClass, Document query, Document sort) {
+    public QueryType find(Class<?> entityClass, Bson query, Bson sort) {
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, query, sort);
     }
 
-    public QueryType find(Class<?> entityClass, Document query) {
+    public QueryType find(Class<?> entityClass, Bson query) {
         return find(entityClass, query, (Document) null);
     }
 
@@ -582,12 +584,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public List<?> list(Class<?> entityClass, Document query) {
+    public List<?> list(Class<?> entityClass, Bson query) {
         return list(find(entityClass, query));
     }
 
     //specific Mongo query
-    public List<?> list(Class<?> entityClass, Document query, Document sort) {
+    public List<?> list(Class<?> entityClass, Bson query, Bson sort) {
         return list(find(entityClass, query, sort));
     }
 
@@ -616,12 +618,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public Stream<?> stream(Class<?> entityClass, Document query) {
+    public Stream<?> stream(Class<?> entityClass, Bson query) {
         return stream(find(entityClass, query));
     }
 
     //specific Mongo query
-    public Stream<?> stream(Class<?> entityClass, Document query, Document sort) {
+    public Stream<?> stream(Class<?> entityClass, Bson query, Bson sort) {
         return stream(find(entityClass, query, sort));
     }
 
@@ -633,12 +635,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
-        Document sortDoc = sortToDocument(sort);
+        Bson sortDoc = sortToDocument(sort);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, null, sortDoc);
     }
 
-    private Document sortToDocument(Sort sort) {
+    private Bson sortToDocument(Sort sort) {
         if (sort == null) {
             return null;
         }
@@ -698,7 +700,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public long count(Class<?> entityClass, Document query) {
+    public long count(Class<?> entityClass, Bson query) {
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return session == null ? collection.countDocuments(query) : collection.countDocuments(session, query);
@@ -713,7 +715,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public boolean deleteById(Class<?> entityClass, Object id) {
         MongoCollection collection = mongoCollection(entityClass);
-        Document query = new Document().append(ID, id);
+        Bson query = new Document().append(ID, id);
         ClientSession session = getSession(entityClass);
         DeleteResult results = session == null ? collection.deleteOne(query) : collection.deleteOne(session, query);
         return results.getDeletedCount() == 1;
@@ -742,7 +744,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     //specific Mongo query
-    public long delete(Class<?> entityClass, Document query) {
+    public long delete(Class<?> entityClass, Bson query) {
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return session == null ? collection.deleteMany(query).getDeletedCount()
@@ -761,19 +763,19 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return executeUpdate(entityClass, update, params);
     }
 
-    public UpdateType update(Class<?> entityClass, Document update) {
+    public UpdateType update(Class<?> entityClass, Bson update) {
         return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {
         String bindUpdate = bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = Document.parse(bindUpdate);
         return createUpdate(mongoCollection(entityClass), entityClass, docUpdate);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
         String bindUpdate = bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = Document.parse(bindUpdate);
         return createUpdate(mongoCollection(entityClass), entityClass, docUpdate);
     }
 

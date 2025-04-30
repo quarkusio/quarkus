@@ -28,9 +28,8 @@ public interface PluginCommand extends Callable<Integer> {
             List<String> commandWithArgs = new ArrayList<>();
             commandWithArgs.addAll(getCommand());
             commandWithArgs.addAll(getArguments());
-            ExecuteUtil.executeProcess(getOutput(), commandWithArgs.toArray(new String[commandWithArgs.size()]),
+            return ExecuteUtil.executeProcess(getOutput(), commandWithArgs.toArray(new String[commandWithArgs.size()]),
                     getWorkingDirectory().toFile());
-            return 1;
         } catch (Exception e) {
             e.printStackTrace();
             return getOutput().handleCommandException(e, "Unable to run plugin command: [" + String.join(" ", getCommand())

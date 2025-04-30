@@ -15,7 +15,7 @@
 
     <properties>
         <wiremock.server.port>8766</wiremock.server.port>
-        <microprofile-rest-client-tck.version>3.0.1</microprofile-rest-client-tck.version>
+        <microprofile-rest-client-tck.version>4.0</microprofile-rest-client-tck.version>
         <!--
         Disabling the enforcer because of:
 
@@ -37,8 +37,8 @@
                         <!-- Disable quarkus optimization -->
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
-                        <quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
-                        <quarkus.rest-client-reactive.disable-smart-produces>true</quarkus.rest-client-reactive.disable-smart-produces>
+                        <quarkus.rest-client.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client.scope>
+                        <quarkus.rest-client.disable-smart-produces>true</quarkus.rest-client.disable-smart-produces>
                         <quarkus.rest-client.disable-contextual-error-messages>true</quarkus.rest-client.disable-contextual-error-messages>
                         <vertx.disableTCCL>true</vertx.disableTCCL>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
@@ -80,6 +80,9 @@
 
                         <!-- TODO fix this-->
                         <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
+
+                        <!-- Missing implementation - See org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl.createEntityPartBuilder -->
+                        <exclude>**/EntityPartTest</exclude>
 
                         <!-- These are flaky -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.FollowRedirectsTest</exclude>
@@ -125,16 +128,16 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-client-deployment</artifactId>
         </dependency>
         <!-- TCKs are adding SessionScope to some beans, so we need this capability to support it -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-servlet-deployment</artifactId>
+            <artifactId>quarkus-rest-servlet-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>

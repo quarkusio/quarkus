@@ -17,9 +17,8 @@ import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
-    private boolean perModule = false;
-
-    private boolean noRewrite;
+    private Boolean noRewrite;
+    private Boolean rewrite;
 
     private boolean rewriteDryRun;
 
@@ -28,17 +27,32 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private String rewritePluginVersion = null;
 
-    private String rewriteUpdateRecipesVersion = null;
+    private String rewriteQuarkusUpdateRecipes = null;
+    private String rewriteAdditionalUpdateRecipes = null;
 
     @Input
     @Optional
+    @Deprecated
     public Boolean getNoRewrite() {
         return noRewrite;
     }
 
-    @Option(description = "Disable the rewrite feature.", option = "noRewrite")
+    @Option(description = "Disable the rewrite feature (deprecated use --rewrite=false instead).", option = "noRewrite")
+    @Deprecated
     public QuarkusUpdate setNoRewrite(Boolean noRewrite) {
         this.noRewrite = noRewrite;
+        return this;
+    }
+
+    @Input
+    @Optional
+    public Boolean getRewrite() {
+        return rewrite;
+    }
+
+    @Option(description = "Run the suggested update recipe for this project.", option = "rewrite")
+    public QuarkusUpdate setRewrite(Boolean rewrite) {
+        this.rewrite = rewrite;
         return this;
     }
 
@@ -48,7 +62,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         return rewriteDryRun;
     }
 
-    @Option(description = "Rewrite in dry-mode.", option = "rewriteDryRun")
+    @Option(description = "Do a dry run of the suggested update recipe for this project.", option = "rewriteDryRun")
     public QuarkusUpdate setRewriteDryRun(Boolean rewriteDryRun) {
         this.rewriteDryRun = rewriteDryRun;
         return this;
@@ -56,12 +70,12 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     @Input
     public boolean getPerModule() {
-        return perModule;
+        return false;
     }
 
-    @Option(description = "Log project's state per module.", option = "perModule")
+    @Option(description = "This option was not used", option = "perModule")
+    @Deprecated
     public void setPerModule(boolean perModule) {
-        this.perModule = perModule;
     }
 
     @Input
@@ -77,13 +91,25 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     @Input
     @Optional
-    public String getRewriteUpdateRecipesVersion() {
-        return rewriteUpdateRecipesVersion;
+    public String getRewriteQuarkusUpdateRecipes() {
+        return rewriteQuarkusUpdateRecipes;
     }
 
-    @Option(description = " The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a project.", option = "updateRecipesVersion")
-    public QuarkusUpdate setRewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
-        this.rewriteUpdateRecipesVersion = rewriteUpdateRecipesVersion;
+    @Option(description = "Use a custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.", option = "quarkusUpdateRecipes")
+    public QuarkusUpdate setRewriteQuarkusUpdateRecipes(String rewriteQuarkusUpdateRecipes) {
+        this.rewriteQuarkusUpdateRecipes = rewriteQuarkusUpdateRecipes;
+        return this;
+    }
+
+    @Input
+    @Optional
+    public String getRewriteAdditionalUpdateRecipes() {
+        return rewriteAdditionalUpdateRecipes;
+    }
+
+    @Option(description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.", option = "additionalUpdateRecipes")
+    public QuarkusUpdate setRewriteAdditionalUpdateRecipes(String rewriteAdditionalUpdateRecipes) {
+        this.rewriteAdditionalUpdateRecipes = rewriteAdditionalUpdateRecipes;
         return this;
     }
 
@@ -140,16 +166,26 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteQuarkusUpdateRecipes != null) {
+            invoker.rewriteQuarkusUpdateRecipes(rewriteQuarkusUpdateRecipes);
+        }
+        if (rewriteAdditionalUpdateRecipes != null) {
+            invoker.rewriteAdditionalUpdateRecipes(rewriteAdditionalUpdateRecipes);
         }
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);
         }
         invoker.targetPlatformVersion(targetPlatformVersion);
         invoker.rewriteDryRun(rewriteDryRun);
-        invoker.noRewrite(noRewrite);
-        invoker.perModule(perModule);
+
+        // backward compat
+        if (noRewrite != null && noRewrite) {
+            rewrite = false;
+        }
+
+        if (rewrite != null) {
+            invoker.rewrite(rewrite);
+        }
         invoker.appModel(extension().getApplicationModel());
         try {
             invoker.execute();

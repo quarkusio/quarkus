@@ -19,7 +19,7 @@ public final class RawCommandLineArgumentsBuildItem extends SimpleBuildItem
     /**
      * As this object directly implements ReturnedProxy it can be
      * passed into bytecode recorders. The runtime value of the command line parameters
-     * in places directly into the startup context under this key.
+     * are placed directly into the startup context under this key.
      */
     @Override
     public String __returned$proxy$key() {

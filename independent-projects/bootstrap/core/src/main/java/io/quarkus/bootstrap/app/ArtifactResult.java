@@ -7,9 +7,9 @@ public class ArtifactResult {
 
     private final Path path;
     private final String type;
-    private final Map<String, Object> metadata;
+    private final Map<String, String> metadata;
 
-    public ArtifactResult(Path path, String type, Map<String, Object> metadata) {
+    public ArtifactResult(Path path, String type, Map<String, String> metadata) {
         this.path = path;
         this.type = type;
         this.metadata = metadata;
@@ -23,7 +23,7 @@ public class ArtifactResult {
         return type;
     }
 
-    public Map<String, Object> getMetadata() {
+    public Map<String, String> getMetadata() {
         return metadata;
     }
 }

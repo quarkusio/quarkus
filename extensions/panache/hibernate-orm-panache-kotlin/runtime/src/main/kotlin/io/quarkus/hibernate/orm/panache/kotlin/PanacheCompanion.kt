@@ -8,6 +8,7 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import java.util.stream.Stream
+import org.hibernate.Session
 
 /**
  * Defines methods to be used via the companion objects of entities.
@@ -29,6 +30,13 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @return the [EntityManager] for the [Entity]
      */
     @GenerateBridge fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
+
+    /**
+     * Returns the [Session] for the [Entity] for extra operations (eg. CriteriaQueries)
+     *
+     * @return the [Session] for the [Entity]
+     */
+    @GenerateBridge fun getSession(): Session = throw implementationInjectionMissing()
 
     /**
      * Find an entity of this type by ID.

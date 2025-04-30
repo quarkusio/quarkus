@@ -1,17 +1,22 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.Response;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpClientRequest;
 
 public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
 
-    private InvocationBuilderImpl invocationBuilder;
+    private final InvocationBuilderImpl invocationBuilder;
 
     public UniInvoker(InvocationBuilderImpl invocationBuilder) {
         this.invocationBuilder = invocationBuilder;
@@ -20,10 +25,36 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
     @Override
     public <R> Uni<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
+        AtomicReference<RestClientRequestContext> restClientRequestContextRef = new AtomicReference<>();
         return Uni.createFrom().completionStage(new Supplier<CompletionStage<R>>() {
             @Override
             public CompletionStage<R> get() {
-                return invoker.method(name, entity, responseType);
+                RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity,
+                        responseType == null ? new GenericType<>(String.class) : responseType,
+                        true);
+                restClientRequestContextRef.set(restClientRequestContext);
+                CompletableFuture response = restClientRequestContext.getResult();
+                return invoker.mapResponse(response, responseType == null ? String.class : responseType.getRawType());
+            }
+        }).onFailure().transform(new Function<>() {
+            @Override
+            public Throwable apply(Throwable t) {
+                if ((t instanceof ProcessingException) && (t.getCause() != null)) {
+                    return t.getCause();
+                }
+                return t;
+            }
+        }).onCancellation().invoke(new Runnable() {
+            @Override
+            public void run() {
+                // be very defensive here as things could have been nulled out when the application is being torn down
+                RestClientRequestContext restClientRequestContext = restClientRequestContextRef.get();
+                if (restClientRequestContext != null) {
+                    HttpClientRequest httpClientRequest = restClientRequestContext.getHttpClientRequest();
+                    if (httpClientRequest != null) {
+                        httpClientRequest.reset();
+                    }
+                }
             }
         });
     }

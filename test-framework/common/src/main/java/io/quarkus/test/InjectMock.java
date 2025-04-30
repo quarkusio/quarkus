@@ -1,18 +1,19 @@
 package io.quarkus.test;
 
 import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Instructs the test engine to inject a mock instance of a bean in the field of a test class.
+ * Instructs the test engine to inject a mock instance of a bean into the annotated field or parameter.
  * <p>
  * This annotation is supported:
  * <ul>
- * <li>in a {@code io.quarkus.test.component.QuarkusComponentTest},</li>
- * <li>in a {@code io.quarkus.test.QuarkusTest} if {@code quarkus-junit5-mockito} is present.</li>
+ * <li>for fields and method parameters in a {@code io.quarkus.test.component.QuarkusComponentTest},</li>
+ * <li>for fields in a {@code io.quarkus.test.QuarkusTest} if {@code quarkus-junit5-mockito} is present.</li>
  * </ul>
  * The lifecycle and configuration API of the injected mock depends on the type of test being used.
  * <p>
@@ -21,7 +22,7 @@ import java.lang.annotation.Target;
  * {@code io.quarkus.test.junit.QuarkusTest}.
  */
 @Retention(RUNTIME)
-@Target(FIELD)
+@Target({ FIELD, PARAMETER })
 public @interface InjectMock {
 
 }

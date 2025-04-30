@@ -1,51 +1,33 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RouteDescription {
 
-    private String javaMethod;
-    private String path;
-    private String httpMethod;
-    private String produces;
-    private String consumes;
+    private String basePath;
+    private List<RouteMethodDescription> calls = new ArrayList<>();
 
-    public String getJavaMethod() {
-        return javaMethod;
+    public RouteDescription() {
     }
 
-    public void setJavaMethod(String javaMethod) {
-        this.javaMethod = javaMethod;
+    public RouteDescription(String basePath) {
+        this.basePath = basePath;
     }
 
-    public String getPath() {
-        return path;
+    public String getBasePath() {
+        return basePath;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setBasePath(String basePath) {
+        this.basePath = basePath;
     }
 
-    public String getHttpMethod() {
-        return httpMethod;
+    public List<RouteMethodDescription> getCalls() {
+        return calls;
     }
 
-    public void setHttpMethod(String httpMethod) {
-        this.httpMethod = httpMethod;
+    public void addCall(RouteMethodDescription call) {
+        this.calls.add(call);
     }
-
-    public String getProduces() {
-        return produces;
-    }
-
-    public void setProduces(String produces) {
-        this.produces = produces;
-    }
-
-    public String getConsumes() {
-        return consumes;
-    }
-
-    public void setConsumes(String consumes) {
-        this.consumes = consumes;
-    }
-
 }

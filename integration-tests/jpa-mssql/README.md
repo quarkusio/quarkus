@@ -18,14 +18,14 @@ mvn clean install -Dstart-containers -Dtest-containers -Dnative
 
 Alternatively you can connect to your own SQL Server.
 Reconfigure the connection URL with `-Dmssqldb.url=jdbc:sqlserver://...`;
-you'll probably want to change the authentication password too: `-Dmssqldb.sa-password=NotS0Secret`.
+you'll probably want to change the authentication password too: `-Dmssqldb.sa-password=yourStrong(!)Password`.
 
 ### With Podman
 
 If you prefer to run the MSSQL Server container via podman, use:
 
 ```
-podman run --rm=true --net=host --memory-swappiness=0 --name mssql_testing -e SA_PASSWORD=ActuallyRequired11Complexity -e ACCEPT_EULA=Y -p 1433:1433 mcr.microsoft.com/mssql/2019-CU8-ubuntu-16.04
+podman run --rm=true --net=host --memory-swappiness=0 --name mssql_testing -e MSSQL_SA_PASSWORD=yourStrong(!)Password -e ACCEPT_EULA=Y -p 1435:1433 mcr.microsoft.com/mssql/2022-latest
 ```
 
 ## Limitations

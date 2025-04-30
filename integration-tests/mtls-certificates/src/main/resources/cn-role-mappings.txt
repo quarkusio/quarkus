@@ -1,0 +1,2 @@
+client=user,admin
+localhost=user

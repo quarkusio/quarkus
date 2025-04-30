@@ -71,7 +71,7 @@ public class PathTreeBuilder {
             throw new IllegalArgumentException(root + " does not exist");
         }
         if (archive) {
-            return new ArchivePathTree(root, getPathFilter(), manifestEnabled == null ? true : manifestEnabled);
+            return ArchivePathTree.forPath(root, getPathFilter(), manifestEnabled == null ? true : manifestEnabled);
         }
         if (Files.isDirectory(root)) {
             return new DirectoryPathTree(root, getPathFilter(), manifestEnabled == null ? false : manifestEnabled);

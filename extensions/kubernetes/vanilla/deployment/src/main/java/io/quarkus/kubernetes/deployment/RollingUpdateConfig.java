@@ -1,19 +1,17 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class RollingUpdateConfig {
+public interface RollingUpdateConfig {
     /**
      * Specifies the maximum number of Pods that can be unavailable during the update process.
      */
-    @ConfigItem(defaultValue = "25%")
-    String maxUnavailable;
+    @WithDefault("25%")
+    String maxUnavailable();
 
     /**
      * Specifies the maximum number of Pods that can be created over the desired number of Pods.
      */
-    @ConfigItem(defaultValue = "25%")
-    String maxSurge;
+    @WithDefault("25%")
+    String maxSurge();
 }

@@ -1,5 +1,5 @@
 allprojects {
-    group 'org.acme.p'
+    group 'org.acme'
     version '1.0-SNAPSHOT'
 
     apply plugin: 'java'
@@ -10,6 +10,7 @@ allprojects {
             content {
                 includeGroup 'org.acme' // for dependencies built in this test
                 includeGroupByRegex 'io.quarkus.*'
+                includeGroup 'org.hibernate.orm'
             }
         }
         mavenCentral()

@@ -1,5 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -12,6 +15,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcSession;
@@ -19,6 +24,8 @@ import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
@@ -74,6 +81,7 @@ public class TenantResource {
             response += (",introspection_client_id:" + introspection.getString("introspection_client_id"));
             response += (",introspection_client_secret:" + introspection.getString("introspection_client_secret"));
             response += (",active:" + introspection.getBoolean("active"));
+            response += (",userinfo:" + getUserInfo().getPreferredUserName());
             response += (",cache-size:" + tokenCache.getCacheSize());
         }
 
@@ -97,6 +105,22 @@ public class TenantResource {
     @Path("no-discovery")
     public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
         return userNameService(tenant, false);
+    }
+
+    @AuthorizationCodeFlow
+    @GET
+    @Path("code-flow-auth-mech-annotation")
+    @RolesAllowed("user")
+    public String codeFlowAuthMechSelectedExplicitly() {
+        return idToken.getName();
+    }
+
+    @BearerTokenAuthentication
+    @GET
+    @Path("bearer-auth-mech-annotation")
+    @RolesAllowed("user")
+    public String bearerAuthMechSelectedExplicitly() {
+        return idToken.getName();
     }
 
     @GET
@@ -158,6 +182,28 @@ public class TenantResource {
             throw new OIDCException("Groups are not expected");
         }
         return tenant + ":" + getNameWebAppType(idToken.getName(), "preferred_username", "upn");
+    }
+
+    @GET
+    @Path("webapp2-scope-permissions")
+    @PermissionsAllowed({ "openid", "email", "profile" })
+    public String scopePermissionsWebApp2(@PathParam("tenant") String tenant) {
+        if (!tenant.equals("tenant-web-app2")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        return Arrays
+                .stream(accessToken.<String> getClaim(OidcConstants.TOKEN_SCOPE).split(" "))
+                .sorted(String::compareTo)
+                .collect(Collectors.joining(" "));
+    }
+
+    @AuthorizationCodeFlow
+    @GET
+    @Path("webapp-local-logout")
+    @RolesAllowed("user")
+    public String localLogout() {
+        oidcSession.logout().await().indefinitely();
+        return securityIdentity.getPrincipal().getName();
     }
 
     private String getNameWebAppType(String name,

@@ -24,11 +24,7 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
     public interface JavaVersion {
 
-        Status isExactlyJava11();
-
-        Status isJava11OrHigher();
-
-        Status isJava17OrHigher();
+        Status isJava21OrHigher();
 
         Status isJava19OrHigher();
 
@@ -44,17 +40,7 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             }
 
             @Override
-            public Status isExactlyJava11() {
-                return Status.UNKNOWN;
-            }
-
-            @Override
-            public Status isJava11OrHigher() {
-                return Status.UNKNOWN;
-            }
-
-            @Override
-            public Status isJava17OrHigher() {
+            public Status isJava21OrHigher() {
                 return Status.UNKNOWN;
             }
 
@@ -66,9 +52,8 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
         final class Known implements JavaVersion {
 
-            private static final int JAVA_11_MAJOR = 55;
-            private static final int JAVA_17_MAJOR = 61;
             private static final int JAVA_19_MAJOR = 63;
+            private static final int JAVA_21_MAJOR = 65;
 
             private final int determinedMajor;
 
@@ -77,23 +62,13 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             }
 
             @Override
-            public Status isExactlyJava11() {
-                return equalStatus(JAVA_11_MAJOR);
-            }
-
-            @Override
-            public Status isJava11OrHigher() {
-                return higherOrEqualStatus(JAVA_11_MAJOR);
-            }
-
-            @Override
-            public Status isJava17OrHigher() {
-                return higherOrEqualStatus(JAVA_17_MAJOR);
-            }
-
-            @Override
             public Status isJava19OrHigher() {
                 return higherOrEqualStatus(JAVA_19_MAJOR);
+            }
+
+            @Override
+            public Status isJava21OrHigher() {
+                return higherOrEqualStatus(JAVA_21_MAJOR);
             }
 
             private Status higherOrEqualStatus(int javaMajor) {

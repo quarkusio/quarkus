@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ import com.mongodb.spi.dns.DnsException;
 
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.dns.SrvRecord;
@@ -55,6 +57,8 @@ public class MongoDnsClient implements DnsClient {
     private static final Map<String, List<SrvRecord>> SRV_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, List<String>> TXT_CACHE = new ConcurrentHashMap<>();
 
+    private static final Logger log = Logger.getLogger(MongoDnsClient.class);
+
     MongoDnsClient(io.vertx.core.Vertx vertx) {
         Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
 
@@ -72,11 +76,15 @@ public class MongoDnsClient implements DnsClient {
         DnsClientOptions dnsClientOptions = new DnsClientOptions()
                 .setLogActivity(activity);
         if (server != null) {
-            int port = config.getOptionalValue(DNS_SERVER_PORT, Integer.class)
-                    .orElse(53);
-            dnsClientOptions
-                    .setHost(server)
-                    .setPort(port);
+            dnsClientOptions.setHost(server);
+            if (config.getOptionalValue(DNS_SERVER_PORT, Integer.class).isPresent()) {
+                dnsClientOptions.setPort(config.getOptionalValue(DNS_SERVER_PORT, Integer.class).orElseThrow());
+            }
+        }
+        dnsClientOptions.setQueryTimeout(config.getValue(DNS_LOOKUP_TIMEOUT, Duration.class).toMillis());
+
+        if (log.isDebugEnabled()) {
+            log.debugf("DNS client options: %s", dnsClientOptions.toJson());
         }
         dnsClient = mutinyVertx.createDnsClient(dnsClientOptions);
     }
@@ -91,7 +99,7 @@ public class MongoDnsClient implements DnsClient {
                         .map(line -> line.split(" ")[1])
                         .collect(Collectors.toList());
             } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                Logger.getLogger(MongoDnsClientProvider.class).info("Unable to read the /etc/resolv.conf file", e);
+                log.info("Unable to read the /etc/resolv.conf file", e);
             }
         }
         return nameServers;
@@ -99,14 +107,12 @@ public class MongoDnsClient implements DnsClient {
 
     @Override
     public List<String> getResourceRecordData(String name, String type) throws DnsException {
-        switch (type) {
-            case "SRV":
-                return resolveSrvRequest(name);
-            case "TXT":
-                return resolveTxtRequest(name);
-            default:
-                throw new IllegalArgumentException("Unknown DNS record type: " + type);
-        }
+        log.debugf("Resolving DNS record for name: %s and type: %s", name, type);
+        return switch (type) {
+            case "SRV" -> resolveSrvRequest(name);
+            case "TXT" -> resolveTxtRequest(name);
+            default -> throw new IllegalArgumentException("Unknown DNS record type: " + type);
+        };
     }
 
     /*
@@ -130,24 +136,37 @@ public class MongoDnsClient implements DnsClient {
             if (SRV_CACHE.containsKey(srvHost)) {
                 srvRecords = SRV_CACHE.get(srvHost);
             } else {
-                srvRecords = dnsClient.resolveSRV(srvHost).invoke(new Consumer<>() {
-                    @Override
-                    public void accept(List<SrvRecord> srvRecords) {
-                        SRV_CACHE.put(srvHost, srvRecords);
-                    }
-                }).await().atMost(timeout);
+                srvRecords = Uni.createFrom().<List<SrvRecord>> deferred(
+                        new Supplier<>() {
+                            @Override
+                            public Uni<? extends List<SrvRecord>> get() {
+                                return dnsClient.resolveSRV(srvHost);
+                            }
+                        })
+                        .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
+                        .invoke(new Consumer<>() {
+                            @Override
+                            public void accept(List<SrvRecord> srvRecords) {
+                                SRV_CACHE.put(srvHost, srvRecords);
+                            }
+                        })
+                        .await().atMost(timeout);
             }
 
             if (srvRecords.isEmpty()) {
                 throw new MongoConfigurationException("No SRV records available for host " + srvHost);
             }
+            List<String> results = new ArrayList<>();
             for (SrvRecord srvRecord : srvRecords) {
                 String resolvedHost = srvRecord.target().endsWith(".")
                         ? srvRecord.target().substring(0, srvRecord.target().length() - 1)
                         : srvRecord.target();
 
-                hosts.add(format("%d %d %d %s", srvRecord.priority(), srvRecord.weight(), srvRecord.port(), resolvedHost));
+                var r = format("%d %d %d %s", srvRecord.priority(), srvRecord.weight(), srvRecord.port(), resolvedHost);
+                results.add(r);
             }
+            hosts.addAll(results);
+            log.debugf("Resolved SRV records for %s: %s", srvHost, results);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up SRV record for host " + srvHost, e);
         }
@@ -167,12 +186,23 @@ public class MongoDnsClient implements DnsClient {
         try {
             Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
                     .orElse(Duration.ofSeconds(5));
-            return dnsClient.resolveTXT(host).invoke(new Consumer<>() {
-                @Override
-                public void accept(List<String> strings) {
-                    TXT_CACHE.put(host, strings);
-                }
-            }).await().atMost(timeout);
+
+            return Uni.createFrom().<List<String>> deferred(
+                    new Supplier<>() {
+                        @Override
+                        public Uni<? extends List<String>> get() {
+                            return dnsClient.resolveTXT(host);
+                        }
+                    })
+                    .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
+                    .invoke(new Consumer<>() {
+                        @Override
+                        public void accept(List<String> strings) {
+                            log.debugf("Resolved TXT records for %s: %s", host, strings);
+                            TXT_CACHE.put(host, strings);
+                        }
+                    })
+                    .await().atMost(timeout);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up TXT record for host " + host, e);
         }

@@ -43,7 +43,7 @@ public class SyntheticBeanWithStereotypeTest {
             .beanClasses(ToBeStereotype.class, SimpleBinding.class, SimpleInterceptor.class)
             .additionalClasses(SomeBean.class)
             .stereotypeRegistrars(new MyStereotypeRegistrar())
-            .annotationsTransformers(new MyAnnotationTrasnformer())
+            .annotationTransformations(new MyAnnotationTrasnformer())
             .beanRegistrars(new MyBeanRegistrar())
             .build();
 

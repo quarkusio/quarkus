@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "TLS certificate registry"
+metadata:
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true
+  config:
+  - "quarkus.tls."
+  cli-plugins:
+  - "tls: ${project.groupId}:quarkus-tls-registry-cli:${project.version}"

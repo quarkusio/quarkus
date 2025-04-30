@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesTest {
 
@@ -40,7 +40,7 @@ public class MultipleDataSourcesTest {
     static class BeanUsingDefaultDataSource {
 
         @Inject
-        MySQLPool mySQLClient;
+        Pool mySQLClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
@@ -60,7 +60,7 @@ public class MultipleDataSourcesTest {
 
         @Inject
         @ReactiveDataSource("hibernate")
-        MySQLPool mySQLClient;
+        Pool mySQLClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();

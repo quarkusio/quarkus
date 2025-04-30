@@ -14,10 +14,10 @@ public class AwsElasticBlockStoreVolumeConverter {
 
     private static AwsElasticBlockStoreVolumeBuilder convert(AwsElasticBlockStoreVolumeConfig c) {
         AwsElasticBlockStoreVolumeBuilder b = new AwsElasticBlockStoreVolumeBuilder();
-        b.withVolumeId(c.volumeId);
-        b.withFsType(c.fsType);
-        b.withReadOnly(c.readOnly);
-        c.partition.ifPresent(p -> b.withPartition(p));
+        b.withVolumeId(c.volumeId());
+        b.withFsType(c.fsType());
+        b.withReadOnly(c.readOnly());
+        c.partition().ifPresent(p -> b.withPartition(p));
         return b;
     }
 }

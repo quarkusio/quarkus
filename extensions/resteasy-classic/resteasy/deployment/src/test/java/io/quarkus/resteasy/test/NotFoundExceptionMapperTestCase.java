@@ -37,8 +37,8 @@ public class NotFoundExceptionMapperTestCase {
                 .then()
                 .statusCode(404)
                 .contentType(ContentType.HTML)
-                .body(containsString("\"/index.html")) // check that index.html is displayed
-                .body(Matchers.containsString("<h1 class=\"container\">404 - Resource Not Found</h1>"));
+                .body(containsString("/index.html")) // check that index.html is displayed
+                .body(Matchers.containsString("<div class=\"callout\">404 - Resource Not Found</div>"));
     }
 
     @Test

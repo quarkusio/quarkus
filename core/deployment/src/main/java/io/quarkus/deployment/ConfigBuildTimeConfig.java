@@ -1,17 +1,26 @@
 package io.quarkus.deployment;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocPrefix;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
-@ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.BUILD_TIME)
-public class ConfigBuildTimeConfig {
+/**
+ * Configuration
+ */
+@ConfigMapping(prefix = "quarkus.config")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigDocPrefix("quarkus.config")
+public interface ConfigBuildTimeConfig {
     /**
      * <p>
      * Set this to <code>true</code> to read configuration from system properties and environment variables only. This
      * only applies to runtime.
      * </p>
      */
-    @ConfigItem(name = "config.sources.system-only", defaultValue = "false")
-    public boolean systemOnly;
+    @WithName("sources.system-only")
+    @WithDefault("false")
+    boolean systemOnly();
 }

@@ -10,9 +10,9 @@ import jakarta.enterprise.lang.model.AnnotationInfo;
 class InterceptorInfoImpl extends BeanInfoImpl implements InterceptorInfo {
     private final io.quarkus.arc.processor.InterceptorInfo arcInterceptorInfo;
 
-    InterceptorInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    InterceptorInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             io.quarkus.arc.processor.InterceptorInfo arcInterceptorInfo) {
-        super(jandexIndex, annotationOverlays, arcInterceptorInfo);
+        super(jandexIndex, annotationOverlay, arcInterceptorInfo);
         this.arcInterceptorInfo = arcInterceptorInfo;
     }
 
@@ -25,7 +25,7 @@ class InterceptorInfoImpl extends BeanInfoImpl implements InterceptorInfo {
     public Collection<AnnotationInfo> interceptorBindings() {
         return arcInterceptorInfo.getBindings()
                 .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
+                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlay, it))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

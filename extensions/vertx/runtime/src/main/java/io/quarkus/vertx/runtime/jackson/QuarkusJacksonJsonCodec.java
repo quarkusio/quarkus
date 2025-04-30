@@ -28,13 +28,33 @@ import io.vertx.core.spi.json.JsonCodec;
  * The difference is that this class obtains the ObjectMapper from Arc in order to inherit the
  * user-customized ObjectMapper.
  */
-class QuarkusJacksonJsonCodec implements JsonCodec {
+public class QuarkusJacksonJsonCodec implements JsonCodec {
 
-    private static final ObjectMapper mapper;
+    private static volatile ObjectMapper mapper;
     // we don't want to create this unless it's absolutely necessary (and it rarely is)
     private static volatile ObjectMapper prettyMapper;
 
     static {
+        populateMapper();
+    }
+
+    public static void reset() {
+        mapper = null;
+        prettyMapper = null;
+    }
+
+    public static ObjectMapper mapper() {
+        if (mapper == null) {
+            synchronized (QuarkusJacksonJsonCodec.class) {
+                if (mapper == null) {
+                    populateMapper();
+                }
+            }
+        }
+        return mapper;
+    }
+
+    private static void populateMapper() {
         ArcContainer container = Arc.container();
         if (container == null) {
             // this can happen in QuarkusUnitTest
@@ -74,7 +94,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
 
     private ObjectMapper prettyMapper() {
         if (prettyMapper == null) {
-            prettyMapper = mapper.copy();
+            prettyMapper = mapper().copy();
             prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         }
         return prettyMapper;
@@ -83,7 +103,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T fromValue(Object json, Class<T> clazz) {
-        T value = QuarkusJacksonJsonCodec.mapper.convertValue(json, clazz);
+        T value = QuarkusJacksonJsonCodec.mapper().convertValue(json, clazz);
         if (clazz == Object.class) {
             value = (T) adapt(value);
         }
@@ -102,7 +122,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
 
     public static JsonParser createParser(Buffer buf) {
         try {
-            return QuarkusJacksonJsonCodec.mapper.getFactory()
+            return QuarkusJacksonJsonCodec.mapper().getFactory()
                     .createParser((InputStream) new ByteBufInputStream(buf.getByteBuf()));
         } catch (IOException e) {
             throw new DecodeException("Failed to decode:" + e.getMessage(), e);
@@ -111,7 +131,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
 
     public static JsonParser createParser(String str) {
         try {
-            return QuarkusJacksonJsonCodec.mapper.getFactory().createParser(str);
+            return QuarkusJacksonJsonCodec.mapper().getFactory().createParser(str);
         } catch (IOException e) {
             throw new DecodeException("Failed to decode:" + e.getMessage(), e);
         }
@@ -122,7 +142,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
         T value;
         JsonToken remaining;
         try {
-            value = QuarkusJacksonJsonCodec.mapper.readValue(parser, type);
+            value = QuarkusJacksonJsonCodec.mapper().readValue(parser, type);
             remaining = parser.nextToken();
         } catch (Exception e) {
             throw new DecodeException("Failed to decode:" + e.getMessage(), e);
@@ -141,7 +161,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
     @Override
     public String toString(Object object, boolean pretty) throws EncodeException {
         try {
-            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
+            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper();
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);
@@ -151,7 +171,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
     @Override
     public Buffer toBuffer(Object object, boolean pretty) throws EncodeException {
         try {
-            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
+            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper();
             return Buffer.buffer(mapper.writeValueAsBytes(object));
         } catch (Exception e) {
             throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);

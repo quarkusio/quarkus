@@ -3,8 +3,10 @@ package io.quarkus.qute.deployment.devui;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,6 +20,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
+import io.quarkus.qute.deployment.EffectiveTemplatePathsBuildItem;
 import io.quarkus.qute.deployment.ImplicitValueResolverBuildItem;
 import io.quarkus.qute.deployment.TemplateDataBuildItem;
 import io.quarkus.qute.deployment.TemplateExtensionMethodBuildItem;
@@ -26,14 +29,12 @@ import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 
 public class QuteDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void pages(
-            List<TemplatePathBuildItem> templatePaths,
+            EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
             List<CheckedTemplateBuildItem> checkedTemplates,
             TemplateVariantsBuildItem variants,
             TemplatesAnalysisBuildItem templatesAnalysis,
@@ -45,7 +46,7 @@ public class QuteDevUIProcessor {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        List<TemplatePathBuildItem> sortedTemplatePaths = templatePaths.stream()
+        List<TemplatePathBuildItem> sortedTemplatePaths = effectiveTemplatePaths.getTemplatePaths().stream()
                 .sorted(Comparator.comparing(tp -> tp.getPath().toLowerCase())).collect(Collectors.toList());
         pageBuildItem.addBuildTimeData("templates",
                 createTemplatesJson(sortedTemplatePaths, checkedTemplates, templatesAnalysis, variants));
@@ -116,41 +117,42 @@ public class QuteDevUIProcessor {
         cardPages.produce(pageBuildItem);
     }
 
-    private JsonArray createTemplateGlobalsJson(List<TemplateGlobalBuildItem> sortedTemplateGlobals) {
-        JsonArray globals = new JsonArray();
+    private List<Map<String, String>> createTemplateGlobalsJson(List<TemplateGlobalBuildItem> sortedTemplateGlobals) {
+        List<Map<String, String>> globals = new ArrayList<>();
         for (TemplateGlobalBuildItem global : sortedTemplateGlobals) {
-            JsonObject json = new JsonObject();
-            json.put("name", global.getName());
-            json.put("target", global.getDeclaringClass() + "#"
+            Map<String, String> map = new HashMap<>();
+            map.put("name", global.getName());
+            map.put("target", global.getDeclaringClass() + "#"
                     + (global.isField() ? global.getTarget().asField().name() : global.getTarget().asMethod().name() + "()"));
-            globals.add(json);
+            globals.add(map);
         }
         return globals;
     }
 
-    private JsonArray createTemplateDataJson(List<TemplateDataBuildItem> sortedTemplateData) {
-        JsonArray data = new JsonArray();
+    private List<Map<String, Object>> createTemplateDataJson(List<TemplateDataBuildItem> sortedTemplateData) {
+        List<Map<String, Object>> data = new ArrayList<>();
         for (TemplateDataBuildItem templateData : sortedTemplateData) {
-            JsonObject json = new JsonObject();
-            json.put("target", templateData.getTargetClass().name().toString());
+            Map<String, Object> map = new HashMap<>();
+            map.put("target", templateData.getTargetClass().name().toString());
             if (templateData.hasNamespace()) {
-                json.put("namespace", templateData.getNamespace());
+                map.put("namespace", templateData.getNamespace());
             }
             if (templateData.getIgnore() != null && templateData.getIgnore().length > 0) {
-                json.put("ignores", Arrays.toString(templateData.getIgnore()));
+                map.put("ignores", Arrays.toString(templateData.getIgnore()));
             }
             if (templateData.isProperties()) {
-                json.put("properties", true);
+                map.put("properties", true);
             }
-            data.add(json);
+            data.add(map);
         }
         return data;
     }
 
-    private JsonArray createExtensionMethodsJson(List<TemplateExtensionMethodBuildItem> sortedExtensionMethods) {
-        JsonArray extensionMethods = new JsonArray();
+    private List<Map<String, String>> createExtensionMethodsJson(
+            List<TemplateExtensionMethodBuildItem> sortedExtensionMethods) {
+        List<Map<String, String>> extensionMethods = new ArrayList<>();
         for (TemplateExtensionMethodBuildItem templateExtensionMethod : sortedExtensionMethods) {
-            JsonObject extensionMethod = new JsonObject();
+            Map<String, String> extensionMethod = new HashMap<>();
             extensionMethod.put("name", templateExtensionMethod.getMethod().declaringClass().name() + "#"
                     + templateExtensionMethod.getMethod().name() + "()");
             if (templateExtensionMethod.getMatchRegex() != null && !templateExtensionMethod.getMatchRegex().isEmpty()) {
@@ -170,31 +172,31 @@ public class QuteDevUIProcessor {
         return extensionMethods;
     }
 
-    private JsonArray createTemplatesJson(List<TemplatePathBuildItem> sortedTemplatePaths,
+    private List<Map<String, Object>> createTemplatesJson(List<TemplatePathBuildItem> sortedTemplatePaths,
             List<CheckedTemplateBuildItem> checkedTemplates, TemplatesAnalysisBuildItem templatesAnalysis,
             TemplateVariantsBuildItem variants) {
-        JsonArray templates = new JsonArray();
+        List<Map<String, Object>> templates = new ArrayList<>();
         for (TemplatePathBuildItem templatePath : sortedTemplatePaths) {
-            JsonObject template = new JsonObject();
+            Map<String, Object> template = new HashMap<>();
             template.put("path", templatePath.getPath());
 
             CheckedTemplateBuildItem checkedTemplate = findCheckedTemplate(getBasePath(templatePath.getPath(), variants),
                     checkedTemplates);
             if (checkedTemplate != null) {
-                template.put("checkedTemplateMethod",
-                        checkedTemplate.method.declaringClass().name() + "#" + checkedTemplate.method.name() + "()");
+                template.put("checkedTemplate",
+                        checkedTemplate.getDescription());
             }
 
             TemplateAnalysis analysis = templatesAnalysis.getAnalysis().stream()
                     .filter(ta -> ta.path.equals(templatePath.getPath())).findFirst().orElse(null);
             if (analysis != null) {
                 if (!analysis.fragmentIds.isEmpty()) {
-                    JsonArray fragmentIds = new JsonArray();
+                    List<String> fragmentIds = new ArrayList<>();
                     analysis.fragmentIds.forEach(fragmentIds::add);
                     template.put("fragmentIds", fragmentIds);
                 }
                 if (!analysis.parameterDeclarations.isEmpty()) {
-                    JsonArray paramDeclarations = new JsonArray();
+                    List<String> paramDeclarations = new ArrayList<>();
                     for (ParameterDeclaration pd : analysis.parameterDeclarations) {
                         paramDeclarations.add(String.format("{@%s %s%s}",
                                 pd.getTypeInfo().substring(1, pd.getTypeInfo().length() - 1), pd.getKey(),

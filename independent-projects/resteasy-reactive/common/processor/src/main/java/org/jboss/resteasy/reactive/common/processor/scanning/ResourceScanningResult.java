@@ -18,16 +18,17 @@ public final class ResourceScanningResult {
     final Map<DotName, String> pathInterfaces;
     final Map<DotName, String> clientInterfaces;
     final Map<DotName, MethodInfo> resourcesThatNeedCustomProducer;
-    final Set<String> beanParams;
     final Map<DotName, String> httpAnnotationToMethod;
     final List<MethodInfo> classLevelExceptionMappers;
+    final Set<DotName> requestScopedResources;
 
     public ResourceScanningResult(IndexView index, Map<DotName, ClassInfo> scannedResources,
             Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, String> clientInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers) {
+            Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers,
+            Set<DotName> requestScopedResources) {
         this.index = index;
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
@@ -35,9 +36,9 @@ public final class ResourceScanningResult {
         this.pathInterfaces = pathInterfaces;
         this.clientInterfaces = clientInterfaces;
         this.resourcesThatNeedCustomProducer = resourcesThatNeedCustomProducer;
-        this.beanParams = beanParams;
         this.httpAnnotationToMethod = httpAnnotationToMethod;
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+        this.requestScopedResources = requestScopedResources;
     }
 
     public IndexView getIndex() {
@@ -68,15 +69,15 @@ public final class ResourceScanningResult {
         return resourcesThatNeedCustomProducer;
     }
 
-    public Set<String> getBeanParams() {
-        return beanParams;
-    }
-
     public Map<DotName, String> getHttpAnnotationToMethod() {
         return httpAnnotationToMethod;
     }
 
     public List<MethodInfo> getClassLevelExceptionMappers() {
         return classLevelExceptionMappers;
+    }
+
+    public Set<DotName> getRequestScopedResources() {
+        return requestScopedResources;
     }
 }

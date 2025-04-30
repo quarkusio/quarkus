@@ -1,11 +1,8 @@
 package io.quarkus.resteasy.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.Application;
@@ -17,18 +14,16 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
-import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.runtime.ResteasyServlet;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServletMappingBuildItem;
+import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletContextPathBuildItem;
@@ -49,16 +44,13 @@ public class ResteasyServletProcessor {
     @BuildStep
     public void jaxrsConfig(
             Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<ResteasyJaxrsConfigBuildItem> deprecatedResteasyJaxrsConfig,
-            BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
             String rootPath = httpRootPathBuildItem.relativePath(resteasyServerConfig.get().getRootPath());
             String defaultPath = resteasyServerConfig.get().getPath();
 
-            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
-            resteasyJaxrsConfig
-                    .produce(new io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
+            resteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
         }
     }
 
@@ -121,13 +113,6 @@ public class ResteasyServletProcessor {
                         .produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
             }
         }
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(STATIC_INIT)
-    void addServletsToExceptionMapper(List<ServletBuildItem> servlets, ExceptionMapperRecorder recorder) {
-        recorder.setServlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
-                .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
     }
 
     private String getMappingPath(String path) {

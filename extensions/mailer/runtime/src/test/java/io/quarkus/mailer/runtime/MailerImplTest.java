@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.UUID;
 
 import jakarta.mail.BodyPart;
 import jakarta.mail.MessagingException;
@@ -55,7 +59,7 @@ class MailerImplTest {
         mailer = new MutinyMailerImpl(vertx,
                 MailClient.createShared(vertx,
                         new MailConfig().setPort(wiser.getServer().getPort())),
-                null, FROM, null, false, List.of(), false);
+                null, FROM, null, false, List.of(), false, false, null);
 
         wiser.getMessages().clear();
     }
@@ -267,7 +271,7 @@ class MailerImplTest {
 
     private String read(BodyPart part) throws IOException, MessagingException {
         try (InputStream is = part.getInputStream()) {
-            Scanner s = new Scanner(is, "UTF-8").useDelimiter("\\A");
+            Scanner s = new Scanner(is, StandardCharsets.UTF_8).useDelimiter("\\A");
             return s.hasNext() ? s.next() : "";
         }
     }

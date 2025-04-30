@@ -20,9 +20,10 @@ export class QuiIdeLink extends observeState(LitElement) {
     static properties = {
         fileName: {type: String},
         lang: {type: String},
-        lineNumber: {type: Number},
+        lineNumber: {type: String},
         stackTraceLine: {type: String},
-        _fontWeight: {type: String}
+        _fontWeight: {type: String},
+        noCheck: {type: Boolean},
     };
 
     constructor() {
@@ -30,8 +31,9 @@ export class QuiIdeLink extends observeState(LitElement) {
         this.stackTraceLine = null;
         this.fileName = null;
         this.lang = "java";
-        this.lineNumber = 0;
+        this.lineNumber = "0";
         this._fontWeight = "normal";
+        this.noCheck = false;
     }
     
     connectedCallback() {
@@ -55,7 +57,7 @@ export class QuiIdeLink extends observeState(LitElement) {
                         if(givenClassName && givenClassName!== "" && this._checkIfStringStartsWith(givenClassName, devuiState.ideInfo.idePackages)){
                             this.fileName = givenClassName;
                             this.lang = lang;
-                            this.lineNumber = parseInt(lineNumber);
+                            this.lineNumber = lineNumber;
                             this._fontWeight = "bold";
                         }
                     }
@@ -75,7 +77,7 @@ export class QuiIdeLink extends observeState(LitElement) {
 
     render() {
         if(this.fileName){
-            if(this._checkIfStringStartsWith(this.fileName, devuiState.ideInfo.idePackages)){
+            if(this.noCheck || this._checkIfStringStartsWith(this.fileName, devuiState.ideInfo.idePackages)){
                 return html`<span style="font-weight: ${this._fontWeight};" @click=${() => this._openInIde()}><slot></slot></span>`;
             }else{
                 return html`<slot></slot>`;

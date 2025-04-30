@@ -24,7 +24,7 @@ public class ZRangeArgs implements RedisCommandExtraArguments {
 
     /**
      * The LIMIT argument can be used to obtain a sub-range from the matching elements.
-     * A negative @{code count} returns all elements from the {@code offset}.
+     * A negative {@code count} returns all elements from the {@code offset}.
      *
      * @param offset the offset value
      * @param count the count value
@@ -37,8 +37,8 @@ public class ZRangeArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> list = new ArrayList<>();
         if (rev) {
             list.add("REV");
         }

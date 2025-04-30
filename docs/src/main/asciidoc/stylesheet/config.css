@@ -22,15 +22,11 @@ table.configuration-reference.tableblock > tbody > tr:nth-child(even) > th {
 table.configuration-reference.tableblock > tbody > tr > th {
   background-color: transparent;
   font-size: 1rem;
-  height: 60px;
   border: none;
   border-bottom: 1px solid #4695eb;
   vertical-align: bottom;
 }
 
-table.configuration-reference.tableblock > tbody > tr:first-child > th {
-  height: 30px;
-}
 table.configuration-reference.tableblock > tbody > tr > th:nth-child(2),
 table.configuration-reference.tableblock > tbody > tr > th:nth-child(3),
 table.configuration-reference.tableblock > tbody > tr > td:nth-child(2),
@@ -84,9 +80,8 @@ table.configuration-reference.tableblock .description-collapsed {
 table.configuration-reference.tableblock .description-decoration {
   height: 10px;
   margin: 0px;
-  padding: 0px;
+  padding: 0px 0px .75rem 0px;
   text-align: center;
-
   cursor: pointer;
 }
 
@@ -104,14 +99,13 @@ table.configuration-reference.tableblock a.link-collapsible i.fa {
 }
 
 table.configuration-reference.tableblock tr.row-collapsible td {
-  cursor: pointer;
 }
 
 table.configuration-reference.tableblock td.tableblock > .content > :last-child {
   margin-bottom: inherit;
 }
 
-input#config-search-0 {
+input[id^="config-search-"] {
   -webkit-appearance: none;
   display: block;
   width: 100%;
@@ -133,8 +127,8 @@ input#config-search-0 {
   letter-spacing: 1.5px;
 }
 
-input#config-search-0:hover,
-input#config-search-0:focus {
+input[id^="config-search-"]:hover,
+input[id^="config-search-"]:focus {
   padding: 12px 2px;
   outline: 0;
   border: 1px solid transparent;

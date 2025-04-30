@@ -51,4 +51,11 @@ public class QuarkusRecoveryService extends RecoveryManagerService {
         }
         xaResources.clear();
     }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        isCreated = false;
+        recoveryManagerService = null;
+    }
 }

@@ -7,20 +7,33 @@ import java.util.Locale;
 
 import jakarta.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class StringTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withApplicationRoot(root -> root
+                    .addAsResource(
+                            new StringAsset("{str:eval('Hello {name}!')}"),
+                            "templates/hello.txt")
+                    .addAsResource(
+                            // https://github.com/quarkusio/quarkus/issues/47092
+                            // This will trigger value resolver generation for StringBuilder
+                            new StringAsset("{str:builder.append('Qute').append(\" is\").append(' cool!')}"),
+                            "templates/builder.txt"));
 
     @Inject
     Engine engine;
+
+    @Inject
+    Template hello;
 
     @Test
     public void testTemplateExtensions() {
@@ -46,6 +59,61 @@ public class StringTemplateExtensionsTest {
                 engine.parse("{foo + 'bar' + 1}")
                         .data("foo", "bar")
                         .render());
+        assertEquals("barbar1",
+                engine.parse("{str:concat(foo, 'bar', 1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder(foo).append('bar').append(1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder.append(foo).append('bar').append(1)}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder(foo) + 'bar' + 1}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{str:builder + foo + 'bar' + 1}")
+                        .data("foo", "bar")
+                        .render());
+        assertEquals("Qute-is-cool",
+                engine.parse("{str:join('-', 'Qute', 'is', foo)}")
+                        .data("foo", "cool")
+                        .render());
+        assertEquals("Qute is cool!",
+                engine.parse("{str:Qute + ' is ' + foo + '!'}")
+                        .data("foo", "cool")
+                        .render());
+        assertEquals("Qute is cool!",
+                engine.parse("{str:['Qute'] + ' is ' + foo + '!'}")
+                        .data("foo", "cool")
+                        .render());
+        // note that this is not implemented as a template extension but a ns resolver
+        assertEquals("Hello fool!",
+                engine.parse("{str:eval('Hello {name}!')}")
+                        .data("name", "fool")
+                        .render());
+        assertEquals("Hello fool!",
+                hello.data("name", "fool")
+                        .render());
+
+        // https://github.com/quarkusio/quarkus/issues/47092
+        assertEquals("Quteiscool!",
+                engine.parse("{str:builder('Qute').append(\"is\").append(\"cool!\")}")
+                        .render());
+        assertEquals("Qute's cool!",
+                engine.parse("{str:builder('Qute').append(\"'s\").append(\" cool!\")}")
+                        .render());
+        assertEquals("\"Qute\" is cool!",
+                engine.parse("{str:builder('\"Qute\" ').append('is').append(\" cool!\")}")
+                        .render());
+        assertEquals("Hello '!",
+                engine.parse("{str:concat(\"Hello '\",\"!\")}")
+                        .render());
+
     }
 
 }

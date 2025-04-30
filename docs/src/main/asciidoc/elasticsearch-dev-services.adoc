@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Elasticsearch
-
 include::_attributes.adoc[]
+:categories: data
+:summary: Start Elasticsearch automatically in dev and test modes
+:topics: data,search,elasticsearch,nosql,dev-services,testing,dev-mode
+:extensions: io.quarkus:quarkus-elasticsearch-java-client,io.quarkus:quarkus-elasticsearch-rest-client,io.quarkus:quarkus-hibernate-search-orm-elasticsearch
 
 If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client` or `quarkus-hibernate-search-orm-elasticsearch`),
 Dev Services for Elasticsearch automatically starts an Elasticsearch server in dev mode and when running tests.
@@ -48,13 +51,95 @@ Note that the Elasticsearch hosts property is automatically configured with the 
 
 == Configuring the image
 
-Dev Services for Elasticsearch only support Elasticsearch based images, OpenSearch is not supported at the moment.
+Dev Services for Elasticsearch support distributions based on both Elasticsearch and OpenSearch images.
 
-If you need to use a different image than the default one you can configure it via:
-[source, properties]
+When using xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search],
+Dev Services will default to Elasticsearch or OpenSearch based on Hibernate Search configuration.
+
+Otherwise, Dev Services will default to Elasticsearch. To use OpenSearch, configure the distribution explicitly:
+[source,properties,subs="attributes"]
+----
+quarkus.elasticsearch.devservices.distribution=opensearch
+----
+
+If you need to use a different Elasticsearch or OpenSearch image than the default one you can configure it via:
+[source,properties,subs="attributes"]
 ----
 quarkus.elasticsearch.devservices.image-name={elasticsearch-image}
 ----
+
+For exotic image names, Quarkus might be unable to infer the distribution (`elastic` or `opensearch`).
+In these cases starting the Dev Services will fail, and you will need to configure the distribution explicitly:
+[source,properties,subs="attributes"]
+----
+quarkus.elasticsearch.devservices.image-name=my-custom-image-with-no-clue-about-the-distribution:1.0
+quarkus.elasticsearch.devservices.distribution=elasticsearch
+----
+
+
+[[reuse]]
+== Reusing Dev Services
+
+[[reuse-within-execution]]
+=== General case
+
+Within a dev mode session or test suite execution,
+Quarkus will always reuse Elasticsearch Dev Services as long as their configuration
+(username, password, environment, port bindings, ...) did not change.
+
+When the configuration of Elasticsearch Dev Services changes,
+Quarkus will always restart the corresponding containers.
+
+When a dev mode session or test suite execution ends,
+Quarkus will (by default) stop Elasticsearch Dev Services.
+
+[[reuse-across-executions]]
+=== Reusing Dev Service containers across runs
+
+If you want to keep Dev Service containers running *after a dev mode session or test suite execution*
+to reuse them in the next dev mode session or test suite execution,
+this is possible as well.
+Just enable https://java.testcontainers.org/features/reuse/[TestContainers reuse]
+by inserting this line in one of your
+https://java.testcontainers.org/features/configuration/[TestContainers configuration file]
+(generally `~/.testcontainers.properties` or `C:/Users/myuser/.testcontainers.properties`):
+
+[source,properties]
+----
+testcontainers.reuse.enable=true
+----
+
+[NOTE]
+====
+Even with container reuse enabled, containers will only be reused if their startup command did not change:
+same environment variables (username/password in particular), same port bindings, ...
+====
+
+[WARNING]
+====
+Reusing containers implies reusing their internal state,
+including the Elasticsearch schema and the content of indexes.
+
+If that's not what you want -- and if your tests write to the indexes, that's probably not what you want --
+consider reinitializing your schema and data on application startup.
+If you use Hibernate Search,
+xref:hibernate-search-orm-elasticsearch.adoc#quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy[Hibernate Search's schema management]
+may help with that.
+====
+
+[WARNING]
+====
+With container reuse enabled, old containers (especially with obsolete configuration)
+might be left running indefinitely, even after starting a new Quarkus dev mode session or test suite execution.
+
+In that case, you will need to stop and remove these containers manually.
+====
+
+If you want to reuse containers for some Quarkus applications but not all of them,
+or some Dev Services but not all of them,
+you can disable this feature for a specific Dev Service by setting the configuration property
+xref:elasticsearch-dev-services.adoc#quarkus-elasticsearch-rest-client_quarkus-elasticsearch-devservices_quarkus-elasticsearch-devservices-reuse[`quarkus.elasticsearch.devservices.reuse`]
+to `false`.
 
 == Current limitations
 
@@ -62,4 +147,4 @@ Currently, only the default backend for Hibernate Search Elasticsearch is suppor
 
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client_quarkus.elasticsearch.devservices.adoc[opts=optional, leveloffset=+1]

@@ -6,57 +6,43 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.RUN_TIME)
-public class DataSourcesReactiveMySQLConfig {
-
-    /**
-     * The default datasource.
-     */
-    @ConfigItem(name = "reactive.mysql")
-    public DataSourceReactiveMySQLConfig defaultDataSource;
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface DataSourcesReactiveMySQLConfig {
 
     /**
      * Additional named datasources.
      */
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceReactiveMySQLOuterNamedConfig> namedDataSources;
-
-    public DataSourceReactiveMySQLConfig getDataSourceReactiveRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource;
-        }
-
-        DataSourceReactiveMySQLOuterNamedConfig dataSourceReactiveMySQLOuterNamedConfig = namedDataSources
-                .get(dataSourceName);
-        if (dataSourceReactiveMySQLOuterNamedConfig == null) {
-            return new DataSourceReactiveMySQLConfig();
-        }
-
-        return dataSourceReactiveMySQLOuterNamedConfig.reactive.mysql;
-    }
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceReactiveMySQLOuterNamedConfig> dataSources();
 
     @ConfigGroup
-    public static class DataSourceReactiveMySQLOuterNamedConfig {
+    public interface DataSourceReactiveMySQLOuterNamedConfig {
 
         /**
          * The MySQL-specific configuration.
          */
-        public DataSourceReactiveMySQLOuterNestedNamedConfig reactive;
+        DataSourceReactiveMySQLOuterNestedNamedConfig reactive();
     }
 
     @ConfigGroup
-    public static class DataSourceReactiveMySQLOuterNestedNamedConfig {
+    public interface DataSourceReactiveMySQLOuterNestedNamedConfig {
 
         /**
          * The MySQL-specific configuration.
          */
-        public DataSourceReactiveMySQLConfig mysql;
+        DataSourceReactiveMySQLConfig mysql();
     }
 
 }

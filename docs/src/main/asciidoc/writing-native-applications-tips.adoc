@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, writing-extensions, native
 :summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
+:topics: native,extensions
 
 This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
 
@@ -36,6 +37,8 @@ So this directory is not a shortcut for "let's automatically include these resou
 Other resources should be declared explicitly.
 ====
 
+==== Using the `quarkus.native.resources.includes` configuration property
+
 To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
 and its counterpart to exclude resources `quarkus.native.resources.excludes`.
 
@@ -54,8 +57,21 @@ will include:
 * all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
 * all text files in the `bar/` directory and its subdirectories.
 
+==== Using a configuration file
+
 If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
-you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+you can also create a `resource-config.json` JSON file defining which resources should be included.
+This, and other native image configuration files, should be placed under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+This way they will be automatically parsed by the native build, without additional configuration.
+
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+
+Please also note that the `resource-config.json` file will be overwritten by Quarkus if placed directly under `src/main/resources/META-INF/native-image/` as Quarkus generates its own configuration file in this directory.
+====
+
+An example of such a file is the following:
 
 [source,json]
 ----
@@ -76,49 +92,8 @@ Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
 ====
-You can find more information about this topic in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
-
-The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=resources-config.json
-----
-
-In the previous snippet we were able to simply use `resources-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
-If the file had been added to another directory, the proper file path would have had to be specified manually.
-
-[TIP]
-====
-Multiple options may be separated by a comma. For example, one could use:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
-----
-
-in order to ensure that various resources are included and additional reflection is registered.
-
-====
-If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
-
-When using Maven, we could use the following configuration:
-
-[source,xml]
-----
-<profiles>
-    <profile>
-        <id>native</id>
-        <properties>
-            <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=resources-config.json</quarkus.native.additional-build-args>
-        </properties>
-    </profile>
-</profiles>
-----
 
 === Registering for reflection
 
@@ -189,7 +164,7 @@ An even nastier possible outcome could be for no exception to be thrown, but ins
 
 There are two different ways to fix this type of issues.
 
-[#registerForReflection]
+[[registerForReflection]]
 ==== Using the @RegisterForReflection annotation
 
 The easiest way to register a class for reflection is to use the `@RegisterForReflection` annotation:
@@ -222,11 +197,18 @@ public class MyReflectionConfiguration {
 }
 ----
 
+Note: By default the `@RegisterForReflection` annotation will also register any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
+
 ==== Using a configuration file
 
-You can use a configuration file to register classes for reflection.
+You can also use a configuration file to register classes for reflection, if you prefer relying on the GraalVM infrastructure.
 
-As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+====
+
+As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflect-config.json` (the most common location is within `src/main/resources`)
 
 [source,json]
 ----
@@ -245,49 +227,39 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 
 [NOTE]
 ====
-For more details on the format of this file, please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[the GraalVM documentation].
+For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
-The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
+The final order of business is to make the configuration file known to the `native-image` executable.
+To do that, place the configuration file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+This way they will be automatically parsed by the native build, without additional configuration.
 
-[source,properties]
+=== Registering for proxy
+
+Analogous to `@RegisterForReflection`, you can use `@RegisterForProxy` to register interfaces for dynamic proxy:
+
+[source,java]
 ----
-quarkus.native.additional-build-args =-H:ReflectionConfigurationFiles=reflection-config.json
+@RegisterForProxy
+public interface MyInterface extends MySecondInterface {
+}
 ----
 
-In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
-If the file had been added to another directory, the proper file path would have had to be specified manually.
+Note that `MyInterface` and all its super interfaces will be registered.
 
-[TIP]
+Also, in case the interface is in a third-party jar, you can do it by using an empty class that will host the `@RegisterForProxy` for it.
+
+[source,java]
+----
+@RegisterForProxy(targets={MyInterface.class, MySecondInterface.class})
+public class MyReflectionConfiguration {
+}
+----
+
+[WARNING]
 ====
-Multiple options may be separated by a comma. For example, one could use:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
-----
-
-in order to ensure that various resources are included and additional reflection is registered.
-
+Note that the order of the specified proxy interfaces is significant. For more information, see link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
 ====
-If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
-
-When using Maven, we could use the following configuration:
-
-[source,xml]
-----
-<profiles>
-    <profile>
-        <id>native</id>
-        <properties>
-            <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json</quarkus.native.additional-build-args>
-        </properties>
-    </profile>
-</profiles>
-----
 
 [[delay-class-init-in-your-app]]
 === Delaying class initialization
@@ -327,7 +299,7 @@ It should be added to the `native-image` configuration using the `quarkus.native
 
 [NOTE]
 ====
-You can find more information about all this in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+For more information, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
 [NOTE]
@@ -348,6 +320,7 @@ and in the case of using the Maven configuration instead of `application.propert
 ----
 ====
 
+[[managing-proxy-classes-app]]
 === Managing Proxy Classes
 
 While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
@@ -359,8 +332,10 @@ In such a situation, the error you might encounter is:
 com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
 ----
 
-Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+To solve the issue you can create a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+For more information about the format of the `proxy-config.json`, see the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
+
+Alternatively, you can create a quarkus extension and register the proxy classes as described in <<managing-proxy-classes-extension>>.
 
 [[modularity-benefits]]
 === Modularity Benefits
@@ -410,7 +385,7 @@ and instead code that interacts with optional dependencies should be moved into 
 [[enforcing-singletons]]
 === Enforcing Singletons
 
-As already explained in the <<delay-class-init-in-your-app, delay class initialization>> section,
+As already explained in the <<delay-class-init-in-your-app,delay class initialization>> section,
 Quarkus marks all code to be initialized at build time by default.
 This means that, unless marked otherwise,
 static variables will be assigned at build time,
@@ -564,7 +539,7 @@ depending on your use case.
 
 === Beware of common Java API overrides
 
-Certain commonly used Java methods are overriden by user classes,
+Certain commonly used Java methods are overridden by user classes,
 e.g. `toString`, `equals`, `hashCode`...etc.
 The majority of overrides do not cause problems,
 but if they use third party libraries (e.g. for additional formatting),
@@ -612,7 +587,7 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-More information about reflection in GraalVM can be found https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[here].
+For more information about reflection in GraalVM, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
 === Including resources
@@ -633,11 +608,11 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+For more information about GraalVM resource handling in native executables, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 
-== Delay class initialization
+=== Delay class initialization
 
 Quarkus simplifies things by allowing extensions authors to simply register a `RuntimeInitializedClassBuildItem`. A simple example of doing so could be:
 
@@ -657,12 +632,13 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 
 [NOTE]
 ====
-For more information about `--initialize-at-run-time`, please read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+For more information about the `--initialize-at-run-time` option, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
+[[managing-proxy-classes-extension]]
 === Managing Proxy Classes
 
-Very similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
+Similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
 
 [source,java]
 ----
@@ -677,15 +653,19 @@ public class S3Processor {
 }
 ----
 
-Using such a construct means that a `-H:DynamicProxyConfigurationResources` option will automatically be added to the `native-image` command line.
+This will allow Quarkus to generate the necessary configuration for handling the proxy class.
+
+Alternatively, you may create a `proxy-config.json` as described in <<managing-proxy-classes-app>>.
 
 [NOTE]
 ====
-For more information about Proxy Classes you can read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+In both cases the configuration will be automatically parsed by the native build, without additional configuration.
+
+For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually].
 ====
 
 === Logging with Native Image
 
 If you are using dependencies that require logging components such as Apache Commons Logging or Log4j and are experiencing a `ClassNotFoundException` when building the native executable, you can resolve this by excluding the logging library and adding the corresponding JBoss Logging adapter.
 
-For more details please refer to the xref:logging.adoc#logging-adapters[Logging guide].
+For more details please refer to the xref:logging.adoc#logging-apis[Logging guide].

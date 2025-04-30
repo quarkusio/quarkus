@@ -8,6 +8,20 @@
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-{extension.id}.git</developerConnection>
         <url>https://github.com/quarkiverse/quarkus-{extension.id}</url>
     </scm>
+    {#if quarkus.version.or(quarkus.bom.version).compareVersionTo("3.14") >= 0}
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-config-doc-maven-plugin</artifactId>
+                    <version>$\{quarkus.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    {/if}
+    {#if has-integration-tests-module}
     <profiles>
         <profile>
             <id>it</id>
@@ -22,4 +36,5 @@
             </modules>
         </profile>
     </profiles>
+    {/if}
 </project>

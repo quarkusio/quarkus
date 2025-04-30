@@ -40,9 +40,6 @@ If you think some information is outdated, either provide a pull request or emai
 |Cassandra-Quarkus
 |https://github.com/adutra[Alexandre Dutra], https://github.com/tomekl007[Tomasz Lelek], https://github.com/absurdfarce[Bret McGuire], https://github.com/emerkle826[Erik Merkle], https://github.com/olim7t[Olivier Michallat]
 
-|Consul Config
-|https://github.com/geoand[Georgios Andrianakis]
-
 |Container Image Jib
 |https://github.com/geoand[Georgios Andrianakis]
 
@@ -50,7 +47,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/geoand[Georgios Andrianakis]
 
 |Elasticsearch REST Client Common
-|https://github.com/gsmet[Guillaume Smet], https://github.com/loicmathieu[Loïc Mathieu]
+|https://github.com/gsmet[Guillaume Smet], https://github.com/yrodiere[Yoann Rodière], https://github.com/loicmathieu[Loïc Mathieu]
 
 |Elasticsearch REST Client
 |https://github.com/loicmathieu[Loïc Mathieu], https://github.com/gsmet[Guillaume Smet]
@@ -83,16 +80,16 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/cescoffier[Clément Escoffier], https://github.com/alesj[Aleš Justin]
 
 |Hibernate ORM
-|https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+|https://github.com/yrodiere[Yoann Rodière], https://github.com/gsmet[Guillaume Smet]
 
 |Hibernate ORM with Panache
 |https://github.com/FroMage[Stéphane Épardaud]
 
 |Hibernate ORM with Panache for Kotlin
-|https://github.com/evanchooly[Justin Lee]
+|
 
 |Hibernate Search
-|https://github.com/gsmet[Guillaume Smet]
+|https://github.com/yrodiere[Yoann Rodière], https://github.com/gsmet[Guillaume Smet]
 
 |Hibernate Validator
 |https://github.com/gsmet[Guillaume Smet]
@@ -102,9 +99,6 @@ If you think some information is outdated, either provide a pull request or emai
 
 |Jackson
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
-
-|Jaeger
-|https://github.com/objectiser[Gary Brown]
 
 |JAXB
 |https://github.com/gsmet[Guillaume Smet]
@@ -116,19 +110,13 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
 
 |JDBC - MySQL
-|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/gsmet[Guillaume Smet]
 
 |JDBC - PostgreSQL
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
 
 |JDBC - SQL Server
 |https://github.com/Sanne[Sanne Grinovero]
-
-|JGit
-|https://github.com/gastaldi[George Gastaldi]
-
-|JSch
-|https://github.com/gastaldi[George Gastaldi]
 
 |JSON-B
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
@@ -146,7 +134,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/mariofusco[Mario Fusco], https://github.com/cristianonicolai[Cristiano Nicolai]
 
 |Kotlin
-|https://github.com/geoand[Georgios Andrianakis], https://github.com/evanchooly[Justin Lee]
+|https://github.com/geoand[Georgios Andrianakis]
 
 |Kubernetes
 |https://github.com/Sgitario[ Jose Carvajal], https://github.com/iocanel[Ioannis Canellos]
@@ -167,7 +155,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/cescoffier[Clément Escoffier]
 
 |MongoDB with Panache
-|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/evanchooly[Justin Lee]
+|https://github.com/loicmathieu[Loïc Mathieu]
 
 |Narayana JTA
 |https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]
@@ -262,9 +250,6 @@ If you think some information is outdated, either provide a pull request or emai
 |SmallRye GraphQL Client
 |https://github.com/jmartisk[Jan Martiska], https://github.com/phillip-kruger[Phillip Kruger]
 
-|SmallRye OpenTracing
-|https://github.com/radcortez[Roberto Cortez]
-
 |SmallRye Reactive Messaging
 |https://github.com/cescoffier[Clément Escoffier]
 
@@ -324,4 +309,7 @@ If you think some information is outdated, either provide a pull request or emai
 
 |Vert.x Web
 |https://github.com/cescoffier[Clément Escoffier]
+
+|Websockets Next
+|https://github.com/mkouba[Martin Kouba]
 |===

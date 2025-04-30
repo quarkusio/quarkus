@@ -17,16 +17,16 @@ public class SecretVolumeConverter {
 
     public static SecretVolumeBuilder convert(SecretVolumeConfig c) {
         SecretVolumeBuilder b = new SecretVolumeBuilder();
-        b.withSecretName(c.secretName);
-        b.withDefaultMode(FilePermissionUtil.parseInt(c.defaultMode));
-        b.withOptional(c.optional);
-        if (c.items != null && !c.items.isEmpty()) {
-            List<Item> items = new ArrayList<>(c.items.size());
-            for (Map.Entry<String, VolumeItemConfig> item : c.items.entrySet()) {
+        b.withSecretName(c.secretName());
+        b.withDefaultMode(FilePermissionUtil.parseInt(c.defaultMode()));
+        b.withOptional(c.optional());
+        if (c.items() != null && !c.items().isEmpty()) {
+            List<Item> items = new ArrayList<>(c.items().size());
+            for (Map.Entry<String, VolumeItemConfig> item : c.items().entrySet()) {
                 items.add(new ItemBuilder()
                         .withKey(item.getKey())
-                        .withPath(item.getValue().path)
-                        .withMode(item.getValue().mode)
+                        .withPath(item.getValue().path())
+                        .withMode(item.getValue().mode())
                         .build());
             }
 

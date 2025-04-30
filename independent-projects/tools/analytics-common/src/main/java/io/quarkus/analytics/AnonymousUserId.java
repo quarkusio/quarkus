@@ -29,8 +29,8 @@ public class AnonymousUserId {
 
     // Singleton
     private AnonymousUserId(final FileLocations fileLocations, final MessageWriter log) {
-        this.uuid = loadOrCreate(fileLocations.getUUIDFile());
         this.log = log;
+        this.uuid = loadOrCreate(fileLocations.getUUIDFile());
     }
 
     public String getUuid() {
@@ -42,13 +42,20 @@ public class AnonymousUserId {
     }
 
     private String loadOrCreate(Path file) {
-        if (Files.exists(file)) {
-            return load(file);
-        } else {
-            String uuid = UUID.randomUUID().toString();
-            write(uuid, file);
-            isNew = true;
-            return uuid;
+        try {
+            if (Files.exists(file)) {
+                return load(file);
+            } else {
+                String uuid = UUID.randomUUID().toString();
+                write(uuid, file);
+                isNew = true;
+                return uuid;
+            }
+        } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Could not create UUID file at " + file.toAbsolutePath(), e);
+            }
+            return "N/A";
         }
     }
 
@@ -60,7 +67,9 @@ public class AnonymousUserId {
                     .map(String::trim)
                     .orElse("empty");
         } catch (IOException e) {
-            log.warn("[Quarkus build analytics] Could not read redhat anonymous UUID file at " + file.toAbsolutePath(), e);
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Could not read redhat anonymous UUID file at " + file.toAbsolutePath(), e);
+            }
         }
         return uuid;
     }
@@ -70,8 +79,10 @@ public class AnonymousUserId {
             FileUtils.createFileAndParent(uuidFile);
             FileUtils.append(uuid, uuidFile);
         } catch (IOException e) {
-            log.warn("[Quarkus build analytics] Could not write redhat anonymous UUID to file at " + uuidFile.toAbsolutePath(),
-                    e);
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Could not write redhat anonymous UUID to file at "
+                        + uuidFile.toAbsolutePath(), e);
+            }
         }
     }
 }

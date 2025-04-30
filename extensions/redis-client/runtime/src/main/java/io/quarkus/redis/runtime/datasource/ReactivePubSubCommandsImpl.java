@@ -4,6 +4,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,11 +31,11 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands implements ReactivePubSubCommands<V> {
 
-    private final Class<V> classOfMessage;
+    private final Type classOfMessage;
     private final Redis client;
     private final ReactiveRedisDataSourceImpl datasource;
 
-    public ReactivePubSubCommandsImpl(ReactiveRedisDataSourceImpl ds, Class<V> classOfMessage) {
+    public ReactivePubSubCommandsImpl(ReactiveRedisDataSourceImpl ds, Type classOfMessage) {
         super(ds, new Marshaller(classOfMessage));
         this.client = ds.redis;
         this.datasource = ds;
@@ -193,10 +194,10 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         for (String channel : channels) {
             if (channel == null) {
-                throw new IllegalArgumentException("Channels must not be null");
+                return Uni.createFrom().failure(new IllegalArgumentException("Channels must not be null"));
             }
             if (channel.isBlank()) {
-                throw new IllegalArgumentException("Channels cannot be blank");
+                return Uni.createFrom().failure(new IllegalArgumentException("Channels cannot be blank"));
             }
         }
 
@@ -259,10 +260,14 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         List<String> list = List.of(channels);
         return Multi.createFrom().emitter(emitter -> {
-            subscribe(list, (channel, value) -> new DefaultRedisPubSubMessage<>(value, channel), emitter::complete,
-                    emitter::fail)
-                    .subscribe().with(subscriber -> emitter
-                            .onTermination(() -> subscriber.unsubscribe(channels).subscribe().asCompletionStage()));
+            subscribe(list,
+                    (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)),
+                    emitter::complete, emitter::fail)
+                    .subscribe().with(x -> {
+                        emitter.onTermination(() -> {
+                            x.unsubscribe(channels).subscribe().asCompletionStage();
+                        });
+                    }, emitter::fail);
         });
     }
 

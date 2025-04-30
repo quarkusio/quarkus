@@ -46,6 +46,7 @@ public class EnabledInfoTest {
                 .body("java.version", is(notNullValue()))
                 .body("build", is(notNullValue()))
                 .body("build.time", is(notNullValue()))
+                .body("build.quarkusVersion", is(notNullValue()))
                 .body("git", is(notNullValue()))
                 .body("git.branch", is(notNullValue()))
                 .body("git.build", is(nullValue()));
@@ -55,6 +56,7 @@ public class EnabledInfoTest {
         assertNotNull(buildInfo.artifact());
         assertNotNull(buildInfo.version());
         assertNotNull(buildInfo.time());
+        assertNotNull(buildInfo.quarkusVersion());
 
         assertNotNull(gitInfo);
         assertNotNull(gitInfo.branch());
@@ -68,5 +70,7 @@ public class EnabledInfoTest {
 
         assertNotNull(javaInfo);
         assertNotNull(javaInfo.version());
+        assertNotNull(javaInfo.vendor());
+        assertNotNull(javaInfo.vendorVersion());
     }
 }

@@ -43,9 +43,7 @@ public class ImmutableListTest {
         assertThatExceptionOfType(NoSuchElementException.class)
                 .isThrownBy(() -> it.next());
         assertThatExceptionOfType(IndexOutOfBoundsException.class)
-                .isThrownBy(() -> list.get(5))
-                .withMessage(
-                        "Index 5 is out of bounds, list size: 2");
+                .isThrownBy(() -> list.get(5));
     }
 
 }

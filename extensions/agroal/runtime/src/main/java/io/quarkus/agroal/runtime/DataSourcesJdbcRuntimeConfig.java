@@ -2,37 +2,36 @@ package io.quarkus.agroal.runtime;
 
 import java.util.Map;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.RUN_TIME)
-public class DataSourcesJdbcRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface DataSourcesJdbcRuntimeConfig {
 
     /**
-     * The default datasource.
+     * Datasources.
      */
-    @ConfigItem
-    public DataSourceJdbcRuntimeConfig jdbc;
-
-    /**
-     * Additional named datasources.
-     */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceJdbcOuterNamedRuntimeConfig> namedDataSources;
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceJdbcOuterNamedRuntimeConfig> dataSources();
 
     @ConfigGroup
-    public static class DataSourceJdbcOuterNamedRuntimeConfig {
+    interface DataSourceJdbcOuterNamedRuntimeConfig {
 
         /**
          * The JDBC runtime configuration.
          */
-        @ConfigItem
-        public DataSourceJdbcRuntimeConfig jdbc;
+        DataSourceJdbcRuntimeConfig jdbc();
     }
+
 }

@@ -43,7 +43,7 @@ public class IdeProcessor {
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
         IDE_PROCESSES.put(
-                (processInfo -> processInfo.containInArguments("netbeans")),
+                (processInfo -> (processInfo.containInArguments("netbeans") || processInfo.containInCommand("nbexec"))),
                 Ide.NETBEANS);
 
         IDE_ARGUMENTS_EXEC_INDICATOR.put(Ide.NETBEANS, (ProcessInfo processInfo) -> {
@@ -82,7 +82,7 @@ public class IdeProcessor {
             return null;
         }
         Ide result = null;
-        if (ideConfig.target == IdeConfig.Target.auto) {
+        if (ideConfig.target() == IdeConfig.Target.auto) {
 
             // the idea here is to auto-detect the special files that IDEs create
             // and also the running IDE process if need be
@@ -110,13 +110,13 @@ public class IdeProcessor {
                 }
             }
         } else {
-            if (ideConfig.target == IdeConfig.Target.idea) {
+            if (ideConfig.target() == IdeConfig.Target.idea) {
                 result = Ide.IDEA;
-            } else if (ideConfig.target == IdeConfig.Target.eclipse) {
+            } else if (ideConfig.target() == IdeConfig.Target.eclipse) {
                 result = Ide.ECLIPSE;
-            } else if (ideConfig.target == IdeConfig.Target.vscode) {
+            } else if (ideConfig.target() == IdeConfig.Target.vscode) {
                 result = Ide.VSCODE;
-            } else if (ideConfig.target == IdeConfig.Target.netbeans) {
+            } else if (ideConfig.target() == IdeConfig.Target.netbeans) {
                 result = Ide.NETBEANS;
             }
         }
@@ -189,7 +189,6 @@ public class IdeProcessor {
         return new IdeRunningProcessBuildItem(result);
     }
 
-    // TODO: remove when we move to Java 11 and just call the methods of 'java.lang.ProcessHandle'
     private static class ProcessUtil {
 
         /**

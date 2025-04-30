@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -12,10 +13,13 @@ import static java.util.stream.Collectors.joining;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -24,12 +28,15 @@ import org.jboss.logging.Logger;
 import org.jose4j.keys.X509Util;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer;
+import com.github.tomakehurst.wiremock.common.ListOrSingle;
+import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
 import com.google.common.collect.ImmutableSet;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
+import wiremock.com.github.jknack.handlebars.Helper;
+import wiremock.com.github.jknack.handlebars.Options;
 
 /**
  * Provides a mock OIDC server to tests.
@@ -43,6 +50,12 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
             "https://server.example.com");
     private static final String TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.token.audience",
             "https://server.example.com");
+    private static final String ID_TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.idtoken.audience",
+            "https://id.server.example.com");
+    private static final String TOKEN_SUBJECT = "123456";
+    private static final String BEARER_TOKEN_TYPE = "Bearer";
+    private static final String ID_TOKEN_TYPE = "ID";
+
     private static final String TOKEN_USER_ROLES = System.getProperty("quarkus.test.oidc.token.user-roles", "user");
     private static final String TOKEN_ADMIN_ROLES = System.getProperty("quarkus.test.oidc.token.admin-roles", "user,admin");
     private static final String ENCODED_X5C = "MIIC+zCCAeOgAwIBAgIGAXx/E9rgMA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDAeFw0yMTEwMTQxMzUzMDBaFw0yMjEwMTQxMzUzMDBaMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAIicN95dXlQLBqEZUsqPhQopnjnPgGmW80NohEgNzZLqN0xW9cyJJrdJM5Z1lRrePHZGiJdd1XXn4fYasP6/cjRfMWal9X6dD5wlnOTP01/4beX5vctE6W4lZrI3kTFmZ+I69w7BaLsUPWgV1CYrtuldL3dr6xAnngK3hU+JraB2Ndw9llXib26HOZhCXKedCTYcUQieVJGPI0f8H1JNk88+PnwI+cUGgXHF56iTLv9QujI6AhIgextXdd21T0XiHgBkSlSSBeqIKAjfCW6zoXP+PJU+Lso24J3duG3mrbilqHZlmIWnLRaG0RmKOeedXIDHvAaMaVUOLaN9HBgNKo0CAwEAAaNTMFEwHQYDVR0OBBYEFMYGoBNHBTMvMT4DwClVHVVwn+5VMB8GA1UdIwQYMBaAFMYGoBNHBTMvMT4DwClVHVVwn+5VMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAFulB0DKhykXGbGPIBPcj63ItLNilgl1i8i43my8fYdV6OBWLIhZ4InhpX1+XmYCNPNtu94Jy1csS00K2/Hhn4ByBd+6nd5DSr0W0VdVQyhLz3GW1nf0J3X2N+tD818O0KtKKPTq4p9reg/XtV+DNv7DeDAGzlfgRL4E4fQx6OYeuu35kGrPvAddIA70leJMELJRylCLfEcl2ne/Bht8cZVp7ZCxnfXnsc+7hCW84mhzGjJycA3E6TnZPD3pD+q9FoIAQMxMQqUCH71u9vTvz1Q5JdokuJJY2eTHSUKyHA9MwSFq8DFDICJFBoQuFyDlK5yxSUcQpR3mBwKdimj6oA0=";
@@ -52,10 +65,20 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     @Override
     public Map<String, String> start() {
 
-        server = new WireMockServer(
-                wireMockConfig()
-                        .extensions(new ResponseTemplateTransformer(false))
-                        .dynamicPort());
+        server = new WireMockServer(wireMockConfig().dynamicPort().extensions(
+                new TemplateHelperProviderExtension() {
+                    @Override
+                    public String getName() {
+                        return "custom-helpers";
+                    }
+
+                    @Override
+                    public Map<String, Helper<?>> provideTemplateHelpers() {
+                        Helper<String> idTokenHelper = OidcWiremockTestResource.this::buildBasicSchemeIdToken;
+                        return Map.ofEntries(Map.entry("basic-scheme-id-token", idTokenHelper));
+                    }
+                }));
+
         server.start();
 
         server.stubFor(
@@ -209,6 +232,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "")
                                 .withTransformers("response-template")));
 
+        definePasswordGrantTokenStub();
+        defineClientCredGrantTokenStub();
+
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", server.baseUrl() + "/auth");
@@ -241,10 +267,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
 
     private void defineValidIntrospectionMockTokenStubForUserWithRoles(String user, Set<String> roles) {
         long exp = now() + 300;
-        server.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+        server.stubFor(post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching("token=" + user + "&token_type_hint=access_token"))
-                .willReturn(WireMock
-                        .aResponse()
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
@@ -258,10 +283,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     private void defineInvalidIntrospectionMockTokenStubForUserWithRoles(String user, Set<String> roles) {
-        server.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+        server.stubFor(post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching("token=" + user + "&token_type_hint=access_token"))
-                .willReturn(WireMock
-                        .aResponse()
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
                                 "{\"active\":true,\"scope\":\"" + roles.stream().collect(joining(" ")) + "\",\"username\":\""
@@ -270,14 +294,14 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     private void defineJwtBearerGrantTokenStub() {
-        server.stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-token")
+        server.stubFor(post("/auth/realms/quarkus/jwt-bearer-token")
                 .withRequestBody(containing("client_id=quarkus-app"))
                 .withRequestBody(containing("client_secret=secret"))
                 .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"))
                 .withRequestBody(containing("scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read+offline_access"))
                 .withRequestBody(containing("requested_token_use=on_behalf_of"))
                 .withRequestBody(containing("assertion"))
-                .willReturn(WireMock.aResponse()
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\n" +
                                 "  \"access_token\": \""
@@ -286,23 +310,45 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     private void defineCodeFlowAuthorizationMockTokenStub() {
-        server.stubFor(WireMock.post("/auth/realms/quarkus/token")
+        server.stubFor(post("/auth/realms/quarkus/token")
                 .withRequestBody(containing("authorization_code"))
-                .willReturn(WireMock.aResponse()
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\n" +
                                 "  \"access_token\": \""
                                 + getAccessToken("alice", getAdminRoles()) + "\",\n" +
                                 "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\",\n" +
-                                "  \"id_token\": \"" + getIdToken("alice", getAdminRoles())
-                                + "\"\n" +
-                                "}")));
+                                "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                "}")
+                        .withTransformers("response-template")));
+    }
+
+    private void definePasswordGrantTokenStub() {
+        server.stubFor(post("/auth/realms/quarkus/token")
+                .withRequestBody(containing("grant_type=password"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\"}")));
+    }
+
+    private void defineClientCredGrantTokenStub() {
+        server.stubFor(post("/auth/realms/quarkus/token")
+                .withRequestBody(containing("grant_type=client_credentials"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\"}")));
     }
 
     private void defineCodeFlowAuthorizationMockEncryptedTokenStub() {
-        server.stubFor(WireMock.post("/auth/realms/quarkus/encrypted-id-token")
+        server.stubFor(post("/auth/realms/quarkus/encrypted-id-token")
                 .withRequestBody(containing("authorization_code"))
-                .willReturn(WireMock.aResponse()
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\n" +
                                 "  \"access_token\": \""
@@ -314,11 +360,15 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String getEncryptedIdToken(String userName, Set<String> groups) {
+        return getEncryptedIdToken(userName, groups, "123456");
+    }
+
+    public static String getEncryptedIdToken(String userName, Set<String> groups, String sub) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
-                .subject("123456")
+                .subject(sub)
                 .jws()
                 .keyId("1")
                 .innerSign("privateKey.jwk").encrypt("publicKey.jwk");
@@ -341,34 +391,61 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String getAccessToken(String userName, Set<String> groups) {
-        return generateJwtToken(userName, groups);
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, BEARER_TOKEN_TYPE);
     }
 
     public static String getIdToken(String userName, Set<String> groups) {
-        return generateJwtToken(userName, groups);
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE);
+    }
+
+    public static String getIdToken(String userName, String clientId, Map<String, String> claims) {
+        return generateJwtToken(userName, Set.of(), TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE), claims);
+    }
+
+    public static String getIdToken(String userName, Set<String> groups, String clientId) {
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE));
     }
 
     public static String generateJwtToken(String userName, Set<String> groups) {
-        return Jwt.preferredUserName(userName)
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT);
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub) {
+        return generateJwtToken(userName, groups, sub, null);
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type) {
+        return generateJwtToken(userName, groups, sub, type, Set.of(TOKEN_AUDIENCE));
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud) {
+        return generateJwtToken(userName, groups, sub, type, aud, Map.of());
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud,
+            Map<String, String> claims) {
+        JwtClaimsBuilder builder = Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
-                .audience(TOKEN_AUDIENCE)
+                .audience(aud)
                 .claim("sid", "session-id")
-                .subject("123456")
+                .subject(sub);
+        if (type != null) {
+            builder.claim("typ", type);
+        }
+
+        if (claims != null) {
+            claims.forEach(builder::claim);
+        }
+
+        return builder
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
     }
 
     public static String getLogoutToken() {
-        return Jwt.issuer(TOKEN_ISSUER)
-                .audience(TOKEN_AUDIENCE)
-                .subject("123456")
-                .claim("events", createEventsClaim())
-                .claim("sid", "session-id")
-                .jws()
-                .keyId("1")
-                .sign("privateKey.jwk");
+        return getLogoutToken("123456");
     }
 
     public static String getLogoutToken(String sub) {
@@ -401,4 +478,45 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
             server = null;
         }
     }
+
+    private String buildBasicSchemeIdToken(String context, Options options) {
+
+        String clientId = getHeader("Authorization", options)
+                .map(OidcWiremockTestResource::removerBasicPrefix)
+                .map(OidcWiremockTestResource::decodeBase64)
+                .map(OidcWiremockTestResource::getClientIdFromCredentials)
+                .orElseThrow(() -> new RuntimeException("Invalid Authorization header"));
+
+        return getIdToken(context, getAdminRoles(), clientId);
+    }
+
+    private static Optional<String> getHeader(String header, Options options) {
+
+        TreeMap<String, ListOrSingle<String>> map = options.get("request.headers");
+        if (map == null || !map.containsKey(header) || map.get(header).isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(map.get(header).getFirst());
+    }
+
+    private static String removerBasicPrefix(String value) {
+        if (value.startsWith("Basic ")) {
+            return value.substring("Basic ".length());
+        }
+        return value;
+    }
+
+    private static String decodeBase64(String base64String) {
+        return new String(Base64.getDecoder().decode(base64String));
+    }
+
+    private static String getClientIdFromCredentials(String credentials) {
+        String[] tokens = credentials.split(":");
+        if (tokens.length >= 1) {
+            return tokens[0];
+        }
+        return credentials;
+    }
+
 }

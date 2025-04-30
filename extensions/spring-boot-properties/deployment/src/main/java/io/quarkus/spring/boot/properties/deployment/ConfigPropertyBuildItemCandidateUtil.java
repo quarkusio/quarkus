@@ -1,5 +1,7 @@
 package io.quarkus.spring.boot.properties.deployment;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -26,7 +28,8 @@ public class ConfigPropertyBuildItemCandidateUtil {
      */
     public static void removePropertiesWithDefaultValue(ClassLoader classLoader, String configClass,
             List<ConfigPropertyBuildItemCandidate> candidates) {
-        try (InputStream is = classLoader.getResourceAsStream(configClass.replace('.', '/') + ".class")) {
+        final String resourceName = fromClassNameToResourceName(configClass);
+        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
             ClassReader configClassReader = new ClassReader(is);
             configClassReader.accept(new ConfigClassVisitor(candidates, configClass), 0);
         } catch (IOException e) {

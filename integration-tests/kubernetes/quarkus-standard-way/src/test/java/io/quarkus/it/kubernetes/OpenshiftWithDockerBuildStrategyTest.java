@@ -23,8 +23,9 @@ public class OpenshiftWithDockerBuildStrategyTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-s2i").setApplicationVersion("0.1-SNAPSHOT")
+            .setApplicationName("openshift-docker").setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-docker-build-strategy.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
@@ -52,7 +53,7 @@ public class OpenshiftWithDockerBuildStrategyTest {
 
         assertThat(openshiftList).filteredOn(h -> "BuildConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("openshift-s2i");
+                assertThat(m.getName()).isEqualTo("openshift-docker");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
             });
             assertThat(h).isInstanceOfSatisfying(BuildConfig.class, bc -> {

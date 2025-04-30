@@ -216,7 +216,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         settingsCopy.putAll(settings);
         settingsCopy.put(org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml);
 
-        return new StandardServiceRegistryImpl(autoCloseRegistry, bootstrapServiceRegistry, initiators,
+        return StandardServiceRegistryImpl.create(autoCloseRegistry, bootstrapServiceRegistry, initiators,
                 providedServices, settingsCopy);
     }
 

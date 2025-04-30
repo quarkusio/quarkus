@@ -9,17 +9,26 @@ action:
   name: replace
 swap:
   "(?<!/)var": VAR
-  # Bind: BIND
+  "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
+  "(?<!Microsoft )Azure": Microsoft Azure
+  "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
+  "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
+  "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
+  "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
+  "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
+  "(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS": Red Hat JBoss BRMS
+  "[dD]ay-0|day 0": Day 0
+  "[dD]ay-1|day 1": Day 1
+  "[dD]ay-2|day 2": Day 2
+  "BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)": Red Hat JBoss BPM Suite
+  "DM(?![ -]Multipath)|directory manager": Directory Manager
+  "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
+  "JBoss Console|Red Hat Console": AMQ Console
+  "Kernel(?!-based Virtual Machine)": kernel
+  "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
+  "OD": Red Hat OpenShift Dedicated
   '(?<!\.)yaml|Yaml': YAML
-  '(?<!Business )Resource Planner|(?<!Business Resource )Planner': Business Resource Planner
-  '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
-  '(?<!Microsoft Azure )On-Demand Marketplace': Microsoft Azure On-Demand Marketplace
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
-  '(?<!Red Hat )Customer Portal': Red Hat Customer Portal
-  '(?<!Red Hat )JBoss Enterprise Application Platform': Red Hat JBoss Enterprise Application Platform
-  '(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP': Red Hat OpenStack Platform
-  '(?<!Red Hat JBoss )BRMS(?! engine)': inference engine
-  '(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS': Red Hat JBoss BRMS
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
   '\s\.Net Core|\s\.Net|\s\.NET\sCore|dotNet': .NET
   'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
@@ -30,20 +39,14 @@ swap:
   'ack\spacket|ACK(?!\sflag)|ack': ACK flag
   'ActiveMQ\sArtemis|ActiveMQ(?!\sArtemis)': built-in messaging|JBoss EAP built-in messaging|JBoss EAP messaging
   'Admin\sPortal|webadmin\sportal|webadmin|Administrator\sPortal|Administration\sportal': Administration Portal
-  'BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)': Red Hat JBoss BPM Suite
   'BRMS\sengine': inference engine
   'GUI\seditor|Business\sCentral\seditor': guided editor
-  'JBoss Broker|Red Hat Broker|The AMQ Broker': AMQ Broker
-  'JBoss Console|Red Hat Console': AMQ Console
   'JBoss\.org': JBoss Community
   'JBoss\sAMQ': AMQ
   'JBoss\sInterconnect': AMQ Interconnect
-  'Kernel(?!-based Virtual Machine)': kernel
   'Kie(?!\sServer)': KIE
   'Kie\sServer': Intelligent Process Server
   'O\.K\.D|okd|OpenShift Kubernetes Distribution|OpenShift\sOrigin': OKD
-  'OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager': Red Hat OpenShift Cluster Manager
-  'OD': Red Hat OpenShift Dedicated
   'Red\sHat\sInterconnect': AMQ Interconnect
   'Red\sHat\sVirtualization\sHypervisor|RHV\sHost|RHV-H': Red Hat Virtualization Host
   'RHVM|RHV-M|RHV\sManager': Red Hat Virtualization Manager
@@ -116,7 +119,6 @@ swap:
   Fqdn|fqdn: FQDN
   gb|Gb: GB
   gbps|GBPS: Gbps
-  gb|Gb: GB
   GDBTK: Insight
   gid|Gid: GID
   Gimp|gimp: GIMP
@@ -139,6 +141,8 @@ swap:
   IBM z Systems: IBM Z
   Ignite|Fuse Ignite: Fuse Online|Red Hat Fuse Online|Syndesis
   ignition config: Ignition config
+  Image Builder: image builder
+  Istio Service Mesh : Istio service mesh
   INSTALL_DIR|installDir: FUSE_HOME
   Iops|IOPs: IOPS
   Ip: IP
@@ -194,13 +198,14 @@ swap:
   OCP: Red Hat OpenShift Container Platform
   ODF: Red Hat OpenShift Data Foundation
   Open InfiniBand|Infiniband: InfiniBand
-  openid connect|Openid Connect: OpenID Connect
-  Open InfiniBand|Infiniband: InfiniBand
   Open JDK|openjdk|JDK: OpenJDK
+  openid connect|Openid Connect: OpenID Connect
+  openrewrite|Openrewrite|Open Rewrite: OpenRewrite
   Openshift online|OO: Red Hat OpenShift Online
   Operating Environment: operating environment
   Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
   Opex|Opex|OPEX|opEx: OpEx
+  ORAN: O-RAN
   Organization administrator|Org Admin|org admin: Organization Administrator
   OS|Operating System: operating system
   Overcloud: overcloud
@@ -225,11 +230,11 @@ swap:
   Qdmanage|QDMANAGE: qdmanage
   Qdstat|QDSTAT: qdstat
   Qeth|QETH: qeth
+  Rabbit\sMQ|rabbitMQ|Rabbitmq|Rabbit-mq: RabbitMQ
   RAMdisk|ramdisk|RAM-disk: RAM disk
   Ram|ram: RAM
   RAW: raw
   Red Hat JBoss Data Grid|JDG: Red Hat Data Grid
-  Red Hat JBoss EAP: Red Hat JBoss Enterprise Application Platform
   Red Hat Network Satellite server: Red Hat Network Satellite Server
   Red Hat Proxy: Red Hat Network Proxy Server
   Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server

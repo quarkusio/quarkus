@@ -15,11 +15,11 @@ jobs:
         id: deploy
         run: npx surge teardown https://quarkus-pr-main-${{ github.event.number }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }} || true
       - name: Update PR status comment
-        uses: actions-cool/maintain-one-comment@v3.1.0
+        uses: quarkusio/action-helpers@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.number }}
           body: |
             🙈 The PR is closed and the preview is expired.
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ github.event.number }}
+          body-marker: <!-- Preview status comment marker -->

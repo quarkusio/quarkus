@@ -9,6 +9,7 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -218,5 +219,22 @@ public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     public Uni<Void> xtrim(K key, XTrimArgs args) {
         this.tx.enqueue(Response::toLong);
         return this.reactive._xtrim(key, args).invoke(this::queuedOrDiscard).replaceWithVoid();
+    }
+
+    @Override
+    public Uni<Void> xpending(K key, String group) {
+        this.tx.enqueue(reactive::decodeAsXPendingSummary);
+        return this.reactive._xpending(key, group).invoke(this::queuedOrDiscard).replaceWithVoid();
+    }
+
+    @Override
+    public Uni<Void> xpending(K key, String group, StreamRange range, int count) {
+        return this.xpending(key, group, range, count, null);
+    }
+
+    @Override
+    public Uni<Void> xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        this.tx.enqueue(reactive::decodeListOfPendingMessages);
+        return this.reactive._xpending(key, group, range, count, args).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 }

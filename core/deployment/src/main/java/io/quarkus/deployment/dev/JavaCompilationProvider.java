@@ -2,11 +2,7 @@ package io.quarkus.deployment.dev;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -20,14 +16,10 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
 import org.jboss.logging.Logger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.deployment.dev.filesystem.QuarkusFileManager;
 import io.quarkus.deployment.dev.filesystem.ReloadableFileManager;
 import io.quarkus.deployment.dev.filesystem.StaticFileManager;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.paths.PathCollection;
 
 public class JavaCompilationProvider implements CompilationProvider {
 
@@ -37,7 +29,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
     private static final Set<String> COMPILER_OPTIONS = Set.of("-g", "-parameters");
-    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi");
+    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi", "Annotation processing is enabled because");
 
     private static final String PROVIDER_KEY = "java";
 
@@ -63,7 +55,8 @@ public class JavaCompilationProvider implements CompilationProvider {
                     context.getCompilerOptions(PROVIDER_KEY),
                     context.getReleaseJavaVersion(),
                     context.getSourceJavaVersion(),
-                    context.getTargetJvmVersion()).toList();
+                    context.getTargetJvmVersion(),
+                    context.getAnnotationProcessors()).toList();
         }
 
         final JavaCompiler compiler = this.compiler;
@@ -74,7 +67,10 @@ public class JavaCompilationProvider implements CompilationProvider {
 
         final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
                 context.getClasspath(), context.getReloadableClasspath(),
-                context.getOutputDirectory(), context.getSourceEncoding());
+                context.getOutputDirectory(), context.getGeneratedSourcesDirectory(),
+                context.getAnnotationProcessorPaths(),
+                context.getSourceEncoding(),
+                context.ignoreModuleInfo());
 
         if (this.fileManager == null) {
             final Supplier<StandardJavaFileManager> supplier = () -> {
@@ -112,20 +108,6 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
-        Path sourceFilePath;
-        final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
-        try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
-            final ClassReader reader = new ClassReader(inputStream);
-            reader.accept(visitor, 0);
-            sourceFilePath = visitor.getSourceFileForClass(classFilePath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return sourceFilePath;
-    }
-
-    @Override
     public void close() throws IOException {
         if (this.fileManager != null) {
             this.fileManager.close();
@@ -149,37 +131,5 @@ public class JavaCompilationProvider implements CompilationProvider {
         StringBuilder builder = new StringBuilder();
         diagnosticsCollector.getDiagnostics().forEach(diagnostic -> builder.append("\n").append(diagnostic));
         return String.format("\u001B[91mCompilation Failed:%s\u001b[0m", builder);
-    }
-
-    private static class RuntimeUpdatesClassVisitor extends ClassVisitor {
-        private final PathCollection sourcePaths;
-        private final String classesPath;
-        private String sourceFile;
-
-        public RuntimeUpdatesClassVisitor(PathCollection sourcePaths, String classesPath) {
-            super(Gizmo.ASM_API_VERSION);
-            this.sourcePaths = sourcePaths;
-            this.classesPath = classesPath;
-        }
-
-        @Override
-        public void visitSource(String source, String debug) {
-            this.sourceFile = source;
-        }
-
-        public Path getSourceFileForClass(final Path classFilePath) {
-            for (Path sourcesDir : sourcePaths) {
-                final Path classesDir = Paths.get(classesPath);
-                final StringBuilder sourceRelativeDir = new StringBuilder();
-                sourceRelativeDir.append(classesDir.relativize(classFilePath.getParent()));
-                sourceRelativeDir.append(File.separator);
-                sourceRelativeDir.append(sourceFile);
-                final Path sourceFilePath = sourcesDir.resolve(Path.of(sourceRelativeDir.toString()));
-                if (Files.exists(sourceFilePath)) {
-                    return sourceFilePath;
-                }
-            }
-            return null;
-        }
     }
 }

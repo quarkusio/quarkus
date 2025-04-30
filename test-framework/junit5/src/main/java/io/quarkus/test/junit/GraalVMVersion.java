@@ -1,34 +1,29 @@
 package io.quarkus.test.junit;
 
+import io.quarkus.deployment.pkg.steps.GraalVM;
+
 public enum GraalVMVersion {
-    GRAALVM_21_0(org.graalvm.home.Version.create(21, 0)),
-    GRAALVM_22_0(org.graalvm.home.Version.create(22, 0)),
-    GRAALVM_22_1(org.graalvm.home.Version.create(22, 1));
+    GRAALVM_23_1_0(GraalVM.Version.VERSION_23_1_0),
+    GRAALVM_24_0_0(GraalVM.Version.VERSION_24_0_0),
+    GRAALVM_24_0_999(GraalVM.Version.VERSION_24_0_999),
+    GRAALVM_24_1_0(GraalVM.Version.VERSION_24_1_0),
+    GRAALVM_24_1_999(GraalVM.Version.VERSION_24_1_999),
+    GRAALVM_24_2_0(GraalVM.Version.VERSION_24_2_0);
 
-    private final org.graalvm.home.Version version;
+    private final GraalVM.Version version;
 
-    GraalVMVersion(org.graalvm.home.Version version) {
+    GraalVMVersion(GraalVM.Version version) {
         this.version = version;
     }
 
-    public org.graalvm.home.Version getVersion() {
+    public GraalVM.Version getVersion() {
         return version;
-    }
-
-    /**
-     * Compares this version with another GraalVM version
-     *
-     * @return {@code -1} if this version is older than the other version,
-     *         {@code +1} if it's newer and {@code 0} if they represent the same version
-     */
-    public int compareTo(org.graalvm.home.Version version) {
-        return this.version.compareTo(version);
     }
 
     @Override
     public String toString() {
         return "GraalVMVersion{" +
-                "version=" + version.toString() +
+                "version=" + version.getVersionAsString() +
                 '}';
     }
 }

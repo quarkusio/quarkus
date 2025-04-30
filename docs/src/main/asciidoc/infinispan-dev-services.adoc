@@ -7,20 +7,18 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Start Infinispan automatically in dev and test modes.
+:topics: dev-services,data,infinispan,testing,dev-mode
+:extensions: io.quarkus:quarkus-infinispan-client
 
 Quarkus supports a feature called Dev Services that allows you to create various datasources without any config.
 If you have docker running and have not configured `quarkus.infinispan-client.hosts`,
 Quarkus will automatically start an Infinispan container when running tests or dev mode, and automatically configure the connection.
 
-The following properties are available to customize the Infinispan Dev Services:
-
-include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
-
 When running the production version of the application, the Infinispan connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services
 we recommend that you use the `%prod.` profile to define your Infinispan settings.
 
-Dev Services for Infinispan relies on Docker to start the server.
+Dev Services for Infinispan relies on Docker/Podman to start the server.
 
 == Connecting to the running Infinispan Server
 
@@ -60,6 +58,31 @@ Dev Services for Infinispan relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
 You can configure the broker address using `quarkus.infinispan-client.hosts`.
 
+== Providing configuration to the running server
+Dev Services for Infinispan will spin up an Infinispan with the infinispan.xml file by default.
+However, there are cases where is helpful to provide some extra configuration to the server.
+This can be done by adding configuration files in xml, yaml or json to the resources classpath and
+providing the following configuration:
+
+[source,properties]
+----
+quarkus.infinispan-client.devservices.config-files=server-config-override.xml <1>
+----
+<1> server-config-override.xml is a file under the resources folder
+
+[source,xml]
+----
+<infinispan> <1>
+    <cache-container>
+        <local-cache name="my-local-cache"> <2>
+            <encoding media-type="application/x-protostream" />
+        </local-cache>
+    </cache-container>
+</infinispan>
+----
+<1> The content of server-config-override.xml file
+<2> By providing a cache configuration, this cache will be present on the server container
+
 == Cross Site Replication
 If you want run the Infinispan Server container with Cross Site Replication configuration, you need to provide a site name.
 
@@ -81,7 +104,7 @@ link:https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-re
 
 == Multiple Dev Services for named connections
 The Infinispan Client extension supports connecting to more than one Infinispan Cluster with
-the named connections. If you need to spin an additional dev service for a connection name, configure
+the named connections. If you need to spin an additional Dev Service for a connection name, configure
 at least on property in the application properties:
 
 [source,properties]
@@ -91,11 +114,62 @@ quarkus.infinispan-client.conn-2.devservices.enabled=true
 
 == Tracing with OpenTelemetry
 
-Infinispan supports instrumentation of the server via OpenTelemetry. Enable tracing setting `quarkus.infinispan-client.devservices.tracing.enabled` to true.
-The default otlp exporter endpoint is `http://localhost:4317`.
-If you are running Jaeger in a container as explained in the xref:opentelemetry.adoc[OpenTelemetry guide], since the containers
-are running in the default network, Infinispan container won't have access to localhost.
-You need to get the IP running the following command and configure the `quarkus.infinispan-client.devservices.tracing.exporter.otlp.endpoint` property.
+Infinispan supports server tracing using OpenTelemetry. Starting from Infinispan 15.0, you need
+to configure tracing in the server's settings.
+To enable tracing in Dev Services, you need to add extra settings using the
+`quarkus.infinispan-client.devservices.config-files` property.
+
+[source, yaml]
+----
+infinispan:
+        cacheContainer:
+                tracing:
+                        collector-endpoint: "http://jaeger:4318" <1>
+                        enabled: true <2>
+                        exporter-protocol: "OTLP" <3>
+                        service-name: "infinispan-server" <4>
+                        security: false <5>
+----
+<1> Collector endpoint. Assuming a container service name 'jaeger' is running.
+<2> Enables tracing.
+<3> Exporter protocol. OLTP is the OpenTelemetry protocol.
+<4> The service name that will be registered in the tracing collector, Jaeger in this case.
+<5> Enables 'security' category tracing.
+
+See below the equivalent in XML and JSON.
+
+[source, xml]
+----
+<infinispan>
+  <cache-container statistics="true">
+    <tracing collector-endpoint="http://jaeger:4318"
+             enabled="true"
+             exporter-protocol="OTLP"
+             service-name="infinispan-server"
+             security="false" />
+  </cache-container>
+</infinispan>
+----
+
+[source, json]
+----
+{
+  "infinispan" : {
+    "cache-container" : {
+      "statistics" : true,
+      "tracing" : {
+        "collector-endpoint" : "http://jaeger:4318",
+        "enabled" : true,
+        "exporter-protocol" : "OTLP",
+        "service-name" : "infinispan-server",
+        "security" : false
+      }
+    }
+  }
+}
+----
+
+You need to name the Jaeger service or get the IP running the following command to configure the exporter endpoint.
 
 [source,bash]
 ----
@@ -129,3 +203,7 @@ The default service name is `infinispan`.
 
 Sharing is enabled by default in dev mode, but disabled in test mode.
 You can disable the sharing with `quarkus.infinispan-client.devservices.shared=false`
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-infinispan-client_quarkus.infinispan-client.devservices.adoc[opts=optional, leveloffset=+1]

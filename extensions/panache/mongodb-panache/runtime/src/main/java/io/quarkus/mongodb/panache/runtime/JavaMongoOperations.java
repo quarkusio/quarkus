@@ -3,7 +3,7 @@ package io.quarkus.mongodb.panache.runtime;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -20,12 +20,12 @@ public class JavaMongoOperations extends MongoOperations<PanacheQuery<?>, Panach
     public static final JavaMongoOperations INSTANCE = new JavaMongoOperations();
 
     @Override
-    protected PanacheQuery<?> createQuery(MongoCollection collection, ClientSession session, Document query, Document sortDoc) {
+    protected PanacheQuery<?> createQuery(MongoCollection collection, ClientSession session, Bson query, Bson sortDoc) {
         return new PanacheQueryImpl(collection, session, query, sortDoc);
     }
 
     @Override
-    protected PanacheUpdate createUpdate(MongoCollection collection, Class<?> entityClass, Document docUpdate) {
+    protected PanacheUpdate createUpdate(MongoCollection collection, Class<?> entityClass, Bson docUpdate) {
         return new PanacheUpdateImpl(this, entityClass, docUpdate, collection);
     }
 

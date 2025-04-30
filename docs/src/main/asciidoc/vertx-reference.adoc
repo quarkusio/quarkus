@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Vert.x Reference Guide
 include::_attributes.adoc[]
 :categories: miscellaneous
+:keywords: vertx event verticle
 :summary: This reference guide provides advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.
 
 https://vertx.io[Vert.x] is a toolkit for building reactive applications.
@@ -14,7 +15,7 @@ As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Arc
 This guide is the companion to the xref:vertx.adoc[Using Eclipse Vert.x API from a Quarkus Application] guide.
 It provides more advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.
 
-[#vertx-access]
+[[vertx-access]]
 == Access the Vert.x instance
 
 To access the managed Vert.x instance, add the `quarkus-vertx` extension to your project.
@@ -26,13 +27,14 @@ With this extension, you can retrieve the managed instance of Vert.x using eithe
 ----
 @ApplicationScoped
 public class MyBean {
-// Field injection
-@Inject Vertx vertx;
 
-// Constructor injection
-MyBean(Vertx vertx) {
-    // ...
-}
+    // Field injection
+    @Inject Vertx vertx;
+
+    // Constructor injection
+    MyBean(Vertx vertx) {
+        // ...
+    }
 
 }
 ----
@@ -58,7 +60,7 @@ Documentation about the Vert.x Mutiny variant is available on https://smallrye.i
 You can configure the Vert.x instance from the `application.properties` file.
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-vertx-core.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx.adoc[opts=optional, leveloffset=+1]
 
 See <<customizing-the-vert-x-configuration>> to configure the Vert.x instance using a programmatic approach.
 
@@ -81,8 +83,8 @@ Check the associated documentation to learn how to use them.
 |Documentation
 
 |AMQP Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
-|https://quarkus.io/guides/amqp
+|`io.quarkus:quarkus-messaging-amqp` (extension)
+|xref:amqp.adoc[Getting Started to Quarkus Messaging with AMQP]
 
 |Circuit Breaker
 |`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
@@ -94,35 +96,35 @@ Check the associated documentation to learn how to use them.
 
 |DB2 Client
 |`io.quarkus:quarkus-reactive-db2-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Kafka Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
-|https://quarkus.io/guides/kafka
+|`io.quarkus:quarkus-messaging-kafka` (extension)
+|xref:kafka.adoc[Apache Kafka Reference Guide]
 
 |Mail Client
 |`io.quarkus:quarkus-mailer` (extension)
-|https://quarkus.io/guides/mailer
+|xref:mailer.adoc[Sending emails using SMTP]
 
 |MQTT Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
+|`io.quarkus:quarkus-messaging-mqtt` (extension)
 |No guide yet
 
 |MS SQL Client
 |`io.quarkus:quarkus-reactive-mssql-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |MySQL Client
 |`io.quarkus:quarkus-reactive-mysql-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Oracle Client
 |`io.quarkus:quarkus-reactive-oracle-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |PostgreSQL Client
 |`io.quarkus:quarkus-reactive-pg-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |RabbitMQ Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client` (external dependency)
@@ -130,7 +132,7 @@ Check the associated documentation to learn how to use them.
 
 |Redis Client
 |`io.quarkus:quarkus-redis-client` (extension)
-|https://quarkus.io/guides/redis
+|xref:redis.adoc[Using the Redis Client]
 
 |Web Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-web-client` (external dependency)
@@ -142,7 +144,7 @@ To learn more about the usage of the Vert.x Mutiny API, refer to https://smallry
 
 === Use the Vert.x Web Client
 
-This section gives an example using the Vert.x `WebClient` in the context of a RESTEasy Reactive application.
+This section gives an example using the Vert.x `WebClient` in the context of a Quarkus REST (formerly RESTEasy Reactive) application.
 As indicated in the table above, add the following dependency to your project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -229,7 +231,7 @@ Then, create the native executable with:
 
 include::{includes}/devtools/build-native.adoc[]
 
-[#using-vert-x-json]
+[[using-vert-x-json]]
 == Use Vert.x JSON
 
 Vert.x APIs often rely on JSON.
@@ -252,7 +254,7 @@ Note that these features use the mapper managed by the `quarkus-jackson` extensi
 Refer to xref:rest-json.adoc#json[Jackson configuration] to customize the mapping.
 
 
-JSON Object and JSON Array are both supported as Quarkus HTTP endpoint requests and response bodies (using classic RESTEasy and RESTEasy Reactive).
+JSON Object and JSON Array are both supported as Quarkus HTTP endpoint requests and response bodies (using classic RESTEasy and Quarkus REST).
 Consider these endpoints:
 
 
@@ -462,7 +464,7 @@ Thanks to the `@Dependent` scope, it returns a new instance on every call.
 Finally, you pass the desired number of instances to the `DeploymentOptions`, such as two in the previous example.
 It will call the supplier twice, which will create two instances of your verticle.
 
-[#eventbus]
+[[eventbus]]
 == Use the Event Bus
 
 Vert.x comes with a built-in https://vertx.io/docs/vertx-core/java/#event_bus[event bus] that you can use from your Quarkus application.
@@ -514,6 +516,22 @@ public String consume(String name) {
 }
 ----
 <1> Receive the messages sent to the `greeting` address
+
+The address value can be a property expression.
+In this case, the configured value is used instead: `@ConsumeEvent("${my.consumer.address}")`.
+Additionally, the property expression can specify a default value: `@ConsumeEvent("${my.consumer.address:defaultAddress}")`.
+
+.Config Property Example
+[source, java]
+----
+@ConsumeEvent("${my.consumer.address}")   // <1>
+public String consume(String name) {
+    return name.toLowerCase();
+}
+----
+<1> Receive the messages sent to the address configured with the `my.consumer.address` key.
+
+NOTE: If no config property with the specified key exists and no default value is set then the application startup fails.
 
 === Process events asynchronously
 
@@ -694,11 +712,29 @@ Uni<String> response = bus.<String>request("address", "hello, how are you?")
         .onItem().transform(Message::body);
 ----
 
+=== Process events on virtual threads
+
+Methods annotated with `@ConsumeEvent` can also be annotated with `@RunOnVirtualThread`.
+In this case, the method is invoked on a virtual thread.
+Each event is invoked on a different virtual thread.
+
+To use this feature, make sure:
+
+1. Your Java runtime supports virtual threads.
+2. Your method uses a blocking signature.
+
+The second point means only methods returning an object or `void` can use `@RunOnVirtualThread`.
+Methods returning a `Uni` or a `CompletionStage` **cannot** run on virtual threads.
+
+Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
+
 === Use codecs
 
-The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses codecs to _serialize_ and _deserialize_ objects.
+The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses https://vertx.io/docs/vertx-core/java/#_message_codecs[codecs] to _serialize_ and _deserialize_ message objects.
 Quarkus provides a default codec for local delivery.
-So you can exchange objects as follows:
+This codec is automatically used for return types and message body parameters of local consumers, i.e. methods annotated with `@ConsumeEvent` where `ConsumeEvent#local() == true` (which is the default).
+
+So that you can exchange the message objects as follows:
 
 [source, java]
 ----
@@ -779,7 +815,7 @@ public class EventResource {
 <2> when we get the response, extract the body and send it to the user
 
 NOTE: the HTTP method returns a `Uni`.
-If you are using RESTEasy Reactive, `Uni` support is built-in.
+If you are using Quarkus REST, `Uni` support is built-in.
 If you are using _classic_ RESTEasy, you need to add the `quarkus resteasy-mutiny` extension to your project.
 
 We need a consumer listening on the `greeting` address.
@@ -836,7 +872,7 @@ So use SockJS, you need to configure the bridge, especially the addresses that w
 
 [source, java]
 ----
-package org.acme.vertx;
+package org.acme;
 
 import io.vertx.core.Vertx;
 import io.vertx.ext.bridge.PermittedOptions;
@@ -857,9 +893,13 @@ public class SockJsExample {
 
     public void init(@Observes Router router) {
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
-        sockJSHandler.bridge(new SockJSBridgeOptions()
+        Router bridge = sockJSHandler.bridge(new SockJSBridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddress("ticks")));
-        router.route("/eventbus/*").handler(sockJSHandler);
+        router.route("/eventbus/*").subRouter(bridge);
+
+        AtomicInteger counter = new AtomicInteger();
+        vertx.setPeriodic(1000,
+                ignored -> vertx.eventBus().publish("ticks", counter.getAndIncrement()));
     }
 
 }
@@ -903,7 +943,7 @@ The browser must use the `vertx-eventbus` JavaScript library to consume the mess
 </html>
 ----
 
-[#native-transport]
+[[native-transport]]
 == Use native transports
 
 IMPORTANT: Native transports are not supported in native executables.
@@ -992,6 +1032,52 @@ On macOS Sierra and above you can enable the following socket options:
 quarkus.http.so-reuse-port=true
 ----
 
+== Use a Vert.x context-aware scheduler
+
+Some Mutiny operators need to schedule work on an executor thread pool.
+A good example is `.onItem().delayIt().by(Duration.ofMillis(10))` as it needs such an executor to delay emissions.
+
+The default executor is returned by `io.smallrye.mutiny.infrastructure.Infrastructure` and it is already configured and managed by Quarkus.
+
+That being said, there are cases where you need to make sure that an operation is run on a Vert.x (duplicated) context and not just on any random thread.
+
+The `io.smallrye.mutiny.vertx.core.ContextAwareScheduler` interface offers an API to obtain context-aware schedulers.
+Such a scheduler is configured with:
+
+1. a delegate `ScheduledExecutorService` of your choice (hint: you can reuse `Infrastructure.getDefaultWorkerPool()`), and
+2. a context fetching strategy among:
+  - an explicit `Context`, or
+  - calling `Vertx::getOrCreateContext()` either on the current thread or later when the scheduling request happens, or
+  - calling `Vertx::currentContext()`, which fails if the current thread is not a Vert.x thread.
+
+Here is a sample where `ContextAwareScheduler` is used:
+
+[source,java]
+----
+class MyVerticle extends AbstractVerticle {
+
+    @Override
+    public Uni<Void> asyncStart() {
+        vertx.getOrCreateContext().put("foo", "bar");
+
+        var delegate = Infrastructure.getDefaultWorkerPool();
+        var scheduler = ContextAwareScheduler.delegatingTo(delegate)
+            .withCurrentContext();
+
+        return Uni.createFrom().voidItem()
+                .onItem().delayIt().onExecutor(scheduler).by(Duration.ofMillis(10))
+                .onItem().invoke(() -> {
+                    // Prints "bar"
+                    var ctx = vertx.getOrCreateContext();
+                    System.out.println(ctx.get("foo"));
+                });
+    }
+}
+----
+
+In this example a scheduler is created by capturing the context of the Vert.x event-loop that calls `asyncStart()`.
+The `delayIt` operator uses that scheduler, and we can check that the context that we get in `invoke` is a Vert.x duplicated context where the data for key `"foo"` has been propagated.
+
 == Use a Unix domain socket
 
 Listening on a Unix domain socket allows us to dispense with the overhead of TCP
@@ -1025,7 +1111,7 @@ See <<native-transport>> for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 
-[#use-io_uring]
+[[use-io_uring]]
 == Use io_uring
 
 IMPORTANT: `io_uring` is not supported in native executables.
@@ -1128,9 +1214,15 @@ In environments with read only file systems you may receive errors of the form:
 java.lang.IllegalStateException: Failed to create cache dir
 ----
 
-Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in Kubernetes by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`, or setting the `quarkus.vertx.cache-directory` property in `application.properties`:
 
-[#customizing-the-vert-x-configuration]
+[source, properties]
+----
+quarkus.vertx.cache-directory=/tmp/vertx
+----
+
+
+[[customizing-the-vert-x-configuration]]
 == Customize the Vert.x configuration
 
 The configuration of the managed Vert.x instance can be provided using the `application.properties` file, but also using _special beans_.
@@ -1151,4 +1243,34 @@ public class MyCustomizer implements VertxOptionsCustomizer {
 
 The _customizer_ beans received the `VertxOptions` (coming from the application configuration), and can modify them.
 
+== Brotli4J and cross-platform support
 
+Brotli4J is a native library that provides support for the Brotli compression algorithm.
+By default, Quarkus includes the Brotli native library matching the platform you are running on.
+But sometimes, you need to include the native library for a different platform.
+
+In this case, you need to explicitly add a dependency to your project.
+For example, if you need to include the native library for `linux-aarch64`, you can add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.aayushatharva.brotli4j</groupId>
+    <artifactId>native-linux-aarch64</artifactId>
+</dependency>
+----
+
+This will include the native library for `linux-aarch64` in your project, in addition to the one matching your machine.
+
+Here is the list of available brotli4j artifacts for the different platforms:
+
+* `native-linux-x86_64`
+* `native-linux-s390x`
+* `native-linux-ppc64le`
+* `native-linux-aarch64`
+* `native-linux-armv7`
+* `native-linux-riscv64`
+* `native-windows-x86_64`
+* `native-windows-aarch64`
+* `native-macos-x86_64`
+* `native-macos-aarch64`

@@ -8,23 +8,26 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: security
+:topics: security,oidc
+:extensions: io.quarkus:quarkus-oidc
 
 As a Quarkus developer, you configure the Quarkus OpenID Connect (OIDC) extension by setting the following properties in the `src/main/resources/application.properties` file.
 
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
+== OIDC configuration
+
+include::{generated-dir}/config/quarkus-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
+
+See also the xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference] for an expanded, detailed explanation of OIDC configuration properties and their typical, recommended combinations.
+
+== Keycloak Dev Services configuration
+
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
 
 == References
 
+* xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
-* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OpenID Connect (OIDC) Bearer token authentication]
-// * https://www.keycloak.org/documentation.html[Keycloak Documentation]
-* https://openid.net/connect/[OpenID Connect]
-// * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
-// * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
-// * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
-* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC Authorization code flow authentication]
+* xref:security-openid-connect-multitenancy.adoc[OIDC MultiTenancy]
+* xref:security-openid-connect-dev-services.adoc[Keycloak Dev Services]
 * xref:security-overview.adoc[Quarkus Security]
-// * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
-// TASK - Select some references and eliminate the rest.

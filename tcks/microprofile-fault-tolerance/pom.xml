@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Fault Tolerance</name>
 
     <properties>
-        <microprofile-fault-tolerance-tck.version>4.0.2</microprofile-fault-tolerance-tck.version>
+        <microprofile-fault-tolerance-tck.version>4.1.2</microprofile-fault-tolerance-tck.version>
     </properties>
 
     <build>
@@ -26,6 +26,7 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye.faulttolerance.mp-compatibility>true</smallrye.faulttolerance.mp-compatibility>
+                        <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -56,6 +57,10 @@
             <artifactId>quarkus-smallrye-metrics</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.microprofile.fault-tolerance</groupId>
             <artifactId>microprofile-fault-tolerance-tck</artifactId>
             <version>${microprofile-fault-tolerance-tck.version}</version>
@@ -78,6 +83,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

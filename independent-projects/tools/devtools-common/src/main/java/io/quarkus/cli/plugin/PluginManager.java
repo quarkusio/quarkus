@@ -97,10 +97,11 @@ public class PluginManager {
         Map<String, Plugin> installablePlugins = state.installablePlugins();
         Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name)).map(Plugin::inUserCatalog);
         return plugin.map(p -> {
-            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(p);
+            Plugin withDescription = p.withDescription(description);
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(withDescription);
             pluginCatalogService.writeCatalog(updatedCatalog);
             state.invalidateInstalledPlugins();
-            return p;
+            return withDescription;
         });
     }
 
@@ -235,10 +236,12 @@ public class PluginManager {
      */
     private boolean reconcile(PluginCatalog catalog) {
         Path location = catalog.getCatalogLocation()
-                .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
+                .orElseThrow(() -> new IllegalArgumentException("Unknown plugin catalog location."));
         List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
                 .collect(Collectors.toList());
-        Map<String, Plugin> installablePlugins = state.getInstallablePlugins().entrySet().stream()
+        //Let's only fetch installable plugins of the corresponding types.
+        //This will help us avoid uneeded calls to things like jbang if no jbang plugins are installed
+        Map<String, Plugin> installablePlugins = state.installablePlugins(installedTypes).entrySet().stream()
                 .filter(e -> installedTypes.contains(e.getValue().getType()))
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
@@ -276,24 +279,31 @@ public class PluginManager {
      * @return true if changes any catalog was modified.
      */
     public boolean sync() {
-        boolean catalogModified = reconcile();
-        Map<String, Plugin> installedPlugins = getInstalledPlugins();
-        Map<String, Plugin> extensionPlugins = state.getExtensionPlugins();
-        Map<String, Plugin> pluginsToInstall = extensionPlugins.entrySet().stream()
-                .filter(e -> !installedPlugins.containsKey(e.getKey()))
-                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-        catalogModified = catalogModified || !pluginsToInstall.isEmpty();
-        pluginsToInstall.forEach((name, plugin) -> {
-            addPlugin(plugin);
-        });
-        state.invalidate();
-        if (!catalogModified) {
-            PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-            PluginCatalog catalog = state.pluginCatalog(false);
-            pluginCatalogService.writeCatalog(catalog);
-            // here we are just touching the catalog, no need to invalidate
+        if (state.isSynced()) {
+            return false;
         }
-        return catalogModified;
+        try {
+            boolean catalogModified = reconcile();
+            Map<String, Plugin> installedPlugins = getInstalledPlugins();
+            Map<String, Plugin> extensionPlugins = state.getExtensionPlugins();
+            Map<String, Plugin> pluginsToInstall = extensionPlugins.entrySet().stream()
+                    .filter(e -> !installedPlugins.containsKey(e.getKey()))
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+            catalogModified = catalogModified || !pluginsToInstall.isEmpty();
+            pluginsToInstall.forEach((name, plugin) -> {
+                addPlugin(plugin);
+            });
+            state.invalidate();
+            if (!catalogModified) {
+                PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
+                PluginCatalog catalog = state.pluginCatalog(false);
+                pluginCatalogService.writeCatalog(catalog);
+                // here we are just touching the catalog, no need to invalidate
+            }
+            return catalogModified;
+        } finally {
+            state.synced();
+        }
     }
 
     /**

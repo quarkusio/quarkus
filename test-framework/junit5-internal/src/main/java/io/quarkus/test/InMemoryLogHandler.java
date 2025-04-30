@@ -3,13 +3,14 @@ package io.quarkus.test;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import org.wildfly.common.Assert;
+import org.jboss.logmanager.ExtHandler;
 
-public class InMemoryLogHandler extends Handler {
+import io.smallrye.common.constraint.Assert;
+
+public class InMemoryLogHandler extends ExtHandler {
 
     private final Predicate<LogRecord> predicate;
 

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -171,6 +172,8 @@ public class IfSectionTest {
         data.put("mapEmpty", Collections.emptyMap());
         data.put("array", new String[] { "foo" });
         data.put("arrayEmpty", new String[] {});
+        data.put("optional", Optional.of("foo"));
+        data.put("optionalEmpty", Optional.empty());
 
         assertEquals("1", engine.parse("{#if name}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if nameEmpty}1{#else}0{/if}").render(data));
@@ -183,6 +186,8 @@ public class IfSectionTest {
         assertEquals("0", engine.parse("{#if mapEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if array}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if arrayEmpty}1{#else}0{/if}").render(data));
+        assertEquals("1", engine.parse("{#if optional}1{#else}0{/if}").render(data));
+        assertEquals("0", engine.parse("{#if optionalEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if !arrayEmpty}1{#else}0{/if}").render(data));
         assertEquals("1", engine.parse("{#if arrayEmpty || name}1{#else}0{/if}").render(data));
         assertEquals("0", engine.parse("{#if arrayEmpty && name}1{#else}0{/if}").render(data));
@@ -221,7 +226,8 @@ public class IfSectionTest {
             engine.parse("{#if val.is.not.there}NOK{#else}OK{/if}").render();
             fail();
         } catch (TemplateException expected) {
-            assertEquals("Rendering error: Entry \"val\" not found in the data map in expression {val.is.not.there}",
+            assertEquals(
+                    "Rendering error: Key \"val\" not found in the template data map with keys [] in expression {val.is.not.there}",
                     expected.getMessage());
         }
         assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());
@@ -259,6 +265,19 @@ public class IfSectionTest {
                 assertEquals(3, expression.getOrigin().getLineCharacterStart());
             }
         }
+    }
+
+    @Test
+    public void testComparisons() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("longGtInt", engine.parse("{#if val > 10}longGtInt{/if}").data("val", 11l).render());
+        assertEquals("doubleGtInt", engine.parse("{#if val > 10}doubleGtInt{/if}").data("val", 20.0).render());
+        assertEquals("longGtStr", engine.parse("{#if val > '10'}longGtStr{/if}").data("val", 11l).render());
+        assertEquals("longLeStr", engine.parse("{#if val <= '10'}longLeStr{/if}").data("val", 1l).render());
+        assertEquals("longEqInt", engine.parse("{#if val == 10}longEqInt{/if}").data("val", 10l).render());
+        assertEquals("doubleEqInt", engine.parse("{#if val == 10}doubleEqInt{/if}").data("val", 10.0).render());
+        assertEquals("doubleEqFloat", engine.parse("{#if val == 10.00f}doubleEqFloat{/if}").data("val", 10.0).render());
+        assertEquals("longEqLong", engine.parse("{#if val eq 10l}longEqLong{/if}").data("val", Long.valueOf(10)).render());
     }
 
     public static class Target {

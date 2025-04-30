@@ -22,7 +22,7 @@ public class EnabledInfoOnManagementInterfaceTest {
                 .then()
                 .statusCode(404);
 
-        when().get("http://0.0.0.0:9001/q/info")
+        when().get("http://localhost:9001/q/info")
                 .then()
                 .statusCode(200)
                 .body("os", is(notNullValue()))

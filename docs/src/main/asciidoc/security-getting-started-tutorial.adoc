@@ -1,0 +1,660 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-getting-started-tutorial"]
+= Getting started with security by using Basic authentication and Jakarta Persistence
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: security,getting-started
+:topics: security,authentication,basic-authentication,http
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
+
+Get started with Quarkus Security by securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider, enabling role-based access control.
+
+The Jakarta Persistence `IdentityProvider` verifies and converts a xref:security-basic-authentication.adoc[Basic authentication] user name and password pair to a `SecurityIdentity` instance, which is used to authorize access requests, making your Quarkus application secure.
+
+For more information about Jakarta Persistence, see the xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence] guide.
+
+This tutorial prepares you to implement more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Building your application
+
+This tutorial gives detailed steps for creating an application with endpoints that illustrate various authorization policies:
+
+[cols="20%,40% ",options="header"]
+|===
+|Endpoint | Description
+|`/api/public`| Accessible without authentication, this endpoint allows anonymous access.
+a| `/api/admin`| Secured with role-based access control (RBAC), this endpoint is accessible only to users with the `admin` role.
+Access is controlled declaratively by using the `@RolesAllowed` annotation.
+a| `/api/users/me`| Also secured by RBAC, this endpoint is accessible only to users with the `user` role.
+It returns the caller's username as a string.
+|===
+
+[TIP]
+====
+To examine the completed example, download the {quickstarts-archive-url}[archive] or clone the Git repository:
+
+[source,bash,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
+
+You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart/[directory].
+====
+
+:sectnums:
+:sectnumlevels: 3
+
+== Create and verify the Maven project
+
+ifndef::no-quarkus-security-jpa-reactive[]
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `quarkus-security-jpa` or `quarkus-security-jpa-reactive` extension.
+endif::no-quarkus-security-jpa-reactive[]
+ifdef::no-quarkus-security-jpa-reactive[]
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `quarkus-security-jpa` extension.
+endif::no-quarkus-security-jpa-reactive[]
+
+[NOTE]
+====
+xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities, but you can also use xref:hibernate-orm.adoc[Hibernate ORM] with the `quarkus-security-jpa` extension.
+
+ifndef::no-quarkus-security-jpa-reactive[]
+Both xref:hibernate-reactive.adoc[Hibernate Reactive] and xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] can be used with the `quarkus-security-jpa-reactive` extension.
+endif::no-quarkus-security-jpa-reactive[]
+
+You must also add your preferred database connector library.
+The instructions in this example tutorial use a PostgreSQL database for the identity store.
+====
+
+
+=== Create the Maven project
+
+You can create a new Maven project with the Security Jakarta Persistence extension or add the extension to an existing Maven project.
+You can use either Hibernate ORM or Hibernate Reactive.
+
+==== Creating new Maven project
+
+* To create a new Maven project with the Jakarta Persistence extension, complete one of the following steps:
+** To create the Maven project with Hibernate ORM, use the following command:
+
+:create-app-artifact-id: security-jpa-quickstart
+:create-app-extensions: security-jpa,jdbc-postgresql,rest,hibernate-orm-panache
+include::{includes}/devtools/create-app.adoc[]
+
+==== Adding Jakarta Persistence extension to existing project
+
+* To add the Jakarta Persistence extension to an existing Maven project, complete one of the following steps:
+
+** To add the Security Jakarta Persistence extension to an existing Maven project with Hibernate ORM, run the following command from your project base directory:
++
+====
+:add-extension-extensions: security-jpa
+include::{includes}/devtools/extension-add.adoc[]
+====
+ifndef::no-quarkus-security-jpa-reactive[]
+** To add the Security Jakarta Persistence extension to an existing Maven project with Hibernate Reactive, run the following command from your project base directory:
++
+====
+:add-extension-extensions: security-jpa-reactive
+include::{includes}/devtools/extension-add.adoc[]
+====
+endif::no-quarkus-security-jpa-reactive[]
+
+=== Verify the quarkus-security-jpa dependency
+
+After you have run either of the preceding commands to create the Maven project, verify that the `quarkus-security-jpa` dependency was added to your project build XML file.
+
+* To verify the `quarkus-security-jpa` extension, check for the following configuration:
++
+====
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security-jpa</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-security-jpa")
+----
+====
+ifndef::no-quarkus-security-jpa-reactive[]
+* To verify the `quarkus-security-jpa-reactive` extension, check for the following configuration:
++
+====
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security-jpa-reactive</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-security-jpa-reactive")
+----
+====
+endif::no-quarkus-security-jpa-reactive[]
+
+== Write the application
+
+* Secure the API endpoint to determine who can access the application by using one of the following approaches:
+
+** Implement the `/api/public` endpoint to allow all users access to the application.
+Add a regular Jakarta REST resource to your Java source code, as shown in the following code snippet:
++
+====
+.`src/main/java/org/acme/security/jpa/PublicResource.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/api/public")
+public class PublicResource {
+
+    @GET
+    @PermitAll
+    @Produces(MediaType.TEXT_PLAIN)
+    public String publicResource() {
+        return "public";
+   }
+}
+----
+====
+** Implement an /api/admin endpoint that can only be accessed by users who have the admin role.
+The source code for the `/api/admin` endpoint is similar, but instead, you use a `@RolesAllowed` annotation to ensure that only users granted the `admin` role can access the endpoint.
+Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
++
+====
+.`src/main/java/org/acme/security/jpa/AdminResource.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/api/admin")
+public class AdminResource {
+
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String adminResource() {
+         return "admin";
+    }
+}
+----
+====
+** Implement an `/api/users/me` endpoint that can only be accessed by users who have the `user` role.
+Use `SecurityContext` to get access to the currently authenticated `Principal` user and to return their username, all of which is retrieved from the database.
++
+====
+.`src/main/java/org/acme/security/jpa/UserResource.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
+
+@Path("/api/users")
+public class UserResource {
+
+    @GET
+    @RolesAllowed("user")
+    @Path("/me")
+    public String me(@Context SecurityContext securityContext) {
+        return securityContext.getUserPrincipal().getName();
+    }
+}
+----
+====
+
+[[define-the-user-entity]]
+== Define the user entity
+
+Specify how security information is stored in the model by adding the following annotations to the `user` entity:
+
+.`src/main/java/org/acme/security/jpa/User.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.security.jpa.Password;
+import io.quarkus.security.jpa.Roles;
+import io.quarkus.security.jpa.UserDefinition;
+import io.quarkus.security.jpa.Username;
+
+@Entity
+@Table(name = "test_user")
+@UserDefinition <1>
+public class User extends PanacheEntity {
+    @Username <2>
+    public String username;
+    @Password <3>
+    public String password;
+    @Roles <4>
+    public String role;
+
+    /**
+     * Adds a new user to the database
+     * @param username the username
+     * @param password the unencrypted password (it is encrypted with bcrypt)
+     * @param role the comma-separated roles
+     */
+    public static void add(String username, String password, String role) { <5>
+        User user = new User();
+        user.username = username;
+        user.password = BcryptUtil.bcryptHash(password);
+        user.role = role;
+        user.persist();
+    }
+}
+
+----
+
+The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
+
+<1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
+<2> Indicates the field used for the username.
+<3> Indicates the field used for the password.
+By default, it uses bcrypt-hashed passwords.
+You can configure it to use plain text or custom passwords.
+<4> Indicates the comma-separated list of roles added to the target principal representation attributes.
+<5> Allows us to add users while hashing passwords with the proper bcrypt hash.
+
+[NOTE]
+====
+Don’t forget to set up the Panache and PostgreSQL JDBC driver, please see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache] for more information.
+====
+ifndef::no-quarkus-security-jpa-reactive[]
+[NOTE]
+====
+Hibernate Reactive Panache uses `io.quarkus.hibernate.reactive.panache.PanacheEntity` instead of `io.quarkus.hibernate.orm.panache.PanacheEntity`.
+For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
+====
+endif::no-quarkus-security-jpa-reactive[]
+
+== Configure the application
+
+. Enable the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] mechanism by setting the `quarkus.http.auth.basic` property to `true`:
++
+`quarkus.http.auth.basic=true`
++
+[NOTE]
+====
+When secure access is required, and no other authentication mechanisms are enabled, the built-in xref:security-basic-authentication.adoc[Basic authentication] of Quarkus is the fallback authentication mechanism.
+Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
+====
++
+. Configure at least one data source in the `src/main/resources/application.properties` file so the `quarkus-security-jpa` extension can access your database.
+For example:
++
+====
+.src/main/resources/application.properties
+[source,properties]
+----
+quarkus.http.auth.basic=true
+
+%prod.quarkus.datasource.db-kind=postgresql
+%prod.quarkus.datasource.username=quarkus
+%prod.quarkus.datasource.password=quarkus
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus
+
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+----
+
+By adding the `%prod.` profile prefix, you ensure that the data source properties are only observed by an application running in production mode.
+
+====
++
+. To initialize the database with users and roles, implement the `Startup` class, as outlined in the following code snippet:
+
+ifndef::no-quarkus-security-jpa-reactive[]
+[NOTE]
+====
+* The URLs of Reactive datasources that are used by the `quarkus-security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
+configuration property and not the `quarkus.datasource.jdbc.url` configuration property typically used by JDBC datasources.
++
+.src/main/resources/application.properties
+[source,properties]
+----
+%prod.quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:5431/security_jpa
+----
++
+* In this tutorial, a PostgreSQL database is used for the identity store.
+link:https://hibernate.org/orm/[Hibernate ORM] automatically creates the database schema on startup.
+This approach is suitable for development but is not recommended for production.
+Therefore, adjustments are needed in a production environment.
+====
+endif::no-quarkus-security-jpa-reactive[]
+
+.`src/main/java/org/acme/security/jpa/Startup.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
+import jakarta.transaction.Transactional;
+
+import io.quarkus.runtime.StartupEvent;
+
+
+@Singleton
+public class Startup {
+    @Transactional
+    public void loadUsers(@Observes StartupEvent evt) {
+        // reset and load all test users
+        User.deleteAll();
+        User.add("admin", "admin", "admin");
+        User.add("user", "user", "user");
+    }
+}
+----
+
+The preceding example demonstrates how the application can be protected and identities provided by the specified database.
+
+[IMPORTANT]
+====
+In a production environment, do not store plain text passwords.
+As a result, the `quarkus-security-jpa` defaults to using bcrypt-hashed passwords.
+====
+
+== Test your application in dev mode by using Dev Services for PostgreSQL
+
+Complete the integration testing of your application in JVM and native modes by using xref:dev-services.adoc#databases[Dev Services for PostgreSQL] before you run your application in production mode.
+
+Start by adding the following dependencies to your test project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.rest-assured:rest-assured")
+----
+
+To run your application in dev mode:
+
+include::{includes}/devtools/dev.adoc[]
+
+
+In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
+Make sure that either `Podman` or `Docker` is installed on your computer.
+
+To write the integration test, use the following code sample:
+
+.`src/test/java/org/acme/security/jpa/JpaSecurityRealmTest.java`
+[source,java]
+----
+package org.acme.security.jpa;
+
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.core.Is.is;
+
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class JpaSecurityRealmTest {
+
+    @Test
+    void shouldAccessPublicWhenAnonymous() {
+        get("/api/public")
+                .then()
+                .statusCode(HttpStatus.SC_OK);
+
+    }
+
+    @Test
+    void shouldNotAccessAdminWhenAnonymous() {
+        get("/api/admin")
+                .then()
+                .statusCode(HttpStatus.SC_UNAUTHORIZED);
+
+    }
+
+    @Test
+    void shouldAccessAdminWhenAdminAuthenticated() {
+        given()
+                .auth().preemptive().basic("admin", "admin")
+                .when()
+                .get("/api/admin")
+                .then()
+                .statusCode(HttpStatus.SC_OK);
+
+    }
+
+    @Test
+    void shouldNotAccessUserWhenAdminAuthenticated() {
+        given()
+                .auth().preemptive().basic("admin", "admin")
+                .when()
+                .get("/api/users/me")
+                .then()
+                .statusCode(HttpStatus.SC_FORBIDDEN);
+    }
+
+    @Test
+    void shouldAccessUserAndGetIdentityWhenUserAuthenticated() {
+        given()
+                .auth().preemptive().basic("user", "user")
+                .when()
+                .get("/api/users/me")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(is("user"));
+    }
+}
+----
+
+As you can see in this code sample, you do not need to start the test container from the test code.
+
+To run these tests, choose `Press [r] to resume testing` option which is shown in the console after you started your application in dev mode.
+
+[NOTE]
+====
+When you start your application in dev mode, Dev Services for PostgreSQL launches a PostgreSQL dev mode container so that you can start developing your application.
+While developing your application, you can add and run tests individually by using the xref:continuous-testing.adoc[Continuous Testing] feature.
+Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
+====
+
+Alternatively, you can run these tests using Maven:
+
+[source,bash,subs=attributes+]
+----
+./mvnw test
+----
+
+== Test your application in production mode by using Curl or browser
+
+To test your application using Curl or a browser start a PostgreSQL server first.
+Then, compile and run your application in either JVM or native mode.
+
+=== Start the PostgreSQL server
+
+[source,bash]
+----
+docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
+           -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
+           -p 5432:5432 postgres:17
+----
+
+=== Compile and run the application
+
+* Compile and run your Quarkus application by using one of the following methods:
+** JVM mode
+. Compile the application:
++
+====
+include::{includes}/devtools/build.adoc[]
+====
+. Run the application:
++
+====
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+====
+
+** Native mode
+
+. Compile the application:
++
+====
+include::{includes}/devtools/build-native.adoc[]
+====
+. Run the application:
++
+====
+[source,bash]
+----
+./target/security-jpa-quickstart-1.0.0-SNAPSHOT-runner
+----
+====
+
+=== Access and test the application security with Curl
+
+When your application is running, you can access its endpoints by using one of the following Curl commands.
+
+* Connect to a protected endpoint anonymously:
++
+====
+[source,shell]
+----
+$ curl -i -X GET http://localhost:8080/api/public
+
+HTTP/1.1 200 OK
+Content-Length: 6
+Content-Type: text/plain;charset=UTF-8
+
+public
+----
+====
+* Connect to a protected endpoint anonymously:
++
+====
+[source,shell]
+----
+$ curl -i -X GET http://localhost:8080/api/admin
+
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Basic
+----
+====
+* Connect to a protected endpoint as an authorized user:
++
+====
+[source,shell]
+----
+$ curl -i -X GET -u admin:admin http://localhost:8080/api/admin
+
+HTTP/1.1 200 OK
+Content-Length: 5
+Content-Type: text/plain;charset=UTF-8
+
+admin
+----
+====
+
+You can also access the same endpoint URLs by using a browser.
+
+=== Access and test the application security with the browser
+
+If you use a browser to connect to a protected resource anonymously, a Basic authentication form displays, prompting you to enter credentials.
+
+=== Results
+
+When you provide the credentials of an authorized user, for example, `admin:admin`, the Jakarta Persistence security extension authenticates and loads the user's roles.
+The `admin` user is authorized to access the protected resources.
+
+If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as shown in the following example:
+
+[source,shell]
+----
+$ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
+
+HTTP/1.1 403 Forbidden
+----
+
+Finally, the user named `user` is authorized, and the security context contains the principal details, for example, the username.
+
+[source,shell]
+----
+$ curl -i -X GET -u user:user http://localhost:8080/api/users/me
+
+HTTP/1.1 200 OK
+Content-Length: 4
+Content-Type: text/plain;charset=UTF-8
+
+user
+----
+
+:sectnums!:
+
+== What's next
+
+You have successfully learned how to create and test a secure Quarkus application.
+This was achieved by integrating the built-in xref:security-basic-authentication.adoc[Basic authentication] in Quarkus with the Jakarta Persistence identity provider.
+
+After completing this tutorial, you can explore more advanced security mechanisms in Quarkus.
+The following information shows you how to use `OpenID Connect` for secure single sign-on access to your Quarkus endpoints:
+
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
+
+== References
+
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture]
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Other supported authentication mechanisms]
+* xref:security-identity-providers.adoc[Identity providers]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
+* xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]
+* xref:hibernate-orm.adoc[Using Hibernate ORM and Jakarta Persistence]

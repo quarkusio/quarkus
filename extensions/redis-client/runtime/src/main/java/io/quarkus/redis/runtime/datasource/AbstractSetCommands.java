@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
@@ -14,11 +15,9 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
 
-    protected final Class<V> typeOfValue;
+    protected final Type typeOfValue;
 
-    public static final Command SINTERCARD = Command.create("sintercard");
-
-    AbstractSetCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractSetCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfValue = v;
     }
@@ -41,7 +40,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SDIFF).put(marshaller.encode(keys)));
     }
@@ -55,7 +54,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SDIFFSTORE)
                 .put(marshaller.encode(destination))
@@ -67,7 +66,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SINTER).put(marshaller.encode(keys)));
     }
@@ -76,10 +75,10 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
 
-        RedisCommand cmd = RedisCommand.of(SINTERCARD).put(keys.length).putAll(marshaller.encode(keys));
+        RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys));
         return execute(cmd);
     }
 
@@ -90,10 +89,10 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         positive(limit, "limit");
 
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
 
-        RedisCommand cmd = RedisCommand.of(SINTERCARD).put(keys.length).putAll(marshaller.encode(keys))
+        RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys))
                 .put("LIMIT").put(limit);
         return execute(cmd);
     }
@@ -102,7 +101,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(destination, "destination");
         notNullOrEmpty(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SINTERSTORE)
                 .put(marshaller.encode(destination))
@@ -187,7 +186,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         return execute(RedisCommand.of(Command.SUNION).put(marshaller.encode(keys)));
     }
@@ -197,7 +196,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         if (keys.length <= 1) {
-            throw new IllegalArgumentException("`keys` must contain at least 2 keys");
+            return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
         RedisCommand cmd = RedisCommand.of(Command.SUNIONSTORE)
                 .put(marshaller.encode(destination))

@@ -40,7 +40,7 @@ export class QwcQuteTemplates extends LitElement {
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
                         header="Type-safe Template Method"
-                        ${columnBodyRenderer(this._renderCheckedTemplateMethod, [])}
+                        ${columnBodyRenderer(this._renderCheckedTemplate, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
@@ -63,9 +63,9 @@ export class QwcQuteTemplates extends LitElement {
         `;
     }
     
-    _renderCheckedTemplateMethod(template) {
+    _renderCheckedTemplate(template) {
         return html`
-            <code>${template.checkedTemplateMethod}</code>
+            <code>${template.checkedTemplate}</code>
         `;
     }
     

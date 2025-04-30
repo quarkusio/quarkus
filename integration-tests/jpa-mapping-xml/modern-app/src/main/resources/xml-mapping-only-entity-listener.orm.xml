@@ -17,6 +17,8 @@
         <attributes>
             <id name="id">
             </id>
+            <basic name="text">
+            </basic>
         </attributes>
     </entity>
 
@@ -36,6 +38,8 @@
         <attributes>
             <id name="id">
             </id>
+            <basic name="text">
+            </basic>
         </attributes>
     </entity>
 

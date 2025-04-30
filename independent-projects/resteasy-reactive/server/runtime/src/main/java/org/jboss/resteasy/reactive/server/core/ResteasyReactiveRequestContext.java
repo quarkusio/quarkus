@@ -14,24 +14,41 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.ReaderInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
@@ -41,7 +58,9 @@ import org.jboss.resteasy.reactive.server.jaxrs.ContainerResponseContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.RequestImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -135,6 +154,7 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
     private FormData formData;
+    private boolean producesChecked;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -147,6 +167,11 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public abstract ServerHttpResponse serverResponse();
+
+    @Override
+    public HttpHeaders getRequestHeaders() {
+        return getHttpHeaders();
+    }
 
     public Deployment getDeployment() {
         return deployment;
@@ -226,18 +251,20 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
-    public String getPathParam(int index) {
-        return doGetPathParam(index, pathParamValues);
+    public String getPathParam(int index, boolean encoded) {
+        return doGetPathParam(index, pathParamValues, encoded);
     }
 
-    private String doGetPathParam(int index, Object pathParamValues) {
+    private String doGetPathParam(int index, Object pathParamValues, boolean encoded) {
         if (pathParamValues instanceof String[]) {
-            return ((String[]) pathParamValues)[index];
+            String pathParam = ((String[]) pathParamValues)[index];
+            return encoded ? pathParam : Encode.decodePath(pathParam);
         }
         if (index > 1) {
             throw new IndexOutOfBoundsException();
         }
-        return (String) pathParamValues;
+        String pathParam = (String) pathParamValues;
+        return encoded ? pathParam : Encode.decodePath(pathParam);
     }
 
     public ResteasyReactiveRequestContext setPathParamValue(int index, String value) {
@@ -420,17 +447,7 @@ public abstract class ResteasyReactiveRequestContext
      * Returns the normalised non-decoded path excluding any prefix.
      */
     public String getPathWithoutPrefix() {
-        String path = getPath();
-        if (path != null) {
-            String prefix = deployment.getPrefix();
-            if (!prefix.isEmpty()) {
-                // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
-                if (path.startsWith(prefix)) {
-                    return path.substring(prefix.length());
-                }
-            }
-        }
-        return path;
+        return PathHelper.getPathWithoutPrefix(getPath(), deployment.getPrefix());
     }
 
     /**
@@ -628,7 +645,9 @@ public abstract class ResteasyReactiveRequestContext
 
     protected void endResponse() {
         if (serverResponse().headWritten()) {
-            serverRequest().closeConnection();
+            if (!serverResponse().closed()) {
+                serverRequest().closeConnection();
+            }
         } else {
             serverResponse().setStatusCode(500).end();
         }
@@ -794,24 +813,80 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
+    public void setProducesChecked(boolean checked) {
+        producesChecked = checked;
+    }
+
+    public boolean isProducesChecked() {
+        return producesChecked;
+    }
+
     @Override
     public Object getHeader(String name, boolean single) {
         if (httpHeaders == null) {
-            if (single)
-                return serverRequest().getRequestHeader(name);
+            if (single) {
+                String header = serverRequest().getRequestHeader(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
-            return serverRequest().getAllRequestHeaders(name);
+            return filterEmpty(serverRequest().getAllRequestHeaders(name));
         } else {
-            if (single)
-                return httpHeaders.getMutableHeaders().getFirst(name);
+            if (single) {
+                String header = httpHeaders.getMutableHeaders().getFirst(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
             List<String> list = httpHeaders.getMutableHeaders().get(name);
             if (list == null) {
                 return Collections.emptyList();
             } else {
-                return list;
+                return filterEmpty(list);
             }
         }
+    }
+
+    private static List<String> filterEmpty(List<String> list) {
+        // empty and tiny lists are handled inlined
+        int size = list.size();
+        if (size == 0) {
+            return list;
+        }
+        if (size == 1) {
+            String val = list.get(0);
+            if (val.isEmpty()) {
+                return List.of();
+            }
+            return list;
+        }
+        // this shouldn't be common both on query params and header values
+        return filterEmptyOnNonTinyList(list);
+    }
+
+    private static List<String> filterEmptyOnNonTinyList(List<String> list) {
+        assert list.size() > 1;
+        List<String> nonEmptyList = null;
+        int remaining = list.size();
+        for (String i : list) {
+            if (!i.isEmpty()) {
+                if (nonEmptyList == null) {
+                    nonEmptyList = new ArrayList<>(remaining);
+                }
+                nonEmptyList.add(i);
+            }
+            remaining--;
+        }
+        if (nonEmptyList == null) {
+            return List.of();
+        }
+        return nonEmptyList;
     }
 
     public Object getQueryParameter(String name, boolean single, boolean encoded) {
@@ -822,6 +897,9 @@ public abstract class ResteasyReactiveRequestContext
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
+            if (val != null && val.isEmpty()) {
+                return null;
+            }
             if (encoded && val != null) {
                 val = Encode.encodeQueryParam(val);
             }
@@ -829,7 +907,7 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name);
+        List<String> strings = filterEmpty(serverRequest().getAllQueryParams(name));
         if (encoded) {
             List<String> newStrings = new ArrayList<>();
             for (String i : strings) {
@@ -885,7 +963,7 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public String getCookieParameter(String name) {
         Cookie cookie = getHttpHeaders().getCookies().get(name);
-        return cookie != null ? cookie.getValue() : null;
+        return cookie != null && !cookie.getValue().isEmpty() ? cookie.getValue() : null;
     }
 
     @Override
@@ -895,7 +973,7 @@ public abstract class ResteasyReactiveRequestContext
         }
         if (single) {
             FormValue val = formData.getFirst(name);
-            if (val == null || val.isFileItem()) {
+            if (val == null || val.isFileItem() || val.getValue().isEmpty()) {
                 return null;
             }
             if (encoded) {
@@ -907,6 +985,9 @@ public abstract class ResteasyReactiveRequestContext
         List<String> strings = new ArrayList<>();
         if (val != null) {
             for (FormValue i : val) {
+                if (i.getValue().isEmpty()) {
+                    continue;
+                }
                 if (encoded) {
                     strings.add(Encode.encodeQueryParam(i.getValue()));
                 } else {
@@ -914,8 +995,97 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
         }
-        return strings;
 
+        return strings;
+    }
+
+    @Override
+    public <T> T getBeanParameter(Class<T> type) {
+        // FIXME: we don't check if it's a bean parameter at all, but this is only called from ClassInjectorTransformer
+        Instance<T> select = CDI.current().select(type);
+        if (select != null) {
+            T instance = select.get();
+            if (instance != null) {
+                registerCompletionCallback(new CompletionCallback() {
+                    @Override
+                    public void onComplete(Throwable throwable) {
+                        select.destroy(instance);
+                    }
+                });
+                return (T) instance;
+            }
+        }
+        throw new IllegalStateException("Unsupported bean param type: " + type);
+    }
+
+    @Override
+    public <T> T getContextParameter(Class<T> type) {
+        // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
+        if (type.equals(ServerRequestContext.class)) {
+            return (T) this;
+        }
+        if (type.equals(HttpHeaders.class)) {
+            return (T) getHttpHeaders();
+        }
+        if (type.equals(UriInfo.class)) {
+            return (T) getUriInfo();
+        }
+        if (type.equals(Configuration.class)) {
+            return (T) getDeployment().getConfiguration();
+        }
+        if (type.equals(AsyncResponse.class)) {
+            AsyncResponseImpl asyncResponse = getAsyncResponse();
+            if (asyncResponse == null) {
+                asyncResponse = new AsyncResponseImpl(this);
+                setAsyncResponse(asyncResponse);
+            }
+            return (T) response;
+        }
+        if (type.equals(SseEventSink.class)) {
+            SseEventSinkImpl sseEventSink = getSseEventSink();
+            if (sseEventSink == null) {
+                sseEventSink = new SseEventSinkImpl(this);
+                setSseEventSink(sseEventSink);
+            }
+            return (T) sseEventSink;
+        }
+        if (type.equals(Request.class)) {
+            return (T) getRequest();
+        }
+        if (type.equals(Providers.class)) {
+            return (T) getProviders();
+        }
+        if (type.equals(Sse.class)) {
+            return (T) SseImpl.INSTANCE;
+        }
+        if (type.equals(ResourceInfo.class)) {
+            return (T) getTarget().getLazyMethod();
+        }
+        if (type.equals(SimpleResourceInfo.class)) {
+            return (T) getTarget().getSimplifiedResourceInfo();
+        }
+        if (type.equals(Application.class)) {
+            return (T) CDI.current().select(Application.class).get();
+        }
+        if (type.equals(SecurityContext.class)) {
+            return (T) getSecurityContext();
+        }
+        if (type.equals(ResourceContext.class)) {
+            return (T) ResourceContextImpl.INSTANCE;
+        }
+        Object instance = unwrap(type);
+        if (instance != null) {
+            return (T) instance;
+        }
+        Instance<T> select = CDI.current().select(type);
+        if (select != null) {
+            instance = select.get();
+        }
+        if (instance != null) {
+            return (T) instance;
+        }
+        // FIXME: move to build time
+        throw new IllegalStateException("Unsupported contextual type: " + type);
     }
 
     @Override
@@ -926,18 +1096,11 @@ public abstract class ResteasyReactiveRequestContext
         Integer index = target.getPathParameterIndexes().get(name);
         String value;
         if (index != null) {
-            value = getPathParam(index);
-        } else {
-            // Check previous resources if the path is not defined in the current target
-            value = getResourceLocatorPathParam(name);
+            return getPathParam(index, encoded);
         }
 
-        // It's possible to inject a path param that's not defined, return null in this case
-        if (encoded && value != null) {
-            return Encode.encodeQueryParam(value);
-        }
-
-        return value;
+        // Check previous resources if the path is not defined in the current target
+        return getResourceLocatorPathParam(name, encoded);
     }
 
     @Override
@@ -996,8 +1159,46 @@ public abstract class ResteasyReactiveRequestContext
 
     public abstract Runnable registerTimer(long millis, Runnable task);
 
-    public String getResourceLocatorPathParam(String name) {
-        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY));
+    public String getResourceLocatorPathParam(String name, boolean encoded) {
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY), encoded);
+    }
+
+    /**
+     * Collects all path parameters, first from the current RuntimeResource, also known as target, and then from the previous
+     * RuntimeResources, including path parameters from sub resource locators in the process.
+     *
+     * @param encoded
+     * @return MultivaluedMap with path parameters. May be empty, but is never null
+     */
+    public MultivaluedMap<String, String> getAllPathParameters(boolean encoded) {
+        MultivaluedMap<String, String> pathParams = new QuarkusMultivaluedHashMap<>();
+        // a target can be null if this happens in a filter that runs before the target is set
+        if (target == null) {
+            return pathParams;
+        }
+
+        PreviousResource previousResource = null;
+        Object paramValues = this.pathParamValues;
+        do {
+            for (Map.Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
+                pathParams.add(pathParam.getKey(), doGetPathParam(pathParam.getValue(), paramValues, encoded));
+            }
+
+            if (previousResource != null) {
+                previousResource = previousResource.prev;
+            } else {
+                previousResource = (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY);
+            }
+            if (previousResource == null) {
+                break;
+            }
+
+            target = previousResource.locatorTarget;
+            paramValues = previousResource.locatorPathParamValues;
+
+        } while (true);
+
+        return pathParams;
     }
 
     public FormData getFormData() {
@@ -1009,7 +1210,7 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
-    private String getResourceLocatorPathParam(String name, PreviousResource previousResource) {
+    private String getResourceLocatorPathParam(String name, PreviousResource previousResource, boolean encoded) {
         if (previousResource == null) {
             return null;
         }
@@ -1020,13 +1221,13 @@ public abstract class ResteasyReactiveRequestContext
             for (URITemplate.TemplateComponent component : classPath.components) {
                 if (component.name != null) {
                     if (component.name.equals(name)) {
-                        return doGetPathParam(index, previousResource.locatorPathParamValues);
+                        return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                     }
                     index++;
                 } else if (component.names != null) {
                     for (String nm : component.names) {
                         if (nm.equals(name)) {
-                            return doGetPathParam(index, previousResource.locatorPathParamValues);
+                            return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                         }
                     }
                     index++;
@@ -1036,19 +1237,19 @@ public abstract class ResteasyReactiveRequestContext
         for (URITemplate.TemplateComponent component : previousResource.locatorTarget.getPath().components) {
             if (component.name != null) {
                 if (component.name.equals(name)) {
-                    return doGetPathParam(index, previousResource.locatorPathParamValues);
+                    return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                 }
                 index++;
             } else if (component.names != null) {
                 for (String nm : component.names) {
                     if (nm.equals(name)) {
-                        return doGetPathParam(index, previousResource.locatorPathParamValues);
+                        return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                     }
                 }
                 index++;
             }
         }
-        return getResourceLocatorPathParam(name, previousResource.prev);
+        return getResourceLocatorPathParam(name, previousResource.prev, encoded);
     }
 
     public abstract boolean resumeExternalProcessing();

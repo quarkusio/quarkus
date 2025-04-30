@@ -2,14 +2,19 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.client.SseEvent;
+import org.jboss.resteasy.reactive.client.SseEventFilter;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
@@ -43,8 +48,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
     /**
      * We need this class to work around a bug in Mutiny where we can register our cancel listener
-     * after the subscription is cancelled and we never get notified
-     * See https://github.com/smallrye/smallrye-mutiny/issues/417
+     * after the subscription is cancelled, and we never get notified
+     * See <a href="https://github.com/smallrye/smallrye-mutiny/issues/417">...</a>
      */
     static class MultiRequest<R> {
 
@@ -125,11 +130,16 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     if (!emitter.isCancelled()) {
                         if (response.getStatus() == 200
                                 && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                            registerForSse(multiRequest, responseType, response, vertxResponse);
+                            registerForSse(
+                                    multiRequest, responseType, vertxResponse,
+                                    (String) restClientRequestContext.getProperties()
+                                            .get(RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP),
+                                    restClientRequestContext.getInvokedMethod());
                         } else if (response.getStatus() == 200
-                                && RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType())) {
+                                && isNewlineDelimited(response)) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
                                     vertxResponse);
+
                         } else {
                             // read stuff in chunks
                             registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
@@ -149,24 +159,113 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 RestMediaType.APPLICATION_NDJSON_TYPE.isCompatible(response.getMediaType());
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private <R> void registerForSse(MultiRequest<? super R> multiRequest,
             GenericType<R> responseType,
-            Response response,
-            HttpClientResponse vertxResponse) {
+            HttpClientResponse vertxResponse, String defaultContentType,
+            Method invokedMethod) {
+
+        boolean returnSseEvent = SseEvent.class.equals(responseType.getRawType());
+        GenericType responseTypeFirstParam = responseType.getType() instanceof ParameterizedType
+                ? new GenericType(((ParameterizedType) responseType.getType()).getActualTypeArguments()[0])
+                : null;
+
+        Predicate<SseEvent<String>> eventPredicate = createEventPredicate(invokedMethod);
+
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
         SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
-                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS);
+                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS, defaultContentType);
 
         multiRequest.onCancel(sseSource::close);
         sseSource.register(event -> {
+
+            // TODO: we might want to cut down on the allocations here...
+
+            if (eventPredicate != null) {
+                boolean keep = eventPredicate.test(new SseEvent<>() {
+                    @Override
+                    public String id() {
+                        return event.getId();
+                    }
+
+                    @Override
+                    public String name() {
+                        return event.getName();
+                    }
+
+                    @Override
+                    public String comment() {
+                        return event.getComment();
+                    }
+
+                    @Override
+                    public String data() {
+                        return event.readData();
+                    }
+                });
+                if (!keep) {
+                    return;
+                }
+            }
+
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
-            multiRequest.emit(event.readData(responseType));
+
+            if (returnSseEvent) {
+                multiRequest.emit((R) new SseEvent() {
+                    @Override
+                    public String id() {
+                        return event.getId();
+                    }
+
+                    @Override
+                    public String name() {
+                        return event.getName();
+                    }
+
+                    @Override
+                    public String comment() {
+                        return event.getComment();
+                    }
+
+                    @Override
+                    public Object data() {
+                        if (responseTypeFirstParam != null) {
+                            return event.readData(responseTypeFirstParam);
+                        } else {
+                            return event.readData(); // TODO: is this correct?
+                        }
+                    }
+                });
+            } else {
+                R item = event.readData(responseType);
+                if (item != null) { // we don't emit null because it breaks Multi (by design)
+                    multiRequest.emit(item);
+                }
+            }
+
         }, multiRequest::fail, multiRequest::complete);
         // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);
+    }
+
+    private Predicate<SseEvent<String>> createEventPredicate(Method invokedMethod) {
+        if (invokedMethod == null) {
+            return null; // should never happen
+        }
+
+        SseEventFilter filterAnnotation = invokedMethod.getAnnotation(SseEventFilter.class);
+        if (filterAnnotation == null) {
+            return null;
+        }
+
+        try {
+            return filterAnnotation.value().getConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private <R> void registerForChunks(MultiRequest<? super R> multiRequest,
@@ -174,7 +273,6 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             GenericType<R> responseType,
             ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
-        boolean isNewlineDelimited = isNewlineDelimited(response);
         // make sure we get exceptions on the response, like close events, otherwise they
         // will be logged as errors by vertx
         vertxClientResponse.exceptionHandler(t -> {
@@ -193,45 +291,15 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 try {
                     byte[] bytes = buffer.getBytes();
                     MediaType mediaType = response.getMediaType();
+                    ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                    R item = restClientRequestContext.readEntity(
+                            in,
+                            responseType,
+                            mediaType,
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
+                            response.getMetadata());
+                    multiRequest.emitter.emit(item);
 
-                    if (isNewlineDelimited) {
-                        String charset = mediaType.getParameters().get(MediaType.CHARSET_PARAMETER);
-                        charset = charset == null ? "UTF-8" : charset;
-                        byte[] separator = "\n".getBytes(charset);
-                        int start = 0;
-                        while (start < bytes.length) {
-                            int end = bytes.length;
-                            for (int i = start; i < end; i++) {
-                                if (bytes[i] == separator[0]) {
-                                    int j;
-                                    boolean matches = true;
-                                    for (j = 1; j < separator.length; j++) {
-                                        if (bytes[i + j] != separator[j]) {
-                                            matches = false;
-                                            break;
-                                        }
-                                    }
-                                    if (matches) {
-                                        end = i;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (start < end) {
-                                ByteArrayInputStream in = new ByteArrayInputStream(bytes, start, end);
-                                R item = restClientRequestContext.readEntity(in, responseType, mediaType,
-                                        response.getMetadata());
-                                multiRequest.emitter.emit(item);
-                            }
-                            start = end + separator.length;
-                        }
-                    } else {
-                        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                        R item = restClientRequestContext.readEntity(in, responseType, mediaType,
-                                response.getMetadata());
-                        multiRequest.emitter.emit(item);
-                    }
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler
                     // which calls emitter.complete()
@@ -262,7 +330,10 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
                 ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
                 try {
-                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
+                    R item = restClientRequestContext.readEntity(in,
+                            responseType,
+                            response.getMediaType(),
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
                             response.getMetadata());
                     multiRequest.emit(item);
                 } catch (IOException e) {

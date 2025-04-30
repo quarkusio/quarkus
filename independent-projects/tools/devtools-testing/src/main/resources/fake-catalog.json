@@ -76,6 +76,62 @@
       ]
     },
     {
+      "name" : "RESTEasy Reactive Jackson",
+      "description" : "Jackson serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it",
+      "metadata" : {
+        "codestart" : {
+          "name" : "resteasy-reactive",
+          "kind" : "core",
+          "languages" : [ "java", "kotlin", "scala" ],
+          "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-FAKE"
+        },
+        "minimum-java-version" : "11",
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy-reactive.", "quarkus.jackson." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "scm-url" : "https://github.com/quarkus-release/release",
+        "short-name" : "resteasy-reactive-jackson",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jackson", "io.quarkus.resteasy.reactive.json.jackson" ]
+        },
+        "categories" : [ "web", "reactive" ],
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-virtual-threads", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-reactive-jackson-common", "io.quarkus:quarkus-jackson" ],
+        "keywords" : [ "rest-jackson", "quarkus-resteasy-reactive-json", "jaxrs-json", "rest", "jaxrs", "json", "jackson", "jakarta-rest" ]
+      },
+      "artifact" : "io.quarkus:quarkus-resteasy-reactive-jackson::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name" : "RESTEasy Reactive JSON-B",
+      "description" : "JSON-B serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+      "metadata" : {
+        "codestart" : {
+          "name" : "resteasy-reactive",
+          "kind" : "core",
+          "languages" : [ "java", "kotlin", "scala" ],
+          "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-FAKE"
+        },
+        "minimum-java-version" : "11",
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy-reactive." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "scm-url" : "https://github.com/quarkus-release/release",
+        "short-name" : "resteasy-reactive-jsonb",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jsonb", "io.quarkus.resteasy.reactive.json.jsonb" ]
+        },
+        "categories" : [ "web", "reactive" ],
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-virtual-threads", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-reactive-jsonb-common", "io.quarkus:quarkus-jsonb" ],
+        "keywords" : [ "rest-jsonb", "resteasy-reactive-json", "jaxrs-json", "rest", "jaxrs", "json", "jsonb", "jakarta-rest" ]
+      },
+      "artifact" : "io.quarkus:quarkus-resteasy-reactive-jsonb::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
       "name": "YAML Configuration",
       "description": "Use YAML to configure your Quarkus application",
       "metadata": {
@@ -371,6 +427,13 @@
   ],
   "metadata": {
     "project": {
+      "default-codestart": "resteasy-reactive",
+      "codestart-data": {
+        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.21",
+        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+      },
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "4.3.2",
@@ -386,9 +449,11 @@
         "gradle-plugin-id": "io.quarkus",
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
-        "proposed-maven-version": "3.8.8",
-        "maven-wrapper-version": "3.2.0",
-        "gradle-wrapper-version": "8.1.1"
+        "minimum-java-version": "11",
+        "recommended-java-version": "17",
+        "proposed-maven-version": "3.9.9",
+        "maven-wrapper-version": "3.3.2",
+        "gradle-wrapper-version": "8.13"
       }
     },
     "codestarts-artifacts": [

@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: tooling
 
 This guide covers packaging and releasing CLI applications using the link:https://jreleaser.org[JReleaser] tool.
 
@@ -106,23 +107,39 @@ shell completion scripts, man pages, license, readme, and more.
 == Creating the distribution
 
 We can leverage the link:http://maven.apache.org/plugins/maven-assembly-plugin/[maven-assembly-plugin] to create such
-a distribution. We'll also make use of the link:https://github.com/trustin/os-maven-plugin[os-maven-plugin] to properly
+a distribution. We'll also make use of the link:https://github.com/maveniverse/nisse[Nisse Maven plugin] to properly
 identify the platform on which this executable can run, adding said platform to the distribution's filename.
 
-First, let's add the os-maven-plugin to the `pom.xml`. This plugin works as a Maven extension and as such must be added
+First, let's add the Nisse Maven plugin to the `pom.xml`. This plugin must be added
 to the `<build>` section of the file:
 
 [source,xml]
 ----
   <build>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
-      </extension>
-    </extensions>
+    <plugins>
+      <plugin>
+        <groupId>eu.maveniverse.maven.plugins</groupId>
+        <artifactId>nisse-plugin3</artifactId>
+        <version>0.4.0</version>
+        <executions>
+          <execution>
+            <id>inject-properties</id>
+              <goals>
+                <goal>inject-properties</goal>
+              </goals>
+              <phase>validate</phase>
+            </execution>
+          </executions>
+        </plugin>
     <!-- ... -->
+----
+
+In order for this plugin to generate the correct properties, we need to make sure the `nisse.compat.osDetector` system
+property is set. This can be done by adding the following `.mvn/maven.config` file:
+
+[source]
+----
+-Dnisse.compat.osDetector=true
 ----
 
 Next, native executables on Linux and macOS platforms typically do not have a file extension but Windows executables do,
@@ -138,7 +155,7 @@ their own directory to avoid cluttering the `target` directory. Thus, let's add 
 
 Now we configure the maven-assembly-plugin to create a Zip and a Tar file containing the executable and any supporting files
 it may need to perform its job. Take special note on the name of the distribution, this is where we make use of the platform
-properties detected by the os-maven-plugin. This plugin is configured in its own profile with the `single` goal bound to
+properties detected by the os-detector-maven-plugin. This plugin is configured in its own profile with the `single` goal bound to
 the `package` phase. It's done this way to avoid rebuilding the distribution every single time the build is invoked, as we
 only needed when we're ready for a release.
 
@@ -618,10 +635,10 @@ As a reference, these are the full contents of the `pom.xml`:
   <properties>
     <executable-suffix/>
     <distribution.directory>${project.build.directory}/distributions</distribution.directory>
-    <compiler-plugin.version>3.11.0</compiler-plugin.version>
+    <compiler-plugin.version>3.14.0</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -656,14 +673,21 @@ As a reference, these are the full contents of the `pom.xml`:
     </dependency>
   </dependencies>
   <build>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
-      </extension>
-    </extensions>
     <plugins>
+      <plugin>
+        <groupId>eu.maveniverse.maven.nisse</groupId>
+        <artifactId>plugin3</artifactId>
+        <version>0.3.4</version>
+        <executions>
+          <execution>
+            <id>inject-properties</id>
+            <goals>
+              <goal>inject-properties</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
@@ -708,7 +732,7 @@ As a reference, these are the full contents of the `pom.xml`:
       </activation>
       <properties>
         <skipITs>false</skipITs>
-        <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
       </properties>
     </profile>
     <profile>

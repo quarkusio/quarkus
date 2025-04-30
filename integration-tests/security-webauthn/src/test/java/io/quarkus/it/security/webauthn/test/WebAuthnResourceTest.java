@@ -2,17 +2,19 @@ package io.quarkus.it.security.webauthn.test;
 
 import static io.restassured.RestAssured.given;
 
+import java.net.URL;
 import java.util.function.Consumer;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.security.webauthn.WebAuthnController;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
@@ -29,6 +31,9 @@ public class WebAuthnResourceTest {
         MANUAL;
     }
 
+    @TestHTTPResource
+    URL url;
+
     @Test
     public void testWebAuthnUser() {
         testWebAuthn("FroMage", User.USER, Endpoint.DEFAULT);
@@ -40,26 +45,26 @@ public class WebAuthnResourceTest {
         testWebAuthn("admin", User.ADMIN, Endpoint.DEFAULT);
     }
 
-    private void testWebAuthn(String userName, User user, Endpoint endpoint) {
-        Filter cookieFilter = new RenardeCookieFilter();
-        WebAuthnHardware token = new WebAuthnHardware();
+    private void testWebAuthn(String username, User user, Endpoint endpoint) {
+        Filter cookieFilter = new CookieFilter();
+        WebAuthnHardware token = new WebAuthnHardware(url);
 
         verifyLoggedOut(cookieFilter);
 
         // two-step registration
-        String challenge = WebAuthnEndpointHelper.invokeRegistration(userName, cookieFilter);
+        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge(username, cookieFilter);
         JsonObject registrationJson = token.makeRegistrationJson(challenge);
         if (endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeCallback(registrationJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeRegistration(username, registrationJson, cookieFilter);
         else {
             invokeCustomEndpoint("/register", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registrationJson);
-                request.formParam("userName", userName);
+                request.formParam("username", username);
             });
         }
 
         // verify that we can access logged-in endpoints
-        verifyLoggedIn(cookieFilter, userName, user);
+        verifyLoggedIn(cookieFilter, username, user);
 
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
@@ -67,19 +72,19 @@ public class WebAuthnResourceTest {
         verifyLoggedOut(cookieFilter);
 
         // two-step login
-        challenge = WebAuthnEndpointHelper.invokeLogin(userName, cookieFilter);
+        challenge = WebAuthnEndpointHelper.obtainLoginChallenge(username, cookieFilter);
         JsonObject loginJson = token.makeLoginJson(challenge);
         if (endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeCallback(loginJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeLogin(loginJson, cookieFilter);
         else {
             invokeCustomEndpoint("/login", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnLoginFormParameters(request, loginJson);
-                request.formParam("userName", userName);
+                request.formParam("username", username);
             });
         }
 
         // verify that we can access logged-in endpoints
-        verifyLoggedIn(cookieFilter, userName, user);
+        verifyLoggedIn(cookieFilter, username, user);
 
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
@@ -97,14 +102,13 @@ public class WebAuthnResourceTest {
                 .log().ifValidationFails()
                 .post(uri)
                 .then()
-                .statusCode(200)
                 .log().ifValidationFails()
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+                .statusCode(200)
+                .cookie(WebAuthnEndpointHelper.getChallengeCookie(), Matchers.is(""))
+                .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 
-    private void verifyLoggedIn(Filter cookieFilter, String userName, User user) {
+    private void verifyLoggedIn(Filter cookieFilter, String username, User user) {
         // public API still good
         RestAssured.given().filter(cookieFilter)
                 .when()
@@ -118,7 +122,7 @@ public class WebAuthnResourceTest {
                 .get("/api/public/me")
                 .then()
                 .statusCode(200)
-                .body(Matchers.is(userName));
+                .body(Matchers.is(username));
 
         // user API accessible
         RestAssured.given().filter(cookieFilter)
@@ -126,7 +130,7 @@ public class WebAuthnResourceTest {
                 .get("/api/users/me")
                 .then()
                 .statusCode(200)
-                .body(Matchers.is(userName));
+                .body(Matchers.is(username));
 
         // admin API?
         if (user == User.ADMIN) {

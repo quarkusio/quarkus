@@ -9,10 +9,10 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 /**
  * This Automatic Feature for GraalVM will register for reflection
  * the most commonly used cache implementations from Caffeine.
- * It's implemented as an explicit @{@link Feature} rather than
+ * It's implemented as an explicit {@link Feature} rather than
  * using the Quarkus builditems because it doesn't need to be
  * dynamically tuned (the list is static), and to take advantage
- * of the reachability information we can infer from @{@link org.graalvm.nativeimage.hosted.Feature.DuringAnalysisAccess}.
+ * of the reachability information we can infer from {@link org.graalvm.nativeimage.hosted.Feature.DuringAnalysisAccess}.
  *
  * This allows us to register for reflection these resources only if
  * Caffeine is indeed being used: only if the cache builder is reachable
@@ -66,6 +66,8 @@ public class CacheConstructorsFeature implements Feature {
         final Constructor<?>[] z = aClass.getDeclaredConstructors();
         RuntimeReflection.register(aClass);
         RuntimeReflection.register(z);
+        // Accessed by com.github.benmanes.caffeine.cache.LocalCacheFactory.newFactory
+        RuntimeReflection.registerFieldLookup(aClass, "FACTORY");
     }
 
     /**
@@ -77,6 +79,7 @@ public class CacheConstructorsFeature implements Feature {
         return new String[] {
                 "com.github.benmanes.caffeine.cache.PDMS",
                 "com.github.benmanes.caffeine.cache.PSA",
+                "com.github.benmanes.caffeine.cache.PSAW",
                 "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PSW",
                 "com.github.benmanes.caffeine.cache.PSMW",
@@ -86,6 +89,7 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.PSWMW",
                 "com.github.benmanes.caffeine.cache.SILMS",
                 "com.github.benmanes.caffeine.cache.SSA",
+                "com.github.benmanes.caffeine.cache.SSAW",
                 "com.github.benmanes.caffeine.cache.SSLA",
                 "com.github.benmanes.caffeine.cache.SSLMS",
                 "com.github.benmanes.caffeine.cache.SSMS",
@@ -106,7 +110,8 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSSMSA",
                 "com.github.benmanes.caffeine.cache.SSSMSW",
                 "com.github.benmanes.caffeine.cache.SSSMSAW",
-                "com.github.benmanes.caffeine.cache.SSSW"
+                "com.github.benmanes.caffeine.cache.SSSW",
+                "com.github.benmanes.caffeine.cache.SSSAW"
         };
     }
 }

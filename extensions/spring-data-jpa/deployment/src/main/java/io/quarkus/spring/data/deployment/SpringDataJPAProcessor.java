@@ -27,6 +27,8 @@ import org.springframework.data.domain.Auditable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.QueryByExampleExecutor;
@@ -64,7 +66,7 @@ public class SpringDataJPAProcessor {
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
     public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
-    public static final String QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "quarkus.hibernate-orm.database.generation";
+    public static final String QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY = "quarkus.hibernate-orm.schema-management.strategy";
     public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
     public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";
     private static final String QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT = "quarkus.hibernate-orm.sql-load-script";
@@ -80,7 +82,9 @@ public class SpringDataJPAProcessor {
         additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
                 Repository.class.getName(),
                 CrudRepository.class.getName(),
+                ListCrudRepository.class.getName(),
                 PagingAndSortingRepository.class.getName(),
+                ListPagingAndSortingRepository.class.getName(),
                 JpaRepository.class.getName(),
                 QueryByExampleExecutor.class.getName()));
     }
@@ -99,6 +103,7 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.Page",
                 "org.springframework.data.domain.Slice",
                 "org.springframework.data.domain.PageImpl",
+                "org.springframework.data.domain.Pageable",
                 "org.springframework.data.domain.SliceImpl",
                 "org.springframework.data.domain.Sort",
                 "org.springframework.data.domain.Chunk",
@@ -189,7 +194,7 @@ public class SpringDataJPAProcessor {
                         break;
                     case SPRING_JPA_GENERATE_DDL:
                         notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_GENERATE_DDL
-                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION + "\n";
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY + "\n";
                         break;
                     case SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY:
                         notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY
@@ -202,12 +207,12 @@ public class SpringDataJPAProcessor {
                     case SPRING_DATASOURCE_DATA:
                         notSupportedProperties = notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT
                                 + " could be used to load data instead of " + SPRING_DATASOURCE_DATA
-                                + " but it does not support either comma separated list of resources or resources with ant-style patterns as "
+                                + " but it does not support ant-style patterns as "
                                 + SPRING_DATASOURCE_DATA
-                                + " does, it accepts the name of the file containing the SQL statements to execute when when Hibernate ORM starts.\n";
+                                + " does, it accepts the name of files containing the SQL statements to execute when Hibernate ORM starts.\n";
                         break;
                     default:
-                        notSupportedProperties = notSupportedProperties + "\t- " + sp + "\n";
+                        notSupportedProperties = notSupportedProperties + "\t- " + sp + " does not have a Quarkus equivalent\n";
                         break;
                 }
             }

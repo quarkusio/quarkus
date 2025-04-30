@@ -14,7 +14,7 @@
     <artifactId>quarkus-reactive-mssql-client-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>Quarkus - Reactive MS SQL Client</name>
+    <name>Quarkus - Reactive Microsoft SQL Server Client</name>
 
     <modules>
         <module>deployment</module>

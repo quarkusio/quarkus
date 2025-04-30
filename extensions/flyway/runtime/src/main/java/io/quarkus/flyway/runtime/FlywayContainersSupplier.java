@@ -1,7 +1,6 @@
 package io.quarkus.flyway.runtime;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
@@ -13,12 +12,8 @@ public class FlywayContainersSupplier implements Supplier<Collection<FlywayConta
 
     @Override
     public Collection<FlywayContainer> get() {
-        if (FlywayRecorder.FLYWAY_CONTAINERS.isEmpty()) {
-            return Collections.emptySet();
-        }
-
         Set<FlywayContainer> containers = new TreeSet<>(FlywayContainerComparator.INSTANCE);
-        containers.addAll(FlywayRecorder.FLYWAY_CONTAINERS);
+        containers.addAll(FlywayContainerUtil.getActiveFlywayContainers());
         return containers;
     }
 

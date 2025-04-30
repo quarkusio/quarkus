@@ -6,11 +6,15 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 
 /**
  * This class uses test order because all tests depend on extension publication which can be done once.
@@ -64,7 +68,8 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 ":ext-t:runtime:publishToMavenLocal",
                 ":ext-t:deployment:publishToMavenLocal",
                 ":ext-u:runtime:publishToMavenLocal",
-                ":ext-u:deployment:publishToMavenLocal");
+                ":ext-u:deployment:publishToMavenLocal",
+                ":dev-mode-only-lib:publishToMavenLocal");
     }
 
     @Test
@@ -73,10 +78,11 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         // A -> B?(C) -> E?(C)
         // C
+        // T
 
         final File projectDir = getProjectDir("conditional-test-project");
 
-        runGradleWrapper(projectDir, "clean", ":runner:quarkusBuild", "-Dquarkus.package.type=mutable-jar");
+        runGradleWrapper(projectDir, "clean", ":runner:quarkusBuild", "-Dquarkus.package.jar.type=mutable-jar");
 
         final File buildDir = new File(projectDir, "runner" + File.separator + "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
@@ -85,6 +91,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-b-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-c-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-e-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.ext-t-1.0-SNAPSHOT.jar")).exists();
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
         assertThat(mainLib.resolve("org.acme.transitive-dependency-1.0-SNAPSHOT.jar")).doesNotExist();
 
@@ -139,7 +146,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         final File projectDir = getProjectDir("conditional-test-project");
 
-        runGradleWrapper(projectDir, "clean", ":scenario-two:quarkusBuild", "-Dquarkus.package.type=mutable-jar");
+        runGradleWrapper(projectDir, "clean", ":scenario-two:quarkusBuild", "-Dquarkus.package.jar.type=mutable-jar");
 
         final File buildDir = new File(projectDir, "scenario-two" + File.separator + "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
@@ -177,4 +184,66 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(deploymentLib.resolve("org.acme.ext-t-deployment-1.0-SNAPSHOT.jar")).exists();
         assertThat(deploymentLib.resolve("org.acme.ext-u-deployment-1.0-SNAPSHOT.jar")).exists();
     }
+
+    @Test
+    @Order(6)
+    public void conditionalDevDependencies() throws Exception {
+
+        // A -> B?(C) -> E?(C)
+        // A -> D?(dev)
+        // A -> N?(dev, G)
+        // A -> S? (dev, T) -> U
+        // C -> dev-mode-only-lib? (dev) -> P
+        // T
+
+        var appModel = BuildToolHelper
+                .enableGradleAppModelForDevMode(getProjectDir("conditional-test-project/runner").toPath());
+        final Set<String> acmeArtifacts = new HashSet<>();
+        for (var d : appModel.getDependencies()) {
+            if (d.getGroupId().equals("org.acme")) {
+                acmeArtifacts.add(d.getArtifactId());
+            }
+        }
+        assertThat(acmeArtifacts).containsExactlyInAnyOrder(
+                "ext-a", "ext-a-deployment",
+                "ext-b", "ext-b-deployment",
+                "ext-c", "ext-c-deployment",
+                "ext-d", "ext-d-deployment",
+                "ext-e", "ext-e-deployment",
+                "ext-p", "ext-p-deployment",
+                "ext-s", "ext-s-deployment",
+                "ext-u", "ext-u-deployment",
+                "ext-t", "ext-t-deployment",
+                "simple-dependency", "transitive-dependency",
+                "dev-mode-only-lib");
+    }
+
+    @Test
+    @Order(7)
+    public void conditionalDevDependenciesInProdMode() throws Exception {
+
+        // A -> B?(C) -> E?(C)
+        // A -> D?(dev)
+        // A -> N?(dev, G)
+        // A -> S? (dev, T) -> U
+        // C -> dev-mode-only-lib? (dev) -> P
+        // T
+
+        var appModel = BuildToolHelper
+                .enableGradleAppModelForProdMode(getProjectDir("conditional-test-project/runner").toPath());
+        final Set<String> acmeArtifacts = new HashSet<>();
+        for (var d : appModel.getDependencies()) {
+            if (d.getGroupId().equals("org.acme")) {
+                acmeArtifacts.add(d.getArtifactId());
+            }
+        }
+        assertThat(acmeArtifacts).containsExactlyInAnyOrder(
+                "ext-a", "ext-a-deployment",
+                "ext-b", "ext-b-deployment",
+                "ext-c", "ext-c-deployment",
+                "ext-e", "ext-e-deployment",
+                "ext-t", "ext-t-deployment",
+                "simple-dependency", "transitive-dependency");
+    }
+
 }

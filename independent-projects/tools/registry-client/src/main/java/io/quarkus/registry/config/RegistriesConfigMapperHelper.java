@@ -36,10 +36,11 @@ public class RegistriesConfigMapperHelper {
     }
 
     public static ObjectMapper initMapper(ObjectMapper mapper) {
-        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class)
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return mapper;
     }
 

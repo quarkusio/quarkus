@@ -81,6 +81,12 @@ public class FileUtils {
         } catch (Exception e) {
             log.warn("[Quarkus build analytics] Could not read {}", path.toString(), e);
             return Optional.empty();
+        } catch (Throwable t) {
+            log.error("[Quarkus build analytics] Unexpected error reading class " + t.getClass().getName() +
+                    " from path: " + path.toString() +
+                    ". Got message: " + t.getMessage() +
+                    ". Attempting to continue...");
+            return Optional.empty();
         }
     }
 }

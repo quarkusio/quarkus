@@ -1,9 +1,5 @@
 package io.quarkus.smallrye.graphql.runtime.spi;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-
 import graphql.schema.PropertyDataFetcherHelper;
 import io.smallrye.graphql.execution.Classes;
 import io.smallrye.graphql.spi.ClassloadingService;
@@ -38,12 +34,10 @@ public class QuarkusClassloadingService implements ClassloadingService {
             if (Classes.isPrimitive(className)) {
                 return Classes.getPrimativeClassType(className);
             } else {
-                return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> {
-                    ClassLoader cl = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
-                    return loadClass(className, cl);
-                });
+                ClassLoader cl = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
+                return loadClass(className, cl);
             }
-        } catch (PrivilegedActionException | ClassNotFoundException pae) {
+        } catch (ClassNotFoundException pae) {
             throw new RuntimeException("Can not load class [" + className + "]", pae);
         }
     }

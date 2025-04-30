@@ -11,6 +11,7 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
@@ -33,12 +35,12 @@ import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
-import org.jboss.logging.Logger;
 
 import com.mongodb.AuthenticationMechanism;
 import com.mongodb.Block;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoConfigurationException;
 import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
 import com.mongodb.ReadConcern;
@@ -53,50 +55,64 @@ import com.mongodb.connection.ConnectionPoolSettings;
 import com.mongodb.connection.ServerSettings;
 import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
+import com.mongodb.connection.TransportSettings;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
-import io.quarkus.mongodb.health.MongoHealthCheck;
+import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
- *
+ * <p>
  * It isn't a CDI producer in the literal sense, but it is marked as a bean
  * and its {@code createMongoClient} and {@code createReactiveMongoClient} methods are called at runtime in order to produce
  * the actual client objects.
- *
- *
  */
 @Singleton
 public class MongoClients {
 
-    private static final Logger LOGGER = Logger.getLogger(MongoClients.class.getName());
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private final MongodbConfig mongodbConfig;
     private final MongoClientSupport mongoClientSupport;
     private final Instance<CodecProvider> codecProviders;
+    private final TlsConfigurationRegistry tlsConfigurationRegistry;
     private final Instance<PropertyCodecProvider> propertyCodecProviders;
     private final Instance<CommandListener> commandListeners;
 
     private final Map<String, MongoClient> mongoclients = new HashMap<>();
     private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private final Instance<ReactiveContextProvider> reactiveContextProviders;
+    private final Instance<MongoClientCustomizer> customizers;
+    private final Vertx vertx;
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
+            TlsConfigurationRegistry tlsConfigurationRegistry,
             Instance<PropertyCodecProvider> propertyCodecProviders,
-            Instance<CommandListener> commandListeners) {
+            Instance<CommandListener> commandListeners,
+            Instance<ReactiveContextProvider> reactiveContextProviders,
+            @Any Instance<MongoClientCustomizer> customizers,
+            Vertx vertx) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
+        this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         this.propertyCodecProviders = propertyCodecProviders;
         this.commandListeners = commandListeners;
+        this.reactiveContextProviders = reactiveContextProviders;
+        this.customizers = customizers;
+        this.vertx = vertx;
 
         try {
             //JDK bug workaround
@@ -105,21 +121,11 @@ public class MongoClients {
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException ignored) {
         }
-
-        try {
-            Class.forName("org.eclipse.microprofile.health.HealthCheck");
-            InstanceHandle<MongoHealthCheck> instance = Arc.container()
-                    .instance(MongoHealthCheck.class, Any.Literal.INSTANCE);
-            if (instance.isAvailable()) {
-                instance.get().configure(mongodbConfig);
-            }
-        } catch (ClassNotFoundException e) {
-            // Ignored - no health check
-        }
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
         mongoclients.put(clientName, client);
         return client;
@@ -127,7 +133,8 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
@@ -136,8 +143,8 @@ public class MongoClients {
     }
 
     public MongoClientConfig getMatchingMongoClientConfig(String clientName) {
-        return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig
-                : mongodbConfig.mongoClientConfigs.get(clientName);
+        return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig()
+                : mongodbConfig.mongoClientConfigs().get(clientName);
     }
 
     private static class ClusterSettingBuilder implements Block<ClusterSettings.Builder> {
@@ -145,30 +152,30 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(ClusterSettings.Builder builder) {
-            Optional<String> maybeConnectionString = config.connectionString;
-            if (!maybeConnectionString.isPresent()) {
+            Optional<String> maybeConnectionString = config.connectionString();
+            if (maybeConnectionString.isEmpty()) {
                 // Parse hosts
-                List<ServerAddress> hosts = parseHosts(config.hosts);
+                List<ServerAddress> hosts = parseHosts(config.hosts());
                 builder.hosts(hosts);
 
-                if (hosts.size() == 1 && !config.replicaSetName.isPresent()) {
+                if (hosts.size() == 1 && config.replicaSetName().isEmpty()) {
                     builder.mode(ClusterConnectionMode.SINGLE);
                 } else {
                     builder.mode(ClusterConnectionMode.MULTIPLE);
                 }
             }
-            if (config.localThreshold.isPresent()) {
-                builder.localThreshold(config.localThreshold.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.localThreshold().isPresent()) {
+                builder.localThreshold(config.localThreshold().get().toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            config.replicaSetName.ifPresent(builder::requiredReplicaSetName);
+            config.replicaSetName().ifPresent(builder::requiredReplicaSetName);
 
-            if (config.serverSelectionTimeout.isPresent()) {
-                builder.serverSelectionTimeout(config.serverSelectionTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.serverSelectionTimeout().isPresent()) {
+                builder.serverSelectionTimeout(config.serverSelectionTimeout().get().toMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -179,24 +186,24 @@ public class MongoClients {
             this.connectionPoolListeners = connectionPoolListeners;
         }
 
-        private MongoClientConfig config;
-        private List<ConnectionPoolListener> connectionPoolListeners;
+        private final MongoClientConfig config;
+        private final List<ConnectionPoolListener> connectionPoolListeners;
 
         @Override
         public void apply(ConnectionPoolSettings.Builder builder) {
-            config.maxPoolSize.ifPresent(builder::maxSize);
-            config.minPoolSize.ifPresent(builder::minSize);
-            if (config.maxConnectionIdleTime.isPresent()) {
-                builder.maxConnectionIdleTime(config.maxConnectionIdleTime.get().toMillis(), TimeUnit.MILLISECONDS);
+            config.maxPoolSize().ifPresent(builder::maxSize);
+            config.minPoolSize().ifPresent(builder::minSize);
+            if (config.maxConnectionIdleTime().isPresent()) {
+                builder.maxConnectionIdleTime(config.maxConnectionIdleTime().get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            if (config.maxConnectionLifeTime.isPresent()) {
-                builder.maxConnectionLifeTime(config.maxConnectionLifeTime.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.maxConnectionLifeTime().isPresent()) {
+                builder.maxConnectionLifeTime(config.maxConnectionLifeTime().get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            if (config.maintenanceFrequency.isPresent()) {
-                builder.maintenanceFrequency(config.maintenanceFrequency.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.maintenanceFrequency().isPresent()) {
+                builder.maintenanceFrequency(config.maintenanceFrequency().get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            if (config.maintenanceInitialDelay.isPresent()) {
-                builder.maintenanceInitialDelay(config.maintenanceInitialDelay.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.maintenanceInitialDelay().isPresent()) {
+                builder.maintenanceInitialDelay(config.maintenanceInitialDelay().get().toMillis(), TimeUnit.MILLISECONDS);
             }
             for (ConnectionPoolListener connectionPoolListener : connectionPoolListeners) {
                 builder.addConnectionPoolListener(connectionPoolListener);
@@ -205,17 +212,33 @@ public class MongoClients {
     }
 
     private static class SslSettingsBuilder implements Block<SslSettings.Builder> {
-        public SslSettingsBuilder(MongoClientConfig config, boolean disableSslSupport) {
+        private final TlsConfigurationRegistry tlsConfigurationRegistry;
+
+        private final MongoClientConfig config;
+        private final boolean disableSslSupport;
+
+        public SslSettingsBuilder(MongoClientConfig config,
+                TlsConfigurationRegistry tlsConfigurationRegistry,
+                boolean disableSslSupport) {
             this.config = config;
             this.disableSslSupport = disableSslSupport;
+            this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         }
-
-        private MongoClientConfig config;
-        private boolean disableSslSupport;
 
         @Override
         public void apply(SslSettings.Builder builder) {
-            builder.enabled(!disableSslSupport).invalidHostNameAllowed(config.tlsInsecure);
+            builder.enabled(!disableSslSupport).invalidHostNameAllowed(config.tlsInsecure());
+            if (!disableSslSupport) {
+                Optional<TlsConfiguration> tlsConfig = TlsConfiguration.from(tlsConfigurationRegistry,
+                        config.tlsConfigurationName());
+                if (tlsConfig.isPresent()) {
+                    try {
+                        builder.context(tlsConfig.get().createSSLContext());
+                    } catch (Exception e) {
+                        throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry", e);
+                    }
+                }
+            }
         }
     }
 
@@ -224,15 +247,15 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(SocketSettings.Builder builder) {
-            if (config.connectTimeout.isPresent()) {
-                builder.connectTimeout((int) config.connectTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.connectTimeout().isPresent()) {
+                builder.connectTimeout((int) config.connectTimeout().get().toMillis(), TimeUnit.MILLISECONDS);
             }
-            if (config.readTimeout.isPresent()) {
-                builder.readTimeout((int) config.readTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.readTimeout().isPresent()) {
+                builder.readTimeout((int) config.readTimeout().get().toMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -242,17 +265,17 @@ public class MongoClients {
             this.config = config;
         }
 
-        private MongoClientConfig config;
+        private final MongoClientConfig config;
 
         @Override
         public void apply(ServerSettings.Builder builder) {
-            if (config.heartbeatFrequency.isPresent()) {
-                builder.heartbeatFrequency((int) config.heartbeatFrequency.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (config.heartbeatFrequency().isPresent()) {
+                builder.heartbeatFrequency((int) config.heartbeatFrequency().get().toMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
 
-    private MongoClientSettings createMongoConfiguration(MongoClientConfig config) {
+    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config, boolean isReactive) {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
@@ -260,8 +283,23 @@ public class MongoClients {
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
 
+        if (isReactive) {
+            switch (config.reactiveTransport()) {
+                case NETTY:
+                    // we supports just NIO for now
+                    if (!vertx.isNativeTransportEnabled()) {
+                        configureNettyTransport(settings);
+                    }
+                    break;
+                case MONGO:
+                    // no-op since this is the default behaviour
+                    break;
+            }
+            reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
+        }
+
         ConnectionString connectionString;
-        Optional<String> maybeConnectionString = config.connectionString;
+        Optional<String> maybeConnectionString = config.connectionString();
         if (maybeConnectionString.isPresent()) {
             connectionString = new ConnectionString(maybeConnectionString.get());
             settings.applyConnectionString(connectionString);
@@ -275,25 +313,25 @@ public class MongoClients {
         }
         settings.commandListenerList(commandListenerList);
 
-        config.applicationName.ifPresent(settings::applicationName);
+        config.applicationName().ifPresent(settings::applicationName);
 
-        if (config.credentials != null) {
+        if (config.credentials() != null) {
             MongoCredential credential = createMongoCredential(config);
             if (credential != null) {
                 settings.credential(credential);
             }
         }
 
-        if (config.writeConcern != null) {
-            WriteConcernConfig wc = config.writeConcern;
-            WriteConcern concern = (wc.safe ? WriteConcern.ACKNOWLEDGED : WriteConcern.UNACKNOWLEDGED)
-                    .withJournal(wc.journal);
+        if (config.writeConcern() != null) {
+            WriteConcernConfig wc = config.writeConcern();
+            WriteConcern concern = (wc.safe() ? WriteConcern.ACKNOWLEDGED : WriteConcern.UNACKNOWLEDGED)
+                    .withJournal(wc.journal());
 
-            if (wc.wTimeout.isPresent()) {
-                concern = concern.withWTimeout(wc.wTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+            if (wc.wTimeout().isPresent()) {
+                concern = concern.withWTimeout(wc.wTimeout().get().toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            Optional<String> maybeW = wc.w;
+            Optional<String> maybeW = wc.w();
             if (maybeW.isPresent()) {
                 String w = maybeW.get();
                 if ("majority".equalsIgnoreCase(w)) {
@@ -304,10 +342,12 @@ public class MongoClients {
                 }
             }
             settings.writeConcern(concern);
-            settings.retryWrites(wc.retryWrites);
+            settings.retryWrites(wc.retryWrites());
         }
-        if (config.tls) {
-            settings.applyToSslSettings(new SslSettingsBuilder(config, mongoClientSupport.isDisableSslSupport()));
+        if (config.tls() || config.tlsConfigurationName().isPresent()) {
+            settings.applyToSslSettings(new SslSettingsBuilder(config,
+                    tlsConfigurationRegistry,
+                    mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
         settings.applyToConnectionPoolSettings(
@@ -315,14 +355,59 @@ public class MongoClients {
         settings.applyToServerSettings(new ServerSettingsBuilder(config));
         settings.applyToSocketSettings(new SocketSettingsBuilder(config));
 
-        if (config.readPreference.isPresent()) {
-            settings.readPreference(ReadPreference.valueOf(config.readPreference.get()));
+        if (config.readPreference().isPresent()) {
+            settings.readPreference(ReadPreference.valueOf(config.readPreference().get()));
         }
-        if (config.readConcern.isPresent()) {
-            settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern.get())));
+        if (config.readConcern().isPresent()) {
+            settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern().get())));
         }
 
+        if (config.uuidRepresentation().isPresent()) {
+            settings.uuidRepresentation(config.uuidRepresentation().get());
+        }
+
+        settings = customize(name, settings);
+
         return settings.build();
+    }
+
+    private void configureNettyTransport(MongoClientSettings.Builder settings) {
+        var nettyStreaming = TransportSettings.nettyBuilder()
+                .allocator(VertxByteBufAllocator.POOLED_ALLOCATOR)
+                .eventLoopGroup(vertx.nettyEventLoopGroup())
+                .socketChannelClass(NioSocketChannel.class).build();
+        settings.transportSettings(nettyStreaming);
+    }
+
+    private boolean doesNotHaveClientNameQualifier(Bean<?> bean) {
+        for (Annotation qualifier : bean.getQualifiers()) {
+            if (qualifier.annotationType().equals(MongoClientName.class)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private MongoClientSettings.Builder customize(String name, MongoClientSettings.Builder settings) {
+        // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
+        // Otherwise, we use the one that has the qualifier.
+        // Note that at build time, we check that we have at most one customizer per client, including for the default one.
+        if (MongoClientBeanUtil.isDefault(name)) {
+            var maybe = customizers.handlesStream()
+                    .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
+                    .findFirst(); // We have at most one customizer without the qualifier.
+            if (maybe.isEmpty()) {
+                return settings;
+            } else {
+                return maybe.get().get().customize(settings);
+            }
+        } else {
+            Instance<MongoClientCustomizer> selected = customizers.select(MongoClientName.Literal.of(name));
+            if (selected.isResolvable()) { // We can use resolvable, as we have at most one customizer per client
+                return selected.get().customize(settings);
+            }
+            return settings;
+        }
     }
 
     private void configureCodecRegistry(CodecRegistry defaultCodecRegistry, MongoClientSettings.Builder settings) {
@@ -385,24 +470,27 @@ public class MongoClients {
     }
 
     private MongoCredential createMongoCredential(MongoClientConfig config) {
-        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials);
-        if (usernamePassword == null) {
-            return null;
-        }
 
         // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
         // and null is not allowed
-        String authSource = config.credentials.authSource.orElse(config.database.orElse("admin"));
+        String authSource = config.credentials().authSource().orElse(config.database().orElse("admin"));
         // AuthMechanism
         AuthenticationMechanism mechanism = null;
-        Optional<String> maybeMechanism = config.credentials.authMechanism;
+        Optional<String> maybeMechanism = config.credentials().authMechanism();
         if (maybeMechanism.isPresent()) {
             mechanism = getAuthenticationMechanism(maybeMechanism.get());
         }
 
+        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials());
+        if (usernamePassword == null) {
+            if (mechanism == null) {
+                return null;
+            }
+            usernamePassword = new UsernamePassword(null, null);
+        }
         // Create the MongoCredential instance.
-        String username = usernamePassword.getUsername();
-        char[] password = usernamePassword.getPassword();
+        String username = usernamePassword.username();
+        char[] password = usernamePassword.password();
         MongoCredential credential;
         if (mechanism == GSSAPI) {
             credential = MongoCredential.createGSSAPICredential(username);
@@ -423,8 +511,8 @@ public class MongoClients {
         }
 
         //add the properties
-        if (!config.credentials.authMechanismProperties.isEmpty()) {
-            for (Map.Entry<String, String> entry : config.credentials.authMechanismProperties.entrySet()) {
+        if (!config.credentials().authMechanismProperties().isEmpty()) {
+            for (Map.Entry<String, String> entry : config.credentials().authMechanismProperties().entrySet()) {
                 credential = credential.withMechanismProperty(entry.getKey(), entry.getValue());
             }
         }
@@ -433,20 +521,20 @@ public class MongoClients {
     }
 
     private UsernamePassword determineUserNamePassword(CredentialConfig config) {
-        if (config.credentialsProvider.isPresent()) {
-            String beanName = config.credentialsProviderName.orElse(null);
+        if (config.credentialsProvider().isPresent()) {
+            String beanName = config.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = config.credentialsProvider.get();
+            String name = config.credentialsProvider().get();
             Map<String, String> credentials = credentialsProvider.getCredentials(name);
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             return new UsernamePassword(user, password.toCharArray());
         } else {
-            String username = config.username.orElse(null);
+            String username = config.username().orElse(null);
             if (username == null) {
                 return null;
             }
-            char[] password = config.password.map(String::toCharArray).orElse(null);
+            char[] password = config.password().map(String::toCharArray).orElse(null);
             return new UsernamePassword(username, password);
         }
     }
@@ -475,21 +563,6 @@ public class MongoClients {
         }
     }
 
-    private static class UsernamePassword {
-        private final String username;
-        private final char[] password;
-
-        public UsernamePassword(String username, char[] password) {
-            this.username = username;
-            this.password = password;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public char[] getPassword() {
-            return password;
-        }
+    private record UsernamePassword(String username, char[] password) {
     }
 }

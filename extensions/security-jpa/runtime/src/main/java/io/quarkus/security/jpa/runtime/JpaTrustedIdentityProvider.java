@@ -5,12 +5,14 @@ import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Query;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
@@ -24,7 +26,7 @@ public abstract class JpaTrustedIdentityProvider implements IdentityProvider<Tru
     private static Logger log = Logger.getLogger(JpaTrustedIdentityProvider.class);
 
     @Inject
-    EntityManagerFactory entityManagerFactory;
+    SessionFactory sessionFactory;
 
     @Override
     public Class<TrustedAuthenticationRequest> getRequestType() {
@@ -37,19 +39,33 @@ public abstract class JpaTrustedIdentityProvider implements IdentityProvider<Tru
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override
             public SecurityIdentity get() {
-                EntityManager em = entityManagerFactory.createEntityManager();
-                ((org.hibernate.Session) em).setHibernateFlushMode(FlushMode.MANUAL);
-                ((org.hibernate.Session) em).setDefaultReadOnly(true);
-                try {
-                    return authenticate(em, request);
-                } catch (SecurityException e) {
-                    log.debug("Authentication failed", e);
-                    throw new AuthenticationFailedException();
-                } finally {
-                    em.close();
+                if (requireActiveCDIRequestContext() && !Arc.container().requestContext().isActive()) {
+                    var requestContext = Arc.container().requestContext();
+                    requestContext.activate();
+                    try {
+                        return authenticate(request);
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
+                return authenticate(request);
             }
         });
+    }
+
+    private SecurityIdentity authenticate(TrustedAuthenticationRequest request) {
+        try (Session session = sessionFactory.openSession()) {
+            session.setHibernateFlushMode(FlushMode.MANUAL);
+            session.setDefaultReadOnly(true);
+            return authenticate(session, request);
+        } catch (SecurityException e) {
+            log.debug("Authentication failed", e);
+            throw new AuthenticationFailedException(e);
+        }
+    }
+
+    protected boolean requireActiveCDIRequestContext() {
+        return false;
     }
 
     protected <T> T getSingleUser(Query query) {

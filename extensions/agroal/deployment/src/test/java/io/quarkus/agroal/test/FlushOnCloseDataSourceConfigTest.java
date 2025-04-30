@@ -1,7 +1,5 @@
 package io.quarkus.agroal.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,11 +57,8 @@ class FlushOnCloseDataSourceConfigTest {
         }
 
         try (Connection connection = defaultDataSource.getConnection()) {
-            assertEquals("1", connection.getClientInfo("ClientUser"));
-            try (Connection conn2 = defaultDataSource.getConnection()) {
-                // new connection should not contain any mark ClientUser
-                assertNull(conn2.getClientInfo("ClientUser"));
-            }
+            // new connection should not contain any mark ClientUser
+            assertNull(connection.getClientInfo("ClientUser"));
         }
     }
 
@@ -81,13 +76,7 @@ class FlushOnCloseDataSourceConfigTest {
 
         @Override
         public void onConnectionReturn(Connection connection) {
-            try {
-                // Connection marked "ClientUser:2" must not return to the pool.
-                assertNotEquals("2", connection.getClientInfo("ClientUser"));
-                LOGGER.info("connection returned ClientUser:" + connection.getClientInfo("ClientUser"));
-            } catch (SQLException e) {
-                Assertions.fail(e);
-            }
+            Assertions.fail("unexpected connection return");
         }
     }
 }

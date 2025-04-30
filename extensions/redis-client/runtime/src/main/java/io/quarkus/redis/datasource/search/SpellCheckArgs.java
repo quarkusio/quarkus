@@ -68,8 +68,8 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> list = new ArrayList<>();
         if (distance != 0) {
             list.add("DISTANCE");
             list.add(Integer.toString(distance));

@@ -1,3 +1,4 @@
+#file: noinspection IncorrectFormatting
 ---
 extends: spelling
 level: warning
@@ -17,7 +18,6 @@ filters:
   - "[bB]ackfilling"
   - "[bB]ackported"
   - "[bB]acktrace"
-  - "[bB]crypt"
   - "[bB]indable"
   - "[bB]oolean"
   - "[bB]reakpoint"
@@ -28,9 +28,11 @@ filters:
   - "[cC]olocate"
   - "[cC]onfig"
   - "[cC]ustomizer"
+  - "[dD]atasource"
   - "[dD]eclaratively"
   - "[dD]ecompiler"
   - "[dD]eserialization"
+  - "[dD]eserialized"
   - "[dD]esynchronize"
   - "[dD]esynchronized"
   - "[dD]ev"
@@ -129,6 +131,7 @@ filters:
   - "[sS]etter"
   - "[sS]harding"
   - "[sS]ysctl"
+  - "[sS]yslog"
   - "[Ss]u"
   - "[sS]ubcommand"
   - "[sS]ubcommands"
@@ -164,18 +167,24 @@ filters:
   - "[uU]ntrusted"
   - "[uU]psell"
   - "[uU]pselling"
+  - "[uU]rl"
   - "[vV]alidator"
   - "Let\\'s Encrypt"
   - adoc
+  - AGPLv
   - Agroal
   - Annobin
   - Ansible
   - Antora
   - API
+  - Applixware
+  - Asciidoctor
   - AssertJ
+  - autolink
   - aws
   - AWS
   - Azure
+  - bcrypt
   - Bierner
   - Bitbucket
   - BOM
@@ -184,7 +193,8 @@ filters:
   - btn
   - Btrfs
   - Bugzilla
-  - Camel Quarkus
+  - Camel
+  - camelCase
   - CentOS
   - Ceph
   - cephfs
@@ -198,16 +208,19 @@ filters:
   - Cloudwashing
   - CodeReady
   - ConfigMap
-  - ConfigMaps
   - Containerfile
   - Containerfiles
   - Cookiecutter
+  - CPUs
   - CR
   - CRD
   - CRDs
   - CRs
+  - CSIDriver
+  - CSINode
   - CSVs
   - Ctrl
+  - CVEs
   - Cygmon
   - DaemonSet
   - Datadog
@@ -223,24 +236,37 @@ filters:
   - Endevor
   - Endian
   - endif
+  - eServer
   - Esprima
+  - etcd
   - Exif
+  - extranet
   - Fabrice
+  - Facter
   - Failsafe
+  - FDs
   - Fernflower
+  - firewalld
   - Flathub
   - Flatpak
+  - Fluentd
   - Flyway
   - Fortran
   - Funqy
   - GCC
+  - GIDs
   - GitHub
   - GitLab
   - Gluster
-  - Gradle
-  - Grayscale
+  - GNUPro
   - GraalVM
+  - Gradle
   - GraphQL
+  - greenboot
+  - Grayscale
+  - GraphQL
+  - Graylog
+  - gRPC
   - GUI
   - Hashicorp
   - Helgrind
@@ -253,15 +279,26 @@ filters:
   - HTTPS
   - IDE
   - IDEs
+  - IKEv
   - Infinispan
   - Intelephense
   - IntelliJ
+  - IPsec
+  - ISeries
+  - Istio
+  - IPPool
+  - IPsec
+  - IPv
+  - ISVs
   - Itanium
   - Jakarta
   - Jandex
   - Java
   - Jave
+  - JBang
   - JBoss
+  - JBoss Log Manager
+  - JBoss Logging
   - Jira
   - Jolokia
   - Joyent
@@ -270,15 +307,22 @@ filters:
   - JVM
   - Kafka
   - kbd
+  - keystore
   - Kibana
   - Knative
   - Knowledgebase
   - Kogito
   - Kompose
+  - kubelet
   - Kubespray
   - Kubernetes
   - Kylin
   - Laravel
+  - LGPLv
+  - librados
+  - librbd
+  - libOSMesa
+  - Logstash
   - Lombok
   - Liquibase
   - Makefile
@@ -291,6 +335,7 @@ filters:
   - Mirantis
   - Mockito
   - MongoDB
+  - Multipath
   - MySQL
   - Nagios
   - Narayana
@@ -298,34 +343,55 @@ filters:
   - NetcoredebugOutput
   - Netty
   - Newdoc
+  - NFSv
   - Nginx
   - npm
   - NuGet
+  - Nutanix
+  - NVidia
+  - NVMe
   - OAuth
+  - objectClass
   - ocp
   - OmniSharp
   - OpenID
   - OpenJDK
+  - OpenRewrite
   - OpenShift
-  - OpenTracing
+  - OSBuild
   - osd
+  - OSs
+  - PCIe
+  - PDF
   - PHP
+  - PIDs
   - Podman
   - PostgreSQL
   - PowerShell
   - Prometheus
   - proxied
   - Pytorch
+  - qdmanage
+  - qdstat
   - qeth
+  - OTel
+  - QLogic
   - Quarkiverse
   - Quarkus
   - Qute
-  - Quiltflower
+  - Realtime
   - Redis
   - Redistributions
+  - relaxngDatatype
   - Restic
   - RESTEasy
+  - Restic
   - Rolfe
+  - Rollup
+  - ROMs
+  - rootful
+  - rootless
+  - RPMs
   - Sakila
   - sbt
   - SCM
@@ -336,9 +402,10 @@ filters:
   - SmallRye
   - Spotify
   - startx
+  - STMicroelectronics
   - Suchow
-  - Symfony
   - SVG
+  - Symfony
   - Tekton
   - Telekom
   - Tensorflow
@@ -346,23 +413,31 @@ filters:
   - Toolset
   - Traefik
   - Uber
+  - UIDs
   - URI
-  - URIs
-  - url
   - URL
-  - URLs
+  - USBGuard
   - Vale
   - Valgrind
+  - vDisk
   - Velero
   - Vert.x
+  - vHost
+  - Vineflower
+  - VMs
+  - VMware
   - vsix
+  - vSphere
   - WebAuthn
-  - Webview
-  - Webviews
+  - Webpack
+  - WebView
   - WebSocket
   - Wildfly
   - Woopra
   - Wordpress
+  - XString
+  - XWayland
   - Yana
   - Yeoman
+  - ZCentral
   - Zowe

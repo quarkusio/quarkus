@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyCommands;
@@ -190,6 +192,30 @@ public class KeyCommandsTest extends DatasourceTestBase {
         assertThat(k).hasSize(2);
         assertThat(k.contains("one")).isTrue();
         assertThat(k.contains("two")).isTrue();
+    }
+
+    @Test
+    void keysWithTypeReferences() {
+        var v = ds.value(new TypeReference<List<String>>() {
+            // Empty on purpose
+        }, new TypeReference<Person>() {
+            // Empty on purpose
+        });
+        var k = ds.key(new TypeReference<List<String>>() {
+            // Empty on purpose
+        });
+
+        assertThat(k.keys("*")).isEqualTo(List.of());
+        Map<List<String>, Person> map = new LinkedHashMap<>();
+        map.put(List.of("one"), Person.person1);
+        map.put(List.of("two"), Person.person2);
+        map.put(List.of("three"), Person.person3);
+        v.mset(map);
+        var l = k.keys("*o*");
+        assertThat(l).hasSize(2);
+        assertThat(l.contains(List.of("one"))).isTrue();
+        assertThat(l.contains(List.of("two"))).isTrue();
+        assertThat(l.contains(List.of("three"))).isFalse();
     }
 
     @Test

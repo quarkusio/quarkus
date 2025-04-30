@@ -6,7 +6,7 @@ import java.io.ObjectStreamClass;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class QuarkusMSSQLDelegate extends org.quartz.impl.jdbcjobstore.HSQLDBDelegate {
+public class QuarkusMSSQLDelegate extends org.quartz.impl.jdbcjobstore.MSSQLDelegate {
     /**
      * See the javadoc in {@link QuarkusObjectInputStream#resolveClass(ObjectStreamClass)} and
      * {@link DBDelegateUtils#getObjectFromInput(InputStream)}

@@ -4,13 +4,16 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.function.Function;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+@Tag(TestTags.DEVMODE)
 public class ImportSqlHotReloadScriptTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

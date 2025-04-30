@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Year;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.concurrent.Flow.Publisher;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.Vetoed;
@@ -175,6 +178,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName APPLICATION_SCOPED = DotName.createSimple(ApplicationScoped.class.getName());
     public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
     public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());
+    public static final DotName DEPENDENT = DotName.createSimple(Dependent.class.getName());
     public static final DotName WEB_APPLICATION_EXCEPTION = DotName.createSimple(WebApplicationException.class.getName());
 
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
@@ -202,6 +206,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName OFFSET_TIME = DotName.createSimple(OffsetTime.class.getName());
     public static final DotName ZONED_DATE_TIME = DotName.createSimple(ZonedDateTime.class.getName());
     public static final DotName YEAR = DotName.createSimple(Year.class.getName());
+    public static final DotName YEAR_MONTH = DotName.createSimple(YearMonth.class.getName());
 
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
@@ -235,6 +240,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName INPUT_STREAM = DotName.createSimple(InputStream.class.getName());
     public static final DotName OUTPUT_STREAM = DotName.createSimple(OutputStream.class.getName());
     public static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+    public static final DotName URI = DotName.createSimple(java.net.URI.class.getName());
+    public static final DotName URL = DotName.createSimple(java.net.URL.class.getName());
 
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(jakarta.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(jakarta.json.JsonArray.class.getName());
@@ -266,10 +273,14 @@ public final class ResteasyReactiveDotNames {
     public static final DotName RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT = DotName
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext");
 
+    public static final DotName RESTEASY_REACTIVE_SERVER_REQUEST_CONTEXT = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ServerRequestContext");
+
     public static final DotName WITH_FORM_READ = DotName
             .createSimple("org.jboss.resteasy.reactive.server.WithFormRead");
 
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+    public static final DotName RECORD = DotName.createSimple(Record.class.getName());
 
     public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     public static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");

@@ -29,6 +29,7 @@ public class OpenshiftWithAppSecretTest {
             .setApplicationName("openshift-with-app-secret")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-app-secret.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults

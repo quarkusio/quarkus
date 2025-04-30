@@ -27,7 +27,8 @@ public interface CodestartFileStrategyHandler {
                     new ForbiddenCodestartFileStrategyHandler(),
                     new SmartConfigMergeCodestartFileStrategyHandler(),
                     new SmartPomMergeCodestartFileStrategyHandler(),
-                    new SmartPackageFileStrategyHandler())
+                    new SmartPackageFileStrategyHandler(),
+                    new DockerComposeCodestartFileStrategyHandler())
             .collect(Collectors.toMap(CodestartFileStrategyHandler::name, Function.identity()));
 
     String name();

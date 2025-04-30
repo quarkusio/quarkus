@@ -61,10 +61,12 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
     /**
      * Delegates to {@link #destroy()} if the handle does not represent a CDI contextual instance or if it represents a
      * {@link Dependent} CDI contextual instance.
+     * <p>
+     * Note that in the strict compatibility mode, this method delegates to {@link #destroy()} always,
+     * for compatibility with the CDI specification.
      */
     @Override
     default void close() {
-        // https://github.com/quarkusio/quarkus/issues/33665
         if (Arc.container().strictCompatibility()) {
             destroy();
             return;

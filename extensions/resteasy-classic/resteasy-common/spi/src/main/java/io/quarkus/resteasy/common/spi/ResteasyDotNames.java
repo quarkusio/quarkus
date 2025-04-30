@@ -30,6 +30,12 @@ public final class ResteasyDotNames {
     public static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple("jakarta.ws.rs.container.DynamicFeature");
     public static final DotName CONTEXT = DotName.createSimple("jakarta.ws.rs.core.Context");
+    public static final DotName PATH_PARAM = DotName.createSimple("jakarta.ws.rs.PathParam");
+    public static final DotName QUERY_PARAM = DotName.createSimple("jakarta.ws.rs.QueryParam");
+    public static final DotName HEADER_PARAM = DotName.createSimple("jakarta.ws.rs.HeaderParam");
+    public static final DotName FORM_PARAM = DotName.createSimple("jakarta.ws.rs.FormParam");
+    public static final DotName MATRIX_PARAM = DotName.createSimple("jakarta.ws.rs.MatrixParam");
+    public static final DotName COOKIE_PARAM = DotName.createSimple("jakarta.ws.rs.CookieParam");
     public static final DotName RESTEASY_QUERY_PARAM = DotName
             .createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
     public static final DotName RESTEASY_FORM_PARAM = DotName

@@ -9,11 +9,10 @@ import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
 import java.util.List;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.smallrye.common.constraint.Assert;
 
 /**
  *
@@ -44,16 +43,6 @@ public final class RootDefinition extends ClassDefinition {
                                                     "Runtime", "Config"),
                                             "Run", "Time", "Configuration"),
                                     "Run", "Time", "Config"),
-                            "Configuration"),
-                    "Config");
-        } else if (configPhase == ConfigPhase.BOOTSTRAP) {
-            trimmedSegments = withoutSuffix(
-                    withoutSuffix(
-                            withoutSuffix(
-                                    withoutSuffix(
-                                            segments,
-                                            "Bootstrap", "Configuration"),
-                                    "Bootstrap", "Config"),
                             "Configuration"),
                     "Config");
         } else {

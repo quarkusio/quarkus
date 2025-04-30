@@ -2,18 +2,20 @@ package io.quarkus.runtime.console;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "console", phase = ConfigPhase.RUN_TIME)
-public class ConsoleRuntimeConfig {
-
+/**
+ * Console
+ */
+@ConfigMapping(prefix = "quarkus.console")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface ConsoleRuntimeConfig {
     /**
      * If color should be enabled or disabled.
-     *
+     * <p>
      * If this is not present then an attempt will be made to guess if the terminal supports color
      */
-    @ConfigItem
-    public Optional<Boolean> color;
+    Optional<Boolean> color();
 }

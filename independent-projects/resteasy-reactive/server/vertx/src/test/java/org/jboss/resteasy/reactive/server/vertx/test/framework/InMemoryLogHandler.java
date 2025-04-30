@@ -3,11 +3,12 @@ package org.jboss.resteasy.reactive.server.vertx.test.framework;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-public class InMemoryLogHandler extends Handler {
+import org.jboss.logmanager.ExtHandler;
+
+public class InMemoryLogHandler extends ExtHandler {
 
     private final Predicate<LogRecord> predicate;
 

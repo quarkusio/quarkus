@@ -12,34 +12,47 @@ import org.graalvm.nativeimage.hosted.Feature;
  */
 public class DisableLoggingFeature implements Feature {
 
-    private static final String[] CATEGORIES = {
-            "org.jboss.threads"
+    /**
+     * Category to configure to WARNING
+     */
+    private static final String[] WARN_CATEGORIES = {
+            "org.jboss.threads" };
+
+    /**
+     * Category to configure to ERROR
+     */
+    private static final String[] ERROR_CATEGORIES = {
+            "io.netty.resolver.dns.DnsServerAddressStreamProviders"
     };
 
-    private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);
+    private final Map<String, Level> categoryMap = new HashMap<>(WARN_CATEGORIES.length + ERROR_CATEGORIES.length);
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        for (String category : CATEGORIES) {
+        for (String category : WARN_CATEGORIES) {
             Logger logger = Logger.getLogger(category);
             categoryMap.put(category, logger.getLevel());
             logger.setLevel(Level.WARNING);
+        }
+
+        for (String category : ERROR_CATEGORIES) {
+            Logger logger = Logger.getLogger(category);
+            categoryMap.put(category, logger.getLevel());
+            logger.setLevel(Level.SEVERE);
         }
     }
 
     @Override
     public void afterAnalysis(AfterAnalysisAccess access) {
-        for (String category : CATEGORIES) {
-            Level level = categoryMap.remove(category);
-            if (level != null) {
-                Logger logger = Logger.getLogger(category);
-                logger.setLevel(level);
-            }
+        for (Map.Entry<String, Level> entry : categoryMap.entrySet()) {
+            Logger logger = Logger.getLogger(entry.getKey());
+            logger.setLevel(entry.getValue());
         }
+        categoryMap.clear();
     }
 
     @Override
     public String getDescription() {
-        return "Disables INFO logging during the analysis phase";
+        return "Adapts logging during the analysis phase";
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.runtime.annotations;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -8,9 +10,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Used to mark a {@link org.eclipse.microprofile.config.spi.ConfigSource},
- * {@link org.eclipse.microprofile.config.spi.ConfigSourceProvider} or {@link io.smallrye.config.ConfigSourceFactory}
- * as safe to be initialized during STATIC INIT.
+ * Used to mark a configuration object as safe to be initialized during the STATIC INIT phase.
+ * <p>
+ * The target configuration objects include {@link org.eclipse.microprofile.config.spi.ConfigSource},
+ * {@link org.eclipse.microprofile.config.spi.ConfigSourceProvider}, {@link io.smallrye.config.ConfigSourceFactory} and
+ * {@link io.smallrye.config.ConfigMapping}. Moreover, this annotation can be used for
+ * {@link org.eclipse.microprofile.config.inject.ConfigProperty} injection points.
+ * <p>
  *
  * When a Quarkus application is starting up, Quarkus will execute first a static init method which contains some
  * extensions actions and configurations. Example:
@@ -36,7 +42,7 @@ import java.lang.annotation.Target;
  * previous code example and a ConfigSource that requires database access. In this case, it is impossible to properly
  * initialize such ConfigSource, because the database services are not yet available so the ConfigSource in unusable.
  */
-@Target(TYPE)
+@Target({ TYPE, FIELD, PARAMETER })
 @Retention(RUNTIME)
 @Documented
 public @interface StaticInitSafe {

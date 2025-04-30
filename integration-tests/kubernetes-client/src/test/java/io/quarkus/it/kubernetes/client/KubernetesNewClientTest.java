@@ -45,8 +45,8 @@ class KubernetesNewClientTest {
         Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
         Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
 
-        mockServer.getClient().inNamespace("test").pods().create(pod1);
-        mockServer.getClient().inNamespace("test").pods().create(pod2);
+        mockServer.getClient().inNamespace("test").resource(pod1).create();
+        mockServer.getClient().inNamespace("test").resource(pod2).create();
     }
 
 }

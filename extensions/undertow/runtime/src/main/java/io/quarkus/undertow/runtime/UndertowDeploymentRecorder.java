@@ -50,10 +50,11 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -67,6 +68,7 @@ import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -156,17 +158,17 @@ public class UndertowDeploymentRecorder {
 
     }
 
-    final RuntimeValue<HttpConfiguration> httpConfiguration;
+    final RuntimeValue<VertxHttpConfig> httpConfig;
 
-    public UndertowDeploymentRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
-        this.httpConfiguration = httpConfiguration;
+    public UndertowDeploymentRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.httpConfig = httpConfig;
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
     }
 
-    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
+    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFiles, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
             List<String> welcomeFiles, final boolean hasSecurityCapability) {
@@ -175,20 +177,18 @@ public class UndertowDeploymentRecorder {
         d.setDefaultResponseEncoding(responseCharacterEncoding);
         d.setDefaultEncoding(defaultCharset);
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
-        d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath(mountPoint);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            cl = new ClassLoader() {
-            };
+            cl = ClassLoader.getSystemClassLoader();
         }
         d.setClassLoader(cl);
         //TODO: we need better handling of static resources
         ResourceManager resourceManager;
         if (hotDeploymentResourcePaths == null) {
-            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
+            resourceManager = new KnownPathResourceManager(knownFiles, knownDirectories,
                     new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
             List<ResourceManager> managers = new ArrayList<>();
@@ -275,6 +275,9 @@ public class UndertowDeploymentRecorder {
         ServletInfo sv = info.getValue().getServlets().get(name);
         if (sv != null) {
             sv.addMapping(mapping);
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                ResourceNotFoundData.addServlet(mapping);
+            }
         }
     }
 
@@ -352,7 +355,7 @@ public class UndertowDeploymentRecorder {
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
             DeploymentManager manager, List<HandlerWrapper> wrappers,
-            ServletRuntimeConfig servletRuntimeConfig, HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            ServletRuntimeConfig servletRuntimeConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -374,20 +377,21 @@ public class UndertowDeploymentRecorder {
                     .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
             main = pathHandler;
         }
+        main = new CanonicalPathHandler(main);
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
 
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
-                servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
+                servletRuntimeConfig.directBuffers().orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize()
                         .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
-        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
+        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
-        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression
-                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get())
+        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
+                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get())
                 : Collections.emptySet();
 
         return new Handler<RoutingContext>() {
@@ -418,11 +422,11 @@ public class UndertowDeploymentRecorder {
                     });
                 }
 
-                Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
+                Optional<MemorySize> maxBodySize = httpConfig.getValue().limits().maxBodySize();
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpConfiguration.getValue().readTimeout;
+                Duration readTimeout = httpConfig.getValue().readTimeout();
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);
@@ -453,23 +457,38 @@ public class UndertowDeploymentRecorder {
     }
 
     public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer,
-            LaunchMode launchMode, ShutdownContext shutdownContext) {
+            LaunchMode launchMode, ShutdownContext shutdownContext, boolean decorateStacktrace, String scrMainJava,
+            List<String> knownClasses) {
         if (info.getValue().getExceptionHandler() == null) {
             //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
             //log. If this is not production we also include the stack trace
-            boolean alreadyMapped = false;
+            boolean alreadyMapped500 = false;
+            boolean alreadyMapped404 = false;
             for (ErrorPage i : info.getValue().getErrorPages()) {
                 if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.INTERNAL_SERVER_ERROR) {
-                    alreadyMapped = true;
-                    break;
+                    alreadyMapped500 = true;
+                } else if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.NOT_FOUND) {
+                    alreadyMapped404 = true;
                 }
             }
-            if (!alreadyMapped || launchMode.isDevOrTest()) {
+            if (!alreadyMapped500 || launchMode.isDevOrTest()) {
                 info.getValue().setExceptionHandler(new QuarkusExceptionHandler());
                 info.getValue().addErrorPage(new ErrorPage("/@QuarkusError", StatusCodes.INTERNAL_SERVER_ERROR));
+                String knownClassesString = null;
+                if (knownClasses != null)
+                    knownClassesString = String.join(",", knownClasses);
                 info.getValue().addServlet(new ServletInfo("@QuarkusError", QuarkusErrorServlet.class)
                         .addMapping("/@QuarkusError").setAsyncSupported(true)
-                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest())));
+                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest()))
+                        .addInitParam(QuarkusErrorServlet.SHOW_DECORATION,
+                                Boolean.toString(decorateStacktrace(launchMode, decorateStacktrace)))
+                        .addInitParam(QuarkusErrorServlet.SRC_MAIN_JAVA, scrMainJava)
+                        .addInitParam(QuarkusErrorServlet.KNOWN_CLASSES, knownClassesString));
+            }
+            if (!alreadyMapped404 && launchMode.equals(LaunchMode.DEVELOPMENT)) {
+                info.getValue().addErrorPage(new ErrorPage("/@QuarkusNotFound", StatusCodes.NOT_FOUND));
+                info.getValue().addServlet(new ServletInfo("@QuarkusNotFound", QuarkusNotFoundServlet.class)
+                        .addMapping("/@QuarkusNotFound").setAsyncSupported(true));
             }
         }
         setupRequestScope(info.getValue(), beanContainer);
@@ -739,6 +758,20 @@ public class UndertowDeploymentRecorder {
         if (secure != null) {
             config.setSecure(secure);
         }
+    }
+
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location, int errorCode) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, errorCode));
+
+    }
+
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location,
+            Class<? extends Throwable> exceptionType) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, exceptionType));
+    }
+
+    private boolean decorateStacktrace(LaunchMode launchMode, boolean decorateStacktrace) {
+        return decorateStacktrace && launchMode.equals(LaunchMode.DEVELOPMENT);
     }
 
     /**

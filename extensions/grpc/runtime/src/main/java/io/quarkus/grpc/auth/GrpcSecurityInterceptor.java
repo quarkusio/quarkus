@@ -1,17 +1,28 @@
 package io.quarkus.grpc.auth;
 
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.isExplicitlyMarkedAsUnsafe;
+import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.DEFERRED_IDENTITY_KEY;
+import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.Prioritized;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.grpc.Metadata;
@@ -19,15 +30,22 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Security interceptor invoking {@link GrpcSecurityMechanism} implementations
@@ -37,6 +55,7 @@ import io.vertx.core.Vertx;
 public final class GrpcSecurityInterceptor implements ServerInterceptor, Prioritized {
 
     private static final Logger log = Logger.getLogger(GrpcSecurityInterceptor.class);
+    private static final String IDENTITY_KEY = "io.quarkus.grpc.auth.identity";
 
     private final IdentityProviderManager identityProviderManager;
     private final CurrentIdentityAssociation identityAssociation;
@@ -46,15 +65,24 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
 
     private final Map<String, List<String>> serviceToBlockingMethods = new HashMap<>();
     private boolean hasBlockingMethods = false;
+    private final boolean notUsingSeparateGrpcServer;
+    private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
 
     @Inject
     public GrpcSecurityInterceptor(
             CurrentIdentityAssociation identityAssociation,
             IdentityProviderManager identityProviderManager,
             Instance<GrpcSecurityMechanism> securityMechanisms,
-            Instance<AuthExceptionHandlerProvider> exceptionHandlers) {
+            Instance<AuthExceptionHandlerProvider> exceptionHandlers,
+            @ConfigProperty(name = "quarkus.grpc.server.use-separate-server") boolean usingSeparateGrpcServer,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            BeanManager beanManager, Event<AuthenticationFailureEvent> authFailureEvent,
+            Event<AuthenticationSuccessEvent> authSuccessEvent) {
+        this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
+                AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityAssociation = identityAssociation;
         this.identityProviderManager = identityProviderManager;
+        this.notUsingSeparateGrpcServer = !usingSeparateGrpcServer;
 
         AuthExceptionHandlerProvider maxPrioHandlerProvider = null;
 
@@ -69,64 +97,120 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
         for (GrpcSecurityMechanism securityMechanism : securityMechanisms) {
             mechanisms.add(securityMechanism);
         }
-        mechanisms.sort(Comparator.comparing(GrpcSecurityMechanism::getPriority));
-        this.securityMechanisms = mechanisms;
+        if (mechanisms.isEmpty()) {
+            this.securityMechanisms = null;
+        } else {
+            mechanisms.sort(Comparator.comparing(GrpcSecurityMechanism::getPriority));
+            this.securityMechanisms = mechanisms;
+        }
     }
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
             Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
-        Exception error = null;
-        for (GrpcSecurityMechanism securityMechanism : securityMechanisms) {
-            if (securityMechanism.handles(metadata)) {
-                try {
-                    AuthenticationRequest authenticationRequest = securityMechanism.createAuthenticationRequest(metadata);
-                    Context context = Vertx.currentContext();
-                    boolean onEventLoopThread = Context.isOnEventLoopThread();
+        boolean identityAssociationNotSet = true;
+        if (securityMechanisms != null) {
+            Exception error = null;
+            for (GrpcSecurityMechanism securityMechanism : securityMechanisms) {
+                if (securityMechanism.handles(metadata)) {
+                    try {
+                        AuthenticationRequest authenticationRequest = securityMechanism.createAuthenticationRequest(metadata);
+                        Context context = Vertx.currentContext();
+                        boolean onEventLoopThread = Context.isOnEventLoopThread();
 
-                    final boolean isBlockingMethod;
-                    if (hasBlockingMethods) {
-                        var methods = serviceToBlockingMethods.get(serverCall.getMethodDescriptor().getServiceName());
-                        if (methods != null) {
-                            isBlockingMethod = methods.contains(serverCall.getMethodDescriptor().getFullMethodName());
+                        final boolean isBlockingMethod;
+                        if (hasBlockingMethods) {
+                            var methods = serviceToBlockingMethods.get(serverCall.getMethodDescriptor().getServiceName());
+                            if (methods != null) {
+                                isBlockingMethod = methods.contains(serverCall.getMethodDescriptor().getFullMethodName());
+                            } else {
+                                isBlockingMethod = false;
+                            }
                         } else {
                             isBlockingMethod = false;
                         }
-                    } else {
-                        isBlockingMethod = false;
-                    }
 
-                    if (authenticationRequest != null) {
-                        Uni<SecurityIdentity> auth = identityProviderManager
-                                .authenticate(authenticationRequest)
-                                .emitOn(new Executor() {
-                                    @Override
-                                    public void execute(Runnable command) {
-                                        if (onEventLoopThread && !isBlockingMethod) {
-                                            context.runOnContext(new Handler<>() {
-                                                @Override
-                                                public void handle(Void event) {
-                                                    command.run();
-                                                }
-                                            });
-                                        } else {
-                                            command.run();
+                        if (authenticationRequest != null) {
+                            Uni<SecurityIdentity> auth = identityProviderManager
+                                    .authenticate(authenticationRequest)
+                                    .emitOn(new Executor() {
+                                        @Override
+                                        public void execute(Runnable command) {
+                                            if (onEventLoopThread && !isBlockingMethod) {
+                                                context.runOnContext(new Handler<>() {
+                                                    @Override
+                                                    public void handle(Void event) {
+                                                        command.run();
+                                                    }
+                                                });
+                                            } else {
+                                                command.run();
+                                            }
                                         }
+                                    });
+                            if (securityEventHelper.fireEventOnSuccess()) {
+                                auth = auth.invoke(new Consumer<SecurityIdentity>() {
+                                    @Override
+                                    public void accept(SecurityIdentity securityIdentity) {
+                                        securityEventHelper
+                                                .fireSuccessEvent(new AuthenticationSuccessEvent(securityIdentity, null));
                                     }
                                 });
-                        identityAssociation.setIdentity(auth);
-                        error = null;
-                        break;
+                            }
+                            if (securityEventHelper.fireEventOnFailure()) {
+                                auth = auth.onFailure().invoke(new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(Throwable throwable) {
+                                        securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(throwable, null));
+                                    }
+                                });
+                            }
+                            identityAssociation.setIdentity(auth);
+                            error = null;
+                            identityAssociationNotSet = false;
+                            break;
+                        }
+                    } catch (Exception e) {
+                        error = e;
+                        log.warn("Failed to prepare AuthenticationRequest for a gRPC call", e);
                     }
-                } catch (Exception e) {
-                    error = e;
-                    log.warn("Failed to prepare AuthenticationRequest for a gRPC call", e);
                 }
             }
+            if (error != null) { // if parsing for all security mechanisms failed, let's propagate the last exception
+                var authFailedEx = new AuthenticationFailedException("Failed to parse authentication data", error);
+                if (securityEventHelper.fireEventOnFailure()) {
+                    securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(authFailedEx, null));
+                }
+                identityAssociation.setIdentity(Uni.createFrom().failure(authFailedEx));
+                identityAssociationNotSet = false;
+            }
         }
-        if (error != null) { // if parsing for all security mechanisms failed, let's propagate the last exception
-            identityAssociation.setIdentity(Uni.createFrom()
-                    .failure(new AuthenticationFailedException("Failed to parse authentication data", error)));
+        if (identityAssociationNotSet && notUsingSeparateGrpcServer) {
+            // authenticate via HTTP authenticator
+            Context capturedContext = getCapturedVertxContext();
+            if (capturedContext != null) {
+                if (capturedContext.getLocal(IDENTITY_KEY) != null) {
+                    identityAssociation.setIdentity(capturedContext.<SecurityIdentity> getLocal(IDENTITY_KEY));
+                } else if (capturedContext.getLocal(DEFERRED_IDENTITY_KEY) != null) {
+                    Uni<SecurityIdentity> identityUni = capturedContext
+                            .<Uni<SecurityIdentity>> getLocal(DEFERRED_IDENTITY_KEY)
+                            .onFailure(new Predicate<Throwable>() {
+                                @Override
+                                public boolean test(Throwable t) {
+                                    return !(t instanceof AuthenticationException);
+                                }
+                            })
+                            // even if it were internal error, we must be able to identify exceptions
+                            // raised during authentication so that we don't append body by default, hence wrapping it
+                            .transform(AuthenticationFailedException::new);
+                    identityAssociation.setIdentity(identityUni);
+                }
+                identityAssociationNotSet = false;
+            }
+        }
+        if (identityAssociationNotSet) {
+            Uni<SecurityIdentity> identityUni = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            identityAssociation.setIdentity(identityUni);
         }
         ServerCall.Listener<ReqT> listener = serverCallHandler.startCall(serverCall, metadata);
         return exceptionHandlerProvider.createHandler(listener, serverCall, metadata);
@@ -140,5 +224,31 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     void init(Map<String, List<String>> serviceToBlockingMethods) {
         this.serviceToBlockingMethods.putAll(serviceToBlockingMethods);
         this.hasBlockingMethods = true;
+    }
+
+    public static void propagateSecurityIdentityWithDuplicatedCtx(RoutingContext event) {
+        Context context = getCapturedVertxContext();
+        if (context != null) {
+            if (event.user() instanceof QuarkusHttpUser existing) {
+                getCapturedVertxContext().putLocal(IDENTITY_KEY, existing.getSecurityIdentity());
+            } else {
+                getCapturedVertxContext().putLocal(DEFERRED_IDENTITY_KEY, QuarkusHttpUser.getSecurityIdentity(event, null));
+                // we will handle failures ourselves, so that response is written once
+                // do this even if the authentication failure handler is not DefaultAuthFailureHandler because
+                // it might be the failure handler added by the Quarkus REST when it is present
+                event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+            }
+        }
+    }
+
+    private static Context getCapturedVertxContext() {
+        // this is only running when gRPC is run as Vert.x HTTP route handler, therefore we should be on duplicated context
+        Context capturedVertxContext = Vertx.currentContext();
+        if (capturedVertxContext == null || !isDuplicatedContext(capturedVertxContext)
+                || isExplicitlyMarkedAsUnsafe(capturedVertxContext)) {
+            log.warn("Unable to prepare request authentication - authentication must run on Vert.x duplicated context");
+            return null;
+        }
+        return capturedVertxContext;
     }
 }

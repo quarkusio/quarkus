@@ -2,6 +2,7 @@ package io.quarkus.scheduler.test;
 
 import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
@@ -13,6 +14,7 @@ import jakarta.enterprise.event.Observes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
@@ -39,6 +41,10 @@ public class ConcurrentExecutionSkipTest {
             } else {
                 fail("Jobs were not executed in 10 seconds!");
             }
+
+            assertTrue(Jobs.FAILED_LATCH.await(5, TimeUnit.SECONDS));
+            assertTrue(Jobs.FAILURE_COUNTER.get() > 0);
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
@@ -50,8 +56,11 @@ public class ConcurrentExecutionSkipTest {
         static final CountDownLatch BLOCKING_LATCH = new CountDownLatch(1);
 
         static final AtomicInteger COUNTER = new AtomicInteger(0);
+        static final AtomicInteger FAILING_COUNTER = new AtomicInteger(0);
         static final AtomicInteger SUCCESS_COUNTER = new AtomicInteger(0);
+        static final AtomicInteger FAILURE_COUNTER = new AtomicInteger(0);
         static final CountDownLatch SKIPPED_LATCH = new CountDownLatch(1);
+        static final CountDownLatch FAILED_LATCH = new CountDownLatch(1);
 
         @Scheduled(every = "1s", concurrentExecution = SKIP)
         void nonconcurrent() throws InterruptedException {
@@ -61,12 +70,24 @@ public class ConcurrentExecutionSkipTest {
             }
         }
 
+        @Scheduled(every = "1s", concurrentExecution = SKIP)
+        void failing() {
+            if (FAILING_COUNTER.incrementAndGet() > 2) {
+                FAILED_LATCH.countDown();
+            }
+            throw new IllegalStateException();
+        }
+
         void onSkip(@Observes SkippedExecution event) {
             SKIPPED_LATCH.countDown();
         }
 
         void onSuccess(@Observes SuccessfulExecution event) {
             SUCCESS_COUNTER.incrementAndGet();
+        }
+
+        void onFailure(@Observes FailedExecution event) {
+            FAILURE_COUNTER.incrementAndGet();
         }
     }
 }

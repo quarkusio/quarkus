@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Quarkus-based Google Cloud Functions.
+:topics: google,gcp,serverless,function,cloud
+:extensions: io.quarkus:quarkus-google-cloud-functions
 
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
@@ -30,7 +32,7 @@ If you don't want to follow all these steps, you can go right to the completed e
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `google-cloud-functions-quickstart` {quickstarts-tree-url}/google-cloud-functions-quickstart[directory].
+The solution is located in the `google-cloud-functions-quickstart` link:{quickstarts-tree-url}/google-cloud-functions-quickstart[directory].
 
 
 == Creating the Maven Deployment Project
@@ -55,8 +57,6 @@ gcloud auth login
 
 For this example project, we will create four functions, one `HttpFunction`, one `BackgroundFunction` (Storage event),
 one `RawBackgroundFunction` (PubSub event) and one `CloudEventsFunction` (storage event using the Cloud Events specification).
-
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must add the `--gen2` parameter.
 
 == Choose Your Function
 
@@ -191,8 +191,6 @@ public class RawBackgroundFunctionPubSubTest implements RawBackgroundFunction { 
 
 === The CloudEventsFunction
 
-WARNING: `CloudEventsFunction` is a feature of Cloud Functions gen 2 only.
-
 This `CloudEventsFunction` is triggered by a Cloud Events Storage event, you can use any Cloud Events supported by Google Cloud instead.
 
 [source,java]
@@ -240,7 +238,7 @@ The result of the previous command is a single JAR file inside the `target/deplo
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 The `gcloud` command will be different depending on which event triggers your function.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 21 runtime but you can switch to the Java 17 runtime by using `--runtime=java17` instead of `--runtime=java21` on the deploy commands.
 
 [WARNING]
 ====
@@ -260,7 +258,7 @@ This is an example command to deploy your `HttpFunction` to Google Cloud:
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
-  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
+  --runtime=java21 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -287,7 +285,7 @@ it needs to use `--trigger-event google.storage.object.finalize` and the `--trig
 gcloud functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
     --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
-    --runtime=java17 --source=target/deployment
+    --runtime=java21 --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -313,7 +311,7 @@ it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger
 ----
 gcloud functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
-  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
+  --runtime=java21 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -330,16 +328,14 @@ gcloud functions call quarkus-example-pubsub --data '{"data":{"greeting":"world"
 
 === The CloudEventsFunction
 
-WARNING: `CloudEventsFunction` is a feature of Cloud Functions gen 2 only.
-
 This is an example command to deploy your `CloudEventsFunction` to Google Cloud, as the function is triggered by a Storage event,
 it needs to use `--trigger-bucket` parameter with the name of a previously created bucket:
 
 [source,bash]
 ----
-gcloud functions deploy quarkus-example-cloud-event --gen2 \
+gcloud functions deploy quarkus-example-cloud-event \
   --entry-point=io.quarkus.gcp.functions.QuarkusCloudEventsFunction \
-  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
+  --runtime=java21 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -427,8 +423,6 @@ This will call your PubSub background function with a PubSubMessage `{"greeting"
 
 === The CloudEventsFunction
 
-IMPORTANT: `CloudEventsFunction` is a feature of Cloud Function gen 2 only.
-
 For cloud events functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.QuarkusCloudEventsFunction`.
 
 [source,bash,subs="attributes"]
@@ -483,10 +477,17 @@ To use it, you must add the following test dependency in your `pom.xml`.
     <artifactId>quarkus-test-google-cloud-functions</artifactId>
     <scope>test</scope>
 </dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
 ----
 
 This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
 This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+The default Quarkus test port configuration (`quarkus.http.test-port`) will be honored and if you set it to 0 a random port will be assigned to the function invoker.
 
 === The HttpFunction
 
@@ -582,8 +583,6 @@ class RawBackgroundFunctionPubSubTestCase {
 3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
 
 === The CloudEventsFunction
-
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
 
 [source,java]
 ----

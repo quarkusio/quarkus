@@ -84,15 +84,14 @@ public abstract class Deploy extends QuarkusBuildTask {
 
     @Inject
     public Deploy() {
-        super("Deploy");
+        super("Deploy", false);
     }
 
     @TaskAction
     public void checkRequiredExtensions() {
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
         Properties sysProps = new Properties();
-        sysProps.putAll(configMap);
+        sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)

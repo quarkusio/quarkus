@@ -1,26 +1,28 @@
 ////
-This guide is maintained in the main Quarkus repository
-and pull requests should be submitted there:
+This guide is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= YAML Configuration
+[id="config-yaml"]
+= YAML configuration
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: core
-:summary: YAML as a Configuration Source.
+:summary: Optionally, use application.yaml instead of application.properties to configure your application.
+:topics: configuration
+:extensions: io.quarkus:quarkus-config-yaml
 
-https://en.wikipedia.org/wiki/YAML[YAML] is a very popular format. Kubernetes relies heavily on the YAML format to
-write the various resource descriptors.
+You can use a YAML file,`application.yaml`, to configure your {project-name} application instead of the standard Java properties file, `application.properties`.
 
-Quarkus offers the possibility to use YAML in addition to the standard Java Properties file.
+link:https://en.wikipedia.org/wiki/YAML[YAML] is widely used for defining resource descriptors, especially in Kubernetes.
 
-== Enabling YAML Configuration
+== Enable YAML configuration
 
 To enable YAML configuration, add the `quarkus-config-yaml` extension:
 
 :add-extension-extensions: quarkus-config-yaml
 include::{includes}/devtools/extension-add.adoc[]
 
-You can also just add the following dependency into your project:
+Alternatively, add the following dependency to your project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -37,16 +39,15 @@ You can also just add the following dependency into your project:
 implementation("io.quarkus:quarkus-config-yaml")
 ----
 
-Remove the `src/main/resources/application.properties` and create a `src/main/resources/application.yaml` file.
+After adding the extension or dependency, to avoid confusion, remove the `src/main/resources/application.properties` file and create a `src/main/resources/application.yaml` file.
 
-NOTE: If both are present, Quarkus prioritizes configuration properties from the YAML file first and then from the
-Properties file. However, to avoid confusion, we recommend removing the Properties file.
+NOTE: If both files are present, {project-name} gives precedence to properties in the YAML file.
 
-TIP: Quarkus supports both the  `yml` and `yaml` file extensions.
+TIP: {project-name} recognizes both `.yml` and `.yaml` file extensions.
 
-=== Example
+=== Example YAML configurations
 
-The following snippets provide examples of YAML configuration:
+The following snippets give examples of YAML configurations:
 
 [source,yaml]
 ----
@@ -78,7 +79,8 @@ quarkus:
 ----
 quarkus:
   datasource:
-    url: jdbc:postgresql://localhost:5432/quarkus_test
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/quarkus_test
 
   hibernate-orm:
     database:
@@ -111,13 +113,18 @@ app:
 
 == Profiles
 
-As you can see in the previous snippet, you can use xref:config-reference.adoc#profiles[profiles] in YAML. The profile
-key requires double quotes: `"%test"`. This is because YAML does not support keys starting with `%`.
+As you can see in the previous snippet, you can use xref:config-reference.adoc#profiles[profiles] in YAML.
 
-Everything under the `"%test"` key is only enabled when the `test` profile is active. For example, in the previous
-snippet it disables OIDC (`quarkus.oidc.enabled: false`), whereas without the `test` profile, it would be enabled.
 
-As for the Java Properties format, you can define your own profile:
+In YAML, keys that begin with `%` are not allowed.
+However, profile keys must start with this symbol.
+To resolve this, enclose the profile keys in double quotes, as demonstrated by the example, `"%test"`.
+
+All configurations under the `"%test"` key activate only when the `test` profile is enabled.
+For instance, the previous snippet shows that OpenID Connect (OIDC) (`quarkus.oidc.enabled: false`) is disabled when the `test` profile is active.
+Without the `test` profile, OIDC is enabled by default.
+
+You can also define custom profiles, such as `%staging` in the following example:
 
 [source, yaml]
 ----
@@ -131,12 +138,12 @@ quarkus:
           port: 8082
 ----
 
-If you enable the `staging` profile, the HTTP port will be 8082, whereas it would be 8081 otherwise.
+If you enable the `staging` profile, the HTTP port is set to `8082` instead of `8081`.
 
-The YAML configuration also support profile aware files. In this case, properties for a specific profile may reside in
-an `application-{profile}.yaml` named file. The previous example may be expressed as:
+The YAML configuration also supports profile-aware files.
+In this case, properties for a specific profile can reside in an `application-{profile}.yaml` named file.
+The previous example can be expressed as:
 
-.application.yaml
 [source, yaml]
 ----
 quarkus:
@@ -154,8 +161,7 @@ quarkus:
 
 == Expressions
 
-The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], using the same format as Java
-Properties:
+The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], by using the same format as Java properties:
 
 [source, yaml]
 ----
@@ -170,12 +176,12 @@ display:
     factor: ${x.factor}
 ----
 
-Note that you can reference nested properties using the `.` (dot) separator as in `${x.factor}`.
+You can reference nested properties by using the `.` (dot) separator, as in `${x.factor}`.
 
 == External application.yaml file
 
-The `application.yaml` file may also be placed in `config/application.yaml` to specialize the runtime configuration. The
-file has to be present in the root of the working directory relative to the Quarkus application runner:
+The `application.yaml` file can also be placed in `config/application.yaml` to specialize the runtime configuration.
+The file must be present in the root of the working directory relative to the {project-name} application runner:
 
 [source, text]
 ----
@@ -185,16 +191,16 @@ file has to be present in the root of the working directory relative to the Quar
 ├── my-app-runner
 ----
 
-The values from this file override any values from the regular `application.yaml` file if exists.
+The values from this file override any values from the regular `application.yaml` file if it exists.
 
-== Configuration key conflicts
+== Configuration property conflicts
 
-The MicroProfile Config specification defines configuration keys as an arbitrary `.`-delimited string. However,
-structured formats like YAML only support a subset of the possible configuration namespace. For example, consider the
-two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`. One property is the prefix of another,
-so it may not be immediately evident how to specify both keys in your YAML configuration.
+The MicroProfile Config specification defines configuration properties as an arbitrary `.`-delimited string.
+However, structured formats such as YAML only support a subset of the possible configuration namespace.
+For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
+One property is the prefix of another, so it might not be immediately evident how to specify both keys in your YAML configuration.
 
-This is solved by using a `null` key (represented by `~`) for any YAML property which is a prefix of another one:
+This is solved by using `~` as a `null` key to represent any YAML property that is a prefix of another one:
 
 [source,yaml]
 ----
@@ -205,5 +211,46 @@ quarkus:
       methods: GET,PUT,POST
 ----
 
-YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used
-in any level for disambiguating configuration keys.
+YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration properties.
+
+Although Quarkus primarily uses `.properties` file extension for configuration, the snakeyaml library, which is used for parsing YAML in Quarkus, can also parse JSON structures. This means you can use YAML files with JSON content inside.
+
+YAML and JSON structures can be read in an application.yaml file.
+
+Certainly, here's a step-by-step guide on how to use complex configuration structures with Quarkus:
+
+* Define Your Configuration Interface.
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface ServiceConfig {
+
+  List<Environment> environments();
+
+  interface Environment {
+    String name();
+    String services();
+  }
+}
+----
+
+* Create the appropriate JSON structure and store it in a YAML file.
+
+[source,yaml]
+----
+{
+  "server": {
+    "environments": [
+      {
+        "name": "dev",
+        "services": "bookstore"
+      },
+      {
+        "name": "batch",
+        "services": "warehouse"
+      }
+    ]
+  }
+}
+----

@@ -8,13 +8,16 @@ public class WorkerConfiguration {
 
     private String poolName;
 
+    private boolean virtualThread;
+
     public WorkerConfiguration() {
     }
 
-    public WorkerConfiguration(String className, String name, String poolName) {
+    public WorkerConfiguration(String className, String name, String poolName, boolean virtualThread) {
         this.className = className;
         this.methodName = name;
         this.poolName = poolName;
+        this.virtualThread = virtualThread;
     }
 
     public String getClassName() {
@@ -41,4 +44,11 @@ public class WorkerConfiguration {
         this.poolName = poolName;
     }
 
+    public boolean isVirtualThread() {
+        return virtualThread;
+    }
+
+    public void setVirtualThread(boolean virtualThread) {
+        this.virtualThread = virtualThread;
+    }
 }

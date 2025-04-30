@@ -42,5 +42,4 @@ public class GrpcSecurityRecorder {
 
         container.beanInstance(GrpcSecurityInterceptor.class).init(svcToMethods);
     }
-
 }

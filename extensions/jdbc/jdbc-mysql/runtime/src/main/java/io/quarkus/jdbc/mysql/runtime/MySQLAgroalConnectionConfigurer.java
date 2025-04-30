@@ -1,5 +1,7 @@
 package io.quarkus.jdbc.mysql.runtime;
 
+import java.util.Map;
+
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.exceptionsorter.MySQLExceptionSorter;
 import io.quarkus.agroal.runtime.AgroalConnectionConfigurer;
@@ -10,7 +12,8 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 public class MySQLAgroalConnectionConfigurer implements AgroalConnectionConfigurer {
 
     @Override
-    public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
+    public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalProperties) {
         dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
     }
 

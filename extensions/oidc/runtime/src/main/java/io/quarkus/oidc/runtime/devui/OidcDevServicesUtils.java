@@ -185,9 +185,9 @@ public final class OidcDevServicesUtils {
         return token.eventually(client::close);
     }
 
-    private static Uni<String> testServiceInternal(WebClient client, String serviceUrl, Uni<String> token) {
-        return token
-                .flatMap(t -> {
+    private static Uni<String> testServiceInternal(WebClient client, String serviceUrl, Uni<String> tokenUni) {
+        return tokenUni
+                .flatMap(token -> {
                     LOG.infof("Sending token to '%s'", serviceUrl);
                     return client
                             .getAbs(serviceUrl)

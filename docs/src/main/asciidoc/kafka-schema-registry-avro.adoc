@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
+:topics: messaging,kafka,apicurio,registry
+:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka
 
 This guide shows how your Quarkus application can use Apache Kafka, https://avro.apache.org/docs/current/[Avro] serialized
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry]).
@@ -40,14 +42,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-avro-schema-quickstart` {quickstarts-tree-url}/kafka-avro-schema-quickstart[directory].
+The solution is located in the `kafka-avro-schema-quickstart` link:{quickstarts-tree-url}/kafka-avro-schema-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kafka-avro-schema-quickstart
-:create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-kafka,apicurio-registry-avro
+:create-app-extensions: rest-jackson,messaging-kafka,apicurio-registry-avro
 include::{includes}/devtools/create-app.adoc[]
 
 [TIP]
@@ -245,7 +247,7 @@ See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-regis
 [TIP]
 ====
 You might have noticed that we didn't configure the schema registry URL anywhere.
-This is because Dev Services for Apicurio Registry configures all Kafka channels in SmallRye Reactive Messaging to use the automatically started registry instance.
+This is because Dev Services for Apicurio Registry configures all Kafka channels in Quarkus Messaging to use the automatically started registry instance.
 
 Apicurio Registry, in addition to its native API, also exposes an endpoint that is API-compatible with Confluent Schema Registry.
 Therefore, this automatic configuration works both for Apicurio Registry serde and Confluent Schema Registry serde.
@@ -322,7 +324,7 @@ version: '2'
 services:
 
   zookeeper:
-    image: quay.io/strimzi/kafka:0.22.1-kafka-2.7.0
+    image: quay.io/strimzi/kafka:0.41.0-kafka-3.7.0
     command: [
         "sh", "-c",
         "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -333,7 +335,7 @@ services:
       LOG_DIR: /tmp/logs
 
   kafka:
-    image: quay.io/strimzi/kafka:0.22.1-kafka-2.7.0
+    image: quay.io/strimzi/kafka:0.41.0-kafka-3.7.0
     command: [
         "sh", "-c",
         "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
@@ -414,7 +416,7 @@ First, let's add test dependencies on REST Client and Awaitility to the build fi
 <!-- we'll use Jakarta REST Client for talking to the SSE endpoint -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-reactive</artifactId>
+    <artifactId>quarkus-rest-client</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -427,7 +429,7 @@ First, let's add test dependencies on REST Client and Awaitility to the build fi
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-rest-client-reactive")
+testImplementation("io.quarkus:quarkus-rest-client")
 testImplementation("org.awaitility:awaitility")
 ----
 
@@ -543,7 +545,7 @@ If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio 
 <dependency>
     <groupId>io.strimzi</groupId>
     <artifactId>strimzi-test-container</artifactId>
-    <version>0.22.1</version>
+    <version>0.105.0</version>
     <scope>test</scope>
     <exclusions>
         <exclusion>
@@ -557,7 +559,7 @@ If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.strimzi:strimzi-test-container:0.22.1") {
+testImplementation("io.strimzi:strimzi-test-container:0.105.0") {
     exclude group: "org.apache.logging.log4j", module: "log4j-core"
 }
 ----
@@ -618,7 +620,7 @@ The `quarkus-apicurio-registry-avro` extension depends on recent versions of Api
 and most versions of Apicurio Registry server and client are backwards compatible.
 For some you need to make sure that the client used by Serdes is compatible with the server.
 
-For example, with Apicurio dev service if you set the image name to use version `2.1.5.Final`:
+For example, with Apicurio Dev Service if you set the image name to use version `2.1.5.Final`:
 
 [source,properties]
 ----
@@ -740,7 +742,7 @@ Also, you need to add a few dependencies and a custom Maven repository to your `
     <!-- Confluent registry libraries use Jakarta REST client -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-rest-client-reactive</artifactId>
+        <artifactId>quarkus-rest-client</artifactId>
     </dependency>
     <dependency>
         <groupId>io.confluent</groupId>
@@ -784,7 +786,7 @@ dependencies {
     implementation("io.quarkus:quarkus-confluent-registry-avro")
 
     // Confluent registry libraries use Jakarta REST client
-    implementation("io.quarkus:quarkus-rest-client-reactive")
+    implementation("io.quarkus:quarkus-rest-client")
 
     implementation("io.confluent:kafka-avro-serializer:7.2.0") {
         exclude group: "jakarta.ws.rs", module: "jakarta.ws.rs-api"
@@ -793,12 +795,25 @@ dependencies {
 ----
 
 In JVM mode, any version of `io.confluent:kafka-avro-serializer` can be used.
-In native mode, Quarkus only supports the following versions:
+In native mode, Quarkus supports the following versions: `6.2.x`, `7.0.x`, `7.1.x`, `7.2.x`, `7.3.x`.
 
-* 6.2.x
-* 7.0.x
-* 7.1.x
-* 7.2.x
+For version `7.4.x` and `7.5.x`, due to an issue with the Confluent Schema Serializer, you need to add another dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-csv</artifactId>
+</dependency>
+----
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+dependencies {
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
+}
+----
 
 For any other versions, the native configuration may need to be adjusted.
 

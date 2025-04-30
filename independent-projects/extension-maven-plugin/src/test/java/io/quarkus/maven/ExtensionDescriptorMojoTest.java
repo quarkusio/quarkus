@@ -142,7 +142,9 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         mavenExecPom("fake-extension-runtime");
         mavenExecPom("fake-extension-deployment");
 
-        ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime");
+        // The test extension, by design, resolves dependencies of an older (and outside the main project) Quarkus version
+        // Usually it builds fine, even offline, but we cannot count on everything being already downloaded, especially
+        ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime", false);
         mojo.execute();
 
     }
@@ -156,7 +158,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         mavenExecPom("fake-extension-deployment");
 
         Exception thrown = Assertions.assertThrows(MojoExecutionException.class, () -> {
-            ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime-with-missing-dependencies");
+            ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime-with-missing-dependencies", false);
             mojo.execute();
         });
         assertTrue("Message format does not match expectations: \n" + thrown.getMessage(),
@@ -178,7 +180,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         mavenExecPom("fake-extension-deployment");
 
         Exception thrown = Assertions.assertThrows(MojoExecutionException.class, () -> {
-            ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime-with-missing-dependencies");
+            ExtensionDescriptorMojo mojo = makeMojo("fake-extension-runtime-with-missing-dependencies", false);
             mojo.execute();
         });
         String message = thrown.getMessage();
@@ -232,6 +234,10 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     }
 
     private ExtensionDescriptorMojo makeMojo(String dirName) throws Exception {
+        return makeMojo(dirName, RESOLVE_OFFLINE);
+    }
+
+    private ExtensionDescriptorMojo makeMojo(String dirName, boolean resolveOffline) throws Exception {
         File basedir = getTestFile(TEST_RESOURCES + dirName);
         File pom = new File(basedir, "pom.xml");
 
@@ -241,11 +247,12 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         // add localRepo - framework doesn't do this on its own
         ArtifactRepository localRepo = createLocalArtifactRepository();
         session.getRequest().setLocalRepository(localRepo);
+        session.getRequest().setBaseDirectory(basedir);
 
         final MavenArtifactResolver mvn = new MavenArtifactResolver(
                 new BootstrapMavenContext(BootstrapMavenContext.config()
                         .setCurrentProject(pom.getAbsolutePath())
-                        .setOffline(RESOLVE_OFFLINE)));
+                        .setOffline(resolveOffline)));
 
         ExtensionDescriptorMojo mojo = (ExtensionDescriptorMojo) lookupConfiguredMojo(session,
                 newMojoExecution("extension-descriptor"));
@@ -292,18 +299,20 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         return repo;
     }
 
-    private void mavenExecPom(String dir) throws MavenInvocationException {
+    private void mavenExecPom(String dirName) throws MavenInvocationException {
+        File basedir = getTestFile(TEST_RESOURCES + dirName);
+        File pom = new File(basedir, "pom.xml");
+
         InvocationRequest request = new DefaultInvocationRequest();
-        File projectPath = getTestFile(TEST_RESOURCES, dir + "/pom.xml");
-
-        request.setPomFile(projectPath);
-
+        request.setPomFile(pom);
         request.setGoals(Collections.singletonList("install"));
-        Invoker invoker = new DefaultInvoker();
+        request.setDebug(false);
+        request.setShowErrors(true);
+        request.setBatchMode(true);
 
-        // This is a bit ugly, but bake in knowledge about where we are in the hierarchy to find maven
-        invoker.setMavenHome(new File("../../").getAbsoluteFile());
-        invoker.setMavenExecutable(new File("../../mvnw").getAbsoluteFile());
+        Invoker invoker = new DefaultInvoker();
+        invoker.setMavenHome(new File(basedir, "../"));
+        invoker.setMavenExecutable(new File(basedir, "../mvnw").getAbsoluteFile());
 
         invoker.execute(request);
     }
@@ -322,5 +331,4 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                     Files.exists(pathToBeDeleted));
         }
     }
-
 }

@@ -10,6 +10,7 @@ import jakarta.enterprise.inject.build.compatible.spi.Discovery;
 import jakarta.enterprise.inject.build.compatible.spi.Enhancement;
 import jakarta.enterprise.inject.build.compatible.spi.FieldConfig;
 import jakarta.enterprise.inject.build.compatible.spi.InterceptorInfo;
+import jakarta.enterprise.inject.build.compatible.spi.InvokerFactory;
 import jakarta.enterprise.inject.build.compatible.spi.Messages;
 import jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations;
 import jakarta.enterprise.inject.build.compatible.spi.MethodConfig;
@@ -58,6 +59,7 @@ class DotNames {
     static final DotName INTERCEPTOR_INFO = DotName.createSimple(InterceptorInfo.class);
     static final DotName OBSERVER_INFO = DotName.createSimple(ObserverInfo.class);
 
+    static final DotName INVOKER_FACTORY = DotName.createSimple(InvokerFactory.class);
     static final DotName MESSAGES = DotName.createSimple(Messages.class);
     static final DotName META_ANNOTATIONS = DotName.createSimple(MetaAnnotations.class);
     static final DotName SCANNED_CLASSES = DotName.createSimple(ScannedClasses.class);

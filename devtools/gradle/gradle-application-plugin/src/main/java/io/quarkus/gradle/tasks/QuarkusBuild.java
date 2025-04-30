@@ -18,7 +18,6 @@ import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
@@ -41,7 +40,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
 
     @Inject
     public QuarkusBuild() {
-        super("Builds a Quarkus application.");
+        super("Builds a Quarkus application.", true);
     }
 
     @SuppressWarnings("unused")
@@ -49,14 +48,10 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         Map<String, ?> nativeArgsMap = new HashMap<>();
         action.execute(nativeArgsMap);
         for (Map.Entry<String, ?> nativeArg : nativeArgsMap.entrySet()) {
-            getForcedProperties().put(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
+            getAdditionalForcedProperties().get().getProperties().put(expandConfigurationKey(nativeArg.getKey()),
+                    nativeArg.getValue().toString());
         }
         return this;
-    }
-
-    @Internal
-    public MapProperty<String, String> getForcedProperties() {
-        return extension().forcedPropertiesProperty();
     }
 
     @Internal
@@ -101,93 +96,99 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         return artifactProperties();
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @OutputDirectories
     protected Map<String, File> getBuildOutputDirectories() {
         Map<String, File> outputs = new HashMap<>();
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case LEGACY_JAR:
-            case LEGACY:
-                outputs.put("fast-jar", fastJar());
-                outputs.put("legacy-lib", gradleBuildDir().resolve("lib").toFile());
-                break;
-            case NATIVE:
-                outputs.put("native-source", nativeSources());
-                outputs.put("fast-jar", fastJar());
-                break;
-            case JAR:
-            case FAST_JAR:
-                outputs.put("fast-jar", fastJar());
-                break;
-            case MUTABLE_JAR:
-            case UBER_JAR:
-                outputs.put("fast-jar", fastJar());
-                outputs.put("generated", genBuildDir().toFile());
-                break;
-            case NATIVE_SOURCES:
+        if (nativeEnabled()) {
+            if (jarEnabled()) {
+                throw nativeAndJar();
+            }
+            if (nativeSourcesOnly()) {
                 outputs.put("fast-jar", fastJar());
                 outputs.put("generated", genBuildDir().toFile());
                 outputs.put("native-source", nativeSources());
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            } else {
+                outputs.put("native-source", nativeSources());
+                outputs.put("fast-jar", fastJar());
+            }
+        } else if (jarEnabled()) {
+            switch (jarType()) {
+                case LEGACY_JAR -> {
+                    outputs.put("fast-jar", fastJar());
+                    outputs.put("legacy-lib", gradleBuildDir().resolve("lib").toFile());
+                }
+                case FAST_JAR -> outputs.put("fast-jar", fastJar());
+                case MUTABLE_JAR, UBER_JAR -> {
+                    outputs.put("fast-jar", fastJar());
+                    outputs.put("generated", genBuildDir().toFile());
+                }
+            }
         }
         return outputs;
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @OutputFiles
     protected Map<String, File> getBuildOutputFiles() {
         Map<String, File> outputs = new HashMap<>();
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case UBER_JAR:
-            case LEGACY_JAR:
-            case LEGACY:
-                outputs.put("runner-jar", runnerJar());
+        if (nativeEnabled()) {
+            if (jarEnabled()) {
+                throw nativeAndJar();
+            }
+            if (nativeSourcesOnly()) {
                 outputs.put("artifact-properties", artifactProperties());
-                break;
-            case NATIVE:
+            } else {
                 outputs.put("native-runner", nativeRunner());
                 outputs.put("artifact-properties", artifactProperties());
-                break;
-            case JAR:
-            case FAST_JAR:
-            case MUTABLE_JAR:
-            case NATIVE_SOURCES:
-                outputs.put("artifact-properties", artifactProperties());
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            }
+        } else if (jarEnabled()) {
+            PackageConfig.JarConfig.JarType packageType = jarType();
+            switch (packageType) {
+                case UBER_JAR, LEGACY_JAR -> {
+                    outputs.put("runner-jar", runnerJar());
+                    outputs.put("artifact-properties", artifactProperties());
+                }
+                case FAST_JAR, MUTABLE_JAR -> outputs.put("artifact-properties", artifactProperties());
+            }
         }
         return outputs;
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     protected Collection<File> getBuildInputFiles() {
         List<File> inputs = new ArrayList<>();
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case JAR:
-            case FAST_JAR:
-            case NATIVE:
+        if (nativeEnabled()) {
+            if (jarEnabled()) {
+                throw nativeAndJar();
+            }
+            if (nativeSourcesOnly()) {
+                // nothing
+            } else {
                 Path appBuildBaseDir = appBuildDir();
                 inputs.add(genBuildDir().toFile());
                 inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
                 runnerAndArtifactsInputs(inputs::add, appBuildBaseDir);
-                break;
-            case LEGACY_JAR:
-            case LEGACY:
-                inputs.add(depBuildDir().resolve("lib").toFile());
-                inputs.add(appBuildDir().resolve("lib").toFile());
-                runnerAndArtifactsInputs(inputs::add, appBuildDir());
-                break;
-            case MUTABLE_JAR:
-            case NATIVE_SOURCES:
-            case UBER_JAR:
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            }
+        } else if (jarEnabled()) {
+            PackageConfig.JarConfig.JarType packageType = jarType();
+            switch (packageType) {
+                case FAST_JAR -> {
+                    Path appBuildBaseDir = appBuildDir();
+                    inputs.add(genBuildDir().toFile());
+                    inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
+                    runnerAndArtifactsInputs(inputs::add, appBuildBaseDir);
+                }
+                case LEGACY_JAR -> {
+                    inputs.add(depBuildDir().resolve("lib").toFile());
+                    inputs.add(appBuildDir().resolve("lib").toFile());
+                    runnerAndArtifactsInputs(inputs::add, appBuildDir());
+                }
+                case MUTABLE_JAR, UBER_JAR -> {
+                }
+            }
         }
         return inputs;
     }
@@ -200,9 +201,10 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         buildInputs.accept(sourceDir.resolve(nativeImageSourceJarDirName()).toFile());
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @TaskAction
     public void finalizeQuarkusBuild() {
-        if (extension().forcedPropertiesProperty().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
+        if (getExtensionView().getForcedProperties().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
             getLogger().info("SKIPPING finalizedBy deploy build");
             return;
         }
@@ -211,30 +213,30 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         getLogger().info("Removing output files and directories (provide a clean state).");
         getFileSystemOperations().delete(delete -> delete.delete(getBuildOutputFiles().values()));
 
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case JAR:
-            case FAST_JAR:
-            case NATIVE:
-                assembleFastJar();
-                break;
-            case LEGACY_JAR:
-            case LEGACY:
-                assembleLegacyJar();
-                break;
-            case MUTABLE_JAR:
-            case UBER_JAR:
-            case NATIVE_SOURCES:
+        if (nativeEnabled()) {
+            if (jarEnabled()) {
+                throw nativeAndJar();
+            }
+            if (nativeSourcesOnly()) {
                 generateBuild();
                 assembleFullBuild();
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            } else {
+                assembleFastJar();
+            }
+        } else if (jarEnabled()) {
+            switch (jarType()) {
+                case FAST_JAR -> assembleFastJar();
+                case LEGACY_JAR -> assembleLegacyJar();
+                case MUTABLE_JAR, UBER_JAR -> {
+                    generateBuild();
+                    assembleFullBuild();
+                }
+            }
         }
     }
 
     private void assembleLegacyJar() {
-        getLogger().info("Finalizing Quarkus build for {} packaging", packageType());
+        getLogger().info("Finalizing Quarkus build for {} JAR type", jarType());
 
         Path buildDir = this.buildDir.toPath();
         Path libDir = buildDir.resolve("lib");
@@ -285,8 +287,17 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         // build/quarkus-build/gen
         Path genBuildDir = genBuildDir();
 
-        getLogger().info("Copying Quarkus build for {} packaging from {} into {}", packageType(),
-                genBuildDir, targetDir);
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Copying Quarkus build for native sources from {} into {}", genBuildDir, targetDir);
+            } else {
+                getLogger().info("Copying Quarkus native build from {} into {}", genBuildDir, targetDir);
+
+            }
+        } else {
+            getLogger().info("Copying Quarkus build for {} JAR type from {} into {}", jarType(),
+                    genBuildDir, targetDir);
+        }
         getFileSystemOperations().copy(copy -> {
             copy.into(targetDir);
             copy.from(genBuildDir);
@@ -305,8 +316,18 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         // build/quarkus-build/dep
         Path depBuildDir = depBuildDir();
 
-        getLogger().info("Synchronizing Quarkus build for {} packaging from {} and {} into {}", packageType(),
-                appBuildDir, depBuildDir, appTargetDir);
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Synchronizing Quarkus build for native sources from {} and {} into {}",
+                        appBuildDir, depBuildDir, appTargetDir);
+            } else {
+                getLogger().info("Synchronizing Quarkus native build from {} and {} into {}",
+                        appBuildDir, depBuildDir, appTargetDir);
+            }
+        } else {
+            getLogger().info("Synchronizing Quarkus build for {} JAR type from {} and {} into {}", jarType(),
+                    appBuildDir, depBuildDir, appTargetDir);
+        }
         getFileSystemOperations().sync(sync -> {
             sync.eachFile(new CopyActionDeleteNonWriteableTarget(appTargetDir.toPath()));
             sync.into(appTargetDir);
@@ -317,8 +338,18 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     }
 
     private void copyRunnersAndArtifactProperties(Path sourceDir) {
-        getLogger().info("Copying remaining Quarkus application artifacts for {} packaging from {} into {}",
-                packageType(), sourceDir, buildDir);
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Copying remaining Quarkus application artifacts for native sources from {} into {}",
+                        sourceDir, buildDir);
+            } else {
+                getLogger().info("Copying remaining Quarkus application artifacts for native build from {} into {}",
+                        sourceDir, buildDir);
+            }
+        } else {
+            getLogger().info("Copying remaining Quarkus application artifacts for {} JAR type from {} into {}",
+                    jarType(), sourceDir, buildDir);
+        }
         getFileSystemOperations().copy(
                 copy -> copy.into(buildDir).from(sourceDir)
                         .include(QUARKUS_ARTIFACT_PROPERTIES,
@@ -336,4 +367,9 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         }
         return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, hyphenatedKey);
     }
+
+    static GradleException nativeAndJar() {
+        return new GradleException("Outputting both native and JAR packages is not currently supported");
+    }
+
 }

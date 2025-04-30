@@ -20,21 +20,25 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-service-binding</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-mysql</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
         </dependency>
     </dependencies>
 
@@ -45,21 +49,26 @@
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <parentFirstArtifacts>
-                        <parentFirstArtifact>mysql:mysql-connector-java</parentFirstArtifact>
+                        <parentFirstArtifact>com.mysql:mysql-connector-j</parentFirstArtifact>
                     </parentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

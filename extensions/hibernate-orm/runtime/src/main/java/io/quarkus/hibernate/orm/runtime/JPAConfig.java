@@ -18,7 +18,7 @@ import jakarta.persistence.Persistence;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 
 public class JPAConfig {
 
@@ -26,16 +26,14 @@ public class JPAConfig {
 
     private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
+    private final boolean requestScopedSessionEnabled;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
-        for (RuntimePersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+        for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
-            var puConfig = puConfigMap.getOrDefault(descriptor.getConfigurationName(),
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
-            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getConfigurationName());
+            if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
                         puName);
                 deactivatedPersistenceUnitNames.add(puName);
@@ -43,6 +41,7 @@ public class JPAConfig {
                 persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
             }
         }
+        this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
     }
 
     void startAll() {
@@ -75,7 +74,8 @@ public class JPAConfig {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e.getCause());
+                throw e.getCause() instanceof RuntimeException ? (RuntimeException) e.getCause()
+                        : new RuntimeException(e.getCause());
             }
         }
     }
@@ -120,6 +120,13 @@ public class JPAConfig {
      */
     public Set<String> getDeactivatedPersistenceUnitNames() {
         return deactivatedPersistenceUnitNames;
+    }
+
+    /**
+     * Returns boolean value for enabling request scoped sessions
+     */
+    public boolean getRequestScopedSessionEnabled() {
+        return this.requestScopedSessionEnabled;
     }
 
     public static class Destroyer implements BeanDestroyer<JPAConfig> {

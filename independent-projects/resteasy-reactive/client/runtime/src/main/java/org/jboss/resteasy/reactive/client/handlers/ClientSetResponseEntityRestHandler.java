@@ -8,8 +8,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.StatusType;
 
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
@@ -24,12 +24,12 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
 
     @Override
     public void handle(RestClientRequestContext context) throws Exception {
-        ClientRequestContextImpl requestContext = context.getClientRequestContext();
+        ClientRequestContextImpl requestContext = context.getOrCreateClientRequestContext();
         if (context.isCheckSuccessfulFamily()) {
             StatusType effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
             if (Response.Status.Family.familyOf(effectiveResponseStatus.getStatusCode()) != Response.Status.Family.SUCCESSFUL) {
-                throw new WebClientApplicationException(effectiveResponseStatus.getStatusCode(),
-                        effectiveResponseStatus.getReasonPhrase());
+                Response response = ClientResponseCompleteRestHandler.mapToResponse(context, effectiveResponseStatus, true);
+                throw new ClientWebApplicationException(response);
             }
         }
 

@@ -35,7 +35,7 @@ public interface BuildExtension {
      * Initialize self.
      *
      * @param buildContext
-     * @return {@code true} if the extension should be put into service, @{code false} otherwise
+     * @return {@code true} if the extension should be put into service, {@code false} otherwise
      */
     default boolean initialize(BuildContext buildContext) {
         return true;
@@ -67,6 +67,7 @@ public interface BuildExtension {
         static Key<Map<DotName, ClassInfo>> QUALIFIERS = simpleBuiltIn("qualifiers");
         static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = simpleBuiltIn("interceptorBindings");
         static Key<Map<DotName, StereotypeInfo>> STEREOTYPES = simpleBuiltIn("stereotypes");
+        static Key<InvokerFactory> INVOKER_FACTORY = simpleBuiltIn("invokerFactory");
         static Key<BeanDeployment> DEPLOYMENT = simpleBuiltIn("deployment");
 
         String asString();

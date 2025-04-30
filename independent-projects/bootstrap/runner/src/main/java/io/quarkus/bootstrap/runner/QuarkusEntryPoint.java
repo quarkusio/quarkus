@@ -5,11 +5,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -30,16 +34,18 @@ public class QuarkusEntryPoint {
 
         try {
             doRun(args);
-        } catch (Exception e) {
+        } catch (RuntimeException | Error e) {
             InitialConfigurator.DELAYED_HANDLER.close();
             throw e;
+        } catch (Throwable t) {
+            InitialConfigurator.DELAYED_HANDLER.close();
+            throw new UndeclaredThrowableException(t);
         }
     }
 
-    private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
-            InvocationTargetException, NoSuchMethodException {
+    private static void doRun(String... args) throws Throwable {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        String decodedPath = URLDecoder.decode(path, "UTF-8");
+        String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
 
         if (Boolean.parseBoolean(System.getenv("QUARKUS_LAUNCH_DEVMODE"))) {
@@ -58,7 +64,8 @@ public class QuarkusEntryPoint {
                 Thread.currentThread().setContextClassLoader(appRunnerClassLoader);
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(appRunnerClassLoader);
                 Class<?> mainClass = appRunnerClassLoader.loadClass(app.getMainClass());
-                mainClass.getMethod("main", String[].class).invoke(null, args);
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                lookup.findStatic(mainClass, "main", MethodType.methodType(void.class, String[].class)).invokeExact(args);
             } finally {
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(null);
                 appRunnerClassLoader.close();
@@ -68,6 +75,11 @@ public class QuarkusEntryPoint {
 
     private static void doReaugment(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
+        if (!Files.exists(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT))) {
+            System.out.println("[ERROR] Re-augmentation was requested, " +
+                    "but the application wasn't built with 'quarkus.package.jar.type=mutable-jar'");
+            return;
+        }
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT)))) {
             List<String> paths = (List<String>) in.readObject();

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.wildfly.common.Assert;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build chain.
@@ -15,24 +15,17 @@ import org.wildfly.common.Assert;
  */
 public final class BuildChain {
     private final Set<ItemId> initialIds;
-    private final int initialSingleCount;
-    private final int initialMultiCount;
     private final Set<ItemId> finalIds;
     private final List<StepInfo> startSteps;
-    private final Set<ItemId> consumed;
     private final List<BuildProvider> providers;
     private final int endStepCount;
     private final ClassLoader classLoader;
 
-    BuildChain(final int initialSingleCount, final int initialMultiCount, final Set<StepInfo> startSteps,
-            final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
+    BuildChain(final Set<StepInfo> startSteps, BuildChainBuilder builder, final int endStepCount) {
         providers = builder.getProviders();
         initialIds = builder.getInitialIds();
         finalIds = builder.getFinalIds();
-        this.initialSingleCount = initialSingleCount;
-        this.initialMultiCount = initialMultiCount;
         this.startSteps = new ArrayList<>(startSteps);
-        this.consumed = consumed;
         this.endStepCount = endStepCount;
         this.classLoader = builder.getClassLoader();
     }
@@ -96,20 +89,8 @@ public final class BuildChain {
         return initialIds.contains(itemId);
     }
 
-    int getInitialSingleCount() {
-        return initialSingleCount;
-    }
-
-    int getInitialMultiCount() {
-        return initialMultiCount;
-    }
-
     List<StepInfo> getStartSteps() {
         return startSteps;
-    }
-
-    Set<ItemId> getConsumed() {
-        return consumed;
     }
 
     Set<ItemId> getFinalIds() {

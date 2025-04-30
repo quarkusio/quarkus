@@ -2,39 +2,44 @@ package io.quarkus.smallrye.health.runtime;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
-@ConfigRoot(name = "smallrye-health", phase = ConfigPhase.RUN_TIME)
-public class SmallRyeHealthRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.smallrye-health")
+public interface SmallRyeHealthRuntimeConfig {
 
     /**
      * If Health UI should be enabled. By default, Health UI is enabled if it is included (see {@code always-include}).
      */
-    @ConfigItem(name = "ui.enable", defaultValue = "true")
-    boolean enable;
+    @WithName("ui.enable")
+    @WithDefault("true")
+    boolean enable();
 
     /**
      * Additional top-level properties to be included in the resulting JSON object.
      */
-    @ConfigItem(name = "additional.property")
-    Map<String, String> additionalProperties;
+    @WithName("additional.property")
+    @ConfigDocMapKey("property-name")
+    Map<String, String> additionalProperties();
 
     /**
      * Specifications of checks that can be disabled.
      */
-    @ConfigItem
-    Map<String, Enabled> check;
+    @ConfigDocMapKey("check-classname")
+    Map<String, Enabled> check();
 
     @ConfigGroup
-    public static final class Enabled {
+    interface Enabled {
 
         /**
          * Whether the HealthCheck should be enabled.
          */
-        @ConfigItem
-        boolean enabled;
+        boolean enabled();
     }
 }

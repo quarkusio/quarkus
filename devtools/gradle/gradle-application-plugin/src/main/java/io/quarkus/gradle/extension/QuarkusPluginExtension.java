@@ -1,48 +1,50 @@
 package io.quarkus.gradle.extension;
 
+import static io.quarkus.runtime.LaunchMode.*;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Objects;
+import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.process.JavaForkOptions;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.AppModelGradleResolver;
-import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.gradle.tasks.AbstractQuarkusExtension;
-import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
+    // TODO dynamically load generation provider, or make them write code directly in quarkus-generated-sources
+    public static final String[] CODE_GENERATION_PROVIDER = new String[] { "grpc", "avdl", "avpr", "avsc" };
+    public static final String[] CODE_GENERATION_INPUT = new String[] { "proto", "avro" };
     private final SourceSetExtension sourceSetExtension;
 
     private final Property<Boolean> cacheLargeArtifacts;
     private final Property<Boolean> cleanupBuildOutput;
+    private final ListProperty<String> codeGenerationProviders;
+    private final ListProperty<String> codeGenerationInputs;
 
     public QuarkusPluginExtension(Project project) {
         super(project);
@@ -51,6 +53,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
                 .convention(true);
         this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
                 .convention(!System.getenv().containsKey("CI"));
+        this.codeGenerationProviders = project.getObjects().listProperty(String.class)
+                .convention(List.of(CODE_GENERATION_PROVIDER));
+        this.codeGenerationInputs = project.getObjects().listProperty(String.class)
+                .convention(List.of(CODE_GENERATION_INPUT));
 
         this.sourceSetExtension = new SourceSetExtension();
     }
@@ -62,51 +68,6 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     @SuppressWarnings("unused")
     public void manifest(Action<Manifest> action) {
         action.execute(this.getManifest());
-    }
-
-    public void beforeTest(Test task) {
-        try {
-            final Map<String, Object> props = task.getSystemProperties();
-
-            final ApplicationModel appModel = getApplicationModel(LaunchMode.TEST);
-            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
-            props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
-
-            StringJoiner outputSourcesDir = new StringJoiner(",");
-            for (File outputSourceDir : combinedOutputSourceDirs()) {
-                outputSourcesDir.add(outputSourceDir.getAbsolutePath());
-            }
-            props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
-
-            final SourceSetContainer sourceSets = getSourceSets();
-            final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-
-            final File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
-
-            Path projectDirPath = projectDir.toPath();
-
-            // Identify the folder containing the sources associated with this test task
-            String fileList = sourceSets.stream()
-                    .filter(sourceSet -> Objects.equals(
-                            task.getTestClassesDirs().getAsPath(),
-                            sourceSet.getOutput().getClassesDirs().getAsPath()))
-                    .flatMap(sourceSet -> sourceSet.getOutput().getClassesDirs().getFiles().stream())
-                    .filter(File::exists)
-                    .distinct()
-                    .map(testSrcDir -> String.format("%s:%s",
-                            projectDirPath.relativize(testSrcDir.toPath()),
-                            projectDirPath.relativize(outputDirectoryAsFile.toPath())))
-                    .collect(Collectors.joining(","));
-            task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
-            task.getLogger().debug("test dir mapping - {}", fileList);
-
-            QuarkusBuild quarkusBuild = project.getTasks().named(QuarkusPlugin.QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class)
-                    .get();
-            String nativeRunner = quarkusBuild.getNativeRunner().toPath().toAbsolutePath().toString();
-            props.put("native.image.path", nativeRunner);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to resolve deployment classpath", e);
-        }
     }
 
     public Property<String> getFinalName() {
@@ -137,6 +98,30 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         this.cacheLargeArtifacts.set(cacheLargeArtifacts);
     }
 
+    public void setCodeGenerationInputs(List<String> codeGenerationInputs) {
+        this.codeGenerationInputs.set(codeGenerationInputs);
+    }
+
+    /**
+     * The directories of code generation inputs, only needed if using a customer extension that provides its own code
+     * generator.
+     */
+    public ListProperty<String> getCodeGenerationInputs() {
+        return codeGenerationInputs;
+    }
+
+    public void setCodeGenerationProviders(List<String> codeGenerationProviders) {
+        this.codeGenerationProviders.set(codeGenerationProviders);
+    }
+
+    /**
+     * The identifiers of the code generation providers, only needed if using a customer extension that provides its own code
+     * generator.
+     */
+    public ListProperty<String> getCodeGenerationProviders() {
+        return codeGenerationProviders;
+    }
+
     public String finalName() {
         return getFinalName().get();
     }
@@ -157,6 +142,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
     }
 
+    public static FileCollection combinedOutputSourceDirs(Project project) {
+        ConfigurableFileCollection classesDirs = project.files();
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        classesDirs.from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        classesDirs.from(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        return classesDirs;
+    }
+
     public Set<File> combinedOutputSourceDirs() {
         Set<File> sourcesDirs = new LinkedHashSet<>();
         SourceSetContainer sourceSets = getSourceSets();
@@ -166,7 +159,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public AppModelResolver getAppModelResolver() {
-        return getAppModelResolver(LaunchMode.NORMAL);
+        return getAppModelResolver(NORMAL);
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
@@ -174,7 +167,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public ApplicationModel getApplicationModel() {
-        return getApplicationModel(LaunchMode.NORMAL);
+        return getApplicationModel(NORMAL);
     }
 
     public ApplicationModel getApplicationModel(LaunchMode mode) {
@@ -203,6 +196,9 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     /**
      * Returns the last file from the specified {@link FileCollection}.
+     *
+     * @param fileCollection the collection of files present in the directory
+     * @return result returns the last file
      */
     public static File getLastFile(FileCollection fileCollection) {
         File result = null;
@@ -254,11 +250,19 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return quarkusBuildProperties;
     }
 
-    public void set(String name, @Nullable String value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    public ListProperty<String> getCachingRelevantProperties() {
+        return cachingRelevantProperties;
     }
 
-    public void set(String name, Property<String> value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    public void set(String name, @Nullable String value) {
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
+    }
+
+    public void set(String name, Provider<String> value) {
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
+    }
+
+    private String addQuarkusBuildPropertyPrefix(String name) {
+        return String.format("quarkus.%s", name);
     }
 }

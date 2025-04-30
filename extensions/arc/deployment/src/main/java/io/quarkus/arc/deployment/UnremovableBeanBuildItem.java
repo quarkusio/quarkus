@@ -19,6 +19,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 
 /**
  * This build item is used to exclude beans that would be normally removed if the config property
@@ -88,6 +89,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param classNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassNames(String... classNames) {
         Set<String> names = new HashSet<>();
         Collections.addAll(names, classNames);
@@ -100,6 +102,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param classNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassNames(Set<String> classNames) {
         return new UnremovableBeanBuildItem(new BeanClassNamesExclusion(classNames));
     }
@@ -110,6 +113,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(DotName... typeNames) {
         Set<DotName> names = new HashSet<>();
         Collections.addAll(names, typeNames);
@@ -122,6 +126,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(Class<?>... types) {
         return new UnremovableBeanBuildItem(new BeanTypesExclusion(
                 Arrays.stream(types).map(Class::getName).map(DotName::createSimple).collect(Collectors.toSet())));
@@ -133,6 +138,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(Set<DotName> typeNames) {
         return new UnremovableBeanBuildItem(new BeanTypesExclusion(typeNames));
     }
@@ -145,6 +151,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassAnnotation(DotName annotationName) {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(annotationName));
     }
@@ -157,6 +164,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassAnnotation(String nameStartsWith) {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(nameStartsWith));
     }
@@ -167,6 +175,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem targetWithAnnotation(DotName annotationName) {
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override

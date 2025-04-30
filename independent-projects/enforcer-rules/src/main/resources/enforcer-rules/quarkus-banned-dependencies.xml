@@ -45,7 +45,6 @@
                 <!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->
                 <exclude>com.sun.activation:jakarta.activation</exclude>
                 <!-- use our jboss-logmanager -->
-                <exclude>org.jboss.logging:jboss-logmanager</exclude>
                 <exclude>org.jboss.logging:jboss-logging-jdk</exclude>
                 <!-- We don't want all the API's in one jar-->
                 <exclude>javax:javaee-api</exclude>
@@ -57,8 +56,6 @@
                 <exclude>org.eclipse.parsson:jakarta.json</exclude>
                 <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                 <exclude>io.netty:netty-all</exclude>
-                <!-- Ban jboss-logmanager, we use jboss-logmanager-embedded -->
-                <exclude>org.jboss.logmanager:jboss-logmanager</exclude>
                 <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
                 <exclude>log4j:log4j</exclude>
                 <exclude>org.apache.logging.log4j:log4j-core</exclude>
@@ -110,6 +107,9 @@
                 <!-- These defunct artifacts cause conflicts with their modern counterparts -->
                 <!-- replaced with: org.codehaus.plexus:* -->
                 <exclude>org.sonatype.plexus:*</exclude>
+                <!-- svm artifact, shouldn't be used as it's not public API. Use the -->
+                <!-- org.graalvm.sdk:graal-sdk dependency instead -->
+                <exclude>org.graalvm.nativeimage:svm</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

@@ -59,11 +59,12 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging-annotations</artifactId>
+            <scope>provided</scope>
          </dependency>
         <dependency>
             <groupId>org.jboss.threads</groupId>
@@ -79,11 +80,7 @@
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -152,21 +149,40 @@
                     </lesserPriorityArtifacts>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-classloader-commons</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-constraint</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-cpu</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-expression</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-function</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>
-                        <parentFirstArtifact>org.wildfly.common:wildfly-common</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.js:js</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-net</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-os</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-ref</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:nativeimage</parentFirstArtifact>
+                        <!-- support for GraalVM js -->
+                        <parentFirstArtifact>org.graalvm.polyglot:js-community</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.js:js-language</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.js:js-scriptengine</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.polyglot:js</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.polyglot:polyglot</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.regex:regex</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.truffle:truffle-api</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
-                        <parentFirstArtifact>com.ibm.icu:icu4j</parentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-runtime</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-compiler</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-enterprise</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.shadowed:icu4j</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:jniutils</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:word</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:collections</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:native-bridge</parentFirstArtifact>
+                        <!-- /support for GraalVM js -->
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-maven-resolver</parentFirstArtifact>
                         <parentFirstArtifact>org.slf4j:slf4j-api</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.slf4j:slf4j-jboss-logmanager</parentFirstArtifact>
-                        <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven.resolver:maven-resolver-api</parentFirstArtifact>
@@ -204,19 +220,40 @@
                         <parentFirstArtifact>org.jboss.byteman:byteman</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
-                        <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.graalvm.js:js</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:nativeimage</runnerParentFirstArtifact>
+                        <!-- support for GraalVM js -->
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:js-community</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.js:js-language</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.js:js-scriptengine</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:js</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:polyglot</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.regex:regex</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.truffle:truffle-api</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>com.ibm.icu:icu4j</runnerParentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-runtime</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-compiler</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-enterprise</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.shadowed:icu4j</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:jniutils</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:word</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:collections</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
+                        <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-classloader-commons</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
                         <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->
                         <runnerParentFirstArtifact>org.jboss.logging:jboss-logging</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</runnerParentFirstArtifact>
-                        <!-- This is needed as it's a dependency of the JBoss Logging so it too needs to be loaded by the JDK ClassLoader -->
-                        <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jboss.logmanager:jboss-logmanager</runnerParentFirstArtifact>
+                        <!-- These are needed as it's a dependency of the JBoss LogManager so it too needs to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-constraint</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-cpu</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-expression</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-function</runnerParentFirstArtifact>
                         <!-- This is needed because it contains some jar handling classes -->
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-net</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-os</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-ref</runnerParentFirstArtifact>
                         <!-- QuarkusEntryPoint needs org-crac class definition -->
                         <runnerParentFirstArtifact>io.github.crac:org-crac</runnerParentFirstArtifact>
                         <!-- Make use of byteman frictionless -->
@@ -258,9 +295,23 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                                <!-- As string concatenation has a non-zero impact on startup, let's disable it for this module -->
+                                <arg>-XDstringConcat=inline</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Target_org_wildfly_common_net*</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

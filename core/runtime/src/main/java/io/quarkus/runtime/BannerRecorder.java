@@ -14,7 +14,7 @@ public class BannerRecorder {
     }
 
     public RuntimeValue<Optional<Supplier<String>>> provideBannerSupplier(String bannerText) {
-        if (bannerRuntimeConfig.getValue().enabled) {
+        if (bannerRuntimeConfig.getValue().enabled()) {
             return new RuntimeValue<>(Optional.of(new ConstantSupplier(bannerText)));
         }
         return new RuntimeValue<>(Optional.empty());

@@ -40,7 +40,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Inject
     public MpJwtValidator(JWTParser parser, SmallRyeJwtConfig config) {
         this.parser = parser;
-        this.blockingAuthentication = config == null ? false : config.blockingAuthentication;
+        this.blockingAuthentication = config == null ? false : config.blockingAuthentication();
     }
 
     @Override

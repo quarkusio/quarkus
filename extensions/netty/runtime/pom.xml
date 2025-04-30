@@ -44,8 +44,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -61,16 +61,6 @@
             <classifier>osx-x86_64</classifier>
             <optional>true</optional>
         </dependency>
-
-        <!--
-        The recent version of Netty have a hard dependency on brotli,
-        without this dependency, it's not possible to compile to native
-        -->
-        <dependency>
-            <groupId>com.aayushatharva.brotli4j</groupId>
-            <artifactId>brotli4j</artifactId>
-            <version>1.7.1</version> <!-- TODO Extract this version -->
-        </dependency>
     </dependencies>
 
     <build>
@@ -81,15 +71,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

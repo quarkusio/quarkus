@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -46,34 +47,55 @@ import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
 public class ApplicationArchiveBuildStep {
 
     private static final Logger LOGGER = Logger.getLogger(ApplicationArchiveBuildStep.class);
 
-    IndexDependencyConfiguration config;
-
+    /**
+     * Indexing
+     */
+    @ConfigMapping(prefix = "quarkus.index-dependency")
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-    static final class IndexDependencyConfiguration {
+    interface IndexDependencyConfiguration {
         /**
          * Artifacts on the classpath that should also be indexed.
          * <p>
          * Their classes will be in the index and processed by Quarkus processors.
          */
-        @ConfigItem(name = ConfigItem.PARENT)
+        @WithParentName
         @ConfigDocSection
         @ConfigDocMapKey("dependency-name")
-        Map<String, IndexDependencyConfig> indexDependency;
+        Map<String, IndexDependencyConfig> indexDependency();
+
+        interface IndexDependencyConfig {
+            /**
+             * The maven groupId of the artifact.
+             */
+            String groupId();
+
+            /**
+             * The maven artifactId of the artifact (optional).
+             */
+            Optional<String> artifactId();
+
+            /**
+             * The maven classifier of the artifact (optional).
+             */
+            Optional<String> classifier();
+        }
     }
 
     @BuildStep
-    void addConfiguredIndexedDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
-        for (IndexDependencyConfig indexDependencyConfig : config.indexDependency.values()) {
-            indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId,
-                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier.orElse(null)));
+    void addConfiguredIndexedDependencies(IndexDependencyConfiguration config,
+            BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
+        for (IndexDependencyConfiguration.IndexDependencyConfig indexDependencyConfig : config.indexDependency().values()) {
+            indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId(),
+                    indexDependencyConfig.artifactId().orElse(null), indexDependencyConfig.classifier().orElse(null)));
         }
     }
 
@@ -95,7 +117,7 @@ public class ApplicationArchiveBuildStep {
         }
 
         Map<ArtifactKey, Set<String>> removedResources = new HashMap<>();
-        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources().entrySet()) {
             removedResources.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
 
@@ -120,7 +142,7 @@ public class ApplicationArchiveBuildStep {
 
         return new ApplicationArchivesBuildItem(
                 new ApplicationArchiveImpl(appindex.getIndex(), tree,
-                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getKey()),
+                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact()),
                 applicationArchives);
     }
 
@@ -167,21 +189,27 @@ public class ApplicationArchiveBuildStep {
         if (indexDependencyBuildItems.isEmpty()) {
             return;
         }
-        final Set<ArtifactKey> indexDependencyKeys = new HashSet<>(indexDependencyBuildItems.size());
+        final Set<ArtifactKey> indexDependencyKeys = new HashSet<>();
+        final Set<String> indexGroupIds = new HashSet<>();
         for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
-            indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
-                    indexDependencyBuildItem.getArtifactId(),
-                    indexDependencyBuildItem.getClassifier(),
-                    ArtifactCoords.TYPE_JAR));
+            if (indexDependencyBuildItem.getArtifactId() != null) {
+                indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
+                        indexDependencyBuildItem.getArtifactId(),
+                        indexDependencyBuildItem.getClassifier(),
+                        ArtifactCoords.TYPE_JAR));
+            } else {
+                indexGroupIds.add(indexDependencyBuildItem.getGroupId());
+            }
         }
         for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
-            if (dep.isRuntimeCp() && indexDependencyKeys.contains(dep.getKey())) {
+            if (dep.isRuntimeCp()
+                    && (indexDependencyKeys.contains(dep.getKey()) || indexGroupIds.contains(dep.getGroupId()))) {
                 for (Path path : dep.getContentTree().getRoots()) {
                     if (!root.isExcludedFromIndexing(path)
                             && !root.getResolvedPaths().contains(path)
                             && indexedDeps.add(path)) {
                         try {
-                            appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, dep.getKey(),
+                            appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, dep,
                                     removedResources));
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
@@ -193,10 +221,11 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
-            IndexCache indexCache, Path dep, ArtifactKey artifactKey, Map<ArtifactKey, Set<String>> removedResources)
+            IndexCache indexCache, Path dep, ResolvedDependency resolvedDependency,
+            Map<ArtifactKey, Set<String>> removedResources)
             throws IOException {
         LOGGER.debugf("Indexing dependency: %s", dep);
-        final Set<String> removed = removedResources.get(artifactKey);
+        final Set<String> removed = resolvedDependency != null ? removedResources.get(resolvedDependency.getKey()) : null;
         final OpenPathTree openTree;
         final IndexView index;
         if (Files.isDirectory(dep)) {
@@ -206,7 +235,7 @@ public class ApplicationArchiveBuildStep {
             openTree = buildCloseables.add(PathTree.ofArchive(dep).open());
             index = handleJarPath(dep, indexCache, removed);
         }
-        return new ApplicationArchiveImpl(index, openTree, artifactKey);
+        return new ApplicationArchiveImpl(index, openTree, resolvedDependency);
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
@@ -247,7 +276,7 @@ public class ApplicationArchiveBuildStep {
                             }
                             indexCache.cache.put(rootPath, index);
                         }
-                        appArchives.add(new ApplicationArchiveImpl(index, tree, dependencyKey));
+                        appArchives.add(new ApplicationArchiveImpl(index, tree, cpe.getResolvedDependency()));
                         return null;
                     }
 
@@ -261,7 +290,7 @@ public class ApplicationArchiveBuildStep {
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                        return new ApplicationArchiveImpl(index, tree, dependencyKey);
+                        return new ApplicationArchiveImpl(index, tree, cpe.getResolvedDependency());
                     });
                     if (archive != null) {
                         appArchives.add(archive);

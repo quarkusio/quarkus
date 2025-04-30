@@ -19,22 +19,25 @@ public class SmallRyeHealthDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            SmallRyeHealthConfig config,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            SmallRyeHealthBuildTimeConfig config,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeHealthRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+        String path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath(),
+                managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
+
         pageBuildItem.addPage(Page.externalPageBuilder("Health")
                 .icon("font-awesome-solid:heart-circle-bolt")
-                .url(path)
+                .url(path, path)
                 .isJsonContent());
 
+        String uipath = nonApplicationRootPathBuildItem.resolveManagementPath(config.ui().rootPath(),
+                managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
         pageBuildItem.addPage(Page.externalPageBuilder("Health UI")
                 .icon("font-awesome-solid:stethoscope")
-                .url(nonApplicationRootPathBuildItem.resolvePath(config.ui.rootPath))
+                .url(uipath, uipath)
                 .isHtmlContent());
 
         return pageBuildItem;

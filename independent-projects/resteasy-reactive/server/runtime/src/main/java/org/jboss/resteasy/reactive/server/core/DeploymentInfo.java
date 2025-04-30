@@ -38,7 +38,7 @@ public class DeploymentInfo {
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
-    private boolean resumeOn404;
+    private boolean servletPresent = false;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -193,12 +193,12 @@ public class DeploymentInfo {
         return this;
     }
 
-    public boolean isResumeOn404() {
-        return resumeOn404;
+    public boolean isServletPresent() {
+        return servletPresent;
     }
 
-    public DeploymentInfo setResumeOn404(boolean resumeOn404) {
-        this.resumeOn404 = resumeOn404;
+    public DeploymentInfo setServletPresent(boolean servletPresent) {
+        this.servletPresent = servletPresent;
         return this;
     }
 }

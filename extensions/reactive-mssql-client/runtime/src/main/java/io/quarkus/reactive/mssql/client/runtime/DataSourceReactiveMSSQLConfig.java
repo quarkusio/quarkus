@@ -3,21 +3,20 @@ package io.quarkus.reactive.mssql.client.runtime;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DataSourceReactiveMSSQLConfig {
+public interface DataSourceReactiveMSSQLConfig {
 
     /**
      * The desired size (in bytes) for TDS packets.
      */
-    @ConfigItem
-    public OptionalInt packetSize = OptionalInt.empty();
+    OptionalInt packetSize();
 
     /**
      * Whether SSL/TLS is enabled.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean ssl = false;
+    @WithDefault("false")
+    public boolean ssl();
 
 }

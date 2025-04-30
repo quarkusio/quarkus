@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.hibernate.query.SemanticException;
+import org.hibernate.query.SyntaxException;
 import org.hibernate.query.sqm.ParsingException;
 
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -52,9 +53,13 @@ public final class NamedQueryUtil {
         return null;
     }
 
-    public static RuntimeException checkForNamedQueryMistake(IllegalArgumentException x, String originalQuery) {
+    public static RuntimeException checkForNamedQueryMistake(RuntimeException x, String originalQuery) {
         if (originalQuery != null
-                && (x.getCause() instanceof SemanticException || x.getCause() instanceof ParsingException)
+                && (isQueryStringException(x)
+                        // Some APIs return IllegalArgumentException when the query string is invalid,
+                        // which is not helpful and probably a result of trying to match JPA behavior,
+                        // but the cause is actually meaningful.
+                        || x instanceof IllegalArgumentException && isQueryStringException(x.getCause()))
                 && isNamedQuery(originalQuery)) {
             return new PanacheQueryException("Invalid query '" + originalQuery
                     + "' but it matches a known @NamedQuery, perhaps you should prefix it with a '#' to use it as a named query: '#"
@@ -62,5 +67,10 @@ public final class NamedQueryUtil {
         } else {
             return x;
         }
+    }
+
+    private static boolean isQueryStringException(Throwable x) {
+        return x instanceof SemanticException || x instanceof ParsingException
+                || x instanceof SyntaxException;
     }
 }

@@ -1,2 +1,1 @@
 # JBang Quarkus Project
-

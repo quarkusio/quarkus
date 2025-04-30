@@ -95,12 +95,13 @@ public class BeanArchiveProcessor {
                     knownMissingClasses, Thread.currentThread().getContextClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
-        for (GeneratedBeanBuildItem generatedBeanClass : generatedBeans) {
-            IndexingUtil.indexClass(generatedBeanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
-                    knownMissingClasses, Thread.currentThread().getContextClassLoader(), generatedBeanClass.getData());
-            generatedClassNames.add(DotName.createSimple(generatedBeanClass.getName().replace('/', '.')));
-            generatedClass.produce(new GeneratedClassBuildItem(true, generatedBeanClass.getName(), generatedBeanClass.getData(),
-                    generatedBeanClass.getSource()));
+        for (GeneratedBeanBuildItem generatedBean : generatedBeans) {
+            IndexingUtil.indexClass(generatedBean.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
+                    knownMissingClasses, Thread.currentThread().getContextClassLoader(), generatedBean.getData());
+            generatedClassNames.add(DotName.createSimple(generatedBean.getName().replace('/', '.')));
+            generatedClass.produce(new GeneratedClassBuildItem(generatedBean.isApplicationClass(), generatedBean.getName(),
+                    generatedBean.getData(),
+                    generatedBean.getSource()));
         }
 
         PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
@@ -148,13 +149,16 @@ public class BeanArchiveProcessor {
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
         beanDefiningAnnotations.addAll(customScopes.getCustomScopeNames());
-        // Also include archives that are not bean archives but contain scopes, qualifiers or interceptor bindings
+        // Also include archives that are not bean archives but contain scopes, qualifiers,
+        // interceptor bindings, interceptors or decorators
         beanDefiningAnnotations.add(DotNames.SCOPE);
         beanDefiningAnnotations.add(DotNames.NORMAL_SCOPE);
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
+        beanDefiningAnnotations.add(DotNames.DECORATOR);
+        beanDefiningAnnotations.add(DotNames.INTERCEPTOR);
 
-        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility;
+        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility();
         Collection<ApplicationArchive> candidateArchives = applicationArchivesBuildItem.getApplicationArchives();
         if (!rootIsAlwaysBeanArchive) {
             candidateArchives = new ArrayList<>(candidateArchives);
@@ -229,7 +233,8 @@ public class BeanArchiveProcessor {
                                 LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
                                         + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
                                         + "Path to beans.xml: %s",
-                                        archive.getKey() != null ? archive.getKey().toGacString() + ":" + pathVisit.getPath()
+                                        archive.getResolvedDependency() != null
+                                                ? archive.getResolvedDependency().toCompactCoords() + ":" + pathVisit.getPath()
                                                 : pathVisit.getPath());
                             }
                         }
@@ -248,15 +253,16 @@ public class BeanArchiveProcessor {
             ApplicationArchive archive) {
         if (archive.getKey() != null) {
             final ArtifactKey key = archive.getKey();
-            for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
-                if (archiveMatches(key, excludeDependency.groupId, excludeDependency.artifactId,
-                        excludeDependency.classifier)) {
+            for (IndexDependencyConfig excludeDependency : config.excludeDependency().values()) {
+                if (archiveMatches(key, excludeDependency.groupId(), excludeDependency.artifactId(),
+                        excludeDependency.classifier())) {
                     return true;
                 }
             }
 
             for (ExcludeDependencyBuildItem excludeDependencyBuildItem : excludeDependencyBuildItems) {
-                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(), excludeDependencyBuildItem.getArtifactId(),
+                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(),
+                        Optional.ofNullable(excludeDependencyBuildItem.getArtifactId()),
                         excludeDependencyBuildItem.getClassifier())) {
                     return true;
                 }
@@ -266,17 +272,16 @@ public class BeanArchiveProcessor {
         return false;
     }
 
-    public static boolean archiveMatches(ArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
-
-        if (Objects.equals(key.getArtifactId(), artifactId)
-                && Objects.equals(key.getGroupId(), groupId)) {
+    public static boolean archiveMatches(ArtifactKey key, String groupId, Optional<String> artifactId,
+            Optional<String> classifier) {
+        if (Objects.equals(key.getGroupId(), groupId)
+                && (artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get()))) {
             if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
             } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {
                 return true;
             }
         }
-
         return false;
     }
 

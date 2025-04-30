@@ -29,9 +29,10 @@ public class KubernetesWithSpecifiedContainerNameTest {
             .setApplicationName("kubernetes-with-specified-container-name")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-with-specified-container-name.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-container-image-s2i", Version.getVersion())));
+                    Dependency.of("io.quarkus", "quarkus-container-image-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -81,7 +82,7 @@ public class KubernetesWithSpecifiedContainerNameTest {
                 });
             });
 
-            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-11");
+            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-17");
             assertThat(h.getMetadata().getLabels()).contains(entry("app.kubernetes.io/name", "ofoo"));
         });
     }

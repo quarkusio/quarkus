@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,7 +56,7 @@ public class AeshConsole extends QuarkusConsole {
      * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care
      * is taken.
      */
-    private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();
+    private final ConcurrentLinkedQueue<String> writeQueue = new ConcurrentLinkedQueue<>();
     private final Lock connectionLock = new ReentrantLock();
     private static final ThreadLocal<Boolean> IN_WRITE = new ThreadLocal<>() {
         @Override

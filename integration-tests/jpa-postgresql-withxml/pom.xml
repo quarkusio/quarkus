@@ -10,14 +10,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-jpa-postgresql-withxml</artifactId>
-    <name>Quarkus - Integration Tests - JPA - PostgreSQL</name>
+    <name>Quarkus - Integration Tests - JPA - PostgreSQL with XML</name>
     <description>Module that contains JPA related tests running with the PostgreSQL database</description>
 
+    <properties>
+        <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
+    </properties>
+
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
@@ -25,6 +25,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaxb</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -68,7 +76,20 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaxb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -148,9 +169,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

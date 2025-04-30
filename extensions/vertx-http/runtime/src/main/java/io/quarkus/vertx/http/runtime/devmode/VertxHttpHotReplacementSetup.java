@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -16,13 +17,15 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
+import io.quarkus.vertx.core.runtime.QuarkusExecutorFactory;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.impl.NoStackTraceException;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -47,6 +50,15 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             @Override
             public void run() {
                 RemoteSyncHandler.doPreScan();
+            }
+        });
+        hotReplacementContext.addPostRestartStep(new Runnable() {
+            @Override
+            public void run() {
+                // If not on a worker thread then attempt to re-initialize the dev mode executor
+                if (!Context.isOnWorkerThread()) {
+                    QuarkusExecutorFactory.reinitializeDevModeExecutor();
+                }
             }
         });
     }
@@ -98,35 +110,34 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.request().endHandler(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Object>>() {
+                    VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Void>() {
                         @Override
-                        public void handle(Promise<Object> promise) {
-                            try {
-                                String redirect = "/";
-                                MultiMap attrs = routingContext.request().formAttributes();
-                                Map<String, String> newVals = new HashMap<>();
-                                for (Map.Entry<String, String> i : attrs) {
-                                    if (i.getKey().startsWith("key.")) {
-                                        newVals.put(i.getKey().substring("key.".length()), i.getValue());
-                                    } else if (i.getKey().equals("redirect")) {
-                                        redirect = i.getValue();
-                                    }
+                        public Void call() {
+                            String redirect = "/";
+                            MultiMap attrs = routingContext.request().formAttributes();
+                            Map<String, String> newVals = new HashMap<>();
+                            for (Map.Entry<String, String> i : attrs) {
+                                if (i.getKey().startsWith("key.")) {
+                                    newVals.put(i.getKey().substring("key.".length()), i.getValue());
+                                } else if (i.getKey().equals("redirect")) {
+                                    redirect = i.getValue();
                                 }
-                                CurrentConfig.EDITOR.accept(newVals);
-                                routingContext.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
-                                        .set(HttpHeaderNames.LOCATION, redirect);
-                                routingContext.response().end();
-                            } catch (Throwable t) {
-                                routingContext.fail(t);
                             }
+                            CurrentConfig.EDITOR.accept(newVals);
+                            routingContext.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
+                                    .set(HttpHeaderNames.LOCATION, redirect);
+                            routingContext.response().end();
+                            return null;
                         }
-                    });
+                    }).onFailure(routingContext::fail);
                 }
             });
             routingContext.request().resume();
             return;
         }
-        if ((nextUpdate > System.currentTimeMillis() && !hotReplacementContext.isTest())
+        if ((nextUpdate > System.currentTimeMillis() &&
+                !hotReplacementContext.isTest() &&
+                !DevConsoleManager.isDoingHttpInitiatedReload()) // if there is a live reload possibly going on we don't want to let a request through to restarting application, this is best effort, but it narrows the window a lot
                 || routingContext.request().headers().contains(HEADER_NAME)) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
                 handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());
@@ -136,9 +147,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             return;
         }
         ClassLoader current = Thread.currentThread().getContextClassLoader();
-        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Boolean>>() {
+        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
             @Override
-            public void handle(Promise<Boolean> event) {
+            public Boolean call() {
                 //the blocking pool may have a stale TCCL
                 Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
@@ -151,8 +162,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             try {
                                 restart = hotReplacementContext.doScan(true);
                             } catch (Exception e) {
-                                event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
-                                return;
+                                throw new IllegalStateException("Unable to perform live reload scanning", e);
                             }
                             if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
                                 //its possible a Kafka message or some other source triggered a reload,
@@ -163,8 +173,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         }
                     }
                     if (hotReplacementContext.getDeploymentProblem() != null) {
-                        event.fail(hotReplacementContext.getDeploymentProblem());
-                        return;
+                        throw new NoStackTraceException(hotReplacementContext.getDeploymentProblem());
                     }
                     if (restart) {
                         //close all connections on close, except for this one
@@ -180,9 +189,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 } finally {
                     DevConsoleManager.setDoingHttpInitiatedReload(false);
                 }
-                event.complete(restart);
+                return restart;
             }
-        }, false, new Handler<AsyncResult<Boolean>>() {
+        }, false).onComplete(new Handler<AsyncResult<Boolean>>() {
             @Override
             public void handle(AsyncResult<Boolean> event) {
                 if (event.failed()) {
@@ -190,6 +199,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 } else {
                     boolean restart = event.result();
                     if (restart) {
+                        QuarkusExecutorFactory.reinitializeDevModeExecutor();
                         routingContext.request().headers().set(HEADER_NAME, "true");
                         VertxHttpRecorder.getRootHandler().handle(routingContext.request());
                     } else {

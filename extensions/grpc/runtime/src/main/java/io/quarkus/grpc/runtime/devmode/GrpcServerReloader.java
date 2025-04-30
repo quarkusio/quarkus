@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.devmode;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerMethodDefinition;
@@ -12,7 +13,6 @@ import io.quarkus.dev.testing.GrpcWebSocketProxy;
 import io.quarkus.grpc.stubs.ServerCalls;
 import io.quarkus.grpc.stubs.StreamCollector;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.vertx.grpc.VertxServer;
 
 public class GrpcServerReloader {
@@ -28,7 +28,7 @@ public class GrpcServerReloader {
     }
 
     public static StreamCollector devModeCollector() {
-        if (ProfileManager.getLaunchMode() != LaunchMode.DEVELOPMENT) {
+        if (LaunchMode.current() != LaunchMode.DEVELOPMENT) {
             throw new IllegalStateException("Attempted to initialize development mode StreamCollector in non-development mode");
         }
         return new DevModeStreamsCollector();
@@ -90,8 +90,14 @@ public class GrpcServerReloader {
 
     public static void shutdown() {
         if (server != null) {
-            server.shutdown();
-            server = null;
+            try {
+                server.shutdown();
+            } catch (RejectedExecutionException ignored) {
+                // Ignore this, it means the application is already shutting down
+            } finally {
+                server = null;
+            }
+
         }
     }
 }

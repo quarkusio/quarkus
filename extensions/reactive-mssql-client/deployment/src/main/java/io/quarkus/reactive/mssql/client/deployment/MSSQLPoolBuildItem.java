@@ -1,17 +1,20 @@
 package io.quarkus.reactive.mssql.client.deployment;
 
+import java.util.function.Function;
+
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.runtime.RuntimeValue;
 import io.vertx.mssqlclient.MSSQLPool;
 
+@Deprecated(since = "3.21", forRemoval = true)
 public final class MSSQLPoolBuildItem extends MultiBuildItem {
 
     private final String dataSourceName;
 
-    private final RuntimeValue<MSSQLPool> mssqlPool;
+    private final Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> mssqlPool;
 
-    public MSSQLPoolBuildItem(String dataSourceName, RuntimeValue<MSSQLPool> mssqlPool) {
+    public MSSQLPoolBuildItem(String dataSourceName, Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> mssqlPool) {
         this.dataSourceName = dataSourceName;
         this.mssqlPool = mssqlPool;
     }
@@ -20,7 +23,7 @@ public final class MSSQLPoolBuildItem extends MultiBuildItem {
         return dataSourceName;
     }
 
-    public RuntimeValue<MSSQLPool> getMSSQLPool() {
+    public Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> getMSSQLPool() {
         return mssqlPool;
     }
 

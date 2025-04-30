@@ -56,8 +56,10 @@
  * otherwise it will be the name of your entity.
  * </p>
  * <p>
- * The Mongo PojoCodec is used to serialize your entity to Bson Document, you can find more information on it's
- * documentation page: https://mongodb.github.io/mongo-java-driver/3.10/bson/pojos/
+ * The Mongo PojoCodec is used to serialize your entity to a Bson Document, you can find more information on its
+ * documentation page:
+ * https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/data-formats/document-data-format-pojo.
+ * This codec also supports Java records.
  * You can use the MongoDB annotations to control the mapping to the database : <code>@BsonId</code>,
  * <code>@BsonProperty("fieldName")</code>, <code>@BsonIgnore</code>.
  * </p>

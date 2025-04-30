@@ -319,7 +319,7 @@ public class CliDriver {
     }
 
     public static Result invokeExtensionAddMultiple(Path projectRoot, Path file) throws Exception {
-        // add the qute extension
+        // add amazon-lambda-http and jackson extensions
         Result result = execute(projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -345,7 +345,7 @@ public class CliDriver {
     }
 
     public static Result invokeExtensionRemoveMultiple(Path projectRoot, Path file) throws Exception {
-        // add the qute extension
+        // remove amazon-lambda-http and jackson extensions
         Result result = execute(projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -366,6 +366,52 @@ public class CliDriver {
                 "quarkus-amazon-lambda-http should not be listed as a dependency. Result:\n" + content);
         Assertions.assertFalse(content.contains("quarkus-jackson"),
                 "quarkus-jackson should not be listed as a dependency. Result:\n" + content);
+
+        return result;
+    }
+
+    public static Result invokeExtensionAddMultipleCommas(Path projectRoot, Path file) throws Exception {
+        Result result = execute(projectRoot, "extension", "add",
+                "quarkus-rest-jsonb,quarkus-rest-jackson", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+
+        result = invokeValidateExtensionList(projectRoot);
+        Assertions.assertTrue(result.stdout.contains("quarkus-qute"),
+                "Expected quarkus-qute to be in the list of extensions. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-rest-jsonb"),
+                "Expected quarkus-rest-jsonb to be in the list of extensions. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("quarkus-rest-jackson"),
+                "Expected quarkus-rest-jackson to be in the list of extensions. Result:\n" + result);
+
+        String content = CliDriver.readFileAsString(file);
+        Assertions.assertTrue(content.contains("quarkus-qute"),
+                "quarkus-qute should still be listed as a dependency. Result:\n" + content);
+        Assertions.assertTrue(content.contains("quarkus-rest-jsonb"),
+                "quarkus-rest-jsonb should be listed as a dependency. Result:\n" + content);
+        Assertions.assertTrue(content.contains("quarkus-rest-jackson"),
+                "quarkus-rest-jackson should be listed as a dependency. Result:\n" + content);
+
+        return result;
+    }
+
+    public static Result invokeExtensionRemoveMultipleCommas(Path projectRoot, Path file) throws Exception {
+        Result result = execute(projectRoot, "extension", "remove",
+                "quarkus-rest-jsonb,quarkus-rest-jackson", "-e", "-B", "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+
+        result = invokeValidateExtensionList(projectRoot);
+        Assertions.assertFalse(result.stdout.contains("quarkus-rest-jsonb"),
+                "quarkus-rest-jsonb should not be in the list of extensions. Result:\n" + result);
+        Assertions.assertFalse(result.stdout.contains("quarkus-rest-jackson"),
+                "quarkus-rest-jackson should not be in the list of extensions. Result:\n" + result);
+
+        String content = CliDriver.readFileAsString(file);
+        Assertions.assertFalse(content.contains("quarkus-rest-jsonb"),
+                "quarkus-rest-jsonb should not be listed as a dependency. Result:\n" + content);
+        Assertions.assertFalse(content.contains("quarkus-rest-jackson"),
+                "quarkus-rest-jackson should not be listed as a dependency. Result:\n" + content);
 
         return result;
     }

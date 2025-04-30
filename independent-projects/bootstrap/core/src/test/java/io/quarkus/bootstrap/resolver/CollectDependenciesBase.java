@@ -1,12 +1,11 @@
 package io.quarkus.bootstrap.resolver;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  *
@@ -47,11 +47,20 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             expected.addAll(expectedResult);
             expected.addAll(deploymentDeps);
         }
-        // stripping the resolved paths
-        final List<Dependency> resolvedDeps = getTestResolver().resolveModel(root.toArtifact()).getDependencies()
-                .stream()
-                .map(d -> new ArtifactDependency(d)).collect(Collectors.toList());
-        assertEquals(new HashSet<>(expected), new HashSet<>(resolvedDeps));
+        final Collection<ResolvedDependency> buildDeps = getTestResolver().resolveModel(root.toArtifact()).getDependencies();
+        assertThat(stripResolvedPaths(buildDeps)).containsExactlyInAnyOrderElementsOf(expected);
+        assertBuildDependencies(buildDeps);
+    }
+
+    protected void assertBuildDependencies(Collection<ResolvedDependency> buildDeps) {
+    }
+
+    private static List<Dependency> stripResolvedPaths(Collection<ResolvedDependency> deps) {
+        final List<Dependency> result = new ArrayList<>(deps.size());
+        for (var dep : deps) {
+            result.add(new ArtifactDependency(dep));
+        }
+        return result;
     }
 
     protected BootstrapAppModelResolver getTestResolver() throws Exception {

@@ -2,9 +2,8 @@ package io.quarkus.deployment.builditem;
 
 import java.util.logging.Level;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Establish the default log level of a log category.
@@ -29,6 +28,7 @@ public final class LogCategoryBuildItem extends MultiBuildItem {
      *
      * @param category the category (must not be {@code null} or empty)
      * @param level the level (must not be {@code null})
+     * @param setMinLevelDefault if the default minimum level for the category should be set
      */
     public LogCategoryBuildItem(final String category, final Level level, boolean setMinLevelDefault) {
         Assert.checkNotNullParam("category", category);

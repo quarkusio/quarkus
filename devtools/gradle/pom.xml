@@ -50,6 +50,28 @@
             </properties>
         </profile>
         <profile>
+            <id>gradleJavaHomeSet</id>
+            <activation>
+                <property>
+                    <name>env.GRADLE_JAVA_HOME</name>
+                </property>
+            </activation>
+            <properties>
+                <gradleJavaHome>${env.GRADLE_JAVA_HOME}</gradleJavaHome>
+            </properties>
+        </profile>
+        <profile>
+            <id>gradleJavaHomeNotSet</id>
+            <activation>
+                <property>
+                    <name>!env.GRADLE_JAVA_HOME</name>
+                </property>
+            </activation>
+            <properties>
+                <gradleJavaHome>${env.JAVA_HOME}</gradleJavaHome>
+            </properties>
+        </profile>
+        <profile>
             <id>run-gradle</id>
             <activation>
                 <file>
@@ -79,6 +101,7 @@
                                     <environmentVariables>
                                         <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
                                         <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                                        <JAVA_HOME>${gradleJavaHome}</JAVA_HOME>
                                     </environmentVariables>
                                     <skip>${skip.gradle.build}</skip>
                                 </configuration>
@@ -163,6 +186,17 @@
             <activation>
                 <property>
                     <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
+            <id>quickly-docs-build</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
                 </property>
             </activation>
             <properties>

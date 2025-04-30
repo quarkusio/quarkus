@@ -48,8 +48,8 @@ class ArcProxyBeanMetaDataClassNormalizerTest {
     }
 
     /**
-     * Simulates an object injected through @{@link io.quarkus.test.junit.mockito.InjectMock}
-     * or @{@link io.quarkus.test.junit.mockito.InjectSpy}.
+     * Simulates an object injected through {@link io.quarkus.test.InjectMock}
+     * or {@code io.quarkus.test.junit.mockito.InjectSpy}.
      */
     private static class SecondSubclass extends FirstSubclass {
     }

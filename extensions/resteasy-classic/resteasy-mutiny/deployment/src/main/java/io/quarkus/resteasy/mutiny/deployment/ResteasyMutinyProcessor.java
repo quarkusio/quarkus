@@ -16,10 +16,10 @@ public class ResteasyMutinyProcessor {
 
     void warn() {
         Logger.getLogger(ResteasyMutinyProcessor.class).warn("The quarkus-resteasy-mutiny extension is deprecated. " +
-                "Switch to RESTEasy Reactive instead.\n" +
+                "Switch to Quarkus REST instead.\n" +
                 "This extension adds support for Uni and Multi to RESTEasy Classic, without using the reactive execution model,"
                 +
-                " as RESTEasy Classic does not use it. To properly integrate Mutiny and RESTEasy, use RESTEasy Reactive. See https://quarkus.io/guides/getting-started-reactive for detailed instructions");
+                " as RESTEasy Classic does not use it. To properly integrate Mutiny and RESTEasy, use Quarkus REST. See https://quarkus.io/guides/getting-started-reactive for detailed instructions");
     }
 
 }

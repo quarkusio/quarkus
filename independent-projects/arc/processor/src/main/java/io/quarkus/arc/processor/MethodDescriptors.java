@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -20,6 +22,7 @@ import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.interceptor.InvocationContext;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ArcInvocationContext;
@@ -62,6 +65,9 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);
 
+    public static final MethodDescriptor CONSUMER_ACCEPT = MethodDescriptor.ofMethod(Consumer.class, "accept",
+            void.class, Object.class);
+
     public static final MethodDescriptor CREATIONAL_CTX_CHILD = MethodDescriptor.ofMethod(CreationalContextImpl.class, "child",
             CreationalContextImpl.class,
             CreationalContext.class);
@@ -93,6 +99,8 @@ public final class MethodDescriptors {
             Object.class);
 
     public static final MethodDescriptor OBJECT_HASH_CODE = MethodDescriptor.ofMethod(Object.class, "hashCode", int.class);
+
+    public static final MethodDescriptor OBJECT_GET_CLASS = MethodDescriptor.ofMethod(Object.class, "getClass", Class.class);
 
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
@@ -239,6 +247,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class,
             "getActiveContext", InjectableContext.class, Class.class);
 
+    public static final MethodDescriptor ARC_CONTAINER_GET_CONTEXTS = MethodDescriptor.ofMethod(ArcContainer.class,
+            "getContexts", List.class, Class.class);
+
     public static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class,
             CreationalContext.class);
@@ -272,17 +283,18 @@ public final class MethodDescriptors {
     public static final MethodDescriptor CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getApplicationScopedDelegate", Object.class, InjectableContext.class, InjectableBean.class);
 
+    public static final MethodDescriptor CLIENT_PROXIES_GET_SINGLE_CONTEXT_DELEGATE = MethodDescriptor.ofMethod(
+            ClientProxies.class,
+            "getSingleContextDelegate", Object.class, InjectableContext.class, InjectableBean.class);
+
     public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getDelegate", Object.class, InjectableBean.class);
 
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_SET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "set", Object.class, Object.class);
+    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_GET = MethodDescriptor.ofMethod(
+            DecoratorDelegateProvider.class, "getCurrent", Object.class, CreationalContext.class);
 
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_UNSET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "unset", void.class);
-
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_GET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "get", Object.class);
+    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_SET = MethodDescriptor.ofMethod(
+            DecoratorDelegateProvider.class, "setCurrent", Object.class, CreationalContext.class, Object.class);
 
     public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
             .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,
@@ -306,6 +318,19 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPT_FUNCTION_INTERCEPT = MethodDescriptor.ofMethod(InterceptFunction.class,
             "intercept", Object.class, ArcInvocationContext.class);
+
+    public static final MethodDescriptor LOCK_LOCK = MethodDescriptor.ofMethod(Lock.class, "lock", void.class);
+    public static final MethodDescriptor LOCK_UNLOCK = MethodDescriptor.ofMethod(Lock.class, "unlock", void.class);
+
+    public static final MethodDescriptor ACTIVE_RESULT_VALUE = MethodDescriptor.ofMethod(ActiveResult.class,
+            "value", boolean.class);
+    public static final MethodDescriptor ACTIVE_RESULT_REASON = MethodDescriptor.ofMethod(ActiveResult.class,
+            "inactiveReason", String.class);
+    public static final MethodDescriptor ACTIVE_RESULT_CAUSE = MethodDescriptor.ofMethod(ActiveResult.class,
+            "inactiveCause", ActiveResult.class);
+
+    public static final MethodDescriptor STRING_BUILDER_APPEND = MethodDescriptor.ofMethod(StringBuilder.class,
+            "append", StringBuilder.class, String.class);
 
     private MethodDescriptors() {
     }

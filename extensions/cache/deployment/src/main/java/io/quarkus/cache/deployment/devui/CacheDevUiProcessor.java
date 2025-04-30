@@ -1,6 +1,6 @@
 package io.quarkus.cache.deployment.devui;
 
-import io.quarkus.cache.runtime.devconsole.CacheJsonRPCService;
+import io.quarkus.cache.runtime.devui.CacheJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -21,7 +21,7 @@ public class CacheDevUiProcessor {
         return pageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(CacheJsonRPCService.class);
     }

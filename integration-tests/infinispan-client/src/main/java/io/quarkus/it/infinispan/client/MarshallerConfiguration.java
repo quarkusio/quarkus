@@ -3,8 +3,9 @@ package io.quarkus.it.infinispan.client;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
-import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.schema.Schema;
+import org.infinispan.protostream.schema.Type;
 
 @ApplicationScoped
 public class MarshallerConfiguration {
@@ -14,14 +15,14 @@ public class MarshallerConfiguration {
     }
 
     @Produces
-    FileDescriptorSource bookProtoDefinition() {
-        return FileDescriptorSource.fromString("magazine.proto", "package magazine_sample;\n" +
-                "\n" +
-                "message Magazine {\n" +
-                "  required string name = 1;\n" +
-                "  required int32 publicationYear = 2;\n" +
-                "  required int32 publicationMonth = 3;\n" +
-                "  repeated string stories = 4;\n" +
-                "}");
+    Schema magazineSchema() {
+        return new Schema.Builder("magazine.proto")
+                .packageName("magazine_sample")
+                .addMessage("Magazine")
+                .addField(Type.Scalar.STRING, "name", 1)
+                .addField(Type.Scalar.INT32, "publicationYear", 2)
+                .addField(Type.Scalar.INT32, "publicationMonth", 3)
+                .addRepeatedField(Type.Scalar.STRING, "stories", 4)
+                .build();
     }
 }

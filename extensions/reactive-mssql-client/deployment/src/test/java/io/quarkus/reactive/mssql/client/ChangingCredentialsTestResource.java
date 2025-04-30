@@ -12,19 +12,19 @@ import jakarta.ws.rs.core.Response;
 
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mssqlclient.MSSQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/test")
 public class ChangingCredentialsTestResource {
 
     @Inject
-    MSSQLPool client;
+    Pool client;
 
     @Inject
     ChangingCredentialsProvider credentialsProvider;
 
     void addUser(@Observes StartupEvent ignored) {
-        client.query("CREATE LOGIN user2 WITH PASSWORD = 'user2_Has_A_Str0ng_Required_Password'").executeAndAwait();
+        client.query("CREATE LOGIN user2 WITH PASSWORD = 'yourStrong(!)Password2'").executeAndAwait();
         client.query("CREATE USER user2 FOR LOGIN user2").executeAndAwait();
     }
 

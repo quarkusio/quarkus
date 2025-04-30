@@ -5,55 +5,75 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTelemetry
 include::_attributes.adoc[]
+:diataxis-type: reference
 :categories: observability
-:summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide distributed tracing for interactive web applications.
+:summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide observability for interactive web applications.
+:topics: observability,opentelemetry
+:extensions: io.quarkus:quarkus-opentelemetry
 
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
-distributed tracing for interactive web applications.
+Observability for interactive web applications.
 
-OpenTelemetry Metrics and Logging are not yet supported.
+On these page we show the signal independent features of the extension.
+
+include::{includes}/observability-include.adoc[]
 
 [NOTE]
 ====
-- Quarkus now supports the OpenTelemetry Autoconfiguration for Traces. The configurations match what you can see at
-https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[OpenTelemetry SDK Autoconfigure]
-with the `quarkus.*` prefix.
-
-- Extensions and the libraries they provide, are directly instrumented in Quarkus. The *use of the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended* due to context propagation issues between imperative and reactive libraries.
+- The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide], the new xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] and the xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide].
+- The use of *the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended*. Quarkus Extensions and the libraries they provide, are directly instrumented. That agent doesn't work with native mode.
 ====
 
-== Prerequisites
+== Introduction
+https://opentelemetry.io/docs/what-is-opentelemetry/[OpenTelemetry] is an Observability framework and toolkit designed to create and manage telemetry data such as traces, metrics, and logs. Crucially, OpenTelemetry is vendor- and tool-agnostic.
 
-:prerequisites-docker-compose:
-include::{includes}/prerequisites.adoc[]
+Quarkus provides manual and automatic instrumentation for tracing and manual instrumentation capabilities for metrics.
 
-== Architecture
+This will allow Quarkus based applications to be observable by tools and services supporting OpenTelemetry.
 
-In this guide, we create a straightforward REST application to demonstrate distributed tracing.
+[NOTE]
+====
+Automatic metrics instrumentation in Quarkus is done by the xref:telemetry-micrometer.adoc[Quarkus Micrometer extension]. We plan to provide, in the future, a bridge for those metrics to be available in OpenTelemetry as well.
+====
 
-== Solution
+Quarkus supports the OpenTelemetry Autoconfiguration. The configurations match what you can see at
+https://opentelemetry.io/docs/languages/java/configuration/[OpenTelemetry SDK Autoconfigure]
+with the `quarkus.*` prefix.
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can skip right to the completed example.
+This guide provides a crosscutting explanation of the OpenTelemetry extension and how to use it. If you need details about any particular signal (tracing or metrics), please refer to the signal specific guide.
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+With the introduction of OpenTelemetry Metrics, the original, single page guide had to be split according to signal types, as follows:
 
-The solution is located in the `opentelemetry-quickstart` {quickstarts-tree-url}/opentelemetry-quickstart[directory].
+=== xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide]
 
-== Creating the Maven project
+The tracing functionality is supported and *on* by default.
 
-First, we need a new project. Create a new project with the following command:
+=== xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide]
 
-:create-app-artifact-id: opentelemetry-quickstart
-:create-app-extensions: resteasy-reactive,quarkus-opentelemetry
-include::{includes}/devtools/create-app.adoc[]
+==== Enable Metrics
+The metrics functionality is experimental and *off* by default. You will need to activate it by setting:
 
-This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
-which includes the default OpenTelemetry support,
-and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
+[source,properties]
+----
+quarkus.otel.metrics.enabled=true
+----
+At build time on your `application.properties` file.
 
-If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry` extension
-to your project by running the following command in your project base directory:
+=== xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
+
+==== Enable Logs
+The logging functionality is experimental and *off* by default. You will need to activate it by setting:
+
+[source,properties]
+----
+quarkus.otel.logs.enabled=true
+----
+At build time on your `application.properties` file.
+
+== Using the extension
+
+If you already have your Quarkus project, you can add the `quarkus-opentelemetry` extension
+to it by running the following command in your project base directory:
 
 :add-extension-extensions: opentelemetry
 include::{includes}/devtools/extension-add.adoc[]
@@ -75,242 +95,134 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-opentelemetry")
 ----
 
-=== Examine the Jakarta REST resource
-
-Create a `src/main/java/org/acme/opentelemetry/TracedResource.java` file with the following content:
-
-[source,java]
-----
-package org.acme.opentelemetry;
-
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import org.jboss.logging.Logger;
-
-@Path("/hello")
-public class TracedResource {
-
-    private static final Logger LOG = Logger.getLogger(TracedResource.class);
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        LOG.info("hello");
-        return "hello";
-    }
-}
-----
-
-Notice that there is no tracing specific code included in the application. By default, requests sent to this
-endpoint will be traced without any required code changes.
 
 === Create the configuration
 
-There are no mandatory configurations for the extension to work.
+:opentelemetry-config:
+include::{includes}/opentelemetry-config.adoc[]
 
-If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+=== Disable all or parts of the OpenTelemetry extension
 
-[source,properties]
-----
-quarkus.application.name=myservice // <1>
-quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317 // <2>
-quarkus.otel.exporter.otlp.traces.headers=authorization=Bearer my_secret // <3>
-quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <4>
+Once you add the dependency, the extension will generate tracing data by default. To enable metrics or disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
 
-# Alternative to the console log
-quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <5>
-----
+|===
+|Affected Signal | Property name |Default value |Description
 
-<1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
-<2> gRPC endpoint to send spans. If not set, it will default to `http://localhost:4317`.
-<3> Optional gRPC headers commonly used for authentication
-<4> Add tracing information into log messages.
-<5> You can also only put the trace info into the access log. In this case you must omit the info in the console log format.
+| All
+|`quarkus.otel.enabled`
+|true
+|If false, disable the OpenTelemetry usage at *build* time.
 
-[NOTE]
-====
-All configurations have been updated from `quarkus.opentelemetry.\*` -> `quarkus.otel.*`
+| All
+|`quarkus.otel.sdk.disabled`
+|false
+|Comes from the OpenTelemetry autoconfiguration. If true, will disable the OpenTelemetry SDK usage at *runtime*.
 
-The legacy configurations are now deprecated but will still work during a transition period.
-====
+| All output
+|`quarkus.otel.exporter.otlp.enabled`
+|true
+|Deprecated for removal.
 
-== Run the application
+If false will disable the default OTLP exporter at *build* time.
 
-The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
+| Traces
+|`quarkus.otel.traces.enabled`
+|true
+|If false, disable the OpenTelemetry tracing usage at *build* time.
 
-[NOTE]
-====
-Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
-You do not need to install a separated collector. You can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
-https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry] for details).
-====
+| Traces output
+|`quarkus.otel.traces.exporter`
+|cdi
+|List of exporters to be used for tracing, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable tracing data output.
 
-Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
+| Metrics
+|`quarkus.otel.metrics.enabled`
+|false
+|Metrics are disabled by default at *build* time because they are experimental.
 
-[source,yaml,subs="attributes"]
-----
-version: "2"
-services:
+| Metrics output
+|`quarkus.otel.metrics.exporter`
+|cdi
+|List of exporters to be used for metrics, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable metrics data output.
 
-  # Jaeger
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14268:14268" # Receive legacy OpenTracing traces, optional
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver, not yet used by Quarkus, optional
-      - "14250:14250" # Receive from external otel-collector, optional
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-----
-You should remove the optional ports you don't need them.
+| Logs
+|`quarkus.otel.logs.enabled`
+|false
+|Logs are disabled by default at *build* time because they are experimental.
 
-Now we are ready to run our application. If using `application.properties` to configure the tracer:
+| Logs output
+|`quarkus.otel.logs.exporter`
+|cdi
+|List of exporters to be used for logs, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable logs data output.
 
-include::{includes}/devtools/dev.adoc[]
+| Logs output
+|`quarkus.otel.logs.handler.enabled`
+|true
+|If false, disable the OpenTelemetry logs handler at *runtime*. This removes the bridge between the Quarkus logging system (JBoss LogManager) and OpenTelemetry logs.
+|===
 
-or if configuring the OTLP gRPC endpoint via JVM arguments:
+If you need to enable or disable the exporter at runtime, you can use the xref:opentelemetry-tracing.adoc#sampler[sampler] because it has the ability to filter out all the spans if needed.
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317"
-include::{includes}/devtools/dev.adoc[]
-:!dev-additional-parameters:
-
-With the OpenTelemetry Collector, the Jaeger system and the application running, you can make a request to the provided endpoint:
-
-[source,shell]
-----
-$ curl http://localhost:8080/hello
-hello
-----
-
-When the first request has been submitted, you will be able to see the tracing information in the logs:
-
-[source]
-----
-10:49:02 INFO  traceId=, parentId=, spanId=, sampled= [io.quarkus] (main) Installed features: [cdi, opentelemetry, rest-client, resteasy, smallrye-context-propagation, vertx]
-10:49:03 INFO  traceId=17ceb8429b9f25b0b879fa1503259456, parentId=3125c8bee75b7ad6, spanId=58ce77c86dd23457, sampled=true [or.ac.op.TracedResource] (executor-thread-1) hello
-10:49:03 INFO  traceId=ad23acd6d9a4ed3d1de07866a52fa2df, parentId=, spanId=df13f5b45cf4d1e2, sampled=true [or.ac.op.TracedResource] (executor-thread-0) hello
-----
-
-
-Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
-
-Hit `CTRL+C` or type `q` to stop the application.
-
-=== JDBC
-
-The https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jdbc/library[JDBC instrumentation] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your build file:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.opentelemetry.instrumentation</groupId>
-    <artifactId>opentelemetry-jdbc</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc")
-----
-
-As it uses a dedicated JDBC datasource wrapper, you must enable telemetry for your datasource:
-
-[source, properties]
-----
-# enable tracing
-quarkus.datasource.jdbc.telemetry=true
-
-# configure datasource
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
-----
-
-== Additional configuration
-Some use cases will require custom configuration of OpenTelemetry.
-These sections will outline what is necessary to properly configure it.
-
-=== ID Generator
-The OpenTelemetry extension will use by default a random https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#id-generators[ID Generator]
-when creating the trace and span identifier.
-
-Some vendor-specific protocols need a custom ID Generator, you can override the default one by creating a producer.
-The OpenTelemetry extension will detect the `IdGenerator` CDI bean and will use it when configuring the tracer producer.
-
-[source,java]
-----
-@Singleton
-public class CustomConfiguration {
-
-    /** Creates a custom IdGenerator for OpenTelemetry */
-    @Produces
-    @Singleton
-    public IdGenerator idGenerator() {
-        return AwsXrayIdGenerator.getInstance();
-    }
-}
-----
-
-=== Propagators
-OpenTelemetry propagates cross-cutting concerns through https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md[propagators] that will share an underlying `Context` for storing state and accessing
-data across the lifespan of a distributed transaction.
-
-By default, the OpenTelemetry extension enables the https://www.w3.org/TR/trace-context/[W3C Trace Context] and the https://www.w3.org/TR/baggage/[W3C Baggage]
-propagators, you can however choose any of the supported OpenTelemetry propagators by setting the `propagators` config that is described in the <<configuration-reference>>.
-
-==== Additional Propagators
-
-* The `b3`, `b3multi`, `jaeger` and `ottrace` propagators will need the https://github.com/open-telemetry/opentelemetry-java/tree/main/extensions/trace-propagators[trace-propagators]
-extension to be added as a dependency to your project.
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.opentelemetry</groupId>
-    <artifactId>opentelemetry-extension-trace-propagators</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.opentelemetry:opentelemetry-extension-trace-propagators")
-----
-
-* The `xray` propagator will need the https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/aws-xray-propagator[aws]
-extension to be added as a dependency to your project.
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.opentelemetry.contrib</groupId>
-    <artifactId>opentelemetry-aws-xray-propagator</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.opentelemetry.contrib:opentelemetry-aws-xray-propagator")
-----
+Particular instrumentation components can be disabled in tracing, like ignore client requests but keep server ones. For more details, please check the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide].
 
 === Resource
 A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/overview.md#resources[resource] is a representation
-of the entity that is producing telemetry, it adds attributes to the exported trace to characterize who is producing the trace.
+of the entity that is producing telemetry, it adds attributes to the exported trace or metric to characterize who is producing the telemetry. Quarkus follows the https://opentelemetry.io/docs/languages/java/configuration/#resources[resources auto-configuration] specified by the Java OpenTelemetry SDK.
 
-You can add attributes by setting the `resource-attributes` tracer config that is described in the <<configuration-reference>>.
+==== Default
+The following attributes are added by default to resources.
+
+|===
+|Attribute name|Content example|Origin
+
+|service.name
+|"opentelemetry-quickstart"
+|Value comes from the artifactId, from the `quarkus.application.name` property or from `quarkus.otel.resource.attributes=service.name=cart` property.
+
+|host.name
+|"myHost"
+|Resolved at startup
+
+|service.version
+|"1.0-SNAPSHOT"
+|Resolved at build time from the artifact version
+
+|telemetry.sdk.language
+|"java"
+|Static value
+
+|telemetry.sdk.name
+|"opentelemetry"
+|Resolved at build time
+
+|telemetry.sdk.version
+|"1.32.0"
+|Resolved at build time
+
+|webengine.name
+|"Quarkus"
+|Static value
+
+|webengine.version
+|"999-SNAPSHOT"
+|Quarkus version resolved at build time
+|===
+
+==== Using configuration
+You can add additional attributes by setting the `quarkus.otel.resource.attributes` config property that is described in the <<configuration-reference>>.
 Since this property can be overridden at runtime, the OpenTelemetry extension will pick up its value following the order of precedence that
 is described in the xref:config-reference.adoc#configuration-sources[Quarkus Configuration Reference].
 
+[source,properties]
+----
+quarkus.otel.resource.attributes=deployment.environment=dev,service.name=cart,service.namespace=shopping
+----
+
+This will add the attributes for `deployment.environment`, `service.name` and `service.namespace` to the resource and be included in traces and metrics.
+
+==== Using CDI beans
 If by any means you need to use a custom resource or one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
-you can create multiple resource producers. The OpenTelemetry extension will detect the `Resource` CDI beans and will merge them when configuring the tracer producer.
+you can create multiple resource producers. The OpenTelemetry extension will detect the `Resource` CDI beans and will merge them when configuring the OTel SDK.
 
 [source,java]
 ----
@@ -331,206 +243,81 @@ public class CustomConfiguration {
 }
 ----
 
-=== Sampler
-A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether
-a trace should be sampled and exported, controlling noise and overhead by reducing the number of sample of traces collected and sent
-to the collector.
+=== Semantic conventions
 
-You can set a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler]
-simply by setting the desired sampler config described in the <<configuration-reference>>.
+OpenTelemetry provides a set of https://opentelemetry.io/docs/specs/semconv/http/http-spans/[semantic conventions] to standardize the data collected by the instrumentation.
 
-[NOTE]
-====
-Quarkus 3.0 introduced breaking changes on the configuration.
-
-Sampler related property names and values change to comply with the latest Java OpenTelemetry SDK. During a transition period it will be possible to set the new configuration values in the old property because we are mapping  `quarkus.opentelemetry.tracer.sampler` -> `quarkus.otel.traces.sampler`.
-
-If the sampler is parent based, there is no need to set, the now dropped property, `quarkus.opentelemetry.tracer.sampler.parent-based`.
-
-The values you need to set on `quarkus.opentelemetry.tracer.sampler` are now:
-
-|===
-|Old Sampler config value |New Sampler config value|New Sampler config value (Parent based)
-
-|`on`
-|`always_on`
-|`parentbased_always_on`
-
-|`off`
-|`always_off`
-|`parentbased_always_off`
-
-|`ratio`
-|`traceidratio`
-|`parentbased_traceidratio`
-|===
-====
-
-If you need to use a custom sampler there are now 2 different ways:
-
-==== Sampler CDI Producer
-
-You can create a sampler CDI producer. The Quarkus OpenTelemetry extension will detect the `Sampler` CDI bean and will use it when configuring the Tracer.
-
-[source,java]
-----
-@Singleton
-public class CustomConfiguration {
-
-    /** Creates a custom sampler for OpenTelemetry */
-    @Produces
-    @Singleton
-    public Sampler sampler() {
-        return JaegerRemoteSampler.builder()
-        .setServiceName("my-service")
-        .build();
-    }
-}
-----
-
-==== OTel Sampler SPI
-
-This will use the SPI hooks available with the OTel Autoconfiguration.
-You can create a simple Sampler class:
-[source,java]
-----
-public class CustomSPISampler implements Sampler {
-    @Override
-    public SamplingResult shouldSample(Context context,
-            String s,
-            String s1,
-            SpanKind spanKind,
-            Attributes attributes,
-            List<LinkData> list) {
-        // Do some sampling here
-        return Sampler.alwaysOn().shouldSample(context, s, s1, spanKind, attributes, list);
-    }
-
-    @Override
-    public String getDescription() {
-        return "custom-spi-sampler-description";
-    }
-}
-
-----
-Then a Sampler Provider:
-[source,java]
-----
-public class CustomSPISamplerProvider implements ConfigurableSamplerProvider {
-    @Override
-    public Sampler createSampler(ConfigProperties configProperties) {
-        return new CustomSPISampler();
-    }
-
-    @Override
-    public String getName() {
-        return "custom-spi-sampler";
-    }
-}
-----
-Write the SPI loader text file at `resources/META-INF/services` with name `io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider` containing the full qualified name of the `CustomSPISamplerProvider` class.
-
-Then activate on the configuration:
-[source,properties]
-----
-quarkus.otel.traces.sampler=custom-spi-sampler
-----
-
-As you can see, CDI is much simpler to work with.
-
-== Additional instrumentation
-
-Some Quarkus extensions will require additional code to ensure traces are propagated to subsequent execution.
-These sections will outline what is necessary to propagate traces across process boundaries.
-
-The instrumentation documented in this section has been tested with Quarkus and works in both standard and native mode.
-
-=== CDI
-
-Annotating a method in any CDI aware bean with the `io.opentelemetry.instrumentation.annotations.WithSpan`
-annotation will create a new Span and establish any required relationships with the current Trace context.
-
-Method parameters can be annotated with the `io.opentelemetry.instrumentation.annotations.SpanAttribute` annotation to
-indicate which method parameters should be part of the Trace.
-
-Example:
-[source,java]
-----
-@ApplicationScoped
-class SpanBean {
-    @WithSpan
-    void span() {
-
-    }
-
-    @WithSpan("name")
-    void spanName() {
-
-    }
-
-    @WithSpan(kind = SERVER)
-    void spanKind() {
-
-    }
-
-    @WithSpan
-    void spanArgs(@SpanAttribute(value = "arg") String arg) {
-
-    }
-}
-----
-
-=== Available OpenTelemetry CDI injections
-
-As per MicroProfile Telemetry Tracing specification, Quarkus supports the CDI injections of the
-following classes:
-
-* `io.opentelemetry.api.OpenTelemetry`
-* `io.opentelemetry.api.trace.Tracer`
-* `io.opentelemetry.api.trace.Span`
-* `io.opentelemetry.api.baggage.Baggage`
-
-You can inject these classes in any CDI enabled bean. For instance, the `Tracer` is particularly useful to start custom spans:
-
-[source,java]
-----
-@Inject
-Tracer tracer;
-
-...
-
-public void tracedWork() {
-    Span span = tracer.spanBuilder("My custom span")
-        .setAttribute("attr", "attr.value")
-        .setParent(Context.current().with(Span.current()))
-        .setSpanKind(SpanKind.INTERNAL)
-        .startSpan();
-
-    // traced work
-
-    span.end();
-}
-----
-
-=== SmallRye Reactive Messaging - Kafka
-
-When using the SmallRye Reactive Messaging extension for Kafka,
-we are able to propagate the span into the Kafka Record with:
-
-[source,java]
-----
-TracingMetadata tm = TracingMetadata.withPrevious(Context.current());
-Message out = Message.of(...).withMetadata(tm);
-----
-
-The above creates a `TracingMetadata` object we can add to the `Message` being produced,
-which retrieves the OpenTelemetry `Context` to extract the current span for propagation.
+When creating manual instrumentation, while naming metrics or attributes you should follow those conventions and not create new names to represent existing conventions. This will make data correlation easier to perform across services.
 
 == Exporters
 
-Quarkus OpenTelemetry defaults to the standard OTLP exporter defined in OpenTelemetry.
+=== Default
 
-Additional exporters will be available in the Quarkiverse https://github.com/quarkiverse/quarkus-opentelemetry-exporter/blob/main/README.md[quarkus-opentelemetry-exporter] project.
+The Quarkus OpenTelemetry extension uses its own signal exporters built on top of Vert.x for optimal performance and maintainability.
+
+The exporter is automatically wired with CDI, that's why the `quarkus.otel.traces.exporter` and `quarkus.otel.metrics.exporter` properties default to `cdi`.
+
+The `quarkus.otel.exporter.otlp.protocol` defaults to `grpc` but `http/protobuf` can also be used.
+
+NOTE: If you change the protocol, you also need to change the port in the endpoint. The default port for `grpc` is `4317` and for `http/protobuf` is `4318`.
+
+=== On Quarkiverse
+Additional exporters will be available in the Quarkiverse https://docs.quarkiverse.io/quarkus-opentelemetry-exporter/dev/index.html[quarkus-opentelemetry-exporter] project.
+
+Currently, are available the following exporters (may be outdated) for:
+
+- Legacy Jaeger
+- Microsoft Azure
+- Google Cloud
+
+Also on Quarkiverse, the https://docs.quarkiverse.io/quarkus-amazon-services/dev/opentelemetry.html[Quarkus AWS SDK has integration with OpenTelemetry].
+
+=== Logging exporter (for debugging)
+
+You can output all metrics to the console, for debugging/development purposes.
+
+IMPORTANT: Don't use this in production.
+
+You will need to add the following dependency to your project:
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-logging</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentelemetry:opentelemetry-exporter-logging")
+----
+
+
+Then, setting the exporter to `logging` in the `application.properties` file:
+[source, properties]
+----
+quarkus.otel.metrics.exporter=logging <1>
+quarkus.otel.metric.export.interval=10000ms <2>
+quarkus.otel.traces.exporter=logging <3>
+----
+
+<1> Set the metrics exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
+<2> Set the interval to export the metrics. The default is `1m`, which is too long for debugging.
+<3> Set the traces exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
+
+== Visualizing the data
+
+We recommend the xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
+
+This provides a Quarkus Dev service using an "all-in-one" https://github.com/grafana/docker-otel-lgtm[Grafana OTel LGTM].
+
+Grafana is used to visualize data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+
+This provides an easy way to visualize all OpenTelemetry data generated by the application.
+
+You can also use the xref:logging-exporter-for-debugging[logging exporter] to output all traces and metrics to the console.
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference
@@ -541,8 +328,5 @@ https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/au
 adding the usual `quarkus.*` prefix.
 
 Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.
-
-*The legacy properties* with prefix `quarkus.opentelemetry.*` are currently being mapped to the new ones as a default, during a transition period. See Default column in the details below.
-
 
 include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]

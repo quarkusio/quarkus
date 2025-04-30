@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 
 public class TestNativeConfig implements NativeConfig {
 
@@ -20,6 +20,14 @@ public class TestNativeConfig implements NativeConfig {
 
     public TestNativeConfig(String builderImage, ImagePullStrategy builderImagePull) {
         this.builderImage = new TestBuildImageConfig(builderImage, builderImagePull);
+    }
+
+    public boolean enabled() {
+        return true;
+    }
+
+    public boolean sourcesOnly() {
+        return true;
     }
 
     @Override
@@ -138,6 +146,16 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public Optional<Boolean> pie() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<String> march() {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean remoteContainerBuild() {
         return false;
     }
@@ -208,8 +226,18 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public boolean includeReasonsInConfigFiles() {
+        return false;
+    }
+
+    @Override
     public Compression compression() {
         return null;
+    }
+
+    @Override
+    public boolean agentConfigurationApply() {
+        return false;
     }
 
     private class TestBuildImageConfig implements BuilderImageConfig {

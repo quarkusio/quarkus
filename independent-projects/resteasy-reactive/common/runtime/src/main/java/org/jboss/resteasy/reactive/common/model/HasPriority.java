@@ -14,6 +14,13 @@ public interface HasPriority {
 
         public static final TreeMapComparator INSTANCE = new TreeMapComparator();
 
+        public static final TreeMapComparator REVERSED = new TreeMapComparator() {
+            @Override
+            public int compare(HasPriority o1, HasPriority o2) {
+                return super.compare(o2, o1);
+            }
+        };
+
         @Override
         public int compare(HasPriority o1, HasPriority o2) {
             int res = o1.priority().compareTo(o2.priority());

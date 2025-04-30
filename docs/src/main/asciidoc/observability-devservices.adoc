@@ -1,0 +1,42 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Observability Dev Services
+include::_attributes.adoc[]
+:categories: observability,devservices,telemetry,metrics,tracing,logging
+:summary: Entry point for Observability DevServices
+:topics: observability,grafana,lgtm,prometheus,victoriametrics,jaeger,otel,otlp
+:extensions: io.quarkus:quarkus-observability-devservices
+
+We are already familiar with xref:dev-services.adoc[Dev Service] concept, but in the case of Observability we need a way to orchestrate and connect more than a single Dev Service, usually a whole stack of them; e.g. a metrics agent periodically scraping application for metrics, pushing them into timeseries database, and Grafana feeding graphs of this timeseries data.
+
+With this in mind, we added a new concept of Dev Resource, an adapter between Dev Service concept and https://testcontainers.com/[Testcontainers]. And since we now have fine-grained services - with the Dev Resource per container, we can take this even further, allowing the user to choose the way to use this new Dev Resource concept:
+
+NOTE: Each Dev Resource implementation is an `@QuarkusTestResourceLifecycleManager` implementation as well
+
+* leave it to Dev Services to pick-up various Dev Resources from classpath, and apply xref:dev-services.adoc[Dev Service] concept to it
+
+* explicitly disable Dev Services and enable Dev Resources and use less-heavy concept of starting and stopping Dev Resources
+
+* explicitly disable both Dev Services and Dev Resources, and use Quarkus' `@QuarkusTestResource` testing concept (see Note)
+
+You can either add Observability extension dependency along with needed Dev Resources dependencies, or you use existing `sinks` - pom.xml files which add Observability extension dependency along with other required dependencies for certain technology stacks; e.g. `victoriametrics` sink would have `quarkus-observability-devresource-victoriametrics` and `quarkus-victoriametrics-client` dependencies already included in the `pom.xml`.
+
+[NOTE]
+====
+Make sure you set the `scope` of these sink dependencies to `provided`, otherwise libraries such as Testcontainers will end-up in your app's production libraries:
+[source, xml]
+----
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-observability-devservices-...</artifactId>
+            <scope>provided</scope> <!-- !! -->
+        </dependency>
+----
+====
+
+Let's see how all of this looks in practice, with the usual `all-in-one` Grafana usage, in the form of https://github.com/grafana/docker-otel-lgtm[OTel-LGTM] Docker image.
+
+* xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM]

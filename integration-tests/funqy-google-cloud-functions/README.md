@@ -32,7 +32,7 @@ To deploy a background function that listen to PubSub event, you can use the fol
 ```shell script
 gcloud functions deploy quarkus-funqy-pubsub --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
   --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish \
-  --runtime=java11 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloPubSubWorld
+  --runtime=java21 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloPubSubWorld
 ```
 
 You can then invoke your function via `gcloud`:
@@ -47,8 +47,8 @@ To deploy a background function that listen to Storage event, you can use the fo
 
 ```shell script
 gcloud functions deploy quarkus-funqy-storage --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
-  --trigger-resource my_java11_gcs_bucket --trigger-event google.storage.object.finalize \
-  --runtime=java11 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloGCSWorld
+  --trigger-resource my_gcs_bucket --trigger-event google.storage.object.finalize \
+  --runtime=java21 --source=target/deployment --set-env-vars=QUARKUS_FUNQY_EXPORT=helloGCSWorld
 ```
 
 You can then invoke your function via `gcloud`:

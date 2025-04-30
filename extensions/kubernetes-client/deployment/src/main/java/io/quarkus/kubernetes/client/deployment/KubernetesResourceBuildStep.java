@@ -20,7 +20,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.kubernetes.client.KubernetesResources;
-import io.quarkus.kubernetes.client.runtime.KubernetesSerializationRecorder;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesSerializationRecorder;
 import io.quarkus.kubernetes.client.spi.KubernetesResourcesBuildItem;
 
 public class KubernetesResourceBuildStep {

@@ -7,10 +7,22 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-/**
- */
 public final class StringUtil {
     private StringUtil() {
+    }
+
+    public static String changePrefix(String name, String oldPrefix, String newPrefix) {
+        if (!name.startsWith(oldPrefix)) {
+            return name;
+        }
+        // don't use here String::replaceFirst because it uses regex
+        final int oldLen = oldPrefix.length();
+        final int diff = newPrefix.length() - oldLen;
+        final int nameLen = name.length();
+        final var builder = new StringBuilder(nameLen + diff);
+        builder.append(newPrefix);
+        builder.append(name, oldLen, nameLen);
+        return builder.toString();
     }
 
     public static Iterator<String> camelHumpsIterator(String str) {
@@ -100,13 +112,13 @@ public final class StringUtil {
     }
 
     /**
-     * @deprecated Use {@link String#join} instead.
+     * Dropped for public usage, kept in place for usage by hyphenate method to avoid need for lambda
+     *
      * @param delim delimiter
      * @param it iterator
      * @return the joined string
      */
-    @Deprecated
-    public static String join(String delim, Iterator<String> it) {
+    private static String join(String delim, Iterator<String> it) {
         final StringBuilder b = new StringBuilder();
         if (it.hasNext()) {
             b.append(it.next());

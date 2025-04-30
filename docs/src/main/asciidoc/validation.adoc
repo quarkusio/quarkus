@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web, data
 :summary: This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
+:topics: bean-validation,hibernate-validator,validation,validator,constraints
+:extensions: io.quarkus:quarkus-hibernate-validator
 
 This guide covers how to use Hibernate Validator/Bean Validation for:
 
@@ -32,17 +34,17 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `validation-quickstart` {quickstarts-tree-url}/validation-quickstart[directory].
+The solution is located in the `validation-quickstart` link:{quickstarts-tree-url}/validation-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: validation-quickstart
-:create-app-extensions: resteasy-reactive-jackson,hibernate-validator
+:create-app-extensions: rest-jackson,hibernate-validator
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive/Jakarta REST, Jackson and Hibernate Validator/Bean Validation extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive)/Jakarta REST, Jackson and Hibernate Validator/Bean Validation extensions.
 
 If you already have your Quarkus project configured, you can add the `hibernate-validator` extension
 to your project by running the following command in your project base directory:
@@ -50,7 +52,7 @@ to your project by running the following command in your project base directory:
 :add-extension-extensions: hibernate-validator
 include::{includes}/devtools/extension-add.adoc[]
 
-The result of this command is dependent on your build tool:
+This will add the following to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -142,12 +144,12 @@ Let's now create the `Result` class as an inner class:
 [source, java]
 ----
 public static class Result {
-        
+
     Result(String message) {
         this.success = true;
         this.message = message;
     }
-        
+
     Result(Set<? extends ConstraintViolation<?>> violations) {
         this.success = false;
         this.message = violations.stream()
@@ -197,6 +199,42 @@ As you can see, we don't have to manually validate the provided `Book` anymore a
 If a validation error is triggered, a violation report is generated and serialized as JSON as our end point produces a JSON output.
 It can be extracted and manipulated to display a proper error message.
 
+An example of such a report could be:
+
+[source, json]
+----
+{
+    "title": "Constraint Violation",
+    "status": 400,
+    "violations": [
+        {
+            "field": "tryMeEndPointMethodValidation.book.title",
+            "message": "Title cannot be blank"
+        }
+    ]
+}
+----
+
+This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`. If the application code needs to handle `ValidationException` in some custom way,
+it can provide an implementation of `jakarta.ws.rs.ext.ExceptionMapper` like so:
+
+[source, java]
+----
+import jakarta.validation.ValidationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    @Override
+    public Response toResponse(ValidationException exception) {
+        // TODO: implement
+    }
+}
+----
+
 == Service method validation
 
 It might not always be handy to have the validation rules declared at the end point level as it could duplicate some business validation.
@@ -219,7 +257,7 @@ public class BookService {
 }
 ----
 
-Calling the service in your rest end point triggers the `Book` validation automatically:
+Calling such service method, e.g. in your rest end point, triggers the `Book` validation automatically:
 
 [source, java]
 ----
@@ -238,16 +276,28 @@ public Result tryMeServiceMethodValidation(Book book) {
 ----
 
 Note that, if you want to push the validation errors to the frontend, you have to catch the exception and push the information yourselves
-as they will not be automatically pushed to the JSON output.
+as they will not be automatically pushed to the JSON output and will be treated as any other internal server errors.
 
 Keep in mind that you usually don't want to expose to the public the internals of your services
-- and especially not the validated value contained in the violation object.
+-- and especially not the validated value contained in the violation object.
+
+[IMPORTANT]
+====
+By default, only failing the validation of the constraints defined for the parameters of the REST endpoints
+will result in bad request responses with a validation report as a part of the response body.
+In any other case, e.g. validation of service methods (be it parameters or return values),
+validation of the return value of a REST endpoint, etc., will result in an internal server error (response status code `5xx`),
+unless the application code explicitly catches and handles the `ConstraintViolationException` (or a custom `ExceptionMapper` is implemented).
+The reasoning behind such behaviour is that only REST endpoint parameters are considered as the user input
+and hence can be treated as a bad request (response status code `4xx`),
+At the same time, constraint violations in other places result from the application logic execution and, hence, are treated as internal errors.
+====
 
 == A frontend
 
 Now let's add the simple web page to interact with our `BookResource`.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this {quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this link:{quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 
@@ -373,6 +423,53 @@ The scope you choose for your `ConstraintValidator` bean is important:
 - If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
 
+When injecting beans relying on the runtime configuration, use `@Inject Instance<..>`. Since constraints are initialized
+at build time, it is not possible to completely preconfigure the constraint in the `initialize(..)` method,
+as the runtime information will be missing at that point. The `initialize(..)` method in such scenarios can still be used
+to read the constraint annotation parameters, and perform any work not relying on the runtime configuration.
+Hence, it is recommended that any heavy configuration work happens as part of the injected bean initialization
+and methods used in the `ConstraintValidator#isValid(..)` implementation are as fast as possible:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
+
+    @Inject
+    Instance<MyService> service;
+
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+
+        return service.get().validate(value);
+    }
+}
+
+@ApplicationScoped
+public class MyService {
+
+	private final Predicate<String> validationFunction;
+
+	@Inject
+	public MyService(MyRuntimeConfig config) {
+		// perform all possible "initialization" work, e.g.:
+		if (config.complexValidationEnabled()) {
+			validationFunction = s -> ...
+		} else {
+			validationFunction = String::isBlank;
+		}
+	}
+
+	public boolean validate(String value) {
+		// perform the validation
+		return validationFunction.test(value);
+	}
+}
+----
+
 === Validation and localization
 
 By default, constraint violation messages will be returned in the build system locale.
@@ -385,7 +482,7 @@ You can configure this behavior by adding the following configuration in your `a
 quarkus.default-locale=fr-FR
 ----
 
-If you are using RESTEasy Reactive or RESTEasy Classic, in the context of a Jakarta REST endpoint,
+If you are using Quarkus REST or RESTEasy Classic, in the context of a Jakarta REST endpoint,
 Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
 provided the supported locales have been properly specified in the `application.properties`:
 
@@ -394,6 +491,9 @@ provided the supported locales have been properly specified in the `application.
 # The list of all the supported locales
 quarkus.locales=en-US,es-ES,fr-FR
 ----
+
+Alternatively, you can use `all` to make native-image executable to include all available locales. It inflate the size of the executable
+substantially though. The difference between including just two or three locales and including all locales is at least 23 MB.
 
 A similar mechanism exists for GraphQL services based on the `quarkus-smallrye-graphql` extension.
 
@@ -406,7 +506,7 @@ If this default mechanism is not sufficient and you need a custom locale resolut
 
 === Validation groups for REST endpoint or service method validation
 
-It's sometimes necessary to enable different validation constraints
+It is sometimes necessary to enable different validation constraints
 for the same class when it's passed to a different method.
 
 For example, a `Book` may need to have a `null` identifier when passed to the `post` method
@@ -495,8 +595,8 @@ using a bootstrap that is Quarkus-specific.
 
 Creating a `ValidatorFactory` by yourself it not supported in native executables
 and if you try to do so,
-you will get an  error similar to `jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no 
-Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your 
+you will get an  error similar to `jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no
+Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your
 classpath.` when running your native executable.
 
 Thus why you should always use the Quarkus-managed `ValidatorFactory` by injecting an instance of

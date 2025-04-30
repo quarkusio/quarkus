@@ -1,9 +1,3 @@
-/*
- * Hibernate, Relational Persistence for Idiomatic Java
- *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later
- * See the lgpl.txt file in the root directory or http://www.gnu.org/licenses/lgpl-2.1.html
- */
 package io.quarkus.hibernate.orm.runtime.cdi;
 
 import jakarta.annotation.PreDestroy;
@@ -13,6 +7,7 @@ import jakarta.inject.Singleton;
 
 import org.hibernate.resource.beans.container.spi.AbstractCdiBeanContainer;
 import org.hibernate.resource.beans.container.spi.BeanLifecycleStrategy;
+import org.hibernate.resource.beans.container.spi.ContainedBean;
 import org.hibernate.resource.beans.container.spi.ContainedBeanImplementor;
 import org.hibernate.resource.beans.spi.BeanInstanceProducer;
 
@@ -25,6 +20,23 @@ public class QuarkusArcBeanContainer extends AbstractCdiBeanContainer {
     @Override
     public BeanManager getUsableBeanManager() {
         return beanManager;
+    }
+
+    @Override
+    public <B> ContainedBean<B> getBean(Class<B> beanType, LifecycleOptions lifecycleOptions,
+            BeanInstanceProducer fallbackProducer) {
+        // We can only support these lifecycle options. See QuarkusBeanContainerLifecycleOptions.
+        // Usually that's what we get passed (when using QuarkusManagedBeanRegistry),
+        // but in some cases Hibernate ORM calls the bean cotnainer directly and bypasses the registry,
+        // so we need to override options in that case.
+        return super.getBean(beanType, QuarkusBeanContainerLifecycleOptions.INSTANCE, fallbackProducer);
+    }
+
+    @Override
+    public <B> ContainedBean<B> getBean(String beanName, Class<B> beanType, LifecycleOptions lifecycleOptions,
+            BeanInstanceProducer fallbackProducer) {
+        // Overriding lifecycle options; see comments in the other getBean() method.
+        return super.getBean(beanName, beanType, QuarkusBeanContainerLifecycleOptions.INSTANCE, fallbackProducer);
     }
 
     @Override

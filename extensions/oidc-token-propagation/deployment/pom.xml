@@ -3,20 +3,19 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-oidc-token-propagation-parent</artifactId>
+        <artifactId>quarkus-resteasy-client-oidc-token-propagation-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-token-propagation-deployment</artifactId>
-    <name>Quarkus - OpenID Connect Token Propagation - Deployment</name>
+    <artifactId>quarkus-resteasy-client-oidc-token-propagation-deployment</artifactId>
+    <name>Quarkus - RESTEasy Client - OpenID Connect Token Propagation - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-token-propagation</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-token-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -28,11 +27,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt-build-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-token-propagation-common-deployment</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -66,15 +69,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

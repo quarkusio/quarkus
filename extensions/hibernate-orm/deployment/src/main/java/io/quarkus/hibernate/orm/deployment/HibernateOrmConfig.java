@@ -9,12 +9,18 @@ import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
+@ConfigMapping(prefix = "quarkus.hibernate-orm")
 @ConfigRoot
-public class HibernateOrmConfig {
+public interface HibernateOrmConfig {
 
     /**
      * Whether Hibernate ORM is enabled *during the build*.
@@ -25,49 +31,64 @@ public class HibernateOrmConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
+     * Whether Hibernate ORM is working in blocking mode.
+     *
+     * Hibernate ORM's blocking `EntityManager`/`Session`/`SessionFactory`
+     * are normally disabled by default if no JDBC datasource is found.
+     * You can set this property to `false` if you want to disable them
+     * despite having a JDBC datasource.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean blocking();
 
     /**
      * Database related configuration.
      */
-    @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigDatabase database;
+    HibernateOrmConfigDatabase database();
 
     /**
-     * Configuration for the default persistence unit.
+     * Configuration for persistence units.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public HibernateOrmConfigPersistenceUnit defaultPersistenceUnit;
-
-    /**
-     * Additional named persistence units.
-     */
-    @ConfigDocSection
+    @WithParentName
+    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @WithDefaults
     @ConfigDocMapKey("persistence-unit-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits;
+    Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
+
+    default HibernateOrmConfigPersistenceUnit defaultPersistenceUnit() {
+        return persistenceUnits().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    default Map<String, HibernateOrmConfigPersistenceUnit> namedPersistenceUnits() {
+        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
+        map.putAll(persistenceUnits());
+        map.remove(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        return map;
+    }
 
     /**
      * Configuration for the {@code persistence.xml} handling.
      */
-    @ConfigItem
-    public HibernateOrmConfigPersistenceXml persistenceXml;
+    HibernateOrmConfigPersistenceXml persistenceXml();
 
     /**
      * Logging configuration.
      */
-    @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigLog log;
+    HibernateOrmConfigLog log();
 
     /**
      * Whether statistics collection is enabled. If 'metrics.enabled' is true, then the default here is
      * considered true, otherwise the default is false.
      */
-    @ConfigItem
-    public Optional<Boolean> statistics;
+    Optional<Boolean> statistics();
 
     /**
      * Whether session metrics should be appended into the server log for each Hibernate session. This
@@ -75,73 +96,69 @@ public class HibernateOrmConfig {
      * (which means both `statistics` and `log-session-metrics` need to be enabled for the session metrics
      * to appear in the log).
      */
-    @ConfigItem
-    public Optional<Boolean> logSessionMetrics;
+    Optional<Boolean> logSessionMetrics();
 
     /**
-     * Whether metrics are published if a metrics extension is enabled.
+     * Configuration related to metrics.
      */
-    @ConfigItem(name = "metrics.enabled")
-    public boolean metricsEnabled;
+    HibernateOrmConfigMetric metrics();
 
-    public boolean isAnyNonPersistenceXmlPropertySet() {
+    /**
+     * Dev UI.
+     */
+    @WithDefaults
+    @WithName("dev-ui")
+    HibernateOrmConfigDevUI devui();
+
+    default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
-        return defaultPersistenceUnit.isAnyPropertySet() ||
-                !persistenceUnits.isEmpty() ||
-                log.isAnyPropertySet() ||
-                statistics.isPresent() ||
-                logSessionMetrics.isPresent() ||
-                metricsEnabled;
-    }
-
-    public Map<String, HibernateOrmConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
-        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
-        }
-        map.putAll(persistenceUnits);
-        return map;
+        return defaultPersistenceUnit().isAnyPropertySet() ||
+                !namedPersistenceUnits().isEmpty() ||
+                log().isAnyPropertySet() ||
+                statistics().isPresent() ||
+                logSessionMetrics().isPresent() ||
+                metrics().isAnyPropertySet();
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceXml {
+    interface HibernateOrmConfigPersistenceXml {
 
         /**
          * If {@code true}, Quarkus will ignore any {@code persistence.xml} file in the classpath
          * and rely exclusively on the Quarkus configuration.
          */
-        @ConfigItem
-        public boolean ignore;
+        @WithDefault("false")
+        boolean ignore();
 
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigLog {
+    interface HibernateOrmConfigLog {
 
         /**
          * Logs SQL bind parameter.
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem
         @Deprecated
-        public boolean bindParam;
+        @WithDefault("false")
+        boolean bindParam();
 
         /**
          * Logs SQL bind parameters.
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem
-        public boolean bindParameters;
+        @WithDefault("false")
+        boolean bindParameters();
 
-        public boolean isAnyPropertySet() {
-            return bindParam || bindParameters;
+        default boolean isAnyPropertySet() {
+            return bindParam() || bindParameters();
         }
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigDatabase {
+    interface HibernateOrmConfigDatabase {
         /**
          * When set, attempts to exchange data with the database
          * as the given version of Hibernate ORM would have,
@@ -165,9 +182,32 @@ public class HibernateOrmConfig {
          *
          * @asciidoclet
          */
-        @ConfigItem(name = "orm-compatibility.version", defaultValue = "latest")
-        @ConvertWith(DatabaseOrmCompatibilityVersion.Converter.class)
-        public DatabaseOrmCompatibilityVersion ormCompatibilityVersion;
+        @WithName("orm-compatibility.version")
+        @WithDefault("latest")
+        @WithConverter(DatabaseOrmCompatibilityVersion.Converter.class)
+        DatabaseOrmCompatibilityVersion ormCompatibilityVersion();
     }
 
+    @ConfigGroup
+    interface HibernateOrmConfigMetric {
+
+        /**
+         * Whether metrics are published if a metrics extension is enabled.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigDevUI {
+        /**
+         * Allow hql queries in the Dev UI page
+         */
+        @WithDefault("false")
+        boolean allowHql();
+    }
 }

@@ -1,0 +1,16 @@
+name: "WebSockets Next"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "websockets"
+  keywords:
+  - "websocket"
+  - "websockets"
+  - "web-socket"
+  - "web-sockets"
+  - "http"
+  categories:
+  - "web"
+  guide: https://quarkus.io/guides/websockets-next-reference
+  status: "stable"
+  config:
+  - "quarkus.websockets.next"

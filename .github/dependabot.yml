@@ -6,7 +6,7 @@ updates:
       interval: daily
       time: "23:00"
       timezone: Europe/Paris
-    open-pull-requests-limit: 6
+    open-pull-requests-limit: 20
     labels:
       - area/dependencies
     allow:
@@ -35,6 +35,8 @@ updates:
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
       - dependency-name: org.jboss.threads:jboss-threads
+      - dependency-name: org.jboss.marshalling:*
+      - dependency-name: org.wildfly.common:*
       # Quarkus
       - dependency-name: io.quarkus.*:*
       - dependency-name: io.quarkus:*
@@ -44,12 +46,13 @@ updates:
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client
-      - dependency-name: mysql:mysql-connector-java
+      - dependency-name: com.mysql:mysql-connector-j
       - dependency-name: org.apache.derby:*
       - dependency-name: com.ibm.db2:jcc
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: io.strimzi:strimzi-test-container
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*
       # Scala
@@ -57,16 +60,19 @@ updates:
       - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
       - dependency-name: io.smallrye:*
+      - dependency-name: io.smallrye.beanbag:*
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
       - dependency-name: io.smallrye.reactive:*
-      # Swagger-UI
-      - dependency-name: org.webjars:swagger-ui
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
+      # Hibernate
+      - dependency-name: org.hibernate:*
+      - dependency-name: org.hibernate.*:*
       # Test dependencies
-      - dependency-name: net.sourceforge.htmlunit:htmlunit
+      - dependency-name: org.htmlunit:htmlunit
       - dependency-name: io.rest-assured:*
+      - dependency-name: org.hamcrest:hamcrest
       - dependency-name: org.junit:junit-bom
       - dependency-name: org.junit.jupiter:*
       - dependency-name: org.assertj:assertj-core
@@ -80,14 +86,18 @@ updates:
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: org.apache.maven.plugins:maven-invoker-plugin
+      - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
       - dependency-name: org.jboss.narayana.stm:*
+      # Narayana - LRA
+      - dependency-name: org.jboss.narayana.lra:*
       # Agroal
       - dependency-name: io.agroal:*
       # WireMock
-      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
+      - dependency-name: org.wiremock:wiremock
+      - dependency-name: org.wiremock:wiremock-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
       # Picocli
       - dependency-name: info.picocli:*
@@ -137,18 +147,16 @@ updates:
       - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
       - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
-      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
       # Dev UI web dependencies
-      - dependency-name: org.webjars:bootstrap
-      - dependency-name: org.webjars:font-awesome
-      - dependency-name: org.webjars:jquery
-      - dependency-name: org.webjars:codemirror
-      - dependency-name: org.webjars.npm:mermaid
+      - dependency-name: org.mvnpm:*
+      - dependency-name: org.mvnpm.*:*
       # Elasticsearch - we do not update the high level client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
       - dependency-name: co.elastic.clients:elasticsearch-java
+      # Gradle extensions present in .mvn/extensions.xml
+      - dependency-name: com.gradle:*
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
@@ -158,7 +166,6 @@ updates:
       - dependency-name: io.dekorate:servicebinding-annotations
       - dependency-name: io.opentelemetry:*
       - dependency-name: io.opentelemetry.*:*
-      - dependency-name: io.opentracing.contrib:*
       - dependency-name: org.aesh:readline
       - dependency-name: org.checkerframework:checker-qual
       - dependency-name: org.jboss.metadata:jboss-metadata-web
@@ -170,17 +177,17 @@ updates:
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
+      - dependency-name: com.dajudge.kindcontainer:kindcontainer
       - dependency-name: jakarta.*:*
       - dependency-name: org.eclipse.*:*
       - dependency-name: org.glassfish.*:*
       - dependency-name: org.apache.groovy:*
       - dependency-name: org.apache.qpid:*
+      - dependency-name: biz.paluch.logging:logstash-gelf
+      - dependency-name: org.bitbucket.b_c:jose4j
+      - dependency-name: io.fabric8:maven-model-helper
+      - dependency-name: org.codejive:java-properties
     ignore:
-      # this one cannot be upgraded due to the usage of proxies in new versions
-      # the proxy implements interfaces in a random order which causes issues
-      # https://github.com/quarkusio/quarkus/issues/18033
-      # https://github.com/opentracing-contrib/java-jdbc/issues/116
-      - dependency-name: io.opentracing.contrib:opentracing-jdbc
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
@@ -199,9 +206,15 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Major/minor upgrades require more work and synchronization, we do them manually.
+      # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.hibernate.*:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.apache.kafka:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

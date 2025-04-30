@@ -21,11 +21,12 @@ public class WrongSingletonTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EjbSingleton.class))
+            .withApplicationRoot(root -> root
+                    .addClasses(EjbSingleton.class, GuiceProducers.class, JavaxSingleton.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause.getMessage().contains("jakarta.ejb.Singleton"), t.toString());
+                assertTrue(rootCause.getMessage().contains("javax.inject.Singleton"), t.toString());
                 assertTrue(rootCause.getMessage().contains("com.google.inject.Singleton"), t.toString());
             });
 
@@ -52,6 +53,11 @@ public class WrongSingletonTest {
         List<String> produceEjbSingleton() {
             return Collections.emptyList();
         }
+
+    }
+
+    @javax.inject.Singleton
+    static class JavaxSingleton {
 
     }
 

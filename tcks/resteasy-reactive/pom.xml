@@ -17,7 +17,7 @@
     <properties>
 
         <!-- to avoid sudden surprises, checkout is pinned to a specific commit -->
-        <resteasy-reactive-testsuite.repo.ref>8937bc59acc21658d1c9acf59dc3e8960fd98869</resteasy-reactive-testsuite.repo.ref>
+        <resteasy-reactive-testsuite.repo.ref>7aabd9b98f8fdb1f3ee634f7594bd224ea159a34</resteasy-reactive-testsuite.repo.ref>
 
         <exec.skip>${skipTests}</exec.skip>
         <resteasy-reactive-testsuite.clone.skip>${exec.skip}</resteasy-reactive-testsuite.clone.skip>
@@ -73,7 +73,7 @@
                         </goals>
                         <configuration>
                             <executable>${maven.multiModuleProjectDirectory}/mvnw</executable>
-                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
+                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args} -Dquarkus.platform.version=${project.version} -Dquarkus-plugin.version=${project.version}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>
                     </execution>
@@ -123,11 +123,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-reactive</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -138,12 +133,17 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+            <artifactId>quarkus-rest-client-jaxrs</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jsonb</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -213,7 +213,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -226,7 +226,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-client-jaxrs-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -239,7 +239,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

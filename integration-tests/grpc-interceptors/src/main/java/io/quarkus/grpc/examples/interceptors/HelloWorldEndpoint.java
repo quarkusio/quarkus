@@ -32,6 +32,8 @@ public class HelloWorldEndpoint {
 
         return Response.ok(helloReply.getMessage())
                 .header("interceptors", String.join(",", invoked))
+                .header("used_cbc", MyCBC.USED.get() + "")
+                .header("used_sbc", MySBC.USED.get() + "")
                 .build();
     }
 

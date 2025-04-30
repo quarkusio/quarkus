@@ -25,6 +25,10 @@ class ExtensionMethod {
         return jandex.parameterTypes();
     }
 
+    org.jboss.jandex.Type parameterType(int index) {
+        return jandex.parameterType(index);
+    }
+
     @Override
     public String toString() {
         return jandex.declaringClass().simpleName() + "." + jandex.name() + "()";

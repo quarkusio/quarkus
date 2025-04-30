@@ -32,8 +32,9 @@ public class DefaultPicocliCommandLineFactory implements PicocliCommandLineFacto
 
     @Override
     public CommandLine create() {
-        String topCommandName = picocliConfiguration.topCommand.orElse(null);
-        if (topCommandName != null) {
+        if (picocliConfiguration.topCommand().isPresent()) {
+            String topCommandName = picocliConfiguration.topCommand().get();
+
             Instance<Object> namedTopCommand = topCommand.select(NamedLiteral.of(topCommandName));
             if (namedTopCommand.isResolvable()) {
                 return new CommandLine(namedTopCommand.get(), picocliFactory);

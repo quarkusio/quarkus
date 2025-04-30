@@ -1,6 +1,8 @@
 package io.quarkus.it.opentelemetry.reactive;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,9 +13,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestQuery;
+
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.internal.data.ExceptionEventData;
 
 @Path("")
 public class ExporterResource {
@@ -34,6 +38,19 @@ public class ExporterResource {
                 .stream()
                 .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
                 .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/export-event-attributes")
+    public Map<String, Object> exportEventAttributes(@RestQuery String spanName, @RestQuery String eventName) {
+        return export()
+                .stream()
+                .filter(s -> spanName.equals(s.getName()))
+                .map(SpanData::getEvents)
+                .flatMap(Collection::stream)
+                .filter(e -> eventName.equals(e.getName()))
+                .flatMap(e -> e.getAttributes().asMap().entrySet().stream())
+                .collect(Collectors.toMap(e -> e.getKey().getKey(), Map.Entry::getValue));
     }
 
     @GET

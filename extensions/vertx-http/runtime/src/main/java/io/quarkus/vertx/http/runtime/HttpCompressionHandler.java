@@ -2,7 +2,6 @@ package io.quarkus.vertx.http.runtime;
 
 import java.util.Set;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -11,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * A simple wrapping handler that removes the {@code Content-Encoding: identity} HTTP header if the {@code Content-Type}
  * header is set and the value is a compressed media type as configured via
- * {@link io.quarkus.vertx.http.runtime.HttpBuildTimeConfig#compressMediaTypes}.
+ * {@link VertxHttpBuildTimeConfig#compressMediaTypes}.
  */
 public class HttpCompressionHandler implements Handler<RoutingContext> {
 
@@ -25,12 +24,10 @@ public class HttpCompressionHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext context) {
-        context.addEndHandler(new Handler<AsyncResult<Void>>() {
+        context.addHeadersEndHandler(new Handler<Void>() {
             @Override
-            public void handle(AsyncResult<Void> result) {
-                if (result.succeeded()) {
-                    compressIfNeeded(context, compressedMediaTypes);
-                }
+            public void handle(Void result) {
+                compressIfNeeded(context, compressedMediaTypes);
             }
         });
         routeHandler.handle(context);

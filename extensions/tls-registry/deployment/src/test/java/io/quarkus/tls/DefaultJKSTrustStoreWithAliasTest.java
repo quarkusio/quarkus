@@ -1,0 +1,59 @@
+package io.quarkus.tls;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.security.KeyStoreException;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
+
+import jakarta.inject.Inject;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
+
+@Certificates(baseDir = "target/certs", certificates = {
+        @Certificate(name = "test-alias-jks", password = "password", formats = { Format.JKS }, aliases = {
+                @Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
+                @Alias(name = "alias2", password = "alias-password-2")
+        })
+})
+public class DefaultJKSTrustStoreWithAliasTest {
+
+    private static final String configuration = """
+            quarkus.tls.trust-store.jks.path=target/certs/test-alias-jks-truststore.jks
+            quarkus.tls.trust-store.jks.password=password
+            quarkus.tls.trust-store.jks.alias=alias1
+            """;
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .add(new StringAsset(configuration), "application.properties"));
+
+    @Inject
+    TlsConfigurationRegistry certificates;
+
+    @Test
+    void test() throws KeyStoreException, CertificateParsingException {
+        TlsConfiguration def = certificates.getDefault().orElseThrow();
+
+        assertThat(def.getTrustStore()).isNotNull();
+        assertThat(def.getTrustStoreOptions()).isNotNull();
+
+        X509Certificate certificate = (X509Certificate) def.getTrustStore().getCertificate("alias1");
+        assertThat(certificate).isNotNull();
+        assertThat(certificate.getSubjectAlternativeNames()).anySatisfy(l -> {
+            assertThat(l.get(0)).isEqualTo(2);
+            assertThat(l.get(1)).isEqualTo("dns:acme.org");
+        });
+    }
+}

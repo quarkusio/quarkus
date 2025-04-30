@@ -1,6 +1,5 @@
 package io.quarkus.reactive.mssql.client;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mssqlclient.MSSQLPool;
+import io.vertx.sqlclient.Pool;
 
 public class MSSQLPoolProducerTest {
 
@@ -39,12 +38,10 @@ public class MSSQLPoolProducerTest {
     static class BeanUsingBareMSSQLClient {
 
         @Inject
-        MSSQLPool mssqlClient;
+        Pool mssqlClient;
 
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            mssqlClient.query("SELECT 1").execute(ar -> cf.complete(null));
-            return cf;
+        public CompletionStage<?> verify() {
+            return mssqlClient.query("SELECT 1").execute().toCompletionStage();
         }
     }
 
@@ -52,12 +49,11 @@ public class MSSQLPoolProducerTest {
     static class BeanUsingMutinyMSSQLClient {
 
         @Inject
-        io.vertx.mutiny.mssqlclient.MSSQLPool mssqlClient;
+        io.vertx.mutiny.sqlclient.Pool mssqlClient;
 
         public CompletionStage<Void> verify() {
             return mssqlClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem((Void) null)
                     .subscribeAsCompletionStage();
         }
     }

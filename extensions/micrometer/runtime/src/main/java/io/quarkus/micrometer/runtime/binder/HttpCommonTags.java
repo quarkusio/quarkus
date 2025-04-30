@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.runtime.binder;
 
+import java.util.Objects;
+
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
 
@@ -46,22 +48,18 @@ public class HttpCommonTags {
 
     /**
      * Creates a {@code uri} tag based on the URI of the given {@code request}.
-     * Falling back to {@code REDIRECTION} for 3xx responses, {@code NOT_FOUND}
-     * for 404 responses, {@code root} for requests with no path info, and {@code UNKNOWN}
+     * Falling back to {@code REDIRECTION} for 3xx responses if there wasn't a matched path pattern, {@code NOT_FOUND}
+     * for 404 responses if there wasn't a matched path pattern, {@code root} for requests with no path info, and
+     * {@code UNKNOWN}
      * for all other requests.
      *
      * @param pathInfo request path
+     * @param initialPath initial path before request pattern matching took place. Pass in null if there is pattern matching
+     *        done in the caller.
      * @param code status code of the response
      * @return the uri tag derived from the request
      */
-    public static Tag uri(String pathInfo, int code) {
-        if (code > 0) {
-            if (code / 100 == 3) {
-                return URI_REDIRECTION;
-            } else if (code == 404) {
-                return URI_NOT_FOUND;
-            }
-        }
+    public static Tag uri(String pathInfo, String initialPath, int code, boolean suppress4xxErrors) {
         if (pathInfo == null) {
             return URI_UNKNOWN;
         }
@@ -69,7 +67,39 @@ public class HttpCommonTags {
             return URI_ROOT;
         }
 
+        if (code > 0) {
+            if (code / 100 == 3) {
+                if (isTemplatedPath(pathInfo, initialPath)) {
+                    return Tag.of("uri", pathInfo);
+                } else {
+                    return URI_REDIRECTION;
+                }
+            } else if (code == 404) {
+                if (isTemplatedPath(pathInfo, initialPath)) {
+                    return Tag.of("uri", pathInfo);
+                } else {
+                    return URI_NOT_FOUND;
+                }
+            } else if (code >= 400) {
+                if (!suppress4xxErrors) {
+                    // legacy behaviour
+                    return Tag.of("uri", pathInfo);
+                } else if (isTemplatedPath(pathInfo, initialPath)) {
+                    return Tag.of("uri", pathInfo);
+                } else {
+                    // Do not return the path info as it can lead to a metrics explosion
+                    // for 4xx and 5xx responses
+                    return URI_UNKNOWN;
+                }
+            }
+        }
+
         // Use first segment of request path
         return Tag.of("uri", pathInfo);
+    }
+
+    private static boolean isTemplatedPath(String pathInfo, String initialPath) {
+        // only include the path info if it has been matched to a template (initialPath != pathInfo) to avoid a metrics explosion with lots of entries
+        return initialPath != null && !Objects.equals(initialPath, pathInfo);
     }
 }

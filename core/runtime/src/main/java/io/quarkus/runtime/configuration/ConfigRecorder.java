@@ -1,29 +1,27 @@
 package io.quarkus.runtime.configuration;
 
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig.BuildTimeMismatchAtRuntime;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 @Recorder
 public class ConfigRecorder {
-
     private static final Logger log = Logger.getLogger(ConfigRecorder.class);
-
-    final ConfigurationRuntimeConfig configurationConfig;
-
-    public ConfigRecorder(ConfigurationRuntimeConfig configurationConfig) {
-        this.configurationConfig = configurationConfig;
-    }
 
     public void handleConfigChange(Map<String, ConfigValue> buildTimeRuntimeValues) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -41,7 +39,8 @@ public class ConfigRecorder {
         for (Map.Entry<String, ConfigValue> entry : buildTimeRuntimeValues.entrySet()) {
             ConfigValue currentValue = config.getConfigValue(entry.getKey());
             // Check for changes. Also, we only have a change if the source ordinal is higher
-            if (currentValue.getValue() != null && !entry.getValue().getValue().equals(currentValue.getValue())
+            // The config value can be null (for ex. if the property uses environment variables not available at build time)
+            if (currentValue.getValue() != null && !Objects.equals(entry.getValue().getValue(), currentValue.getValue())
                     && entry.getValue().getSourceOrdinal() < currentValue.getSourceOrdinal()) {
                 mismatches.add(
                         " - " + entry.getKey() + " is set to '" + currentValue.getValue()
@@ -60,18 +59,16 @@ public class ConfigRecorder {
         }
 
         if (!mismatches.isEmpty()) {
-            final String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
-            switch (configurationConfig.buildTimeMismatchAtRuntime) {
-                case fail:
-                    throw new IllegalStateException(msg);
-                case warn:
-                    log.warn(msg);
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected " + BuildTimeMismatchAtRuntime.class.getName() + ": "
-                            + configurationConfig.buildTimeMismatchAtRuntime);
+            String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
+            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
+            BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
+                    .getOptionalValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class)
+                    .orElse(warn);
+            if (fail.equals(buildTimeMismatchAtRuntime)) {
+                throw new IllegalStateException(msg);
+            } else if (warn.equals(buildTimeMismatchAtRuntime)) {
+                log.warn(msg);
             }
-
         }
     }
 
@@ -96,5 +93,22 @@ public class ConfigRecorder {
                         + "'. This may lead to unexpected results.");
             }
         }
+    }
+
+    public void unknownConfigFiles() throws Exception {
+        ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
+    }
+
+    public void releaseConfig(ShutdownContext shutdownContext) {
+        // This is mostly useful to handle restarts in Dev/Test mode.
+        // While this may seem to duplicate code in IsolatedDevModeMain,
+        // it actually does not because it operates on a different instance
+        // of QuarkusConfigFactory from a different classloader.
+
+        if (shutdownContext == null) {
+            throw new RuntimeException(
+                    "Internal errror: shutdownContext is null. This probably happened because Quarkus failed to start properly in an earlier step, or because tests were run on a Quarkus instance that had already been shut down.");
+        }
+        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
     }
 }

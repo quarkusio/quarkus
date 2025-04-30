@@ -16,7 +16,7 @@ public class InjectionPointBean extends BuiltInBean<InjectionPoint> {
 
     @Override
     public InjectionPoint get(CreationalContext<InjectionPoint> creationalContext) {
-        return InjectionPointProvider.get();
+        return InjectionPointProvider.getCurrent(creationalContext);
     }
 
     @Override

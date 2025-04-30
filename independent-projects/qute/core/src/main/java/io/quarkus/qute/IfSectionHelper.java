@@ -246,7 +246,12 @@ public class IfSectionHelper implements SectionHelper {
 
         @Override
         public CompletionStage<Object> evaluate(SectionResolutionContext context) {
-            CompletionStage<Object> ret = context.resolutionContext().evaluate(expression);
+            CompletionStage<Object> ret;
+            if (expression.isLiteral()) {
+                ret = expression.asLiteral();
+            } else {
+                ret = context.resolutionContext().evaluate(expression);
+            }
             if (operator == Operator.NOT) {
                 return ret.thenApply(this::logicalComplement);
             }
@@ -266,6 +271,86 @@ public class IfSectionHelper implements SectionHelper {
         @Override
         public String toString() {
             return "OperandCondition [operator=" + operator + ", expression=" + expression.toOriginalString() + "]";
+        }
+
+    }
+
+    static class DoubletonCondition implements Condition {
+
+        final Condition condition1;
+        final Condition condition2;
+        final Operator operator;
+
+        private DoubletonCondition(Condition condition1, Condition condition2, Operator operator) {
+            this.condition1 = Objects.requireNonNull(condition1);
+            this.condition2 = Objects.requireNonNull(condition2);
+            this.operator = operator;
+        }
+
+        @Override
+        public CompletionStage<Object> evaluate(SectionResolutionContext context) {
+            CompletionStage<Object> ret = condition1.evaluate(context);
+            if (ret instanceof CompletedStage completed) {
+                ret = evaluateSecond(context, completed.get());
+            } else {
+                ret = ret.thenCompose(first -> evaluateSecond(context, first));
+            }
+            if (operator == Operator.NOT) {
+                return ret.thenApply(this::logicalComplement);
+            }
+            return ret;
+        }
+
+        @Override
+        public Operator getOperator() {
+            return operator;
+        }
+
+        @Override
+        public String toString() {
+            return "DoubletonCondition [condition1=" + condition1 + ", condition2=" + condition2 + ", operator=" + operator
+                    + "]";
+        }
+
+        CompletionStage<Object> evaluateSecond(SectionResolutionContext context, Object firstVal) {
+            Boolean shortResult = null;
+            Operator operator = condition2.getOperator();
+            if (operator != null && operator.isShortCircuiting()) {
+                shortResult = operator.evaluate(firstVal);
+            }
+            if (shortResult != null) {
+                // There is no need to continue with the next operand
+                return CompletedStage.of(shortResult);
+            }
+            CompletionStage<Object> second = condition2.evaluate(context);
+            if (second instanceof CompletedStage completed) {
+                return processValues(operator, firstVal, completed.get());
+            } else {
+                return second.thenCompose(c2 -> processValues(operator, firstVal, c2));
+            }
+        }
+
+        CompletionStage<Object> processValues(Operator operator,
+                Object firstVal, Object secondVal) {
+            Object val;
+            if (operator == null || !operator.isBinary()) {
+                val = secondVal;
+            } else {
+                // Binary operator
+                try {
+                    if (Results.isNotFound(secondVal)) {
+                        secondVal = null;
+                    }
+                    Object localValue = firstVal;
+                    if (Results.isNotFound(localValue)) {
+                        localValue = null;
+                    }
+                    val = operator.evaluate(localValue, secondVal);
+                } catch (Throwable e) {
+                    return CompletedStage.failure(e);
+                }
+            }
+            return CompletedStage.of(val);
         }
 
     }
@@ -310,8 +395,8 @@ public class IfSectionHelper implements SectionHelper {
                     return processConditionValue(context, operator, previousValue, literalVal, iter);
                 } else {
                     CompletionStage<Object> ret = next.evaluate(context);
-                    if (ret instanceof CompletedStage) {
-                        return processConditionValue(context, operator, previousValue, ((CompletedStage<Object>) ret).get(),
+                    if (ret instanceof CompletedStage completed) {
+                        return processConditionValue(context, operator, previousValue, completed.get(),
                                 iter);
                     } else {
                         return ret.thenCompose(r -> processConditionValue(context, operator, previousValue, r, iter));
@@ -391,9 +476,9 @@ public class IfSectionHelper implements SectionHelper {
         boolean evaluate(Object op1, Object op2) {
             switch (this) {
                 case EQ:
-                    return Objects.equals(op1, op2);
+                    return equals(op1, op2);
                 case NE:
-                    return !Objects.equals(op1, op2);
+                    return !equals(op1, op2);
                 case GE:
                 case GT:
                 case LE:
@@ -405,6 +490,17 @@ public class IfSectionHelper implements SectionHelper {
                 default:
                     throw new TemplateException("Not a binary operator: " + this);
             }
+        }
+
+        boolean equals(Object op1, Object op2) {
+            if (Objects.equals(op1, op2)) {
+                return true;
+            }
+            if (op1 != null && op2 != null && (op1 instanceof Number || op2 instanceof Number)) {
+                // Both operands are not null and at least one of them is a number
+                return getDecimal(op1).compareTo(getDecimal(op2)) == 0;
+            }
+            return false;
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -468,25 +564,22 @@ public class IfSectionHelper implements SectionHelper {
         }
 
         static BigDecimal getDecimal(Object value) {
-            BigDecimal decimal;
-            if (value instanceof BigDecimal) {
-                decimal = (BigDecimal) value;
-            } else if (value instanceof BigInteger) {
-                decimal = new BigDecimal((BigInteger) value);
-            } else if (value instanceof Integer) {
-                decimal = new BigDecimal((Integer) value);
-            } else if (value instanceof Long) {
-                decimal = new BigDecimal((Long) value);
-            } else if (value instanceof Double) {
-                decimal = new BigDecimal((Double) value);
-            } else if (value instanceof Float) {
-                decimal = new BigDecimal((Float) value);
-            } else if (value instanceof String) {
-                decimal = new BigDecimal(value.toString());
-            } else {
-                throw new TemplateException("Not a valid number: " + value);
+            if (value instanceof BigDecimal decimal) {
+                return decimal;
+            } else if (value instanceof BigInteger bigInteger) {
+                return new BigDecimal(bigInteger);
+            } else if (value instanceof Integer integer) {
+                return BigDecimal.valueOf(integer);
+            } else if (value instanceof Long _long) {
+                return BigDecimal.valueOf(_long);
+            } else if (value instanceof Double _double) {
+                return BigDecimal.valueOf(_double);
+            } else if (value instanceof Float _float) {
+                return BigDecimal.valueOf(_float);
+            } else if (value instanceof String string) {
+                return new BigDecimal(string);
             }
-            return decimal;
+            throw new TemplateException("Cannot coerce " + value + " to a BigDecimal");
         }
 
     }
@@ -664,6 +757,8 @@ public class IfSectionHelper implements SectionHelper {
 
             if (operator == null && conditions.size() == 1) {
                 condition = conditions.get(0);
+            } else if (conditions.size() == 2) {
+                condition = new DoubletonCondition(conditions.get(0), conditions.get(1), operator);
             } else {
                 condition = new CompositeCondition(operator, ImmutableList.copyOf(conditions));
             }

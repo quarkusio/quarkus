@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
 import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
-import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,9 +11,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -29,7 +28,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -41,10 +39,10 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.PanacheHibernateOrmRecorder;
-import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
-import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
+import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.panache.hibernate.common.deployment.PanacheJpaEntityOperationsEnhancer;
 
 public final class PanacheHibernateResourceProcessor {
 
@@ -54,7 +52,7 @@ public final class PanacheHibernateResourceProcessor {
     static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
 
-    private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
+    private static final DotName DOTNAME_SESSION = DotName.createSimple(Session.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
@@ -72,12 +70,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_ENTITY_MANAGER));
-    }
-
-    @BuildStep
-    AdditionalApplicationArchiveMarkerBuildItem marker() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_SESSION));
     }
 
     @BuildStep
@@ -126,7 +119,7 @@ public final class PanacheHibernateResourceProcessor {
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             modelClasses.add(entityClassName);
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityOperationsEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
         }
 
         panacheEntities.addAll(modelClasses);

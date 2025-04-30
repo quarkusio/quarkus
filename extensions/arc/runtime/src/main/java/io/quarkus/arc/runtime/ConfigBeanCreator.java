@@ -27,10 +27,12 @@ public class ConfigBeanCreator implements BeanCreator<Object> {
             throw new IllegalStateException("Cannot load required type: " + requiredType);
         }
 
-        InjectionPoint injectionPoint = InjectionPointProvider.get();
+        InjectionPoint injectionPoint = InjectionPointProvider.getCurrent(creationalContext);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
         }
+
+        ConfigStaticInitCheckInterceptor.recordConfigValue(injectionPoint, null);
 
         try {
             return ConfigProducerUtil.getValue(injectionPoint, ConfigProvider.getConfig());

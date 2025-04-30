@@ -9,7 +9,12 @@ if [ $# -eq 0 ]; then
 fi
 VERSION=$1
 
-./mvnw versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations
+./mvnw -e -B -Dscan=false -Ddevelocity.cache.local.enabled=false -Ddevelocity.cache.remote.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations -DupdateBuildOutputTimestampPolicy=always
+
+if [ -f independent-projects/enforcer-rules/src/it/smoketest/pom.xml ]; then
+    # update the parent version only using indentation
+    sed -i -r "s@        <version>[^<]+</version>@        <version>${VERSION}</version>@" independent-projects/enforcer-rules/src/it/smoketest/pom.xml
+fi
 
 if [ -f devtools/gradle/gradle.properties ]; then
     sed -i -r "s/^version( ?= ?).*$/version\1${VERSION}/" devtools/gradle/gradle.properties

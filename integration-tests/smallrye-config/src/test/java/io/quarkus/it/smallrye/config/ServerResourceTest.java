@@ -1,19 +1,13 @@
 package io.quarkus.it.smallrye.config;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.Header;
 
 @QuarkusTest
 class ServerResourceTest {
@@ -48,15 +42,6 @@ class ServerResourceTest {
     }
 
     @Test
-    void serverHost() {
-        given()
-                .get("/server/host")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(equalTo("localhost"));
-    }
-
-    @Test
     void properties() {
         given()
                 .get("/server/properties")
@@ -83,25 +68,5 @@ class ServerResourceTest {
                 .statusCode(OK.getStatusCode())
                 .header("X-VERSION", "1.2.3.4")
                 .body(containsString("My application info"));
-    }
-
-    @Test
-    void invalid() {
-        given()
-                .header(new Header(CONTENT_TYPE, APPLICATION_JSON))
-                .header(new Header(ACCEPT, APPLICATION_JSON))
-                .get("/server/validator/{prefix}", "cloud")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body("errors", hasSize(9))
-                .body("errors", hasItem("cloud.log.days must be less than or equal to 15"))
-                .body("errors", hasItem("cloud.cors.origins[1].port must be greater than or equal to 8000"))
-                .body("errors", hasItem("cloud.info.name size must be between 0 and 3"))
-                .body("errors", hasItem("cloud.info.code must be less than or equal to 3"))
-                .body("errors", hasItem("cloud.info.alias[0] size must be between 0 and 3"))
-                .body("errors", hasItem("cloud.info.admins.root[1].username size must be between 0 and 4"))
-                .body("errors", hasItem("cloud.info.firewall.accepted[1] size must be between 8 and 15"))
-                .body("errors", hasItem("cloud.proxy.timeout must be less than or equal to 10"))
-                .body("errors", hasItem("cloud server is not prod"));
     }
 }

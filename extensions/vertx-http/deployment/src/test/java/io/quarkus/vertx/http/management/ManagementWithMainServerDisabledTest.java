@@ -2,9 +2,8 @@ package io.quarkus.vertx.http.management;
 
 import java.util.function.Consumer;
 
-import javax.inject.Singleton;
-
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -66,7 +65,7 @@ public class ManagementWithMainServerDisabledTest {
     @Test
     public void testManagementWithoutMain() {
         RestAssured.given()
-                .get("http://0.0.0.0:9001/management/my-route")
+                .get("http://localhost:9001/management/my-route")
                 .then().statusCode(200).body(Matchers.equalTo("ok"));
     }
 

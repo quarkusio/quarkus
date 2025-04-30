@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
 
 /**
  * Builder for {@link Engine}.
@@ -24,6 +27,8 @@ import java.util.function.Supplier;
  */
 public final class EngineBuilder {
 
+    private static final Logger LOG = Logger.getLogger(EngineBuilder.class);
+
     final Map<String, SectionHelperFactory<?>> sectionHelperFactories;
     final List<ValueResolver> valueResolvers;
     final List<NamespaceResolver> namespaceResolvers;
@@ -37,6 +42,7 @@ public final class EngineBuilder {
     String iterationMetadataPrefix;
     long timeout;
     boolean useAsyncTimeout;
+    final List<EngineListener> listeners;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -51,18 +57,31 @@ public final class EngineBuilder {
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
         this.timeout = 10_000;
         this.useAsyncTimeout = true;
+        this.listeners = new ArrayList<>();
     }
 
+    /**
+     * Register the factory for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
-        if (factory.cacheFactoryConfig()) {
-            factory = new CachedConfigSectionHelperFactory<>(factory);
-        }
+        factory = cachedFactory(factory);
         for (String alias : factory.getDefaultAliases()) {
             sectionHelperFactories.put(alias, factory);
         }
         return this;
     }
 
+    /**
+     * Register the factories for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelpers(SectionHelperFactory<?>... factories) {
         for (SectionHelperFactory<?> factory : factories) {
             addSectionHelper(factory);
@@ -70,7 +89,15 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     * Register the factory for all default aliases and the specified name.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(String name, SectionHelperFactory<?> factory) {
+        factory = cachedFactory(factory);
         addSectionHelper(factory);
         sectionHelperFactories.put(name, factory);
         return this;
@@ -83,10 +110,22 @@ public final class EngineBuilder {
                 new FragmentSectionHelper.Factory());
     }
 
+    /**
+     *
+     * @param resolverSupplier
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {
         return addValueResolver(resolverSupplier.get());
     }
 
+    /**
+     *
+     * @param resolvers
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolvers(ValueResolver... resolvers) {
         for (ValueResolver valueResolver : resolvers) {
             addValueResolver(valueResolver);
@@ -94,9 +133,15 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param resolver
+     * @return self
+     * @see EngineListener
+     */
     public EngineBuilder addValueResolver(ValueResolver resolver) {
         this.valueResolvers.add(resolver);
-        return this;
+        return addListener(resolver);
     }
 
     /**
@@ -130,6 +175,7 @@ public final class EngineBuilder {
      * @param resolver
      * @return self
      * @throws IllegalArgumentException if there is a resolver of the same priority for the given namespace
+     * @see EngineListener
      */
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
         String namespace = Namespaces.requireValid(resolver.getNamespace());
@@ -143,7 +189,7 @@ public final class EngineBuilder {
             }
         }
         this.namespaceResolvers.add(resolver);
-        return this;
+        return addListener(resolver);
     }
 
     /**
@@ -235,6 +281,10 @@ public final class EngineBuilder {
      * {@link #addSectionHelper(SectionHelperFactory)}.
      * <p>
      * A valid prefix consists of alphanumeric characters and underscores.
+     * <p>
+     * Keep in mind that the prefix must be set before the {@link LoopSectionHelper.Factory} is registered, for example before
+     * the {@link #addDefaultSectionHelpers()} method is called. In other words, the {@link LoopSectionHelper.Factory} must be
+     * re-registered after the prefix is set.
      *
      * @param prefix
      * @return self
@@ -276,11 +326,56 @@ public final class EngineBuilder {
     }
 
     /**
+     * Value and namespace resolvers that also implement {@link EngineListener} are registered automatically.
+     *
+     * @param listener
+     * @return self
+     */
+    public EngineBuilder addEngineListener(EngineListener listener) {
+        this.listeners.add(Objects.requireNonNull(listener));
+        return this;
+    }
+
+    /**
      *
      * @return a new engine instance
      */
     public Engine build() {
-        return new EngineImpl(this);
+        EngineImpl engine = new EngineImpl(this);
+        for (EngineListener listener : listeners) {
+            try {
+                listener.engineBuilt(engine);
+            } catch (Throwable e) {
+                LOG.warnf("Engine listener error: " + e);
+            }
+        }
+        return engine;
+    }
+
+    private SectionHelperFactory<?> cachedFactory(SectionHelperFactory<?> factory) {
+        if (factory instanceof CachedConfigSectionHelperFactory || !factory.cacheFactoryConfig()) {
+            return factory;
+        }
+        return new CachedConfigSectionHelperFactory<>(factory);
+    }
+
+    private EngineBuilder addListener(Object obj) {
+        if (obj instanceof EngineListener listener) {
+            listeners.add(listener);
+        }
+        return this;
+    }
+
+    /**
+     * Receives notifications about Engine lifecycle.
+     * <p>
+     * Value and namespace resolvers that also implement {@link EngineListener} are registered automatically.
+     */
+    public interface EngineListener {
+
+        default void engineBuilt(Engine engine) {
+        }
+
     }
 
     static class CachedConfigSectionHelperFactory<T extends SectionHelper> implements SectionHelperFactory<T> {

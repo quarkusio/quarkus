@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -83,7 +84,7 @@ public final class PluginUtil {
         if (checkUrl(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
             return false;
         }
-        if (checkGACTV(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
+        if (checkGACTV(p.getLocation()).isPresent() && p.getType() != PluginType.extension) { //We don't want to remove remotely located plugins
             return false;
         }
         if (p.getLocation().map(PluginUtil::isLocalFile).orElse(false)) {
@@ -136,7 +137,7 @@ public final class PluginUtil {
      */
     public static Optional<Path> checkPath(String location) {
         try {
-            return Optional.of(Path.of(location));
+            return Optional.of(Paths.get(location));
         } catch (InvalidPathException | NullPointerException e) {
             return Optional.empty();
         }

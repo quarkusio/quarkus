@@ -197,8 +197,8 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                 .toArray(ResultHandle[]::new);
 
         String responseContentTypeResolverClassName = isResteasyClassic
-                ? "io.quarkus.spring.web.runtime.ResteasyClassicResponseContentTypeResolver"
-                : "io.quarkus.spring.web.runtime.ResteasyReactiveResponseContentTypeResolver";
+                ? "io.quarkus.spring.web.resteasy.classic.runtime.ResteasyClassicResponseContentTypeResolver"
+                : "io.quarkus.spring.web.resteasy.reactive.runtime.ResteasyReactiveResponseContentTypeResolver";
         ResultHandle contentTypeResolver = methodCreator
                 .newInstance(MethodDescriptor.ofConstructor(responseContentTypeResolverClassName));
 

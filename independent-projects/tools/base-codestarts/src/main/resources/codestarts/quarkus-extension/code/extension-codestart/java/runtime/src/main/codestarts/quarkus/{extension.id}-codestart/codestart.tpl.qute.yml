@@ -7,7 +7,7 @@ metadata:
   description: {#if extension.description}{extension.description}{#else}Start coding with {extension.name}{/if}
 #  path: /some-path
 {#if input.extra-codestarts.contains("quarkiverse")}
-  related-guide-section: https://quarkiverse.github.io/quarkiverse-docs/quarkus-quinoa/dev/index.html
+  related-guide-section: https://docs.quarkiverse.io/quarkus-{extension.id}/dev/index.html
 {#else}
 #  related-guide-section: TBD
 {/if}

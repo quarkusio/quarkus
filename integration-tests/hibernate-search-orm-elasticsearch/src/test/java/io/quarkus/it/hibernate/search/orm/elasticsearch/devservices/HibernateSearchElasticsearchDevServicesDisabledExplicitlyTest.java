@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -32,10 +31,13 @@ public class HibernateSearchElasticsearchDevServicesDisabledExplicitlyTest {
             // we won't have an Elasticsearch instance to talk to.
             config.putAll(Map.of(
                     "quarkus.hibernate-search-orm.schema-management.strategy", "none",
-                    // This version does not matter as long as it's supported by Hibernate Search:
-                    // it won't be checked in this test anyway.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "7.5",
-                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false"));
+                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false",
+                    // When disabling the version check we need to set a more precise version
+                    // than what we have in application.properties.
+                    // But here it doesn't matter as we won't send a request to Elasticsearch anyway,
+                    // so we're free to put anything.
+                    // Just make sure to set something consistent with what we have in application.properties.
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.15"));
             return config;
         }
 
@@ -45,12 +47,6 @@ public class HibernateSearchElasticsearchDevServicesDisabledExplicitlyTest {
             // that way, we can control whether quarkus.hibernate-search-orm.elasticsearch.hosts is set or not.
             // In this test, we do NOT set quarkus.hibernate-search-orm.elasticsearch.hosts.
             return "someotherprofile";
-        }
-
-        @Override
-        public List<TestResourceEntry> testResources() {
-            // Enables injection of DevServicesContext
-            return List.of(new TestResourceEntry(DevServicesContextSpy.class));
         }
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
+import java.util.Objects;
+
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 import io.smallrye.reactive.messaging.EmitterConfiguration;
@@ -114,5 +116,38 @@ public class QuarkusEmitterConfiguration implements EmitterConfiguration {
 
     public void setNumberOfSubscriberBeforeConnecting(int numberOfSubscriberBeforeConnecting) {
         this.numberOfSubscriberBeforeConnecting = numberOfSubscriberBeforeConnecting;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        QuarkusEmitterConfiguration that = (QuarkusEmitterConfiguration) o;
+        return overflowBufferSize == that.overflowBufferSize
+                && broadcast == that.broadcast
+                && numberOfSubscriberBeforeConnecting == that.numberOfSubscriberBeforeConnecting
+                && Objects.equals(name, that.name)
+                && Objects.equals(emitterType.value(), that.emitterType.value())
+                && overflowBufferStrategy == that.overflowBufferStrategy;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, emitterType.value(), overflowBufferStrategy, overflowBufferSize, broadcast,
+                numberOfSubscriberBeforeConnecting);
+    }
+
+    @Override
+    public String toString() {
+        return "QuarkusEmitterConfiguration{" +
+                "name='" + name + '\'' +
+                ", emitterType=" + emitterType +
+                ", overflowBufferStrategy=" + overflowBufferStrategy +
+                ", overflowBufferSize=" + overflowBufferSize +
+                ", broadcast=" + broadcast +
+                ", numberOfSubscriberBeforeConnecting=" + numberOfSubscriberBeforeConnecting +
+                '}';
     }
 }

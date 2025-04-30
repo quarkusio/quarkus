@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.maven.settings.Activation;
 import org.apache.maven.settings.Profile;
@@ -18,6 +17,7 @@ import org.apache.maven.settings.io.DefaultSettingsWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -142,14 +142,24 @@ public class ResolverSetupCleanup {
         return true;
     }
 
-    protected boolean isBootstrapForTestMode() {
-        return false;
+    protected QuarkusBootstrap.Mode getBootstrapMode() {
+        return QuarkusBootstrap.Mode.PROD;
     }
 
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(newArtifactResolver(currentProject));
-        if (isBootstrapForTestMode()) {
-            appModelResolver.setTest(true);
+        appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(null));
+        switch (getBootstrapMode()) {
+            case PROD:
+                break;
+            case TEST:
+                appModelResolver.setTest(true);
+                break;
+            case DEV:
+                appModelResolver.setDevMode(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported bootstrap mode " + getBootstrapMode());
         }
         return appModelResolver;
     }
@@ -173,10 +183,6 @@ public class ResolverSetupCleanup {
             }
         }
         return builder.build();
-    }
-
-    protected TsJar newJar() throws IOException {
-        return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
     }
 
     protected TsQuarkusExt install(TsQuarkusExt extension) {

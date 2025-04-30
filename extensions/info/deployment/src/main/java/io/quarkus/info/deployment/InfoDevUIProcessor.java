@@ -1,10 +1,13 @@
 package io.quarkus.info.deployment;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.devui.spi.page.MenuPageBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
@@ -14,27 +17,30 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 public class InfoDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    MenuPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+    void create(BuildProducer<CardPageBuildItem> cardPageProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             InfoBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem) {
-        MenuPageBuildItem pageBuildItem = new MenuPageBuildItem();
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                managementBuildTimeConfig, launchModeBuildItem);
 
-        pageBuildItem.addBuildTimeData("infoUrl", path);
-
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
+        WebComponentPageBuilder infoPage = Page.webComponentPageBuilder()
                 .title("Information")
                 .icon("font-awesome-solid:circle-info")
-                .componentLink("qwc-info.js"));
-        pageBuildItem.addPage(Page.externalPageBuilder("Raw")
+                .componentLink("qwc-info.js");
+
+        ExternalPageBuilder rawPage = Page.externalPageBuilder("Raw")
                 .url(path)
                 .icon("font-awesome-solid:circle-info")
-                .isJsonContent());
+                .isJsonContent();
 
-        return pageBuildItem;
+        CardPageBuildItem cardBuildItem = new CardPageBuildItem();
+        cardBuildItem.addBuildTimeData("infoUrl", path);
+        cardBuildItem.addPage(infoPage);
+        cardBuildItem.addPage(rawPage);
+        cardPageProducer.produce(cardBuildItem);
     }
 
 }

@@ -2,12 +2,13 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Collection;
 import java.util.List;
-
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
@@ -19,30 +20,30 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
  */
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
-    private final ParsedPersistenceXmlDescriptor descriptor;
+    private final QuarkusPersistenceUnitDescriptor descriptor;
 
-    // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
-    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
-    // use the name "<default>", so we need to convert between those.
-    private final String configurationName;
     private final RecordedConfig config;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
-    private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final boolean isHibernateValidatorPresent;
+    private final Optional<FormatMapperKind> jsonMapper;
+    private final Optional<FormatMapperKind> xmlMapper;
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
+    public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
             RecordedConfig config,
             String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml) {
+            boolean fromPersistenceXml,
+            boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper) {
         this.descriptor = descriptor;
-        this.configurationName = configurationName;
         this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
-        this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.isHibernateValidatorPresent = isHibernateValidatorPresent;
+        this.jsonMapper = jsonMapper;
+        this.xmlMapper = xmlMapper;
     }
 
     public Collection<String> getManagedClassNames() {
@@ -58,7 +59,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     }
 
     public String getConfigurationName() {
-        return configurationName;
+        return descriptor.getConfigurationName();
     }
 
     public RecordedConfig getConfig() {
@@ -77,9 +78,18 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return fromPersistenceXml;
     }
 
+    public boolean isReactive() {
+        return descriptor.isReactive();
+    }
+
+    public boolean isHibernateValidatorPresent() {
+        return isHibernateValidatorPresent;
+    }
+
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        return new QuarkusPersistenceUnitDefinition(descriptor, configurationName, config,
-                xmlMappings, isReactive, fromPersistenceXml, integrationStaticDescriptors);
+        return new QuarkusPersistenceUnitDefinition(descriptor, config,
+                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper,
+                integrationStaticDescriptors);
     }
 }

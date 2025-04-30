@@ -1,8 +1,6 @@
 package io.quarkus.qute;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -10,7 +8,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public final class Futures {
 
@@ -44,21 +41,19 @@ public final class Futures {
             }
         } else {
             // multiple params
-            List<Entry<String, CompletableFuture<Object>>> asyncResults = new ArrayList<>(parameters.size());
-            for (Entry<String, Expression> e : parameters.entrySet()) {
-                if (!e.getValue().isLiteral()) {
-                    asyncResults.add(Map.entry(e.getKey(), resolutionContext.evaluate(e.getValue()).toCompletableFuture()));
-                }
-            }
-            if (asyncResults.isEmpty()) {
+            Map<String, CompletableFuture<Object>> asyncResults = collectAsyncResults(parameters, resolutionContext);
+            if (asyncResults == null) {
                 // only literals
-                return CompletedStage.of(parameters.entrySet().stream()
-                        .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().getLiteral())));
+                Map<String, Object> ret = new HashMap<>();
+                for (Entry<String, Expression> e : parameters.entrySet()) {
+                    ret.put(e.getKey(), e.getValue().getLiteral());
+                }
+                return CompletedStage.of(ret);
             } else if (asyncResults.size() == 1) {
                 // single non-literal param - avoid CompletableFuture.allOf() and add remaining literals
-                return asyncResults.get(0).getValue().thenApply(v -> {
+                return asyncResults.values().iterator().next().thenApply(v -> {
                     try {
-                        return singleValueMap(parameters, asyncResults.get(0));
+                        return singleValueMap(parameters, asyncResults.entrySet().iterator().next());
                     } catch (InterruptedException | ExecutionException e1) {
                         throw new CompletionException(e1);
                     }
@@ -66,32 +61,45 @@ public final class Futures {
             } else {
                 // multiple non-literal params
                 CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
-                CompletableFuture.allOf(asyncResults.stream().map(Entry::getValue).toArray(CompletableFuture[]::new))
+                CompletableFuture.allOf(asyncResults.values().toArray(CompletableFuture[]::new))
                         .whenComplete((v, t1) -> {
                             if (t1 != null) {
                                 result.completeExceptionally(t1);
                             } else {
                                 // IMPL NOTE: Keep the map mutable - it can be modified in UserTagSectionHelper
                                 Map<String, Object> values = new HashMap<>();
-                                int j = 0;
                                 try {
                                     for (Entry<String, Expression> entry : parameters.entrySet()) {
                                         if (entry.getValue().isLiteral()) {
                                             values.put(entry.getKey(), entry.getValue().getLiteral());
                                         } else {
-                                            values.put(entry.getKey(), asyncResults.get(j++).getValue().get());
+                                            values.put(entry.getKey(), asyncResults.get(entry.getKey()).get());
                                         }
                                     }
                                     result.complete(values);
                                 } catch (Throwable e) {
                                     result.completeExceptionally(e);
                                 }
-
                             }
                         });
                 return result;
             }
         }
+    }
+
+    private static Map<String, CompletableFuture<Object>> collectAsyncResults(Map<String, Expression> parameters,
+            ResolutionContext resolutionContext) {
+        Map<String, CompletableFuture<Object>> asyncResults = null;
+        for (Entry<String, Expression> e : parameters.entrySet()) {
+            if (e.getValue().isLiteral()) {
+                continue;
+            }
+            if (asyncResults == null) {
+                asyncResults = new HashMap<>();
+            }
+            asyncResults.put(e.getKey(), resolutionContext.evaluate(e.getValue()).toCompletableFuture());
+        }
+        return asyncResults;
     }
 
     private static Map<String, Object> singleValueMap(String key, Object value) {

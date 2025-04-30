@@ -1,15 +1,23 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
+import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.impl.NoStackTraceException;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -24,16 +32,20 @@ import io.vertx.core.spi.metrics.PoolMetrics;
 import io.vertx.core.spi.metrics.TCPMetrics;
 import io.vertx.core.spi.metrics.VertxMetrics;
 
-public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetricsFactory, VertxMetrics {
+public class VertxMeterBinderAdapter extends MetricsOptions
+        implements VertxMetricsFactory, VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
     private static final Logger log = Logger.getLogger(VertxMeterBinderAdapter.class);
     public static final String METRIC_NAME_SEPARATOR = "|";
 
     private HttpBinderConfiguration httpBinderConfiguration;
+    private OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper;
 
     public VertxMeterBinderAdapter() {
     }
 
-    void setHttpConfig(HttpBinderConfiguration httpBinderConfiguration) {
+    void initBinder(HttpBinderConfiguration httpBinderConfiguration,
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper) {
+        this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
         this.httpBinderConfiguration = httpBinderConfiguration;
     }
 
@@ -60,11 +72,15 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
     @Override
     public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(HttpServerOptions options, SocketAddress localAddress) {
         if (httpBinderConfiguration == null) {
-            throw new IllegalStateException("HttpBinderConfiguration was not found");
+            throw new NoStackTraceException("HttpBinderConfiguration was not found");
+        }
+        if (openTelemetryContextUnwrapper == null) {
+            throw new NoStackTraceException("OpenTelemetryContextUnwrapper was not found");
         }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
-            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration);
+            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper,
+                    options);
         }
         return null;
     }
@@ -183,4 +199,39 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
         return null;
     }
 
+    @Override
+    public ConnectionTracker getHttpConnectionTracker() {
+        return new ConnectionTracker() {
+
+            private final Counter counter = Counter.builder("vertx.http.connections.rejected")
+                    .description("Number of rejected HTTP connections")
+                    .register(Metrics.globalRegistry);
+
+            @Override
+            public void onConnectionRejected() {
+                counter.increment();
+            }
+
+            @Override
+            public void initialize(int maxConnections, AtomicInteger current) {
+                Gauge.builder("vertx.http.connections.current", new Supplier<Number>() {
+                    @Override
+                    public Number get() {
+                        return current.get();
+                    }
+                })
+                        .description("Current number of active HTTP connections")
+                        .register(Metrics.globalRegistry);
+
+                Gauge.builder("vertx.http.connections.max", new Supplier<Number>() {
+                    @Override
+                    public Number get() {
+                        return maxConnections;
+                    }
+                })
+                        .description("Max number of HTTP connections")
+                        .register(Metrics.globalRegistry);
+            }
+        };
+    }
 }

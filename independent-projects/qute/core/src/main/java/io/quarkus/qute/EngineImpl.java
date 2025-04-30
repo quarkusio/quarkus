@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -116,6 +117,9 @@ class EngineImpl implements Engine {
     }
 
     public Template putTemplate(String id, Template template) {
+        if (!Identifiers.isValid(id)) {
+            throw new IllegalArgumentException("Invalid identifier found: [" + id + "]");
+        }
         return templates.put(id, template);
     }
 
@@ -162,6 +166,43 @@ class EngineImpl implements Engine {
             }
         }
         return Optional.empty();
+    }
+
+    @Override
+    public boolean removeStandaloneLines() {
+        return removeStandaloneLines;
+    }
+
+    @Override
+    public EngineBuilder newBuilder() {
+        EngineBuilder builder = Engine.builder();
+        builder.timeout(getTimeout());
+        builder.useAsyncTimeout(useAsyncTimeout());
+        builder.removeStandaloneLines(removeStandaloneLines());
+        builder.strictRendering(getEvaluator().strictRendering());
+        for (Entry<String, SectionHelperFactory<?>> e : sectionHelperFactories.entrySet()) {
+            builder.addSectionHelper(e.getKey(), e.getValue());
+        }
+        for (ValueResolver valueResolver : valueResolvers) {
+            builder.addValueResolver(valueResolver);
+        }
+        for (NamespaceResolver namespaceResolver : namespaceResolvers) {
+            builder.addNamespaceResolver(namespaceResolver);
+        }
+        for (TemplateLocator locator : locators) {
+            builder.addLocator(locator);
+        }
+        for (ResultMapper resultMapper : resultMappers) {
+            builder.addResultMapper(resultMapper);
+        }
+        for (Initializer initializer : initializers) {
+            builder.addTemplateInstanceInitializer(initializer);
+        }
+        builder.computeSectionHelper(sectionHelperFunc);
+        for (ParserHook parserHook : parserHooks) {
+            builder.addParserHook(parserHook);
+        }
+        return builder;
     }
 
     String generateId() {

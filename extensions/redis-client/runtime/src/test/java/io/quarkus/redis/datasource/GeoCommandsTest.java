@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.offset;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.Set;
 
@@ -14,6 +15,8 @@ import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.geo.GeoAddArgs;
 import io.quarkus.redis.datasource.geo.GeoCommands;
@@ -88,6 +91,32 @@ public class GeoCommandsTest extends DatasourceTestBase {
 
         added = geo.geoadd(key, GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
         assertThat(added).isTrue();
+    }
+
+    @Test
+    @RequiresRedis6OrHigher
+    void geoaddUsingTypeReferences() {
+        var g = ds.geo(new TypeReference<Map<String, Place>>() {
+            // Empty on purpose
+        });
+
+        boolean added = g.geoadd(key, 44.9396, CRUSSOL_LATITUDE, Map.of("a", Place.crussol));
+        assertThat(added).isTrue();
+
+        added = g.geoadd(key, 44.9396, CRUSSOL_LATITUDE, Map.of("a", Place.crussol));
+        assertThat(added).isFalse();
+
+        added = g.geoadd(key, GeoPosition.of(GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE), Map.of("a", Place.grignan));
+        assertThat(added).isTrue();
+
+        added = g.geoadd(key, GeoItem.of(Map.of("a", Place.suze), SUZE_LONGITUDE, SUZE_LATITUDE));
+        assertThat(added).isTrue();
+
+        List<GeoValue<Map<String, Place>>> list = g.geosearch(key, new GeoSearchArgs<Map<String, Place>>()
+                .byRadius(60, GeoUnit.KM).fromMember(Map.of("a", Place.crussol)).ascending().withDistance());
+        assertThat(list).hasSize(2);
+        assertThat(list.get(0).member).isEqualTo(Map.of("a", Place.crussol));
+        assertThat(list.get(1).member).isEqualTo(Map.of("a", Place.grignan)); // 58 Km from crussol
     }
 
     @Test

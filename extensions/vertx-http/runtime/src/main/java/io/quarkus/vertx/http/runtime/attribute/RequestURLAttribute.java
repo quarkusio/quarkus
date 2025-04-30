@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -10,16 +11,21 @@ public class RequestURLAttribute implements ExchangeAttribute {
 
     public static final String REQUEST_URL_SHORT = "%U";
     public static final String REQUEST_URL = "%{REQUEST_URL}";
+    public static final String ORIGINAL_REQUEST_URL_SHORT = "%<U";
+    public static final String ORIGINAL_REQUEST_URL = "%{<REQUEST_URL}";
 
-    public static final ExchangeAttribute INSTANCE = new RequestURLAttribute();
+    public static final ExchangeAttribute INSTANCE = new RequestURLAttribute(false);
+    public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new RequestURLAttribute(true);
 
-    private RequestURLAttribute() {
+    private final boolean useOriginalRequest;
 
+    private RequestURLAttribute(boolean useOriginalRequest) {
+        this.useOriginalRequest = useOriginalRequest;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return exchange.request().uri();
+        return useOriginalRequest ? OriginalRequestContext.getUri(exchange) : exchange.request().uri();
     }
 
     @Override
@@ -38,6 +44,8 @@ public class RequestURLAttribute implements ExchangeAttribute {
         public ExchangeAttribute build(final String token) {
             if (token.equals(REQUEST_URL) || token.equals(REQUEST_URL_SHORT)) {
                 return RequestURLAttribute.INSTANCE;
+            } else if (token.equals(ORIGINAL_REQUEST_URL) || token.equals(ORIGINAL_REQUEST_URL_SHORT)) {
+                return RequestURLAttribute.INSTANCE_ORIGINAL_REQUEST;
             }
             return null;
         }

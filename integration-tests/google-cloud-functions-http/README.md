@@ -20,7 +20,7 @@ Finally, you need to use `gcloud` to deploy the function to Google Cloud
 
 ```shell script
 gcloud functions deploy quarkus-example-http --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --source=target/deployment
+  --runtime=java21 --trigger-http --source=target/deployment
 ```
 
 ## Testing the endpoints

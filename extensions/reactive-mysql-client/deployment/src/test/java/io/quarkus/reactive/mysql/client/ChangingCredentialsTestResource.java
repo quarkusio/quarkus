@@ -10,13 +10,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.mysqlclient.MySQLPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/test")
 public class ChangingCredentialsTestResource {
 
     @Inject
-    MySQLPool client;
+    Pool client;
 
     @Inject
     ChangingCredentialsProvider credentialsProvider;

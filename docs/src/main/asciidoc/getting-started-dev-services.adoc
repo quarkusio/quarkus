@@ -1,0 +1,346 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="getting-started-dev-services-tutorial"]
+= Your second Quarkus application
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: getting-started, data, core
+:summary: Discover some of the features that make developing with Quarkus a joyful experience.
+:topics: getting-started,dev-services
+
+This tutorial shows you how to create an application which writes to and reads from a database.
+You will use Dev Services, so you will not actually download, configure, or even start the database yourself.
+You will also use Panache, a layer on top of Hibernate ORM, to make reading and writing data easier.
+
+This guide helps you:
+
+ *  Read and write objects to a database
+ *  Develop and test against services with zero configuration
+
+== Prerequisites
+
+:prerequisites-time: 30 minutes
+:prerequisites-docker:
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+
+This tutorial builds on what you learned writing xref:getting-started.adoc[your first Quarkus application].
+You will not need the code from that application, but make sure you understand the concepts.
+
+== Solution
+
+We recommend that you follow the instructions from <<Bootstrapping the project>> onwards to create the application step by step.
+
+However, you can go right to the completed example.
+
+Download an {quickstarts-archive-url}[archive] or clone the git repository:
+
+[source,bash,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
+
+The solution is located in the `getting-started-dev-services` {quickstarts-tree-url}/getting-started-dev-services[directory].
+
+:sectnums:
+:sectnumlevels: 3
+== Outline steps
+
+- Bootstrap the application
+- Update the application to read user input
+- Create a Panache Entity
+- Read and write the entity
+- Configure an external database using a profile
+
+== Setting up an interactive application
+
+=== Bootstrapping the project
+
+The easiest way to create a new Quarkus project is to open a terminal and run the following command:
+
+:create-app-artifact-id: getting-started-dev-services
+:create-app-extensions: rest
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
+
+For an explanation of what's in the generated application, see the xref:getting-started.adoc[First application guide].
+
+=== Running the application
+
+Launch the application in dev mode
+
+include::{includes}/devtools/dev.adoc[]
+
+Once the application is up, visit http://localhost:8080/hello. It should show a "Hello from Quarkus REST" message.
+
+=== Accepting user input
+
+Let's make the application a bit more interactive.
+Open the project in your IDE and navigate to `src/main/java/org/acme/GreetingResource.java`
+Add a query param in the `hello` method.
+(The `org.jboss.resteasy.reactive.RestQuery` annotation is like the Jakarta REST `@QueryParam`
+annotation, except you don't need to duplicate the parameter name.)
+
+[source, java]
+----
+public String hello(@RestQuery String name) {
+    return "Hello " + name;
+}
+----
+
+Visit http://localhost:8080/hello?name=Bloom.
+
+You should see a personalised message: `Hello Bloom`.
+
+=== Fixing the tests
+
+In your Quarkus terminal, type 'r' to run the tests. You should see
+that your application changes broke the tests!
+
+To fix the tests, open `src/test/java/org/acme/GreetingResourceTest.java`
+and replace
+
+[source, java]
+----
+             .body(is("Hello from Quarkus REST"));
+----
+
+with
+
+[source, java]
+----
+             .body(containsString("Hello"));
+----
+
+This still validates the HTTP endpoint, but it's more flexible
+about the expected output.
+You should see in your terminal that the tests are now passing.
+
+== Adding persistence
+
+=== Creating a Panache Entity
+
+1. To add the persistence libraries, run
+
+:add-extension-extensions: hibernate-orm-panache,jdbc-postgresql
+include::{includes}/devtools/extension-add.adoc[]
+
+The application will record the names of people it greets. Define an Entity
+by creating a `Greeting.java` class. Add the following content:
+
+[source, java]
+----
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Entity;
+
+@Entity
+public class Greeting extends PanacheEntity {
+    public String name;
+}
+----
+
+The entity makes use of xref:hibernate-orm-panache.adoc[Panache], a layer on top of Hibernate ORM.
+Extending `PanacheEntity` brings in a range of methods for reading, writing, and finding data.
+Because all the data access methods are on the `Greeting` entity, rather than on a separate data access class,
+this is an example of the active record pattern.
+
+The `Greeting` table will have one column, a field called `name`.
+
+=== Writing data
+
+To use the new entity, update the `hello` method to start writing some data.
+
+Change the method to the following:
+
+[source, java]
+----
+@GET
+@Transactional
+@Produces(MediaType.TEXT_PLAIN)
+public String hello(@QueryParam("name") String name) {
+   Greeting greeting = new Greeting();
+   greeting.name = name;
+   greeting.persist();
+   return "Hello " + name;
+}
+----
+
+Don't forget the `@Transactional` annotation, which ensures writes are wrapped
+in a transaction.
+
+[NOTE]
+.GETs should not change application state.
+Generally, you shouldn't do state updates in a `GET` REST method, but here it makes
+trying things out simpler. Let's assume what's being written is a logging "side effect",
+rather than a meaningful state changes!
+
+Try out the updated endpoint by visiting http://localhost:8080/hello?name=Bloom.
+You should see a "Hello Bloom" message.
+
+=== Reading data
+Although the new persistence code seems to be working without errors, how
+do you know anything is being written to the database?
+
+Add a second REST method to `GreetingResource`.
+
+[source, java]
+----
+@GET
+@Path("names")
+@Produces(MediaType.TEXT_PLAIN)
+public String names() {
+    List<Greeting> greetings = Greeting.listAll();
+    String names = greetings.stream().map(g-> g.name)
+       .collect(Collectors.joining (", "));
+    return "I've said hello to " + names;
+}
+----
+
+To try it out, visit http://localhost:8080/hello?name=Bloom, and then http://localhost:8080/hello/names.
+
+You should see the following message: "I've said hello to Bloom".
+
+[IMPORTANT]
+.a container runtime is required.
+====
+Don't forget that you need to have a container runtime available, or
+you will start seeing failures in the Quarkus logs at this point.
+====
+
+== Dev services
+
+Reading and writing to the database seems to be working well, but that's a bit unexpected.
+Where did a PostgreSQL database come from? You didn't set anything up.
+
+The database is being managed using xref:dev-services.adoc[Dev Services].
+Dev Services take care of stopping and starting services needed by your application.
+Because you
+included the `jdbc-postgresql` dependency, the database is a containerised PostgreSQL database.
+If you'd added `jdbc-mysql` instead, you would have gotten a containerised MySQL database.
+
+If you like, use your container tool to see what containers are running.
+For example, if you're using Docker, run `docker ps`, and for podman, run `podman ps`.
+You should see something like the following:
+
+----
+ff88dcedd899  docker.io/library/postgres:14  postgres -c fsync...  20 minutes ago  Up 20 minutes  0.0.0.0:34789->5432/tcp  nostalgic_bassi
+----
+
+Stop Quarkus and run `docker ps` again.
+You should see nothing running (it may take a few moments for containers to shut down).
+Quarkus will automatically stop the container when your application stops.
+
+=== Initialising services
+
+If you play with your code some more, you may notice that sometimes, after making an application change, http://localhost:8080/hello/names doesn't list any names.
+What's going on? By default, in dev mode, with a Dev Services database,
+Quarkus configures Hibernate ORM database schema management strategy to be `drop-and-create`.
+See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus-hibernate-orm-schema-management-strategy[Hibernate configuration reference] for more details.
+If a code change triggers an application restart, the database tables
+will be dropped (deleted) and then re-created.
+
+This is convenient, but what if you'd prefer the database to always have content?
+That would make testing easier.
+If you provide an `import.sql` file, Quarkus will use that to initialise
+the database on each start.
+
+1. Make a `src/main/resources/import.sql` file in your project
+2. Add the following SQL statements:
+
+[source, sql]
+----
+INSERT INTO Greeting(id, name)
+VALUES (nextval('Greeting_SEQ'), 'Alice');
+INSERT INTO Greeting(id, name)
+VALUES (nextval('Greeting_SEQ'), 'Bob');
+----
+
+Now, hit `s` in your dev mode session, to force a full restart. Then visit http://localhost:8080/hello/names.
+
+You'll see that Alice and Bob are always included in the list of names.
+
+== Controlling Dev Services
+
+=== Using an external database instead
+
+What if you'd rather use an external database that you manage yourself?
+Add the following to `src/main/resources/application.properties`:
+
+[source, properties]
+----
+# configure your datasource
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.username = leopold
+quarkus.datasource.password = bloom
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
+----
+
+This tells Quarkus that you don't want it to start a Dev Service,
+because you have your own database. You don't need to worry about starting
+the database, because you're just seeing how to change the configuration.
+
+Visit http://localhost:8080/hello/names. Instead of a list of names,
+you'll get a red error screen. In the terminal where Quarkus is running.
+you'll see the following stack error message:
+
+----
+2023-06-28 19:18:22,880 ERROR [io.qua.ver.htt.run.QuarkusErrorHandler] (executor-thread-1) HTTP Request to /hello?name=fred failed, error id: 4f9b5ce6-3b08-41c5-af36-24eee4d1dd2b-2: org.hibernate.exception.JDBCConnectionException: Unable to acquire JDBC Connection [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
+        at org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:98)
+        at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:56)
+...
+----
+
+This makes sense; you've disabled the database Dev Service, but you haven't
+started your own database.
+
+=== Using profiles
+
+Unless you want to, don't worry about setting up an external database
+to resolve the connection error. Instead, you will go back to using the Dev Service.
+It made life easy!
+
+But what about production? You won't want to use Dev Services in production.
+In fact, Quarkus only starts Dev Services in dev and test modes.
+
+Wouldn't it be nice to configure an external database,
+but have it *only* used in production, so you could still use Dev Services the rest of the time?
+
+Add a `%prod.`
+prefix to the database configuration. This means the configuration
+only applies to the xref:config-reference.adoc#profiles[prod profile]
+
+The configuration should look like this:
+
+[source, properties]
+----
+# configure your datasource
+%prod.quarkus.datasource.db-kind = postgresql
+%prod.quarkus.datasource.username = leopold
+%prod.quarkus.datasource.password = bloom
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
+----
+
+Now the external database will be used in prod mode,
+and Dev Services will be used in dev and test modes.
+
+Check http://localhost:8080/hello/names. It should be working again,
+because the Dev Services have been re-enabled.
+Notice that there was no need to restart Quarkus for any of these changes.
+
+
+:sectnums!:
+== Summary
+
+You've taken a simple REST application and updated it to write and read
+data from a database, using Hibernate ORM and Panache. The data was persisted to
+a 'real' database, without you having to configure anything.
+
+
+== References
+
+* xref:dev-services.adoc[Dev Services]
+
+* xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache]

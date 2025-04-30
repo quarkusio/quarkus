@@ -3,25 +3,26 @@ package io.quarkus.stork;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class StorkLoadBalancerConfiguration {
+public interface StorkLoadBalancerConfiguration {
 
     /**
      * Configures load balancer type, e.g. "round-robin".
      * A LoadBalancerProvider for the type has to be available
      *
      */
-    @ConfigItem(defaultValue = "round-robin")
-    public String type;
+    @WithDefault(value = "round-robin")
+    String type();
 
     /**
      * Load Balancer parameters.
      * Check the documentation of the selected load balancer type for available parameters
      *
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, String> parameters;
+    @WithParentName
+    Map<String, String> parameters();
 
 }

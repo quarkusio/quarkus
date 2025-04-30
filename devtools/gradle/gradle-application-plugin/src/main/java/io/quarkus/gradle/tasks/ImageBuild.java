@@ -1,27 +1,33 @@
 
 package io.quarkus.gradle.tasks;
 
-import java.util.Optional;
+import static io.quarkus.gradle.tasks.ImageCheckRequirementsTask.QUARKUS_CONTAINER_IMAGE_BUILD;
+import static io.quarkus.gradle.tasks.ImageCheckRequirementsTask.QUARKUS_CONTAINER_IMAGE_BUILDER;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.gradle.api.provider.MapProperty;
-import org.gradle.api.tasks.options.Option;
+import org.gradle.api.tasks.TaskAction;
 
 public abstract class ImageBuild extends ImageTask {
 
-    Optional<Builder> builder = Optional.empty();
-
-    @Option(option = "builder", description = "The container image extension to use for building the image (e.g. docker, jib, buildpack, openshift).")
-    public void setBuilder(Builder builder) {
-        this.builder = Optional.of(builder);
-    }
-
     @Inject
     public ImageBuild() {
-        super("Perform an image build");
-        MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
+        super("Perform an image build", true);
+    }
+
+    @TaskAction
+    public void imageBuild() throws IOException {
+        Map<String, String> forcedProperties = new HashMap<String, String>();
+        File imageBuilder = getBuilderName().get().getAsFile();
+        String inputString = new String(Files.readAllBytes(imageBuilder.toPath()));
         forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
-        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, getProject().provider(() -> builder().name()));
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, inputString);
+        getAdditionalForcedProperties().get().getProperties().putAll(forcedProperties);
     }
 }

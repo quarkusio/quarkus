@@ -22,7 +22,8 @@ import org.jboss.logging.Logger;
 
 public abstract class PathTreeWithManifest implements PathTree {
 
-    private static final String META_INF_VERSIONS = "META-INF/versions/";
+    private static final String META_INF = "META-INF/";
+    private static final String META_INF_VERSIONS = META_INF + "versions/";
     public static final int JAVA_VERSION;
 
     static {
@@ -32,16 +33,13 @@ public abstract class PathTreeWithManifest implements PathTree {
             List<Integer> list = (List<Integer>) v.getClass().getMethod(versionStr).invoke(v);
             JAVA_VERSION = list.get(0);
         } catch (Exception e) {
-            //version 8
-            throw new IllegalStateException(
-                    "Failed to obtain the Java vesion from java.lang.Runtime, possibly it's Java 8 which is not supported anymore",
-                    e);
+            throw new IllegalStateException("Failed to obtain the Java version from java.lang.Runtime", e);
         }
     }
 
     protected boolean manifestEnabled;
     private final ReentrantReadWriteLock manifestInfoLock = new ReentrantReadWriteLock();
-    private transient Manifest manifest;
+    private transient ManifestAttributes manifestAttributes;
     protected transient boolean manifestInitialized;
     protected volatile Map<String, String> multiReleaseMapping;
 
@@ -60,7 +58,7 @@ public abstract class PathTreeWithManifest implements PathTree {
     protected PathTreeWithManifest(PathTreeWithManifest pathTreeWithManifest) {
         pathTreeWithManifest.manifestReadLock().lock();
         try {
-            this.manifest = pathTreeWithManifest.manifest;
+            this.manifestAttributes = pathTreeWithManifest.manifestAttributes;
             this.manifestInitialized = pathTreeWithManifest.manifestInitialized;
             this.multiReleaseMapping = pathTreeWithManifest.multiReleaseMapping;
         } finally {
@@ -77,12 +75,12 @@ public abstract class PathTreeWithManifest implements PathTree {
     protected abstract <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled);
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         // Optimistically try with a lock that allows concurrent access first, for performance.
         manifestReadLock().lock();
         try {
             if (manifestInitialized) {
-                return manifest;
+                return manifestAttributes;
             }
         } finally {
             manifestReadLock().unlock();
@@ -93,18 +91,18 @@ public abstract class PathTreeWithManifest implements PathTree {
             if (manifestInitialized) {
                 // Someone else got here between our call to manifestReadLock().unlock()
                 // and our call to manifestWriteLock().lock(); it can happen.
-                return manifest;
+                return manifestAttributes;
             }
             final Manifest m = apply("META-INF/MANIFEST.MF", ManifestReader.INSTANCE, false);
             initManifest(m);
         } finally {
             manifestWriteLock().unlock();
         }
-        return manifest;
+        return manifestAttributes;
     }
 
     protected void initManifest(Manifest m) {
-        manifest = m;
+        manifestAttributes = ManifestAttributes.of(m);
         manifestInitialized = true;
     }
 
@@ -117,7 +115,9 @@ public abstract class PathTreeWithManifest implements PathTree {
     }
 
     public boolean isMultiReleaseJar() {
-        return isMultiReleaseJar(getManifest());
+        ManifestAttributes manifestAttributes = getManifestAttributes();
+
+        return manifestAttributes != null && manifestAttributes.isMultiRelease();
     }
 
     protected Map<String, String> getMultiReleaseMapping() {
@@ -136,11 +136,11 @@ public abstract class PathTreeWithManifest implements PathTree {
     }
 
     protected String toMultiReleaseRelativePath(String relativePath) {
-        return getMultiReleaseMapping().getOrDefault(relativePath, relativePath);
-    }
+        if (relativePath.startsWith(META_INF)) {
+            return relativePath;
+        }
 
-    private static boolean isMultiReleaseJar(final Manifest m) {
-        return m != null && Boolean.parseBoolean(m.getMainAttributes().getValue("Multi-Release"));
+        return getMultiReleaseMapping().getOrDefault(relativePath, relativePath);
     }
 
     private static class MultiReleaseMappingReader implements Function<PathVisit, Map<String, String>> {

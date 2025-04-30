@@ -8,6 +8,8 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +55,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
     private int count = -1;
     private Duration timeout;
     private final Map<String, String> params = new HashMap<>();
+    private final Map<String, byte[]> byteArrayParams = new HashMap<>();
     private int dialect = -1;
 
     /**
@@ -360,6 +363,66 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
+     * Defines a parameter with a byte array value.
+     *
+     * @param name the parameter name
+     * @param value the parameter value as byte array
+     * @return the current {@code QueryArgs}
+     */
+    public QueryArgs param(String name, byte[] value) {
+        this.byteArrayParams.put(notNullOrBlank(name, "name"), notNullOrEmpty(value, "value"));
+        return this;
+    }
+
+    /**
+     * Defines a parameter with a float array value.
+     *
+     * @param name the parameter name
+     * @param value the parameter value as array of floats
+     * @return the current {@code QueryArgs}
+     */
+    public QueryArgs param(String name, float[] value) {
+        this.byteArrayParams.put(notNullOrBlank(name, "name"), toByteArray(notNullOrEmpty(value, "value")));
+        return this;
+    }
+
+    /**
+     * Defines a parameter with a double array value.
+     *
+     * @param name the parameter name
+     * @param value the parameter value as array of doubles
+     * @return the current {@code QueryArgs}
+     */
+    public QueryArgs param(String name, double[] value) {
+        this.byteArrayParams.put(notNullOrBlank(name, "name"), toByteArray(notNullOrEmpty(value, "value")));
+        return this;
+    }
+
+    /**
+     * Defines a parameter with an int array value.
+     *
+     * @param name the parameter name
+     * @param value the parameter value as array of ints
+     * @return the current {@code QueryArgs}
+     */
+    public QueryArgs param(String name, int[] value) {
+        this.byteArrayParams.put(notNullOrBlank(name, "name"), toByteArray(notNullOrEmpty(value, "value")));
+        return this;
+    }
+
+    /**
+     * Defines a parameter with a long array value.
+     *
+     * @param name the parameter name
+     * @param value the parameter value as array of longs
+     * @return the current {@code QueryArgs}
+     */
+    public QueryArgs param(String name, long[] value) {
+        this.byteArrayParams.put(notNullOrBlank(name, "name"), toByteArray(notNullOrEmpty(value, "value")));
+        return this;
+    }
+
+    /**
      * Selects the dialect version under which to execute the query.
      * If not specified, the query will execute under the default dialect version set during module initial loading.
      *
@@ -372,8 +435,8 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs(Codec encoder) {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs(Codec encoder) {
+        List<Object> list = new ArrayList<>();
 
         if (nocontent) {
             list.add("NOCONTENT");
@@ -480,9 +543,13 @@ public class QueryArgs implements RedisCommandExtraArguments {
             list.add(Long.toString(timeout.toMillis()));
         }
 
-        if (!params.isEmpty()) {
+        if (!params.isEmpty() || !byteArrayParams.isEmpty()) {
             list.add("PARAMS");
-            list.add(Integer.toString(params.size()));
+            list.add(Integer.toString((params.size() + byteArrayParams.size()) * 2));
+            for (Map.Entry<String, byte[]> entry : byteArrayParams.entrySet()) {
+                list.add(entry.getKey());
+                list.add(entry.getValue());
+            }
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 list.add(entry.getKey());
                 list.add(entry.getValue());
@@ -527,4 +594,29 @@ public class QueryArgs implements RedisCommandExtraArguments {
     public boolean containsSortKeys() {
         return withSortKeys;
     }
+
+    private byte[] toByteArray(float[] input) {
+        byte[] bytes = new byte[Float.BYTES * input.length];
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().put(input);
+        return bytes;
+    }
+
+    private byte[] toByteArray(double[] input) {
+        byte[] bytes = new byte[Double.BYTES * input.length];
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer().put(input);
+        return bytes;
+    }
+
+    private byte[] toByteArray(int[] input) {
+        byte[] bytes = new byte[Integer.BYTES * input.length];
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(input);
+        return bytes;
+    }
+
+    private byte[] toByteArray(long[] input) {
+        byte[] bytes = new byte[Long.BYTES * input.length];
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer().put(input);
+        return bytes;
+    }
+
 }

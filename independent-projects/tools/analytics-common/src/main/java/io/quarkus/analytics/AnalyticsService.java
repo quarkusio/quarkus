@@ -42,13 +42,16 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.TextStyle;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -70,17 +73,22 @@ public class AnalyticsService implements AutoCloseable {
 
     final private RestClient restClient;
     final private ConfigService config;
-    final private AnonymousUserId userId;
+    final private AnonymousUserId anonymousUserId;
     final private MessageWriter log;
     final FileLocations fileLocations;
 
     public AnalyticsService(final FileLocations fileLocations, MessageWriter log) {
         this.fileLocations = fileLocations;
-        this.log = log;
+        if (log == null) {
+            this.log = MessageWriter.info();
+            this.log.info("No logger provided, using default");
+        } else {
+            this.log = log;
+        }
         this.postFutures = new ConcurrentLinkedQueue<>();
-        this.restClient = new RestClient(log);
-        this.userId = AnonymousUserId.getInstance(fileLocations, log);
-        this.config = new ConfigService(this.restClient, this.userId, fileLocations, log);
+        this.restClient = new RestClient(this.log);
+        this.anonymousUserId = AnonymousUserId.getInstance(fileLocations, this.log);
+        this.config = new ConfigService(this.restClient, this.anonymousUserId, fileLocations, this.log);
     }
 
     public void buildAnalyticsUserInput(Function<String, String> analyticsEnabledSupplier) {
@@ -100,7 +108,7 @@ public class AnalyticsService implements AutoCloseable {
             final Map<String, Object> context = createContextMap(applicationModel, buildInfo);
             sendIdentity(context);
             Track trackEvent = Track.builder()
-                    .userId(userId.getUuid())
+                    .userId(anonymousUserId.getUuid())
                     .context(context)
                     .event(trackEventType)
                     .properties(TrackProperties.builder()
@@ -129,10 +137,19 @@ public class AnalyticsService implements AutoCloseable {
                 log.debug("[Quarkus build analytics] Build analytics sent successfully. Sent event can be seen at .../target/" +
                         fileLocations.lastTrackFileName());
             }
+        } catch (ExecutionException | TimeoutException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Failed to send build analytics to Segment. " +
+                        "Connection might not be available or is too slow: " +
+                        e.getClass().getName() + ": " +
+                        (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            }
         } catch (Exception e) {
-            log.warn("[Quarkus build analytics] Failed to send build analytics to Segment: " +
-                    e.getClass().getName() + ": " +
-                    (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Failed to send build analytics to Segment: " +
+                        e.getClass().getName() + ": " +
+                        (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            }
         }
     }
 
@@ -150,9 +167,9 @@ public class AnalyticsService implements AutoCloseable {
     }
 
     void sendIdentity(final Map<String, Object> context) {
-        if (this.userId.isNew()) { // fixme when inactive on 1st call it will not send identity.
+        if (this.anonymousUserId.isNew()) { // fixme when inactive on 1st call it will not send identity.
             this.restClient.postIdentity(Identity.builder()
-                    .userId(this.userId.getUuid())
+                    .userId(this.anonymousUserId.getUuid())
                     .context(context)
                     .timestamp(Instant.now())
                     .build());
@@ -242,10 +259,15 @@ public class AnalyticsService implements AutoCloseable {
     }
 
     private String getQuarkusVersion(ApplicationModel applicationModel) {
-        return applicationModel.getPlatforms().getImportedPlatformBoms().stream()
+        final Collection<ArtifactCoords> platformBoms = applicationModel.getPlatforms().getImportedPlatformBoms();
+        if (platformBoms.isEmpty()) {
+            // Typically, this situation should result in a build error, but it's not up to this service to fail it
+            return "N/A";
+        }
+        return platformBoms.stream()
                 .filter(artifactCoords -> artifactCoords.getArtifactId().equals("quarkus-bom"))
                 .map(ArtifactCoords::getVersion)
                 .findFirst()
-                .orElse("N/A");
+                .orElse("CUSTOM");
     }
 }

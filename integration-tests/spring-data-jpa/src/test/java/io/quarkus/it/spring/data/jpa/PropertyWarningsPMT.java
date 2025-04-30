@@ -42,7 +42,7 @@ public class PropertyWarningsPMT {
                             .contains(
                                     "spring.jpa.hibernate.naming.implicit-strategy should be replaced by quarkus.hibernate-orm.implicit-naming-strategy")
                             .contains(
-                                    "quarkus.hibernate-orm.sql-load-script could be used to load data instead of spring.datasource.data but it does not support either comma separated list of resources or resources with ant-style patterns as spring.datasource.data does, it accepts the name of the file containing the SQL statements to execute when when Hibernate ORM starts");
+                                    "quarkus.hibernate-orm.sql-load-script could be used to load data instead of spring.datasource.data but it does not support ant-style patterns as spring.datasource.data does, it accepts the name of files containing the SQL statements to execute when Hibernate ORM starts");
                 });
             });
         });

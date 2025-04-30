@@ -1,7 +1,5 @@
 package io.quarkus.elytron.security.ldap;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Hashtable;
 
 import javax.naming.Binding;
@@ -24,9 +22,9 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.net.SocketFactory;
 
-import org.wildfly.common.Assert;
 import org.wildfly.security.auth.realm.ldap.ThreadLocalSSLSocketFactory;
-import org.wildfly.security.manager.action.SetContextClassLoaderAction;
+
+import io.smallrye.common.constraint.Assert;
 
 class DelegatingLdapContext implements LdapContext {
 
@@ -46,7 +44,7 @@ class DelegatingLdapContext implements LdapContext {
     }
 
     // for needs of newInstance()
-    private DelegatingLdapContext(DirContext delegating, SocketFactory socketFactory) throws NamingException {
+    private DelegatingLdapContext(DirContext delegating, SocketFactory socketFactory) {
         this.delegating = delegating;
         this.closeHandler = null; // close handler should not be applied to copy
         this.socketFactory = socketFactory;
@@ -488,10 +486,10 @@ class DelegatingLdapContext implements LdapContext {
     }
 
     private ClassLoader setClassLoaderTo(final ClassLoader targetClassLoader) {
-        return doPrivileged(new SetContextClassLoaderAction(targetClassLoader));
+        final Thread currentThread = Thread.currentThread();
+        final ClassLoader original = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(targetClassLoader);
+        return original;
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
-    }
 }

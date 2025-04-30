@@ -8,9 +8,10 @@
   <properties>
     <!-- Maven plugin -->
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
-    <compiler-plugin.version>3.8.1</compiler-plugin.version>
-    <dependency-plugin.version>3.2.0</dependency-plugin.version>
-    <maven.compiler.release>11</maven.compiler.release>
+    <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
+    <dependency-plugin.version>${dependency-plugin.version}</dependency-plugin.version>
+    <maven.compiler.release>${maven.compiler.release}</maven.compiler.release>
 
     <!-- General project setup -->
     <failsafe.it-phase>verify</failsafe.it-phase>
@@ -39,7 +40,6 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -55,7 +55,7 @@
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive</artifactId>
+      <artifactId>quarkus-rest</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -131,9 +131,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>\${compiler-plugin.version}</version>
         <configuration>
-          <compilerArgs>
-            <arg>-parameters</arg>
-          </compilerArgs>
+          <parameters>true</parameters>
         </configuration>
         <executions>
           <execution>

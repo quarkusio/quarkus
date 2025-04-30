@@ -1,0 +1,238 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deploying-to-openshift-s2i-howto"]
+= Using S2I to deploy {project-name} applications to {openshift}
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud, native
+:summary: This guide describes how to build and deploy a Quarkus application on {openshift} by using Source-to-Image (S2I).
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
+
+You can deploy your {project-name} applications to {openshift-long} by using the Source-to-Image (S2I) method.
+With S2I, you must provide the source code to the build container through a Git repository or by uploading the source code at build time.
+
+
+ifdef::no-S2I-support[]
+[IMPORTANT]
+====
+S2I is not supported for native deployments.
+To deploy {project-name} applications compiled to native executables, use the Docker build strategy.
+====
+endif::no-S2I-support[]
+
+The deployment procedure differs based on the Java version your {project-name} application uses.
+
+[[using-the-S2I-Java-17]]
+== Deploying {project-name} applications to {openshift} with Java {jdk-version-other}
+
+You can deploy {project-name} applications that run Java {jdk-version-other} to {openshift} by using the S2I method.
+
+=== Prerequisites
+
+* You have a Quarkus application built with Java {jdk-ver-other}.
+* Optional: You have a Quarkus project that includes the `quarkus-openshift` extension.
+* You are working in the correct OpenShift project namespace.
+* Your project is hosted in a Git repository.
+
+=== Procedure
+
+. Open the `pom.xml` file, and set the Java version to {jdk-version-other}:
++
+[source,xml,subs=attributes+]
+----
+<maven.compiler.source>{jdk-version-other}</maven.compiler.source>
+<maven.compiler.target>{jdk-version-other}</maven.compiler.target>
+----
++
+. Package your Java {jdk-version-other} application, by entering the following command:
++
+[source,shell]
+----
+./mvnw clean package
+----
+. Create a directory called `.s2i` at the same level as the `pom.xml` file.
+. Create a file called `environment` in the `.s2i` directory and add the following content:
++
+[source]
+----
+MAVEN_S2I_ARTIFACT_DIRS=target/quarkus-app
+S2I_SOURCE_DEPLOYMENTS_FILTER=app lib quarkus quarkus-run.jar
+JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+AB_JOLOKIA_OFF=true
+JAVA_APP_JAR=/deployments/quarkus-run.jar
+----
++
+. Commit and push your changes to the remote Git repository.
+
+. Import the supported {openshift} image by entering the following command:
++
+[source,subs="attributes+,+quotes"]
+----
+oc import-image {name-image-ubi9-open-jdk-17-short} --from={name-image-ubi9-open-jdk-17} --confirm
+----
++
+[NOTE]
+====
+* If you are using the OpenShift image registry and pulling from image streams in the same project, your pod service account must already have the correct permissions.
+* If you are pulling images across other {openshift} projects or from secured registries, additional configuration steps might be required.
+
+For more information, see the link:https://docs.openshift.com/container-platform/[Red Hat Openshift Container Platform] documentation.
+====
+
+. Build the project, create the application, and deploy the {openshift} service:
++
+[source,xml,subs="attributes+,+quotes"]
+----
+oc new-app registry.access.redhat.com/ubi9/openjdk-17~<git_path> --name=<project_name>
+----
++
+* Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
+For example, `oc new-app registry.access.redhat.com/ubi9/openjdk-17~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus`.
++
+If you do not have SSH keys configured for the Git repository, when specifying the Git path, use the HTTPS URL instead of the SSH URL.
+
+* Replace `<project_name>` with the name of your application.
+
+. To deploy an updated version of the project, push changes to the Git repository, and then run:
++
+[source,xml,subs="attributes+,+quotes"]
+----
+oc start-build <project_name>
+----
++
+. To expose a route to the application, run the following command:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc expose svc <project_name>
+----
+
+
+=== Verification
+
+. List the pods associated with your current {openshift} project:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc get pods
+----
+. To get the log output for your application's pod, run the following command, replacing `<pod_name>` with the name of the latest pod prefixed by your application name:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc logs -f <pod_name>
+----
+
+== Deploying {project-name} applications to {openshift} with Java {jdk-version-latest}
+
+You can deploy {project-name} applications that run Java {jdk-version-latest} to {openshift} by using the S2I method.
+
+=== Prerequisites
+
+* Optional: You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
+* You are working in the correct {openshift} project namespace.
+* Your project is hosted in a Git repository.
+
+=== Procedure
+
+. Open the `pom.xml` file, and set the Java version to {jdk-version-latest}:
++
+[source,xml,subs=attributes+]
+----
+<maven.compiler.source>{jdk-version-latest}</maven.compiler.source>
+<maven.compiler.target>{jdk-version-latest}</maven.compiler.target>
+----
++
+. Package your Java {jdk-ver-latest} application, by entering the following command:
++
+[source,shell]
+----
+./mvnw clean package
+----
+. Create a directory called `.s2i` at the same level as the `pom.xml` file.
+. Create a file called `environment` in the `.s2i` directory and add the following content:
++
+[source]
+----
+MAVEN_S2I_ARTIFACT_DIRS=target/quarkus-app
+S2I_SOURCE_DEPLOYMENTS_FILTER=app lib quarkus quarkus-run.jar
+JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+AB_JOLOKIA_OFF=true
+JAVA_APP_JAR=/deployments/quarkus-run.jar
+----
+. Commit and push your changes to the remote Git repository.
+. Import the supported {openshift} image by entering the following command:
++
+[source,subs="attributes+,+quotes"]
+----
+oc import-image {name-image-ubi9-open-jdk-21-short} --from={name-image-ubi9-open-jdk-21} --confirm
+----
++
+[NOTE]
+====
+* If you are using the OpenShift image registry and pulling from image streams in the same project, your pod service account must already have the correct permissions.
+
+* If you are pulling images across other {openshift} projects or from secured registries, additional configuration steps might be required.
+For more information, see the link:https://docs.openshift.com/container-platform/[Red Hat Openshift Container Platform] documentation.
+
+* If you are deploying on IBM Z infrastructure, enter `oc import-image {name-image-ubi9-open-jdk-21-short} --from=registry.redhat.io/{name-image-ubi9-open-jdk-21-short} --confirm` instead.
+For information about this image, see link:https://catalog.redhat.com/software/containers/ubi9/openjdk-21/653fb7e21b2ec10f7dfc10d0[{runtimes-openjdk-long} 21].
+====
+
+. Build the project, create the application, and deploy the {openshift} service:
++
+[source,xml,subs="attributes+,+quotes"]
+----
+oc new-app registry.access.redhat.com/ubi8/openjdk-21~<git_path> --name=<project_name>
+----
++
+* Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
+For example, `oc new-app registry.access.redhat.com/ubi9/openjdk-21~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus`.
++
+If you do not have SSH keys configured for the Git repository, when specifying the Git path, use the HTTPS URL instead of the SSH URL.
+
+* Replace `<project_name>` with the name of your application.
++
+
+[NOTE]
+====
+If you are deploying on IBM Z infrastructure, enter `oc new-app ubi9/openjdk-21~<git_path> --name=<project_name>` instead.
+====
+
+. To deploy an updated version of the project, push changes to the Git repository, and then run:
++
+[source,xml,subs="attributes+,+quotes"]
+----
+oc start-build <project_name>
+----
+
+. To expose a route to the application, run the following command:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc expose svc <project_name>
+----
+
+=== Verification
+
+. List the pods associated with your current {openshift} project:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc get pods
+----
++
+. To get the log output for your application's pod, run the following command, replacing `<pod_name>` with the name of the latest pod prefixed by your application name:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc logs -f <pod_name>
+----
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploying {project-name} applications to {openshift}]

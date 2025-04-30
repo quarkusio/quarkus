@@ -5,6 +5,7 @@ import picocli.CommandLine;
 
 @TopCommand
 @CommandLine.Command(name = "test", mixinStandardHelpOptions = true, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n", subcommands = {
+        ExitCodeCommand.class,
         CommandUsedAsParent.class,
         CompletionReflectionCommand.class,
         DefaultValueProviderCommand.class,

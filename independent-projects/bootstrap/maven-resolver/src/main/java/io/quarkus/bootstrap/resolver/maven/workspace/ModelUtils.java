@@ -28,7 +28,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class ModelUtils {
@@ -177,12 +176,12 @@ public class ModelUtils {
     }
 
     public static String resolveVersion(String rawVersion, Model rawModel) {
-        final Map<String, String> props = new HashMap<>();
+        final Map<String, String> props = new HashMap<>(rawModel.getProperties().size() + System.getProperties().size());
         putAll(props, rawModel.getProperties());
         putAll(props, System.getProperties());
 
         Matcher matcher = getUnresolvedVersionPattern().matcher(rawVersion);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             final String resolved = props.get(matcher.group(1));
             if (resolved == null) {
@@ -233,7 +232,9 @@ public class ModelUtils {
     }
 
     public static Model readModel(final Path pomXml) throws IOException {
-        return readModel(Files.newInputStream(pomXml));
+        Model model = readModel(Files.newInputStream(pomXml));
+        model.setPomFile(pomXml.toFile());
+        return model;
     }
 
     public static Model readModel(InputStream stream) throws IOException {

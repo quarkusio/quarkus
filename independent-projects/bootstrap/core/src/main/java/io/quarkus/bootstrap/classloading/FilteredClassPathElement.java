@@ -7,24 +7,27 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
 
-    final ClassPathElement delegate;
-    final Set<String> removed;
+    private final ClassPathElement delegate;
+    private final Set<String> removed;
+    private final Set<String> resources;
 
     public FilteredClassPathElement(ClassPathElement delegate, Collection<String> removed) {
         this.delegate = delegate;
         this.removed = new HashSet<>(removed);
+        this.resources = new HashSet<>(delegate.getProvidedResources());
+        this.resources.removeAll(this.removed);
     }
 
     @Override
-    public ArtifactKey getDependencyKey() {
-        return delegate.getDependencyKey();
+    public ResolvedDependency getResolvedDependency() {
+        return delegate.getResolvedDependency();
     }
 
     @Override
@@ -52,20 +55,23 @@ public class FilteredClassPathElement implements ClassPathElement {
 
     @Override
     public Set<String> getProvidedResources() {
-        Set<String> ret = new HashSet<>(delegate.getProvidedResources());
-        ret.removeAll(removed);
-        return ret;
+        return resources;
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        return delegate.getProtectionDomain(classLoader);
+    public boolean containsReloadableResources() {
+        return delegate.containsReloadableResources();
     }
 
     @Override
-    public Manifest getManifest() {
+    public ProtectionDomain getProtectionDomain() {
+        return delegate.getProtectionDomain();
+    }
+
+    @Override
+    public ManifestAttributes getManifestAttributes() {
         //we don't support filtering the manifest
-        return delegate.getManifest();
+        return delegate.getManifestAttributes();
     }
 
     @Override

@@ -94,36 +94,44 @@
    * Licensed under the Apache 2 license.
    */
 
-  function WebAuthn(options) {
-    this.registerPath = options.registerPath;
-    this.loginPath = options.loginPath;
-    this.callbackPath = options.callbackPath;
-    // validation
-    if (!this.callbackPath) {
-      throw new Error('Callback path is missing!');
-    }
+  function WebAuthn(options = {}) {
+    this.registerOptionsChallengePath = options.registerOptionsChallengePath || "/q/webauthn/register-options-challenge";
+    this.loginOptionsChallengePath = options.loginOptionsChallengePath || "/q/webauthn/login-options-challenge";
+    this.registerPath = options.registerPath || "/q/webauthn/register";
+	this.loginPath = options.loginPath || "/q/webauthn/login";
+	this.csrf = options.csrf;
   }
 
   WebAuthn.constructor = WebAuthn;
 
-  WebAuthn.prototype.registerOnly = function (user) {
+  WebAuthn.prototype.fetchWithCsrf = function (path, options) {
     const self = this;
-    if (!self.registerPath) {
-      return Promise.reject('Register path missing form the initial configuration!');
+	if(self.csrf) {
+		if(!options.headers) {
+			options.headers = {};
+		}
+		options.headers[self.csrf.header] = self.csrf.value;
+	}
+	return fetch(path, options);
+  }
+
+  WebAuthn.prototype.registerClientSteps = function (user) {
+    const self = this;
+    if (!self.registerOptionsChallengePath) {
+      return Promise.reject('Register challenge path missing form the initial configuration!');
     }
-    return fetch(self.registerPath, {
-      method: 'POST',
+    return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({username: user.username, displayName: user.displayName}).toString(), {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user || {})
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       })
       .then(res => res.json())
       .then(res => {
@@ -152,9 +160,15 @@
 
   WebAuthn.prototype.register = function (user) {
     const self = this;
-    return self.registerOnly(user)
+	if (!self.registerPath) {
+	  throw new Error('Register path is missing!');
+	}
+	if (!user || !user.username) {
+		return Promise.reject('User name (user.username) required');
+	}
+    return self.registerClientSteps(user)
       .then(body => {
-        return fetch(self.callbackPath, {
+        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({username: user.username}).toString(), {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -167,15 +181,18 @@
         if (res.status >= 200 && res.status < 300) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       });
   };
 
   WebAuthn.prototype.login = function (user) {
     const self = this;
-    return self.loginOnly(user)
+	if (!self.loginPath) {
+	  throw new Error('Login path is missing!');
+	}
+    return self.loginClientSteps(user)
       .then(body => {
-        return fetch(self.callbackPath, {
+        return self.fetchWithCsrf(self.loginPath, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -188,28 +205,31 @@
         if (res.status >= 200 && res.status < 300) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       });
   };
 
-  WebAuthn.prototype.loginOnly = function (user) {
+  WebAuthn.prototype.loginClientSteps = function (user) {
     const self = this;
-    if (!self.loginPath) {
-      return Promise.reject('Login path missing from the initial configuration!');
+    if (!self.loginOptionsChallengePath) {
+      return Promise.reject('Login challenge path missing from the initial configuration!');
     }
-    return fetch(self.loginPath, {
-      method: 'POST',
+    let path = self.loginOptionsChallengePath
+    if (user != null && user.username != null) {
+      path = path + "?" + new URLSearchParams({username: user.username}).toString()
+    }
+    return self.fetchWithCsrf(path, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user)
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       })
       .then(res => res.json())
       .then(res => {

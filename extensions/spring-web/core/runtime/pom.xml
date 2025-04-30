@@ -16,12 +16,12 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+            <artifactId>quarkus-spring-web-resteasy</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+            <artifactId>quarkus-spring-web-rest</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>

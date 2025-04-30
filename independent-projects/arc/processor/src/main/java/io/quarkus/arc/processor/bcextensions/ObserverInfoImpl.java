@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor.bcextensions;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.event.TransactionPhase;
@@ -15,33 +14,33 @@ import jakarta.enterprise.lang.model.types.Type;
 
 class ObserverInfoImpl implements ObserverInfo {
     private final org.jboss.jandex.IndexView jandexIndex;
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
     private final io.quarkus.arc.processor.ObserverInfo arcObserverInfo;
 
-    ObserverInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    ObserverInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             io.quarkus.arc.processor.ObserverInfo arcObserverInfo) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.arcObserverInfo = arcObserverInfo;
     }
 
     @Override
     public Type eventType() {
-        return TypeImpl.fromJandexType(jandexIndex, annotationOverlays, arcObserverInfo.getObservedType());
+        return TypeImpl.fromJandexType(jandexIndex, annotationOverlay, arcObserverInfo.getObservedType());
     }
 
     @Override
     public Collection<AnnotationInfo> qualifiers() {
         return arcObserverInfo.getQualifiers()
                 .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (AnnotationInfo) new AnnotationInfoImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override
     public ClassInfo declaringClass() {
         org.jboss.jandex.ClassInfo jandexClass = jandexIndex.getClassByName(arcObserverInfo.getBeanClass());
-        return new ClassInfoImpl(jandexIndex, annotationOverlays, jandexClass);
+        return new ClassInfoImpl(jandexIndex, annotationOverlay, jandexClass);
     }
 
     @Override
@@ -49,7 +48,7 @@ class ObserverInfoImpl implements ObserverInfo {
         if (arcObserverInfo.isSynthetic()) {
             return null;
         }
-        return new MethodInfoImpl(jandexIndex, annotationOverlays, arcObserverInfo.getObserverMethod());
+        return new MethodInfoImpl(jandexIndex, annotationOverlay, arcObserverInfo.getObserverMethod());
     }
 
     @Override
@@ -58,7 +57,7 @@ class ObserverInfoImpl implements ObserverInfo {
             return null;
         }
         org.jboss.jandex.MethodParameterInfo jandexParameter = arcObserverInfo.getEventParameter();
-        return new ParameterInfoImpl(jandexIndex, annotationOverlays, jandexParameter);
+        return new ParameterInfoImpl(jandexIndex, annotationOverlay, jandexParameter);
     }
 
     @Override
@@ -66,7 +65,7 @@ class ObserverInfoImpl implements ObserverInfo {
         if (arcObserverInfo.isSynthetic()) {
             return null;
         }
-        return BeanInfoImpl.create(jandexIndex, annotationOverlays, arcObserverInfo.getDeclaringBean());
+        return BeanInfoImpl.create(jandexIndex, annotationOverlay, arcObserverInfo.getDeclaringBean());
     }
 
     @Override

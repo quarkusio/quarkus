@@ -61,7 +61,6 @@ public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
                             .putHeader(CONTENT_TYPE, getMimeType(fileName))
                             .end(Buffer.buffer(content));
                 } catch (IOException ex) {
-                    ex.printStackTrace();
                     event.next();
                 }
             } else {
@@ -107,10 +106,10 @@ public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
     }
 
     public static interface MimeType {
-        public static final String HTML = "text/html";
-        public static final String JS = "text/javascript";
+        public static final String HTML = "text/html; charset=utf-8";
+        public static final String JS = "text/javascript; charset=utf-8";
         public static final String JSON = "application/json";
-        public static final String CSS = "text/css";
-        public static final String PLAIN = "text/plain";
+        public static final String CSS = "text/css; charset=utf-8";
+        public static final String PLAIN = "text/plain; charset=utf-8";
     }
 }

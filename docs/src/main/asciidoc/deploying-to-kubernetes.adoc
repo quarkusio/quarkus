@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud, native
 :summary: This guide covers how to deploy a native application on Kubernetes.
+:topics: devops,kubernetes,cloud,deployment
+:extensions: io.quarkus:quarkus-kubernetes
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user-supplied configuration using https://github.com/dekorateio/dekorate/[dekorate].
 It currently supports generating resources for vanilla <<#kubernetes,Kubernetes>>, <<#openshift,OpenShift>> and <<#knative,Knative>>.
@@ -20,13 +22,13 @@ Finally, when either one of container image extensions is present (see the xref:
 include::{includes}/prerequisites.adoc[]
 * Access to a Kubernetes cluster (Minikube is a viable option)
 
-[#kubernetes]
+[[kubernetes]]
 == Kubernetes
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
 
 :create-app-artifact-id: kubernetes-quickstart
-:create-app-extensions: resteasy-reactive,kubernetes,jib
+:create-app-extensions: rest,kubernetes,jib
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -37,7 +39,7 @@ This added the following dependencies to the build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -52,7 +54,7 @@ This added the following dependencies to the build file:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 implementation("io.quarkus:quarkus-kubernetes")
 implementation("io.quarkus:quarkus-container-image-jib")
 ----
@@ -191,7 +193,7 @@ spec:
   ...
 ----
 
-The `app.quarkus.io/commit-id`, `app.quarkus.io/build-timestamp` labels and the `app.kubernetes.io/version` annotation might change every time we re-build the Kubernetes manifests which can be problematic when we want to deploy these resources using a Git-Ops tool (because these tools will detect differences and hence will perform a re-deployment). 
+The `app.quarkus.io/commit-id`, `app.quarkus.io/build-timestamp` labels and the `app.kubernetes.io/version` annotation might change every time we re-build the Kubernetes manifests which can be problematic when we want to deploy these resources using a Git-Ops tool (because these tools will detect differences and hence will perform a re-deployment).
 
 To make the generated resources Git-Ops friendly and only produce idempotent resources (resources that won't change every time we build the sources), we need to add the following property:
 
@@ -209,7 +211,7 @@ quarkus.kubernetes.output-directory=target/kubernetes-with-idempotent
 
 [NOTE]
 ====
-Note that the property `quarkus.kubernetes.output-directory` is relative to the current project location. 
+Note that the property `quarkus.kubernetes.output-directory` is relative to the current project location.
 ====
 
 === Changing the generated deployment resource
@@ -236,7 +238,7 @@ You can provide the arguments that will be used by the Kubernetes Job via the pr
 
 Finally, the Kubernetes job will be launched every time it is installed in Kubernetes. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
 
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.job.parallelism-parallelism[link]).
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes_quarkus-kubernetes-job-parallelism[link]).
 
 ==== Generating CronJob resources
 
@@ -251,7 +253,7 @@ quarkus.kubernetes.cron-job.schedule=0 * * * *
 
 IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
 
-You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.cron-job.parallelism-parallelism[link]).
+You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes_quarkus-kubernetes-cron-job-parallelism[link]).
 
 === Namespace
 
@@ -266,7 +268,7 @@ To specify the namespace in your manifest customize with the following property 
 
 [source,properties]
 ----
-quarkus.kubernetes.namespace=mynamespace 
+quarkus.kubernetes.namespace=mynamespace
 ----
 
 === Defining a Docker registry
@@ -280,6 +282,41 @@ quarkus.container-image.registry=my.docker-registry.net
 
 By adding this property along with the rest of the container image properties of the previous section, the generated manifests will use the image `my.docker-registry.net/quarkus/demo-app:1.0`.
 The image is not the only thing that can be customized in the generated manifests, as will become evident in the following sections.
+
+
+==== Automatic generation of pull secrets
+
+When docker registries are used, users often provide credentials, so that an image is built and pushed to the specified registry during the build.
+[source,properties]
+----
+quarkus.container-image.username=myusername
+quarkus.container-image.password=mypassword
+----
+
+Kubernetes will also need these credentials when it comes to pull the image from the registry. This is where image pull secrets are used. An image pull secret is a special kind
+of secret that contains the required credentials. Quarkus can automatically generate and configure when:
+
+[source,properties]
+----
+quarkus.kubernetes.generate-image-pull-secret=true
+----
+
+More specifically a `Secret` like the one below is generated:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-quarkus-app-pull-secret
+data:
+  ".dockerconfigjson": ewogCSJhdXRocyI6IHsKCQkibXkucmVnaXN0eS5vcmciOiB7CiAJCQkiYXV0aCI6ImJYbDFjMlZ5Ym1GdFpUcHRlWEJoYzNOM2IzSmsiCgkJfQoJfQp9
+type: kubernetes.io/dockerconfigjson
+
+----
+
+And also `test-quarkus-app-pull-secret` is added to the `imagePullSecrets` list.
+
 
 === Labels and Annotations
 
@@ -363,8 +400,8 @@ quarkus.kubernetes.annotations.foo=bar
 quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
-[#env-vars]
-==== Environment variables
+[[env-vars]]
+=== Environment variables
 
 Kubernetes provides multiple ways of defining environment variables:
 
@@ -373,7 +410,7 @@ Kubernetes provides multiple ways of defining environment variables:
 - interpolate a single value identified by a given field in a Secret or ConfigMap
 - interpolate a value from a field within the same resource
 
-===== Environment variables from key/value pairs
+==== Environment variables from key/value pairs
 
 To add a key/value pair as an environment variable in the generated resources:
 
@@ -386,7 +423,7 @@ The command above will add `MY_ENV_VAR=foobar` as an environment variable.
 Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
 
 [[secret-mapping]]
-===== Environment variables from Secret
+==== Environment variables from Secret
 
 To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`
 to be used as source by a comma (`,`):
@@ -430,7 +467,26 @@ This would generate the following in the `env` section of your container:
         optional: false
 ----
 
-===== Environment variables from ConfigMap
+It is also possible to add a prefix when you are generating env from Secret, the following configuration creates environment variable from Secret with key `foo` adding a prefix `BAR`:
+
+
+[source,properties]
+----
+quarkus.kubernetes.env.secrets=foo
+quarkus.kubernetes.env.using-prefix."BAR".for-secret=foo
+----
+
+This would generate the following in the `env` section of your container:
+[source,yaml]
+----
+- env:
+    envFrom:
+    - secretRef:
+        name: foo
+      prefix: BAR
+----
+
+==== Environment variables from ConfigMap
 
 To add all key/value pairs from `ConfigMap` as environment variables just apply the following configuration, separating each
 `ConfigMap` to be used as source by a comma (`,`):
@@ -469,13 +525,31 @@ This would generate the following in the `env` section of your container:
 - env:
   - name: FOO
     valueFrom:
-      configMapRefKey:
+      configMapKeyRef:
         key: keyName
         name: my-configmap
         optional: false
 ----
 
-===== Environment variables from fields
+It is also possible to add a prefix when you are generating env from ConfigMap, the following configuration creates environment variable from ConfigMap with key `foo` adding a prefix `BAR`:
+
+[source,properties]
+----
+quarkus.kubernetes.env.configmaps=foo
+quarkus.kubernetes.prefixes."BAR".for-configmap=foo
+----
+
+This would generate the following in the `env` section of your container:
+[source,yaml]
+----
+- env:
+    envFrom:
+    - configMapRef:
+        name: foo
+      prefix: BAR
+----
+
+==== Environment variables from fields
 
 It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
 
@@ -495,13 +569,13 @@ quarkus.openshift.env.fields.foo=metadata.name
 ----
 ====
 
-===== Validation
+==== Validation
 
 A conflict between two definitions, e.g. mistakenly assigning both a value and specifying that a variable is derived from a field, will result in an error being thrown at build time so that you get the opportunity to fix the issue before you deploy your application to your cluster where it might be more difficult to diagnose the source of the issue.
 
 Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
 
-[#env-vars-backwards]
+[[env-vars-backwards]]
 ===== Backwards compatibility
 
 Previous versions of the Kubernetes extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
@@ -524,7 +598,7 @@ and a warning will be issued to alert you of the problem.For example, if you def
 `quarkus.kubernetes.env-vars.my-env-var.value=foobar` and `quarkus.kubernetes.env.vars.my-env-var=newValue`, the extension will
 only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 
-==== Mounting volumes
+=== Mounting volumes
 
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
 Any volume can be mounted with a simple configuration:
@@ -537,14 +611,14 @@ quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
 This will add a mount to the pod for volume `my-volume` to path `/where/to/mount`.
 The volumes themselves can be configured as shown in the sections below.
 
-===== Secret volumes
+==== Secret volumes
 
 [source,properties]
 ----
 quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
 ----
 
-===== ConfigMap volumes
+==== ConfigMap volumes
 
 [source,properties]
 ----
@@ -553,7 +627,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-config-map
 
 ==== Passing application configuration
 
-Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system property.
+Quarkus supports passing configuration from external locations (via SmallRye Config). This usually requires setting an additional environment variable or system property.
 When you need to use a secret or a config map for the purpose of application configuration, you need to:
 
 - define a volume
@@ -579,7 +653,7 @@ The application config volumes will be created using path: `/mnt/app-secret` and
 
 Note: Users may use both properties at the same time.
 
-=== Changing the number of replicas:
+=== Changing the number of replicas
 
 To change the number of replicas from 1 to 3:
 
@@ -608,7 +682,7 @@ implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
-More information about the health extension can be found in the relevant xref:microprofile-health.adoc[guide].
+More information about the health extension can be found in the relevant xref:smallrye-health.adoc[guide].
 
 === Customizing the readiness probe
 To set the initial delay of the probe to 20 seconds and the period to 45:
@@ -640,6 +714,27 @@ spec:
         - foo.com
         - bar.org
         ip: 10.0.0.0
+----
+
+=== Add nodeSelector
+To add a nodeSelector in the generated `Deployment` (more information can be found in https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes[Kubernetes documentation]), just apply the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.node-selector.key=diskType
+quarkus.kubernetes.node-selector.value=ssd
+----
+
+This would generate the following `nodeSelector` section in the `deployment` definition:
+
+[source,yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      nodeSelector:
+        diskType: ssd
 ----
 
 === Container Resources Management
@@ -754,7 +849,7 @@ quarkus.kubernetes.ingress.rules.1.path=/dev
 quarkus.kubernetes.ingress.rules.1.path-type=ImplementationSpecific
 # by default, path type is Prefix
 
-# Exmple to add a new rule that use another service binding
+# Example to add a new rule that use another service binding
 quarkus.kubernetes.ingress.rules.2.host=alt.svc.url
 quarkus.kubernetes.ingress.rules.2.path=/ea
 quarkus.kubernetes.ingress.rules.2.service-name=updated-service
@@ -860,7 +955,7 @@ implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
 To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding).
-To ease the usage of the `kubernetes-client` extension, the `kubernetes` extension is going to generate a RoleBinding resource that binds a cluster role named "view" to the application ServiceAccount resource. It's important to note that the cluster role "view" won't be generated automatically, so it's expected that you have this cluster role with name "view" already installed in your cluster. 
+To ease the usage of the `kubernetes-client` extension, the `kubernetes` extension is going to generate a RoleBinding resource that binds a cluster role named "view" to the application ServiceAccount resource. It's important to note that the cluster role "view" won't be generated automatically, so it's expected that you have this cluster role with name "view" already installed in your cluster.
 
 On the other hand, you can fully customize the roles, subjects and role bindings to generate using the properties under `quarkus.kubernetes.rbac.role-bindings`, and if present, the `kubernetes-client` extension will use it and hence won't generate any RoleBinding resource.
 
@@ -883,7 +978,7 @@ quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.verbs=list
 
 <1> In this example, the role "my-role" will be generated with a policy rule to get the list of deployments.
 
-By default, if one role is configured, a RoleBinding resource will be generated as well to link this role with the ServiceAccount resource. 
+By default, if one role is configured, a RoleBinding resource will be generated as well to link this role with the ServiceAccount resource.
 
 Moreover, you can have more control over the RBAC resources to be generated:
 
@@ -905,9 +1000,9 @@ quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-role
 
 <1> In this example, the role "my-role" will be generated with the specified policy rules.
 <2> Also, the service account "my-service-account" will be generated.
-<3> And we can configure the generated RoleBinding resource by selecting the role to be used and the subject. 
+<3> And we can configure the generated RoleBinding resource by selecting the role to be used and the subject.
 
-Finally, we can also generate the cluster wide role resource of "ClusterRole" kind and a "ClusterRoleBinding" resource as follows: 
+Finally, we can also generate the cluster wide role resource of "ClusterRole" kind and a "ClusterRoleBinding" resource as follows:
 
 [source,properties]
 ----
@@ -925,7 +1020,25 @@ quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.role-name=
 <1> In this example, the cluster role "my-cluster-role" will be generated with the specified policy rules.
 <2> The name of the ClusterRole resource to use. Role resources are namespace-based and hence not allowed in ClusterRoleBinding resources.
 
-=== Deploying to Minikube
+=== Deploying to local Kubernetes
+
+When deploying to local Kubernetes environments, users often perform minor changes to their manifests that simplify the development process.
+The most common changes are:
+
+- Setting `imagePullPolicy` to `IfNotPresent`
+- Using `NodePort` as `Service` type
+
+Quarkus provides extensions that among others set these options by default.
+Such extensions are:
+
+- quarkus-minikube
+- quarkus-kind
+
+If the list of extensions does not match the tool you are using (e.g. Docker Desktop, microk8s etc) then it is suggested to use the `quarkus-minikube` extension.
+as its defaults should be reasonable for most environments.
+
+
+==== Deploying to Minikube
 
 https://github.com/kubernetes/minikube[Minikube] is quite popular when a Kubernetes cluster is needed for development purposes. To make the deployment to Minikube
 experience as frictionless as possible, Quarkus provides the `quarkus-minikube` extension. This extension can be added to a project like so:
@@ -973,7 +1086,7 @@ only. When deploying to production, consider using the vanilla Kubernetes manife
 NOTE: If the assumptions the Minikube extension makes don't fit your workflow, nothing prevents you from using the regular Kubernetes extension to generate Kubernetes manifests
 and apply those to your Minikube cluster.
 
-=== Deploying to Kind
+==== Deploying to Kind
 https://kind.sigs.k8s.io/[Kind] is another popular tool used as a Kubernetes cluster for development purposes. To make the deployment to Kind
 experience as frictionless as possible, Quarkus provides the `quarkus-kind` extension. This extension can be added to a project like so:
 
@@ -999,7 +1112,7 @@ The table below describe all the available configuration options.
 
 .Kubernetes
 :no-duration-note: true
-include::{generated-dir}/config/quarkus-kubernetes-kubernetes-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.kubernetes.adoc[opts=optional, leveloffset=+1]
 
 Properties that use non-standard types, can be referenced by expanding the property.
 For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
@@ -1029,7 +1142,7 @@ The full list of the Kubernetes client configuration properties is provided belo
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
-[#openshift]
+[[openshift]]
 === OpenShift
 
 One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
@@ -1041,7 +1154,7 @@ quarkus extension remove kubernetes,jib
 quarkus extension add openshift
 
 oc new-project quarkus-project
-quarkus build -Dquarkus.container-image.build=true 
+quarkus build -Dquarkus.container-image.build=true
 
 oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
 oc expose svc/greeting
@@ -1056,7 +1169,7 @@ curl <route>/greeting
 ./mvnw quarkus:add-extension -Dextensions="openshift"
 
 oc new-project quarkus-project
-./mvnw clean package -Dquarkus.container-image.build=true 
+./mvnw clean package -Dquarkus.container-image.build=true
 
 oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
 oc expose svc/greeting
@@ -1071,7 +1184,7 @@ curl <route>/greeting
 ./gradlew addExtension --extensions="openshift"
 
 oc new-project quarkus-project
-./gradlew build -Dquarkus.container-image.build=true 
+./gradlew build -Dquarkus.container-image.build=true
 
 oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
 oc expose svc/greeting
@@ -1138,9 +1251,9 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .OpenShift
 :no-duration-note: true
-include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
 
-[#knative]
+[[knative]]
 === Knative
 
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
@@ -1203,7 +1316,7 @@ The generated service can be customized using the following properties:
 
 .Knative
 :no-duration-note: true
-include::{generated-dir}/config/quarkus-knative-knative-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.knative.adoc[opts=optional, leveloffset=+1]
 
 === Deployment targets
 
@@ -1329,7 +1442,7 @@ Finally, all you need to do is to configure your favorite IDE to attach the java
 
 Sometimes it's desirable to either provide additional resources (e.g. a ConfigMap, a Secret, a Deployment for a database) or provide custom ones that will be used as a `base` for the generation process.
 Those resources can be added under `src/main/kubernetes` directory and can be named after the target environment (e.g. kubernetes.json, openshift.json, knative.json, or the yml equivalents). The correlation between provided and generated files is done by file name.
-So, a `kubernetes.json`/`kubernetes.yml` file added in `src/main/kubernetes` will only affect the generated `kubernetes.json`/`kubernetes.yml`. An `openshift.json`/`openshift.yml` file added in `src/main/kubernetes` will only affect the generated `openshift.json`/`openshift.yml`. 
+So, a `kubernetes.json`/`kubernetes.yml` file added in `src/main/kubernetes` will only affect the generated `kubernetes.json`/`kubernetes.yml`. An `openshift.json`/`openshift.yml` file added in `src/main/kubernetes` will only affect the generated `openshift.json`/`openshift.yml`.
 A `knative.json`/`knative.yml` file added in `src/main/kubernetes` will only affect the generated `knative.json`/`knative.yml` and so on. The provided file may be either in json or yaml format and may contain one or more resources. These resources will end up in both generated formats (json and yaml). For example, a secret added in `src/main/kubernetes/kubernetes.yml` will be added to both the generated `kubernetes.yml` and `kubernetes.json`.
 
 Note: At the time of writing there is no mechanism in place that allows a one-to-many relationship between provided and generated files. Minikube is not an exception to the rule above, so if you want to customize the generated minikube manifests, the file placed under `src/main/kubernetes` will have to be named `minikube.json` or `minikube.yml` (naming it `kubernetes.yml` or `kubernetes.json` will result in having only the generated `kubernetes.yml` and `kubernetes.json` affected).
@@ -1407,8 +1520,13 @@ spec:
           protocol: "TCP"
       serviceAccount: "kubernetes-quickstart"
 ----
+<1> The provided replicas,
+<2> labels and
+<3> environment variables were retained.
+<4> However, the image and
+<5> the container port were modified.
 
-The provided replicas <1>, labels <2> and environment variables <3>  were retained. However, the image <4> and container port <5> were modified. Moreover, the default annotations have been added.
+Moreover, the default annotations have been added.
 
 [NOTE]
 ====
@@ -1419,7 +1537,7 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 
 === Using common resources
 
-When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and Openshift extensions at the same time).
+When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and OpenShift extensions at the same time).
 
 For example, we can write a ConfigMap resource only once in the file `src/main/kubernetes/common.yml`:
 
@@ -1450,10 +1568,10 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 * `quarkus-jdbc-mssql`
 * `quarkus-jdbc-mysql`
 * `quarkus-jdbc-postgresql`
-* `quarkus-mongo-client`
+* `quarkus-mongodb-client`
 
 * `quarkus-kafka-client`
-* `quarkus-smallrye-reactive-messaging-kafka`
+* `quarkus-messaging-kafka`
 
 * `quarkus-reactive-db2-client`
 * `quarkus-reactive-mssql-client`
@@ -1468,13 +1586,13 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 
 Workload Projection is a process of obtaining the configuration for services from the Kubernetes cluster. This configuration takes the form of directory structures that follow certain conventions and is attached to an application or to a service as a mounted volume. The `kubernetes-service-binding` extension uses this directory structure to create configuration sources, which allows you to configure additional modules, such as databases or message brokers.
 
-During application development, users can use workload projection to connect their application to a development database, or other locally-run services, without changing the actual application code or configuration. 
+During application development, users can use workload projection to connect their application to a development database, or other locally-run services, without changing the actual application code or configuration.
 
 For an example of a workload projection where the directory structure is included in the test resources and passed to integration test, see the link:https://github.com/quarkusio/quarkus/tree/e7efe6b3efba91b9c4ae26f9318f8397e23e7505/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[Kubernetes Service Binding datasource] GitHub repository.
 
 [NOTE]
 ====
-* The `k8s-sb` directory is the root of all service bindings. In this example, only one database called `fruit-db` is intended to be bound. This binding database has the `type` file, that indicates `postgresql` as the database type, while the other files in the directory provide the necessary information to establish the connection. 
+* The `k8s-sb` directory is the root of all service bindings. In this example, only one database called `fruit-db` is intended to be bound. This binding database has the `type` file, that indicates `postgresql` as the database type, while the other files in the directory provide the necessary information to establish the connection.
 
 * After your Quarkus project obtains information from `SERVICE_BINDING_ROOT` environment variables that are set by OpenShift, you can locate generated configuration files that are present in the file system and use them to map the configuration-file values to properties of certain extensions.
 ====
@@ -1567,10 +1685,10 @@ NOTE: Automatic service binding can be generated for a limited number of service
 .Operators that support the service auto-binding
 [%autowidth,%noheader,stripes=even]
 |====
-|            | Operator                                                                                     | API Version                               | Kind                 
-| `postgresql` | link:https://operatorhub.io/operator/postgresql[CrunchyData Postgres]                        | postgres-operator.crunchydata.com/v1beta1 | PostgresCluster      
-| `mysql`      | link:https://operatorhub.io/operator/percona-xtradb-cluster-operator[Percona XtraDB Cluster] | pxc.percona.com/v1-9-0                    | PerconaXtraDBCluster 
-| `mongo`      | link:https://operatorhub.io/operator/percona-server-mongodb-operator[Percona Mongo]          | psmdb.percona.com/v1-9-0                  | PerconaServerMongoDB 
+|            | Operator                                                                                     | API Version                               | Kind
+| `postgresql` | link:https://operatorhub.io/operator/postgresql[CrunchyData Postgres]                        | postgres-operator.crunchydata.com/v1beta1 | PostgresCluster
+| `mysql`      | link:https://operatorhub.io/operator/percona-xtradb-cluster-operator[Percona XtraDB Cluster] | pxc.percona.com/v1-9-0                    | PerconaXtraDBCluster
+| `mongo`      | link:https://operatorhub.io/operator/percona-server-mongodb-operator[Percona Mongo]          | psmdb.percona.com/v1-9-0                  | PerconaServerMongoDB
 |====
 
 
@@ -1677,7 +1795,7 @@ The following example shows that for a named datasource, the datasource name is 
 quarkus.datasource.fruits-db.db-kind=postgresql
 ----
 
-This has the same effect as the following configuration: 
+This has the same effect as the following configuration:
 
 [source,properties]
 ----

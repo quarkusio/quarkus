@@ -1,0 +1,179 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Getting started with WebSockets Next
+include::_attributes.adoc[]
+:categories: web
+:diataxis-type: tutorial
+:summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. This guide uses the WebSockets Next extension
+:topics: web,websockets
+:extensions: io.quarkus:quarkus-websockets-next
+
+This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
+In this guide, we will develop a very simple chat application using web sockets to receive and send messages to the other connected users.
+
+include::{includes}/extension-status.adoc[]
+
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Quarkus WebSockets vs. Quarkus WebSockets Next
+
+This guide uses the `quarkus-websockets-next` extension.
+This extension is a new implementation of the WebSocket API that is more efficient and easier to use than the original `quarkus-websockets` extension. The original `quarkus-websockets` extension is still available and will continue to be supported.
+
+Unlike `quarkus-websockets`, `quarkus-web-socket-next` does NOT implement https://jakarta.ee/specifications/websocket/[Jakarta WebSocket].
+Instead, it provides a simplified and more modern API that is easier to use.
+It is also designed to work efficiently with Quarkus' reactive programming model and the Quarkus' networking layer.
+
+== What you'll learn
+
+* How to use the `quarkus-websockets-next` extension
+* How to declare a web socket endpoint
+* How to send and receive messages using web sockets
+* How to broadcast messages to all connected users
+* How to be notified of new connections and disconnections
+* How to use _path parameters_ in web socket URLs
+
+== Architecture
+
+In this guide, we create a straightforward chat application using web sockets to receive and send messages to the other connected users.
+
+image:websockets-next-architecture.png[alt=Architecture]
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can skip right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `websockets-next-quickstart` link:{quickstarts-tree-url}/websockets-next-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: websockets-next-quickstart
+:create-app-extensions: websockets-next
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates the project (without any classes) and imports the `websockets-next` extension.
+
+If you already have your Quarkus project configured, you can add the `websockets-next` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: websockets-next
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-websockets-next</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-websockets-next")
+----
+
+== Declaring a WebSocket endpoint
+
+Our application contains a single class that handles the web sockets.
+Create the `org.acme.websockets.ChatWebSocket` class in the `src/main/java` directory.
+Copy the following content into the created file:
+
+[source,java]
+----
+package org.acme.websockets;
+
+import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
+import jakarta.inject.Inject;
+
+@WebSocket(path = "/chat/{username}")  // <1>
+public class ChatWebSocket {
+
+    // Declare the type of messages that can be sent and received
+    public enum MessageType {USER_JOINED, USER_LEFT, CHAT_MESSAGE}
+    public record ChatMessage(MessageType type, String from, String message) {
+    }
+
+    @Inject
+    WebSocketConnection connection;  // <2>
+
+    @OnOpen(broadcast = true)       // <3>
+    public ChatMessage onOpen() {
+        return new ChatMessage(MessageType.USER_JOINED, connection.pathParam("username"), null);
+    }
+
+    @OnClose                    // <4>
+    public void onClose() {
+        ChatMessage departure = new ChatMessage(MessageType.USER_LEFT, connection.pathParam("username"), null);
+        connection.broadcast().sendTextAndAwait(departure);
+    }
+
+    @OnTextMessage(broadcast = true)  // <5>
+    public ChatMessage onMessage(ChatMessage message) {
+        return message;
+    }
+
+}
+----
+<1> Declares the web socket endpoint and configure the path. Note that the path can contain a path parameter: `username`.
+<2> A _session scoped bean_ that represents the connection to the client. It allows sending messages programmatically and retrieve the path parameters.
+<3> This method is called when a new client connects. The `broadcast = true` attribute indicates that the returned message should be sent to all connected clients.
+<4> This method is called when a client disconnects. The method uses the `WebSocketConnection` to broadcast a message to all remaining connected clients.
+<5> This method is called when a client sends a message. The `broadcast = true` attribute indicates that the returned message should be sent to all connected clients. Here, we just returns the received (text) message.
+
+As you can see, Quarkus handles the web socket lifecycle and message handling using annotations.
+It also serializes and deserializes messages using JSON automatically.
+
+== A slick web frontend
+
+All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
+Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
+Create the `src/main/resources/META-INF/resources` directory and copy this link:{quickstarts-blob-url}/websockets-next-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+
+== Run the application
+
+Now, let's see our application in action. Run it with:
+
+include::{includes}/devtools/dev.adoc[]
+
+Then open your 2 browser windows to http://localhost:8080/:
+
+1. Enter a name in the top text area (use 2 different names).
+2. Click on connect
+3. Send and receive messages
+
+image:websockets-next-chat.png[alt=Application]
+
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also build the native executable using:
+
+include::{includes}/devtools/build-native.adoc[]
+
+
+== Conclusion
+
+This short getting started guide has shown you how to create a simple chat application using the `quarkus-websockets-next` extension.
+Learn more about this extension on the xref:./websockets-next-reference.adoc[dedicated reference guide].

@@ -18,8 +18,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.restassured.RestAssured;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.ext.web.Router;
@@ -62,10 +63,6 @@ public class BuildTimeRunTimeConfigTest {
                 .statusCode(200)
                 .body(is("BuildTime RunTime Fixed"));
 
-        RestAssured.when().get("/source/quarkus.tls.trust-all").then()
-                .statusCode(200)
-                .body(is("BuildTime RunTime Fixed"));
-
         TEST.modifyResourceFile("application.properties", s -> s + "\n" +
                 "quarkus.application.name=modified-app\n" +
                 "quarkus.tls.trust-all=true\n");
@@ -81,10 +78,6 @@ public class BuildTimeRunTimeConfigTest {
         RestAssured.when().get("/source/quarkus.application.name").then()
                 .statusCode(200)
                 .body(is("BuildTime RunTime Fixed"));
-
-        RestAssured.when().get("/source/quarkus.tls.trust-all").then()
-                .statusCode(200)
-                .body(is("BuildTime RunTime Fixed"));
     }
 
     @ApplicationScoped
@@ -95,12 +88,14 @@ public class BuildTimeRunTimeConfigTest {
         SmallRyeConfig config;
         @Inject
         ApplicationConfig applicationConfig;
+
         @Inject
-        TlsConfig tlsConfig;
+        TlsConfigurationRegistry tlsRegistry;
 
         public void register(@Observes StartupEvent ev) {
-            router.get("/application").handler(rc -> rc.response().end(applicationConfig.name.get()));
-            router.get("/tls").handler(rc -> rc.response().end(tlsConfig.trustAll + ""));
+            var trustAll = tlsRegistry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+            router.get("/application").handler(rc -> rc.response().end(applicationConfig.name().get()));
+            router.get("/tls").handler(rc -> rc.response().end(trustAll + ""));
             router.get("/source/:name")
                     .handler(rc -> rc.response().end(config.getConfigValue(rc.pathParam("name")).getConfigSourceName()));
         }

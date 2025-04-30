@@ -26,11 +26,12 @@ public class PostgreSqlLifecycleManager implements QuarkusTestResourceLifecycleM
                         postgresContainer.getFirstMappedPort(), QUARKUS));
         properties.put("quarkus.datasource.postgresql.password", QUARKUS);
         properties.put("quarkus.datasource.postgresql.username", QUARKUS);
-        properties.put("quarkus.hibernate-orm.postgresql.database.generation", "drop-and-create");
+        properties.put("quarkus.hibernate-orm.postgresql.schema-management.strategy", "drop-and-create");
         properties.put("quarkus.hibernate-orm.postgresql.active", "true");
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.mariadb.active", "false");
         properties.put("quarkus.hibernate-orm.db2.active", "false");
+        properties.put("quarkus.hibernate-orm.h2.active", "false");
 
         return properties;
     }

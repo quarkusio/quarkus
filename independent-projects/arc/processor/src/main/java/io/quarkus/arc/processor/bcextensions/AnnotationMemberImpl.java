@@ -2,7 +2,6 @@ package io.quarkus.arc.processor.bcextensions;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.lang.model.AnnotationInfo;
 import jakarta.enterprise.lang.model.AnnotationMember;
@@ -11,50 +10,36 @@ import jakarta.enterprise.lang.model.types.Type;
 
 class AnnotationMemberImpl implements AnnotationMember {
     final org.jboss.jandex.IndexView jandexIndex;
-    final AllAnnotationOverlays annotationOverlays;
+    final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
     final Kind kind;
     final org.jboss.jandex.AnnotationValue jandexAnnotationMember;
 
-    AnnotationMemberImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    AnnotationMemberImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.AnnotationValue jandexAnnotationMember) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.kind = determineKind(jandexAnnotationMember);
         this.jandexAnnotationMember = jandexAnnotationMember;
     }
 
     private static Kind determineKind(org.jboss.jandex.AnnotationValue value) {
-        switch (value.kind()) {
-            case BOOLEAN:
-                return Kind.BOOLEAN;
-            case BYTE:
-                return Kind.BYTE;
-            case SHORT:
-                return Kind.SHORT;
-            case INTEGER:
-                return Kind.INT;
-            case LONG:
-                return Kind.LONG;
-            case FLOAT:
-                return Kind.FLOAT;
-            case DOUBLE:
-                return Kind.DOUBLE;
-            case CHARACTER:
-                return Kind.CHAR;
-            case STRING:
-                return Kind.STRING;
-            case ENUM:
-                return Kind.ENUM;
-            case CLASS:
-                return Kind.CLASS;
-            case NESTED:
-                return Kind.NESTED_ANNOTATION;
-            case ARRAY:
-                return Kind.ARRAY;
-            default:
-                throw new IllegalArgumentException("Unknown annotation member " + value);
-        }
+        return switch (value.kind()) {
+            case BOOLEAN -> Kind.BOOLEAN;
+            case BYTE -> Kind.BYTE;
+            case SHORT -> Kind.SHORT;
+            case INTEGER -> Kind.INT;
+            case LONG -> Kind.LONG;
+            case FLOAT -> Kind.FLOAT;
+            case DOUBLE -> Kind.DOUBLE;
+            case CHARACTER -> Kind.CHAR;
+            case STRING -> Kind.STRING;
+            case ENUM -> Kind.ENUM;
+            case CLASS -> Kind.CLASS;
+            case NESTED -> Kind.NESTED_ANNOTATION;
+            case ARRAY -> Kind.ARRAY;
+            default -> throw new IllegalArgumentException("Unknown annotation member " + value);
+        };
     }
 
     private void checkKind(Kind kind) {
@@ -137,20 +122,20 @@ class AnnotationMemberImpl implements AnnotationMember {
     @Override
     public ClassInfo asEnumClass() {
         checkKind(Kind.ENUM);
-        return new ClassInfoImpl(jandexIndex, annotationOverlays,
+        return new ClassInfoImpl(jandexIndex, annotationOverlay,
                 jandexIndex.getClassByName(jandexAnnotationMember.asEnumType()));
     }
 
     @Override
     public Type asType() {
         checkKind(Kind.CLASS);
-        return TypeImpl.fromJandexType(jandexIndex, annotationOverlays, jandexAnnotationMember.asClass());
+        return TypeImpl.fromJandexType(jandexIndex, annotationOverlay, jandexAnnotationMember.asClass());
     }
 
     @Override
     public AnnotationInfo asNestedAnnotation() {
         checkKind(Kind.NESTED_ANNOTATION);
-        return new AnnotationInfoImpl(jandexIndex, annotationOverlays, jandexAnnotationMember.asNested());
+        return new AnnotationInfoImpl(jandexIndex, annotationOverlay, jandexAnnotationMember.asNested());
     }
 
     @Override
@@ -158,8 +143,8 @@ class AnnotationMemberImpl implements AnnotationMember {
         checkKind(Kind.ARRAY);
         return jandexAnnotationMember.asArrayList()
                 .stream()
-                .map(it -> new AnnotationMemberImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (AnnotationMember) new AnnotationMemberImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override

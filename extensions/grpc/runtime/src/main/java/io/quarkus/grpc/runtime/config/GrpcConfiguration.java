@@ -4,28 +4,28 @@ import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
 /**
  * gRPC configuration root.
  */
+@ConfigMapping(prefix = "quarkus.grpc")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class GrpcConfiguration {
+public interface GrpcConfiguration {
 
     /**
      * Configures the gRPC clients.
      */
-    @ConfigItem
-    @ConfigDocSection
+    @ConfigDocSection(generated = true)
     @ConfigDocMapKey("client-name")
-    public Map<String, GrpcClientConfiguration> clients;
+    Map<String, GrpcClientConfiguration> clients();
 
     /**
      * Configure the gRPC server.
      */
-    @ConfigDocSection
-    public GrpcServerConfiguration server;
+    @ConfigDocSection(generated = true)
+    GrpcServerConfiguration server();
 
 }

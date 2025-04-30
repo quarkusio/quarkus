@@ -26,17 +26,16 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         this.config = config;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        CronJobBuilder builder = list.getItems().stream()
+        CronJobBuilder builder = list.buildItems().stream()
                 .filter(this::containsCronJobResource)
                 .map(replaceExistingCronJobResource(list))
                 .findAny()
                 .orElseGet(this::createCronJobResource)
                 .accept(CronJobBuilder.class, this::initCronJobResourceWithDefaults);
 
-        if (Strings.isNullOrEmpty(builder.getSpec().getSchedule())) {
+        if (Strings.isNullOrEmpty(builder.buildSpec().getSchedule())) {
             throw new IllegalArgumentException(
                     "When generating a CronJob resource, you need to specify a schedule CRON expression.");
         }
@@ -49,7 +48,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
     }
 
     private void initCronJobResourceWithDefaults(CronJobBuilder builder) {
-        CronJobFluent.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
+        CronJobFluent<?>.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
 
         var jobTemplateSpec = spec
                 .editOrNewJobTemplate()
@@ -66,6 +65,8 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         // - match labels
         if (jobTemplateSpec.buildSelector().getMatchLabels() == null) {
             jobTemplateSpec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
+        } else {
+            jobTemplateSpec.withSelector(null);
         }
         // - termination grace period seconds
         if (jobTemplateSpec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
@@ -76,20 +77,21 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
             jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
         }
 
-        spec.withSuspend(config.suspend);
-        spec.withConcurrencyPolicy(config.concurrencyPolicy.name());
-        config.schedule.ifPresent(spec::withSchedule);
-        config.successfulJobsHistoryLimit.ifPresent(spec::withSuccessfulJobsHistoryLimit);
-        config.failedJobsHistoryLimit.ifPresent(spec::withFailedJobsHistoryLimit);
-        config.startingDeadlineSeconds.ifPresent(spec::withStartingDeadlineSeconds);
+        spec.withSuspend(config.suspend());
+        spec.withConcurrencyPolicy(config.concurrencyPolicy().name());
+        config.schedule().ifPresent(spec::withSchedule);
+        config.successfulJobsHistoryLimit().ifPresent(spec::withSuccessfulJobsHistoryLimit);
+        config.failedJobsHistoryLimit().ifPresent(spec::withFailedJobsHistoryLimit);
+        config.startingDeadlineSeconds().ifPresent(spec::withStartingDeadlineSeconds);
+        config.timeZone().ifPresent(spec::withTimeZone);
 
-        jobTemplateSpec.withCompletionMode(config.completionMode.name());
-        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy.name()).endSpec().endTemplate();
-        config.parallelism.ifPresent(jobTemplateSpec::withParallelism);
-        config.completions.ifPresent(jobTemplateSpec::withCompletions);
-        config.backoffLimit.ifPresent(jobTemplateSpec::withBackoffLimit);
-        config.activeDeadlineSeconds.ifPresent(jobTemplateSpec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished.ifPresent(jobTemplateSpec::withTtlSecondsAfterFinished);
+        jobTemplateSpec.withCompletionMode(config.completionMode().name());
+        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
+        config.parallelism().ifPresent(jobTemplateSpec::withParallelism);
+        config.completions().ifPresent(jobTemplateSpec::withCompletions);
+        config.backoffLimit().ifPresent(jobTemplateSpec::withBackoffLimit);
+        config.activeDeadlineSeconds().ifPresent(jobTemplateSpec::withActiveDeadlineSeconds);
+        config.ttlSecondsAfterFinished().ifPresent(jobTemplateSpec::withTtlSecondsAfterFinished);
 
         jobTemplateSpec.endSpec().endJobTemplate();
         spec.endSpec();
@@ -106,7 +108,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         };
     }
 
-    private boolean containsContainerWithName(CronJobFluent.SpecNested<CronJobBuilder> spec) {
+    private boolean containsContainerWithName(CronJobFluent<?>.SpecNested<CronJobBuilder> spec) {
         var jobTemplate = spec.buildJobTemplate();
         if (jobTemplate == null
                 || jobTemplate.getSpec() == null

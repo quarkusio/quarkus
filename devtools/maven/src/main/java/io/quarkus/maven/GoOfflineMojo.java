@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -42,6 +43,9 @@ public class GoOfflineMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    MavenSession session;
 
     @Component
     RepositorySystem repoSystem;
@@ -118,6 +122,7 @@ public class GoOfflineMojo extends AbstractMojo {
 
     private MavenArtifactResolver getResolver() throws MojoExecutionException {
         return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                .setUserSettings(session.getRequest().getUserSettingsFile())
                 .setCurrentProject(project.getBasedir().toString())
                 .setRemoteRepositoryManager(remoteRepositoryManager)
                 .setRemoteRepositories(repos)

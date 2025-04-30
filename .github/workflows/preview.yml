@@ -6,35 +6,67 @@ on:
     types:
       - completed
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   preview:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+      # this is unfortunately needed to be able to write comments on pull requests
+      pull-requests: write
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: quarkusio/quarkusio.github.io
-      - name: Download PR Artifact
-        uses: dawidd6/action-download-artifact@v2
+          fetch-depth: 5000
+          fetch-tags: false
+      - uses: actions/checkout@v4
         with:
-          workflow: ${{ github.event.workflow_run.workflow_id }}
-          workflow_conclusion: success
+          repository: quarkusio/quarkus
+          path: quarkus-main
+
+      - name: Install git-restore-time
+        run: sudo apt-get install -y git-restore-mtime
+
+      - name: Restore mtime
+        run: git restore-mtime
+
+      - name: Download PR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
           name: documentation
           path: documentation-temp
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Store PR id as variable
         id: pr
         run: |
+          pr=$(<documentation-temp/pr-id.txt)
+          if ! [[ $pr =~ ^[0-9]+$ ]] ; then
+            echo "PR id extracted from documentation-temp/pr-id.txt is not a number: $pr"
+            exit 1
+          fi
           echo "id=$(<documentation-temp/pr-id.txt)" >> $GITHUB_OUTPUT
       - name: Sync documentation
         shell: bash
+        # make sure we override the script coming from the artifact with the version from the main repository
         run: |
+          rm ./documentation-temp/docs/sync-web-site.sh
+          cp -a ./quarkus-main/docs/sync-web-site.sh ./documentation-temp/docs/
           chmod 755 ./documentation-temp/docs/sync-web-site.sh
           ./documentation-temp/docs/sync-web-site.sh main ../../
           rm -rf documentation-temp
+          rm -rf quarkus-main
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7 # can change this to 2.7 or whatever version you prefer
+          ruby-version: 3.2.3
       - name: Build Jekyll site
         uses: limjh16/jekyll-action-ts@v2
         with:
@@ -70,30 +102,45 @@ jobs:
           ### In cases where you want to specify the cache key, enable the above 2 inputs
           ### Follows the format here https://github.com/actions/cache
           #
-          # custom_opts: '--future'
+          custom_opts: '--config _config.yml,_only_latest_guides_config.yml'
           ### If you need to specify any Jekyll build options, enable the above input
           ### Flags accepted can be found here https://jekyllrb.com/docs/configuration/options/#build-command-options
+
+      - name: Reduce the size of the website to be compatible with surge
+        run: |
+          find assets/images/posts/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
+          find newsletter/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
+          rm -rf _site/assets/images/worldtour/2023
+          rm -rf _site/assets/images/desktopwallpapers
+
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge ./_site --domain https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.23.1 ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        env:
+          PR_ID: ${{ steps.pr.outputs.id }}
+
       - name: Update PR status comment on success
-        uses: actions-cool/maintain-one-comment@v3.1.0
+        uses: quarkusio/action-helpers@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ steps.pr.outputs.id }}
           body: |
             🎊 PR Preview ${{ github.sha }} has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
+
+            - Images of blog posts older than 3 months are not available.
+            - Newsletters older than 3 months are not available.
+
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png">
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          body-marker: <!-- Preview status comment marker -->
       - name: Update PR status comment on failure
+        uses: quarkusio/action-helpers@main
         if: ${{ failure() }}
-        uses: actions-cool/maintain-one-comment@v3.1.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ steps.pr.outputs.id }}
           body: |
             😭 Deploy PR Preview failed.
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png">
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          body-marker: <!-- Preview status comment marker -->

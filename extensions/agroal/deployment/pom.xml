@@ -29,6 +29,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal</artifactId>
         </dependency>
+        <!-- This is for Dev Mode only runtime code, example Dev UI JsonRPC. 
+            It needs to be compile so that other extensions that depends on this extension can still compile and run their tests
+            If we make this optional it does not get pulled in transitivly. Since this is deployment module it still does not end up
+            in a prod mode build-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal-dev</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal-spi</artifactId>
@@ -87,6 +95,11 @@
             <artifactId>quarkus-smallrye-health-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -99,15 +112,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

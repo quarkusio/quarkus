@@ -10,6 +10,14 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class AuthenticationOciClient {
 
     @Substitute
+    private void loadOciConfig() {
+        throw ExceptionFactory
+                .createException("OciClient authentication is not available in Quarkus when compiling to native-image:" +
+                        " the MySQL JDBC driver team needs to cleanup the dependency requirements to make this possible." +
+                        " If you need this resolved, please open a support request.");
+    }
+
+    @Substitute
     private void initializePrivateKey() {
         throw ExceptionFactory
                 .createException("OciClient authentication is not available in Quarkus when compiling to native-image:" +

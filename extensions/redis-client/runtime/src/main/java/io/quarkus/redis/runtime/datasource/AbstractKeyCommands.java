@@ -8,6 +8,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 import static io.vertx.mutiny.redis.client.Command.EXPIRETIME;
 import static io.vertx.mutiny.redis.client.Command.PEXPIRETIME;
 
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,9 +25,9 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractKeyCommands<K> extends AbstractRedisCommands {
 
-    protected final Class<K> typeOfKey;
+    protected final Type typeOfKey;
 
-    AbstractKeyCommands(RedisCommandExecutor redis, Class<K> k) {
+    AbstractKeyCommands(RedisCommandExecutor redis, Type k) {
         super(redis, new Marshaller(k));
         this.typeOfKey = k;
     }
@@ -144,7 +145,7 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
     Uni<Response> _keys(String pattern) {
         nonNull(pattern, "pattern");
         if (pattern.isBlank()) {
-            throw new IllegalArgumentException("`pattern` must not be blank");
+            return Uni.createFrom().failure(new IllegalArgumentException("`pattern` must not be blank"));
         }
 
         return execute(RedisCommand.of(Command.KEYS).put(pattern));

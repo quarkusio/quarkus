@@ -42,6 +42,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     public QuarkusMultipartFormUpload(Context context,
             QuarkusMultipartForm parts,
             boolean multipart,
+            int maxChunkSize,
             PausableHttpPostRequestEncoder.EncoderMode encoderMode) throws Exception {
         this.context = context;
         this.pending = new InboundBuffer<>(context)
@@ -63,7 +64,8 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                         size);
             }
         };
-        this.encoder = new PausableHttpPostRequestEncoder(httpDataFactory, request, multipart, charset, encoderMode);
+        this.encoder = new PausableHttpPostRequestEncoder(httpDataFactory, request, multipart, maxChunkSize, charset,
+                encoderMode);
         for (QuarkusMultipartFormDataPart formDataPart : parts) {
             if (formDataPart.isAttribute()) {
                 encoder.addBodyAttribute(formDataPart.name(), formDataPart.value());

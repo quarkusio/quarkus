@@ -10,8 +10,8 @@
    </parent>
 
    <modelVersion>4.0.0</modelVersion>
-   <artifactId>quarkus-smallrye-reactive-messaging-pulsar-parent</artifactId>
-   <name>Quarkus - SmallRye Reactive Messaging - Pulsar</name>
+   <artifactId>quarkus-messaging-pulsar-parent</artifactId>
+   <name>Quarkus - Messaging - Pulsar</name>
    <packaging>pom</packaging>
 
    <modules>

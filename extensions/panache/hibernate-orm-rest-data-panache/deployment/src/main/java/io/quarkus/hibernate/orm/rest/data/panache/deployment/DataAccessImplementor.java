@@ -91,10 +91,12 @@ public interface DataAccessImplementor {
      * Available number of pages given a page instance.
      *
      * @param creator Bytecode creator that should be used for implementation.
-     * @param page Page instance.
+     * @param page Page instance that should be used in a query.
+     * @param query HQL query to list entities.
+     * @param queryParams Map of parameters to use by the HQL query.
      * @return int page count.
      */
-    ResultHandle pageCount(BytecodeCreator creator, ResultHandle page);
+    ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams);
 
     /**
      * return the total number of entities.

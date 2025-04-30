@@ -25,4 +25,7 @@ quarkus {
     manifest {
         attributes(mapOf("Manifest-Attribute" to "some-value"))
     }
+
+    // The following line is replaced by the tests in `CachingTest`
+    // ADDITIONAL_CONFIG
 }

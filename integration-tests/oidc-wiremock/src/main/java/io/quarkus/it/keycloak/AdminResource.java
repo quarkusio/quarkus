@@ -8,9 +8,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -20,6 +23,9 @@ public class AdminResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    RoutingContext routingContext;
 
     @Path("bearer")
     @GET
@@ -37,12 +43,20 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-required-claims")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminRequiredClaims() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-azure")
     @GET
     @Authenticated
     @Produces(MediaType.APPLICATION_JSON)
     public String adminAzure() {
-        return "Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
+        return "Name:" + identity.getPrincipal().getName() + ",Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
     }
 
     @Path("bearer-no-introspection")
@@ -50,6 +64,46 @@ public class AdminResource {
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String adminNoIntrospection() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-issuer-resolver/issuer") // don't change the path, avoid default tenant resolver
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminIssuerTest() {
+        return "static.tenant.id=" + routingContext.get("static.tenant.id");
+    }
+
+    @Path("bearer-certificate-full-chain")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerCertificateFullChain() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-chain-custom-validator")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerCertificateCustomValidator() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-certificate-full-chain-root-only")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerCertificateFullChainRootOnly() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-kid-or-chain")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerKidOrChain() {
         return "granted:" + identity.getRoles();
     }
 
@@ -74,6 +128,14 @@ public class AdminResource {
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String adminWrongRolePath() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-permission-checker")
+    @GET
+    @PermissionsAllowed("admin-preferred-username")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerPermissionChecker(@RestQuery String fail) {
         return "granted:" + identity.getRoles();
     }
 }

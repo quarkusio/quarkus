@@ -1,0 +1,123 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deploying-to-openshift-native-howto"]
+= Deploying {project-name} applications compiled to native executables
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud, native
+:summary: This guide describes how to deploy a Quarkus application to {openshift} compiled to native executables.
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
+
+You can deploy your native {project-name} applications to {openshift} compiled to native executables by using the Docker build strategy.
+
+You must create a native executable for your application that targets a supported operating system and match the architecture.
+This means, if you are building on Windows, you create a native Linux executable by using a container runtime, for example, Docker or Podman.
+
+Your Quarkus project includes pregenerated Dockerfiles with instructions.
+If you want to use a custom Dockerfile, add the file to the `src/main/docker` directory or any location inside the module.
+Additionally, if you want to have multiple Docker files and switch between them, set the path to your preferred Dockerfile by using the `quarkus.openshift.native-dockerfile` property.
+
+[NOTE]
+====
+This guide describes this strategy by using a Quarkus project with Maven as the example project.
+====
+
+== Prerequisites
+
+* A supported operating system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
+* You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
+* You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
+* You are working in the correct OpenShift project namespace.
+
+== Procedure
+
+. Set the Docker build strategy in your `application.properties` configuration file:
++
+[source, properties]
+----
+quarkus.openshift.build-strategy=docker
+----
+. Enable container-based native builds:
++
+[source,properties]
+----
+quarkus.native.container-build=true
+----
+. Optional: Set the following properties in the `application.properties` file based on your environment:
+** If you are using an untrusted certificate, enable certificate trust for the `KubernetesClient`:
++
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+** To expose the service and create an {openshift} route, set the following property:
++
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+----
+** To use a custom Dockerfile instead of the pregenerated Dockerfiles, set the path to your custom Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.native-dockerfile=<path_to_your_dockerfile>
+----
+For example, to specify a custom Dockerfile named `Dockerfile.custom-native`:
++
+[source,properties]
+----
+quarkus.openshift.native-dockerfile=src/main/docker/Dockerfile.custom-native
+----
+
+** Specify the container engine:
+***  To build a native executable with Podman:
++
+[source,properties]
+----
+quarkus.native.container-runtime=podman
+----
+*** To build a native executable with Docker:
++
+[source,properties]
+----
+quarkus.native.container-runtime=docker
+----
+
+. Finally, build the native executable, package, and deploy your application to {openshift}:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Pnative -Dquarkus.openshift.deploy=true
+----
+
+== Verification
+
+. Verify that an image stream and a service resource are created, and that the application is deployed.
+Use the {openshift} web console or the following {openshift} command-line interface (CLI) commands:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc get is <1>
+oc get pods <2>
+oc get svc <3>
+----
+<1> List the image streams created.
+<2> List the pods associated with your current OpenShift project.
+<3> List the Kubernetes services.
+
+[start=2]
+. To get the log output for your application's pod, run the following command where `__<pod_name>__` is the name of the latest pod prefixed with the name of your application:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc logs -f __<pod_name>__
+----
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploying {project-name} applications to {openshift}]
+

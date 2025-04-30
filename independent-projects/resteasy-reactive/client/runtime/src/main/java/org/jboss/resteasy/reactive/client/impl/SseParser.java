@@ -40,7 +40,10 @@ public class SseParser implements Handler<Buffer> {
      * True if we're at the very beginning of the data stream and could see a BOM
      */
     private boolean firstByte = true;
-
+    /**
+     * True if we've started to read at least one byte of an event
+     */
+    private boolean startedEvent = false;
     /**
      * The event type we're reading. Defaults to "message" and changes with "event" fields
      */
@@ -50,7 +53,8 @@ public class SseParser implements Handler<Buffer> {
      */
     private String contentType;
     /**
-     * The content type we're reading. Defaults to the X-Sse-Element-Type header
+     * The content type we're reading. If the X-Sse-Element-Type header is not set, then it defaults to the declared @Produces
+     * (if any)
      */
     private String contentTypeHeader;
     /**
@@ -67,8 +71,9 @@ public class SseParser implements Handler<Buffer> {
     private long eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
     private SseEventSourceImpl sseEventSource;
 
-    public SseParser(SseEventSourceImpl sseEventSource) {
+    public SseParser(SseEventSourceImpl sseEventSource, String defaultContentType) {
         this.sseEventSource = sseEventSource;
+        this.contentTypeHeader = defaultContentType;
     }
 
     public void setSseContentTypeHeader(String sseContentTypeHeader) {
@@ -93,6 +98,7 @@ public class SseParser implements Handler<Buffer> {
 
         while (hasByte()) {
             boolean lastFirstByte = firstByte;
+            startedEvent = false;
             nameBuffer.setLength(0);
             valueBuffer.setLength(0);
             commentBuffer.setLength(0);
@@ -103,10 +109,19 @@ public class SseParser implements Handler<Buffer> {
             eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
             // SSE spec says ID is persistent
 
+            boolean needsMoreData = false;
             int lastEventStart = i;
             try {
                 parseEvent();
+                // if we started an event but did not fire it, it means we lacked a final end-of-line and must
+                // wait for more data
+                if (startedEvent) {
+                    needsMoreData = true;
+                }
             } catch (NeedsMoreDataException x) {
+                needsMoreData = true;
+            }
+            if (needsMoreData) {
                 // save the remaining bytes for later
                 i = lastEventStart;
                 // be ready to rescan the BOM, but only if we didn't already see it in a previous event
@@ -131,8 +146,10 @@ public class SseParser implements Handler<Buffer> {
             int c = readChar();
             firstByte = false;
             if (c == COLON) {
+                startedEvent = true;
                 parseComment();
             } else if (isNameChar(c)) {
+                startedEvent = true;
                 parseField(c);
             } else if (isEofWithSideEffect(c)) {
                 dispatchEvent();
@@ -144,9 +161,6 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private void dispatchEvent() {
-        // ignore empty events
-        if (dataBuffer.length() == 0 && commentBuffer.length() == 0)
-            return;
         WebTargetImpl webTarget = sseEventSource.getWebTarget();
         InboundSseEventImpl event;
         // tests don't set a web target, and we don't want them to end up starting vertx just to test parsing
@@ -159,12 +173,14 @@ public class SseParser implements Handler<Buffer> {
         event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setId(lastEventId);
-        event.setData(dataBuffer.length() == 0 ? null : dataBuffer.toString());
+        event.setData(dataBuffer.length() == 0 ? "" : dataBuffer.toString());
         // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
         event.setReconnectDelay(eventReconnectTime);
         event.setMediaType(contentType != null ? MediaType.valueOf(contentType) : null);
         sseEventSource.fireEvent(event);
+        // make sure we mark that we are done with this event
+        startedEvent = false;
     }
 
     private byte peekByte() {

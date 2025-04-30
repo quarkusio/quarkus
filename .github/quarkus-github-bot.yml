@@ -2,6 +2,9 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-github-bot#triage-issues
 features: [ALL]
+develocity:
+  enabled: true
+  url: "https://ge.quarkus.io/"
 workflows:
   rules:
     - allow:
@@ -11,7 +14,7 @@ workflows:
           - "**/*.md"
           - "**/*.adoc"
 workflowRunAnalysis:
-  workflows: ["Quarkus CI"]
+  workflows: ["Quarkus CI", "Quarkus Documentation CI"]
 projectsClassic:
   rules:
     - labels: [area/documentation]
@@ -34,6 +37,13 @@ projects:
 triage:
   discussions:
     monitoredCategories: [33575230]
+  guardedBranches:
+    - ref: '3.20'
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+    - ref: '3.15'
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+    - ref: '3.8'
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
   rules:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
@@ -42,13 +52,9 @@ triage:
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
-    - id: persistence
-      labels: [area/persistence]
-      title: "persistence"
-      directories:
-        - extensions/jdbc/
     - id: db2
-      labels: [area/persistence]
+      # There's no label for DB2, and JDBC/reactive-clients are handled elsewhere.
+      labels: []
       title: "db2"
       notify: [mswatosh]
       directories:
@@ -62,11 +68,16 @@ triage:
         - extensions/funqy/
     - id: devmode
       labels: [area/devmode]
-      title: "dev mode"
+      title: "dev.?mode"
     - id: devui
       labels: [area/dev-ui]
       title: "dev.?ui"
       notify: [phillip-kruger, cescoffier]
+      notifyInPullRequest: true
+    - id: mvnpm
+      labels: [area/dev-ui]
+      title: "(mvnpm|mvnpm.org)"
+      notify: [phillip-kruger]
       notifyInPullRequest: true
     - labels: [area/gradle]
       title: "gradle"
@@ -101,23 +112,23 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/codestarts/
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - id: hibernate-reactive
-      labels: [area/hibernate-reactive, area/persistence]
+      labels: [area/hibernate-reactive]
       title: "hibernate.reactive"
       expression: |
         matches("hibernate", title) && matches("reactive", title)
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
-      notify: [DavideD, gavinking, Sanne]
+      notify: [DavideD, gavinking]
       directories:
         - extensions/hibernate-reactive
     - id: hibernate-orm
-      labels: [area/hibernate-orm, area/persistence]
+      labels: [area/hibernate-orm]
       expression: |
         matches("hibernate", title) && !matches("reactive", title)
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
-      notify: [gsmet, Sanne, yrodiere]
+      notify: [gsmet]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -131,7 +142,7 @@ triage:
     - id: hibernate-search
       labels: [area/hibernate-search]
       title: "hibernate.search"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -139,8 +150,8 @@ triage:
         - integration-tests/hibernate-search
     - id: elasticsearch
       labels: [area/elasticsearch]
-      title: "elasticsearch"
-      notify: [gsmet, yrodiere, loicmathieu]
+      title: "(elasticsearch|opensearch)"
+      notify: [gsmet, marko-bekhta, loicmathieu]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -149,7 +160,7 @@ triage:
     - id: hibernate-validator
       labels: [area/hibernate-validator]
       title: "hibernate.validator"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator
@@ -163,21 +174,21 @@ triage:
     - id: jackson
       labels: [area/jackson]
       title: "jackson"
-      notify: [geoand, gsmet]
+      notify: [geoand, gsmet, mariofusco]
       directories:
         - extensions/jackson/
         - integration-tests/jackson/
     - id: kotlin
       labels: [area/kotlin]
       titleBody: "kotlin"
-      notify: [evanchooly, geoand]
+      notify: [geoand]
       directories:
         - extensions/kotlin/
         - integration-tests/kotlin/
     - id: mongodb
       labels: [area/mongodb]
       title: "mongo"
-      notify: [loicmathieu, evanchooly]
+      notify: [loicmathieu]
       directories:
         - extensions/mongodb-client/
         - integration-tests/mongodb-client/
@@ -200,12 +211,6 @@ triage:
         - integration-tests/vertx-graphql/
         - integration-tests/smallrye-graphql/
         - integration-tests/smallrye-graphql-client/
-    - id: tracing
-      labels: [area/tracing, area/smallrye]
-      title: "(trace|tracing)"
-      notify: [radcortez, brunobat]
-      directories:
-        - extensions/smallrye-opentracing/
     - id: opentelemetry
       labels: [area/tracing]
       title: "(trace|opentelemetry)"
@@ -275,7 +280,7 @@ triage:
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
-      notify: [Sgitario]
+      notify: [geoand]
     - id: qute
       labels: [area/qute]
       title: "qute"
@@ -285,16 +290,20 @@ triage:
         - extensions/resteasy-classic/resteasy-qute/
     - id: reactive-messaging
       labels: [area/reactive-messaging, area/smallrye]
-      title: "reactive.messaging"
+      expression: |
+        matches("reactive.messaging", title)
+        || matches("mqtt", title)
+        || matches("rabbitmq", title)
       notify: [cescoffier, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - id: rest-client
       labels: [area/rest-client]
       title: "rest.client"
-      notify: [cescoffier, geoand, Sgitario]
+      notify: [cescoffier, geoand]
       directories:
-        - extensions/rest-client/
+        - extensions/resteasy-classic/rest-client/
+        - extensions/resteasy-reactive/rest-client/
     - id: smallrye
       labels: [area/smallrye]
       title: "smallrye"
@@ -304,7 +313,7 @@ triage:
     - id: spring
       labels: [area/spring]
       title: "spring"
-      notify: [geoand]
+      notify: [geoand, aureamunoz]
       directories:
         - extensions/spring-
         - integration-tests/spring-
@@ -318,7 +327,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, iocanel, Sgitario]
+      notify: [geoand, iocanel]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -372,20 +381,20 @@ triage:
     - id: scheduler
       labels: [area/scheduler]
       title: "schedule(r)?"
-      notify: [mkouba]
+      notify: [mkouba, manovotn]
       directories:
         - extensions/scheduler/
     - id: quartz
       labels: [area/scheduler]
       title: "quartz"
-      notify: [mkouba, machi1990]
+      notify: [mkouba, machi1990, manovotn]
       directories:
         - extensions/quartz/
         - integration-tests/quartz/
     - id: redis
       labels: [area/redis]
       title: "redis"
-      notify: [machi1990, gsmet, cescoffier]
+      notify: [machi1990, Ladicek, cescoffier]
       directories:
         - extensions/redis-client/
         - integration-tests/redis-client/
@@ -403,10 +412,11 @@ triage:
       directories:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
-    - id: mandrel
-      labels: [area/mandrel]
-      titleBody: "mandrel"
-      notify: [galderz, zakkak, Karm]
+    - id: native-image
+      labels: [area/native-image]
+      body: "Mandrel or GraalVM version"
+      notify: [zakkak, Karm, galderz]
+      notifyInPullRequest: true
     - id: awt
       labels: [area/graphics]
       expression: |
@@ -414,7 +424,7 @@ triage:
               || matches("sun.java2d", titleBody)
               || matches("javax.imageio", titleBody)
               || matches("sun.awt", titleBody)
-      notify: [galderz, zakkak, Karm]
+      notify: [galderz, Karm]
       notifyInPullRequest: true
       directories:
         - extensions/awt/
@@ -438,7 +448,7 @@ triage:
         - integration-tests/artemis-jms/
     - id: cache
       labels: [area/cache]
-      title: "cache"
+      title: "(?<!build )cache"
       notify: [gwenneg]
       directories:
         - extensions/cache/
@@ -459,13 +469,15 @@ triage:
       notify: [ebullient]
     - id: config
       labels: [area/config]
+      title: "config"
       directories:
         - extensions/config-yaml/
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
+      notify: [radcortez]
     - id: core
       labels: [area/core]
-      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne]
       directories:
         - core/
     - id: dependencies
@@ -483,9 +495,60 @@ triage:
         - independent-projects/tools/
     - id: documentation
       labels: [area/documentation]
-      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
+      notify: [sheilamjones, MichalMaler, rolfedh]
       directories:
         - docs/
+    - id: docstyle
+      labels: [area/docstyle]
+      title: "A tagged source doc has been modified"
+      notify: [sheilamjones, MichalMaler, rolfedh]
+      directories:
+        - docs/src/main/asciidoc/_attributes-local.adoc
+        - docs/src/main/asciidoc/_attributes.adoc
+        - docs/src/main/asciidoc/_includes/compile-quarkus-quickly.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-app.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-cli.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-add.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-list.adoc
+        - docs/src/main/asciidoc/_includes/devtools/maven-opts.adoc
+        - docs/src/main/asciidoc/_includes/duration-format-note.adoc
+        - docs/src/main/asciidoc/_includes/extension-status.adoc
+        - docs/src/main/asciidoc/_includes/platform-include.adoc
+        - docs/src/main/asciidoc/_includes/prerequisites.adoc
+        - docs/src/main/asciidoc/datasource.adoc
+        - docs/src/main/asciidoc/deploying-native-executable-openshift.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift-serverless.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift.adoc
+        - docs/src/main/asciidoc/deployment-to-openshift.adoc
+        - docs/src/main/asciidoc/logging.adoc
+        - docs/src/main/asciidoc/security-architecture.adoc
+        - docs/src/main/asciidoc/security-authentication-mechanisms.adoc
+        - docs/src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
+        - docs/src/main/asciidoc/security-basic-authentication-howto.adoc
+        - docs/src/main/asciidoc/security-basic-authentication.adoc
+        - docs/src/main/asciidoc/security-getting-started-tutorial.adoc
+        - docs/src/main/asciidoc/security-identity-providers-concept.adoc
+        - docs/src/main/asciidoc/security-identity-providers.adoc
+        - docs/src/main/asciidoc/security-jpa.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-configuration-properties-reference.adoc
+        - docs/src/main/asciidoc/security-openid-connect-client-reference.adoc
+        - docs/src/main/asciidoc/security-openid-connect-client.adoc
+        - docs/src/main/asciidoc/security-openid-connect-multitenancy.adoc
+        - docs/src/main/asciidoc/security-overview.adoc
+        - docs/src/main/asciidoc/security-proactive-authentication.adoc
+        - docs/src/main/asciidoc/security-vulnerability-detection.adoc
+        - docs/src/main/asciidoc/tls-registry-reference.adoc
+        - docs/src/main/asciidoc/update-quarkus.adoc
     - id: infra-automation
       labels: [area/infra-automation]
       directories:
@@ -493,11 +556,12 @@ triage:
     - id: jaxb
       labels: [area/jaxb]
       title: "jaxb"
-      notify: [gsmet, Sgitario]
+      notify: [gsmet]
       directories:
         - extensions/jaxb/
     - id: logging
       labels: [area/logging]
+      notify: [dmlloyd]
       directories:
         - extensions/logging-gelf/
         - extensions/logging-json/
@@ -550,8 +614,8 @@ triage:
       labels: [area/reactive-streams-operators]
       directories:
         - extensions/reactive-streams-operators/
-    - id: resteasy
-      labels: [area/resteasy]
+    - id: resteasy-classic
+      labels: [area/resteasy-classic]
       directories:
         - extensions/resteasy-classic/
         - extensions/resteasy-classic/resteasy
@@ -564,10 +628,10 @@ triage:
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/
-    - id: resteasy-reactive
-      labels: [area/resteasy-reactive]
+    - id: rest
+      labels: [area/rest]
       title: resteasy.reactive
-      notify: [geoand, FroMage, stuartwdouglas, Sgitario]
+      notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
     - id: scala
@@ -582,13 +646,22 @@ triage:
       directories:
         - extensions/vault/
         - integration-tests/vault
+    - id: netty
+      labels: [area/netty]
+      title: "netty"
+      notify: [franz1981, cescoffier, jponge]
+      directories:
+        - extensions/netty
     - id: vertx
       labels: [area/vertx]
+      title: "vert.?x"
       directories:
         - extensions/vertx
         - integration-tests/vertx
     - id: testing
-      title: "quarkusintegrationtest"
+      expression: |
+        matches("quarkusintegrationtest", title)
+        || matches("mockito", title)
       labels: [area/testing]
       notify: [geoand]
       directories:
@@ -637,7 +710,9 @@ triage:
       notify: [gastaldi, gsmet, aloubyansky, maxandersen]
     - id: mailer
       labels: [area/mailer]
-      title: "\\bmail\\b"
+      expression: |
+        matches("\\bmail\\b", title)
+        || matches("mailer", title)
       notify: [cescoffier]
       directories:
         - extensions/mailer/
@@ -645,17 +720,23 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro, Sanne, yrodiere]
+      notify: [barreiro]
       directories:
         - extensions/agroal/
     - id: continuous-testing
       labels: [area/continuous-testing]
       title: "continuous.testing"
-      notify: [stuartwdouglas]
+      notify: [holly-cummins, geoand]
     - id: devservices
       labels: [area/devservices]
-      title: "dev.?services"
-      notify: [stuartwdouglas, geoand]
+      title: "dev.?services?"
+      notify: [geoand]
+    - id: jdbc
+      labels: [area/jdbc]
+      title: "jdbc"
+      notify: [barreiro]
+      directories:
+        - extensions/jdbc/
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
@@ -684,7 +765,7 @@ triage:
     - id: stork
       labels: [area/stork]
       title: "stork"
-      notify: [aureamunoz, cescoffier, Sgitario]
+      notify: [aureamunoz, cescoffier]
       directories:
         - extensions/smallrye-stork/
     - id: jakarta
@@ -693,5 +774,13 @@ triage:
       notifyInPullRequest: true
       directories:
         - jakarta/
+    - id: virtual-threads
+      labels: [area/virtual-threads]
+      title: "(virtual.thread|RunOnVirtualThread)"
+      notify: [cescoffier, ozangunalp]
+    - id: podman
+      labels: [env/podman]
+      title: "podman"
+      notify: [maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

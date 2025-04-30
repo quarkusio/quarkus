@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,8 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                             creatorClass.getName() + "#create() must not return null");
                     mc.returnValue(ret);
                 },
-                null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""));
+                null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""),
+                null, null, null, null);
         this.bindings = bindings;
         this.interceptionType = interceptionType;
         this.creatorClass = creatorClass;
@@ -78,7 +80,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
             List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, false, Collections.emptyList(), null, false, null, priority);
+                null, null, false, Collections.emptyList(), null, false, null, priority, null, null);
         this.bindings = bindings;
         this.interceptionType = null;
         this.creatorClass = null;
@@ -105,28 +107,32 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                                     + aClass);
                 }
                 if (store.hasAnnotation(method, DotNames.AROUND_INVOKE)) {
-                    addInterceptorMethod(allMethods, aroundInvokes, method);
+                    addInterceptorMethod(allMethods, aroundInvokes, method, InterceptionType.AROUND_INVOKE,
+                            InterceptorPlacement.INTERCEPTOR_CLASS);
                     if (++aroundInvokesFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @AroundInvoke interceptor methods declared on class: " + aClass);
                     }
                 }
                 if (store.hasAnnotation(method, DotNames.AROUND_CONSTRUCT)) {
-                    addInterceptorMethod(allMethods, aroundConstructs, method);
+                    addInterceptorMethod(allMethods, aroundConstructs, method, InterceptionType.AROUND_CONSTRUCT,
+                            InterceptorPlacement.INTERCEPTOR_CLASS);
                     if (++aroundConstructsFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @AroundConstruct interceptor methods declared on class: " + aClass);
                     }
                 }
                 if (store.hasAnnotation(method, DotNames.POST_CONSTRUCT)) {
-                    addInterceptorMethod(allMethods, postConstructs, method);
+                    addInterceptorMethod(allMethods, postConstructs, method, InterceptionType.POST_CONSTRUCT,
+                            InterceptorPlacement.INTERCEPTOR_CLASS);
                     if (++postConstructsFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @PostConstruct interceptor methods declared on class: " + aClass);
                     }
                 }
                 if (store.hasAnnotation(method, DotNames.PRE_DESTROY)) {
-                    addInterceptorMethod(allMethods, preDestroys, method);
+                    addInterceptorMethod(allMethods, preDestroys, method, InterceptionType.PRE_DESTROY,
+                            InterceptorPlacement.INTERCEPTOR_CLASS);
                     if (++preDestroysFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @PreDestroy interceptor methods declared on class: " + aClass);
@@ -227,42 +233,6 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return preDestroys;
     }
 
-    /**
-     *
-     * @deprecated Use {@link #getAroundInvokes()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getAroundInvoke() {
-        return aroundInvokes.get(aroundInvokes.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getAroundConstructs()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getAroundConstruct() {
-        return aroundConstructs.get(aroundConstructs.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getPostConstructs()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getPostConstruct() {
-        return postConstructs.get(postConstructs.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getPreDestroys()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getPreDestroy() {
-        return preDestroys.get(preDestroys.size() - 1);
-    }
-
     public boolean intercepts(InterceptionType interceptionType) {
         if (isSynthetic()) {
             return interceptionType == this.interceptionType;
@@ -296,8 +266,9 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return getTarget().toString().compareTo(other.getTarget().toString());
     }
 
-    static void addInterceptorMethod(List<MethodInfo> allMethods, List<MethodInfo> interceptorMethods, MethodInfo method) {
-        validateSignature(method);
+    static void addInterceptorMethod(List<MethodInfo> allMethods, List<MethodInfo> interceptorMethods, MethodInfo method,
+            InterceptionType interceptionType, InterceptorPlacement interceptorPlacement) {
+        validateSignature(method, interceptionType, interceptorPlacement);
         if (!isInterceptorMethodOverriden(allMethods, method)) {
             interceptorMethods.add(method);
         }
@@ -318,19 +289,105 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                         || method.parameterType(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT));
     }
 
-    private static MethodInfo validateSignature(MethodInfo method) {
-        if (!hasInterceptorMethodParameter(method)) {
-            throw new IllegalStateException(
-                    "An interceptor method must accept exactly one parameter of type jakarta.interceptor.InvocationContext: "
-                            + method + " declared on " + method.declaringClass());
+    private enum InterceptorMethodError {
+        MUST_HAVE_PARAMETER,
+        MUST_NOT_HAVE_PARAMETER,
+        WRONG_RETURN_TYPE,
+    }
+
+    static void validateSignature(MethodInfo method, InterceptionType interceptionType,
+            InterceptorPlacement interceptorPlacement) {
+        boolean isLifecycleCallback = interceptionType == InterceptionType.AROUND_CONSTRUCT
+                || interceptionType == InterceptionType.POST_CONSTRUCT
+                || interceptionType == InterceptionType.PRE_DESTROY;
+
+        boolean mustHaveParameter = !isLifecycleCallback || interceptorPlacement == InterceptorPlacement.INTERCEPTOR_CLASS;
+        boolean mustNotHaveParameter = isLifecycleCallback && interceptorPlacement == InterceptorPlacement.TARGET_CLASS;
+        boolean mayReturnVoid = isLifecycleCallback;
+        boolean mayReturnObject = !isLifecycleCallback || interceptorPlacement == InterceptorPlacement.INTERCEPTOR_CLASS;
+
+        Set<InterceptorMethodError> errors = EnumSet.noneOf(InterceptorMethodError.class);
+        if (mustHaveParameter && !hasInterceptorMethodParameter(method)) {
+            errors.add(InterceptorMethodError.MUST_HAVE_PARAMETER);
         }
-        if (!method.returnType().kind().equals(Type.Kind.VOID) &&
-                !method.returnType().name().equals(DotNames.OBJECT)) {
-            throw new IllegalStateException(
-                    "The return type of an interceptor method must be java.lang.Object or void: "
-                            + method + " declared on " + method.declaringClass());
+        if (mustNotHaveParameter && method.parametersCount() > 0) {
+            errors.add(InterceptorMethodError.MUST_NOT_HAVE_PARAMETER);
         }
-        return method;
+
+        boolean wrongReturnType = true;
+        if (mayReturnVoid && method.returnType().kind().equals(Kind.VOID)) {
+            wrongReturnType = false;
+        }
+        if (mayReturnObject && method.returnType().name().equals(DotNames.OBJECT)) {
+            wrongReturnType = false;
+        }
+        if (wrongReturnType) {
+            errors.add(InterceptorMethodError.WRONG_RETURN_TYPE);
+        }
+
+        if (!errors.isEmpty()) {
+            StringBuilder msg = new StringBuilder();
+            switch (interceptionType) {
+                case AROUND_CONSTRUCT:
+                    msg.append("@AroundConstruct");
+                    break;
+                case AROUND_INVOKE:
+                    msg.append("@AroundInvoke");
+                    break;
+                case POST_CONSTRUCT:
+                    msg.append("@PostConstruct");
+                    break;
+                case PRE_DESTROY:
+                    msg.append("@PreDestroy");
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown interception type: " + interceptionType);
+            }
+            if (isLifecycleCallback) {
+                msg.append(" lifecycle callback method");
+            } else {
+                msg.append(" interceptor method");
+            }
+            msg.append(" declared in ");
+            switch (interceptorPlacement) {
+                case INTERCEPTOR_CLASS:
+                    msg.append("an interceptor class");
+                    break;
+                case TARGET_CLASS:
+                    msg.append("a target class");
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown interceptor placement: " + interceptorPlacement);
+            }
+            msg.append(" must ");
+
+            if (errors.contains(InterceptorMethodError.MUST_HAVE_PARAMETER)) {
+                msg.append("have exactly one parameter of type jakarta.interceptor.InvocationContext");
+            } else if (errors.contains(InterceptorMethodError.MUST_NOT_HAVE_PARAMETER)) {
+                msg.append("have zero parameters");
+            }
+
+            if (errors.contains(InterceptorMethodError.WRONG_RETURN_TYPE)) {
+                if (errors.contains(InterceptorMethodError.MUST_HAVE_PARAMETER)
+                        || errors.contains(InterceptorMethodError.MUST_NOT_HAVE_PARAMETER)) {
+                    msg.append(" and must ");
+                }
+                msg.append("have a return type of ");
+                if (mayReturnVoid) {
+                    msg.append("void");
+                }
+                if (mayReturnVoid && mayReturnObject) {
+                    msg.append(" or ");
+                }
+                if (mayReturnObject) {
+                    msg.append("java.lang.Object");
+                }
+            }
+
+            msg.append(": ").append(method).append(" declared in ").append(method.declaringClass().name());
+
+            throw new DefinitionException(msg.toString());
+        }
     }
 
 }

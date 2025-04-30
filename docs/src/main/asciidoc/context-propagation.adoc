@@ -7,11 +7,12 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: Learn more about how you can pass contextual information with SmallRye Context Propagation.
+:topics: context-propagation
 
-Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
+Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid
 passing them as parameters everywhere. Many Quarkus extensions require those contextual objects to operate
-properly: xref:rest-json.adoc[RESTEasy Reactive], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
+properly: xref:rest-json.adoc[Quarkus REST (formerly RESTEasy Reactive)], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
 for example.
 
 If you write reactive/async code, you have to cut your work into a pipeline of code blocks that get executed
@@ -31,7 +32,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `context-propagation-quickstart` {quickstarts-tree-url}/context-propagation-quickstart[directory].
+The solution is located in the `context-propagation-quickstart` link:{quickstarts-tree-url}/context-propagation-quickstart[directory].
 
 == Setting it up
 
@@ -43,10 +44,10 @@ In other words, add the following dependencies to your build file:
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
-<!-- RESTEasy Reactive extension if not already included -->
+<!-- Quarkus REST extension if not already included -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 <!-- Context Propagation extension -->
 <dependency>
@@ -58,13 +59,13 @@ In other words, add the following dependencies to your build file:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-// RESTEasy Reactive extension if not already included
-implementation("io.quarkus:quarkus-resteasy-reactive")
+// Quarkus REST extension if not already included
+implementation("io.quarkus:quarkus-rest")
 // Context Propagation extension
 implementation("io.quarkus:quarkus-smallrye-context-propagation")
 ----
 
-With this, you will get context propagation for ArC, RESTEasy Reactive and transactions, if you are using them.
+With this, you will get context propagation for ArC, Quarkus REST and transactions, if you are using them.
 
 == Usage example with Mutiny
 
@@ -114,7 +115,7 @@ The 3 items are persisted using the same transaction and this transaction is com
 
 == Usage example for `CompletionStage`
 
-If you are using link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
+If you are using link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 you need manual context propagation. You can do that by injecting a `ThreadContext`
 or `ManagedExecutor` that will propagate every context. For example, here we use the xref:vertx.adoc[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
@@ -134,7 +135,7 @@ them to the client as JSON using xref:rest-json.adoc[Jackson or JSON-B]:
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,
                          new WebClientOptions()
-                          .setDefaultHost("swapi.dev")
+                          .setDefaultHost("swapi.tech")
                           .setDefaultPort(443)
                           .setSsl(true));
         // get the list of Star Wars people, with context capture
@@ -173,7 +174,7 @@ The following configuration properties allow you to specify the default sets of 
 
 [cols="1,1,1"]
 |===
-|Configuration Key|Description|Default Value
+|Configuration property|Description|Default Value
 
 |`mp.context.ThreadContext.propagated`
 |The comma-separated set of propagated contexts
@@ -217,7 +218,7 @@ their extensions:
 
 |`Jakarta REST`
 |N/A
-|The RESTEasy Reactive or RESTEasy Classic context
+|The Quarkus REST or RESTEasy Classic context
 
 |`Application`
 |https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
@@ -316,6 +317,7 @@ If you also need to customize your instance, you can do so using `@ManagedExecut
     ThreadContext sameContext;
 ----
 
+[[context-propagation-for-cdi]]
 == Context Propagation for CDI
 
 In terms of CDI, `@RequestScoped`, `@ApplicationScoped` and `@Singleton` beans get propagated and are available in other threads.

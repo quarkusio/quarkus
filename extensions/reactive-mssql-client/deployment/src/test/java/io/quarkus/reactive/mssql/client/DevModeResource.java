@@ -12,13 +12,13 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import io.vertx.mssqlclient.MSSQLPool;
+import io.vertx.sqlclient.Pool;
 
 @Path("/dev")
 public class DevModeResource {
 
     @Inject
-    MSSQLPool client;
+    Pool client;
 
     @GET
     @Path("/error")

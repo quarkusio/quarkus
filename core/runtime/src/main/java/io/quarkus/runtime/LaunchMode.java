@@ -1,7 +1,5 @@
 package io.quarkus.runtime;
 
-import io.quarkus.runtime.configuration.ProfileManager;
-
 public enum LaunchMode {
 
     /**
@@ -20,6 +18,10 @@ public enum LaunchMode {
 
     public boolean isDevOrTest() {
         return this != NORMAL;
+    }
+
+    public static boolean isDev() {
+        return current() == DEVELOPMENT;
     }
 
     /**
@@ -45,11 +47,17 @@ public enum LaunchMode {
         return profileKey;
     }
 
+    private static volatile LaunchMode launchMode = LaunchMode.NORMAL;
+
+    public static void set(LaunchMode mode) {
+        launchMode = mode;
+    }
+
     /**
      *
      * @return The current launch mode
      */
     public static LaunchMode current() {
-        return ProfileManager.getLaunchMode();
+        return launchMode;
     }
 }

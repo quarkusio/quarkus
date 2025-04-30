@@ -3,31 +3,26 @@ package io.quarkus.kafka.streams.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class TrustStoreConfig {
+public interface TrustStoreConfig {
     /**
      * Trust store type
      */
-    @ConfigItem
-    public Optional<String> type;
+    Optional<String> type();
 
     /**
      * Trust store location
      */
-    @ConfigItem
-    public Optional<String> location;
+    Optional<String> location();
 
     /**
      * Trust store password
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * Trust store certificates
      */
-    @ConfigItem
-    public Optional<String> certificates;
+    Optional<String> certificates();
 }

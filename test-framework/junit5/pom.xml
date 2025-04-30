@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-properties</artifactId>
+            <artifactId>quarkus-junit5-config</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -47,12 +47,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <!-- Avoid adding this to the BOM -->
-            <version>1.4.20</version>
         </dependency>
 
         <dependency>

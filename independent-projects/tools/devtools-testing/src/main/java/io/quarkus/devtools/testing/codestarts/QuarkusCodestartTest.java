@@ -155,7 +155,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
      */
     public void buildProject(Language language) throws IOException {
         final int exitCode = WrapperRunner.run(getProjectWithRealDataDir(language));
-        Assertions.assertThat(exitCode).as("Run project return status is zero").isZero();
+        Assertions.assertThat(exitCode).as("Run project return status should be zero").isZero();
     }
 
     /**
@@ -227,7 +227,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
      * Very usefull to check if a file contains a specific String:
      * <br>
      * Example:<br>
-     * codestartTest.assertThatGeneratedFile(JAVA, "README.md").satisfies(checkContains("./mvnw compile quarkus:dev
+     * codestartTest.assertThatGeneratedFile(JAVA, "README.md").satisfies(checkContains("./mvnw quarkus:dev
      * -Dquarkus.args='Quarky"));
      *
      * @param language the language

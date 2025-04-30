@@ -32,7 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>{java.version}</maven.compiler.release>
         {#if quarkus.version}<quarkus.version>{quarkus.version}</quarkus.version>{/if}
         {#if maven.compiler-plugin-version}<compiler-plugin.version>{maven.compiler-plugin-version}</compiler-plugin.version>{/if}
         {#if maven.surefire-plugin.version}
@@ -45,9 +45,6 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        {#if has-docs-module}
-        <module>docs</module>
-        {/if}
     </modules>
 {#if quarkus.bom}
 
@@ -113,14 +110,28 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>$\{compiler-plugin.version}</version>
                     <configuration>
-                        <compilerArgs>
-                            <arg>-parameters</arg>
-                        </compilerArgs>
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 {/if}
             </plugins>
         </pluginManagement>
     </build>
+{/if}
+{#if has-docs-module}
+    <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>docs</module>
+            </modules>
+        </profile>
+    </profiles>
 {/if}
 </project>

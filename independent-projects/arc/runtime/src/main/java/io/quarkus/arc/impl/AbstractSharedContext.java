@@ -1,9 +1,6 @@
 package io.quarkus.arc.impl;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -16,10 +13,14 @@ import io.quarkus.arc.InjectableContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 
-    protected final ComputingCache<String, ContextInstanceHandle<?>> instances;
+    protected final ContextInstances instances;
 
     public AbstractSharedContext() {
-        this.instances = new ComputingCache<>();
+        this(new ComputingCacheContextInstances());
+    }
+
+    public AbstractSharedContext(ContextInstances instances) {
+        this.instances = Objects.requireNonNull(instances);
     }
 
     @SuppressWarnings("unchecked")
@@ -47,7 +48,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
         if (!Scopes.scopeMatches(this, bean)) {
             throw Scopes.scopeDoesNotMatchException(this, bean);
         }
-        ContextInstanceHandle<?> handle = instances.getValueIfPresent(bean.getIdentifier());
+        ContextInstanceHandle<?> handle = instances.getIfPresent(bean.getIdentifier());
         return handle != null ? (T) handle.get() : null;
     }
 
@@ -63,7 +64,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public Map<InjectableBean<?>, Object> getContextualInstances() {
-        return instances.getPresentValues().stream()
+        return instances.getAllPresent().stream()
                 .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
     }
 
@@ -83,19 +84,24 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public synchronized void destroy() {
-        Set<ContextInstanceHandle<?>> values = instances.getPresentValues();
+        // Note that shared contexts are usually only destroyed when the app stops
+        // I.e. we don't need to use the optimized ContextInstances methods here
+        Set<ContextInstanceHandle<?>> values = instances.getAllPresent();
+        if (values.isEmpty()) {
+            return;
+        }
         // Destroy the producers first
-        for (Iterator<ContextInstanceHandle<?>> iterator = values.iterator(); iterator.hasNext();) {
-            ContextInstanceHandle<?> instanceHandle = iterator.next();
+        for (Iterator<ContextInstanceHandle<?>> it = values.iterator(); it.hasNext();) {
+            ContextInstanceHandle<?> instanceHandle = it.next();
             if (instanceHandle.getBean().getDeclaringBean() != null) {
                 instanceHandle.destroy();
-                iterator.remove();
+                it.remove();
             }
         }
         for (ContextInstanceHandle<?> instanceHandle : values) {
             instanceHandle.destroy();
         }
-        instances.clear();
+        instances.removeEach(null);
     }
 
     @Override

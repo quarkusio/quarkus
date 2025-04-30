@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -61,6 +62,7 @@ import org.jboss.metadata.web.spec.AnnotationsMetaData;
 import org.jboss.metadata.web.spec.CookieConfigMetaData;
 import org.jboss.metadata.web.spec.DispatcherType;
 import org.jboss.metadata.web.spec.EmptyRoleSemanticType;
+import org.jboss.metadata.web.spec.ErrorPageMetaData;
 import org.jboss.metadata.web.spec.FilterMappingMetaData;
 import org.jboss.metadata.web.spec.FilterMetaData;
 import org.jboss.metadata.web.spec.FiltersMetaData;
@@ -81,7 +83,6 @@ import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.ConfigInjectionStaticInitBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
@@ -105,11 +106,13 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.QuarkusIdentityManager;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
@@ -122,7 +125,7 @@ import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -187,7 +190,7 @@ public class UndertowBuildStep {
             ServletRuntimeConfig servletRuntimeConfig,
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (capabilities.isPresent(Capability.SECURITY)) {
             recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
@@ -317,8 +320,8 @@ public class UndertowBuildStep {
             ServletConfig servletConfig,
             WebMetadataBuildItem webMetadataBuildItem) {
         String contextPath;
-        if (servletConfig.contextPath.isPresent()) {
-            contextPath = servletConfig.contextPath.get();
+        if (servletConfig.contextPath().isPresent()) {
+            contextPath = servletConfig.contextPath().get();
         } else if (webMetadataBuildItem.getWebMetaData().getDefaultContextPath() != null) {
             contextPath = webMetadataBuildItem.getWebMetaData().getDefaultContextPath();
         } else {
@@ -392,7 +395,9 @@ public class UndertowBuildStep {
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
             KnownPathsBuildItem knownPaths,
-            HttpBuildTimeConfig httpBuildTimeConfig,
+            LogBuildTimeConfig logBuildTimeConfig,
+            Optional<LoggingDecorateBuildItem> loggingDecorateBuildItem,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             HttpRootPathBuildItem httpRootPath,
             ServletConfig servletConfig,
             final Capabilities capabilities) throws Exception {
@@ -411,8 +416,8 @@ public class UndertowBuildStep {
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, httpRootPath.relativePath(contextPath),
-                servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
-                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
+                servletConfig.defaultCharset(), webMetaData.getRequestCharacterEncoding(),
+                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth().proactive(),
                 webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null,
                 hasSecurityCapability(capabilities));
 
@@ -425,10 +430,14 @@ public class UndertowBuildStep {
         //add servlets
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {
+                String servletClass = servlet.getServletClass();
+                if (servletClass == null) {
+                    continue;
+                }
                 reflectiveClasses.accept(
-                        ReflectiveClassBuildItem.builder(servlet.getServletClass()).build());
+                        ReflectiveClassBuildItem.builder(servletClass).build());
                 RuntimeValue<ServletInfo> sref = recorder.registerServlet(deployment, servlet.getServletName(),
-                        context.classProxy(servlet.getServletClass()),
+                        context.classProxy(servletClass),
                         servlet.isAsyncSupported(),
                         servlet.getLoadOnStartupInt(),
                         bc.getValue(),
@@ -442,7 +451,7 @@ public class UndertowBuildStep {
                 if (webMetaData.getAnnotations() != null) {
                     for (AnnotationMetaData amd : webMetaData.getAnnotations()) {
                         final ServletSecurityMetaData ssmd = amd.getServletSecurity();
-                        if (ssmd != null && amd.getClassName().equals(servlet.getServletClass())) {
+                        if (ssmd != null && amd.getClassName().equals(servletClass)) {
                             // Process the @ServletSecurity into metadata
                             ServletSecurityInfo securityInfo = new ServletSecurityInfo();
                             securityInfo.setEmptyRoleSemantic(
@@ -466,7 +475,7 @@ public class UndertowBuildStep {
                         }
 
                         final MultipartConfigMetaData mcmd = amd.getMultipartConfig();
-                        if (mcmd != null && amd.getClassName().equals(servlet.getServletClass())) {
+                        if (mcmd != null && amd.getClassName().equals(servletClass)) {
                             servlet.setMultipartConfig(mcmd);
                         }
                     }
@@ -551,7 +560,7 @@ public class UndertowBuildStep {
                 if (constraint.getAuthConstraint() == null) {
                     // no auth constraint means we permit the empty roles
                     securityConstraint.setEmptyRoleSemantic(PERMIT);
-                } else if (roleNames.size() == 1 && roleNames.contains("*")) {
+                } else if (roleNames.size() == 1 && (roleNames.contains("*") || roleNames.contains("**"))) {
                     securityConstraint.setEmptyRoleSemantic(AUTHENTICATE);
                 } else {
                     securityConstraint.addRolesAllowed(roleNames);
@@ -652,6 +661,16 @@ public class UndertowBuildStep {
             recorder.addServletContainerInitializer(deployment,
                     (Class<? extends ServletContainerInitializer>) context.classProxy(sci.sciClass), handlesTypes);
         }
+        if (webMetaData.getErrorPages() != null) {
+            for (ErrorPageMetaData errorPage : webMetaData.getErrorPages()) {
+                if (errorPage.getErrorCode() != null && !errorPage.getErrorCode().isBlank()) {
+                    recorder.addErrorPage(deployment, errorPage.getLocation(), Integer.parseInt(errorPage.getErrorCode()));
+                } else if (errorPage.getExceptionType() != null && !errorPage.getExceptionType().isBlank()) {
+                    recorder.addErrorPage(deployment, errorPage.getLocation(),
+                            (Class<? extends Throwable>) context.classProxy(errorPage.getExceptionType()));
+                }
+            }
+        }
         SessionConfigMetaData sessionConfig = webMetaData.getSessionConfig();
         if (sessionConfig != null) {
             if (sessionConfig.getSessionTimeoutSet()) {
@@ -672,8 +691,21 @@ public class UndertowBuildStep {
             }
         }
 
+        String scrMainJava = null;
+        List<String> knownClasses = null;
+        if (loggingDecorateBuildItem.isPresent()) {
+            scrMainJava = loggingDecorateBuildItem.get().getSrcMainJava().toString();
+            knownClasses = loggingDecorateBuildItem.get().getKnowClasses();
+        }
+
         return new ServletDeploymentManagerBuildItem(
-                recorder.bootServletContainer(deployment, bc.getValue(), launchMode.getLaunchMode(), shutdownContext));
+                recorder.bootServletContainer(deployment,
+                        bc.getValue(),
+                        launchMode.getLaunchMode(),
+                        shutdownContext,
+                        logBuildTimeConfig.decorateStacktraces(),
+                        scrMainJava,
+                        knownClasses));
 
     }
 
@@ -683,11 +715,6 @@ public class UndertowBuildStep {
             UndertowDeploymentRecorder recorder) {
         return SyntheticBeanBuildItem.configure(ServletContext.class).scope(ApplicationScoped.class)
                 .supplier(recorder.servletContextSupplier()).done();
-    }
-
-    @BuildStep
-    ConfigInjectionStaticInitBuildItem configInjectionStaticInitAnnotations() {
-        return new ConfigInjectionStaticInitBuildItem(WEB_FILTER);
     }
 
     /**

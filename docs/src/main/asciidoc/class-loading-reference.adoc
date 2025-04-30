@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
+:topics: internals,extensions
 
 This document explains the Quarkus class loading architecture. It is intended for extension
 authors and advanced users who want to understand exactly how Quarkus works.
@@ -64,14 +65,18 @@ prevent the transformation, as the loaded class is not used at runtime.
 
 == ClassLoader Implementations
 
-Quarkus has the following ClassLoaders:
+Quarkus has a number of ClassLoaders. This shows the relationship between them :
 
-Base ClassLoader:: 
+image::classloader-hierarchy.png[alt=Quarkus ClassLoader hierarchy,role="center"]
+
+Here are the roles of each ClassLoader:
+
+Base ClassLoader::
 
 This is usually the normal JVM System ClassLoader. In some environments such as Maven it may be different. This ClassLoader
 is used to load the bootstrap classes, and other ClassLoader instances will delegate the loading of JDK classes to it.
 
-Augment ClassLoader::
+Augmentation ClassLoader::
 
 This loads all the `-deployment` artifacts and their dependencies, as well as other user dependencies. It does not load the
 application root or any hot deployed code. This ClassLoader is persistent, even if the application restarts it will remain
@@ -84,7 +89,7 @@ the builder classes are isolated, which means that use cases that want to custom
 
 Deployment ClassLoader::
 
-This can load all application classes. Its parent is the Augment ClassLoader, so it can also load all deployment classes.
+This can load all application classes. Its parent is the Augmentation ClassLoader, so it can also load all deployment classes.
 
 This ClassLoader is non-persistent, it will be re-created when the application is started, and is isolated. This ClassLoader
 is the context ClassLoader that is used when running the build steps. It is also transformer safe.
@@ -92,7 +97,7 @@ is the context ClassLoader that is used when running the build steps. It is also
 Base Runtime ClassLoader::
 
 This loads all the runtime extension dependencies, as well as other user dependencies (note that this may include duplicate
-copies of classes also loaded by the Augment ClassLoader). It does not load the application root or any hot deployed
+copies of classes also loaded by the Augmentation ClassLoader). It does not load the application root or any hot deployed
 code. This ClassLoader is persistent, even if the application restarts it will remain (which is why it cannot load
 application classes that may be hot deployed). Its parent is the base ClassLoader.
 
@@ -146,7 +151,7 @@ or a `LinkageError` can occur.
         <parentFirstArtifacts>
             <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
             <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
-            <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
+            <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager</parentFirstArtifact>
             <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
             <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
         </parentFirstArtifacts>
@@ -187,7 +192,7 @@ Note that class loading config is different to normal config, in that it does no
 (as it is needed too early), so only supports `application.properties`. The following options are supported.
 
 
-include::{generated-dir}/config/quarkus-class-loading-configuration-class-loading-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.class-loading.adoc[opts=optional, leveloffset=+1]
 
 == Hiding/Removing classes and resources from dependencies
 

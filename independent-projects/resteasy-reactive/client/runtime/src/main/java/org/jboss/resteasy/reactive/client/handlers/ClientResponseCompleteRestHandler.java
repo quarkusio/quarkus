@@ -23,6 +23,7 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
@@ -38,10 +39,19 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
     public static ResponseImpl mapToResponse(RestClientRequestContext context,
             boolean parseContent)
             throws IOException {
+        ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
+        Response.StatusType statusType = new StatusTypeImpl(responseContext.getStatus(), responseContext.getReasonPhrase());
+        return mapToResponse(context, statusType, parseContent);
+    }
+
+    public static ResponseImpl mapToResponse(RestClientRequestContext context,
+            Response.StatusType effectiveResponseStatus,
+            boolean parseContent)
+            throws IOException {
         Map<Class<?>, MultipartResponseData> multipartDataMap = context.getMultipartResponsesData();
         ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
         ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
-        builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
+        builder.status(effectiveResponseStatus);
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);
         InputStream entityStream = responseContext.getEntityStream();
@@ -64,26 +74,35 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                 Object result = multipartData.newInstance();
                 builder.entity(result);
                 List<InterfaceHttpData> parts = context.getResponseMultipartParts();
-                for (FieldFiller fieldFiller : multipartData.getFieldFillers()) {
-                    InterfaceHttpData httpData = getPartForName(parts, fieldFiller.getPartName());
-                    if (httpData == null) {
+                for (InterfaceHttpData httpData : parts) {
+                    FieldFiller fieldFiller = null;
+                    // find the correct filler
+                    for (FieldFiller ff : multipartData.getFieldFillers()) {
+                        if (ff.getPartName().equals(httpData.getName())) {
+                            fieldFiller = ff;
+                            break;
+                        }
+                    }
+                    if (fieldFiller == null) {
                         continue;
-                    } else if (httpData instanceof Attribute) {
+                    }
+                    if (httpData instanceof Attribute at) {
                         // TODO: get rid of ByteArrayInputStream
                         // TODO: maybe we could extract something closer to input stream from attribute
                         ByteArrayInputStream in = new ByteArrayInputStream(
-                                ((Attribute) httpData).getValue().getBytes(StandardCharsets.UTF_8));
+                                at.getValue().getBytes(StandardCharsets.UTF_8));
                         Object fieldValue = context.readEntity(in,
                                 fieldFiller.getFieldType(),
                                 MediaType.valueOf(fieldFiller.getMediaType()),
+                                context.getMethodDeclaredAnnotationsSafe(),
                                 // FIXME: we have strings, it wants objects, perhaps there's
                                 // an Object->String conversion too many
                                 (MultivaluedMap) responseContext.getHeaders());
                         if (fieldValue != null) {
                             fieldFiller.set(result, fieldValue);
                         }
-                    } else if (httpData instanceof FileUpload) {
-                        fieldFiller.set(result, new FileDownloadImpl((FileUpload) httpData));
+                    } else if (httpData instanceof FileUpload fu) {
+                        fieldFiller.set(result, new FileDownloadImpl(fu));
                     } else {
                         throw new IllegalArgumentException("Unsupported multipart message element type. " +
                                 "Expected FileAttribute or Attribute, got: " + httpData.getClass());
@@ -104,11 +123,15 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     Object entity = context.readEntity(entityStream,
                             context.getResponseType(),
                             responseContext.getMediaType(),
+                            context.getMethodDeclaredAnnotationsSafe(),
                             // FIXME: we have strings, it wants objects, perhaps there's
                             // an Object->String conversion too many
                             (MultivaluedMap) responseContext.getHeaders());
                     if (entity != null) {
                         builder.entity(entity);
+                    }
+                    if (entity != null && !(entity instanceof InputStream)) {
+                        entityStream.close();
                     }
                 }
             }
@@ -120,12 +143,4 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
         return builder.build();
     }
 
-    private static InterfaceHttpData getPartForName(List<InterfaceHttpData> parts, String partName) {
-        for (InterfaceHttpData part : parts) {
-            if (partName.equals(part.getName())) {
-                return part;
-            }
-        }
-        return null;
-    }
 }

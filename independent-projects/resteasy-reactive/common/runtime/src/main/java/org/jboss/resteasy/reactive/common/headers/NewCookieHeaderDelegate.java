@@ -140,8 +140,21 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
             b.append(";HttpOnly");
         if (cookie.getSameSite() != null) {
             b.append(";SameSite=");
-            b.append(cookie.getSameSite());
+            appendCorrectCase(b, cookie.getSameSite());
         }
         return b.toString();
     }
+
+    private static void appendCorrectCase(final StringBuilder sb, final Enum<?> e) {
+        boolean first = true;
+        for (char c : e.name().toCharArray()) {
+            if (first) {
+                sb.append(c);
+                first = false;
+            } else {
+                sb.append(Character.toLowerCase(c));
+            }
+        }
+    }
+
 }

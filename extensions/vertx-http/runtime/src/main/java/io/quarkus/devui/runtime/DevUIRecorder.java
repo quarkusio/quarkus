@@ -25,6 +25,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
@@ -45,9 +46,16 @@ public class DevUIRecorder {
     }
 
     public void createJsonRpcRouter(BeanContainer beanContainer,
-            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
+            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
+            List<String> deploymentMethods,
+            List<String> deploymentSubscriptions,
+            Map<String, RuntimeValue> recordedValues) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.populateJsonRPCMethods(extensionMethodsMap);
+        jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
+        jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
+        if (recordedValues != null && !recordedValues.isEmpty()) {
+            jsonRpcRouter.setRecordedValues(recordedValues);
+        }
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
 
@@ -87,6 +95,10 @@ public class DevUIRecorder {
         return new DevUIBuildTimeStaticHandler(basePath, urlAndPath);
     }
 
+    public Handler<RoutingContext> endpointInfoHandler(String basePath) {
+        return new EndpointInfoHandler(basePath);
+    }
+
     public Handler<RoutingContext> vaadinRouterHandler(String basePath) {
         return new VaadinRouterHandler(basePath);
     }
@@ -96,6 +108,10 @@ public class DevUIRecorder {
     }
 
     public Handler<RoutingContext> redirect(String contextRoot) {
+        return redirect(contextRoot, null);
+    }
+
+    public Handler<RoutingContext> redirect(String contextRoot, String page) {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext rc) {
@@ -104,11 +120,19 @@ public class DevUIRecorder {
                 // However, it caused issues with browser caches and prevented users to have applications using Quarkus 2
                 // and Quarkus 3 at the same time. So, we decided to switch to FOUND (302)
                 // See https://github.com/quarkusio/quarkus/issues/33658 for more context.
+                String location = contextRoot + "dev-ui";
+                if (page != null) {
+                    location = location + "/" + page;
+                }
                 rc.response()
-                        .putHeader("Location", contextRoot + "dev-ui")
+                        .putHeader("Location", location)
                         .setStatusCode(HttpResponseStatus.FOUND.code()).end();
             }
         };
+    }
+
+    public Handler<RoutingContext> createLocalHostOnlyFilter(List<String> hosts) {
+        return new LocalHostOnlyFilter(hosts);
     }
 
     private static final class DeleteDirectoryRunnable implements Runnable {

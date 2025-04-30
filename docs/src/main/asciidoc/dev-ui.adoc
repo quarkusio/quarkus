@@ -3,408 +3,1346 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Dev UI
+= Dev UI for extension developers
 include::_attributes.adoc[]
 :categories: writing-extensions
-:summary: Learn how to get your extension contribute features to the Dev UI (v1).
+:summary: Learn how to get your extension to contribute features to the Dev UI (v2).
+:topics: dev-ui,testing
 
 [NOTE]
-.Dev UI v1
+.Dev UI v2
 ====
-This guide covers the Dev UI v1, which has been replaced in Quarkus 3 with xref:dev-ui-v2.adoc[a new Dev UI].
-You can still access the Dev UI v1 using http://localhost:8080/q/dev-v1[/q/dev-v1]
+This guide covers the Dev UI v2, which is the default from Quarkus 3 onwards.
 ====
 
 This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].
 
-Quarkus ships with a new experimental Dev UI, which is available in dev mode (when you start
-quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev-v1[/q/dev-v1] by default. It will show you something like
+Quarkus ships with a Developer UI, which is available in dev mode (when you start
+quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev-ui[/q/dev-ui] by default. It will show you something like
 this:
 
-image::dev-ui-overview.png[alt=Dev UI overview,role="center",width=90%]
+image::dev-ui-overview-v2.png[alt=Dev UI overview,role="center"]
 
-It allows you to quickly visualize all the extensions currently loaded, see their status and go directly
-to their documentation.
+It allows you to:
 
-On top of that, each extension can add:
+- quickly visualize all the extensions currently loaded
+- view extension statuses and go directly to extension documentation
+- view and change `Configuration`
+- manage and visualize `Continuous Testing`
+- view `Dev Services` information
+- view the Build information
+- view and stream various logs
 
-- <<how-can-i-make-my-extension-support-the-dev-ui,Custom useful bits of runtime information in the overview>> 
-- <<adding-full-pages,Full custom pages>>
-- <<advanced-usage-adding-actions,Interactive pages with actions>>
+Each extension used in the application will be listed. There, you can find the guides, additional information, and the applicable configuration for each extension:
 
-== How can I make my extension support the Dev UI?
+image::dev-ui-extension-card-v2.png[alt=Dev UI extension card,role="center"]
 
-In order to make your extension listed in the Dev UI you don't need to do anything!
+== Make my extension extend the Dev UI
+
+To make your extension listed in the Dev UI, you don't need to do anything!
 
 So you can always start with that :)
 
-If you want to contribute badges or links in your extension card on the Dev UI overview
-page, like this:
+Extensions can:
 
-image:dev-ui-embedded.png[alt=Dev UI embedded,role="center"]
+- <<add-links-to-an-extension-card,Add links to an extension card>>
+- <<add-full-pages,Add full custom pages>>
+- <<add-a-footer-tab,Add a footer tab>>
+- <<add-a-section-menu,Add a section menu>>
+- <<custom-cards,Create a custom card>>
 
-You have to add a file named `dev-templates/embedded.html` in your 
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`]
-extension module's resources:
+== Add links to an extension card
 
-image::dev-ui-embedded-file.png[alt=Dev UI embedded.html,align=center]
+=== External links
 
-The contents of this file will be included in your extension card, so for example we can place
-two links with some styling and icons:
+These are links that reference other (external from Dev UI) data. This data can be HTML pages, text, or other data.
 
-[source,html]
-----
-<a href="{config:http-path('quarkus.smallrye-openapi.path')}" class="badge badge-light">
-  <i class="fa fa-map-signs fa-fw"></i>
-  OpenAPI</a>
-<br>
-<a href="{config:http-path('quarkus.swagger-ui.path')}/" class="badge badge-light">
-  <i class="fa fa-map-signs fa-fw"></i>
-  Swagger UI</a>
-----
+A good example of this is the SmallRye OpenAPI extension that contains links to the generated OpenAPI schema in both JSON and YAML format, and a link to Swagger UI:
 
-TIP: We use the Font Awesome Free icon set.
+image::dev-ui-extension-openapi-v2.png[alt=Dev UI extension card,role="center"]
 
-Note how the paths are specified: `{config:http-path('quarkus.smallrye-openapi.path')}`. This is a special
-directive that the quarkus dev console understands: it will replace that value with the resolved route
-named 'quarkus.smallrye-openapi.path'.
-
-The corresponding non-application endpoint is declared using `.routeConfigKey` to associate the route with a name:
+The links to these external references are known at build time. So to get links like this on your card, you add the following Build Step in your extension:
 
 [source,java]
 ----
-    nonApplicationRootPathBuildItem.routeBuilder()
-            .route(openApiConfig.path) // <1>
-            .routeConfigKey("quarkus.smallrye-openapi.path") // <2>
-            ...
-            .build();
+@BuildStep(onlyIf = IsDevelopment.class)// <1>
+public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+
+    CardPageBuildItem cardPageBuildItem = new CardPageBuildItem(); // <2>
+
+    cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml") // <3>
+            .url(nonApplicationRootPathBuildItem.resolvePath("openapi")) // <4>
+            .isYamlContent() // <5>
+            .icon("font-awesome-solid:file-lines")); // <6>
+
+    cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json")
+            .url(nonApplicationRootPathBuildItem.resolvePath("openapi") + "?format=json")
+            .isJsonContent()
+            .icon("font-awesome-solid:file-code"));
+
+    cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
+            .url(nonApplicationRootPathBuildItem.resolvePath("swagger-ui"))
+            .isHtmlContent()
+            .icon("font-awesome-solid:signs-post"));
+
+    return cardPageBuildItem;
+}
 ----
-<1> The configured path is resolved into a valid route.
-<2> The resolved route path is then associated with the key `quarkus.smallrye-openapi.path`.
+<1> Always make sure that this build step is only run when in dev mode
+<2> To add anything on the card, you must return/produce a `CardPageBuildItem`.
+<3> To add a link, you can use the `addPage` method, as all links go to a "page". `Page` has some builders to assist with building a page. For `external` links, use the `externalPageBuilder`.
+<4> Adding the url of the external link (in this case, we use `NonApplicationRootPathBuildItem` to create this link, as this link is under the configurable non-application path, default `/q`). Always use `NonApplicationRootPathBuildItem` if your link is available under `/q`.
+<5> You can (optionally) hint the content type of the content you are navigating to. If there is no hint, a header call will be made to determine the `MediaType`;
+<6> You can add an icon. All free font-awesome icons are available.
 
-== Path considerations
+[NOTE]
+.Note about icons
 
-Paths are tricky business. Keep the following in mind:
+If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome], you can map as follow: Example `<i class="fa-solid fa-house"></i>` will map to `font-awesome-solid:house`, so `fa` becomes `font-awesome` and for the icon name, remove the `fa-`.
 
-* Assume your UI will be nested under the dev endpoint. Do not provide a way to customize this without a strong reason.
-* Never construct your own absolute paths. Adding a suffix to a known, normalized and resolved path is fine.
+==== Embedding external content
 
-Configured paths, like the `dev` endpoint used by the console or the SmallRye OpenAPI path shown in the example above,
-need to be properly resolved against both `quarkus.http.root-path` and `quarkus.http.non-application-root-path`.
-Use `NonApplicationRootPathBuildItem` or `HttpRootPathBuildItem` to construct endpoint routes and identify resolved
-path values that can then be used in templates.
+By default, even external links will render inside (embedded) in Dev UI. In the case of HTML, the page will be rendered, and any other content will be shown using https://codemirror.net/[code-mirror] to markup the media type. For example, the OpenAPI schema document in YAML format:
 
-The `{devRootAppend}` variable can also be used in templates to construct URLs for static dev console resources, for example:
+image::dev-ui-extension-openapi-embed-v2.png[alt=Dev UI embedded page,role="center"]
+
+If you do not want to embed the content, you can use the `.doNotEmbed()` on the Page Builder, this will then open the link in a new tab.
+
+==== Runtime external links
+
+The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case, you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`.
+
+==== Adding labels
+
+You can add an option label to the link in the card using one of the builder methods on the page builder. These labels can be
+
+- static (known at build time) `.staticLabel("staticLabelValue")`
+- dynamic (loaded at runtime) `.dynamicLabelJsonRPCMethodName("yourJsonRPCMethodName")`
+- streaming (continuously streaming updated values at runtime) `.streamingLabelJsonRPCMethodName("yourJsonRPCMethodName")`
+
+For dynamic and streaming labels, see the <<JsonRPC>> Section.
+
+image::dev-ui-extension-card-label-v2.png[alt=Dev UI card labels,role="center"]
+
+== Add full pages
+
+You can also link to an "internal" page (as opposed to the above "external" page). This means that you can build the page and add data and actions for rendering in Dev UI.
+
+=== Build time data
+
+To make build time data available on your full page, you can add any data to your `CardPageBuildItem` with a key and a value:
+
+[source,java]
+----
+CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+pageBuildItem.addBuildTimeData("someKey", getSomeValueObject());
+----
+
+You can add multiple of these key-value pairs for all the data you know at build time that you need on the page.
+
+There are a few options to add full page content in Dev UI. Starting from the most basic (good start) to a full blown web-component (preferred).
+
+=== Display some build time data on a screen (without having to do frontend coding):
+
+If you have some data that is known at build time that you want to display, you can use one of the following builders in `Page`:
+
+- <<raw-data,Raw data>>
+- <<table-data,Table data>>
+- <<qute-data,Qute data>>
+- <<web-component-page,Web Component page>>
+
+==== Raw data
+This will display your data in its raw (serialised) JSON value:
+
+[source,java]
+----
+cardPageBuildItem.addPage(Page.rawDataPageBuilder("Raw data") // <1>
+                .icon("font-awesome-brands:js")
+                .buildTimeDataKey("someKey")); // <2>
+----
+<1> Use the `rawDataPageBuilder`.
+<2> Link back to the key used when you added the build time data in `addBuildTimeData` on the Page BuildItem.
+
+That will create a link to a page that renders the raw data in JSON:
+
+image::dev-ui-raw-page-v2.png[alt=Dev UI raw page,role="center"]
+
+==== Table data
+
+You can also display your Build time data in a table if the structure allows it:
+
+[source,java]
+----
+cardPageBuildItem.addPage(Page.tableDataPageBuilder("Table data") // <1>
+                .icon("font-awesome-solid:table")
+                .showColumn("timestamp") // <2>
+                .showColumn("user") // <2>
+                .showColumn("fullJoke") // <2>
+                .buildTimeDataKey("someKey")); // <3>
+----
+<1> Use the `tableDataPageBuilder`.
+<2> Optionally only show certain fields.
+<3> Link back to the key used when you added the build time data in `addBuildTimeData` on the Page BuildItem.
+
+That will create a link to a page that renders the data in a table:
+
+image::dev-ui-table-page-v2.png[alt=Dev UI table page,role="center"]
+
+==== Qute data
+
+You can also display your build time data using a qute template. All build time data keys are available to use in the template:
+
+[source,java]
+----
+cardPageBuildItem.addPage(Page.quteDataPageBuilder("Qute data") // <1>
+                .icon("font-awesome-solid:q")
+                .templateLink("qute-jokes-template.html")); // <2>
+----
+<1> Use the `quteDataPageBuilder`.
+<2> Link to the Qute template in `/deployment/src/main/resources/dev-ui/`.
+
+Use any Qute template to display the data, for example, `qute-jokes-template.html`:
 
 [source,html]
 ----
-<img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+<table>
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Joke</th>
+        </tr>
+    </thead>
+    <tbody>
+        {#for joke in jokes} // <1>
+        <tr>
+            <td>{joke.timestamp}</td>
+            <td><span><img src="{joke.profilePic}" height="30px"></img> {joke.user}</span></td>
+            <td>{joke.fullJoke}</td>
+        </tr>
+        {/for}
+    </tbody>
+</table>
 ----
+<1> `jokes` added as a build time data key on the Page Build Item.
 
-Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
-for details on how the non-application root path is configured.
+==== Web component page
 
-== Template and styling support
+To build an interactive page with actions and runtime (or build time) data, you must use the web component page:
 
-Both the `embedded.html` files and any full page you add in `/dev-templates` will be interpreted by
-xref:qute.adoc[the Qute template engine].
-
-This also means that you can xref:qute-reference.adoc#user_tags[add custom Qute tags] in 
-`/dev-templates/tags` for your templates to use.
-
-The style system currently in use is https://getbootstrap.com/docs/4.6/getting-started/introduction/[Bootstrap V4 (4.6.0)]
-but note that this might change in the future.
-
-The main template also includes https://jquery.com/[jQuery 3.5.1], but here again this might change.
-
-=== Accessing Config Properties
-
-A `config:property(name)` expression can be used to output the config value for the given property name.
-The property name can be either a string literal or obtained dynamically by another expression.
-For example `{config:property('quarkus.lambda.handler')}` and `{config:property(foo.propertyName)}`.
-
-Reminder: do not use this to retrieve raw configured path values. As shown above, use `{config:http-path(...)}` with
-a known route configuration key when working with resource paths.
-
-== Adding full pages
-
-To add full pages for your Dev UI extension such as this one:
-
-image::dev-ui-page.png[alt=Dev UI custom page,align=center,width=90%]
-
-You need to place them in your extension's 
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module's 
-`/dev-templates` resource folder, like this page for the xref:cache.adoc[`quarkus-cache` extension]:
-
-[[action-example]]
 [source,java]
 ----
-{#include main}// <1>
-    {#style}// <2>
-        .custom {
-            color: gray;
+cardPageBuildItem.addPage(Page.webComponentPageBuilder() // <1>
+                    .icon("font-awesome-solid:egg")
+                    .componentLink("qwc-arc-beans.js") // <2>
+                    .staticLabel(String.valueOf(beans.size())));
+----
+<1> Use the `webComponentPageBuilder`.
+<2> Link to the Web Component in `/deployment/src/main/resources/dev-ui/`. The title can also be defined (using `.title("My title")` in the builder), but if not, the title will be assumed from the componentLink, which should always have the format `qwc` (stands for Quarkus Web Component) dash `extensionName` (example, `arc` in this case ) dash `page title` ("Beans" in this case)
+
+Dev UI uses https://lit.dev/[Lit] to make building these web components easier. You can read more about Web Components and Lit:
+
+- https://www.webcomponents.org/introduction[Web components Getting started]
+- https://lit.dev/docs/[Lit documentation]
+
+===== Basic structure of a Web component page
+
+A Web component page is just a JavaScript Class that creates a new HTML Element:
+
+[source,javascript]
+----
+import { LitElement, html, css} from 'lit'; // <1>
+import { beans } from 'build-time-data'; // <2>
+
+/**
+ * This component shows the Arc Beans
+ */
+export class QwcArcBeans extends LitElement { // <3>
+
+    static styles = css` // <4>
+        .annotation {
+          color: var(--lumo-contrast-50pct); // <5>
         }
-    {/style}
-    {#script} // <3>
-     $(document).ready(function(){
-        $(function () {
-          $('[data-toggle="tooltip"]').tooltip()
+
+        .producer {
+          color: var(--lumo-primary-text-color);
+        }
+        `;
+
+    static properties = {
+        _beans: {state: true}, // <6>
+    };
+
+    constructor() { // <7>
+        super();
+        this._beans = beans;
+    }
+
+    render() { // <8>
+        if (this._beans) {
+            return html`<ul>
+                ${this._beans.map((bean) => // <9>
+                    html`<li>${bean.providerType.name}</li>`
+                )}</ul>`;
+        } else {
+            return html`No beans found`;
+        }
+    }
+}
+customElements.define('qwc-arc-beans', QwcArcBeans); // <10>
+----
+
+<1> You can import Classes and/or functions from other libraries.
+In this case, we use the `LitElement` class and `html` & `css` functions from `Lit`
+<2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
+<3> The component should be named in the following format: Qwc (stands for Quarkus Web Component), then Extension Name, then Page Title, all concatenated with Camel Case. This will also match the file name format as described earlier. The component should also extend `LitComponent`.
+<4> CSS styles can be added using the `css` function, and these styles only apply to your component.
+<5> Styles can reference globally defined CSS variables to make sure your page renders correctly, especially when switching between light and dark mode. You can find all CSS variables in the Vaadin documentation (https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/color[Color], https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/size-space[Sizing and Spacing], etc.)
+<6> Properties can be added. Use `_` in front of a property if that property is private. Properties are usually injected in the HTML template, and can be defined as having state, meaning that if that property changes, the component should re-render. In this case, the beans are Build time data and only change on hot-reload, which will be covered later.
+<7> Constructors (optional) should always call `super` first and then set the default values for the properties.
+<8> The render method (from `LitElement`) will be called to render the page. In this method, you return the markup of the page you want. You can use the `html` function from `Lit`, which gives you a template language to output the HTML you want. Once the template is created, you must only set or change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
+<9> You can use the built-in template functions to do conditional, list, etc. Read more about https://lit.dev/docs/templates/overview/[Lit Templates]
+<10> You must always register your Web component as a custom element, with a unique tag. Here, the tag will follow the same format as the filename (`qwc` dash `extension name` dash `page title` );
+
+===== Using Vaadin UI components for rendering
+
+Dev UI makes extensive usage of https://vaadin.com/docs/latest/components[Vaadin web components] as UI Building blocks.
+
+As an example, the Arc Beans are rendered using a https://vaadin.com/docs/latest/components/grid[Vaadin Grid]:
+
+[source,javascript]
+----
+import { LitElement, html, css} from 'lit';
+import { beans } from 'build-time-data';
+import '@vaadin/grid'; // <1>
+import { columnBodyRenderer } from '@vaadin/grid/lit.js'; // <2>
+import '@vaadin/vertical-layout';
+import '@qomponent/qui-badge'; // <3>
+
+/**
+ * This component shows the Arc Beans
+ */
+export class QwcArcBeans extends LitElement {
+
+    static styles = css`
+        .arctable {
+          height: 100%;
+          padding-bottom: 10px;
+        }
+
+        code {
+          font-size: 85%;
+        }
+
+        .annotation {
+          color: var(--lumo-contrast-50pct);
+        }
+
+        .producer {
+          color: var(--lumo-primary-text-color);
+        }
+        `;
+
+    static properties = {
+        _beans: {state: true},
+    };
+
+    constructor() {
+        super();
+        this._beans = beans;
+    }
+
+    render() {
+        if (this._beans) {
+
+            return html`
+                <vaadin-grid .items="${this._beans}" class="arctable" theme="no-border">
+                    <vaadin-grid-column auto-width
+                        header="Bean"
+                        ${columnBodyRenderer(this._beanRenderer, [])}
+                        resizable>
+                    </vaadin-grid-column>
+
+                    <vaadin-grid-column auto-width
+                        header="Kind"
+                        ${columnBodyRenderer(this._kindRenderer, [])}
+                        resizable>
+                    </vaadin-grid-column>
+
+                    <vaadin-grid-column auto-width
+                        header="Associated Interceptors"
+                        ${columnBodyRenderer(this._interceptorsRenderer, [])}
+                        resizable>
+                    </vaadin-grid-column>
+                </vaadin-grid>`;
+
+        } else {
+            return html`No beans found`;
+        }
+    }
+
+    _beanRenderer(bean) {
+        return html`<vaadin-vertical-layout>
+      <code class="annotation">@${bean.scope.simpleName}</code>
+      ${bean.nonDefaultQualifiers.map(qualifier =>
+            html`${this._qualifierRenderer(qualifier)}`
+        )}
+      <code>${bean.providerType.name}</code>
+      </vaadin-vertical-layout>`;
+    }
+
+    _kindRenderer(bean) {
+      return html`
+        <vaadin-vertical-layout>
+          ${this._kindBadgeRenderer(bean)}
+          ${this._kindClassRenderer(bean)}
+        </vaadin-vertical-layout>
+    `;
+    }
+
+    _kindBadgeRenderer(bean){
+      let kind = this._camelize(bean.kind);
+      let level = null;
+
+      if(bean.kind.toLowerCase() === "field"){
+        kind = "Producer field";
+        level = "success";
+      }else if(bean.kind.toLowerCase() === "method"){
+          kind = "Producer method";
+          level = "success";
+      }else if(bean.kind.toLowerCase() === "synthetic"){
+        level = "contrast";
+      }
+
+      return html`
+        ${level
+          ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>`
+          : html`<qui-badge small><span>${kind}</span></qui-badge>`
+        }`;
+    }
+
+    _kindClassRenderer(bean){
+      return html`
+          ${bean.declaringClass
+            ? html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+            : html`<code class="producer">${bean.memberName}</code>`
+          }
+      `;
+    }
+
+    _interceptorsRenderer(bean) {
+        if (bean.interceptors && bean.interceptors.length > 0) {
+            return html`<vaadin-vertical-layout>
+                          ${bean.interceptorInfos.map(interceptor =>
+                              html`<div>
+                                    <code>${interceptor.interceptorClass.name}</code>
+                                    <qui-badge class="${bean.kind.toLowerCase()}" small pill><span>${interceptor.priority}</span></qui-badge>
+                                  </div>`
+                          )}
+                        </vaadin-vertical-layout>`;
+        }
+    }
+
+    _qualifierRenderer(qualifier) {
+        return html`<code class="annotation">${qualifier.simpleName}</code>`;
+    }
+
+    _camelize(str) {
+        return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function (match, index) {
+            if (+match === 0)
+                return "";
+            return index === 0 ? match.toUpperCase() : match.toLowerCase();
+        });
+    }
+}
+customElements.define('qwc-arc-beans', QwcArcBeans);
+----
+<1> Import the Vaadin component you want to use
+<2> You can also import other functions if needed
+<3> You can also use any component in the Qomponent library, described below
+
+===== Qomponent
+
+We also include all components from the https://github.com/qomponent[Qomponent] library
+
+- https://www.npmjs.com/package/@qomponent/qui-card[Card]
+- https://www.npmjs.com/package/@qomponent/qui-badge[Badge]
+- https://www.npmjs.com/package/@qomponent/qui-alert[Alert]
+- https://www.npmjs.com/package/@qomponent/qui-code-block[Code block]
+
+====== Card
+
+Card component to display contents in a card
+
+[source,javascript]
+----
+import '@qomponent/qui-card';
+----
+
+[source,html]
+----
+    <qui-card header="Small">
+        <div slot="content">
+            <div class="cardcontents">
+                <span>Hello</span>
+            </div>
+        </div>
+    </qui-card>
+----
+
+====== Badge
+
+Badge UI Component based on the https://vaadin.com/docs/latest/components/badge[vaadin themed] badge
+
+image::dev-ui-qui-badge-v2.png[alt=Dev UI Badge,role="center"]
+
+[source,javascript]
+----
+import '@qomponent/qui-badge';
+----
+
+You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast`, or set your own colors.
+
+[source,html]
+----
+<div class="cards">
+    <h3>Tiny</h3>
+    <div class="card">
+        <qui-badge tiny><span>Default</span></qui-badge>
+        <qui-badge level="success" tiny><span>Success</span></qui-badge>
+        <qui-badge level="warning" tiny><span>Warning</span></qui-badge>
+        <qui-badge level="error" tiny><span>Error</span></qui-badge>
+        <qui-badge level="contrast" tiny><span>Contrast</span></qui-badge>
+        <qui-badge background="pink" color="purple" tiny><span>Custom colors</span></qui-badge>
+    </div>
+
+    <h3>Small</h3>
+    <div class="card">
+        <qui-badge small><span>Default</span></qui-badge>
+        <qui-badge level="success" small><span>Success</span></qui-badge>
+        <qui-badge level="warning" small><span>Warning</span></qui-badge>
+        <qui-badge level="error" small><span>Error</span></qui-badge>
+        <qui-badge level="contrast" small><span>Contrast</span></qui-badge>
+        <qui-badge background="pink" color="purple" small><span>Custom colors</span></qui-badge>
+    </div>
+    
+    <h3>Primary</h3>
+    <div class="card">
+        <qui-badge primary><span>Default primary</span></qui-badge>
+        <qui-badge level="success" primary><span>Success primary</span></qui-badge>
+        <qui-badge level="warning" primary><span>Warning primary</span></qui-badge>
+        <qui-badge level="error" primary><span>Error primary</span></qui-badge>
+        <qui-badge level="contrast" primary><span>Contrast primary</span></qui-badge>
+        <qui-badge background="pink" color="purple" primary><span>Custom colors</span></qui-badge>
+    </div>
+
+    <h3>Pill</h3>
+    <div class="card">
+        <qui-badge pill><span>Default pill</span></qui-badge>
+        <qui-badge level="success" pill><span>Success pill</span></qui-badge>
+        <qui-badge level="warning" pill><span>Warning pill</span></qui-badge>
+        <qui-badge level="error" pill><span>Error pill</span></qui-badge>
+        <qui-badge level="contrast" pill><span>Contrast pill</span></qui-badge>
+        <qui-badge background="pink" color="purple" pill><span>Custom colors</span></qui-badge>
+    </div>       
+    
+    <h3>With Icon</h3>
+    <div class="card">
+        <qui-badge text="Default" icon="circle-info">
+            <span>Default icon</span>
+        </qui-badge>
+        <qui-badge text="Success" level="success" icon="circle-check">
+            <span>Success icon</span>
+        </qui-badge>
+        <qui-badge text="Warning" level="warning" icon="warning">
+            <span>Warning icon</span>
+        </qui-badge>
+        <qui-badge text="Error" level="error" icon="circle-exclamation">
+            <span>Error icon</span>
+        </qui-badge>
+        <qui-badge text="Contrast" level="contrast" icon="adjust">
+            <span>Contrast icon</span>
+        </qui-badge>
+        <qui-badge text="Custom" background="pink" color="purple" icon="flag-checkered">
+            <span>Custom colors</span>
+        </qui-badge>
+    </div>
+
+    <h3>Icon only</h3>
+    <div class="card">
+        <qui-badge icon="circle-info"></qui-badge>
+        <qui-badge level="success" icon="circle-check"></qui-badge>
+        <qui-badge level="warning" icon="warning"></qui-badge>
+        <qui-badge level="error" icon="circle-exclamation"></qui-badge>
+        <qui-badge level="contrast" icon="adjust"></qui-badge>
+        <qui-badge level="contrast" background="pink" color="purple" icon="flag-checkered"></qui-badge>
+    </div>
+
+    <h3>Clickable</h3>
+    <div class="card">
+        <qui-badge clickable><span>Default</span></qui-badge>
+        <qui-badge clickable level="success"><span>Success</span></qui-badge>
+        <qui-badge clickable level="warning"><span>Warning</span></qui-badge>
+        <qui-badge clickable level="error"><span>Error</span></qui-badge>
+        <qui-badge clickable level="contrast"><span>Contrast</span></qui-badge>
+        <qui-badge clickable background="pink" color="purple"><span>Custom colors</span></qui-badge>
+    </div>
+    
+</div>
+----
+
+====== Alert
+
+Alerts are modeled around the Bootstrap alerts. Click https://getbootstrap.com/docs/4.0/components/alerts[here] for more info.
+
+Also, see the Notification controller below as an alternative.
+
+image::dev-ui-qui-alert-v2.png[alt=Dev UI Alert,role="center"]
+
+[source,javascript]
+----
+import '@qomponent/qui-alert';
+----
+
+[source,html]
+----
+<qui-alert><span>Info alert</span></qui-alert>
+<qui-alert level="success"><span>Success alert</span></qui-alert>
+<qui-alert level="warning"><span>Warning alert</span></qui-alert>
+<qui-alert level="error"><span>Error alert</span></qui-alert>
+
+<qui-alert permanent><span>Permanent Info alert</span></qui-alert>
+<qui-alert level="success" permanent><span>Permanent Success alert</span></qui-alert>
+<qui-alert level="warning" permanent><span>Permanent Warning alert</span></qui-alert>
+<qui-alert level="error" permanent><span>Permanent Error alert</span></qui-alert>
+
+<qui-alert center><span>Center Info alert</span></qui-alert>
+<qui-alert level="success" center><span>Center Success alert</span></qui-alert>
+<qui-alert level="warning" center><span>Center Warning alert</span></qui-alert>
+<qui-alert level="error" center><span>Center Error alert</span></qui-alert>
+
+<qui-alert showIcon><span>Info alert with icon</span></qui-alert>
+<qui-alert level="success" showIcon><span>Success alert with icon</span></qui-alert>
+<qui-alert level="warning" showIcon><span>Warning alert with icon</span></qui-alert>
+<qui-alert level="error" showIcon><span>Error alert with icon</span></qui-alert>
+
+<qui-alert icon="vaadin:flag-checkered"><span>Info alert with custom icon</span></qui-alert>
+<qui-alert level="success" icon="vaadin:flag-checkered"><span>Success alert with custom icon</span></qui-alert>
+<qui-alert level="warning" icon="vaadin:flag-checkered"><span>Warning alert with custom icon</span></qui-alert>
+<qui-alert level="error" icon="vaadin:flag-checkered"><span>Error alert with custom icon</span></qui-alert>
+
+<qui-alert size="small" showIcon><span>Small Info alert with icon</span></qui-alert>
+<qui-alert level="success" size="small" showIcon><span>Small Success alert with icon</span></qui-alert>
+<qui-alert level="warning" size="small" showIcon><span>Small Warning alert with icon</span></qui-alert>
+<qui-alert level="error" size="small" showIcon><span>Small Error alert with icon</span></qui-alert>
+
+<qui-alert showIcon><span>Info <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="success" showIcon><span>Success <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="warning" showIcon><span>Warning <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="error" showIcon><span>Error <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+
+<qui-alert showIcon primary><span>Primary Info alert with icon</span></qui-alert>
+<qui-alert level="success" showIcon primary><span>Primary Success alert with icon</span></qui-alert>
+<qui-alert level="warning" showIcon primary><span>Primary Warning alert with icon</span></qui-alert>
+<qui-alert level="error" showIcon primary><span>Primary Error alert with icon</span></qui-alert>
+
+<qui-alert title="Information"><span>Info alert with title</span></qui-alert>
+<qui-alert title="Well done" level="success"><span>Success alert with title</span></qui-alert>
+<qui-alert title="Beware" level="warning"><span>Warning alert with title</span></qui-alert>
+<qui-alert title="Ka-boom" level="error"><span>Error alert with title</span></qui-alert>
+
+<qui-alert title="Information" showIcon><span>Info alert with title and icon</span></qui-alert>
+<qui-alert title="Well done" level="success" showIcon><span>Success alert with title and icon</span></qui-alert>
+<qui-alert title="Beware" level="warning" showIcon><span>Warning alert with title and icon</span></qui-alert>
+<qui-alert title="Ka-boom" level="error" showIcon><span>Error alert with title and icon</span></qui-alert>
+----
+
+====== Code block
+
+Display a code block. This component is aware of the theme and will use the correct codemirror theme to match the light/dark mode.
+
+
+image::dev-ui-qui-code-block-v2.png[alt=Dev UI Code Block,role="center"]
+
+[source,javascript]
+----
+import '@qomponent/qui-code-block';
+----
+
+[source,html]
+----
+<qui-code-block mode="properties">
+    <slot>
+        foo = bar
+    </slot>
+</qui-code-block>
+----
+
+Or fetching the contents from a URL:
+
+[source,html]
+----
+<div class="codeBlock">
+    <qui-code-block
+        mode='${this._mode}'
+        src='${this._externalUrl}'>
+    </qui-code-block>
+</div>
+----
+
+To make sure that the code block adopt the correct code-mirror theme (based on the current one in Dev UI), you can do the following:
+
+[source,javascript]
+----
+import { observeState } from 'lit-element-state'; 
+import { themeState } from 'theme-state';
+----
+
+Then change the `extends` to observe state:
+
+[source,javascript]
+----
+extends observeState(LitElement) {
+----
+
+Now you can get the current theme, so add the `theme` property to your code block, example:
+
+[source,html]
+----
+<div class="codeBlock">
+    <qui-code-block
+        mode='${this._mode}'
+        src='${this._externalUrl}'
+        theme='${themeState.theme.name}'>
+    </qui-code-block>
+</div>
+----
+
+Modes:
+ - properties
+ - js
+ - java
+ - xml
+ - json
+ - yaml
+ - sql
+ - html
+ - css
+ - sass
+ - markdown
+
+==== Internal components
+
+===== IDE link
+
+Creates a link to a resource (like a Java source file) that can be opened in the user's IDE (if we could detect the IDE).
+
+[source,javascript]
+----
+import 'qui-ide-link';
+----
+
+[source,html]
+----
+<qui-ide-link title='Source full class name'
+                        class='text-source'
+                        fileName='${sourceClassNameFull}'
+                        lineNumber='${sourceLineNumber}'>[${sourceClassNameFull}]</qui-ide-link>;
+----
+
+https://github.com/quarkusio/quarkus/blob/582f1f78806d2268885faea7aa8f5a4d2b3f5b98/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js#L315[Example code]
+
+===== Using internal controllers
+
+Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller[internal controllers] are available to make certain things easier:
+
+- Notifier
+- Storage
+- Log
+- Router
+- <<JsonRPC>>
+
+====== Notifier
+
+This is an easy way to show a toast message. The toast can be placed on the screen (default left bottom) and can have a level (Info, Success, Warning, Error). Any of the levels can also be primary, which will create a more prominent toast message.
+
+See the source of this controller https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/notifier.js[here].
+
+Example usage:
+
+image::dev-ui-controller-notifier.gif[alt=Dev UI Notifier,role="center"]
+
+[source,javascript]
+----
+import { notifier } from 'notifier';
+----
+
+[source,html]
+----
+<a @click=${() => this._info()}>Info</a>;
+----
+
+[source,javascript]
+----
+_info(position = null){
+    notifier.showInfoMessage("This is an information message", position);
+}
+----
+
+You can find all the valid positions https://vaadin.com/docs/latest/components/notification/#position[here].
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
+
+====== Storage
+
+An easy way to access the local storage in a safe way. This will store values in the local storage, which is scoped for your extension. This way, you do not have to worry that you might clash with another extension.
+
+Local storage is useful to remember user preferences or state. For example, the footer remembers the state (open/close) and the size when open of the bottom drawer.
+
+[source,javascript]
+----
+import { StorageController } from 'storage-controller';
+
+// ...
+
+storageControl = new StorageController(this); // Passing in this will scope the storage to your extension
+
+// ...
+
+const storedHeight = this.storageControl.get("height"); // Get some value
+
+// ...
+
+this.storageControl.set('height', 123); // Set some val
+----
+
+https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
+
+
+====== Log
+
+The log controller is used to add control buttons to a (footer) log.
+See <<Add a footer tab>>.
+
+image::dev-ui-log-control-v2.png[alt=Dev UI Log control,role="center"]
+
+[source,javascript]
+----
+import { LogController } from 'log-controller';
+
+// ...
+
+logControl = new LogController(this); // Passing in this will scope the control to your extension
+
+// ...
+this.logControl
+                .addToggle("On/off switch", true, (e) => {
+                    this._toggleOnOffClicked(e);
+                }).addItem("Log levels", "font-awesome-solid:layer-group", "var(--lumo-tertiary-text-color)", (e) => {
+                    this._logLevels();
+                }).addItem("Columns", "font-awesome-solid:table-columns", "var(--lumo-tertiary-text-color)", (e) => {
+                    this._columns();
+                }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "var(--lumo-tertiary-text-color)", (e) => {
+                    this._zoomOut();
+                }).addItem("Zoom in", "font-awesome-solid:magnifying-glass-plus", "var(--lumo-tertiary-text-color)", (e) => {
+                    this._zoomIn();
+                }).addItem("Clear", "font-awesome-solid:trash-can", "var(--lumo-error-color)", (e) => {
+                    this._clearLog();
+                }).addFollow("Follow log", true , (e) => {
+                    this._toggleFollowLog(e);
+                }).done();
+----
+
+https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js[Example code]
+
+====== Router
+
+The router is mostly used internally. This uses https://github.com/vaadin/router[Vaadin Router] under the covers to route URLs to the correct page/section within the SPA. It will update the navigation and allow history (back button). This also creates the sub-menu available on extensions that have multiple pages.
+
+See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
+
+[[JsonRPC]]
+== Communicating to the backend 
+
+=== JsonRPC against the Runtime classpath
+
+You can fetch or stream runtime data (rather than <<Build time data>> discussed earlier) or execute methods against the runtime classpath (as opposed to deployment classpath). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
+
+*Java part*
+
+This code is responsible for making data available to display on the UI.
+
+You must register the `JsonPRCService` in your processor in the deployment module:
+
+[source,java]
+----
+@BuildStep
+JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <1>
+    return new JsonRPCProvidersBuildItem(CacheJsonRPCService.class);// <2>
+}
+----
+<1> Produce or return a `JsonRPCProvidersBuildItem`
+<2> Define the class in your runtime module that will contain methods that make data available in the UI
+
+https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/java/io/quarkus/cache/deployment/devui/CacheDevUiProcessor.java[Example code]
+
+Now, in your Runtime module, create the JsonRPC Service. This class will default to an application-scoped bean, except if you explicitly scope the bean. All public methods that return something will be made available to call from the Web component Javascript.
+
+The return object in these methods can be:
+
+- primitives or `String`,
+- `io.vertx.core.json.JsonArray`
+- `io.vertx.core.json.JsonObject`
+- any other POJO that can be serializable to JSON
+
+All of the above can be blocking (POJO) or nonblocking (`@NonBlocking` or `Uni`). Alternatively, data can be streamed using `Multi`.
+
+[source,java]
+----
+@NonBlocking // <1>
+public JsonArray getAll() { // <2>
+    Collection<String> names = manager.getCacheNames();
+    List<CaffeineCache> allCaches = new ArrayList<>(names.size());
+    for (String name : names) {
+        Optional<Cache> cache = manager.getCache(name);
+        if (cache.isPresent() && cache.get() instanceof CaffeineCache) {
+            allCaches.add((CaffeineCache) cache.get());
+        }
+    }
+    allCaches.sort(Comparator.comparing(CaffeineCache::getName));
+
+    var array = new JsonArray();
+    for (CaffeineCache cc : allCaches) {
+        array.add(getJsonRepresentationForCache(cc));
+    }
+    return array;
+}
+----
+<1> This example runs nonblocking. We could also return `Uni<JsonArray>`
+<2> The method name `getAll` will be available in the Javascript
+
+https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devui/CacheJsonRPCService.java[Example code]
+
+*Webcomponent (Javascript) part*
+
+Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in your JsonRPC Service)
+
+[source,javascript]
+----
+import { JsonRpc } from 'jsonrpc';
+
+// ...
+
+jsonRpc = new JsonRpc(this); // Passing in this will scope the RPC calls to your extension
+
+// ...
+
+/**
+  * Called when displayed
+  */
+connectedCallback() {
+    super.connectedCallback();
+    this.jsonRpc.getAll().then(jsonRpcResponse => { // <1>
+        this._caches = new Map();
+        jsonRpcResponse.result.forEach(c => { //<2>
+            this._caches.set(c.name, c);
         });
     });
-    {/script}
-    {#title}Cache{/title}// <4>
-    {#body}// <5>
-        <table class="table table-striped custom">
-            <thead class="thead-dark">
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Size</th>
-                </tr>
-            </thead>
-            <tbody>
-                {#for cacheInfo in info:cacheInfos}// <6>
-                    <tr>
-                        <td>
-                            {cacheInfo.name}
-                        </td>
-                        <td>
-                            <form method="post"// <7> 
-                                  enctype="application/x-www-form-urlencoded">
-                                <label class="form-check-label" for="clear">
-                                    {cacheInfo.size}
-                                </label>
-                                <input type="hidden" name="name" value="{cacheInfo.name}">
-                                <input id="clear" type="submit" 
-                                       class="btn btn-primary btn-sm" value="Clear" >
-                            </form>
-                        </td>
-                    </tr>
-                {/for}
-            </tbody>
-        </table>
-    {/body}
-{/include}
-----
-<1> In order to benefit from the same style as other Dev UI pages, extend the `main` template
-<2> You can pass extra CSS for your page in the `style` template parameter
-<3> You can pass extra JavaScript for your page in the `script` template parameter. This will be added inline after the JQuery script, so you can safely use JQuery in your script.
-<4> Don't forget to set your page title in the `title` template parameter
-<5> The `body` template parameter will contain your content
-<6> In order for your template to read custom information from your Quarkus extension, you can use
-    the `info` xref:qute-reference.adoc#namespace_extension_methods[namespace].
-<7> This shows an <<advanced-usage-adding-actions,interactive page>>
-
-== Linking to your full-page templates
-
-Full-page templates for extensions live under a pre-defined `{devRootAppend}/{groupId}.{artifactId}/` directory
-that is referenced using the `urlbase` template parameter. Using configuration defaults, that would resolve to
-`/q/dev-v1/io.quarkus.quarkus-cache/`, as an example.
-
-Use the `{urlbase}` template parameter to reference this folder in `embedded.html`:
-
-[source,html]
-----
-<a href="{urlbase}/caches" class="badge badge-light">// <1>
-  <i class="fa ..."></i>
-  Caches <span class="badge badge-light">{info:cacheInfos.size()}</span></a>
-----
-<1> Use the `urlbase` template parameter to reference full-page templates for your extension
-
-== Passing information to your templates
-
-In `embedded.html` or in full-page templates, you will likely want to display information that is
-available from your extension.
-
-There are two ways to make that information available, depending on whether it is available at
-build time or at run time.
-
-In both cases we advise that you add support for the Dev UI in your `{pkg}.deployment.devconsole`
-package in a `DevConsoleProcessor` class (in your extension's 
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module).
-
-=== Passing run-time information
-
-[source,java]
-----
-package io.quarkus.cache.deployment.devconsole;
-
-import io.quarkus.cache.runtime.CaffeineCacheSupplier;
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-
-public class DevConsoleProcessor {
-
-    @BuildStep(onlyIf = IsDevelopment.class)// <1>
-    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("cacheInfos",
-                      new CaffeineCacheSupplier());// <2>
-    }
-}
-----
-<1> Don't forget to make this xref:building-my-first-extension.adoc#deploying-the-greeting-feature[build step]
-    conditional on being in dev mode
-<2> Declare a run-time dev `info:cacheInfos` template value
-
-This will map the `info:cacheInfos` value to this supplier in your extension's 
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`runtime module`]:
-
-[source,java]
-----
-package io.quarkus.cache.runtime;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Supplier;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.cache.CaffeineCache;
-
-public class CaffeineCacheSupplier implements Supplier<Collection<CaffeineCache>> {
-
-    @Override
-    public List<CaffeineCache> get() {
-        List<CaffeineCache> allCaches = new ArrayList<>(allCaches());
-        allCaches.sort(Comparator.comparing(CaffeineCache::getName));
-        return allCaches;
-    }
-
-    public static Collection<CaffeineCache> allCaches() {
-        // Get it from ArC at run-time
-        return (Collection<CaffeineCache>) (Collection) 
-            Arc.container().instance(CacheManagerImpl.class).get().getAllCaches();
-    }
 }
 ----
 
-=== Passing build-time information
+<1> Note the method `getAll` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
+<2> In this case, the result is an array, so we can loop over it.
 
-Sometimes you only need build-time information to be passed to your template, so you can do it like this:
+JsonArray (or any Java collection), either blocking or nonblocking, will return an array; otherwise, a JsonObject will be returned.
+
+https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/resources/dev-ui/qwc-cache-caches.js[Example code]
+
+You can also pass in parameters in the method being called, for example:
+(In the Runtime Java code)
 
 [source,java]
 ----
-package io.quarkus.qute.deployment.devconsole;
+public Uni<JsonObject> clear(String name) { //<1>
+    Optional<Cache> cache = manager.getCache(name);
+    if (cache.isPresent()) {
+        return cache.get().invalidateAll().map((t) -> getJsonRepresentationForCache(cache.get()));
+    } else {
+        return Uni.createFrom().item(new JsonObject().put("name", name).put("size", -1));
+    }
+}
+----
+<1> The clear method takes one parameter called `name`
 
-import java.util.List;
+In the Webcomponent (Javascript):
 
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
-import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
+[source,javascript]
+----
+_clear(name) {
+    this.jsonRpc.clear({name: name}).then(jsonRpcResponse => { //<1>
+        this._updateCache(jsonRpcResponse.result)
+    });
+}
+----
+<1> The `name` parameter is passed in.
 
-public class DevConsoleProcessor {
+==== Streaming data
 
+You can keep a UI screen updated with the latest data by continuously streaming data to the screen. This can be done with `Multi` (Java side) and `Observer` (Javascript side)
+
+Java side of streaming data:
+
+[source,java]
+----
+public class JokesJsonRPCService {
+
+    private final BroadcastProcessor<Joke> jokeStream = BroadcastProcessor.create();
+
+    @PostConstruct
+    void init() {
+        Multi.createFrom().ticks().every(Duration.ofHours(4)).subscribe().with((item) -> {
+            jokeStream.onNext(getJoke());
+        });
+    }
+
+    public Multi<Joke> streamJokes() { // <1>
+        return jokeStream;
+    }
+
+    // ...
+}
+----
+<1> Return the Multi that will stream jokes
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java#L37[Example code]
+
+Javascript side of streaming data:
+
+[source,javascript]
+----
+this._observer = this.jsonRpc.streamJokes().onNext(jsonRpcResponse => { //<1>
+    this._addToJokes(jsonRpcResponse.result);
+    this._numberOfJokes = this._numberOfJokes++;
+});
+
+// ...
+
+this._observer.cancel(); //<2>
+----
+<1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event.
+<2> Make sure to keep an instance of the observer to cancel later if needed.
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
+
+=== JsonRpc against the deployment classpath
+
+In certain cases you might need to execute methods and/or get data against the deployment classpath. This also happens over JsonRPC communication, but in this case you do not create a JsonRPC Service in the runtime module,
+you can just supply the code to be run in a supplier in the deployment module. To do this you will produce a `BuildTimeActionBuildItem`, example:
+
+[source,java]
+----
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleTemplateInfoBuildItem collectBeanInfo(
-            List<CheckedTemplateBuildItem> checkedTemplates,// <1>
-            TemplateVariantsBuildItem variants) {
-        DevQuteInfos quteInfos = new DevQuteInfos();
-        for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-            DevQuteTemplateInfo templateInfo = 
-                new DevQuteTemplateInfo(checkedTemplate.templateId,
-                    variants.getVariants().get(checkedTemplate.templateId),
-                    checkedTemplate.bindings);
-            quteInfos.addQuteTemplateInfo(templateInfo);
-        }
-        return new DevConsoleTemplateInfoBuildItem("devQuteInfos", quteInfos);// <2>
-    }
-
-}
-----
-<1> Use whatever dependencies you need as input
-<2> Declare a build-time `info:devQuteInfos` DEV template value
-
-== Advanced usage: adding actions
-
-You can also add actions to your Dev UI templates:
-
-image::dev-ui-interactive.png[alt=Dev UI interactive page,align=center,width=90%]
-
-This can be done by adding another xref:building-my-first-extension.adoc#deploying-the-greeting-feature[build step] to
-declare the action in your extension's
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module:
-
-
-[source,java]
-----
-package io.quarkus.cache.deployment.devconsole;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
-import io.quarkus.cache.runtime.devconsole.CacheDevConsoleRecorder;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-
-public class DevConsoleProcessor {
-
-    @BuildStep
-    @Record(value = STATIC_INIT, optional = true)// <1>
-    DevConsoleRouteBuildItem invokeEndpoint(CacheDevConsoleRecorder recorder) {
-        return new DevConsoleRouteBuildItem("caches", "POST",
-                                            recorder.clearCacheHandler());// <2>
-    }
-}
-----
-<1> Mark the recorder as optional, so it will only be invoked when in dev mode
-<2> Declare a `POST {urlbase}/caches` route handled by the given handler
-
-
-Note: you can see <<action-example,how to invoke this action from your full page>>.
-
-Now all you have to do is implement the recorder in your extension's 
-xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`runtime module`]:
-
-
-[source,java]
-----
-package io.quarkus.cache.runtime.devconsole;
-
-import io.quarkus.cache.CaffeineCache;
-import io.quarkus.cache.runtime.CaffeineCacheSupplier;
-import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil.FlashMessageStatus;
-import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
-import io.vertx.ext.web.RoutingContext;
-
-@Recorder
-public class CacheDevConsoleRecorder {
-
-    public Handler<RoutingContext> clearCacheHandler() {
-        return new DevConsolePostHandler() {// <1>
-            @Override
-            protected void handlePost(RoutingContext event, MultiMap form) // <2> 
-              throws Exception {
-                String cacheName = form.get("name");
-                for (CaffeineCache cache : CaffeineCacheSupplier.allCaches()) {
-                    if (cache.getName().equals(cacheName)) {
-                        cache.invalidateAll();
-                        flashMessage(event, "Cache for " + cacheName + " cleared");// <3>
-                        return;
-                    }
+    BuildTimeActionBuildItem createBuildTimeActions() { //<1>
+        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem();//<2>
+        generateManifestActions.addAction("generateManifests", ignored -> { //<3>
+            try {
+                List<Manifest> manifests = holder.getManifests();
+                // Avoid relying on databind.
+                Map<String, String> map = new LinkedHashMap<>();
+                for (Manifest manifest : manifests) {
+                    map.put(manifest.getName(), manifest.getContent());
                 }
-                flashMessage(event, "Cache for " + cacheName + " not found", 
-                             FlashMessageStatus.ERROR);// <4>
+                return map;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        };
+        });
+
+        return generateManifestActions;
+    }
+----
+<1> Return or use a BuildProducer to create a `BuildTimeActionBuildItem`
+<2> `BuildTimeActionBuildItem` is automatically scoped with your extension namespace
+<3> Here we add an action, that is the same as a request-response method. The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`. 
+
+You can also return a `CompletableFuture`/`CompletionStage` as an action, and if you want to stream data you need to use `addSubscription` (rather than `addAction`) and return a `Flow.Publisher`.
+
+=== Dev UI Log
+
+When running a local application using the `999-SNAPSHOT` version, the Dev UI will show a `Dev UI` Log in the footer. This is useful for debugging all JSON RPC messages flowing between the browser and the Quarkus app.
+
+image::dev-ui-jsonrpc-log-v2.png[alt=Dev UI Json RPC Log,role="center"]
+
+== Hot reload
+
+You can update a screen automatically when a hot reload happens. To do this, replace the `LitElement` that your Webcomponent extends with `QwcHotReloadElement`.
+
+`QwcHotReloadElement` extends `LitElement`, so your component is still a Lit Element.
+
+When extending a `QwcHotReloadElement`, you have to use the `hotReload` method. (You must also still provide the `render` method from Lit)
+
+[source,javascript]
+----
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+
+// ...
+
+export class QwcMyExtensionPage extends QwcHotReloadElement {
+
+    render(){
+        // ...
+    }
+
+    hotReload(){
+        // ..
+    }
+
+}
+----
+
+== Custom cards
+
+You can customize the card that is being displayed on the extension page if you do not want to use the default built-in card.
+
+To do this, you must provide a Webcomponent that will be loaded in the place of the provided card and register this in the Java Processor:
+
+[source,java]
+----
+cardPageBuildItem.setCustomCard("qwc-mycustom-card.js");
+----
+
+On the Javascript side, you have access to all the pages (in case you want to create links)
+
+[source,javascript]
+----
+import { pages } from 'build-time-data';
+----
+
+And the following properties will be passed in:
+
+- extensionName
+- description
+- guide
+- namespace
+
+[source,javascript]
+----
+static properties = {
+    extensionName: {type: String},
+    description: {type: String},
+    guide: {type: String},
+    namespace: {type: String}
+}
+----
+
+== State (advance)
+
+State allows properties to contain state and can be reused globally. An example of state properties is the theme, the connection state (if we are connected to the backend), etc.
+
+See the https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state[current built-in] state objects.
+
+The state in Dev UI uses https://github.com/gitaarik/lit-state[LitState]. You can read more about it in their https://gitaarik.github.io/lit-state/build/[documentation].
+
+
+== Add a footer tab
+
+Apart from adding a card and a page, extensions can add a tab to the footer. This is useful for things that are happening continuously. A page will lose connection to the backend when navigating away from that page, and a log in the footer will be permanently connected.
+
+Adding something to the footer works exactly like adding a Card, except you use a `FooterPageBuildItem` rather than a `CardPageBuildItem`.
+
+[source,java]
+----
+FooterPageBuildItem footerPageBuildItem = new FooterPageBuildItem();
+
+footerPageBuildItem.addPage(Page.webComponentPageBuilder()
+        .icon("font-awesome-regular:face-grin-tongue-wink")
+        .title("Joke Log")
+        .componentLink("qwc-jokes-log.js"));
+
+footerProducer.produce(footerPageBuildItem);
+----
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/java/io/quarkus/jokes/deployment/devui/JokesDevUIProcessor.java#L87[Example code]
+
+In your Webcomponent, you can then stream the log to the UI:
+
+[source,javascript]
+----
+export class QwcJokesLog extends LitElement {
+    jsonRpc = new JsonRpc(this);
+    logControl = new LogController(this);
+
+    // ....
+}
+----
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-log.js[Example code]
+
+=== Add a log to the footer
+
+There is an easy way to add a log stream to the footer, without having to create the above mentioned footer. 
+If you just want to stream a log to a tab you can just produce a `FooterLogBuildItem`. This way you only provide a name and a `Flow.Publisher<String>` for your log.
+
+Here is an example from the Dev Services deployment module:
+
+[source,java]
+----
+@BuildStep(onlyIf = { IsDevelopment.class })
+public List<DevServiceDescriptionBuildItem> config(
+        // ...
+        BuildProducer<FooterLogBuildItem> footerLogProducer){
+
+        // ...
+
+    // Dev UI Log stream
+    for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
+        if (service.getContainerInfo() != null) {
+            footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
+                return createLogPublisher(service.getContainerInfo().getId());
+            }));
+        }
+    }
+}
+
+// ...
+
+private Flow.Publisher<String> createLogPublisher(String containerId) {
+    try (FrameConsumerResultCallback resultCallback = new FrameConsumerResultCallback()) {
+        SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
+        resultCallback.addConsumer(OutputFrame.OutputType.STDERR,
+                frame -> publisher.submit(frame.getUtf8String()));
+        resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
+                frame -> publisher.submit(frame.getUtf8String()));
+        LogContainerCmd logCmd = DockerClientFactory.lazyClient()
+                .logContainerCmd(containerId)
+                .withFollowStream(true)
+                .withTailAll()
+                .withStdErr(true)
+                .withStdOut(true);
+        logCmd.exec(resultCallback);
+
+        return publisher;
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+
+----
+
+
+
+== Add a section menu
+
+This allows an extension to link a page directly in the section Menu.
+
+Adding something to the section menu works exactly like adding a Card, except you use a `MenuPageBuildItem` rather than a `CardPageBuildItem`.
+
+[source,java]
+----
+MenuPageBuildItem menuPageBuildItem = new MenuPageBuildItem();
+
+menuPageBuildItem.addPage(Page.webComponentPageBuilder()
+        .icon("font-awesome-regular:face-grin-tongue-wink")
+        .title("One Joke")
+        .componentLink("qwc-jokes-menu.js"));
+
+menuProducer.produce(menuPageBuildItem);
+----
+
+https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/java/io/quarkus/jokes/deployment/devui/JokesDevUIProcessor.java#LL71C16-L71C16[Example code]
+
+Your page can be any Page similar to Cards.
+
+== Testing
+
+You can add tests to your extension that test:
+
+- Build time data
+- Runtime data via JsonRPC
+
+You must add this to your pom:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This will give you access to two base classes for creating these tests.
+
+=== Testing Build time data
+
+If you added Build time data, for example:
+
+[source,java]
+----
+cardPageBuildItem.addBuildTimeData("somekey", somevalue);
+----
+
+To test that your build time data is generated correctly, you can add a test that extends `DevUIBuildTimeDataTest`.
+
+[source,java]
+----
+public class SomeTest extends DevUIBuildTimeDataTest {
+
+    @RegisterExtension
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
+
+    public SomeTest() {
+        super("io.quarkus.my-extension");
+    }
+
+    @Test
+    public void testSomekey() throws Exception {
+        JsonNode somekeyResponse = super.getBuildTimeData("somekey");
+        Assertions.assertNotNull(somekeyResponse);
+
+        // Check more values on somekeyResponse
+    }
+
+}
+----
+
+=== Testing Runtime data
+
+If you added a JsonRPC Service with runtime data responses, for example:
+
+[source,java]
+----
+public boolean updateProperties(String content, String type) {
+    // ...
+}
+----
+
+To test that `updateProperties` executes correctly via JsonRPC, you can add a test that extends `DevUIJsonRPCTest`.
+
+[source,java]
+----
+public class SomeTest extends DevUIJsonRPCTest {
+
+    @RegisterExtension
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
+
+    public SomeTest() {
+        super("io.quarkus.my-extension");
+    }
+
+    @Test
+    public void testUpdateProperties() throws Exception {
+
+        JsonNode updatePropertyResponse = super.executeJsonRPCMethod("updateProperty",
+                Map.of(
+                        "name", "quarkus.application.name",
+                        "value", "changedByTest"));
+        Assertions.assertTrue(updatePropertyResponse.asBoolean());
+
+        // Get the properties to make sure it is changed
+        JsonNode allPropertiesResponse = super.executeJsonRPCMethod("getAllValues");
+        String applicationName = allPropertiesResponse.get("quarkus.application.name").asText();
+        Assertions.assertEquals("changedByTest", applicationName);
     }
 }
 ----
-<1> While you can use https://vertx.io/docs/vertx-web/java/#_routing_by_http_method[any Vert.x handler], 
-    the `DevConsolePostHandler` superclass will handle your POST actions
-    nicely, and auto-redirect to the `GET` URI right after your `POST` for optimal behavior.
-<2> You can get the Vert.x `RoutingContext` as well as the `form` contents
-<3> Don't forget to add a message for the user to let them know everything went fine
-<4> You can also add error messages
-
-
-NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
-users:
-
-image::dev-ui-message.png[alt=Dev UI message,align=center,width=90%]
-

@@ -10,7 +10,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
  */
 public class HibernateSearchEnabled implements BooleanSupplier {
 
-    private final HibernateSearchElasticsearchBuildTimeConfig config;
+    protected final HibernateSearchElasticsearchBuildTimeConfig config;
 
     HibernateSearchEnabled(HibernateSearchElasticsearchBuildTimeConfig config) {
         this.config = config;

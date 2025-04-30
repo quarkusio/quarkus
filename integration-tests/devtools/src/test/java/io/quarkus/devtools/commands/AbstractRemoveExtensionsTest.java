@@ -76,17 +76,16 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
         Assertions.assertTrue(result2.getBooleanValue(RemoveExtensions.OUTCOME_UPDATED));
 
         final T project = readProject();
-        hasNoDependency(project, "quarkus-smallrye-reactive-messaging");
+        hasNoDependency(project, "quarkus-messaging");
         hasNoDependency(project, "quarkus-smallrye-reactive-streams-operators");
-        hasNoDependency(project, "quarkus-smallrye-opentracing");
         hasNoDependency(project, "quarkus-smallrye-metrics");
-        hasNoDependency(project, "quarkus-smallrye-reactive-messaging-kafka");
+        hasNoDependency(project, "quarkus-messaging-kafka");
         hasNoDependency(project, "quarkus-smallrye-health");
         hasNoDependency(project, "quarkus-smallrye-openapi");
         hasNoDependency(project, "quarkus-smallrye-jwt");
         hasNoDependency(project, "quarkus-smallrye-context-propagation");
         hasNoDependency(project, "quarkus-smallrye-reactive-type-converters");
-        hasNoDependency(project, "quarkus-smallrye-reactive-messaging-amqp");
+        hasNoDependency(project, "quarkus-messaging-amqp");
         hasNoDependency(project, "quarkus-smallrye-fault-tolerance");
     }
 

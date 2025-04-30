@@ -5,6 +5,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class Booleans {
@@ -22,20 +26,28 @@ public final class Booleans {
     public static boolean isFalsy(Object value) {
         if (value == null || Results.isNotFound(value)) {
             return true;
-        } else if (value instanceof Boolean) {
-            return !(Boolean) value;
-        } else if (value instanceof AtomicBoolean) {
-            return !((AtomicBoolean) value).get();
-        } else if (value instanceof Collection) {
-            return ((Collection<?>) value).isEmpty();
-        } else if (value instanceof Map) {
-            return ((Map<?, ?>) value).isEmpty();
+        } else if (value instanceof Boolean bool) {
+            return !bool;
+        } else if (value instanceof AtomicBoolean atomicBool) {
+            return !atomicBool.get();
+        } else if (value instanceof Collection col) {
+            return col.isEmpty();
+        } else if (value instanceof Map map) {
+            return map.isEmpty();
         } else if (value.getClass().isArray()) {
             return Array.getLength(value) == 0;
-        } else if (value instanceof CharSequence) {
-            return ((CharSequence) value).length() == 0;
-        } else if (value instanceof Number) {
-            return isZero((Number) value);
+        } else if (value instanceof CharSequence cs) {
+            return cs.length() == 0;
+        } else if (value instanceof Number num) {
+            return isZero(num);
+        } else if (value instanceof Optional opt) {
+            return opt.isEmpty();
+        } else if (value instanceof OptionalInt opt) {
+            return opt.isEmpty();
+        } else if (value instanceof OptionalLong opt) {
+            return opt.isEmpty();
+        } else if (value instanceof OptionalDouble opt) {
+            return opt.isEmpty();
         }
         return false;
     }

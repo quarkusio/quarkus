@@ -6,9 +6,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithName;
 
 public class SslProcessor {
 
@@ -16,18 +17,22 @@ public class SslProcessor {
 
     SslConfig ssl;
 
+    /**
+     * SSL
+     */
+    @ConfigMapping(prefix = "quarkus.ssl")
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-    static class SslConfig {
+    interface SslConfig {
         /**
          * Enable native SSL support.
          */
-        @ConfigItem(name = "native")
-        Optional<Boolean> native_;
+        @WithName("native")
+        Optional<Boolean> native_();
     }
 
     @BuildStep
     SslNativeConfigBuildItem setupNativeSsl() {
-        return new SslNativeConfigBuildItem(ssl.native_);
+        return new SslNativeConfigBuildItem(ssl.native_());
     }
 
     @BuildStep

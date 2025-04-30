@@ -16,7 +16,7 @@
     <properties>
         <segment.analytics.version>3.3.1</segment.analytics.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <wiremock-jre8.version>2.35.0</wiremock-jre8.version>
+        <wiremock.version>3.13.0</wiremock.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
     </properties>
 
@@ -45,9 +45,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
-            <version>${wiremock-jre8.version}</version>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -67,6 +67,25 @@
             <version>${system-stubs-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <!-- we run the analytics test with CI to false as otherwise analytics are disabled-->
+                        <CI>false</CI>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

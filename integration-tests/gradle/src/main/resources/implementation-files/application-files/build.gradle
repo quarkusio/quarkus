@@ -1,4 +1,4 @@
-import io.quarkus.gradle.tasks.QuarkusGenerateCode
+import io.quarkus.gradle.tasks.QuarkusApplicationModelTask
 
 plugins {
     id 'io.quarkus'
@@ -8,4 +8,4 @@ dependencies {
     implementation files("../common/build/libs/common.jar")
 }
 
-tasks.withType(QuarkusGenerateCode).configureEach { t -> t.dependsOn(project(":common").tasks.named("jar")) }
+tasks.withType(QuarkusApplicationModelTask).configureEach { t -> t.dependsOn(project(":common").tasks.named("jar")) }

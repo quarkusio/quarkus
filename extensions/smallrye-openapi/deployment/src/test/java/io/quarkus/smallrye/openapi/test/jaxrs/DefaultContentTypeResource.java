@@ -10,6 +10,12 @@ import jakarta.ws.rs.core.MediaType;
 public class DefaultContentTypeResource {
 
     @GET
+    @Path("/foo")
+    public String foo() {
+        return "bar";
+    }
+
+    @GET
     @Path("/hello")
     public Greeting hello() {
         return new Greeting("Hello there");

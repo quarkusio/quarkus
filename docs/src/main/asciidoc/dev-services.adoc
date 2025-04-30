@@ -6,42 +6,74 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services Overview
 include::_attributes.adoc[]
 :categories: core
-:summary: A list of all extensions that support Dev Services and their configuration options.
+:summary: An introduction to Dev Services and a list of all extensions that support Dev Services and their configuration options.
+:topics: dev-services,dev-mode,testing
+
+== What Are Dev Services?
 
 Quarkus supports the automatic provisioning of unconfigured services in development and test mode. We refer to this capability
-as Dev Services. From a developer's perspective this means that if you include an extension and don't configure it then
+as Dev Services. If you include an extension and don't configure it then
 Quarkus will automatically start the relevant service (usually using https://www.testcontainers.org/[Testcontainers] behind the scenes) and wire up your
 application to use this service.
+
+For a tutorial showing how to get started writing an application with persistence and Dev Services, see xref:getting-started-dev-services.adoc[Your Second Quarkus Application].
+
+
+== Using Dev Services
+
+Dev Services are designed to be frictionless, so they will be automatically started any time you include an extension which supports
+Dev Services, as long as you don't configure a connection to an external service.
+
+NOTE: In order to use most Dev Services you will need a working container environment (remote environments are supported).
+If you don't have a container environment, such as Docker or Podman, installed you will need to configure your services normally.
+
+The default startup timeout for Dev Services is 60s, if this is not enough you can increase it with the `quarkus.devservices.timeout` property.
+
+To configure a production service but continue to use Dev Services in development and test modes, use xref:config-reference.adoc#default-profiles[configuration profiles].
+
+For example,
+
+[source, properties]
+----
+# configure your datasource
+%prod.quarkus.datasource.db-kind = postgresql
+%prod.quarkus.datasource.username = prod-admin
+%prod.quarkus.datasource.password = super-secret
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
+----
+
+== Disabling Dev Services
 
 All this functionality is part of the Quarkus `deployment` modules, so does not affect the production application in any
 way. If you want to disable all Dev Services you can use the `quarkus.devservices.enabled=false` config property, although
 in most cases this is not necessary as simply configuring the service will result in the Dev Service being disabled automatically.
 
-Note that the default startup timeout is 60s, if this is not enough you can increase it with the `quarkus.devservices.timeout` property.
+== Compose Dev Services
+
+xref:compose-dev-services.adoc[Quarkus Compose Dev Services] allows you to define custom dev services using the https://compose-spec.io/[Compose specification].
 
 
-This page lists all the Dev Services that Quarkus supports.
+== Platform Dev Services
 
-NOTE: In order to use Dev Services you will generally need a working Docker environment (remote environments are supported).
-If you don't have Docker installed you will need to configure your services normally.
+This section lists all the Dev Services available in the Quarkus Platform.
 
-== AMQP
+=== AMQP
 
-The AMQP Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-amqp` extension is present in your application, and
+The AMQP Dev Service will be enabled when the `quarkus-messaging-amqp` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:amqp-dev-services.adoc[AMQP Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp-config-group-amqp-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-amqp_quarkus.amqp.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Apicurio Registry
+=== Apicurio Registry
 
 The Apicurio Dev Service will be enabled when the `quarkus-apicurio-registry-avro` extension is present in your application, and it's
 address has not been explicitly configured. More information can be found in the
 xref:apicurio-registry-dev-services.adoc[Apicurio Registry Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-devservice-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-schema-registry-devservice_quarkus.apicurio-registry.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Databases
+=== Databases
 
 The database Dev Services will be enabled when a reactive or JDBC datasource extension is present in the application,
 and the database URL has not been configured. More information can be found in the
@@ -57,80 +89,112 @@ after each run, and can be reused.
 
 N.B. if you opt in for this feature, Quarkus will not reset the state of the database between runs unless you explicitly configure it to.
 
-include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-datasource_quarkus.datasource.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Kafka
+=== Kafka
 
 The Kafka Dev Service will be enabled when the `quarkus-kafka-client` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:kafka-dev-services.adoc[Kafka Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-kafka-client-config-group-kafka-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kafka-client_quarkus.kafka.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Keycloak
+=== Keycloak
 
 The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
 xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
 
-== Kubernetes
+=== Kubernetes
 
-The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and 
+The Kubernetes Dev Service will be enabled when the `kubernetes-client` extension is present in your application, and
 the API server address has not been explicitly configured. More information can be found in the
 xref:kubernetes-dev-services.adoc[Kubernetes Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-kubernetes-client-config-group-kubernetes-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-client_quarkus.kubernetes-client.devservices.adoc[opts=optional, leveloffset=+1]
 
-== MongoDB
+=== MongoDB
 
 The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
-xref:mongodb.adoc#dev-services[MongoDB Guide].
+xref:mongodb-dev-services.adoc[MongoDB Guide].
 
-include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]
 
-== RabbitMQ
+=== RabbitMQ
 
-The RabbitMQ Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-rabbitmq` extension is present in your application, and
+The RabbitMQ Dev Service will be enabled when the `quarkus-messaging-rabbitmq` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-rabbitmq_quarkus.rabbitmq.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Redis
+=== Pulsar
+
+The Pulsar Dev Service will be enabled when the `quarkus-messaging-pulsar` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:pulsar-dev-services.adoc[Pulsar Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-messaging-pulsar_quarkus.pulsar.devservices.adoc[opts=optional, leveloffset=+1]
+
+=== Redis
 
 The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
 xref:redis-dev-services.adoc[Redis Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-client_quarkus.redis.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Vault
+=== Vault
 
 The Vault Dev Service will be enabled when the `quarkus-vault` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
 link:{vault-guide}#dev-services[Vault Guide].
 
-== Neo4j
-
-The Neo4j Dev Service will be enabled when the `quarkus-neo4j` extension is present in your application, and
-the server address has not been explicitly configured. More information can be found in the
-link:{neo4j-guide}#dev-services[Neo4j Guide].
-
-== Infinispan
+=== Infinispan
 
 The Infinispan Dev Service will be enabled when the `quarkus-infinispan-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
 xref:infinispan-dev-services.adoc[Infinispan Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-infinispan-client_quarkus.infinispan-client.devservices.adoc[opts=optional, leveloffset=+1]
 
-== Elasticsearch
+=== Elasticsearch
 
 The Elasticsearch Dev Service will be enabled when one of the Elasticsearch based extensions (Elasticsearch client or Hibernate Search ORM Elasticsearch)
 is present in your application, and the server address has not been explicitly configured.
 More information can be found in the xref:elasticsearch-dev-services.adoc[Elasticsearch Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client_quarkus.elasticsearch.devservices.adoc[opts=optional, leveloffset=+1]
+
+=== Observability
+
+The Observability Dev Services will be enabled when the `quarkus-observability-devservices` extension is present in your application, and
+there is at least one dev resource on the classpath. More information can be found in the
+xref:observability-devservices.adoc[Observability Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-observability-devservices.adoc[opts=optional, leveloffset=+1]
+
+== Dev Services beyond the Quarkus Platform
+
+Many Quarkiverse extensions which are not in the Quarkus Platform also offer Dev Services.
+
+Here are some highlights.
+
+=== Neo4j
+
+The Neo4j Dev Service will be enabled when the `quarkus-neo4j` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+link:{neo4j-guide}#dev-services[Neo4j Guide].
+
+=== WireMock
+
+The WireMock extension starts WireMock as a Dev Service. It is a test-focussed extension, designed to run in dev and test mode only.
+More information can be found in the https://docs.quarkiverse.io/quarkus-wiremock/dev/index.html[WireMock Guide].
+
+=== Microcks
+
+The Microcks Quarkus extension includes a Microcks Dev Service. The Dev Service manages mocks for dependencies and contract-testing your API endpoints.
+See the extension https://github.com/microcks/microcks-quarkus[README.md] for more information.

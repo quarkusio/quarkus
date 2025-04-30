@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Infinispan is an in memory distributed data store and cache server that offers flexible deployment options and robust capabilities for storing, managing, and processing data.
+:topics: data,infinispan
+:extensions: io.quarkus:quarkus-infinispan-client
 
 Infinispan is a distributed, in-memory key/value store that provides Quarkus applications with a highly configurable
 and independently scalable data layer.
@@ -52,7 +54,7 @@ You need at least one running instance of the Infinispan Server.
 
 .Development mode
 
-If you are running a Docker instance, you can use link:infinispan-dev-services.adoc[Infinispan Dev Services]
+If you are running a Docker instance, you can use xref:infinispan-dev-services.adoc[Infinispan Dev Services]
 and connect without configuration.
 
 If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan]
@@ -93,22 +95,17 @@ quarkus.infinispan-client.hosts=localhost:11222 <1>
 
 quarkus.infinispan-client.username=admin <2>
 quarkus.infinispan-client.password=password <3>
-
-quarkus.infinispan-client.client-intelligence=BASIC <4>
 ----
-<1> Sets Infinispan Server address list, separated with commas
+<1> Sets Infinispan Server address list, separated with semicolons
 <2> Sets the authentication username
 <3> Sets the authentication password
-<4> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac.
 
 Alternatively, you can use uri connection by providing a single connection property
 [source,properties]
 ----
 quarkus.infinispan-client.uri=hotrod://admin:password@localhost:11222 <1>
-quarkus.infinispan-client.client-intelligence=BASIC <2>
 ----
 <1> Sets Infinispan URI connection. The following properties will be ignored: hosts, username and password.
-<2> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac
 
 [TIP]
 ====
@@ -124,17 +121,15 @@ clusters.
 
 [source,properties]
 ----
-quarkus.infinispan-client.hosts=host1:11222,host2:3122 <1>
+quarkus.infinispan-client.hosts=host1:11222;host2:3122 <1>
 quarkus.infinispan-client.username=admin
 quarkus.infinispan-client.password=password
-quarkus.infinispan-client.backup-cluster.nyc-site.hosts=nyc1:11222,nyc2:21222,nyc3:31222 <2>
-quarkus.infinispan-client.backup-cluster.nyc-site.client-intelligence=BASIC <3>
-quarkus.infinispan-client.backup-cluster.lon-site.hosts=lon1:11222,lon2:21222,lon3:31222 <4>
+quarkus.infinispan-client.backup-cluster.nyc-site.hosts=nyc1:11222;nyc2:21222;nyc3:31222 <2>
+quarkus.infinispan-client.backup-cluster.lon-site.hosts=lon1:11222;lon2:21222;lon3:31222 <3>
 ----
-<1> Sets Infinispan Server address list, separated with commas. This is the default cluster.
+<1> Sets Infinispan Server address list, separated with semicolons. This is the default cluster.
 <2> Configures a backup site 'nyc-site' with the provided address list
-<3> Configures a backup site 'nyc-site' with the provided client intelligence
-<4> Configures an additional backup site 'lon-site' with the provided address list
+<3> Configures an additional backup site 'lon-site' with the provided address list
 
 Based on the provided configuration, in the event of the default cluster becoming unavailable, the client will
 seamlessly transition to one of the accessible backup clusters.
@@ -157,6 +152,12 @@ public class InfinispanExample {
 <1> The client connects to the 'nyc-site'.
 <2> The client connects to the 'lon-site'.
 <3> The client connects to the default site.
+
+By default, Protobuf Schemas will also be uploaded to the backup clusters. However, it might be required to handle
+the registration manually as a schema may evolve over time when used in production, so you can
+disable this from occurring in each backup site by configuring the
+`quarkus.infinispan-client.backup-cluster.YOUR_SITE_NAME.use-schema-registration` to `false`.
+The value of this property will be ignored if the `use-schema-registration` global property is `false`.
 
 [NOTE]
 ====
@@ -277,6 +278,7 @@ distributedCache:
 
 You can use the following authentication mechanisms with the Infinispan client:
 
+* DIGEST-SHA-512 (default)
 * DIGEST-MD5
 * PLAIN (recommended only in combination with TLS encryption)
 * EXTERNAL
@@ -296,36 +298,19 @@ some additional steps that are detailed here. Let's say we have the following us
 .Author.java
 [source,java]
 ----
-public class Author {
-   private final String name;
-   private final String surname;
-
-   public Author(String name, String surname) {
-      this.name = Objects.requireNonNull(name);
-      this.surname = Objects.requireNonNull(surname);
-   }
-   // Getter/Setter/equals/hashCode/toString omitted
+public record Author(String name, String surname) {
 }
 ----
 
 .Book.java
 [source,java]
 ----
-public class Book {
-   private final String title;
-   private final String description;
-   private final int publicationYear;
-   private final Set<Author> authors;
-   private final BigDecimal price;
-
-   public Book(String title, String description, int publicationYear, Set<Author> authors, BigDecimal price) {
-      this.title = Objects.requireNonNull(title);
-      this.description = Objects.requireNonNull(description);
-      this.publicationYear = publicationYear;
-      this.authors = Objects.requireNonNull(authors);
-      this.price = price;
-   }
-   // Getter/Setter/equals/hashCode/toString omitted
+public record Book(String title,
+                   String description,
+                   int publicationYear,
+                   Set<Author> authors,
+                   Type bookType,
+                   BigDecimal price) {
 }
 ----
 
@@ -351,57 +336,43 @@ Here is an example of how the preceding classes should be changed:
 .Author.java
 [source,java]
 ----
-    @ProtoFactory
-    public Author(String name, String surname) {
-        this.name = Objects.requireNonNull(name);
-        this.surname = Objects.requireNonNull(surname);
-    }
-
-    @ProtoField(number = 1)
-    public String getName() {
-        return name;
-    }
-
-    @ProtoField(number = 2)
-    public String getSurname() {
-        return surname;
-    }
+@Proto //<1>
+public record Author(String name, String surname) { //<2>
+}
 ----
+<1> Since Protostream 5.0, a single annotation is needed to generate a default mapping
+<2> Since Protostream 5.0, records are supported
+
+.Type.java
+[source,java]
+----
+@Proto
+public enum Type { //<1>
+    FANTASY,
+    PROGRAMMING
+}
+----
+<1> Enums are supported
 
 .Book.java
 [source,java]
 ----
-    @ProtoFactory
-    public Book(String title, String description, int publicationYear, Set<Author> authors) {
-        this.title = Objects.requireNonNull(title);
-        this.description = Objects.requireNonNull(description);
-        this.publicationYear = publicationYear;
-        this.authors = Objects.requireNonNull(authors);
-    }
-
-    @ProtoField(number = 1)
-    public String getTitle() {
-        return title;
-    }
-
-    @ProtoField(number = 2)
-    public String getDescription() {
-        return description;
-    }
-
-    @ProtoField(number = 3, defaultValue = "-1")
-    public int getPublicationYear() {
-        return publicationYear;
-    }
-
-    @ProtoField(number = 4)
-    public Set<Author> getAuthors() {
-        return authors;
-    }
+@Proto
+@Indexed // <1>
+public record Book(@Text String title, //<2>
+                   @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed", norms = false) //<3>
+                   String description,
+                   int publicationYear,
+                   Set<Author> authors, // <4>
+                   Type bookType,
+                   BigDecimal price) { // <5>
+}
 ----
-
-If your classes have only mutable fields, then the `ProtoFactory` annotation
-is not required, assuming your class has a no arg constructor.
+<1> Indicates that the entity will be indexed. Necessary to perform distributed full-text query operations.
+<2> Indicates the `title` should be indexed as text
+<3> Indicates the `description` field field should be indexed as a Keyword.
+<4> Collections are supported
+<5> Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
 
 Then all that is required is a very simple `GeneratedSchema` interface with an annotation
 on it to specify configuration settings
@@ -410,23 +381,24 @@ on it to specify configuration settings
 [source,java]
 ----
 import org.infinispan.protostream.GeneratedSchema;
-import org.infinispan.protostream.annotations.AutoProtoSchemaBuilder;
+import org.infinispan.protostream.annotations.ProtoSchema;
 import org.infinispan.protostream.types.java.math.BigDecimalAdapter;
 
-@AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
+@ProtoSchema(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
 interface BookStoreSchema extends GeneratedSchema {
 }
 ----
 
 [TIP]
 ====
-Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
+You can use the `basePackages` property to scan a full package containing your classes.
+You can override the default marshalling by using the `@Protofield` annotation.
 ====
 
 So in this case we will automatically generate the marshaller and schemas for the included classes and
 place them in the schema package automatically. The package does not have to be provided, but if you use Infinispan search capabilities, you must know the generated package.
 
-NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `AutoProtoSchemaBuilder` annotation. Setting either attributes causes native runtime errors.
+NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `ProtoSchema` annotation. Setting either attributes causes native runtime errors.
 
 === Custom serialization
 
@@ -450,7 +422,7 @@ message Book {
   required string description = 2;
   required int32 publicationYear = 3; // no native Date type available in Protobuf
   repeated Author authors = 4;
-  requited double price = 5; // no native BigDecimal type available in Protobuf
+  requited double price = 5; // no native BigDecimal type available in Protobuf but you can use the adapter
 }
 
 message Author {
@@ -461,29 +433,25 @@ message Author {
 . In Code
  +
 Or you can define the proto schema directly in user code by defining a produced bean of type
-`org.infinispan.protostream.FileDescriptorSource`.
+`org.infinispan.protostream.schema.Schema`.
 +
 [source,java]
 ----
    @Produces
-   FileDescriptorSource bookProtoDefinition() {
-      return FileDescriptorSource.fromString("library.proto", "package book_sample;\n" +
-            "\n" +
-            "message Book {\n" +
-            "  required string title = 1;\n" +
-            "  required string description = 2;\n" +
-            "  required int32 publicationYear = 3; // no native Date type available in Protobuf\n" +
-            "\n" +
-            "  repeated Author authors = 4;\n" +
-            "\n" +
-            "  required double price = 5; // no native BigDecimal type available in Protobuf\n" +
-            "}\n" +
-            "\n" +
-            "message Author {\n" +
-            "  required string name = 1;\n" +
-            "  required string surname = 2;\n" +
-            "}");
-   }
+   Schema bookSchema() {
+        return new Schema.Builder("book.proto")
+                .packageName("book_sample")
+                .addMessage("Author")
+                     .addField(Type.Scalar.STRING, "name", 1)
+                     .addField(Type.Scalar.STRING, "surname", 2)
+                .addMessage("Book")
+                     .addField(Type.Scalar.STRING, "title", 1)
+                     .addField(Type.Scalar.STRING, "description", 2)
+                     .addField(Type.Scalar.INT32, "publicationYear", 3)
+                     .addRepeatedField(Type.create("Author"), "author", 4)
+                     .addField(Type.Scalar.DOUBLE, "price", 5)
+                .build();
+    }
 ----
 User Marshaller::
 The last thing to do is to provide a `org.infinispan.protostream.MessageMarshaller` implementation
@@ -604,8 +572,7 @@ the field, constructor or method. In the below code we utilize field and constru
 If you notice the `RemoteCache` declaration has an additional annotation named `Remote`.
 This is a *qualifier* annotation allowing you to specify which named cache that will be injected. This
 annotation is not required and if it is not supplied, the default cache will be injected.
-The RemoteCacheManager bean scope is `@ApplicationScope`.
-The RemoteCache bean scope is `@Singleton`.
+The RemoteCacheManager and RemoteCache bean scope is `@ApplicationScoped`.
 
 For non default connections, combine the qualifier `@InfinispanClientName` and `@Remote`.
 
@@ -625,6 +592,62 @@ For non default connections, combine the qualifier `@InfinispanClientName` and `
 
 
 NOTE: Other types may be supported for injection, please see other sections for more information
+
+=== Mock Support
+Quarkus supports the use of mock objects using two different approaches. You can either use CDI alternatives to
+mock out a bean for all test classes, or use `QuarkusMock` to mock out beans on a per test basis.
+Check the xref:getting-started-testing.adoc[Getting started with testing guide] for more information.
+
+RemoteCacheManager and RemoteCache can be mocked.
+
+.BookService.java
+[source,java]
+----
+@ApplicationScoped
+public class BookService {
+
+   @Inject
+   @Remote("books")
+   RemoteCache<String, Book> books; //<1>
+
+   public String getBookDescriptionById(String id) {
+      Book book = books.get(id);
+      if (book == null) {
+         return "default";
+      }
+
+      return book.getDescription();
+   }
+}
+----
+<1> Use dependency injection to connect to the books cache
+
+In the test class, the RemoteCache can be mocked.
+
+.BookServiceTest.java
+[source,java]
+----
+@QuarkusTest
+public class BookServiceTest {
+
+    @Inject
+    BookService bookService;
+
+    @InjectMock // <1>
+    @Remote("books")
+    RemoteCache<String, Book> bookRemoteCache;
+
+    @Test
+    public void mockRemoteCache() {
+        Mockito.when(bookRemoteCache.get("harry_potter")).thenReturn(new Book(... "Best saga ever");//<2>
+
+        Assertions.assertThat(bookService.getBookDescriptionById("harry_potter")).isEqualTo("Best saga ever");//<3>
+    }
+}
+----
+<1> Inject a mock instead of the RemoteCache bean
+<2> Use Mockito to mock the call of the RemoteCache
+<3> Assert the service call
 
 === Registering Protobuf Schemas with Infinispan Server
 You need to register the generated Protobuf schemas with Infinispan Server to perform queries or convert from
@@ -650,8 +673,16 @@ for Kubernetes deployments, Infinispan Console,
 https://infinispan.org/docs/stable/titles/rest/rest.html#rest_v2_protobuf_schemas[REST API] or the
 https://infinispan.org/docs/stable/titles/encoding/encoding.html#registering-sci-remote-caches_marshalling[Hot Rod Java Client].
 
-[#infinispan-annotations-api]
-== Caching using annotations
+[[infinispan-annotations-api]]
+=== Caching using annotations
+
+[IMPORTANT]
+====
+Infinispan Caching annotations are deprecated *in this extension* and will be removed.
+Use or replace your annotations by using the xref:cache-infinispan-reference.adoc[Infinispan Cache extension].
+Update your import statements to use the annotations from `io.quarkus.cache` package instead of
+`io.quarkus.infinispan.client`.
+====
 
 The Infinispan Client extension offers a set of annotations that can be used in a CDI managed bean to enable caching abilities with Infinispan.
 
@@ -688,8 +719,8 @@ When a method annotated with `@CacheInvalidateAll` is invoked, Infinispan will r
 == Querying
 
 The Infinispan client supports both indexed and non-indexed search as long as the
-`ProtoStreamMarshaller` is configured above. This allows the user to query based on the
-properties of the proto schema. *Indexed queries are preferred for performance reasons*.
+`ProtoStreamMarshaller` is configured above. This allows the user to query on *keys* or
+*values* based on the properties of the proto schema. *Indexed queries are preferred for performance reasons*.
 
 .XML
 [source,xml,options="nowrap",subs=attributes+,role="primary"]
@@ -773,8 +804,43 @@ public class Book {
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
 
+.Query.java
+[source,java]
+----
+@Inject
+@Remote("books")
+RemoteCache<String, Book> booksCache; //<1>
+
+Query<Book> query = booksCache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'"); //<2>
+List<Book> list = query.execute().list();
+----
+<1> Inject the books cache
+<2> Perform a full text query on books author name
+
 NOTE: You can read more about https://infinispan.org/docs/stable/titles/query/query.html[querying] in the Infinispan documentation.
 
+[IMPORTANT]
+====
+Prior to Quarkus 3.9 and the Infinispan 15 integration, queries were executed by calling the following code:
+.Query.java
+[source,java]
+----
+QueryFactory queryFactory = Search.getQueryFactory(booksCache); <1>
+Query query = queryFactory.create("from book_sample.Book");
+List<Book> list = query.execute().list();
+----
+<1> Breaking change in 3.9
+
+This code won't work anymore since `RemoteCache` is now an `@ApplicationScoped` proxy bean.
+`Search.getQueryFactory` will raise a ClassCastException.
+Remove the unecessary indirection by using the `query` method in the `RemoteCache` API as follows.
+
+[source,java]
+----
+Query<Book> query = booksCache.<Book>query("from book_sample.Book");
+List<Book> list = query.execute().list();
+----
+====
 
 == Counters
 
@@ -803,7 +869,6 @@ quarkus.infinispan-client.cache.books.near-cache-mode=INVALIDATED <1>
 quarkus.infinispan-client.cache.books.near-cache-max-entries=200 <2>
 quarkus.infinispan-client.cache.books.near-cache-use-bloom-filter=true <3>
 ----
-
 <1> Enables near caching for the 'books' cache by setting the mode to `INVALIDATED`
 <2> Sets the maximum number of entries that the near cache of the 'books' cache can hold before eviction occurs
 <3> Enables bloom filter for the 'books' cache
@@ -822,11 +887,30 @@ They cannot be used with unbounded near cache: maximum number of entries must be
 
 Encryption at this point requires additional steps to get working.
 
-The first step is to configure the `hotrod-client.properties` file to point to your truststore
+The first step is to configure the `application.properties` file to point to your truststore
 and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL/TLS by default. You can read more about this
 at xref:native-and-ssl.adoc[Using SSL With Native Executables].
+
+== SSL Host Name Validation
+
+To prevent MITM attacks, when SSL is enabled, SSL host name validation is enabled by default in Infinispan.
+In this case, configuring the SNI host name is mandatory to start the client.
+
+[source,properties]
+----
+quarkus.infinispan-client.sni-host-name=localhost <1>
+----
+<1> Sets the SNI host name
+
+This behaviour can be changed by disabling the validation.
+
+[source,properties]
+----
+quarkus.infinispan-client.ssl-host-name-validation=false <1>
+----
+<1> Disables ssl host name validation
 
 == Additional Features
 
@@ -862,16 +946,6 @@ You can disable the sharing with `quarkus.infinispan-client.devservices.shared=f
 
 By default, Dev Services for Infinispan picks a random port and configures the application.
 You can set the port by configuring the `quarkus.infinispan-client.devservices.port` property.
-
-== Testing helpers
-
-To start an Infinispan Server for your unit tests, Quarkus provides one `QuarkusTestResourceLifecycleManager` that relies on link:https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#junit-testing[Infinispan Server Test Container].
-
-- `io.quarkus.test.infinispan.client.InfinispanTestResource` will start a single instance on port 11222 with user 'admin' and password 'password'.
-
-To use them, you need to add the `io.quarkus:quarkus-test-infinispan-client` dependency to your pom.xml.
-
-For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read xref:getting-started-testing.adoc#quarkus-test-resource[Quarkus test resource].
 
 == Configuration Reference
 

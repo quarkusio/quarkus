@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class ReactiveBloomCommandsImpl<K, V> extends AbstractBloomCommands<K, V>
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveBloomCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveBloomCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

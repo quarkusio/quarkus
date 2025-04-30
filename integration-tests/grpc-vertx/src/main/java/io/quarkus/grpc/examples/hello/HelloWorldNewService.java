@@ -1,5 +1,7 @@
 package io.quarkus.grpc.examples.hello;
 
+import com.google.protobuf.Empty;
+
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
@@ -13,6 +15,12 @@ public class HelloWorldNewService extends MutinyGreeterGrpc.GreeterImplBase {
     public Uni<HelloReply> sayHello(HelloRequest request) {
         String name = request.getName();
         return Uni.createFrom().item("Hello " + name)
+                .map(res -> HelloReply.newBuilder().setMessage(res).build());
+    }
+
+    @Override
+    public Uni<HelloReply> sayJo(Empty request) {
+        return Uni.createFrom().item("Jo!")
                 .map(res -> HelloReply.newBuilder().setMessage(res).build());
     }
 

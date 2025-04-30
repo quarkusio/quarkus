@@ -27,7 +27,7 @@ public class KafkaBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return KAFKA_CONSUMER_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
+            return KAFKA_CONSUMER_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
         }
     }
 
@@ -35,7 +35,7 @@ public class KafkaBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return KAFKA_STREAMS_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
+            return KAFKA_STREAMS_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
         }
     }
 

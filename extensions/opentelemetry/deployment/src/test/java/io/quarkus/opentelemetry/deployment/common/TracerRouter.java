@@ -27,6 +27,8 @@ public class TracerRouter {
             String name = rc.pathParam("name");
             if (name.equals("Naruto")) {
                 rc.response().end("hello " + name);
+            } else if (name.equals("Itachi")) {
+                rc.response().end("Amaterasu!");
             } else {
                 rc.response().setStatusCode(404).end();
             }

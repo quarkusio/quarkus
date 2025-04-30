@@ -15,11 +15,9 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <!-- modules are in profile test-modules -->
-
     <build>
         <plugins>
             <plugin>
@@ -27,29 +25,36 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-deployment-deps</id>
+                        <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
-                            <rules>
+                            <!--
+                                This is a test dependency and as such some test libraries don't have the test scope
+                                which is perfectly fine.
+                                We override the enforcer rules to avoid testing that.
+
+                                Also we add the requiresMinimalDeploymentDependency rule.
+                            -->
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
                                 <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-enforcer-rules</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus-staging-maven-plugin.version}</version>
                 <configuration>
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
@@ -78,12 +83,12 @@
                 <artifactId>testng</artifactId>
                 <version>${testng.version}</version>
             </dependency>
-            <!-- Enforce jQuery version that is compatible with TestNG 7.4.0 -->
+            <!-- Enforce jQuery version that is compatible with TestNG 7.8.0 -->
             <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
                 <!-- /!\ this version should not be upgraded, TestNG requires this particular version -->
-                <version>3.5.1</version>
+                <version>3.6.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -111,7 +116,6 @@
                 <module>microprofile-rest-client</module>
                 <module>microprofile-rest-client-reactive</module>
                 <module>microprofile-openapi</module>
-                <module>microprofile-opentracing</module>
                 <module>microprofile-opentelemetry</module>
                 <module>microprofile-lra</module>
                 <module>resteasy-reactive</module>

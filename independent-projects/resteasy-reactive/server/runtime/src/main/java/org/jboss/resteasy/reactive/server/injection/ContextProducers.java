@@ -146,7 +146,7 @@ public class ContextProducers {
     private ResteasyReactiveRequestContext getContext() {
         ResteasyReactiveRequestContext context = CurrentRequestManager.get();
         if (context == null) {
-            throw new IllegalStateException("No RESTEasy Reactive request in progress");
+            throw new IllegalStateException("No REST request in progress");
         }
         return context;
     }

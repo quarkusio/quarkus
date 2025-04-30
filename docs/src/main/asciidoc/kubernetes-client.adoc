@@ -7,7 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide demonstrates how to use the Fabric8 Kubernetes client to interact with your Kubernetes cluster.
-
+:topics: kubernetes,openshift,kubernetes-client
+:extensions: io.quarkus:quarkus-kubernetes-client
 
 Quarkus includes the `kubernetes-client` extension which enables the use of the https://github.com/fabric8io/kubernetes-client[Fabric8 Kubernetes Client]
 in native mode while also making it easier to work with.
@@ -53,7 +54,7 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the link:#quarkus-kubernetes-client_quarkus.kubernetes-client.devservices-dev-services[Dev Services section of the configuration reference].
+Note that the full list of properties is available in the <<quarkus-kubernetes-client_section_quarkus-kubernetes-client-devservices,Dev Services section of the configuration reference>>.
 
 In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Services for Kubernetes] automatically starts a Kubernetes API server.
 
@@ -163,6 +164,8 @@ public class KubernetesClientTest {
 
     @KubernetesTestServer
     KubernetesServer mockServer;
+    @Inject
+    KubernetesClient client;
 
     @BeforeEach
     public void before() {
@@ -170,8 +173,8 @@ public class KubernetesClientTest {
         final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
 
         // Set up Kubernetes so that our "pretend" pods are created
-        mockServer.getClient().pods().create(pod1);
-        mockServer.getClient().pods().create(pod2);
+        client.pods().resource(pod1).create();
+        client.pods().resource(pod2).create();
     }
 
     @Test
@@ -283,7 +286,7 @@ public class KubernetesClientTest {
 }
 ----
 
-[#note-on-generic-types]
+[[note-on-generic-types]]
 == Note on implementing or extending generic types
 
 Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing or extending generic types provided by the client if the application is intended to work in native mode.
@@ -366,7 +369,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 client.pods().watch(new ResourceWatcher<Pod>());
 ----
 
-[#note-on-ec-keys]
+[[note-on-ec-keys]]
 == Note on using Elliptic Curve keys
 
 Please note that if you would like to use Elliptic Curve keys with Kubernetes Client then adding a BouncyCastle PKIX dependency is required:
@@ -471,41 +474,35 @@ public class OpenShiftClientProducer {
 }
 ----
 
-Mock support is also provided in a similar fashion:
+Mock support is also provided in a similar fashion by using the `@WithKubernetesTestServer` explained in the previous section:
 
 [source, java]
 ----
-@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@WithKubernetesTestServer
 @QuarkusTest
 public class OpenShiftClientTest {
 
-    @MockServer
-    private OpenShiftMockServer mockServer;
-...
+    @KubernetesTestServer
+    KubernetesServer mockServer;
+    @Inject
+    OpenShiftClient client;
+
+    @Test
+    public void testInteractionWithAPIServer() {
+        RestAssured.when().get("/route/test").then()
+                .body("size()", is(2));
+    }
+}
 ----
 
-Or by using the `@WithOpenShiftTestServer` similar to the `@WithKubernetesTestServer` explained in the
-previous section:
-
-[source, java]
-----
-@WithOpenShiftTestServer
-@QuarkusTest
-public class OpenShiftClientTest {
-
-    @OpenShiftTestServer
-    private OpenShiftServer mockOpenShiftServer;
-...
-----
-
-To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
+To use this feature, you have to add a dependency on `quarkus-test-kubernetes-client`:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-openshift-client</artifactId>
+    <artifactId>quarkus-test-kubernetes-client</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -513,7 +510,7 @@ To use this feature, you have to add a dependency on `quarkus-test-openshift-cli
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-test-openshift-client")
+testImplementation("io.quarkus:quarkus-test-kubernetes-client")
 ----
 
 == Configuration Reference

@@ -10,13 +10,15 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: extensions
 
 Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
-NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction.
+NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction,
+or the xref:extension-faq.adoc[frequently asked questions].
 
 == Extension philosophy
 
@@ -104,7 +106,7 @@ public class Echo {
    }
 }
 ----
-<1> If a bean registered by an `AdditionalBeanBuildItem` does not specify a scope then `@Dependent` is assumed. 
+<1> If a bean registered by an `AdditionalBeanBuildItem` does not specify a scope then `@Dependent` is assumed.
 
 All other beans can inject such a bean:
 
@@ -138,7 +140,7 @@ public class Echo {
 
     @Inject
     Instance<List<String>> listsOfStrings; <2>
-    
+
     //...
 }
 ----
@@ -152,7 +154,7 @@ Some components may require additional initialization based on information colle
 The most straightforward solution is to obtain a bean instance and call a method directly from a build step.
 However, it is _illegal_ to obtain a bean instance during the augmentation phase.
 The reason is that the CDI container is not started yet.
-It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>. 
+It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>.
 
 TIP: `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` config roots can be injected in any bean. `RUN_TIME` config roots should only be injected after the bootstrap though.
 
@@ -164,14 +166,14 @@ You can obtain a reference to the container via `CDI.current()` or Quarkus-speci
 
 IMPORTANT: Don't forget to make sure the bean state guarantees the visibility, e.g. via the `volatile` keyword.
 
-NOTE: There is one significant drawback of this "late initialization" approach. 
-An _uninitialized_ bean may be accessed by other extensions or application components that are instantiated during bootstrap. 
+NOTE: There is one significant drawback of this "late initialization" approach.
+An _uninitialized_ bean may be accessed by other extensions or application components that are instantiated during bootstrap.
 We'll cover a more robust solution in the <<synthetic_beans>>.
 
 ==== Default beans
 
 A very useful pattern of creating such beans but also giving application code the ability to easily override some beans with custom implementations, is to use
-the `@DefaultBean` that Quarkus provides. 
+the `@DefaultBean` that Quarkus provides.
 This is best explained with an example.
 
 Let us assume that the Quarkus extension needs to provide a `Tracer` bean which application code is meant to inject into its own beans.
@@ -272,16 +274,16 @@ Sometimes it is very useful to be able to register a synthetic bean.
 Bean attributes of a synthetic bean are not derived from a java class, method or field.
 Instead, the attributes are specified by an extension.
 
-NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported. 
+NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported.
 In other words, it's up to the extension to provide all required services to a synthetic bean instance.
 
-There are several ways to register a <<cdi-reference.adoc#synthetic_beans,synthetic bean>> in Quarkus.
-In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>). 
+There are several ways to register a <<cdi-integration.adoc#synthetic_beans,synthetic bean>> in Quarkus.
+In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>).
 
 The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
 
-* whose instance can be easily produced through a <<bytecode-recording,recorder>>, 
-* to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly. 
+* whose instance can be easily produced through a <<bytecode-recording,recorder>>,
+* to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly.
 
 .Instance Produced Through Recorder
 [source%nowrap,java]
@@ -290,7 +292,7 @@ The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
 @Record(STATIC_INIT)
 SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
    return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
-                .runtimeValue(recorder.createFoo("parameters are recorder in the bytecode")) <1>
+                .runtimeValue(recorder.createFoo("parameters are recorded in the bytecode")) <1>
                 .done();
 }
 ----
@@ -303,7 +305,7 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 @Record(STATIC_INIT)
 SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
    return SyntheticBeanBuildItem.configure(TestContext.class).scope(Singleton.class)
-                .runtimeValue(recorder.createContext("parameters are recorder in the bytecode")) <1>
+                .runtimeValue(recorder.createContext("parameters are recorded in the bytecode")) <1>
                 .done();
 }
 ----
@@ -328,6 +330,10 @@ The CDI portable extension model is very flexible.
 Too flexible to benefit from the build time boot promoted by Quarkus.
 Most extension we have seen do not make use of these extreme flexibility capabilities.
 The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parlance).
+
+=== Levels of capability
+
+Quarkus extensions can do lots of things. The xref:extension-maturity-matrix.adoc[extension maturity matrix] lays out a path through the various capabilities, with a suggested implementation order.
 
 == Technical aspect
 
@@ -383,8 +389,12 @@ Your extension project should be setup as a multi-module project with two submod
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
+
 Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
+and the deployment artifacts of any other Quarkus extensions your own extension depends on. This is essential, otherwise any transitively
+pulled in extensions will not provide their full functionality.
+
+NOTE: The Maven and Gradle plugins will validate this for you and alert you to any deployment artifacts you might have forgotten to add.
 
 [WARNING]
 ====
@@ -572,10 +582,6 @@ dependencies {
 }
 ----
 
-[WARNING]
-====
-This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does.
-====
 
 [[build-step-processors]]
 === Build Step Processors
@@ -586,7 +592,7 @@ to produce the final build artifact(s).
 
 ==== Build steps
 
-A _build step_ is a non-static method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.  
+A _build step_ is a non-static method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.
 Each build step may <<consuming-values,consume>> items that are produced by earlier stages, and <<producing-values,produce>> items that can be consumed by later stages. Build steps are normally only run when they produce a build item that is
 ultimately consumed by another step.
 
@@ -815,15 +821,15 @@ SomeOtherBuildItem secondBuildStep() {
 [id='validation-error-build-item']
 ===== Validation Error build items
 
-They represent build items with validation errors that make the build fail. These build items are consumed during the initialization of the CDI container. 
+They represent build items with validation errors that make the build fail. These build items are consumed during the initialization of the CDI container.
 
 .Example of usage of an validation error build item in a "pseudo-target" style
 [source%nowrap,java]
 ----
 @BuildStep
 void checkCompatibility(Capabilities capabilities, BuildProducer<ValidationErrorBuildItem> validationErrors) {
-    if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)
-            && capabilities.isMissing(Capability.RESTEASY_CLASSIC)) {
+    if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)
+            && capabilities.isPresent(Capability.RESTEASY)) {
         validationErrors.produce(new ValidationErrorBuildItem(
                 new ConfigurationException("Cannot use both RESTEasy Classic and Reactive extensions at the same time")));
     }
@@ -833,7 +839,7 @@ void checkCompatibility(Capabilities capabilities, BuildProducer<ValidationError
 [id='artifact-result-build-item']
 ===== Artifact Result build items
 
-They represent build items containing the runnable artifact generated by the build, such as an uberjar or thin jar. 
+They represent build items containing the runnable artifact generated by the build, such as an uberjar or thin jar.
 These build items can also be used to always execute a build step without needing to produce anything.
 
 .Example of build step that is always executed in a "pseudo-target" style
@@ -1045,7 +1051,7 @@ and add them to the reflective hierarchy for `BUILD_TIME` analysis.
 
 ==== Visualizing build step dependencies
 
-It can occasionally be useful to see a visual representation of the interactions between the various build steps. For such cases, adding `-Djboss.builder.graph-output=build.dot` when building an application
+It can occasionally be useful to see a visual representation of the interactions between the various build steps. For such cases, adding `-Dquarkus.builder.graph-output=build.dot` when building an application
 will result in the creation of the `build.dot` file in the project's root directory. See link:https://graphviz.org/resources/[this] for a list of software that can open the file and show the actual visual representation.
 
 [[configuration]]
@@ -1089,13 +1095,6 @@ configuration, and when they are available to applications. The phases defined b
 | ✗
 | Appropriate for things which affect build and must be visible for run time code.  Not read from config at run time.
 
-| BOOTSTRAP
-| ✗
-| ✓
-| ✗
-| ✓
-| Used when runtime configuration needs to be obtained from an external system (like `Consul`), but details of that system need to be configurable (for example Consul's URL). The high level way this works is by using the standard Quarkus config sources (such as properties files, system properties, etc.) and producing `ConfigSourceProvider` objects which are subsequently taken into account by Quarkus when creating the final runtime `Config` object.
-
 | RUN_TIME
 | ✗
 | ✓
@@ -1106,8 +1105,6 @@ configuration, and when they are available to applications. The phases defined b
 |===
 
 For all cases other than the `BUILD_TIME` case, the configuration mapping interface and all the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact. Configuration mappings of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
-
-IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *before* any of other runtime steps. This means that code executed as part of this step cannot access anything that gets initialized in runtime init steps (runtime synthetic CDI beans being one such example).
 
 ==== Configuration Example
 
@@ -1202,8 +1199,7 @@ Since `format` is not defined in these properties, the default value from `@With
 A configuration mapping name can contain an extra suffix segment for the case where there are configuration
 mappings for multiple <<config-phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
 may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
-may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which
-correspond to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
+may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration`.
 
 ==== Configuration Reference Documentation
 
@@ -1316,6 +1312,11 @@ public interface SomeConfig {
 }
 ----
 <1> This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
+
+It is possible to write a textual explanation for the documentation default value, this is useful when it is generated: `@ConfigDocDefault("explain how this is generated")`.
+
+`@ConfigDocEnumValue` gives a way to explicitly customize the string displayed in the documentation when listing accepted values for an enum.
+
 ====
 
 ===== Writing section documentation
@@ -1356,7 +1357,7 @@ To include the generated configuration reference documentation in a guide, use:
 To include only a specific config group:
 [source,asciidoc]
 ----
-\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
+\include::{generated-dir}/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
 ----
 
 For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named
@@ -1373,7 +1374,7 @@ If the guide includes an `application.properties` example, a tip must be include
 [source, asciidoc]
 ----
 [TIP]
-For more information about the extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
 ----
 
 And at the end of the guide, the extensive configuration documentation:
@@ -1388,7 +1389,7 @@ And at the end of the guide, the extensive configuration documentation:
 
 [WARNING]
 ====
-All documentation should be generated and validated before being commited.
+All documentation should be generated and validated before being committed.
 ====
 
 === Conditional Step Inclusion
@@ -1456,7 +1457,9 @@ class MyDevModeProcessor {
 <3> The other build step will only be executed in dev mode.
 
 [id='bytecode-recording']
-=== Bytecode Recording
+=== Generating Bytecode
+
+==== Bytecode Recording
 
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
@@ -1544,11 +1547,14 @@ this includes the ability to register creation functions for classes without no-
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Record` method.
 
-Calling `classProxy` with a given class name will create a `Class` that can be passed into recorder
-methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
-convenience to avoid the need to explicitly load classes in the recorders.
+Calling `classProxy` with a given fully-qualified class name will create a `Class` instance that can be passed into a recorder
+method, and at runtime will be substituted with the class whose name was passed in to `classProxy()`.
+However, this method should not be needed in most use cases because directly loading deployment/application classes at processing time in build steps is safe.
+Therefore, this method is deprecated.
+Nonetheless, there are some use cases where this method comes in handy, such as referring to classes that were generated in previous build steps using `GeneratedClassBuildItem`.
 
-==== Printing step execution time
+
+===== Printing step execution time
 
 At times, it can be useful to know how the exact time each startup task (which is the result of each bytecode recording) takes when the application is run.
 The simplest way to determine this information is to launch the Quarkus application with the `-Dquarkus.debug.print-startup-times=true` system property.
@@ -1568,10 +1574,91 @@ Build step VertxHttpProcessor.openSocket completed in: 93ms
 Build step ShutdownListenerBuildStep.setupShutdown completed in: 1ms
 ----
 
+==== Using Gizmo
+
+In some scenarios, more significant manipulation of bytecode may be needed.
+If bytecode recording isn't sufficient, link:https://github.com/quarkusio/gizmo/blob/main/USAGE.adoc[Gizmo] is a convenient alternative to ASM, with a higher-level API.
+
+==== Runtime Classpath check
+
+Extensions often need a way to determine whether a given class is part of the application's runtime classpath.
+The proper way for an extension to perform this check is to use `io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime`.
+
+[[generating-resources]]
+=== Generating Resources
+
+It is possible to generate resources using extensions, in some scenarios you need to generate a resource into `META-INF` directory, the resource can be a service for SPI or a simple HTML, CSS, Javascript files.
+
+[source,java]
+----
+/**
+ * This build step aggregates all the produced service providers
+ * and outputs them as resources.
+ */
+@BuildStep
+public void produceServiceFiles(
+    BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResourceProducer,
+    BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer
+) throws IOException {
+
+    generatedResourceProducer.produce( // <1>
+        new GeneratedResourceBuildItem(
+            "META-INF/services/io.quarkus.services.GreetingService",
+            """
+            public class HelloService implements GreetingService {
+
+                @Override
+                public void do() {
+                    System.out.println("Hello!");
+                }
+            }
+            """.getBytes(StandardCharsets.UTF_8)));
+
+
+    generatedStaticResourceProducer.produce( // <2>
+        new GeneratedStaticResourceBuildItem(
+            "/index.js",
+            "console.log('Hello World!')".getBytes(StandardCharsets.UTF_8))
+    );
+}
+----
+
+1. Producing a SPI service implementation as a resource in META-INF/services
+2. Producing a static resource (e.g., JavaScript file) served by Vertx
+
+==== Key Points
+
+. **`GeneratedResourceBuildItem`**
+* Generates resources that are persisted in production mode.
+* In development and other non-production modes, the resources are kept in memory and loaded using the `QuarkusClassLoader`.
+
+. **`GeneratedStaticResourceBuildItem`**
+* Generates static resources (e.g., files like JavaScript, HTML, or CSS) served by Vertx.
+* In development mode, Quarkus serves these resources using a Vertx handler backed by a classloader-based filesystem.
+
+==== Differences Between `GeneratedResourceBuildItem` and `GeneratedStaticResourceBuildItem`
+
+While both are used to generate resources, their purposes and behaviors differ:
+
+**`GeneratedResourceBuildItem`:**
+
+* Used for resources required at runtime (e.g., SPI service definitions).
+* Persisted only in production mode; otherwise, stored in memory.
+
+**`GeneratedStaticResourceBuildItem`:**
+
+* Designed for serving static resources via HTTP (e.g., JavaScript or CSS files).
+* In development mode, these resources are served dynamically using Vertx.
+* Generates a `GeneratedResourceBuildItem`.
+* Generates a `AdditionalStaticResourceBuildItem` only on normal mode.
+
+By using these build items appropriately, you can generate and manage resources effectively within your Quarkus extension.
 ////
 TODO: config integration
 ////
 === Contexts and Dependency Injection
+
+The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related use cases, and example code for solutions.
 
 ==== Extension Points
 
@@ -1581,12 +1668,12 @@ Instead, Quarkus extensions can make use of various xref:cdi-reference.adoc[Buil
 
 === Quarkus Dev UI
 
-You can make your extension support the xref:dev-ui-v2.adoc[Quarkus Dev UI] for a greater developer experience.
+You can make your extension support the xref:dev-ui.adoc[Quarkus Dev UI] for a greater developer experience.
 
 === Extension-defined endpoints
 
 Your extension can add additional, non-application endpoints to be served alongside endpoints
-for Health, Metrics, OpenAPI, Swagger UI, etc. 
+for Health, Metrics, OpenAPI, Swagger UI, etc.
 
 Use a `NonApplicationRootPathBuildItem` to define an endpoint:
 
@@ -1604,9 +1691,9 @@ RouteBuildItem myExtensionRoute(NonApplicationRootPathBuildItem nonApplicationRo
 
 Note that the path above does not start with a '/', indicating it is a relative path. The above
 endpoint will be served relative to the configured non-application endpoint root. The non-application
-endpoint root is `/q` by default, which means the resulting endpoint will be found at `/q/custom-endpoint`. 
+endpoint root is `/q` by default, which means the resulting endpoint will be found at `/q/custom-endpoint`.
 
-Absolute paths are handled differently. If the above called `route("/custom-endpoint")`, the resulting 
+Absolute paths are handled differently. If the above called `route("/custom-endpoint")`, the resulting
 endpoint will be found at `/custom-endpoint`.
 
 If an extension needs nested non-application endpoints:
@@ -1625,10 +1712,10 @@ RouteBuildItem myNestedExtensionRoute(NonApplicationRootPathBuildItem nonApplica
 
 Given a default non-application endpoint root of `/q`, this will create an endpoint at `/q/custom-endpoint/deep`.
 
-Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`, 
+Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`,
 the resulting endpoint will be found at `/deep`.
 
-Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus-http-non-application-root-path[Quarkus Vertx HTTP configuration reference]
 for details on how the non-application root path is configured.
 
 === Extension Health Check
@@ -1670,9 +1757,9 @@ There are two broad patterns that extensions can use to interact with an optiona
 
 * Consumer pattern: An extension declares a `MetricsFactoryConsumerBuildItem` and uses that to provide a bytecode recorder to the metrics extension. When the metrics extension has initialized, it will iterate over registered consumers to initialize them with a `MetricsFactory`. This factory can be used to declare API-agnostic metrics, which can be a good fit for extensions that provide an instrumentable object for gathering statistics (e.g. Hibernate's `Statistics` class).
 
-* Binder pattern: An extension can opt to use completely different gathering implementations depending on the metrics system. An `Optional<MetricsCapabilityBuildItem> metricsCapability` build step parameter can be used to declare or otherwise initialize API-specific metrics based on the active metrics extension (e.g. "smallrye-metrics" or "micrometer"). This pattern can be combined with the consumer pattern by using `MetricsFactory::metricsSystemSupported()` to test the active metrics extension within the recorder. 
+* Binder pattern: An extension can opt to use completely different gathering implementations depending on the metrics system. An `Optional<MetricsCapabilityBuildItem> metricsCapability` build step parameter can be used to declare or otherwise initialize API-specific metrics based on the active metrics extension (e.g. "smallrye-metrics" or "micrometer"). This pattern can be combined with the consumer pattern by using `MetricsFactory::metricsSystemSupported()` to test the active metrics extension within the recorder.
 
-Remember that support for metrics is optional. Extensions can use an `Optional<MetricsCapabilityBuildItem> metricsCapability` parameter in their build step to test for the presence of an enabled metrics extension. Consider using additional configuration to control behavior of metrics. Datasource metrics can be expensive, for example, so additional configuration flags are used enable metrics collection on individual datasources. 
+Remember that support for metrics is optional. Extensions can use an `Optional<MetricsCapabilityBuildItem> metricsCapability` parameter in their build step to test for the presence of an enabled metrics extension. Consider using additional configuration to control behavior of metrics. Datasource metrics can be expensive, for example, so additional configuration flags are used enable metrics collection on individual datasources.
 
 When adding metrics for your extension, you may find yourself in one of the following situations:
 
@@ -1887,7 +1974,7 @@ The Jackson extension will then use the produced build item to register a module
 
 If you need more customization capabilities than registering a module,
 you can produce a CDI bean that implements `io.quarkus.jackson.ObjectMapperCustomizer` via an `AdditionalBeanBuildItem`.
-More info about customizing Jackson can be found on the JSON guide xref:rest-json.adoc#configuring-json-support[Configuring JSON support]
+More info about customizing Jackson can be found on the JSON guide xref:rest-json.adoc#json[Configuring JSON support]
 
 ==== Customizing JSON-B
 First, add an *optional* dependency to `quarkus-jsonb` on your extension's runtime module.
@@ -1939,7 +2026,7 @@ The JSON-B extension will then use the produced build item to register your seri
 
 If you need more customization capabilities than registering a serializer or a deserializer,
 you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
-More info about customizing JSON-B can be found on the JSON guide xref:rest-json.adoc#configuring-json-support[Configuring JSON support]
+More info about customizing JSON-B can be found on the JSON guide xref:rest-json.adoc#json[Configuring JSON support]
 
 === Integrating with Development Mode
 
@@ -1956,6 +2043,35 @@ information about this start, in particular:
 It also provides a global context map you can use to store information between restarts, without needing to resort to
 static fields.
 
+Here is an example of a build step that persists context across live reloads:
+
+[source,java]
+----
+@BuildStep(onlyIf = {IsDevelopment.class})
+public void keyPairDevService(LiveReloadBuildItem liveReloadBuildItem, BuildProducer<KeyPairBuildItem> keyPairs) {
+
+    KeyPairContext ctx = liveReloadBuildItem.getContextObject(KeyPairContext.class);    // <1>
+    if (ctx == null && !liveReloadBuildItem.isLiveReload()) {                           // <2>
+        KeyPair keyPair = generateKeyPair(2048);
+        Map<String, String> properties = generateDevServiceProperties(keyPair);
+    liveReloadBuildItem.setContextObject(                                               // <3>
+                KeyPairContext.class, new KeyPairContext(properties));
+        keyPairs.produce(new KeyPairBuildItem(properties));
+    }
+
+    if (ctx != null) {
+        Map<String, String> properties = ctx.getProperties();
+        keyPairs.produce(new KeyPairBuildItem(properties));
+    }
+}
+
+static record KeyPairContext(Map<String, String> properties) {}
+----
+
+<1> You can retrieve the context from `LiveReloadBuildItem`. This call returns `null` if there is no context for the specified type; otherwise, it returns the stored instance from a previous live reload execution.
+<2> You can check if this is the first execution (not a live reload).
+<3> The `LiveReloadBuildItem#setContextObject` method allows you to set a context across live reloads.
+
 ==== Triggering Live Reload
 
 Live reload is generally triggered by an HTTP request, however not all applications are HTTP applications and some extensions
@@ -1965,11 +2081,17 @@ in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotRepla
 On startup the `setupHotDeployment` method will be called, and you can use the provided `io.quarkus.dev.spi.HotReplacementContext`
 to initiate a scan for changed files.
 
+==== Dev Services
+
+Where extensions use an external service, adding a Dev Service can improve the user experience in development and test modes.
+See xref:extension-writing-dev-service.adoc[how to write a Dev Service] for more details.
+
+[[testing-extensions]]
 === Testing Extensions
 
-Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension. 
-This extension allows for Arquillian-style tests that test specific functionalities. 
-It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`. 
+Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension.
+This extension allows for Arquillian-style tests that test specific functionalities.
+It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`.
 The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
 Quarkus application for each test class.
 
@@ -2239,7 +2361,8 @@ The only particular aspect of writing Quarkus extensions in Eclipse is that APT 
 Quarkus generates a lot of classes during the build phase and in many cases also transforms existing classes.
 It is often extremely useful to see the generated bytecode and transformed classes during the development of an extension.
 
-If you set the `quarkus.package.quiltflower.enabled` property to `true` then Quarkus will download and invoke the https://github.com/QuiltMC/quiltflower[Quiltflower decompiler] and dump the result in the `decompiled` directory of the build tool output (`target/decompiled` for Maven for example).
+If you set the `quarkus.package.jar.decompiler.enabled` property to `true` then Quarkus will download and invoke the https://github.com/Vineflower/vineflower[Vineflower decompiler] and dump the result in the `decompiled` directory of the build tool output (`target/decompiled` for Maven for example).
+The output directory can be changed with `quarkus.package.jar.decompiler.output-dir`.
 
 NOTE: This property only works during a normal production build (i.e. not for dev mode/tests) and when `fast-jar` packaging type is used (the default behavior).
 
@@ -2276,15 +2399,74 @@ The property is also honored when running tests:
 
 Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.generated-sources-dir` properties to dump the relevant output.
 
+[[dump-generated-transformed-classes-with-quarkusunittest]]
+==== Inspecting Generated/Transformed Classes in `QuarkusUnitTest`
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+as an alternative to <<dump-the-generated-classes-to-the-file-system,setting `quarkus.debug.*-dir` manually>>,
+you may simply call `QuarkusUnitTest#debugBytecode`:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .debugBytecode(true);
+
+    // ... test methods go here ...
+
+}
+----
+
+This will automatically set up these configuration properties so that classes/sources
+are dumped to `target/debug`, for that test class only,
+in a subdirectory that is unique to each test execution.
+See the javadoc of `QuarkusUnitTest#debugBytecode` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular;
+for example the GitHub Actions CI at https://github.com/quarkusio/quarkus/
+is set up so that such `target/debug` directories are
+collected into build artifacts available for download after each CI run.
+
+[[troubleshooting-trace-logs]]
+==== Enabling trace logs for a particular test only
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+if you need to enable trace logs for a particular test class,
+you may simply call `QuarkusUnitTest#traceCategories` and pass the logging categories in argument:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
+
+    // ... test methods go here ...
+
+}
+----
+
+See the javadoc of `QuarkusUnitTest#traceCategories` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular,
+as this will only increase the verbosity of logs in the particular test where the option is enabled.
+
 ==== Multi-module Maven Projects and the Development Mode
 
 It's not uncommon to develop an extension in a multi-module Maven project that also contains an "example" module.
-However, if you want to run the example in the development mode then the `-DnoDeps` system property must be used in order to exclude the local project dependencies.
-Otherwise, Quarkus attempts to monitor the extension classes and this may result in weird class loading issues.
+
+In multi-module Maven projects we recommend to have an explicit `compile` call to ensure compilation happens before the `quarkus:dev` goal is executed.
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev -DnoDeps
+./mvnw compile quarkus:dev
 ----
 
 ==== Indexer does not include your external dependency
@@ -2299,7 +2481,7 @@ author will typically need to perform using the test-extension code to illustrat
 
 ===== Features
 
-A _feature_ represents a functionality provided by an extension. 
+A _feature_ represents a functionality provided by an extension.
 The name of the feature gets displayed in the log during application bootstrap.
 
 .Example Startup Lines
@@ -2327,7 +2509,7 @@ If multiple extensions register a feature of the same name the build fails.
 
 The feature name should also map to a label in the extension's `devtools/common/src/main/filtered/extensions.json` entry so that
 the feature name displayed by the startup line matches a label that one can use to select the extension when creating a project
-using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `resteasy-reactive-jackson` feature is referenced:
+using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `rest-jackson` feature is referenced:
 
 [source,bash,subs=attributes+]
 ----
@@ -2336,14 +2518,14 @@ mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-reactive,resteasy-reactive-jackson"
+    -Dextensions="rest,rest-jackson"
 cd rest-json
 ----
 
 ===== Capabilities
 
 A _capability_ represents a technical capability that can be queried by other extensions.
-An extension may provide multiple capabilities and multiple extensions can provide the same capability. 
+An extension may provide multiple capabilities and multiple extensions can provide the same capability.
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
@@ -2372,11 +2554,11 @@ Extensions can consume registered capabilities using the `Capabilities` build it
     }
 ----
 
-Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`. 
+Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`.
 Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
-The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
 
 .Register a Bean Defining Annotation
 [source,java]
@@ -2426,6 +2608,7 @@ One of the main things an extension is likely to do is completely separate the c
 Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
 
 An example of parsing an XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
+
 .Parsing an XML Configuration into Runtime XmlConfig Instance
 [source,java]
 ----
@@ -2525,7 +2708,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
         log.info("Begin BeanContainerListener callback\n");
-        IConfigConsumer instance = beanContainer.instance(beanClass); <4>
+        IConfigConsumer instance = beanContainer.beanInstance(beanClass); <4>
         instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
         log.infof("configureBeans, instance=%s\n", instance);
     }
@@ -3001,10 +3184,10 @@ public final class Target_XmlData {
 == Ecosystem integration
 
 Some extensions may be private, and some may wish to be part of the
-broader Quarkus ecosystem, and available for community re-use.
+broader Quarkus ecosystem, and link:https://quarkus.io/extensions/[available for community re-use].
 Inclusion in the Quarkiverse Hub is a convenient mechanism for handling
 continuous testing and publication.
-The link:https://github.com/quarkiverse/quarkiverse/wiki#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
+The link:https://hub.quarkiverse.io/home/#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
 for on-boarding your extension.
 
 Alternatively, continuous testing and publication can be handled manually.
@@ -3027,7 +3210,7 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 
 * Your extension is published in Maven Central
 
-* Your extension repository is configured to use the <<ecosystem-ci, Ecosystem CI>>.
+* Your extension repository is configured to use the <<ecosystem-ci,Ecosystem CI>>.
 
 Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
 
@@ -3036,6 +3219,8 @@ Then you must create a pull request adding a `your-extension.yaml` file in the `
 group-id: <YOUR_EXTENSION_RUNTIME_GROUP_ID>
 artifact-id: <YOUR_EXTENSION_RUNTIME_ARTIFACT_ID>
 ----
+
+NOTE: When your repository contains multiple extensions, you need to create a separate file for each individual extension, not just one file for the entire repository.
 
 That's all. Once the pull request is merged, a scheduled job will check Maven Central for new versions and update the xref:extension-registry-user.adoc[Quarkus Extension Registry].
 

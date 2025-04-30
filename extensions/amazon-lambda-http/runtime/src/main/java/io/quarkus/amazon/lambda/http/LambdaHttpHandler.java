@@ -150,11 +150,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isBinary(responseBuilder.getHeaders().get("Content-Type"))) {
+                        if (isText(responseBuilder.getHeaders().get("Content-Type"))) {
+                            responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
+                        } else {
                             responseBuilder.setIsBase64Encoded(true);
                             responseBuilder.setBody(Base64.getEncoder().encodeToString(baos.toByteArray()));
-                        } else {
-                            responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         }
                     }
                     future.complete(responseBuilder);
@@ -259,10 +259,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         return baos;
     }
 
-    private boolean isBinary(String contentType) {
+    private boolean isText(String contentType) {
         if (contentType != null) {
             String ct = contentType.toLowerCase(Locale.ROOT);
-            return !(ct.startsWith("text") || ct.contains("json") || ct.contains("xml") || ct.contains("yaml"));
+            return (ct.startsWith("text") || ct.contains("json") || (ct.contains("xml") && !ct.contains("openxmlformats"))
+                    || ct.contains("yaml"));
         }
         return false;
     }

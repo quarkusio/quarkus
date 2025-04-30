@@ -5,14 +5,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.openapi.ui.DocExpansion;
 import io.smallrye.openapi.ui.HttpMethod;
 import io.smallrye.openapi.ui.ThemeHref;
 
 @ConfigRoot
-public class SwaggerUiConfig {
+@ConfigMapping(prefix = "quarkus.swagger-ui")
+public interface SwaggerUiConfig {
 
     /**
      * The path where Swagger UI is available.
@@ -20,88 +23,77 @@ public class SwaggerUiConfig {
      * The value `/` is not allowed as it blocks the application from serving anything else.
      * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
-    @ConfigItem(defaultValue = "swagger-ui")
-    public String path;
+    @WithDefault("swagger-ui")
+    String path();
 
     /**
      * If this should be included every time. By default, this is only included when the application is running
      * in dev mode.
      */
-    @ConfigItem(defaultValue = "false")
-    boolean alwaysInclude;
+    @WithDefault("false")
+    boolean alwaysInclude();
 
     /**
      * The urls that will be included as options. By default, the OpenAPI path will be used.
      * Here you can override that and supply multiple urls that will appear in the TopBar plugin.
      */
-    @ConfigItem
-    Map<String, String> urls;
+    @ConfigDocMapKey("name")
+    Map<String, String> urls();
 
     /**
      * If urls option is used, this will be the name of the default selection.
      */
-    @ConfigItem
-    Optional<String> urlsPrimaryName;
+    Optional<String> urlsPrimaryName();
 
     /**
      * The html title for the page.
      */
-    @ConfigItem
-    Optional<String> title;
+    Optional<String> title();
 
     /**
      * Swagger UI theme to be used.
      */
-    @ConfigItem
-    Optional<ThemeHref> theme;
+    Optional<ThemeHref> theme();
 
     /**
      * A footer for the html page. Nothing by default.
      */
-    @ConfigItem
-    Optional<String> footer;
+    Optional<String> footer();
 
     /**
      * If set to true, enables deep linking for tags and operations.
      */
-    @ConfigItem
-    Optional<Boolean> deepLinking;
+    Optional<Boolean> deepLinking();
 
     /**
      * Controls the display of operationId in operations list. The default is false.
      */
-    @ConfigItem
-    Optional<Boolean> displayOperationId;
+    Optional<Boolean> displayOperationId();
 
     /**
      * The default expansion depth for models (set to -1 completely hide the models).
      */
-    @ConfigItem
-    OptionalInt defaultModelsExpandDepth;
+    OptionalInt defaultModelsExpandDepth();
 
     /**
      * The default expansion depth for the model on the model-example section.
      */
-    @ConfigItem
-    OptionalInt defaultModelExpandDepth;
+    OptionalInt defaultModelExpandDepth();
 
     /**
      * Controls how the model is shown when the API is first rendered.
      */
-    @ConfigItem
-    Optional<String> defaultModelRendering;
+    Optional<String> defaultModelRendering();
 
     /**
      * Controls the display of the request duration (in milliseconds) for "Try it out" requests.
      */
-    @ConfigItem
-    Optional<Boolean> displayRequestDuration;
+    Optional<Boolean> displayRequestDuration();
 
     /**
      * Controls the default expansion setting for the operations and tags.
      */
-    @ConfigItem
-    Optional<DocExpansion> docExpansion;
+    Optional<DocExpansion> docExpansion();
 
     /**
      * If set, enables filtering. The top bar will show an edit box that you can use to filter the tagged operations that
@@ -110,14 +102,12 @@ public class SwaggerUiConfig {
      * filter expression.
      * Filtering is case-sensitive matching the filter expression anywhere inside the tag.
      */
-    @ConfigItem
-    Optional<String> filter;
+    Optional<String> filter();
 
     /**
      * If set, limits the number of tagged operations displayed to at most this many. The default is to show all operations.
      */
-    @ConfigItem
-    OptionalInt maxDisplayedTags;
+    OptionalInt maxDisplayedTags();
 
     /**
      * Apply a sort to the operation list of each API.
@@ -125,21 +115,18 @@ public class SwaggerUiConfig {
      * Array.prototype.sort() to know how sort function works).
      * Default is the order returned by the server unchanged.
      */
-    @ConfigItem
-    Optional<String> operationsSorter;
+    Optional<String> operationsSorter();
 
     /**
      * Controls the display of vendor extension (x-) fields and values for Operations, Parameters, and Schema.
      */
-    @ConfigItem
-    Optional<Boolean> showExtensions;
+    Optional<Boolean> showExtensions();
 
     /**
      * Controls the display of extensions (pattern, maxLength, minLength, maximum, minimum) fields and values for
      * Parameters.
      */
-    @ConfigItem
-    Optional<Boolean> showCommonExtensions;
+    Optional<Boolean> showCommonExtensions();
 
     /**
      * Apply a sort to the tag list of each API.
@@ -147,64 +134,55 @@ public class SwaggerUiConfig {
      * sort function).
      * Two tag name strings are passed to the sorter for each pass. Default is the order determined by Swagger UI.
      */
-    @ConfigItem
-    Optional<String> tagsSorter;
+    Optional<String> tagsSorter();
 
     /**
      * Provides a mechanism to be notified when Swagger UI has finished rendering a newly provided definition.
      */
-    @ConfigItem
-    Optional<String> onComplete;
+    Optional<String> onComplete();
 
     /**
      * Set to {@code false} to deactivate syntax highlighting of payloads and cURL command. Can be otherwise an object with the
      * {@code activate} and {@code theme} properties.
      */
-    @ConfigItem
-    Optional<String> syntaxHighlight;
+    Optional<String> syntaxHighlight();
 
     /**
      * OAuth redirect URL.
      */
-    @ConfigItem
-    Optional<String> oauth2RedirectUrl;
+    Optional<String> oauth2RedirectUrl();
 
     /**
      * MUST be a function. Function to intercept remote definition, "Try it out", and OAuth 2.0 requests.
      * Accepts one argument requestInterceptor(request) and must return the modified request, or a Promise that resolves to
      * the modified request.
      */
-    @ConfigItem
-    Optional<String> requestInterceptor;
+    Optional<String> requestInterceptor();
 
     /**
      * If set, MUST be an array of command line options available to the curl command.
      * This can be set on the mutated request in the requestInterceptor function.
      */
-    @ConfigItem
-    Optional<List<String>> requestCurlOptions;
+    Optional<List<String>> requestCurlOptions();
 
     /**
      * MUST be a function. Function to intercept remote definition, "Try it out", and OAuth 2.0 responses.
      * Accepts one argument responseInterceptor(response) and must return the modified response, or a Promise that resolves
      * to the modified response.
      */
-    @ConfigItem
-    Optional<String> responseInterceptor;
+    Optional<String> responseInterceptor();
 
     /**
      * If set to true, uses the mutated request returned from a requestInterceptor to produce the curl command in the UI,
      * otherwise the request before the requestInterceptor was applied is used.
      */
-    @ConfigItem
-    Optional<Boolean> showMutatedRequest;
+    Optional<Boolean> showMutatedRequest();
 
     /**
      * List of HTTP methods that have the "Try it out" feature enabled.
      * An empty array disables "Try it out" for all operations. This does not filter the operations from the display.
      */
-    @ConfigItem
-    Optional<List<HttpMethod>> supportedSubmitMethods;
+    Optional<List<HttpMethod>> supportedSubmitMethods();
 
     /**
      * By default, Swagger UI attempts to validate specs against swagger.io's online validator.
@@ -212,149 +190,137 @@ public class SwaggerUiConfig {
      * Badge).
      * Setting it to either none, 127.0.0.1 or localhost will disable validation.
      */
-    @ConfigItem
-    Optional<String> validatorUrl;
+    Optional<String> validatorUrl();
 
     /**
      * If set to true, enables passing credentials, as defined in the Fetch standard, in CORS requests that are sent by the
      * browser.
      */
-    @ConfigItem
-    Optional<Boolean> withCredentials;
+    Optional<Boolean> withCredentials();
 
     /**
      * Function to set default values to each property in model. Accepts one argument modelPropertyMacro(property), property
      * is immutable
      */
-    @ConfigItem
-    Optional<String> modelPropertyMacro;
+    Optional<String> modelPropertyMacro();
 
     /**
      * Function to set default value to parameters. Accepts two arguments parameterMacro(operation, parameter).
      * Operation and parameter are objects passed for context, both remain immutable
      */
-    @ConfigItem
-    Optional<String> parameterMacro;
+    Optional<String> parameterMacro();
 
     /**
      * If set to true, it persists authorization data and it would not be lost on browser close/refresh
      */
-    @ConfigItem
-    Optional<Boolean> persistAuthorization;
+    Optional<Boolean> persistAuthorization();
 
     /**
      * The name of a component available via the plugin system to use as the top-level layout for Swagger UI.
      */
-    @ConfigItem
-    Optional<String> layout;
+    Optional<String> layout();
 
     /**
      * A list of plugin functions to use in Swagger UI.
      */
-    @ConfigItem
-    Optional<List<String>> plugins;
+    Optional<List<String>> plugins();
+
+    /**
+     * A list of external scripts (usually plugins) to use in Swagger UI.
+     */
+    Optional<List<String>> scripts();
 
     /**
      * A list of presets to use in Swagger UI.
      */
-    @ConfigItem
-    Optional<List<String>> presets;
+    Optional<List<String>> presets();
 
     /**
      * OAuth default clientId - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthClientId;
+    Optional<String> oauthClientId();
 
     /**
      * OAuth default clientSecret - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthClientSecret;
+    Optional<String> oauthClientSecret();
 
     /**
      * OAuth1 Realm query parameter added to authorizationUrl and tokenUrl - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthRealm;
+    Optional<String> oauthRealm();
 
     /**
      * OAuth application name, displayed in authorization popup - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthAppName;
+    Optional<String> oauthAppName();
 
     /**
      * OAuth scope separator for passing scopes - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthScopeSeparator;
+    Optional<String> oauthScopeSeparator();
 
     /**
      * OAuth Scopes, separated using the oauthScopeSeparator - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthScopes;
+    Optional<String> oauthScopes();
 
     /**
      * OAuth additional query parameters added to authorizationUrl and tokenUrl - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<String> oauthAdditionalQueryStringParams;
+    Optional<String> oauthAdditionalQueryStringParams();
 
     /**
      * OAuth only activated for the accessCode flow. During the authorization_code request to the tokenUrl, pass the Client
      * Password using the HTTP Basic Authentication scheme - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<Boolean> oauthUseBasicAuthenticationWithAccessCodeGrant;
+    Optional<Boolean> oauthUseBasicAuthenticationWithAccessCodeGrant();
 
     /**
      * OAuth only applies to authorization code flows. Proof Key for Code Exchange brings enhanced security for OAuth public
      * clients - Used in the initOAuth method.
      */
-    @ConfigItem
-    Optional<Boolean> oauthUsePkceWithAuthorizationCodeGrant;
+    Optional<Boolean> oauthUsePkceWithAuthorizationCodeGrant();
 
     /**
      * Pre-authorize Basic Auth, programmatically set DefinitionKey for a Basic authorization scheme - Used in the
      * preauthorizeBasic method.
      */
-    @ConfigItem
-    Optional<String> preauthorizeBasicAuthDefinitionKey;
+    Optional<String> preauthorizeBasicAuthDefinitionKey();
 
     /**
      * Pre-authorize Basic Auth, programmatically set Username for a Basic authorization scheme - Used in the preauthorizeBasic
      * method.
      */
-    @ConfigItem
-    Optional<String> preauthorizeBasicUsername;
+    Optional<String> preauthorizeBasicUsername();
 
     /**
      * Pre-authorize Basic Auth, programmatically set Password for a Basic authorization scheme - Used in the preauthorizeBasic
      * method.
      */
-    @ConfigItem
-    Optional<String> preauthorizeBasicPassword;
+    Optional<String> preauthorizeBasicPassword();
 
     /**
      * Pre-authorize ApiKey Auth, programmatically set DefinitionKey for an API key or Bearer authorization scheme - Used in the
      * preauthorizeApiKey method.
      */
-    @ConfigItem
-    Optional<String> preauthorizeApiKeyAuthDefinitionKey;
+    Optional<String> preauthorizeApiKeyAuthDefinitionKey();
 
     /**
      * Pre-authorize ApiKey Auth, programmatically set ApiKeyValue for an API key or Bearer authorization scheme - Used in the
      * preauthorizeApiKey method.
      */
-    @ConfigItem
-    Optional<String> preauthorizeApiKeyApiKeyValue;
+    Optional<String> preauthorizeApiKeyApiKeyValue();
 
     /**
      * If set to true, this allows the user to modify and test different query parameters in the API request
      */
-    @ConfigItem(defaultValue = "false")
-    boolean queryConfigEnabled;
+    @WithDefault("false")
+    boolean queryConfigEnabled();
 
+    /**
+     * If try it out should be enabled by default
+     */
+    @WithDefault("false")
+    boolean tryItOutEnabled();
 }

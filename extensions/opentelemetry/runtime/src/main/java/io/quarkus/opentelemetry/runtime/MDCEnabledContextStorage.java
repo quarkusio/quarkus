@@ -21,13 +21,16 @@ enum MDCEnabledContextStorage implements ContextStorage {
 
         Scope scope = DEFAULT_CONTEXT_STORAGE.attach(toAttach);
 
-        return () -> {
-            if (beforeAttach == null) {
-                OpenTelemetryUtil.clearMDCData(null);
-            } else {
-                OpenTelemetryUtil.setMDCData(beforeAttach, null);
+        return new Scope() {
+            @Override
+            public void close() {
+                if (beforeAttach == null) {
+                    OpenTelemetryUtil.clearMDCData(null);
+                } else {
+                    OpenTelemetryUtil.setMDCData(beforeAttach, null);
+                }
+                scope.close();
             }
-            scope.close();
         };
     }
 

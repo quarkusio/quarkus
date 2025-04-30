@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <!-- Service Binding - This isn't necessary to any Kafka functionality, but we want to test that Quarkus provides the proper config from a mock service binding -->
         <dependency>
@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -151,8 +151,33 @@
                 </plugins>
             </build>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
+        </profile>
+        <!-- Flapdoodle sometimes hangs on Windows so we have to disable these tests for now -->
+        <profile>
+            <id>no-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

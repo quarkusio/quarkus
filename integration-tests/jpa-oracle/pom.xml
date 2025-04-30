@@ -39,7 +39,7 @@
         <!-- .. and some web endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -106,7 +106,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -186,9 +186,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

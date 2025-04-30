@@ -41,7 +41,7 @@ body:
       description: >-
         A URL with more information about the technology this extension promotes (defaults to the Quarkiverse Docs repository)
       value:
-        https://quarkiverse.github.io/quarkiverse-docs/<REPOSITORY_NAME>/dev/
+        https://docs.quarkiverse.io/<REPOSITORY_NAME>/dev/
 
   - type: textarea
     id: repository_topics

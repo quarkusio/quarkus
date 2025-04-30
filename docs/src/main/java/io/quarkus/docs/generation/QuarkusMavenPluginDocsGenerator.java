@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.descriptor.Parameter;
@@ -12,95 +13,113 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.descriptor.PluginDescriptorBuilder;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 
-import io.quarkus.annotation.processor.Constants;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
-import io.quarkus.annotation.processor.generate_doc.MavenConfigDocBuilder;
-import io.quarkus.annotation.processor.generate_doc.MavenConfigDocBuilder.GoalParamsBuilder;
-
 /**
  * Generates documentation for the Quarkus Maven Plugin from plugin descriptor.
  */
 public class QuarkusMavenPluginDocsGenerator {
 
     private static final String QUARKUS_MAVEN_PLUGIN = "quarkus-maven-plugin-";
-    private static final String GOALS_OUTPUT_FILE_NAME = QUARKUS_MAVEN_PLUGIN + "goals" + Constants.ADOC_EXTENSION;
-    private static final String GOAL_PARAMETER_ANCHOR_PREFIX = QUARKUS_MAVEN_PLUGIN + "goal-%s-";
+    private static final String GOAL_PARAMETER_ANCHOR_FORMAT = QUARKUS_MAVEN_PLUGIN + "goal-%s-%s";
 
     public static void main(String[] args) throws Exception {
-
-        String errorMessage = null;
-
-        // Path to Quarkus Maven Plugin descriptor (plugin.xml)
-        final Path pluginXmlDescriptorPath;
-        if (args.length == 1) {
-            pluginXmlDescriptorPath = Path.of(args[0]);
-        } else {
-            pluginXmlDescriptorPath = null;
-            errorMessage = String.format("Expected 1 argument ('plugin.xml' file path), got %s", args.length);
+        if (args.length != 2) {
+            throw new IllegalArgumentException("Path for input and output were not provided");
         }
 
-        // Check the file exist
-        if (pluginXmlDescriptorPath != null
-                && (!Files.exists(pluginXmlDescriptorPath) || !Files.isRegularFile(pluginXmlDescriptorPath))) {
-            errorMessage = String.format("File does not exist: %s", pluginXmlDescriptorPath.toAbsolutePath());
+        Path pluginXmlDescriptorPath = Path.of(args[0]);
+        Path mavenPluginAdocPath = Path.of(args[1]);
+
+        if (!Files.exists(pluginXmlDescriptorPath) || !Files.isRegularFile(pluginXmlDescriptorPath)) {
+            throw new IllegalArgumentException(pluginXmlDescriptorPath + " does not exist or is not a regular file");
         }
 
         // Deserialize plugin.xml to PluginDescriptor
         PluginDescriptor pluginDescriptor = null;
-        if (errorMessage == null) {
-            try (Reader input = new XmlStreamReader(new FileInputStream(pluginXmlDescriptorPath.toFile()))) {
-                pluginDescriptor = new PluginDescriptorBuilder().build(input);
-            } catch (IOException e) {
-                errorMessage = String.format("Failed to deserialize PluginDescriptor: %s", e.getMessage());
-            }
+        try (Reader input = new XmlStreamReader(new FileInputStream(pluginXmlDescriptorPath.toFile()))) {
+            pluginDescriptor = new PluginDescriptorBuilder().build(input);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to deserialize PluginDescriptor", e);
         }
 
         // Don't generate documentation if there are no goals (shouldn't happen if correct descriptor is available)
         if (pluginDescriptor != null && (pluginDescriptor.getMojos() == null || pluginDescriptor.getMojos().isEmpty())) {
-            errorMessage = "Found no goals";
-        }
-
-        // Don't break the build if Quarkus Maven Plugin Descriptor is not available
-        if (errorMessage != null) {
-            System.err.printf("Can't generate the documentation for the Quarkus Maven Plugin\n: %s\n", errorMessage);
             return;
         }
 
+        StringBuilder asciidoc = new StringBuilder();
+
         // Build Goals documentation
-        final var goalsConfigDocBuilder = new MavenConfigDocBuilder();
         for (MojoDescriptor mojo : pluginDescriptor.getMojos()) {
 
-            // Add Goal Title
-            goalsConfigDocBuilder.addTableTitle(mojo.getFullGoalName());
+            asciidoc.append("= ").append(mojo.getFullGoalName()).append("\n\n");
 
             // Add Goal Description
             if (mojo.getDescription() != null && !mojo.getDescription().isBlank()) {
-                goalsConfigDocBuilder.addTableDescription(mojo.getDescription());
+                asciidoc.append(mojo.getDescription()).append("\n\n");
             }
 
-            // Collect Goal Parameters
-            final GoalParamsBuilder goalParamsBuilder = goalsConfigDocBuilder.newGoalParamsBuilder();
-            if (mojo.getParameters() != null) {
+            if (mojo.getParameters() != null && !mojo.getParameters().isEmpty()) {
+                asciidoc.append("[.configuration-reference, cols=\"70,15,15\"]\n");
+                asciidoc.append("|===\n\n");
+
+                asciidoc.append("h|[[").append(String.format(GOAL_PARAMETER_ANCHOR_FORMAT, mojo.getGoal(), "parameter-table"))
+                        .append("]] Parameter\n");
+                asciidoc.append("h|Type\n");
+                asciidoc.append("h|Default value\n\n");
+
                 for (Parameter parameter : mojo.getParameters()) {
-                    goalParamsBuilder.addParam(parameter.getType(), parameter.getName(), parameter.getDefaultValue(),
-                            parameter.isRequired(), parameter.getDescription());
+                    String property = getPropertyFromExpression(parameter.getExpression());
+                    String name = Optional.ofNullable(property).orElseGet(parameter::getName);
+
+                    asciidoc.append("a| [[").append(String.format(GOAL_PARAMETER_ANCHOR_FORMAT, mojo.getGoal(), name))
+                            .append("]] ").append(name).append("\n");
+                    if (parameter.getDescription() != null && !parameter.getDescription().isBlank()) {
+                        asciidoc.append("\n[.description]\n--\n").append(escapeCellContent(parameter.getDescription()))
+                                .append("\n--\n");
+                    }
+                    asciidoc.append("|").append("`" + simplifyType(parameter.getType()) + "`")
+                            .append(parameter.isRequired() ? " (required)" : "")
+                            .append("\n");
+                    asciidoc.append("|")
+                            .append(parameter.getDefaultValue() != null && !parameter.getDefaultValue().isEmpty()
+                                    ? "`" + escapeCellContent(parameter.getDefaultValue()) + "`"
+                                    : "")
+                            .append("\n\n");
                 }
-            }
 
-            // Add Parameters Summary Table if the goal has parameters
-            if (goalParamsBuilder.tableIsNotEmpty()) {
-                goalsConfigDocBuilder.addSummaryTable(String.format(GOAL_PARAMETER_ANCHOR_PREFIX, mojo.getGoal()), false,
-                        goalParamsBuilder.build(), GOALS_OUTPUT_FILE_NAME, false);
-
-                // Start next table on a new line
-                goalsConfigDocBuilder.addNewLine();
+                asciidoc.append("|===\n\n");
             }
         }
 
-        // Generate Goals documentation
-        if (goalsConfigDocBuilder.hasWriteItems()) {
-            new ConfigDocWriter().generateDocumentation(GOALS_OUTPUT_FILE_NAME, goalsConfigDocBuilder);
-        }
+        Files.createDirectories(mavenPluginAdocPath.getParent());
+        Files.writeString(mavenPluginAdocPath, asciidoc.toString());
     }
 
+    private static String getPropertyFromExpression(String expression) {
+        if ((expression != null && !expression.isEmpty())
+                && expression.startsWith("${")
+                && expression.endsWith("}")
+                && !expression.substring(2).contains("${")) {
+            // expression="${xxx}" -> property="xxx"
+            return expression.substring(2, expression.length() - 1);
+        }
+        // no property can be extracted
+        return null;
+    }
+
+    private static String simplifyType(String type) {
+        if (type == null || type.isBlank() || type.indexOf('.') == -1) {
+            return type;
+        }
+
+        return type.substring(type.lastIndexOf('.') + 1);
+    }
+
+    private static String escapeCellContent(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.replace("|", "\\|");
+    }
 }

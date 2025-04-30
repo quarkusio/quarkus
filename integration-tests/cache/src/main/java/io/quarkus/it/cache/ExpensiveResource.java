@@ -13,11 +13,13 @@ import io.quarkus.cache.CacheResult;
 @Path("/expensive-resource")
 public class ExpensiveResource {
 
+    public static final String EXPENSIVE_RESOURCE_CACHE_NAME = "expensiveResourceCache";
+
     private int invocations;
 
     @GET
     @Path("/{keyElement1}/{keyElement2}/{keyElement3}")
-    @CacheResult(cacheName = "expensiveResourceCache", lockTimeout = 5000)
+    @CacheResult(cacheName = EXPENSIVE_RESOURCE_CACHE_NAME, lockTimeout = 5000)
     public ExpensiveResponse getExpensiveResponse(@PathParam("keyElement1") @CacheKey String keyElement1,
             @PathParam("keyElement2") @CacheKey String keyElement2, @PathParam("keyElement3") @CacheKey String keyElement3,
             @QueryParam("foo") String foo) {

@@ -1,5 +1,8 @@
 package io.quarkus.apicurio.registry.devservice;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -12,11 +15,13 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.apicurio.registry.devservice.ApicurioRegistryBuildTimeConfig.ApicurioRegistryDevServicesBuildTimeConfig;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -24,8 +29,9 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -34,7 +40,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts Apicurio Registry as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class DevServicesApicurioRegistryProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesApicurioRegistryProcessor.class);
@@ -49,8 +55,8 @@ public class DevServicesApicurioRegistryProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-apicurio-registry";
 
-    private static final ContainerLocator apicurioRegistryContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
-            APICURIO_REGISTRY_PORT);
+    private static final ContainerLocator apicurioRegistryContainerLocator = locateContainerWithLabels(APICURIO_REGISTRY_PORT,
+            DEV_SERVICE_LABEL);
 
     static volatile RunningDevService devService;
     static volatile ApicurioRegistryDevServiceCfg cfg;
@@ -59,13 +65,14 @@ public class DevServicesApicurioRegistryProcessor {
     @BuildStep
     public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
-            ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            ApicurioRegistryBuildTimeConfig apicurioRegistryConfiguration,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
+            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
 
-        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
+        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryConfiguration.devservices());
 
         if (devService != null) {
             boolean restartRequired = !configuration.equals(cfg);
@@ -79,8 +86,10 @@ public class DevServicesApicurioRegistryProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Apicurio Registry Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            devService = startApicurioRegistry(dockerStatusBuildItem, configuration, launchMode,
-                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
+            devService = startApicurioRegistry(dockerStatusBuildItem, composeProjectBuildItem, configuration, launchMode,
+                    useSharedNetwork, devServicesConfig.timeout());
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -136,6 +145,7 @@ public class DevServicesApicurioRegistryProcessor {
     }
 
     private RunningDevService startApicurioRegistry(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
@@ -144,12 +154,12 @@ public class DevServicesApicurioRegistryProcessor {
             return null;
         }
 
-        if (ConfigUtils.isPropertyPresent(APICURIO_REGISTRY_URL_CONFIG)) {
+        if (ConfigUtils.isPropertyNonEmpty(APICURIO_REGISTRY_URL_CONFIG)) {
             log.debug("Not starting dev services for Apicurio Registry, " + APICURIO_REGISTRY_URL_CONFIG + " is configured.");
             return null;
         }
 
-        if (ConfigUtils.isPropertyPresent(CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG)) {
+        if (ConfigUtils.isPropertyNonEmpty(CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG)) {
             log.debug("Not starting dev services for Apicurio Registry, " + CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG
                     + " is configured.");
             return null;
@@ -160,13 +170,16 @@ public class DevServicesApicurioRegistryProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please run Apicurio Registry yourself.");
             return null;
         }
 
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(config.imageName, "apicurio"),
+                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode(), useSharedNetwork))
                 .map(address -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
                         address.getId(), null,
                         // address does not have the URL Scheme - just the host:port, so prepend http://
@@ -176,6 +189,7 @@ public class DevServicesApicurioRegistryProcessor {
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apicurio/apicurio-registry-mem"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                            composeProjectBuildItem.getDefaultNetworkId(),
                             useSharedNetwork);
                     timeout.ifPresent(container::withStartupTimeout);
                     container.withEnv(config.containerEnv);
@@ -196,8 +210,8 @@ public class DevServicesApicurioRegistryProcessor {
                     && "smallrye-kafka".equals(config.getOptionalValue(name, String.class).orElse("ignored"));
             boolean isConfigured = false;
             if ((isIncoming || isOutgoing) && isKafka) {
-                isConfigured = ConfigUtils.isPropertyPresent(name.replace(".connector", ".apicurio.registry.url"))
-                        || ConfigUtils.isPropertyPresent(name.replace(".connector", ".schema.registry.url"));
+                isConfigured = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".apicurio.registry.url"))
+                        || ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".schema.registry.url"));
             }
             if (!isConfigured) {
                 return true;
@@ -219,12 +233,12 @@ public class DevServicesApicurioRegistryProcessor {
         private final Map<String, String> containerEnv;
 
         public ApicurioRegistryDevServiceCfg(ApicurioRegistryDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled.orElse(true);
-            this.imageName = config.imageName;
-            this.fixedExposedPort = config.port.orElse(0);
-            this.shared = config.shared;
-            this.serviceName = config.serviceName;
-            this.containerEnv = config.containerEnv;
+            this.devServicesEnabled = config.enabled().orElse(true);
+            this.imageName = config.imageName();
+            this.fixedExposedPort = config.port().orElse(0);
+            this.shared = config.shared();
+            this.serviceName = config.serviceName();
+            this.containerEnv = config.containerEnv();
         }
 
         @Override
@@ -254,21 +268,23 @@ public class DevServicesApicurioRegistryProcessor {
         private final int fixedExposedPort;
         private final boolean useSharedNetwork;
 
-        private String hostName = null;
+        private final String hostName;
 
         private ApicurioRegistryContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
 
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             withEnv("QUARKUS_PROFILE", "prod");
             if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry-mem")) {
                 throw new IllegalArgumentException("Only apicurio/apicurio-registry-mem images are supported");
             }
+            this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "apicurio-registry");
         }
 
         @Override
@@ -276,7 +292,6 @@ public class DevServicesApicurioRegistryProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
                 return;
             }
 

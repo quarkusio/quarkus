@@ -12,11 +12,6 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
-import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
-import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
-import io.quarkus.arc.deployment.devconsole.DevDecoratorInfo;
-import io.quarkus.arc.deployment.devconsole.DevInterceptorInfo;
-import io.quarkus.arc.deployment.devconsole.DevObserverInfo;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.runtime.devconsole.InvocationInterceptor;
 import io.quarkus.arc.runtime.devconsole.InvocationTree;
@@ -47,6 +42,9 @@ public class ArcDevUIProcessor {
                     .staticLabel(String.valueOf(beans.size())));
 
             pageBuildItem.addBuildTimeData(BEANS, toDevBeanWithInterceptorInfo(beans, beanInfos));
+
+            pageBuildItem.addBuildTimeData(BEAN_IDS_WITH_DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs().keySet());
+            pageBuildItem.addBuildTimeData(DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs());
         }
 
         List<DevObserverInfo> observers = beanInfos.getObservers();
@@ -79,7 +77,7 @@ public class ArcDevUIProcessor {
             pageBuildItem.addBuildTimeData(DECORATORS, decorators);
         }
 
-        if (config.devMode.monitoringEnabled) {
+        if (config.devMode().monitoringEnabled()) {
             pageBuildItem.addPage(Page.webComponentPageBuilder()
                     .icon("font-awesome-solid:fire")
                     .componentLink("qwc-arc-fired-events.js"));
@@ -104,7 +102,7 @@ public class ArcDevUIProcessor {
         return pageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(ArcJsonRPCService.class);
     }
@@ -113,10 +111,10 @@ public class ArcDevUIProcessor {
     void registerMonitoringComponents(ArcConfig config, BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
             CustomScopeAnnotationsBuildItem customScopes, List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        if (!config.devMode.monitoringEnabled) {
+        if (!config.devMode().monitoringEnabled()) {
             return;
         }
-        if (!config.transformUnproxyableClasses) {
+        if (!config.transformUnproxyableClasses()) {
             throw new IllegalStateException(
                     "Dev UI problem: monitoring of CDI business method invocations not possible\n\t- quarkus.arc.transform-unproxyable-classes was set to false and therefore it would not be possible to apply interceptors to unproxyable bean classes\n\t- please disable the monitoring feature via quarkus.arc.dev-mode.monitoring-enabled=false or enable unproxyable classes transformation");
         }
@@ -167,6 +165,8 @@ public class ArcDevUIProcessor {
         return false;
     }
 
+    private static final String BEAN_IDS_WITH_DEPENDENCY_GRAPHS = "beanIdsWithDependencyGraphs";
+    private static final String DEPENDENCY_GRAPHS = "dependencyGraphs";
     private static final String BEANS = "beans";
     private static final String OBSERVERS = "observers";
     private static final String INTERCEPTORS = "interceptors";

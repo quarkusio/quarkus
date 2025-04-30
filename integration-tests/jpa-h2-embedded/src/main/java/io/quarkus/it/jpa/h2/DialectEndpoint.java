@@ -1,44 +1,42 @@
 package io.quarkus.it.jpa.h2;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
 
 import jakarta.inject.Inject;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 
-@WebServlet(name = "DialectEndpoint", urlPatterns = "/dialect/version")
-public class DialectEndpoint extends HttpServlet {
+@Path("/dialect/")
+@Produces(MediaType.TEXT_PLAIN)
+public class DialectEndpoint {
     @Inject
     SessionFactory sessionFactory;
+    @Inject
+    DataSource dataSource;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
-            resp.getWriter().write(DialectVersions.toString(version));
-        } catch (Exception e) {
-            reportException("Failed to retrieve dialect version", e, resp);
-        }
+    @GET
+    @Path("version")
+    public String version() throws IOException {
+        var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        return DialectVersions.toString(version);
     }
 
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
+    @GET
+    @Path("actual-db-version")
+    public String actualDbVersion() throws IOException, SQLException {
+        try (var conn = dataSource.getConnection()) {
+            return conn.getMetaData().getDatabaseProductVersion();
         }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
     }
 
 }

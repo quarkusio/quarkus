@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.Session;
 import org.hibernate.type.StandardBasicTypes;
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/default-catalog-and-schema")
 @ApplicationScoped
@@ -27,7 +27,7 @@ public class DefaultCatalogAndSchemaResource {
     @Path("/test")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public String test(@QueryParam String expectedSchema) {
+    public String test(@RestQuery String expectedSchema) {
         assertThat(findUsingNativeQuery(expectedSchema, "foo")).isEmpty();
 
         EntityWithDefaultCatalogAndSchema entity = new EntityWithDefaultCatalogAndSchema();

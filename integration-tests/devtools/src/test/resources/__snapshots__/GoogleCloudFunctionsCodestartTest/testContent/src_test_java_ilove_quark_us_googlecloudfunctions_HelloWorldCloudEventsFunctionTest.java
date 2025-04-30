@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 @WithFunction(FunctionType.CLOUD_EVENTS)
 class HelloWorldCloudEventsFunctionTest {
     @Test
-    public void testAccept() {
+    void testAccept() {
         given()
                 .body("{\n" +
                         "        \"bucket\": \"MY_BUCKET\",\n" +

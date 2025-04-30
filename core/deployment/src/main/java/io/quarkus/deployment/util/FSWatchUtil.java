@@ -52,20 +52,25 @@ public class FSWatchUtil {
             for (Watcher watcher : watchers) {
                 try {
                     Path rootPath = watcher.rootPath;
-                    List<Path> matchingPaths = Files.walk(rootPath)
-                            .filter(path -> hasExtension(path, watcher.fileExtension))
-                            .collect(Collectors.toList());
-                    List<Path> changedFiles = new ArrayList<>();
-                    for (Path path : matchingPaths) {
-                        long lastModifiedTime = Files.getLastModifiedTime(path).toMillis();
-                        if (lastModifiedTime > lastModified.computeIfAbsent(path, whatever -> 0L)) {
-                            changedFiles.add(path);
-                            lastModified.put(path, lastModifiedTime);
-                        }
+                    if (!rootPath.toFile().isDirectory()) {
+                        // Skip directory - it does not exist.
+                        continue;
                     }
 
-                    if (!firstRun && !changedFiles.isEmpty()) {
-                        watcher.action.accept(changedFiles);
+                    try (var walker = Files.walk(rootPath)) {
+                        List<Path> matchingPaths = walker.filter(path -> hasExtension(path, watcher.fileExtension))
+                                .collect(Collectors.toList());
+                        List<Path> changedFiles = new ArrayList<>();
+                        for (Path path : matchingPaths) {
+                            long lastModifiedTime = Files.getLastModifiedTime(path).toMillis();
+                            if (lastModifiedTime > lastModified.computeIfAbsent(path, whatever -> 0L)) {
+                                changedFiles.add(path);
+                                lastModified.put(path, lastModifiedTime);
+                            }
+                        }
+                        if (!firstRun && !changedFiles.isEmpty()) {
+                            watcher.action.accept(changedFiles);
+                        }
                     }
                 } catch (IOException e) {
                     log.debug("Failed checking for code gen source modifications", e);

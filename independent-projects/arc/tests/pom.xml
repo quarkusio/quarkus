@@ -38,7 +38,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${version.mockito}</version>
             <scope>test</scope>
         </dependency>
 
@@ -69,7 +68,6 @@
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-core</artifactId>
-            <version>${version.kotlin-coroutines}</version>
             <scope>test</scope>
         </dependency>
 
@@ -80,7 +78,6 @@
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus-staging-maven-plugin.version}</version>
                 <configuration>
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
@@ -89,41 +86,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>java-17</id>
-            <activation>
-                <jdk>[17,)</jdk>
-            </activation>
-
-            <properties>
-                <maven.compiler.target>17</maven.compiler.target>
-                <maven.compiler.source>17</maven.compiler.source>
-                <maven.compiler.release>17</maven.compiler.release>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>add-java17-directory</id>
-                                <phase>generate-test-sources</phase>
-                                <goals>
-                                    <goal>add-test-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/test/java17</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
         <profile>
             <id>kotlin-tests</id>
             <activation>

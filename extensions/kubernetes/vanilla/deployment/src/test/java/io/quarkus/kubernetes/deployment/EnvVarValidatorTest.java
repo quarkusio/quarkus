@@ -55,8 +55,8 @@ class EnvVarValidatorTest {
     @Test
     void getBuildItemsTwoRedundantItemsShouldResultInOnlyOneItem() {
         final String name = "name";
-        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
-        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET, null);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET, null);
         validator.process(first);
         validator.process(second);
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
@@ -69,8 +69,8 @@ class EnvVarValidatorTest {
         final String name = "name";
         final String value1 = "foo";
         final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET);
-        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromSecret(name, TARGET);
-        final KubernetesEnvBuildItem third = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromSecret(name, TARGET, null);
+        final KubernetesEnvBuildItem third = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET, null);
         validator.process(first);
         validator.process(second);
         validator.process(third);
@@ -117,14 +117,14 @@ class EnvVarValidatorTest {
          * quarkus.kubernetes.env.secrets=secret
          * quarkus.kubernetes.env-vars.xxx.secret=secret
          */
-        final KubernetesEnvBuildItem newCM = KubernetesEnvBuildItem.createFromConfigMap("configmap", TARGET);
-        final KubernetesEnvBuildItem newS = KubernetesEnvBuildItem.createFromSecret("secret", TARGET);
+        final KubernetesEnvBuildItem newCM = KubernetesEnvBuildItem.createFromConfigMap("configmap", TARGET, null);
+        final KubernetesEnvBuildItem newS = KubernetesEnvBuildItem.createFromSecret("secret", TARGET, null);
         validator.process("foo", Optional.empty(), Optional.empty(), Optional.of("configmap"), Optional.empty(),
-                TARGET, true);
+                TARGET, Optional.empty(), true);
         validator.process(newS);
         validator.process(newCM);
         validator.process("foo", Optional.empty(), Optional.of("secret"), Optional.empty(), Optional.empty(),
-                TARGET, true);
+                TARGET, Optional.empty(), true);
         Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(2, items.size());
         assertTrue(items.contains(newCM));
@@ -168,7 +168,7 @@ class EnvVarValidatorTest {
         final String configmap = "configmap";
         final String key = "key";
         final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET);
-        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap,
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, null,
                 TARGET);
         validator.process(first);
         validator.process(second);
@@ -200,10 +200,10 @@ class EnvVarValidatorTest {
         final String name = "name";
         final String configmap = "configmap";
         final String key = "key";
-        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, TARGET);
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, null, TARGET);
         validator.process(first);
         validator.process(name, Optional.of("oldKey"), Optional.empty(), Optional.of(configmap), Optional.empty(),
-                TARGET, true);
+                TARGET, Optional.empty(), true);
         Collection<KubernetesEnvBuildItem> buildItems = validator.getBuildItems();
         assertEquals(1, buildItems.size());
         assertTrue(buildItems.contains(first));
@@ -211,7 +211,7 @@ class EnvVarValidatorTest {
         // check different order
         validator = new EnvVarValidator();
         validator.process(name, Optional.of("oldKey"), Optional.empty(), Optional.of(configmap), Optional.empty(),
-                TARGET, true);
+                TARGET, Optional.empty(), true);
         validator.process(first);
         buildItems = validator.getBuildItems();
         assertEquals(1, buildItems.size());

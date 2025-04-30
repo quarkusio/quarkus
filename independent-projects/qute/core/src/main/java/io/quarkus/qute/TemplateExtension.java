@@ -9,7 +9,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Instructs a fully integrated environment to generate a {@link ValueResolver} for a method annotated with this annotation.
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
+ * Instructs to generate a {@link ValueResolver} for a method annotated with this annotation.
  * <p>
  * If declared on a class a value resolver is generated for every non-private static method declared on the class. Method-level
  * annotations override the behavior defined on the class. Methods that do not meet the following requirements are ignored.
@@ -121,8 +125,13 @@ public @interface TemplateExtension {
     String matchRegex() default "";
 
     /**
+     * Value resolvers with higher priority take precedence.
+     * <p>
+     * Keep in mind that the reflection-based value resolver has priority {@code -1} and the max priority value for
+     * resolvers generated from {@link TemplateData} and type-safe expressions is {@code 10}.
      *
      * @return the priority used by the generated value resolver
+     * @see ValueResolver#getPriority()
      */
     int priority() default DEFAULT_PRIORITY;
 

@@ -60,7 +60,7 @@ public class TypesTest {
         resolvedTypeVariables.clear();
         // Foo<T>, Object
         Set<Type> fooTypes = Types.getClassBeanTypeClosure(fooClass,
-                dummyDeployment);
+                dummyDeployment).types();
         assertEquals(2, fooTypes.size());
         for (Type t : fooTypes) {
             if (t.kind().equals(Kind.PARAMETERIZED_TYPE)) {
@@ -83,18 +83,20 @@ public class TypesTest {
         final String wildcardInTypeHierarchy = "eagleProducer";
         assertDoesNotThrow(
                 () -> verifyEagleTypes(
-                        Types.getProducerMethodTypeClosure(producerClass.method(wildcardInTypeHierarchy), dummyDeployment)));
+                        Types.getProducerMethodTypeClosure(producerClass.method(wildcardInTypeHierarchy), dummyDeployment)
+                                .types()));
         assertDoesNotThrow(
                 () -> verifyEagleTypes(
-                        Types.getProducerFieldTypeClosure(producerClass.field(wildcardInTypeHierarchy), dummyDeployment)));
+                        Types.getProducerFieldTypeClosure(producerClass.field(wildcardInTypeHierarchy), dummyDeployment)
+                                .types()));
         // now do the same for a non-producer scenario with Eagle class
         assertDoesNotThrow(
                 () -> verifyEagleTypes(Types.getClassBeanTypeClosure(index.getClassByName(DotName.createSimple(Eagle.class)),
-                        dummyDeployment)));
+                        dummyDeployment).types()));
 
         // raw type bean
         Set<Type> rawBeanTypes = Types.getClassBeanTypeClosure(index.getClassByName(DotName.createSimple(MyRawBean.class)),
-                dummyDeployment);
+                dummyDeployment).types();
         assertEquals(rawBeanTypes.size(), 5);
         assertContainsType(MyRawBean.class, rawBeanTypes);
         assertContainsType(MyBean.class, rawBeanTypes);

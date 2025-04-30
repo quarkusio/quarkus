@@ -20,7 +20,7 @@ public final class TransactionalUniAsserter extends UniAsserterInterceptor {
 
     @Override
     protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {
-        return () -> SessionOperations.withTransaction(() -> uniSupplier.get());
+        return () -> SessionOperations.withTransaction(uniSupplier);
     }
 
 }

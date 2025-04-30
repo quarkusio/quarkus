@@ -210,7 +210,7 @@ class QuarkusTransactionImpl {
                 try {
                     getUserTransaction().setTransactionTimeout(
                             (int) Arc.container().instance(TransactionManagerConfiguration.class)
-                                    .get().defaultTransactionTimeout.toSeconds());
+                                    .get().defaultTransactionTimeout().toSeconds());
                 } catch (SystemException e) {
                     log.error("Failed to reset transaction timeout", e);
                 }

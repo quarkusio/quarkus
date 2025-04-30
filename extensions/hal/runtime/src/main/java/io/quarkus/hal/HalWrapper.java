@@ -24,7 +24,9 @@ public abstract class HalWrapper {
     @SuppressWarnings("unused")
     public void addLinks(Link... links) {
         for (Link link : links) {
-            this.links.put(link.getRel(), new HalLink(link.getUri().toString()));
+            this.links.put(link.getRel(), new HalLink(link.getUri().toString(),
+                    link.getTitle(),
+                    link.getType()));
         }
     }
 }

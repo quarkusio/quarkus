@@ -14,7 +14,7 @@ public class OpenApiHttpRootPathCorsTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.http.cors=true\n" +
+                    .addAsResource(new StringAsset("quarkus.http.cors.enabled=true\n" +
                             "quarkus.http.cors.origins=*\n" +
                             "quarkus.http.non-application-root-path=/api/q\n" +
                             "quarkus.http.root-path=/api"), "application.properties"));

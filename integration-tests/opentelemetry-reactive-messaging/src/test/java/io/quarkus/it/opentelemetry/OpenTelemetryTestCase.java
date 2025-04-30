@@ -1,5 +1,6 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -118,13 +119,13 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
 
-        Assertions.assertEquals("GET", spanData.get("attr_http.method"));
-        Assertions.assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(url.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
-        Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
-        Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
+        Assertions.assertEquals("GET", spanData.get("attr_http.request.method"));
+        Assertions.assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(url.getHost(), spanData.get("attr_server.address"));
+        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        Assertions.assertEquals("http", spanData.get("attr_url.scheme"));
+        Assertions.assertEquals("200", spanData.get("attr_http.response.status_code"));
+        Assertions.assertNotNull(spanData.get("attr_client.address"));
         Assertions.assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
@@ -134,12 +135,11 @@ public class OpenTelemetryTestCase {
         Assertions.assertNotNull(spanData.get("spanId"));
         verifyResource(spanData, parentSpanData);
 
-        Assertions.assertEquals(topic + " send", spanData.get("name"));
+        Assertions.assertEquals(topic + " " + PUBLISH.name().toLowerCase(), spanData.get("name"));
         Assertions.assertEquals(SpanKind.PRODUCER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
 
-        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination.kind"));
         Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
         Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
     }
@@ -157,14 +157,13 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertEquals(parentRemote, spanData.get("parent_remote"));
 
-        Assertions.assertEquals("topic", spanData.get("attr_messaging.destination.kind"));
         Assertions.assertEquals("opentelemetry-integration-test - kafka-consumer-" + channel,
                 spanData.get("attr_messaging.consumer.id"));
         Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
         Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
         Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.kafka.consumer.group"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.partition"));
-        Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.kafka.client_id"));
+        Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.client_id"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.message.offset"));
     }
 

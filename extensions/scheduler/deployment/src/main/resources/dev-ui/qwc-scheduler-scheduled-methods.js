@@ -17,6 +17,7 @@ export class QwcSchedulerScheduledMethods extends LitElement {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            height: 100%;
         }
     
         .schedules-table {

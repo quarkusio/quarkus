@@ -43,11 +43,11 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
     @Override
     public T get(CreationalContext<T> creationalContext) {
-        InjectionPoint prev = InjectionPointProvider.set(injectionPoint);
+        InjectionPoint prev = InjectionPointProvider.setCurrent(creationalContext, injectionPoint);
         try {
             return delegateSupplier.get().get(creationalContext);
         } finally {
-            InjectionPointProvider.set(prev);
+            InjectionPointProvider.setCurrent(creationalContext, prev);
         }
     }
 

@@ -117,6 +117,16 @@ public class SpringPreAuthorizeTest {
     }
 
     @Test
+    public void testPrincipalNameFromObjectIsNot() {
+        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")),
+                UnauthorizedException.class,
+                ANONYMOUS);
+        assertSuccess(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")), "whatever", USER);
+        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("user")), ForbiddenException.class,
+                USER);
+    }
+
+    @Test
     public void testNotSecured() {
         assertSuccess(() -> springComponent.notSecured(), "notSecured", ANONYMOUS);
         assertSuccess(() -> springComponent.notSecured(), "notSecured", USER);

@@ -34,6 +34,16 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
                 .get("/foo/openapi")
                 .then()
                 .statusCode(401);
+        given()
+                .when()
+                .get("/r/../foo/openapi")
+                .then()
+                .statusCode(401);
+        given()
+                .when()
+                .get("/foo/bar/../openapi")
+                .then()
+                .statusCode(401);
     }
 
     @Test

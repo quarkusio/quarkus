@@ -1,154 +1,175 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class DataSourceJdbcRuntimeConfig {
+public interface DataSourceJdbcRuntimeConfig {
 
     /**
      * The datasource URL
      */
-    @ConfigItem
-    public Optional<String> url = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> url();
 
     /**
      * The initial size of the pool. Usually you will want to set the initial size to match at least the
      * minimal size, but this is not enforced so to allow for architectures which prefer a lazy initialization
      * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
-    @ConfigItem
-    public OptionalInt initialSize = OptionalInt.empty();
+    OptionalInt initialSize();
 
     /**
      * The datasource pool minimum size
      */
-    @ConfigItem
-    public int minSize = 0;
+    @WithDefault("0")
+    int minSize();
 
     /**
      * The datasource pool maximum size
      */
-    @ConfigItem(defaultValue = "20")
-    public int maxSize = 20;
+    @WithDefault("20")
+    int maxSize();
 
     /**
      * The interval at which we validate idle connections in the background.
      * <p>
      * Set to {@code 0} to disable background validation.
      */
-    @ConfigItem(defaultValue = "2M")
-    public Optional<Duration> backgroundValidationInterval = Optional.of(Duration.ofMinutes(2));
+    @WithDefault("2M")
+    Duration backgroundValidationInterval();
 
     /**
      * Perform foreground validation on connections that have been idle for longer than the specified interval.
      */
-    @ConfigItem
-    public Optional<Duration> foregroundValidationInterval = Optional.empty();
+    Optional<Duration> foregroundValidationInterval();
 
     /**
      * The timeout before cancelling the acquisition of a new connection
      */
-    @ConfigItem(defaultValue = "5")
-    public Optional<Duration> acquisitionTimeout = Optional.of(Duration.ofSeconds(5));
+    @WithDefault("5S")
+    Optional<Duration> acquisitionTimeout();
 
     /**
      * The interval at which we check for connection leaks.
      */
-    @ConfigItem
-    public Optional<Duration> leakDetectionInterval = Optional.empty();
+
+    @ConfigDocDefault("This feature is disabled by default.")
+    Optional<Duration> leakDetectionInterval();
 
     /**
      * The interval at which we try to remove idle connections.
      */
-    @ConfigItem(defaultValue = "5M")
-    public Optional<Duration> idleRemovalInterval = Optional.of(Duration.ofMinutes(5));
+    @WithDefault("5M")
+    Duration idleRemovalInterval();
 
     /**
      * The max lifetime of a connection.
      */
-    @ConfigItem
-    public Optional<Duration> maxLifetime = Optional.empty();
+    @ConfigDocDefault("By default, there is no restriction on the lifespan of a connection.")
+    Optional<Duration> maxLifetime();
 
     /**
      * The transaction isolation level.
      */
-    @ConfigItem
-    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel = Optional.empty();
+    Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel();
 
     /**
      * Collect and display extra troubleshooting info on leaked connections.
      */
-    @ConfigItem
-    public boolean extendedLeakReport;
+    @WithDefault("false")
+    boolean extendedLeakReport();
 
     /**
      * Allows connections to be flushed upon return to the pool. It's not enabled by default.
      */
-    @ConfigItem
-    public boolean flushOnClose;
+    @WithDefault("false")
+    boolean flushOnClose();
 
     /**
-     * When enabled Agroal will be able to produce a warning when a connection is returned
+     * When enabled, Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.
      * Disable for peak performance, but only when there's high confidence that
      * no leaks are happening.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean detectStatementLeaks = true;
+    @WithDefault("true")
+    boolean detectStatementLeaks();
 
     /**
      * Query executed when first using a connection.
      */
-    @ConfigItem
-    public Optional<String> newConnectionSql = Optional.empty();
+    Optional<String> newConnectionSql();
 
     /**
      * Query executed to validate a connection.
      */
-    @ConfigItem
-    public Optional<String> validationQuerySql = Optional.empty();
+    Optional<String> validationQuerySql();
 
     /**
-     * Disable pooling to prevent reuse of Connections. Use this with when an external pool manages the life-cycle
+     * The timeout for the connection validation query
+     */
+    Optional<Duration> validationQueryTimeout();
+
+    /**
+     * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
+     * <p>
+     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation
+     * instead, and to leave this to `false`.
+     */
+    @WithDefault("false")
+    boolean validateOnBorrow();
+
+    /**
+     * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean poolingEnabled = true;
+    @WithDefault("true")
+    boolean poolingEnabled();
+
+    /**
+     * Whether to enable recovery for this datasource.
+     * <p>
+     * Normally a transaction manager will call xa_recover () on an XA connection during recovery to obtain
+     * a list of transaction branches that are currently in a prepared or heuristically completed state.
+     * However, it can happen that multiple XA connections connect to the same datasource which would all
+     * return the same set of branches and for reasons of improved performance only one should be used
+     * for recover() calls. The default value for this configuration property is true because when there
+     * is only one connection it is vital for data consistency that the connection is able to report its
+     * list of prepared or heuristically completed branches.
+     */
+    @WithDefault("true")
+    boolean enableRecovery();
 
     /**
      * Require an active transaction when acquiring a connection. Recommended for production.
      * WARNING: Some extensions acquire connections without holding a transaction for things like schema updates and schema
      * validation. Setting this setting to STRICT may lead to failures in those cases.
      */
-    @ConfigItem
-    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement = Optional.empty();
+    Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement();
 
     /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
-    @ConfigItem
-    public Map<String, String> additionalJdbcProperties = Collections.emptyMap();
-
-    /**
-     * Enable JDBC tracing.
-     */
-    @ConfigItem
-    public DataSourceJdbcTracingRuntimeConfig tracing = new DataSourceJdbcTracingRuntimeConfig();
+    @ConfigDocMapKey("property-key")
+    Map<String, String> additionalJdbcProperties();
 
     /**
      * Enable OpenTelemetry JDBC instrumentation.
      */
-    @ConfigItem(name = "telemetry.enabled", defaultValueDocumentation = "false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
-    public Optional<Boolean> telemetry;
+    @WithName("telemetry.enabled")
+    @ConfigDocDefault("false if quarkus.datasource.jdbc.telemetry=false and true if quarkus.datasource.jdbc.telemetry=true")
+    Optional<Boolean> telemetry();
 
 }

@@ -1,6 +1,8 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -9,9 +11,17 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.it.rest.ExternalService;
+import io.quarkus.it.rest.GreetingService;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -24,6 +34,12 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestProfile(SharedProfileTestCase.MyProfile.class)
 public class SharedProfileTestCase {
+
+    @Inject
+    GreetingService greetingService;
+
+    @Inject
+    ExternalService externalService;
 
     @Test
     public void included() {
@@ -48,6 +64,13 @@ public class SharedProfileTestCase {
     @Test
     public void testContext() {
         Assertions.assertEquals(MyProfile.class.getName(), DummyTestResource.testProfile.get());
+    }
+
+    @Test
+    public void testProfileBeans() {
+        assertEquals("Bonjour Foo", greetingService.greet("Foo"));
+        assertEquals("profile", externalService.service());
+        assertTrue(Arc.container().select(SharedNormalTestCase.class).isUnsatisfied());
     }
 
     public static class MyProfile implements QuarkusTestProfile {
@@ -76,6 +99,18 @@ public class SharedProfileTestCase {
         @Override
         public boolean runMainMethod() {
             return true;
+        }
+
+        @Priority(1000) // Must be higher than priority of MockExternalService
+        @Alternative
+        @Produces
+        public ExternalService externalService() {
+            return new ExternalService() {
+                @Override
+                public String service() {
+                    return "profile";
+                }
+            };
         }
     }
 

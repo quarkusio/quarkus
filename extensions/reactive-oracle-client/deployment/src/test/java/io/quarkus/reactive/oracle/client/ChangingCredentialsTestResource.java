@@ -12,13 +12,13 @@ import jakarta.ws.rs.core.Response;
 
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.oracleclient.OraclePool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @Path("/test")
 public class ChangingCredentialsTestResource {
 
     @Inject
-    OraclePool client;
+    Pool client;
 
     @Inject
     ChangingCredentialsProvider credentialsProvider;

@@ -16,8 +16,10 @@ import io.quarkus.test.component.beans.MyComponent;
 public class ObserverInjectingMockTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(MyComponent.class)
-            .useDefaultConfigProperties();
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
+            .addComponentClasses(MyComponent.class)
+            .useDefaultConfigProperties()
+            .build();
 
     @Inject
     Event<Boolean> event;

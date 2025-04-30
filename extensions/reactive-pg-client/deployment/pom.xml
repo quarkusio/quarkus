@@ -15,7 +15,7 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
-        <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
+        <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
     </properties>
 
     <dependencies>
@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -87,15 +87,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -133,9 +138,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

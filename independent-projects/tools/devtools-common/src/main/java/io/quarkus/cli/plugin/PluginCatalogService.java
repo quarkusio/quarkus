@@ -38,7 +38,7 @@ public class PluginCatalogService extends CatalogService<PluginCatalog> {
     /**
      * Read the {@link PluginCatalog} from project or fallback to global catalog.
      *
-     * @param ouput an {@link OutputOptionMixin} that can be used for tests to substitute current dir with a test directory.
+     * @param output an {@link OutputOptionMixin} that can be used for tests to substitute current dir with a test directory.
      * @param projectDir An optional path pointing to the project directory.
      * @param userdir An optional path pointing to the user directory
      * @return the catalog

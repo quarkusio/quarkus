@@ -21,7 +21,6 @@ import io.vertx.ext.web.RoutingContext;
 public class CORSFilter implements Handler<RoutingContext> {
 
     private static final Logger LOG = Logger.getLogger(CORSFilter.class);
-    private static final Pattern COMMA_SEPARATED_SPLIT_REGEX = Pattern.compile("\\s*,\\s*");
 
     // This is set in the recorder at runtime.
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
@@ -40,13 +39,13 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
-        this.wildcardOrigin = isOriginConfiguredWithWildcard(this.corsConfig.origins);
-        this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods);
-        this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins);
-        this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods);
-        this.exposedHeaders = createHeaderString(this.corsConfig.exposedHeaders);
-        this.allowedHeaders = createHeaderString(this.corsConfig.headers);
-        this.allowedMethods = createHeaderString(this.corsConfig.methods);
+        this.wildcardOrigin = isOriginConfiguredWithWildcard(this.corsConfig.origins());
+        this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods());
+        this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins());
+        this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods());
+        this.exposedHeaders = createHeaderString(this.corsConfig.exposedHeaders());
+        this.allowedHeaders = createHeaderString(this.corsConfig.headers());
+        this.allowedMethods = createHeaderString(this.corsConfig.methods());
     }
 
     private String createHeaderString(Optional<List<String>> headers) {
@@ -84,7 +83,13 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
-        return !origins.isEmpty() && origins.get().size() == 1 && "*".equals(origins.get().get(0));
+        if (origins.isEmpty() || origins.get().size() != 1) {
+            return false;
+        }
+
+        String origin = origins.get().get(0);
+
+        return "*".equals(origin) || "/.*/".equals(origin);
     }
 
     /**
@@ -141,21 +146,21 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             //for both normal and preflight requests we need to check the origin
             boolean allowsOrigin = wildcardOrigin;
+            boolean originMatches = !wildcardOrigin && corsConfig.origins().isPresent() &&
+                    (corsConfig.origins().get().contains(origin) || isOriginAllowedByRegex(allowedOriginsRegex, origin));
             if (!allowsOrigin) {
-                if (corsConfig.origins.isPresent()) {
-                    allowsOrigin = corsConfig.origins.get().contains(origin)
-                            || isOriginAllowedByRegex(allowedOriginsRegex, origin)
-                            || isSameOrigin(request, origin);
+                if (corsConfig.origins().isPresent()) {
+                    allowsOrigin = originMatches || isSameOrigin(request, origin);
                 } else {
                     allowsOrigin = isSameOrigin(request, origin);
                 }
             }
             if (!allowsOrigin) {
+                LOG.debugf("Invalid origin %s", origin);
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
             } else {
-                boolean allowCredentials = corsConfig.accessControlAllowCredentials
-                        .orElse(corsConfig.origins.isPresent() && corsConfig.origins.get().contains(origin));
+                boolean allowCredentials = corsConfig.accessControlAllowCredentials().orElse(originMatches);
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             }
@@ -184,7 +189,7 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             //we check that the actual request matches the allowed methods and headers
             if (!isMethodAllowed(request.method())) {
-                LOG.debug("Method is not allowed");
+                LOG.debugf("Method %s is not allowed", request.method());
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid method");
                 response.end();
@@ -204,9 +209,9 @@ public class CORSFilter implements Handler<RoutingContext> {
             boolean allowsOrigin) {
         //see https://fetch.spec.whatwg.org/#http-cors-protocol
 
-        if (corsConfig.accessControlMaxAge.isPresent()) {
+        if (corsConfig.accessControlMaxAge().isPresent()) {
             event.response().putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
-                    String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
+                    String.valueOf(corsConfig.accessControlMaxAge().get().getSeconds()));
         }
         var response = event.response();
         if (requestedMethods != null) {
@@ -310,7 +315,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private void processPreFlightRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
-        if (isConfiguredWithWildcard(corsConfig.headers)) {
+        if (isConfiguredWithWildcard(corsConfig.headers())) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowedHeaders);

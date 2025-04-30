@@ -1,61 +1,43 @@
 package io.quarkus.vertx.http.deployment;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.Optional;
 
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.PolicyConfig;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.IsApplicationBasicAuthRequired;
+import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceSecurityRecorder;
-import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.management.ManagementSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.ManagementInterfaceHttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.ManagementPathMatchingHttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.SupplierImpl;
 
 public class ManagementInterfaceSecurityProcessor {
 
-    @BuildStep
-    public void builtins(ManagementInterfaceBuildTimeConfig buildTimeConfig,
-            BuildProducer<AdditionalBeanBuildItem> beanProducer) {
-        if (!buildTimeConfig.auth.permissions.isEmpty()) {
-            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(ManagementPathMatchingHttpSecurityPolicy.class));
-        }
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIfNot = IsApplicationBasicAuthRequired.class)
+    @Record(ExecutionTime.STATIC_INIT)
     SyntheticBeanBuildItem initBasicAuth(
-            HttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementInterfaceSecurityRecorder recorder,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
-        if (HttpSecurityProcessor.applicationBasicAuthRequired(httpBuildTimeConfig, managementInterfaceBuildTimeConfig)) {
-            return null;
-        }
-
-        if (managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
+            ManagementSecurityRecorder recorder,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        if (managementBuildTimeConfig.auth().basic().orElse(false)) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(BasicAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
-                    .setRuntimeInit()
                     .scope(Singleton.class)
                     .supplier(recorder.setupBasicAuth());
             return configurator.done();
@@ -67,43 +49,55 @@ public class ManagementInterfaceSecurityProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setupAuthenticationMechanisms(
-            ManagementInterfaceSecurityRecorder recorder,
+            ManagementSecurityRecorder recorder,
             BuildProducer<ManagementInterfaceFilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
-            Capabilities capabilities,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItemBuildProducer,
-            ManagementInterfaceBuildTimeConfig buildTimeConfig) {
-
-        Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
-        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
-            policyMap.put(e.getKey(),
-                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed)));
-        }
-        policyMap.put("deny", new SupplierImpl<>(new DenySecurityPolicy()));
-        policyMap.put("permit", new SupplierImpl<>(new PermitSecurityPolicy()));
-        policyMap.put("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy()));
-
-        if (buildTimeConfig.auth.basic.orElse(false)
-                && capabilities.isPresent(Capability.SECURITY)) {
+            Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandlerBuildItem) {
+        if (managementAuthenticationHandlerBuildItem.isPresent()) {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable()
                             .addBeanClass(HttpAuthenticator.class)
+                            .addBeanClass(ManagementPathMatchingHttpSecurityPolicy.class)
                             .addBeanClass(ManagementInterfaceHttpAuthorizer.class).build());
             filterBuildItemBuildProducer
                     .produce(new ManagementInterfaceFilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
+                            recorder.getAuthenticationHandler(managementAuthenticationHandlerBuildItem.get().handler),
                             ManagementInterfaceFilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
-                    .produce(new ManagementInterfaceFilterBuildItem(recorder.permissionCheckHandler(buildTimeConfig, policyMap),
+                    .produce(new ManagementInterfaceFilterBuildItem(recorder.permissionCheckHandler(),
                             ManagementInterfaceFilterBuildItem.AUTHORIZATION));
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
-                beanContainerListenerBuildItemBuildProducer
-                        .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig, policyMap)));
-            }
-        } else {
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
-                throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
-            }
         }
     }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void createManagementAuthMechHandler(
+            ManagementSecurityRecorder recorder, Capabilities capabilities,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+            BuildProducer<ManagementAuthenticationHandlerBuildItem> managementAuthMechHandlerProducer) {
+        if (managementBuildTimeConfig.auth().enabled() && capabilities.isPresent(Capability.SECURITY)) {
+            managementAuthMechHandlerProducer.produce(new ManagementAuthenticationHandlerBuildItem(
+                    recorder.managementAuthenticationHandler(managementBuildTimeConfig.auth().proactive())));
+        }
+    }
+
+    @Produce(PreRouterFinalizationBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void initializeAuthMechanismHandler(Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandler,
+            ManagementSecurityRecorder recorder, ManagementConfig managementConfig, BeanContainerBuildItem containerBuildItem) {
+        if (managementAuthenticationHandler.isPresent()) {
+            recorder.initializeAuthenticationHandler(managementAuthenticationHandler.get().handler, managementConfig,
+                    containerBuildItem.getValue());
+        }
+    }
+
+    static final class ManagementAuthenticationHandlerBuildItem extends SimpleBuildItem {
+        private final RuntimeValue<AuthenticationHandler> handler;
+
+        private ManagementAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
+            this.handler = handler;
+        }
+    }
+
 }

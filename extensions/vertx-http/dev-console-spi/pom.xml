@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-vertx-http-dev-console-spi</artifactId>
     <name>Quarkus - Vert.x - HTTP - Dev Console SPI</name>
-
+    
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

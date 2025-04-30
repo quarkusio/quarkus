@@ -3,20 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-spring-web-resteasy-reactive-parent</artifactId>
+        <artifactId>quarkus-spring-web-rest-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
-    <name>Quarkus - Spring Web - RESTEasy Reactive - Deployment</name>
+    <artifactId>quarkus-spring-web-rest-deployment</artifactId>
+    <name>Quarkus - Spring Web - REST - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -25,7 +25,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+            <artifactId>quarkus-spring-web-rest</artifactId>
         </dependency>
 
         <dependency>
@@ -44,15 +44,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

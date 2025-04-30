@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to start using gRPC in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 This page explains how to start using gRPC in your Quarkus application.
 While this page describes how to configure it with Maven, it is also possible to use Gradle.
@@ -21,7 +23,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `grpc-plain-text-quickstart` {quickstarts-tree-url}/grpc-plain-text-quickstart[directory].
+The solution is located in the `grpc-plain-text-quickstart` link:{quickstarts-tree-url}/grpc-plain-text-quickstart[directory].
 
 == Configuring your project
 
@@ -44,21 +46,21 @@ implementation("io.quarkus:quarkus-grpc")
 
 By default, the `quarkus-grpc` extension relies on the reactive programming model.
 In this guide we will follow a reactive approach.
-Under the `dependencies` section of your `pom.xml` file, make sure you have the RESTEasy Reactive dependency:
+Under the `dependencies` section of your `pom.xml` file, make sure you have the Quarkus REST (formerly RESTEasy Reactive) dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 If you are using Maven, make sure you have the `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.
@@ -96,10 +98,6 @@ If this retrieved version does not work in your context, you can either force to
 `-Dquarkus.grpc.protoc-os-classifier=your-os-classifier` (e.g. `osx-x86_64`).
 You can also download the suitable binary and specify the location via
 `-Dquarkus.grpc.protoc-path=/path/to/protoc`.
-
-
-Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files.
-See the <<protobuf-maven-plugin>> section for more information.
 
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
@@ -165,56 +163,6 @@ target/generated-sources/grpc
 
 These are the classes we are going to use.
 
-
-=== `proto` files with imports
-
-Protocol Buffers specification provides a way to import `proto` files.
-The Quarkus code generation mechanism lets you control the scope of dependencies to scan for possible imports by setting the `quarkus.generate-code.grpc.scan-for-imports` property to one of the following:
-
-- `all` - scan all the dependencies
-- `none` - don't scan the dependencies, use only what is defined in the `src/main/proto` or `src/test/proto`
-- `groupId1:artifactId1,groupId2:artifactId2` - scan only the dependencies with group id and artifact id in the list.
-
-If not specified, the property is set to `com.google.protobuf:protobuf-java`.
-To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property in your application.properties to the desired value, e.g.
-
-[source,properties]
-----
-quarkus.generate-code.grpc.scan-for-imports=all
-----
-
-=== `proto` files from dependencies
-In some cases, you may want to use `proto` files from a different project to generate the gRPC stubs. In this case:
-
-1. Add a dependency on the artifact that contains the proto file to your project
-2. In `application.properties`, specify the dependencies you want to scan for proto files.
-
-[source,properties]
-----
-quarkus.generate-code.grpc.scan-for-proto=<groupId>:<artifactId>
-----
-The value of the property may be `none`, which is the default value, or a comma separated list of `groupId:artifactId` coordinates.
-
-NOTE: `option java_generic_services = true;` will automatically be removed from proto file containing it.
-
-If the dependency contains a lot of proto files and you want to generate classes for only a subset of them, you can specify glob patterns per dependency. The path to match are relative to the path `src/main/resources` in the dependency.
-
-For instance, having the following properties in your `application.properties`:
-
-[source,properties]
-----
-quarkus.generate-code.grpc.scan-for-proto-includes."<groupId>\:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
-quarkus.generate-code.grpc.scan-for-proto-excludes."<groupId>\:<artifactId>"=foo/private/**,bar/another-proto.proto
-----
-
-will include:
-
-* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
-* all files in the `bar/` directory and its subdirectories except for `another-proto.proto`.
-* `banana/a-proto.proto` file.
-
-NOTE: `:` character in the property keys must be escaped.
-
 == Different gRPC implementations / types
 
 Another thing to take note as well is that Quarkus' gRPC support currently includes 3 different types of gRPC usage:
@@ -229,7 +177,7 @@ Further docs explain how to enable and use each of them.
 
 Now that we have the generated classes let's implement our _hello_ service.
 
-With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean. 
+With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean.
 Learn more about Mutiny on the xref:mutiny-primer.adoc[Mutiny guide].
 The service class must be annotated with the `@io.quarkus.grpc.GrpcService` annotation.
 
@@ -370,107 +318,3 @@ Then, open http://localhost:8080/hello/quarkus in a browser, and you should get 
 Like any other Quarkus applications, you can package it with: `mvn package`.
 You can also package the application into a native executable with: `mvn package -Dnative`.
 
-[[protobuf-maven-plugin]]
-== Generating Java files from proto with protobuf-maven-plugin
-
-Alternatively to using Quarkus code generation to generate stubs for `proto` files, you can also use
-`protobuf-maven-plugin`.
-
-To do it, first define the 2 following properties in the `<properties>` section:
-
-[source,xml,subs="verbatim,attributes"]
-----
-<grpc.version>{grpc-version}</grpc.version>
-<protoc.version>{protoc-version}</protoc.version>
-----
-
-They configure the gRPC version and the `protoc` version.
-
-Then, add to the `build` section the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration.
-
-[source,xml,subs="verbatim,attributes"]
-----
-<build>
-    <extensions>
-        <extension>
-            <groupId>kr.motd.maven</groupId>
-            <artifactId>os-maven-plugin</artifactId>
-            <version>${os-maven-plugin-version}</version>
-        </extension>
-    </extensions>
-
-    <plugins>
-        <plugin>
-            <groupId>org.xolstice.maven.plugins</groupId>
-            <artifactId>protobuf-maven-plugin</artifactId>      // <1>
-            <version>${protobuf-maven-plugin-version}</version>
-            <configuration>
-                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact> // <2>
-                <pluginId>grpc-java</pluginId>
-                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
-                <protocPlugins>
-                    <protocPlugin>
-                        <id>quarkus-grpc-protoc-plugin</id>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-                        <version>{quarkus-version}</version>
-                        <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
-                    </protocPlugin>
-                </protocPlugins>
-            </configuration>
-            <executions>
-                <execution>
-                    <id>compile</id>
-                    <goals>
-                        <goal>compile</goal>
-                        <goal>compile-custom</goal>
-                    </goals>
-                </execution>
-                <execution>
-                    <id>test-compile</id>
-                    <goals>
-                        <goal>test-compile</goal>
-                        <goal>test-compile-custom</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-
-        <!-- ... -->
-    </plugins>
-</build>
-----
-<1> The `protobuf-maven-plugin` that generates stub classes from your gRPC service definition (`proto` files).
-<2> The class generation uses a tool named `protoc`, which is OS-specific.
-That's why we use the `os-maven-plugin` to target the executable compatible with the operating system.
-
-NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
-
-IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plugin`, every time you update the `proto` files, you need to re-generate the classes (using `mvn compile`).
-
-
-== gRPC classes from dependencies
-
-When gRPC classes - the classes generated from `proto` files - are in a dependency of the application, then the dependency needs a Jandex index.
-The `jandex-maven-plugin` can be used to create a Jandex index. More information on this topic can be found in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
-
-[source,xml,subs="attributes+"]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.smallrye</groupId>
-            <artifactId>jandex-maven-plugin</artifactId>
-            <version>{jandex-version}</version>
-            <executions>
-                <execution>
-                <id>make-index</id>
-                <goals>
-                    <goal>jandex</goal>
-                </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-----

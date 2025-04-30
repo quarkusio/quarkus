@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-test-locales-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+    <artifactId>quarkus-integration-test-locales-app</artifactId>
+    <name>Quarkus - Integration Tests - Locales - App</name>
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-constraint</artifactId>
+        </dependency>
+    </dependencies>
+</project>

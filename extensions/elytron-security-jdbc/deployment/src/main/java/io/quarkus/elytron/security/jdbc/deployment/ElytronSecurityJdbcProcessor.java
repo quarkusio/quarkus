@@ -48,17 +48,17 @@ class ElytronSecurityJdbcProcessor {
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BeanContainerBuildItem beanContainerBuildItem, //we need this to make sure ArC is initialized
             List<JdbcDataSourceBuildItem> dataSourcesConfigured) throws Exception {
-        if (!jdbcSecurityRealmBuildTimeConfig.enabled) {
+        if (!jdbcSecurityRealmBuildTimeConfig.enabled()) {
             return;
         }
 
         RuntimeValue<SecurityRealm> realm = recorder.createRealm(jdbcSecurityRealmRuntimeConfig);
-        securityRealm.produce(new SecurityRealmBuildItem(realm, jdbcSecurityRealmBuildTimeConfig.realmName, null));
+        securityRealm.produce(new SecurityRealmBuildItem(realm, jdbcSecurityRealmBuildTimeConfig.realmName(), null));
     }
 
     @BuildStep
     ElytronPasswordMarkerBuildItem marker(JdbcSecurityRealmBuildTimeConfig jdbcSecurityRealmBuildTimeConfig) {
-        if (!jdbcSecurityRealmBuildTimeConfig.enabled) {
+        if (!jdbcSecurityRealmBuildTimeConfig.enabled()) {
             return null;
         }
         return new ElytronPasswordMarkerBuildItem();

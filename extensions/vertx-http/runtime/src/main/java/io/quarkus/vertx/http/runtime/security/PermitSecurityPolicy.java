@@ -9,6 +9,6 @@ public class PermitSecurityPolicy implements HttpSecurityPolicy {
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        return Uni.createFrom().item(CheckResult.PERMIT);
+        return CheckResult.permit();
     }
 }

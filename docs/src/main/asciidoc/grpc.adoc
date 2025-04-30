@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: Entry point for everything gRPC.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc,io.quarkus:quarkus-grpc-xds
 
 https://grpc.io/[gRPC] is a high-performance RPC framework.
 It can efficiently connect services implemented using various languages and frameworks.
@@ -32,3 +34,6 @@ Quarkus gRPC is based on https://vertx.io/docs/vertx-grpc/java/[Vert.x gRPC].
 * xref:grpc-service-consumption.adoc[Consuming a gRPC Service]
 * xref:grpc-kubernetes.adoc[Deploying your gRPC Service in Kubernetes]
 * xref:grpc-xds.adoc[Enabling xDS gRPC support]
+* xref:grpc-generation-reference.adoc[gRPC code generation reference guide]
+* xref:grpc-reference.adoc[gRPC reference guide]
+* xref:grpc-cli.adoc[gRPC CLI support]

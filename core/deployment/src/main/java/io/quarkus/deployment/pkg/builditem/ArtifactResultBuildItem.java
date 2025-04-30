@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.sbom.ApplicationManifestConfig;
 
 /**
  * Represents a runnable artifact, such as an uberjar or thin jar.
@@ -16,12 +17,19 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
 
     private final Path path;
     private final String type;
-    private final Map<String, Object> metadata;
+    private final Map<String, String> metadata;
+    private final ApplicationManifestConfig manifestConfig;
 
-    public ArtifactResultBuildItem(Path path, String type, Map<String, Object> metadata) {
+    public ArtifactResultBuildItem(Path path, String type, Map<String, String> metadata) {
+        this(path, type, metadata, null);
+    }
+
+    public ArtifactResultBuildItem(Path path, String type, Map<String, String> metadata,
+            ApplicationManifestConfig manifestConfig) {
         this.path = path;
         this.type = type;
         this.metadata = metadata;
+        this.manifestConfig = manifestConfig;
     }
 
     public Path getPath() {
@@ -32,7 +40,11 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
         return type;
     }
 
-    public Map<String, Object> getMetadata() {
+    public ApplicationManifestConfig getManifestConfig() {
+        return manifestConfig;
+    }
+
+    public Map<String, String> getMetadata() {
         return metadata;
     }
 }

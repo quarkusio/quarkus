@@ -15,7 +15,7 @@
     <name>Quarkus - Reactive Microsoft SQL Server Client - Deployment</name>
 
     <properties>
-        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>
+        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
     </properties>
 
     <dependencies>
@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -87,15 +87,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -132,9 +137,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -151,7 +153,7 @@
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <SA_PASSWORD>A_Str0ng_Required_Password</SA_PASSWORD>
+                                            <MSSQL_SA_PASSWORD>yourStrong(!)Password</MSSQL_SA_PASSWORD>
                                         </env>
                                         <log>
                                             <prefix>MSSQL:</prefix>

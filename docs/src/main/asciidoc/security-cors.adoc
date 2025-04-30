@@ -1,0 +1,98 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-cors"]
+= Cross-Origin Resource Sharing (CORS)
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: security,web
+:summary: Enable and configure CORS in Quarkus to specify allowed origins, methods, and headers, guiding browsers in handling cross-origin requests safely.
+:keywords: cors,http,configuration, security, headers
+:extensions: io.quarkus:quarkus-vertx-http
+
+Enable and configure CORS in Quarkus to specify allowed origins, methods, and headers, guiding browsers in handling cross-origin requests safely.
+
+Cross-Origin Resource Sharing (CORS) uses HTTP headers to manage browser requests for resources from external origins securely.
+By specifying permitted origins, methods, and headers, Quarkus servers can use the CORS filter to enable browsers to request resources across domains while maintaining controlled access.
+This mechanism enhances security and supports legitimate cross-origin requests.
+For more on origin definitions, see the link:https://datatracker.ietf.org/doc/html/rfc6454[Web Origin Concept].
+
+[[cors-filter]]
+== Enabling the CORS filter
+
+To enforce CORS policies in your application, enable the Quarkus CORS filter by adding the following line to the `src/main/resources/application.properties` file:
+
+[source, properties]
+----
+quarkus.http.cors.enabled=true
+----
+
+The filter intercepts all incoming HTTP requests to identify cross-origin requests and applies the configured policy.
+The filter then adds CORS headers to the HTTP response, informing browsers about allowed origins and access parameters.
+For preflight requests, the filter returns an HTTP response immediately.
+For regular CORS requests, the filter denies access with an HTTP 403 status if the request violates the configured policy; otherwise, the filter forwards the request to the destination if the policy allows it.
+
+For detailed configuration options, see the following Configuration Properties section.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.cors.adoc[leveloffset=+1, opts=optional]
+
+== Example CORS configuration
+
+The following example shows a complete CORS filter configuration, including a regular expression to define one of the origins.
+
+[source, properties]
+----
+quarkus.http.cors.enabled=true <1>
+quarkus.http.cors.origins=http://example.com,http://www.example.io,/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/ <2>
+quarkus.http.cors.methods=GET,PUT,POST <3>
+quarkus.http.cors.headers=X-Custom <4>
+quarkus.http.cors.exposed-headers=Content-Disposition <5>
+quarkus.http.cors.access-control-max-age=24H <6>
+quarkus.http.cors.access-control-allow-credentials=true <7>
+----
+
+<1> Enables the CORS filter.
+<2> Specifies allowed origins, including a regular expression.
+<3> Lists allowed HTTP methods for cross-origin requests.
+<4> Declares custom headers that clients can include in requests.
+<5> Identifies response headers that clients can access.
+<6> Sets how long preflight request results are cached.
+<7> Allows cookies or credentials in cross-origin requests.
+
+When using regular expressions in an `application.properties` file, escape special characters with four backward slashes (`\\\\`) to ensure proper behavior.
+For example:
+
+* `\\\\.` matches a literal `.` character.
+* `\\.` matches any single character as a regular expression metadata character.
+
+[IMPORTANT]
+====
+Incorrectly escaped patterns can lead to unintended behavior or security vulnerabilities.
+Always verify regular expression syntax before deployment.
+====
+
+== Allowing all origins in dev mode
+
+Configuring origins during development can be challenging.
+To simplify development, consider allowing all origins in development mode only:
+
+[source, properties]
+----
+quarkus.http.cors.enabled=true
+%dev.quarkus.http.cors.origins=/.*/
+----
+
+[WARNING]
+====
+Only allow all origins in the development profile (`%dev`).
+Allowing unrestricted origins in production environments poses severe security risks, such as unauthorized data access or resource abuse.
+For production, define explicit origins in the `quarkus.http.cors.origins` property.
+====
+
+== References
+
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:http-reference.adoc[Quarkus HTTP Reference]
+* link:https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[Mozilla HTTP CORS documentation]

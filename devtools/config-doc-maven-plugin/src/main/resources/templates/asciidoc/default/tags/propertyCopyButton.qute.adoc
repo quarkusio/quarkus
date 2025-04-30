@@ -1,0 +1,3 @@
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++{it}+++[]
+endif::add-copy-button-to-config-props[]

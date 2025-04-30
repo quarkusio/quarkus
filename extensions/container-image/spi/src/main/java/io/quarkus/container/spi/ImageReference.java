@@ -16,6 +16,7 @@
 
 package io.quarkus.container.spi;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,7 +78,7 @@ public class ImageReference {
 
     private static final Pattern REFERENCE_PATTERN = Pattern.compile(REFERENCE_REGEX);
 
-    private final String registry;
+    private final Optional<String> registry;
     private final String repository;
     private final String tag;
     private final String digest;
@@ -146,32 +147,29 @@ public class ImageReference {
         String tag = matcher.group(3);
         String digest = matcher.group(4);
 
-        // If no registry was matched, use Docker Hub by default.
-        if (StringUtil.isNullOrEmpty(registry)) {
-            registry = DOCKER_HUB_REGISTRY;
-        }
-
         if (StringUtil.isNullOrEmpty(repository)) {
             throw new IllegalArgumentException("Reference " + reference + " is invalid: The repository was not set");
         }
-        /*
-         * If a registry was matched but it does not contain any dots or colons, it should actually be
-         * part of the repository unless it is "localhost".
-         *
-         * See https://github.com/docker/distribution/blob/245ca4659e09e9745f3cc1217bf56e946509220c/reference/normalize.go#L62
-         */
-        if (!registry.contains(".") && !registry.contains(":") && !"localhost".equals(registry)) {
-            repository = registry + "/" + repository;
-            registry = DOCKER_HUB_REGISTRY;
-        }
 
-        /*
-         * For Docker Hub, if the repository is only one component, then it should be prefixed with
-         * 'library/'.
-         *
-         * See https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-from-docker-hub
-         */
-        if (DOCKER_HUB_REGISTRY.equals(registry) && repository.indexOf('/') < 0) {
+        if (StringUtil.isNullOrEmpty(registry)) {
+            registry = null;
+        } else if (!registry.contains(".") && !registry.contains(":") && !"localhost".equals(registry)) {
+            /*
+             * If a registry was matched but it does not contain any dots or colons, it should actually be
+             * part of the repository unless it is "localhost".
+             *
+             * See
+             * https://github.com/docker/distribution/blob/245ca4659e09e9745f3cc1217bf56e946509220c/reference/normalize.go#L62
+             */
+            repository = registry + "/" + repository;
+            registry = null;
+        } else if (DOCKER_HUB_REGISTRY.equals(registry) && repository.indexOf('/') < 0) {
+            /*
+             * For Docker Hub, if the repository is only one component, then it should be prefixed with
+             * 'library/'.
+             *
+             * See https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-from-docker-hub
+             */
             repository = LIBRARY_REPOSITORY_PREFIX + repository;
         }
 
@@ -188,16 +186,19 @@ public class ImageReference {
         return new ImageReference(registry, repository, tag, digest);
     }
 
-    private ImageReference(
-            String registry, String repository, String tag, String digest) {
-        this.registry = registry;
+    private ImageReference(String registry, String repository, String tag, String digest) {
+        this.registry = Optional.ofNullable(registry);
         this.repository = repository;
         this.tag = tag;
         this.digest = digest;
     }
 
-    public String getRegistry() {
+    public Optional<String> getRegistry() {
         return registry;
+    }
+
+    public String getEffectiveRegistry() {
+        return registry.orElse(DOCKER_HUB_REGISTRY);
     }
 
     public String getRepository() {

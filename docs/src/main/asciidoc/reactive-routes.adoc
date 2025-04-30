@@ -7,16 +7,18 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide demonstrates how to use reactive routes.
+:topics: http,web,routing
+:extensions: io.quarkus:quarkus-reactive-routes
 
 Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
 This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.
 Quarkus also offers the possibility to use reactive routes.
 You can implement REST API with routes only or combine them with Jakarta REST resources and servlets.
 
-The code presented in this guide is available in this {quickstarts-base-url}[GitHub repository] under the {quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
+The code presented in this guide is available in this {quickstarts-base-url}[GitHub repository] under the link:{quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
 
 NOTE: Reactive Routes were initially introduced to provide a reactive execution model for HTTP APIs on top of the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture].
-With the introduction of xref:resteasy-reactive.adoc[RESTEasy Reactive], you can now implement reactive HTTP APIs and still use Jakarta REST annotations.
+With the introduction of xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)], you can now implement reactive HTTP APIs and still use Jakarta REST annotations.
 Reactive Routes are still supported, especially if you want a more _route-based_ approach, and something closer to the underlying reactive engine.
 
 == Quarkus HTTP
@@ -78,8 +80,8 @@ public class MyDeclarativeRoutes {
     void hello(RoutingContext rc) { // <3>
         rc.response().end("hello");
     }
-    
-    @Route(path = "/world") 
+
+    @Route(path = "/world")
     String helloWorld() { // <4>
         return "Hello world!";
     }
@@ -136,7 +138,7 @@ public void blocking(RoutingContext rc) {
     // ...
 }
 ----
-When `@Blocking` is used, it ignores the `type` attribute of `@Route`.
+When `@Blocking` is used, the `type` attribute of the `@Route` is ignored.
 ====
 
 The `@Route` annotation is repeatable and so you can declare several routes for a single method:
@@ -161,6 +163,12 @@ String person() {
 }
 ----
 <1> If the `accept` header matches `text/html`, we set the content type automatically to `text/html`.
+
+=== Executing route on a virtual thread
+
+You can annotate a route method with `@io.smallrye.common.annotation.RunOnVirtualThread` in order to execute it on a virtual thread.
+However, keep in mind that not everything can run safely on virtual threads.
+You should read the xref:virtual-threads.adoc#run-code-on-virtual-threads-using-runonvirtualthread[Virtual thread support reference] carefully and get acquainted with all the details.
 
 === Handling conflicting routes
 
@@ -214,20 +222,20 @@ public class SimpleRoutes {
     }
 }
 ----
-<1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used. 
+<1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used.
 <2> The value of `produces()` is used for content-based routing for all routes where `Route#produces()` is empty.
 
 
 == Reactive Route Methods
 
 A route method must be a non-private non-static method of a CDI bean.
-If the annotated method returns `void` then it has to accept at least one argument - see the supported types below. 
+If the annotated method returns `void` then it has to accept at least one argument - see the supported types below.
 If the annotated method does not return `void` then the arguments are optional.
 
 NOTE: Methods that return `void` must __end__ the response or the HTTP request to this route will never end.
 Some methods of `RoutingExchange` do it for you, others not and you must call the `end()` method of the response by yourself, please refer to its JavaDoc for more information.
 
-A route method can accept arguments of the following types: 
+A route method can accept arguments of the following types:
 
 * `io.vertx.ext.web.RoutingContext`
 * `io.quarkus.vertx.web.RoutingExchange`
@@ -240,10 +248,10 @@ Furthermore, it is possible to inject the `HttpServerRequest` parameters into me
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.request().getParam()`   
-|`java.util.Optional<String>`   |`routingContext.request().getParam()`   
+|`java.lang.String`   |`routingContext.request().getParam()`
+|`java.util.Optional<String>`   |`routingContext.request().getParam()`
 |`java.util.List<String>`   |`routingContext.request().params().getAll()`
 |===
 
@@ -260,10 +268,10 @@ The `HttpServerRequest` headers can be injected into method parameters annotated
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.request().getHeader()`   
-|`java.util.Optional<String>`   |`routingContext.request().getHeader()`   
+|`java.lang.String`   |`routingContext.request().getHeader()`
+|`java.util.Optional<String>`   |`routingContext.request().getHeader()`
 |`java.util.List<String>`   |`routingContext.request().headers().getAll()`
 |===
 
@@ -280,13 +288,13 @@ The request body can be injected into a method parameter annotated with `@io.qua
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.getBodyAsString()`   
-|`io.vertx.core.buffer.Buffer`   |`routingContext.getBody()`   
-|`io.vertx.core.json.JsonObject`   |`routingContext.getBodyAsJson()`   
-|`io.vertx.core.json.JsonArray`   |`routingContext.getBodyAsJsonArray()`   
-|any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`   
+|`java.lang.String`   |`routingContext.getBodyAsString()`
+|`io.vertx.core.buffer.Buffer`   |`routingContext.getBody()`
+|`io.vertx.core.json.JsonObject`   |`routingContext.getBodyAsJson()`
+|`io.vertx.core.json.JsonArray`   |`routingContext.getBodyAsJsonArray()`
+|any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`
 |===
 
 .Request Body Example
@@ -299,7 +307,7 @@ Person createPerson(@Body Person person, @Param("id") Optional<String> primaryKe
 }
 ----
 
-A failure handler can declare a single method parameter whose type extends `Throwable`. 
+A failure handler can declare a single method parameter whose type extends `Throwable`.
 The type of the parameter is used to match the result of `RoutingContext#failure()`.
 
 .Failure Handler Example
@@ -637,6 +645,7 @@ Note that only `@Valid` is supported on the return type.
 The returned class can use any constraint.
 In the case of `Uni`, it checks the item produced asynchronously.
 
+[[using-vertx-web-router]]
 == Using the Vert.x Web Router
 
 You can also register your route directly on the _HTTP routing layer_ by registering routes directly on the `Router` object.
@@ -655,7 +664,7 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-resteasy-reactive` or `quarkus-reactive-routes`, the extension will be added automatically.
+If you use `quarkus-rest` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
 
 You can also receive the Mutiny variant of the Router (`io.vertx.mutiny.ext.web.Router`):
@@ -708,7 +717,7 @@ The response body is never compressed if:
 - the route method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
 - the `Content-Type` header is not set.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
@@ -781,7 +790,7 @@ Also see xref:openapi-swaggerui.adoc[the OpenAPI Guide].
 
 === Adding MicroProfile OpenAPI Annotations
 
-You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
+You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema,
 for instance, adding header info, or specifying the return type on `void` methods might be useful:
 
 [source, java]
@@ -803,21 +812,21 @@ public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
     @Route(methods = Route.HttpMethod.GET)
-    @APIResponse(responseCode="200", 
-            description="Say hello", 
+    @APIResponse(responseCode="200",
+            description="Say hello",
             content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING))) // <2>
     void hello(RoutingContext rc) {
         rc.response().end("hello");
     }
-    
-    @Route(path = "/world") 
+
+    @Route(path = "/world")
     String helloWorld() {
         return "Hello world!";
     }
 
     @Route(path = "/greetings", methods = HttpMethod.GET)
-    @APIResponse(responseCode="200", 
-            description="Greeting", 
+    @APIResponse(responseCode="200",
+            description="Greeting",
             content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING)))
     void greetings(RoutingExchange ex) {
         ex.ok("hello " + ex.getParam("name").orElse("world"));

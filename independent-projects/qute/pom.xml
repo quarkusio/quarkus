@@ -38,19 +38,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
-        <version.junit>5.9.3</version.junit>
-        <version.assertj>3.24.2</version.assertj>
-        <version.jandex>3.1.2</version.jandex>
-        <version.gizmo>1.6.1.Final</version.gizmo>
-        <version.jboss-logging>3.5.1.Final</version.jboss-logging>
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0</version.surefire.plugin>
-        <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>2.3.1</version.smallrye-mutiny>
+        <version.junit>5.12.2</version.junit>
+        <version.assertj>3.27.3</version.assertj>
+        <version.jandex>3.3.0</version.jandex>
+        <version.gizmo>1.9.0</version.gizmo>
+        <version.jboss-logging>3.6.1.Final</version.jboss-logging>
+        <version.smallrye-common>2.12.0</version.smallrye-common>
+        <version.smallrye-mutiny>2.8.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -60,6 +54,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${version.smallrye-common}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -111,7 +112,6 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${version.compiler.plugin}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -133,6 +133,7 @@
                     <executions>
                         <execution>
                             <id>enforce</id>
+                            <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
@@ -155,45 +156,12 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${version.surefire.plugin}</version>
                     <configuration>
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                         <systemPropertyVariables combine.self="override"/>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code.formatter</groupId>
-                    <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.23.0</version>
-                    <dependencies>
-                        <dependency>
-                            <artifactId>quarkus-ide-config</artifactId>
-                            <groupId>io.quarkus</groupId>
-                            <version>${project.version}</version>
-                        </dependency>
-                      </dependencies>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
-                        <configFile>eclipse-format.xml</configFile>
-                        <lineEnding>LF</lineEnding>
-                        <skip>${format.skip}</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code</groupId>
-                    <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.9.0</version>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <groups>java.,javax.,jakarta.,org.,com.</groups>
-                        <staticGroups>*</staticGroups>
-                        <skip>${format.skip}</skip>
-                        <removeUnused>true</removeUnused>
                     </configuration>
                 </plugin>
             </plugins>
@@ -258,68 +226,6 @@
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
             </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${version.nexus-staging-maven-plugin}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you
-                            need to add and edit the following profile: <profile> <id>release</id> <properties>
-                            <gpg.useagent>false</gpg.useagent> <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable>
-                            <- use gpg1 on Mac OS X <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to
-                            your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                            </properties> </profile> -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>format</id>

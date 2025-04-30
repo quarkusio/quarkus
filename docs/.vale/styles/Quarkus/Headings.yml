@@ -24,6 +24,7 @@ exceptions:
   - Azure
   - Basic authentication
   - Basic HTTP authentication
+  - BOM
   - Bierner
   - Bitbucket
   - BOM
@@ -82,8 +83,10 @@ exceptions:
   - Flathub
   - Flatpak
   - Flatpak Builder
+  - Fluentd
   - Fortran
   - Funqy
+  - gRPC
   - GCC
   - GTKplus
   - GUI
@@ -96,6 +99,7 @@ exceptions:
   - GraalVM
   - Gradle
   - GraphQL
+  - Graylog
   - Grayscale
   - GTK
   - HTTP
@@ -117,14 +121,18 @@ exceptions:
   - Infinispan
   - Intelephense
   - IntelliJ
+  - Istio
   - Itanium
   - JAR file
+  - JBang
   - JUnit
   - JVM
   - Jakarta
   - Jandex
   - Java
   - Jave
+  - JBoss Log Manager
+  - JBoss Logging
   - JetBrains
   - Jira
   - Jolokia
@@ -138,6 +146,7 @@ exceptions:
   - Kubespray
   - Kylin
   - Laravel
+  - Logstash
   - Lombok
   - Makefile
   - Mandrel
@@ -167,8 +176,8 @@ exceptions:
   - OpEx
   - OpenID Connect
   - OpenJDK
+  - OpenRewrite
   - OpenShift
-  - OpenTracing
   - PHP
   - Podman
   - Podman Desktop
@@ -184,8 +193,6 @@ exceptions:
   - Qt
   - Quarkiverse
   - Quarkus
-  - Quarkus Security
-  - Quiltflower
   - Qute
   - RESTEasy
   - Red Hat
@@ -224,6 +231,7 @@ exceptions:
   - Valgrind
   - Velero
   - Vert.x
+  - Vineflower
   - WebAuthn
   - WebSocket
   - Webview
@@ -246,4 +254,5 @@ exceptions:
   - startx
   - vNIC
   - vNUMA
+  - xDS
   - xterm

@@ -74,6 +74,10 @@ public class AdditionalWatchedResourcesDevModeTest {
         TEST.modifyResourceFile(SAMPLE_FILE, oldSource -> MODIFIED);
 
         RestAssured.get("/content/{name}", SAMPLE_FILE).then().body(is(MODIFIED));
+
+        TEST.modifyResourceFile(SAMPLE_FILE, oldSource -> INITIAL);
+
+        RestAssured.get("/content/{name}", SAMPLE_FILE).then().body(is(INITIAL));
     }
 
     @Test

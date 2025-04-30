@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,9 +31,9 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
         implements ReactiveSearchCommands<K>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    protected final Class<K> keyType;
+    protected final Type keyType;
 
-    public ReactiveSearchCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveSearchCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
         this.keyType = k;
@@ -59,6 +60,7 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
         if (response == null) {
             return new AggregationResponse(Collections.emptyList());
         }
+
         var payload = response;
         var cursorId = -1L;
         if (cursor) {
@@ -66,6 +68,27 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
             cursorId = response.get(1).toLong();
         }
 
+        if (isMap(payload)) {
+            // Redis 7.2+ behavior
+            Response results = payload.get("results");
+            List<AggregateDocument> docs = new ArrayList<>();
+            if (results != null) {
+                for (Response result : results) {
+                    Map<String, Document.Property> list = new HashMap<>();
+                    if (result.containsKey("extra_attributes")) {
+                        Response attributes = result.get("extra_attributes");
+                        for (String propertyName : attributes.getKeys()) {
+                            list.put(propertyName, new Document.Property(propertyName, attributes.get(propertyName)));
+                        }
+                    }
+                    AggregateDocument doc = new AggregateDocument(list);
+                    docs.add(doc);
+                }
+            }
+            return new AggregationResponse(cursorId, docs);
+        }
+
+        // Pre-Redis 7.2 behavior:
         List<AggregateDocument> docs = new ArrayList<>();
         for (int i = 1; i < payload.size(); i++) {
             var nested = payload.get(i);
@@ -185,6 +208,38 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
         if (response == null) {
             return new SearchQueryResponse(0, Collections.emptyList());
         }
+
+        if (isMap(response)) {
+            // Read it as a map - Redis 7.2 behavior
+            var count = response.get("total_results");
+            if (count == null || count.toInteger() == 0) {
+                return new SearchQueryResponse(0, Collections.emptyList());
+            }
+            var total = count.toInteger();
+
+            List<Document> docs = new ArrayList<>();
+            Response results = response.get("results");
+            for (int i = 0; i < results.size(); i++) {
+                Response result = results.get(i);
+                Response score = result.get("score");
+                Response payload = result.get("payload");
+                Response doc = result.get("extra_attributes");
+
+                Map<String, Document.Property> properties = new HashMap<>();
+                if (doc != null) {
+                    for (String k : doc.getKeys()) {
+                        properties.put(k, new Document.Property(k, doc.get(k)));
+                    }
+                }
+                docs.add(
+                        new Document(result.get("id").toString(), score == null ? 1.0 : score.toDouble(), payload, properties));
+            }
+
+            return new SearchQueryResponse(total, docs);
+
+        }
+
+        // 7.2- behavior
         var count = response.get(0).toInteger();
         if (count == 0) {
             return new SearchQueryResponse(0, Collections.emptyList());
@@ -248,6 +303,33 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
             return new SpellCheckResponse(Collections.emptyMap());
         }
         Map<String, List<SpellCheckResponse.SpellCheckSuggestion>> resp = new LinkedHashMap<>();
+        if (isMap(response)) {
+            // Redis 7.2 behavior.
+            Response results = response.get("results");
+            Set<String> terms = results.getKeys();
+            for (String word : terms) {
+                List<SpellCheckResponse.SpellCheckSuggestion> list = new ArrayList<>();
+                Response suggestions = results.get(word);
+                if (suggestions.size() == 0) {
+                    resp.put(word, Collections.emptyList());
+                } else {
+                    for (Response suggestion : suggestions) {
+                        for (String proposal : suggestion.getKeys()) {
+                            double distance = suggestion.get(proposal).toDouble();
+                            if (!proposal.equals(word)) {
+                                list.add(new SpellCheckResponse.SpellCheckSuggestion(proposal, distance));
+                            }
+                        }
+                        if (!list.isEmpty()) {
+                            resp.put(word, list);
+                        }
+                    }
+                }
+
+            }
+            return new SpellCheckResponse(resp);
+        }
+
         for (Response term : response) {
             if (!term.get(0).toString().equals("TERM")) {
                 continue; // Unknown format
@@ -290,6 +372,20 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
         if (r == null || r.size() == 0) {
             return new SynDumpResponse(Collections.emptyMap());
         }
+        if (isMap(r)) {
+            Set<String> keys = r.getKeys();
+            // Redis 7.2 behavior
+            Map<String, List<String>> synonyms = new HashMap<>();
+            for (String key : keys) {
+                var groups = r.get(key);
+                for (Response group : groups) {
+                    synonyms.computeIfAbsent(group.toString(), x -> new ArrayList<>()).add(key);
+                }
+            }
+            return new SynDumpResponse(synonyms);
+
+        }
+
         Map<String, List<String>> synonyms = new HashMap<>();
         String term = null;
         for (Response response : r) {

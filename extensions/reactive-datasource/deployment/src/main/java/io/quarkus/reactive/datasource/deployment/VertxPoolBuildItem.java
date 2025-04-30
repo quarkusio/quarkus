@@ -10,28 +10,26 @@ import io.vertx.sqlclient.Pool;
  * If you inject this build item when recording runtime init template calls, you are guaranteed the Pool configuration
  * has been injected and Pools can be created.
  */
+@Deprecated(forRemoval = true)
 public final class VertxPoolBuildItem extends MultiBuildItem {
 
-    private final RuntimeValue<? extends Pool> vertxPool;
-    private final String dbKind;
-    private final boolean isDefault;
+    public VertxPoolBuildItem() {
+    }
 
     public VertxPoolBuildItem(RuntimeValue<? extends Pool> vertxPool, String dbKind, boolean isDefault) {
-        this.vertxPool = vertxPool;
-        this.dbKind = dbKind;
-        this.isDefault = isDefault;
+
     }
 
     public RuntimeValue<? extends Pool> getPool() {
-        return vertxPool;
+        throw new IllegalStateException("should never be called");
     }
 
     public String getDbKind() {
-        return dbKind;
+        throw new IllegalStateException("should never be called");
     }
 
     public boolean isDefault() {
-        return isDefault;
+        throw new IllegalStateException("should never be called");
     }
 
 }

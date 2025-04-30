@@ -6,26 +6,30 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Contexts and Dependency Injection
 include::_attributes.adoc[]
 :categories: core
+:keywords: arc
 :summary: Go more in depth into the Quarkus implementation of CDI.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: cdi,arc,injection,interceptor,observer
+:extensions: io.quarkus:quarkus-arc
 
-Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html[Jakarta Contexts and Dependency Injection 4.1, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
-See also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
+See also <<supported_features_and_limitations,the list of supported features and limitations>>.
+Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
-TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
+TIP: If you're new to CDI we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
-NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
+TIP: The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related integration use cases, and example code for solutions.
 
 [[bean_discovery]]
 == Bean Discovery
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only single bean archive with the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
@@ -35,7 +39,7 @@ The bean archive is synthesized from:
 * dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
-Bean classes that don't have a https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+Bean classes that don't have a https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`.
@@ -82,7 +86,7 @@ plugins {
     id 'org.kordamp.gradle.jandex' version '{jandex-gradle-plugin-version}'
 }
 ----
-
+You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]
 ****
 
 [role="secondary asciidoc-tabs-sync-gradle-kotlin"]
@@ -92,9 +96,11 @@ plugins {
 [source,kotlin,subs=attributes+]
 ----
 plugins {
-    id("org.kordamp.gradle.jandex") version '{jandex-gradle-plugin-version}'
+    id("org.kordamp.gradle.jandex") version "{jandex-gradle-plugin-version}"
 }
 ----
+You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]
+
 ****
 
 
@@ -103,9 +109,11 @@ If you can't modify the dependency, you can still index it by adding `quarkus.in
 [source,properties]
 ----
 quarkus.index-dependency.<name>.group-id=
-quarkus.index-dependency.<name>.artifact-id=
+quarkus.index-dependency.<name>.artifact-id=(this one is optional)
 quarkus.index-dependency.<name>.classifier=(this one is optional)
 ----
+
+TIP: If no `artifact-id` is specified then all dependencies with the specified `group-id` are indexed.
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
@@ -155,10 +163,117 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 <1> Value is a group id for a dependency identified by name `acme`.
 <2> Value is an artifact id for a dependency identified by name `acme`.
 
+[[string-based-qualifiers]]
+== String-Based Qualifiers
+
+The `@Named` qualifier, which you might be familiar with, is a _string-based qualifier_.
+That is, it's the string value of the qualifier annotation who determines whether the qualifier matches or not.
+This is not type-safe and should not be the norm in CDI applications.
+Specific qualifier types should be preferred.
+
+However, sometimes string-based qualifiers are necessary.
+In that case, avoid the `@Named` qualifier, because in CDI, it works differently to all other qualifiers.
+
+Specifically: if the only qualifier a bean has is `@Named`, it also automatically gets `@Default`.
+This means that if multiple beans of the same type exist, one of them without qualifiers and the others with `@Named`, they _all_ get the `@Default` qualifier and bean resolution will error with ambiguity.
+For example:
+
+[source,java]
+----
+@ApplicationScoped
+public class Producers {
+    @Produces
+    MyBean produce() {
+        ...
+    }
+
+    @Produces
+    @Named("foo")
+    MyBean produceFoo() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+In this case, the `Consumer#bean` injection point will cause ambiguity error, because both `MyBean` producers will have the `@Default` qualifier.
+
+Instead of `@Named`, use `@io.smallrye.common.annotation.Identifier`.
+This is a regular qualifier that works like all others.
+So if we rewrite the example to use `@Identifier`:
+
+[source,java]
+----
+@ApplicationScoped
+public class Producers {
+    @Produces
+    MyBean produce() {
+        ...
+    }
+
+    @Produces
+    @Identifier("foo")
+    MyBean produceFoo() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+Only the first producer will get the `@Default` qualifier, the second will not.
+Hence, there will be no error and everything will work as expected.
+
+=== When To Use `@Named`?
+
+There is one case where `@Named` is the right thing to use: specifying an external identifier for a different language that doesn't support dependency injection directly.
+
+For example:
+
+[source,java]
+----
+@ApplicationScoped
+@Named("myBean")
+public class MyBean {
+    public String getValue() {
+        ...
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+    @Inject
+    MyBean bean;
+}
+----
+
+As you can see, in the application code, the bean is injected without a qualifier.
+The bean name is only used to refer to the bean in the other language.
+
+Historically, the most common external language that used bean names was JSF.
+In Quarkus, we have xref:qute-reference.adoc#injecting-beans-directly-in-templates[Qute].
+In a Qute template, one would refer to the bean using its name:
+
+[source]
+----
+The current value is {inject:myBean.value}.
+----
+
+Outside of this use-case, just use `@Identifier`.
+
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
 Reflective operations are supported but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 
@@ -200,43 +315,25 @@ public class CounterBean {
 ----
 <1> A package-private constructor injection. `@Inject` is optional in this particular case.
 
-[[supported_features]]
-== Supported Features
+[[supported_features_and_limitations]]
+== [[supported_features]][[limitations]] Supported Features and Limitations
 
-* Programming model
-** Managed beans implemented by a Java class
-*** `@PostConstruct` and `@PreDestroy` lifecycle callbacks
-** Producer methods and fields, disposers
-** Qualifiers
-** Alternatives
-** Stereotypes
-* Dependency injection and lookup
-** Field, constructor and initializer/setter injection
-** Type-safe resolution
-** Programmatic lookup via `jakarta.enterprise.inject.Instance`
-** Client proxies
-** Injection point metadata
-* Scopes and contexts; see xref:cdi.adoc#bean-scope-available[here] for details
-* Interceptors
-** Business method interceptors: `@AroundInvoke`
-** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
+The CDI Lite specification is fully supported.
+The following features from CDI Full are also supported:
+
 * Decorators
-* Events and observer methods, including asynchronous events and transactional observer methods
-* Build Compatible Extensions
-* `BeanContainer`
+** Decoration of built-in beans, such as `Event`, is not supported
+* `BeanManager`
+** In addition to the `BeanContainer` methods, the following methods are supported: `getInjectableReference()`, `resolveDecorators()`
+* `@SessionScoped`
+** Only with the Undertow extension; see xref:cdi.adoc#bean-scope-available[here] for details
 
-[[limitations]]
-== Limitations
+The _method invokers_ implementation supports asynchronous methods.
+The following methods are considered asynchronous and `@Dependent` instances are only destroyed when the asynchronous action completes:
 
-* `@ConversationScoped` is not supported
-* Portable Extensions are not supported
-* `BeanManager`: in addition to the `BeanContainer` methods, only the following methods are supported: `getInjectableReference()`, `resolveDecorators()`
-* Specialization is not supported
-* `beans.xml` descriptor content is ignored, except for the `bean-discovery-mode` attribute
-* Passivation and passivating scopes are not supported
-* Interceptor methods on superclasses are not implemented yet
-* `@Interceptors` is not supported
-* Decoration of built-in beans, such as `Event`, is not supported
+* methods that declare a return type of `CompletionStage`, `Uni`, or `Multi`
+
+NOTE: These additional features are not covered by the CDI Lite TCK.
 
 [[nonstandard_features]]
 == Non-standard Features
@@ -343,6 +440,7 @@ public class EagerAppBean {
 
 NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 
+[[request-context-lifecycle]]
 === Request Context Lifecycle
 
 The request context is also active:
@@ -449,22 +547,23 @@ A good example is a Jakarta REST resource class or a bean which declares a `@Sch
 
 An _unremovable_ bean:
 
-* is excluded from removal by an extension, or
+* is <<eliminate_false_positives,excluded from removal>>, or
 * has a name designated via `@Named`, or
 * declares an observer method.
 
 An _unused_ bean:
 
 * is not _unremovable_, and
-* is not eligible for injection to any injection point in the dependency tree, and
+* is not eligible for injection to any injection point in the dependency tree of _unremovable_ beans, and
 * does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
-* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point.
+* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point, and
+* is not eligible for injection into any <<injecting-multiple-bean-instances-intuitively,`@Inject @All List<>`>> injection point.
 
 Unused interceptors and decorators are not associated with any bean.
 
 [TIP]
 ====
-When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can see more information about which beans are being removed:
+When using the dev mode (running `./mvnw quarkus:dev`), you can see more information about which beans are being removed:
 
 1. In the console - just enable the DEBUG level in your `application.properties`, i.e. `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG`
 2. In the relevant Dev UI page
@@ -548,6 +647,25 @@ public class CustomTracerConfiguration {
 `@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
 way Quarkus supports.
 
+Default beans can optionally declare `@jakarta.annotation.Priority`.
+If there is no priority defined, `@Priority(0)` is assumed.
+Priority value is used for bean ordering and during typesafe resolution to disambiguate multiple matching default beans.
+
+[source,java]
+----
+@Dependent
+public class CustomizedDefaultConfiguration {
+
+    @Produces
+    @DefaultBean
+    @Priority(100)
+    public Configuration customizedConfiguration(){
+        // create a customized default Configuration
+        // this will have priority over previously defined default bean
+    }
+}
+----
+
 [[enable_build_profile]]
 === Enabling Beans for Quarkus Build Profile
 
@@ -600,12 +718,14 @@ public class TracerConfiguration {
 
 NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
 
+TIP: It is also possible to use `@IfBuildProfile` and `@UnlessBuildProfile` on stereotypes.
+
 [[enable_build_properties]]
 === Enabling Beans for Quarkus Build Properties
 
-Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has/has not a specific value,
+Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has or does not have a specific value,
 via the `@io.quarkus.arc.properties.IfBuildProperty` and `@io.quarkus.arc.properties.UnlessBuildProperty` annotations.
-When used in conjunction with `@io.quarkus.arc.DefaultBean`, this annotation allow for the creation of different bean configurations for different build properties.
+When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build properties.
 
 The scenario we mentioned above with `Tracer` could also be implemented in the following way:
 
@@ -652,6 +772,8 @@ public class TracerConfiguration {
 ----
 
 NOTE: Properties set at runtime have absolutely no effect on the bean resolution using `@IfBuildProperty`.
+
+TIP: It is also possible to use `@IfBuildProperty` and `@UnlessBuildProperty` on stereotypes.
 
 === Declaring Selected Alternatives
 
@@ -714,6 +836,7 @@ class Producers {
 }
 ----
 
+[[interception_of_static_methods]]
 === Interception of Static Methods
 
 The Interceptors specification is clear that _around-invoke_ methods must not be declared static.
@@ -942,6 +1065,52 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+=== Sorting beans obtained with programmatic lookup
+
+If there is more than one bean that matches the required type and qualifiers and is eligible for injection, it is possible to iterate (or stream) available bean instances.
+Beans returned by both stream and iterator methods are sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first.
+If no priority is explicitly declared, 0 is assumed.
+
+[source,java]
+----
+interface Service {
+
+}
+
+@Priority(100)
+@ApplicationScoped
+class FirstService implements Service {
+
+}
+
+@Priority(10)
+@ApplicationScoped
+class SecondService implements Service {
+
+}
+
+@ApplicationScoped
+class ThirdService implements Service {
+
+}
+
+@ApplicationScoped
+class Client {
+
+   @Inject
+   Instance<Service> serviceInstance;
+
+   void printServiceName() {
+       if(service.isAmbiguous()){
+           for (Service service : serviceInstance) {
+                // FirstService, SecondService, ThirdService
+           }
+       }
+   }
+}
+----
+
+[[injecting-multiple-bean-instances-intuitively]]
 === Injecting Multiple Bean Instances Intuitively
 
 In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `jakarta.enterprise.inject.Instance` which implements `java.lang.Iterable`.
@@ -1057,6 +1226,299 @@ public class NoopAsyncObserverExceptionHandler implements AsyncObserverException
 }
 ----
 
+=== Intercepted self-invocation
+
+Quarkus supports what is known as intercepted self-invocation or just self-interception - a scenario where CDI bean invokes its own intercepted method from within another method while triggering any associated interceptors.
+This is a non-standard feature as CDI specification doesn't define whether self-interception should work or not.
+
+Suppose we have a CDI bean with two methods, one of which has the `@Transactional` interceptor binding associated with it:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyService {
+
+  @Transactional <1>
+  void doSomething() {
+    // some application logic
+  }
+
+  void doSomethingElse() {
+    doSomething();<2>
+  }
+
+}
+----
+<1> One or more interceptor bindings; `@Transactional` is just an example.
+<2> Non-intercepted method invoking another method from the same bean that has associated binding(s); this will trigger interception.
+
+In the above example, any code calling the `doSomething()` method triggers interception - in this case, the method becomes transactional.
+This is regardless of whether the invocation originated directly from the `MyService` bean (such as `MyService#doSomethingElse`) or from some other bean.
+
+=== Intercepting Producer Methods and Synthetic Beans
+
+By default, interception is only supported for managed beans (also known as class-based beans).
+To support interception of producer methods and synthetic beans, the CDI specification includes an `InterceptionFactory`, which is a runtime oriented concept and therefore cannot be supported in Quarkus.
+
+Instead, Quarkus has its own API: `InterceptionProxy` and `@BindingsSource`.
+The `InterceptionProxy` is very similar to `InterceptionFactory`: it creates a proxy that applies `@AroundInvoke` interceptors before forwarding the method call to the target instance.
+The `@BindingsSource` annotation allows setting interceptor bindings in case the intercepted class is external and cannot be changed.
+
+[source,java]
+----
+import io.quarkus.arc.InterceptionProxy;
+
+@ApplicationScoped
+class MyProducer {
+    @Produces
+    MyClass produce(InterceptionProxy<MyClass> proxy) { // <1>
+        return proxy.create(new MyClass()); // <2>
+    }
+}
+----
+
+<1> Declares an injection point of type `InterceptionProxy<MyClass>`.
+    This means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
+    Note that the type argument must be identical to the return type of the producer method.
+<2> Creates an instance of the interception proxy for the given instance of `MyClass`.
+    The method calls will be forwarded to this target instance after all interceptors run.
+
+In this example, interceptor bindings are read from the `MyClass` class.
+
+IMPORTANT: Note that `InterceptionProxy` only supports `@AroundInvoke` interceptors declared on interceptor classes.
+Other kinds of interception, as well as `@AroundInvoke` interceptors declared on the target class and its superclasses, are not supported.
+
+The intercepted class should be https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
+If it isn't, a bytecode transformation will attempt to fix it if <<unproxyable_classes_transformation,enabled>>, but note that adding a zero-parameter constructor is not always possible.
+
+It is often the case that the produced classes come from external libraries and don't contain interceptor binding annotations at all.
+To support such cases, the `@BindingsSource` annotation may be declared on the `InterceptionProxy` parameter:
+
+[source,java]
+----
+import io.quarkus.arc.BindingsSource;
+import io.quarkus.arc.InterceptionProxy;
+
+abstract class MyClassBindings { // <1>
+    @MyInterceptorBinding
+    abstract String doSomething();
+}
+
+@ApplicationScoped
+class MyProducer {
+    @Produces
+    MyClass produce(@BindingsSource(MyClassBindings.class) InterceptionProxy<MyClass> proxy) { // <2>
+        return proxy.create(new MyClass());
+    }
+}
+----
+
+<1> A class that mirrors the `MyClass` structure and contains interceptor bindings.
+<2> The `@BindingsSource` annotation says that interceptor bindings for `MyClass` should be read from `MyClassBindings`.
+
+The concept of _bindings source_ is a build-time friendly equivalent of `InterceptionFactory.configure()`.
+
+NOTE: Producer method interception and synthetic bean interception only works for instance methods.
+<<interception_of_static_methods>> is not supported for producer methods and synthetic beans.
+
+==== Declaring `@BindingsSource`
+
+The `@BindingsSource` annotation specifies a class that mirrors the structure of the intercepted class.
+Interceptor bindings are then read from that class and treated as if they were declared on the intercepted class.
+
+Specifically: class-level interceptor bindings declared on the bindings source class are treated as class-level bindings of the intercepted class.
+Method-level interceptor bindings declared on the bindings source class are treated as method-level bindings of a method with the same name, return type, parameter types and `static` flag of the intercepted class.
+
+It is common to make the bindings source class and methods `abstract` so that you don't have to write method bodies:
+
+[source,java]
+----
+abstract class MyClassBindings {
+    @MyInterceptorBinding
+    abstract String doSomething();
+}
+----
+
+Since this class is never instantiated and its method are never invoked, this is okay, but it's also possible to create a non-`abstract` class:
+
+[source,java]
+----
+class MyClassBindings {
+    @MyInterceptorBinding
+    String doSomething() {
+        return null; // <1>
+    }
+}
+----
+
+<1> The method body does not matter.
+
+Note that for generic classes, the type variable names must also be identical.
+For example, for the following class:
+
+[source,java]
+----
+class MyClass<T> {
+    T doSomething() {
+        ...
+    }
+
+    void doSomethingElse(T param) {
+        ...
+    }
+}
+----
+
+the bindings source class must also use `T` as the name of the type variable:
+
+[source,java]
+----
+abstract class MyClassBindings<T> {
+    @MyInterceptorBinding
+    abstract T doSomething();
+}
+----
+
+You don't need to declare methods that are not annotated simply because they exist on the intercepted class.
+If you want to add method-level bindings to a subset of methods, you only have to declare the methods that are supposed to have an interceptor binding.
+If you only want to add class-level bindings, you don't have to declare any methods at all.
+
+These annotations can be present on a bindings source class:
+
+* _interceptor bindings_: on the class and on the methods
+* _stereotypes_: on the class
+* `@NoClassInterceptors`: on the methods
+
+Any other annotation present on a bindings source class is ignored.
+
+==== Synthetic Beans
+
+Using `InterceptionProxy` in synthetic beans is similar.
+
+First, you have to declare that your synthetic bean injects the `InterceptionProxy`:
+
+[source,java]
+----
+public void register(RegistrationContext context) {
+    context.configure(MyClass.class)
+            .types(MyClass.class)
+            .injectInterceptionProxy() // <1>
+            .creator(MyClassCreator.class)
+            .done();
+}
+----
+
+<1> Once again, this means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
+
+Second, you have to obtain the `InterceptionProxy` from the `SyntheticCreationalContext` in the `BeanCreator` and use it:
+
+[source,java]
+----
+public MyClass create(SyntheticCreationalContext<MyClass> context) {
+    InterceptionProxy<MyClass> proxy = context.getInterceptionProxy(); // <1>
+    return proxy.create(new MyClass());
+}
+----
+
+<1> Obtains the `InterceptionProxy` for `MyClass`, as declared above.
+    It would also be possible to use the `getInjectedReference()` method, passing a `TypeLiteral`, but `getInterceptionProxy()` is easier.
+
+There's also an equivalent of `@BindingsSource`.
+The `injectInterceptionProxy()` method has an overload with a parameter:
+
+[source,java]
+----
+public void register(RegistrationContext context) {
+    context.configure(MyClass.class)
+            .types(MyClass.class)
+            .injectInterceptionProxy(MyClassBindings.class) // <1>
+            .creator(MyClassCreator.class)
+            .done();
+}
+----
+
+<1> The argument is the bindings source class.
+
+=== `Instance.Handle.close()` Behavior
+
+Per the CDI specification, the `Instance.Handle.close()` method always delegates to `destroy()`.
+In ArC, this is only true in the <<strict_mode>>.
+
+In the default mode, the `close()` method only delegates to `destroy()` when the bean is `@Dependent` (or when the instance handle does not represent a CDI contextual object).
+When the instance handle represents a bean of any other scope, the `close()` method does nothing; the bean is left as is and will be destroyed whenever its context is destroyed.
+
+This is to make the following code behave as one would naively expect:
+
+[source,java]
+----
+Instance<T> instance = ...;
+try (Instance.Handle<T> handle : instance.getHandle()) {
+   T value = handle.get();
+   ... use value ...
+}
+----
+
+The `@Dependent` beans are destroyed immediately, while other beans are not destroyed at all.
+This is important when multiple beans of different scopes might be returned by the `Instance`.
+
+[[reactive_pitfalls]]
+== Pitfalls with Reactive Programming
+
+CDI is a purely synchronous framework.
+Its notion of asynchrony is very limited and based solely on thread pools and thread offloading.
+Therefore, there is a number of pitfalls when using CDI together with reactive programming.
+
+=== Detecting When Blocking Is Allowed
+
+The `io.quarkus.runtime.BlockingOperationControl#isBlockingAllowed()` method can be used to detect whether blocking is allowed on the current thread.
+When it is not, and you need to perform a blocking operation, you have to offload it to another thread.
+The easiest way is to use the `Vertx.executeBlocking()` method:
+
+[source,java]
+----
+import io.quarkus.runtime.BlockingOperationControl;
+
+@ApplicationScoped
+public class MyBean {
+    @Inject
+    Vertx vertx;
+
+    @PostConstruct
+    void init() {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            somethingThatBlocks();
+        } else {
+            vertx.executeBlocking(() -> {
+                somethingThatBlocks();
+                return null;
+            });
+        }
+    }
+
+    void somethingThatBlocks() {
+        // use the file system or JDBC, call a REST service, etc.
+        Thread.sleep(5000);
+    }
+}
+----
+
+=== Asynchronous Observers
+
+CDI asynchronous observers (`@ObservesAsync`) are not aware of reactive programming and are not meant to be used as part of reactive pipelines.
+The observer methods are meant to be synchronous, they are just offloaded to a thread pool.
+
+The `Event.fireAsync()` method returns a `CompletionStage` that completes when all observers are notified.
+If all observers were notified successfully, the `CompletionStage` completes with the event payload.
+If some observers have thrown an exception, the `CompletionStage` completes exceptionally with a `CompletionException`.
+
+The return type of the observer _does not matter_.
+The return value of the observer is _ignored_.
+
+You may declare an observer method that has a return type of `CompletionStage<>` or `Uni<>`, but neither the return type nor the actual return value affect the result of `Event.fireAsync()`.
+Further, if the observer declares a return type of `Uni<>`, the returned `Uni` will not be subscribed to, so it is quite possible that part of the observer logic will not even execute.
+
+Therefore, it is recommended that observer methods, both synchronous and asynchronous, are always declared `void`.
+
 [[build_time_apis]]
 == Build Time Extensions
 
@@ -1065,9 +1527,10 @@ The downside of this approach is that CDI Portable Extensions cannot be supporte
 Nevertheless, most of the functionality can be achieved using Quarkus xref:writing-extensions.adoc[extensions].
 See the xref:cdi-integration.adoc[integration guide] for more information.
 
-== Development Mode
+[[dev_mode]]
+== [[development-mode]] Dev mode
 
-In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
+In dev mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
 
 * HTTP GET `/q/arc` - returns the summary; number of beans, config properties, etc.
 * HTTP GET `/q/arc/beans` - returns the list of all beans
@@ -1078,11 +1541,11 @@ In the development mode, two special endpoints are registered automatically to p
 * HTTP GET `/q/arc/removed-beans` - returns the list of unused beans removed during build
 * HTTP GET `/q/arc/observers` - returns the list of all observer methods
 
-NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
+NOTE: These endpoints are only available in dev mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
 
 === Monitoring Business Method Invocations and Events
 
-In the development mode, it is also possible to enable monitoring of business method invocations and fired events.
+In dev mode, it is also possible to enable monitoring of business method invocations and fired events.
 Simply set the `quarkus.arc.dev-mode.monitoring-enabled` configuration property to `true` and explore the relevant Dev UI pages.
 
 [[strict_mode]]

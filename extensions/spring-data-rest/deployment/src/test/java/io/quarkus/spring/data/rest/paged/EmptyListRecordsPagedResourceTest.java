@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.spring.data.rest.AbstractEntity;
 import io.quarkus.test.QuarkusUnitTest;
 
 class EmptyListRecordsPagedResourceTest {

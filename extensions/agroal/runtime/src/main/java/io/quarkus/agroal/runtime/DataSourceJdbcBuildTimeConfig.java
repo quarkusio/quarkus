@@ -3,50 +3,43 @@ package io.quarkus.agroal.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class DataSourceJdbcBuildTimeConfig {
+public interface DataSourceJdbcBuildTimeConfig {
 
     /**
      * If we create a JDBC datasource for this datasource.
      */
-    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "true")
-    public boolean enabled = true;
+    @WithParentName
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * The datasource driver class name
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> driver = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> driver();
 
     /**
      * Whether we want to use regular JDBC transactions, XA, or disable all transactional capabilities.
      * <p>
      * When enabling XA you will need a driver implementing {@link javax.sql.XADataSource}.
      */
-    @ConfigItem(defaultValue = "enabled")
-    public TransactionIntegration transactions = TransactionIntegration.ENABLED;
+    @WithDefault("enabled")
+    TransactionIntegration transactions();
 
     /**
      * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if
      * a metrics extension is active.
      */
-    @ConfigItem
-    public Optional<Boolean> enableMetrics = Optional.empty();
-
-    /**
-     * Enable JDBC tracing. Disabled by default.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean tracing = false;
+    Optional<Boolean> enableMetrics();
 
     /**
      * Enable OpenTelemetry JDBC instrumentation.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean telemetry = false;
+    @WithDefault("false")
+    boolean telemetry();
 }

@@ -1,1 +1,2 @@
 io.quarkus.qute.runtime.devmode.QuteErrorPageSetup
+io.quarkus.qute.runtime.devmode.QuteSetup

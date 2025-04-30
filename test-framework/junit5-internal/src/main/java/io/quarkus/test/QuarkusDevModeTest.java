@@ -28,6 +28,7 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -41,33 +42,50 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.BootstrapAppModelFactory;
+import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
-import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.TestConfigProviderResolver;
 
 /**
- * A test extension for testing Quarkus development mode in extensions. Intended for use by extension developers
- * testing their extension functionality in dev mode. Unlike {@link QuarkusUnitTest} this will test against
- * a clean deployment for each test method. This is necessary to prevent undefined behaviour by making sure the
- * deployment starts in a clean state for each test.
+ * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
  * <p>
+ * Intended for use by extension developers testing their extension functionality in dev mode.
  * <p>
- * NOTE: These tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
- * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}. This is necessary to ensure dev mode is tested correctly.
- * <p>
+ * Note that unlike {@link QuarkusUnitTest}:
+ * <ul>
+ * <li>Tests run in black-box mode: the classloader of test methods
+ * does not give access to the running Quarkus application,
+ * so things like CDI will not work.
+ * You should define REST endpoints that perform the actions you want to simulate in your tests,
+ * and call those REST endpoints in your tests using e.g. RestAssured.</li>
+ * <li>Each test method will run in a clean deployment.
+ * This is necessary to prevent undefined behaviour by making sure the
+ * deployment starts in a clean state for each test.</li>
+ * <li>Tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
+ * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}.
+ * This is necessary to ensure dev mode is tested correctly.
  * A side effect of this is that the tests will run on port 8080 by default instead of port 8081.
+ * </ul>
  */
 public class QuarkusDevModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
@@ -166,7 +184,7 @@ public class QuarkusDevModeTest
     /**
      * Customize the application root.
      *
-     * @param applicationRootConsumer
+     * @param testArchiveConsumer
      * @return self
      */
     public QuarkusDevModeTest withTestArchive(Consumer<JavaArchive> testArchiveConsumer) {
@@ -218,10 +236,10 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
+    public void beforeAll(ExtensionContext context) {
+        ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(LaunchMode.DEVELOPMENT);
+        TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
-        //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
     }
@@ -246,12 +264,7 @@ public class QuarkusDevModeTest
             TestResourceManager tm = testResourceManager;
 
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
-                @Override
-                public void close() throws Throwable {
-                    tm.close();
-                }
-            });
+            store.put(TestResourceManager.CLOSEABLE_NAME, (ExtensionContext.Store.CloseableResource) tm::close);
         }
         TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
         //dev mode tests just use system properties
@@ -279,17 +292,8 @@ public class QuarkusDevModeTest
             } else {
                 projectSourceRoot = Paths.get(sourcePath);
             }
-            // TODO: again a hack, assumes the sources dir is one dir above java sources path
-            Path projectSourceParent = projectSourceRoot.getParent();
 
-            DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
-            context.setArgs(commandLineArgs);
-            context.setTest(true);
-            context.setAbortOnFailedStart(!allowFailedStart);
-            context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
-            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
-            context.getBuildSystemProperties().putAll(buildSystemProperties);
-            devModeMain = new DevModeMain(context);
+            devModeMain = newDevModeMain(extensionContext, deploymentDir, projectSourceRoot);
             devModeMain.start();
             ApplicationStateNotification.waitForApplicationStart();
         } catch (Exception e) {
@@ -302,7 +306,7 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void afterAll(ExtensionContext context) throws Exception {
+    public void afterAll(ExtensionContext context) {
         for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
             if (e.getValue() == null) {
                 System.clearProperty(e.getKey());
@@ -313,7 +317,9 @@ public class QuarkusDevModeTest
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
-        ClearCache.clearAnnotationCache();
+        ClearCache.clearCaches();
+        TestConfigUtil.cleanUp();
+        ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restoreConfig();
     }
 
     @Override
@@ -331,7 +337,8 @@ public class QuarkusDevModeTest
         inMemoryLogHandler.clearRecords();
     }
 
-    private DevModeContext exportArchive(Path deploymentDir, Path testSourceDir, Path testSourcesParentDir) {
+    private DevModeMain newDevModeMain(ExtensionContext extensionContext, Path deploymentDir, Path testSourceDir) {
+
         try {
 
             deploymentSourcePath = deploymentDir.resolve("src/main/java");
@@ -345,45 +352,27 @@ public class QuarkusDevModeTest
             Files.createDirectories(classes);
             Files.createDirectories(cache);
 
-            //first we export the archive
-            //then we attempt to generate a source tree
             JavaArchive archive = archiveProducer.get();
-            archive.as(ExplodedExporter.class).exportExplodedInto(classes.toFile());
-            copyFromSource(testSourceDir, deploymentSourcePath, classes);
-            copyCodeGenSources(testSourcesParentDir, deploymentSourceParentPath, codeGenSources);
+            exportAndGenerateSourceTree(archive, classes, testSourceDir, deploymentSourcePath, deploymentResourcePath);
 
-            //now copy resources
-            //we assume everything that is not a .class file is a resource
-            //resources are handled differently to sources as they are often not in the same location
-            //in the FS, or are dynamically created
-            try (Stream<Path> stream = Files.walk(classes)) {
-                stream.forEach(s -> {
-                    if (s.toString().endsWith(".class") ||
-                            Files.isDirectory(s)) {
-                        return;
-                    }
-                    String relative = classes.relativize(s).toString();
-                    try {
-                        try (InputStream in = Files.newInputStream(s)) {
-                            byte[] data = FileUtil.readFileContents(in);
-                            Path resolved = deploymentResourcePath.resolve(relative);
-                            Files.createDirectories(resolved.getParent());
-                            Files.write(resolved, data, OPEN_OPTIONS);
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-            }
+            // TODO: again a hack, assumes the sources dir is one dir above java sources path
+            final Path testSourcesParentDir = projectSourceRoot.getParent();
+            copyCodeGenSources(testSourcesParentDir, deploymentSourceParentPath, codeGenSources);
 
             //debugging code
             ExportUtil.exportToQuarkusDeploymentPath(archive);
 
             DevModeContext context = new DevModeContext();
+            context.setBaseName(extensionContext.getDisplayName() + " (QuarkusDevModeTest)");
+            context.setArgs(commandLineArgs);
+            context.setTest(true);
+            context.setAbortOnFailedStart(!allowFailedStart);
+            context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
+            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
+            context.getBuildSystemProperties().putAll(buildSystemProperties);
             context.setCacheDir(cache.toFile());
 
-            DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
-                    .setArtifactKey(GACT.fromString("io.quarkus.test:app-under-test"))
+            final DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
                     .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
                     .setSourcePaths(PathList.of(deploymentSourcePath.toAbsolutePath()))
                     .setClassesPath(classes.toAbsolutePath().toString())
@@ -392,6 +381,13 @@ public class QuarkusDevModeTest
                     .setSourceParents(PathList.of(deploymentSourceParentPath.toAbsolutePath()))
                     .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                     .setTargetDir(targetDir.toAbsolutePath().toString());
+
+            final WorkspaceModule.Mutable testModuleBuilder = WorkspaceModule.builder()
+                    .addArtifactSources(ArtifactSources.main(
+                            SourceDir.of(deploymentSourcePath, classes),
+                            SourceDir.of(deploymentResourcePath, classes)))
+                    .setBuildDir(targetDir)
+                    .setModuleDir(deploymentDir);
 
             //now tests, if required
             if (testArchiveProducer != null) {
@@ -404,35 +400,12 @@ public class QuarkusDevModeTest
                 Files.createDirectories(deploymentTestResourcePath);
                 Files.createDirectories(testClasses);
 
-                //first we export the archive
-                //then we attempt to generate a source tree
-                JavaArchive testArchive = testArchiveProducer.get();
-                testArchive.as(ExplodedExporter.class).exportExplodedInto(testClasses.toFile());
-                copyFromSource(testSourceDir, deploymentTestSourcePath, testClasses);
+                testModuleBuilder.addArtifactSources(ArtifactSources.test(
+                        SourceDir.of(deploymentTestSourcePath, testClasses),
+                        SourceDir.of(deploymentTestResourcePath, testClasses)));
 
-                //now copy resources
-                //we assume everything that is not a .class file is a resource
-                //resources are handled differently to sources as they are often not in the same location
-                //in the FS, or are dynamically created
-                try (Stream<Path> stream = Files.walk(testClasses)) {
-                    stream.forEach(s -> {
-                        if (s.toString().endsWith(".class") ||
-                                Files.isDirectory(s)) {
-                            return;
-                        }
-                        String relative = testClasses.relativize(s).toString();
-                        try {
-                            try (InputStream in = Files.newInputStream(s)) {
-                                byte[] data = FileUtil.readFileContents(in);
-                                Path resolved = deploymentTestResourcePath.resolve(relative);
-                                Files.createDirectories(resolved.getParent());
-                                Files.write(resolved, data, OPEN_OPTIONS);
-                            }
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
-                }
+                exportAndGenerateSourceTree(testArchiveProducer.get(), testClasses, testSourceDir, deploymentTestSourcePath,
+                        deploymentTestResourcePath);
                 moduleBuilder
                         .setTestSourcePaths(PathList.of(deploymentTestSourcePath.toAbsolutePath()))
                         .setTestClassesPath(testClasses.toAbsolutePath().toString())
@@ -440,13 +413,83 @@ public class QuarkusDevModeTest
                         .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 
-            context.setApplicationRoot(
-                    moduleBuilder
-                            .build());
+            final ApplicationModel originalAppModel = resolveOriginalAppModel();
+            var testArtifact = originalAppModel.getAppArtifact();
 
-            return context;
+            context.setApplicationRoot(moduleBuilder.setArtifactKey(testArtifact.getKey()).build());
+
+            return new DevModeMain(context, new DevModeTestApplicationModel(
+                    ResolvedDependencyBuilder.newInstance()
+                            .setCoords(testArtifact)
+                            .setResolvedPath(classes)
+                            .setWorkspaceModule(testModuleBuilder.setModuleId(
+                                    WorkspaceModuleId.of(testArtifact.getGroupId(),
+                                            testArtifact.getArtifactId(), testArtifact.getVersion()))
+                                    .build())
+                            .build(),
+                    originalAppModel));
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
+        }
+    }
+
+    /**
+     * Resolves an {@link ApplicationModel} for the current module running the test.
+     *
+     * @return application model for the module runnign the test
+     */
+    private static ApplicationModel resolveOriginalAppModel() {
+        try {
+            return BootstrapAppModelFactory.newInstance()
+                    .setTest(true)
+                    .setDevMode(true)
+                    .setProjectRoot(Path.of("").normalize().toAbsolutePath())
+                    .resolveAppModel()
+                    .getApplicationModel();
+        } catch (BootstrapException e) {
+            throw new RuntimeException("Failed to resolve the ApplicationModel", e);
+        }
+    }
+
+    /**
+     * Exports the archive to the classes directory and creates a source tree.
+     *
+     * @param archive application archive
+     * @param classes target classes directory
+     * @param testSourceDir test sources directory
+     * @param deploymentSourcePath test application sources directory
+     * @param deploymentResourcePath test application resources directory
+     * @throws IOException in case of an IO failure
+     */
+    private void exportAndGenerateSourceTree(JavaArchive archive, Path classes, Path testSourceDir,
+            Path deploymentSourcePath, Path deploymentResourcePath) throws IOException {
+        //first we export the archive
+        //then we attempt to generate a source tree
+        archive.as(ExplodedExporter.class).exportExplodedInto(classes.toFile());
+        copyFromSource(testSourceDir, deploymentSourcePath, classes);
+
+        //now copy resources
+        //we assume everything that is not a .class file is a resource
+        //resources are handled differently to sources as they are often not in the same location
+        //in the FS, or are dynamically created
+        try (Stream<Path> stream = Files.walk(classes)) {
+            stream.forEach(s -> {
+                if (s.toString().endsWith(".class") ||
+                        Files.isDirectory(s)) {
+                    return;
+                }
+                String relative = classes.relativize(s).toString();
+                try {
+                    try (InputStream in = Files.newInputStream(s)) {
+                        byte[] data = FileUtil.readFileContents(in);
+                        Path resolved = deploymentResourcePath.resolve(relative);
+                        Files.createDirectories(resolved.getParent());
+                        Files.write(resolved, data, OPEN_OPTIONS);
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         }
     }
 

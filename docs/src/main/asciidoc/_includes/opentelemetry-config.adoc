@@ -1,0 +1,44 @@
+By default, the exporters will send out data in batches, using the gRPC protocol and endpoint `http://localhost:4317`.
+
+If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+
+[source,properties]
+----
+quarkus.application.name=myservice // <1>
+quarkus.otel.exporter.otlp.endpoint=http://localhost:4317 // <2>
+quarkus.otel.exporter.otlp.headers=authorization=Bearer my_secret // <3>
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <4>
+
+# Alternative to the console log
+quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <5>
+----
+
+<1> All telemetry created from the application will include an OpenTelemetry `Resource` attribute indicating the telemetry was created by the `myservice` application. If not set, it will default to the artifact id.
+<2> gRPC endpoint to send the telemetry. If not set, it will default to `http://localhost:4317`.
+<3> Optional gRPC headers commonly used for authentication
+<4> Add tracing information into log messages.
+<5> You can also only put the trace info into the access log. In this case you must omit the info in the console log format.
+
+We provide signal agnostic configurations for the connection related properties, meaning that you can use the same properties for both tracing and metrics when you set:
+[source,properties]
+----
+quarkus.otel.exporter.otlp.endpoint=http://localhost:4317
+----
+If you need different configurations for each signal, you can use the specific properties:
+[source,properties]
+----
+quarkus.otel.exporter.otlp.traces.endpoint=http://trace-uri:4317 // <1>
+quarkus.otel.exporter.otlp.metrics.endpoint=http://metrics-uri:4317 // <2>
+quarkus.otel.exporter.otlp.logs.endpoint=http://logs-uri:4317 // <3>
+----
+<1> The endpoint for the traces exporter.
+<2> The endpoint for the metrics exporter.
+<3> The endpoint for the logs exporter.
+
+If you need that your spans and logs to be exported directly as they finish
+(e.g. in a serverless environment / application), you can set this property to `true`.
+This replaces the default batching of data.
+[source,properties]
+----
+quarkus.otel.simple=true
+----

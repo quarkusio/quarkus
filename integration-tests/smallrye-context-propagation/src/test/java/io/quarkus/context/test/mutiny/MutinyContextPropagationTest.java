@@ -156,6 +156,12 @@ public class MutinyContextPropagationTest {
                 .statusCode(Response.Status.OK.getStatusCode()));
     }
 
+    @Test
+    public void testContextPropagationBug40852() {
+        RestAssured.when().get("/mutiny-context/bug40852").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
     private void awaitState(ThrowingRunnable task) {
         Awaitility.await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)

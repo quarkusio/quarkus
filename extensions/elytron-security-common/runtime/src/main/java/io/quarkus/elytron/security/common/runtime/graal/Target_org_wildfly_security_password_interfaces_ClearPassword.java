@@ -1,6 +1,6 @@
 package io.quarkus.elytron.security.common.runtime.graal;
 
-import static org.wildfly.common.Assert.checkNotNullParam;
+import static io.smallrye.common.constraint.Assert.checkNotNullParam;
 
 import org.wildfly.security.password.interfaces.ClearPassword;
 

@@ -35,6 +35,6 @@ public class OpenApiWithConfigTestCase {
                 .body("paths", Matchers.hasKey("/openapi"))
                 .body("paths", Matchers.not(Matchers.hasKey("/resource")));
 
-        System.clearProperty(io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TITLE);
+        System.clearProperty(io.smallrye.openapi.api.SmallRyeOASConfig.INFO_TITLE);
     }
 }

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -75,6 +76,15 @@ public class TestEndpoint {
                                 return Person.count("name", "stef");
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
+                                return Person.count("from Person2 where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("order by name");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
                                 return Dog.count();
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
@@ -100,6 +110,11 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, personResult);
 
                                 return Person.find("name = ?1", "stef").list();
+                            }).flatMap(persons -> {
+                                Assertions.assertEquals(1, persons.size());
+                                Assertions.assertEquals(person, persons.get(0));
+
+                                return Person.find("WHERE name = ?1", "stef").list();
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -1701,7 +1716,8 @@ public class TestEndpoint {
                             () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5) from Cat c")
                                     .project(CatProjectionBean.class));
                     Assertions.assertTrue(
-                            exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
+                            exception.getMessage()
+                                    .startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
                 })
                 .chain(() -> Cat
                         .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
@@ -1714,6 +1730,69 @@ public class TestEndpoint {
                     Assertions.assertEquals("JoN ArBuCkLe", catView.ownerName);
                 })
                 .replaceWith("OK");
+    }
+
+    @WithTransaction
+    @GET
+    @Path("projection-nested")
+    public Uni<String> testNestedProjection() {
+        Person person = new Person();
+        person.name = "1";
+        person.uniqueName = "1";
+        Person person3 = new Person();
+        Person hum = new Person();
+        return person.persist()
+                .chain(() -> Person.find("select name from Person2 where name = ?1", "1")
+                        .project(String.class)
+                        .firstResult()
+
+                )
+                .invoke(personName -> Assertions.assertEquals("1", personName))
+                .chain(() -> {
+                    person3.name = "3";
+                    person3.uniqueName = "3";
+                    person3.address = new Address("street 3");
+                    person3.description = new PersonDescription();
+                    person3.description.weight = 75;
+                    person3.description.size = 170;
+                    return person3.persist();
+                })
+                .chain(() -> Person.find(" name = ?1", "3")
+                        .project(PersonDTO.class)
+                        .<PersonDTO> firstResult())
+                .invoke(
+                        personDTO -> {
+                            Assertions.assertEquals("3", personDTO.name);
+                            Assertions.assertEquals("street 3", personDTO.address.street);
+                            Assertions.assertEquals(170, personDTO.directHeight);
+                            Assertions.assertEquals(170, personDTO.description.height);
+                            Assertions.assertEquals("Height: 170, weight: 75", personDTO.description.getGeneratedDescription());
+                        })
+                .chain(() -> {
+                    hum.name = "hum";
+                    hum.uniqueName = "hum";
+                    Dog kit = new Dog("kit", "bulldog");
+                    hum.dogs.add(kit);
+                    kit.owner = hum;
+                    return hum.persist();
+                })
+                .chain(() -> Dog.find(" name = ?1", "kit")
+                        .project(DogDto.class)
+                        .<DogDto> firstResult())
+                .invoke(
+                        dogDto -> {
+                            Assertions.assertNotNull(dogDto);
+                            Assertions.assertEquals("kit", dogDto.name);
+                            Assertions.assertEquals("hum", dogDto.owner.name);
+                        })
+                .flatMap(v -> person.delete())
+                .flatMap(v -> person3.delete())
+                .flatMap(v -> hum.delete())
+                .flatMap(v -> Person.count())
+                .map(count -> {
+                    Assertions.assertEquals(1, count);
+                    return "OK";
+                });
     }
 
     @WithTransaction
@@ -1990,5 +2069,63 @@ public class TestEndpoint {
 
                     return Person.deleteAll();
                 }).map(v -> "OK");
+    }
+
+    @GET
+    @Path("26308")
+    @WithTransaction
+    public Uni<String> testBug26308() {
+        return testBug26308Query("from Person2 p left join fetch p.address")
+                .flatMap(p -> testBug26308Query("from Person2 p left join p.address"))
+                .flatMap(p -> testBug26308Query("select p from Person2 p left join fetch p.address"))
+                .flatMap(p -> testBug26308Query("select p from Person2 p left join p.address"))
+                .flatMap(p -> testBug26308Query("from Person2 p left join fetch p.address select p"))
+                .flatMap(p -> testBug26308Query("from Person2 p left join p.address select p"))
+                .map(p -> "OK");
+    }
+
+    private Uni<Void> testBug26308Query(String hql) {
+        PanacheQuery<Person> query = Person.find(hql);
+        return query.list()
+                .flatMap(list -> {
+                    Assertions.assertEquals(0, list.size());
+                    return query.count();
+                })
+                .map(count -> {
+                    Assertions.assertEquals(0, count);
+                    return null;
+                });
+    }
+
+    @GET
+    @Path("36496")
+    @WithTransaction
+    public Uni<String> testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        return query.list()
+                .flatMap(list -> {
+                    Assertions.assertEquals(0, list.size());
+                    return query.count();
+                }).flatMap(count -> {
+                    Assertions.assertEquals(0, count);
+                    return Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p");
+                }).map(count -> {
+                    Assertions.assertEquals(0, count);
+                    return "OK";
+                });
+    }
+
+    @GET
+    @Path("40962")
+    @WithTransaction
+    public Uni<String> testBug40962() {
+        // should not throw
+        return Bug40962Entity.find("name = :name ORDER BY locate(location, :location) DESC",
+                Map.of("name", "Demo", "location", "something")).count()
+                .flatMap(count -> Bug40962Entity
+                        .find("FROM Bug40962Entity WHERE name = :name ORDER BY locate(location, :location) DESC",
+                                Map.of("name", "Demo", "location", "something"))
+                        .count())
+                .map(count -> "OK");
     }
 }

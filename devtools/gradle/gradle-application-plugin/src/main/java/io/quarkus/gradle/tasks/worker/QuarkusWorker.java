@@ -32,6 +32,7 @@ public abstract class QuarkusWorker<P extends QuarkusParams> implements WorkActi
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
+                .setDependencyInfoProvider(() -> null)
                 .build().bootstrap();
     }
 }

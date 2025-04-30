@@ -20,7 +20,9 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
 
         <rxjava1.version>1.3.8</rxjava1.version>
-        <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
+
+        <opentelemetry-proto.version>1.3.2-alpha</opentelemetry-proto.version>
     </properties>
 
     <dependencyManagement>
@@ -41,6 +43,13 @@
             </dependency>
 
             <dependency>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-junit5</artifactId>
+                <version>${smallrye-certificate-generator.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>strimzi-test-container</artifactId>
                 <version>${strimzi-test-container.version}</version>
@@ -58,6 +67,10 @@
                         <groupId>com.github.docker-java</groupId>
                         <artifactId>docker-java-api</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
 
@@ -66,6 +79,13 @@
                 <artifactId>jaxb-api</artifactId>
                 <version>${jaxb-api.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry.proto</groupId>
+                <artifactId>opentelemetry-proto</artifactId>
+                <version>${opentelemetry-proto.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

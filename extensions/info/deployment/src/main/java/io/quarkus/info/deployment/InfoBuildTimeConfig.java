@@ -2,6 +2,7 @@ package io.quarkus.info.deployment;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -76,6 +77,7 @@ public interface InfoBuildTimeConfig {
          * Additional properties to be added to the build section
          */
         @WithParentName
+        @ConfigDocMapKey("property-key")
         Map<String, String> additionalProperties();
     }
 

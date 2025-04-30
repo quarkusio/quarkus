@@ -12,7 +12,7 @@
       Type: AWS::Serverless::Function
       Properties:
         Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
-        Runtime: java11
+        Runtime: java21
         CodeUri: function.zip
         MemorySize: 512
         Policies: AWSLambdaBasicExecutionRole

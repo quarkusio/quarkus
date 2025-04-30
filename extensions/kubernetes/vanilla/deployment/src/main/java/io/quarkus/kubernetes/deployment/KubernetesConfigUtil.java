@@ -112,11 +112,11 @@ public class KubernetesConfigUtil {
         Map<String, Object> quarkusPrefixed = new HashMap<>();
 
         Arrays.stream(platformConfigurations).forEach(p -> {
-            p.getPartOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".part-of", g));
-            p.getName().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".name", n));
-            p.getVersion()
+            p.partOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".part-of", g));
+            p.name().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".name", n));
+            p.version()
                     .map(v -> v.equals(UNSET_VALUE) ? DEFAULT_TAG : v)
-                    .ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
+                    .ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".version", v));
         });
 
         result.putAll(quarkusPrefixed);

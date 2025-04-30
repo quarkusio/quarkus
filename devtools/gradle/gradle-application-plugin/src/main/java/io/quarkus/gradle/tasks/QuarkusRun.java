@@ -14,28 +14,33 @@ import javax.inject.Inject;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
-import io.quarkus.deployment.cmd.RunCommandHandler;
+import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
     private final SourceSet mainSourceSet;
+    private final ListProperty<String> jvmArgs;
 
     @Inject
     public QuarkusRun() {
@@ -43,13 +48,15 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     }
 
     public QuarkusRun(String description) {
-        super(description);
+        super(description, false);
         final ObjectFactory objectFactory = getProject().getObjects();
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         workingDirectory = objectFactory.property(File.class);
         workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+
+        jvmArgs = objectFactory.listProperty(String.class);
     }
 
     /**
@@ -75,12 +82,27 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
         workingDirectory.set(getProject().file(workingDir));
     }
 
+    @Input
+    public ListProperty<String> getJvmArguments() {
+        return jvmArgs;
+    }
+
+    @Internal
+    public List<String> getJvmArgs() {
+        return jvmArgs.get();
+    }
+
+    @SuppressWarnings("unused")
+    @Option(description = "Set JVM arguments", option = "jvm-args")
+    public void setJvmArgs(List<String> jvmArgs) {
+        this.jvmArgs.set(jvmArgs);
+    }
+
     @TaskAction
     public void runQuarkus() {
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
         Properties sysProps = new Properties();
-        sysProps.putAll(configMap);
+        sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
@@ -90,13 +112,14 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
+                .setMode(QuarkusBootstrap.Mode.TEST)
                 .build().bootstrap()) {
 
             AugmentAction action = curatedApplication.createAugmentor();
             AtomicReference<Boolean> exists = new AtomicReference<>();
             AtomicReference<String> tooMany = new AtomicReference<>();
             String target = System.getProperty("quarkus.run.target");
-            action.performCustomBuild(RunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
+            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
                 @Override
                 public void accept(Map<String, List> cmds) {
                     List cmd = null;
@@ -122,6 +145,10 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                         throw new RuntimeException("Should never reach this!");
                     }
                     List<String> args = (List<String>) cmd.get(0);
+                    if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
+                        args.addAll(1, getJvmArgs());
+                    }
+
                     getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
                     Path wd = (Path) cmd.get(1);
                     File wdir = wd != null ? wd.toFile() : workingDirectory.get();
@@ -141,7 +168,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                     }
                 }
             },
-                    RunCommandActionResultBuildItem.class.getName());
+                    RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
                 getProject().getLogger().error("quarkus.run.target " + target + " is not found");
                 return;

@@ -9,9 +9,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.quarkus.analytics.common.ContextTestData.createContext;
 import static io.quarkus.analytics.rest.RestClient.IDENTITY_ENDPOINT;
 import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -65,14 +67,25 @@ class RestClientFailTest {
     }
 
     @Test
-    void postIdentityServerTTLExceeded()
-            throws URISyntaxException, JsonProcessingException {
+    void postIdentityServerTTLExceeded() throws URISyntaxException, JsonProcessingException {
         RestClient restClient = new RestClient();
         Identity identity = createIdentity();
         CompletableFuture<HttpResponse<String>> post = restClient.post(
                 identity,
                 new URI("http://localhost:" + MOCK_SERVER_PORT + "/" + IDENTITY_ENDPOINT));
-        assertThrows(TimeoutException.class, () -> post.get(100, TimeUnit.MILLISECONDS).statusCode());
+
+        try {
+            post.get(100, TimeUnit.MILLISECONDS).statusCode();
+            fail("Should have thrown an TimeoutException or ExecutionException");
+        } catch (ExecutionException | TimeoutException e) {
+            // ok
+        } catch (Exception e) {
+            fail("Should have thrown an TimeoutException or ExecutionException");
+        }
+
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> wireMockServer.verify(1, postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))));
+
         wireMockServer.verify(postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))
                 .withRequestBody(equalToJson(getObjectMapper().writeValueAsString(identity))));
     }

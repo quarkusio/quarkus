@@ -18,9 +18,11 @@
         <module>codegen</module>
         <module>api</module>
         <module>stubs</module>
+        <module>reflection</module>
         <module>deployment</module>
         <module>runtime</module>
         <module>xds</module>
         <module>inprocess</module>
+        <module>cli</module>
     </modules>
 </project>

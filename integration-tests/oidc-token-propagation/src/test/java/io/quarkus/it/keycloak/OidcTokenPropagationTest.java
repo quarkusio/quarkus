@@ -50,10 +50,8 @@ public class OidcTokenPropagationTest {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/frontend/access-token-propagation")
                 .then()
-                //.statusCode(200)
-                //.body(equalTo("alice"));
                 .statusCode(500)
-                .body(containsString("Feature not enabled"));
+                .body(containsString("Standard token exchange is not enabled for the requested client"));
     }
 
     @Test

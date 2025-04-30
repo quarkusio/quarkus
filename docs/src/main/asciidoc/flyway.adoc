@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers how to use the Flyway extension to manage your schema migrations.
 :migrations-path: src/main/resources/db/migration
 :config-file: application.properties
+:topics: flyway,data,schema-migration,database
+:extensions: io.quarkus:quarkus-flyway
 
 https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
 
@@ -26,9 +28,7 @@ In your build file, add the following dependencies:
 
 * the Flyway extension
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-* the MariaDB/MySQL support is now in a separate dependency, MariaDB/MySQL users need to add the `flyway-mysql` dependency from now on.
-* the Microsoft SQL Server support is now in a separate dependency, Microsoft SQL Server users need to add the `flyway-sqlserver` dependency from now on.
-* the Oracle support is now in a separate dependency, Oracle users need to add the `flyway-database-oracle` dependency from now on.
+* unless you're using in-memory or file databases (such as H2 or SQLite), you need to add a flyway module dependency corresponding to the database you're using. (https://github.com/flyway/flyway/issues/3780[for more details])
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -37,6 +37,12 @@ In your build file, add the following dependencies:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-flyway</artifactId>
+</dependency>
+
+<!-- JDBC driver dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
 </dependency>
 
 <!-- Flyway SQL Server specific dependencies -->
@@ -57,11 +63,84 @@ In your build file, add the following dependencies:
     <artifactId>flyway-database-oracle</artifactId>
 </dependency>
 
-<!-- JDBC driver dependencies -->
+<!-- Flyway PostgreSQL specific dependencies -->
 <dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
 </dependency>
+
+<!-- Flyway DB2 specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-db2</artifactId>
+</dependency>
+
+<!-- Derby specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-derby</artifactId>
+</dependency>
+
+<!-- HSQLDB specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-hsqldb</artifactId>
+</dependency>
+
+<!-- Informix specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-informix</artifactId>
+</dependency>
+
+<!-- Redshift specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-redshift</artifactId>
+</dependency>
+
+<!-- Saphana specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-saphana</artifactId>
+</dependency>
+
+<!-- Snowflake specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-snowflake</artifactId>
+</dependency>
+
+<!-- Sybasease specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-sybasease</artifactId>
+</dependency>
+
+<!-- Firebird specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-firebird</artifactId>
+</dependency>
+
+<!-- BigQuery specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-gcp-bigquery</artifactId>
+</dependency>
+
+<!-- Spanner specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-gcp-spanner</artifactId>
+</dependency>
+
+<!-- Singlestore specific dependencies -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-singlestore</artifactId>
+</dependency>
+
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
@@ -69,14 +148,41 @@ In your build file, add the following dependencies:
 ----
 // Flyway specific dependencies
 implementation("io.quarkus:quarkus-flyway")
+// JDBC driver dependencies
+implementation("io.quarkus:quarkus-jdbc-postgresql")
 // Flyway SQL Server specific dependencies
 implementation("org.flywaydb:flyway-sqlserver")
 // Flyway MariaDB/MySQL specific dependencies
 implementation("org.flywaydb:flyway-mysql")
 // Flyway Oracle specific dependencies
 implementation("org.flywaydb:flyway-database-oracle")
-// JDBC driver dependencies
-implementation("io.quarkus:quarkus-jdbc-postgresql")
+// Flyway PostgreSQL specific dependencies
+implementation("org.flywaydb:flyway-database-postgresql")
+// Flyway DB2 specific dependencies
+implementation("org.flywaydb:flyway-database-db2")
+// Flyway Derby specific dependencies
+implementation("org.flywaydb:flyway-database-derby")
+// HSQLDB specific dependencies
+implementation("org.flywaydb:flyway-database-hsqldb")
+// Informix specific dependencies
+implementation("org.flywaydb:flyway-database-informix")
+// Redshift specific dependencies
+implementation("org.flywaydb:flyway-database-redshift")
+// Saphana specific dependencies
+implementation("org.flywaydb:flyway-database-saphana")
+// Snowflake specific dependencies
+implementation("org.flywaydb:flyway-database-snowflake")
+// Sybasease specific dependencies
+implementation("org.flywaydb:flyway-database-sybasease")
+// Firebird specific dependencies
+implementation("org.flywaydb:flyway-firebird")
+// BigQuery specific dependencies
+implementation("org.flywaydb:flyway-gcp-bigquery")
+// Spanner specific dependencies
+implementation("org.flywaydb:flyway-gcp-spanner")
+// Singlestore specific dependencies
+implementation("org.flywaydb:flyway-singlestore:10.15.0")
+
 ----
 
 Flyway support relies on the Quarkus datasource config.
@@ -283,25 +389,62 @@ When using Flyway together with Hibernate ORM, you can use the Dev UI to generat
 
 You can find more information about this feature in the xref:hibernate-orm.adoc#flyway[Hibernate ORM guide].
 
+[[reactive-datasources]]
+== Flyway and Reactive datasources
+
+Flyway internally relies on a JDBC datasource,
+whereas reactive use cases will rely on xref:reactive-sql-clients.adoc[reactive SQL clients],
+either directly or through xref:hibernate-reactive.adoc[Hibernate Reactive].
+This is not a problem in Quarkus,
+because xref:datasource.adoc#jdbc-and-reactive-datasources-simultaneously[a single configured datasource can be made available both through reactive clients and JDBC].
+
+To use Flyway on a datasource you otherwise access reactively,
+simply make sure to configure that datasource
+both as xref:datasource.adoc#jdbc-datasource[JDBC]
+and xref:datasource.adoc#reactive-datasource[reactive].
+This involves in particular adding dependencies to Quarkus extensions
+for both the JDBC driver and the reactive client,
+for instance `quarkus-jdbc-postgresql` *and* `quarkus-reactive-pg-client`.
+
 == Flyway on Kubernetes
 Sometimes, it's helpful not to execute Flyway initialization on each application startup. One such example is when deploying
+
 on Kubernetes, where it doesn't make sense to execute Flyway on every single replica. Instead it's desirable to execute it
 once and then start the actual application without Flyway. To support this use case, when generating manifests for Kubernetes
 the generated manifests contain a Kubernetes initialization `Job` for Flyway.
 The `Job` performs initialization and the actual `Pod`, will starts once the `Job` is successfully completed.
 
+=== Disabling
+
 The feature is enabled by default and can be globally disabled, using:
 
 [source,properties]
 ----
-quarkus.kubernetes.externalize-init=false
+quarkus.kubernetes.init-task-defaults.enabled=false
 ----
 
 or on OpenShift:
 
 [source,properties]
 ----
-quarkus.openshift.externalize-init=false
+quarkus.openshift.init-task-defaults.enabled=false
+----
+
+=== Using a custom image that controls waiting for the Job
+
+To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-root-v1.7` you can use:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
+----
+
+or on OpenShift:
+
+
+[source,properties]
+----
+quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
 **Note**: In this context globally means `for all extensions that support init task externalization`.

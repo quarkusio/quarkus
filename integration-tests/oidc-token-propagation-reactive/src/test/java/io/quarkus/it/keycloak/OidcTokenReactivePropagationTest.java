@@ -2,13 +2,12 @@ package io.quarkus.it.keycloak;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.TextPage;
+import org.htmlunit.WebClient;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
-
-import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.TextPage;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -28,9 +27,12 @@ public class OidcTokenReactivePropagationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
+            assertEquals("Bearer:alice", textPage.getContent());
 
-            assertEquals("alice", textPage.getContent());
+            textPage = webClient.getPage("http://localhost:8081/frontend/id-token-propagation");
+            assertEquals("ID:alice", textPage.getContent());
+
             webClient.getCookieManager().clearCookies();
         }
     }

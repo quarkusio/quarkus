@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,6 +21,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.plugins.JavaPlugin;
@@ -31,22 +34,25 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
-import io.quarkus.gradle.tooling.dependency.IncludedBuildExtensionDependency;
-import io.quarkus.gradle.tooling.dependency.LocalExtensionDependency;
 import io.quarkus.runtime.LaunchMode;
 
 public class ApplicationDeploymentClasspathBuilder {
 
+    public static final String QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION = "quarkusBootstrapResolverConfiguration";
+
+    private static String getLaunchModeAlias(LaunchMode mode) {
+        if (mode == LaunchMode.DEVELOPMENT) {
+            return "Dev";
+        }
+        if (mode == LaunchMode.TEST) {
+            return "Test";
+        }
+        return "Prod";
+    }
+
     private static String getRuntimeConfigName(LaunchMode mode, boolean base) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("quarkus");
-        if (mode == LaunchMode.DEVELOPMENT) {
-            sb.append("Dev");
-        } else if (mode == LaunchMode.TEST) {
-            sb.append("Test");
-        } else {
-            sb.append("Prod");
-        }
+        sb.append("quarkus").append(getLaunchModeAlias(mode));
         if (base) {
             sb.append("Base");
         }
@@ -92,24 +98,30 @@ public class ApplicationDeploymentClasspathBuilder {
                             configContainer.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
                     config.setCanBeConsumed(false);
                 });
+    }
 
-        // enable the Panache annotation processor on the classpath, if it's found among the dependencies
-        configContainer.named(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, config -> {
-            config.withDependencies(annotationProcessors -> {
-                Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
-                        .duplicateConfiguration(project, configContainer
-                                .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
-                        .getResolvedConfiguration()
-                        .getResolvedArtifacts();
-                for (ResolvedArtifact artifact : compileClasspathArtifacts) {
-                    if ("quarkus-panache-common".equals(artifact.getName())
-                            && "io.quarkus".equals(artifact.getModuleVersion().getId().getGroup())) {
-                        project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
-                                "io.quarkus:quarkus-panache-common:" + artifact.getModuleVersion().getId().getVersion());
-                    }
-                }
-            });
-        });
+    private static Configuration[] getOriginalRuntimeClasspaths(Project project, LaunchMode mode) {
+        List<String> configurationNames;
+        switch (mode) {
+            case TEST:
+                configurationNames = List.of(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            case NORMAL:
+                configurationNames = List.of(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            case DEVELOPMENT:
+                configurationNames = List.of(
+                        ToolingUtils.DEV_MODE_CONFIGURATION_NAME,
+                        JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
+                        JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected mode: " + mode);
+        }
+        ConfigurationContainer configContainer = project.getConfigurations();
+        return configurationNames.stream()
+                .map(configContainer::getByName)
+                .toArray(Configuration[]::new);
     }
 
     private final Project project;
@@ -118,6 +130,8 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String runtimeConfigurationName;
     private final String platformConfigurationName;
     private final String deploymentConfigurationName;
+    private final String compileOnlyConfigurationName;
+
     /**
      * The platform configuration updates the PlatformImports, but since the PlatformImports don't
      * have a place to be stored in the project, they're stored here. The way that extensions are
@@ -136,10 +150,12 @@ public class ApplicationDeploymentClasspathBuilder {
         this.platformConfigurationName = ToolingUtils.toPlatformConfigurationName(this.runtimeConfigurationName);
         this.deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(this.runtimeConfigurationName);
         this.platformImportName = project.getPath() + ":" + this.platformConfigurationName;
+        this.compileOnlyConfigurationName = "quarkus" + getLaunchModeAlias(mode) + "CompileOnlyConfiguration";
 
         setUpPlatformConfiguration();
         setUpRuntimeConfiguration();
         setUpDeploymentConfiguration();
+        setUpCompileOnlyConfiguration();
     }
 
     private void setUpPlatformConfiguration() {
@@ -213,52 +229,64 @@ public class ApplicationDeploymentClasspathBuilder {
                 configuration.setCanBeConsumed(false);
                 Configuration enforcedPlatforms = this.getPlatformConfiguration();
                 configuration.extendsFrom(enforcedPlatforms);
+                Map<String, Set<Dependency>> calculatedDependenciesByModeAndConfiguration = new HashMap<>();
                 ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
                 configuration.getDependencies().addAllLater(dependencyListProperty.value(project.provider(() -> {
-                    ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
-                            enforcedPlatforms);
-                    final Collection<ExtensionDependency> allExtensions = cdEnabler.getAllExtensions();
-                    Set<ExtensionDependency> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
-                            allExtensions);
-                    // Add conditional extensions
-                    for (ExtensionDependency knownExtension : allExtensions) {
-                        if (knownExtension.isConditional()) {
-                            extensions.add(knownExtension);
+                    String key = String.format("%s%s%s", mode, configuration.getName(), project.getName());
+                    if (!calculatedDependenciesByModeAndConfiguration.containsKey(key)) {
+                        ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
+                                enforcedPlatforms);
+                        final Collection<ExtensionDependency<?>> allExtensions = cdEnabler.getAllExtensions();
+                        Set<ExtensionDependency<?>> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
+                                allExtensions);
+                        // Add conditional extensions
+                        for (ExtensionDependency<?> knownExtension : allExtensions) {
+                            if (knownExtension.isConditional()) {
+                                extensions.add(knownExtension);
+                            }
                         }
-                    }
 
-                    final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
-                    final DependencyHandler dependencies = project.getDependencies();
-                    final Set<Dependency> deploymentDependencies = new HashSet<>();
-                    for (ExtensionDependency extension : extensions) {
-                        if (extension instanceof IncludedBuildExtensionDependency) {
-                            deploymentDependencies.add(((IncludedBuildExtensionDependency) extension).getDeployment());
-                        } else if (extension instanceof LocalExtensionDependency) {
-                            LocalExtensionDependency localExtensionDependency = (LocalExtensionDependency) extension;
-                            deploymentDependencies.add(
-                                    dependencies.project(Collections.singletonMap("path",
-                                            localExtensionDependency.findDeploymentModulePath())));
-                        } else {
+                        final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
+                        final DependencyHandler dependencies = project.getDependencies();
+                        final Set<Dependency> deploymentDependencies = new HashSet<>();
+                        for (ExtensionDependency<?> extension : extensions) {
                             if (!alreadyProcessed.add(extension.getExtensionId())) {
                                 continue;
                             }
-                            deploymentDependencies.add(dependencies.create(
-                                    extension.getDeploymentModule().getGroupId() + ":"
-                                            + extension.getDeploymentModule().getArtifactId() + ":"
-                                            + extension.getDeploymentModule().getVersion()));
+
+                            deploymentDependencies.add(
+                                    DependencyUtils.createDeploymentDependency(dependencies, extension));
                         }
+                        calculatedDependenciesByModeAndConfiguration.put(key, deploymentDependencies);
+                        return deploymentDependencies;
+                    } else {
+                        return calculatedDependenciesByModeAndConfiguration.get(key);
                     }
-                    return deploymentDependencies;
                 })));
             });
         }
+    }
+
+    private void setUpCompileOnlyConfiguration() {
+        if (!project.getConfigurations().getNames().contains(compileOnlyConfigurationName)) {
+            project.getConfigurations().register(compileOnlyConfigurationName, config -> {
+                config.extendsFrom(project.getConfigurations().getByName(platformConfigurationName),
+                        project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
+                config.shouldResolveConsistentlyWith(getDeploymentConfiguration());
+                config.setCanBeConsumed(false);
+            });
+        }
+    }
+
+    public FileCollection getOriginalRuntimeClasspathAsInput() {
+        return project.files((Object[]) getOriginalRuntimeClasspaths(project, mode));
     }
 
     public Configuration getPlatformConfiguration() {
         return project.getConfigurations().getByName(this.platformConfigurationName);
     }
 
-    private Configuration getRawRuntimeConfiguration() {
+    public Configuration getRawRuntimeConfiguration() {
         return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 
@@ -270,8 +298,20 @@ public class ApplicationDeploymentClasspathBuilder {
         return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 
+    public Configuration getRuntimeConfigurationWithoutResolvingDeployment() {
+        return project.getConfigurations().getByName(this.runtimeConfigurationName);
+    }
+
     public Configuration getDeploymentConfiguration() {
         return project.getConfigurations().getByName(this.deploymentConfigurationName);
+    }
+
+    /**
+     * Compile-only configuration which is consistent with the deployment one
+     */
+    public Configuration getCompileOnly() {
+        this.getDeploymentConfiguration().resolve();
+        return project.getConfigurations().getByName(compileOnlyConfigurationName);
     }
 
     /**
@@ -282,10 +322,14 @@ public class ApplicationDeploymentClasspathBuilder {
         return platformImports.get(this.platformImportName);
     }
 
-    private Set<ExtensionDependency> collectFirstMetQuarkusExtensions(Configuration configuration,
-            Collection<ExtensionDependency> knownExtensions) {
+    public PlatformImportsImpl getPlatformImportsWithoutResolvingPlatform() {
+        return platformImports.get(this.platformImportName);
+    }
 
-        Set<ExtensionDependency> firstLevelExtensions = new HashSet<>();
+    private Set<ExtensionDependency<?>> collectFirstMetQuarkusExtensions(Configuration configuration,
+            Collection<ExtensionDependency<?>> knownExtensions) {
+
+        Set<ExtensionDependency<?>> firstLevelExtensions = new HashSet<>();
         Set<ResolvedDependency> firstLevelModuleDependencies = configuration.getResolvedConfiguration()
                 .getFirstLevelModuleDependencies();
 
@@ -297,15 +341,15 @@ public class ApplicationDeploymentClasspathBuilder {
         return firstLevelExtensions;
     }
 
-    private Set<ExtensionDependency> collectQuarkusExtensions(ResolvedDependency dependency, Set<String> visitedArtifacts,
-            Collection<ExtensionDependency> knownExtensions) {
+    private Set<ExtensionDependency<?>> collectQuarkusExtensions(ResolvedDependency dependency, Set<String> visitedArtifacts,
+            Collection<ExtensionDependency<?>> knownExtensions) {
         String artifactKey = String.format("%s:%s", dependency.getModuleGroup(), dependency.getModuleName());
         if (!visitedArtifacts.add(artifactKey)) {
             return Collections.emptySet();
         }
 
-        Set<ExtensionDependency> extensions = new LinkedHashSet<>();
-        ExtensionDependency extension = getExtensionOrNull(dependency.getModuleGroup(), dependency.getModuleName(),
+        Set<ExtensionDependency<?>> extensions = new LinkedHashSet<>();
+        ExtensionDependency<?> extension = getExtensionOrNull(dependency.getModuleGroup(), dependency.getModuleName(),
                 dependency.getModuleVersion(), knownExtensions);
         if (extension != null) {
             extensions.add(extension);
@@ -317,9 +361,9 @@ public class ApplicationDeploymentClasspathBuilder {
         return extensions;
     }
 
-    private ExtensionDependency getExtensionOrNull(String group, String artifact, String version,
-            Collection<ExtensionDependency> knownExtensions) {
-        for (ExtensionDependency knownExtension : knownExtensions) {
+    private ExtensionDependency<?> getExtensionOrNull(String group, String artifact, String version,
+            Collection<ExtensionDependency<?>> knownExtensions) {
+        for (ExtensionDependency<?> knownExtension : knownExtensions) {
             if (group.equals(knownExtension.getGroup()) && artifact.equals(knownExtension.getName())
                     && version.equals(knownExtension.getVersion())) {
                 return knownExtension;

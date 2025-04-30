@@ -3,13 +3,16 @@ package io.quarkus.hibernate.orm.xml.orm;
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 
+@Tag(TestTags.DEVMODE)
 public class OrmXmlHotReloadExplicitFileTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

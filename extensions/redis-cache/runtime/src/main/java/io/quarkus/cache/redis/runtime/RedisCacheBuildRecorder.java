@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -18,11 +19,13 @@ public class RedisCacheBuildRecorder {
     private static final Logger LOGGER = Logger.getLogger(RedisCacheBuildRecorder.class);
 
     private final RedisCachesBuildTimeConfig buildConfig;
-    private final RuntimeValue<RedisCachesConfig> redisCacheConfigRV;
+    private final RuntimeValue<RedisCachesRuntimeConfig> redisCacheConfigRV;
 
-    private static Map<String, String> valueTypes;
+    private static Map<String, Type> keyTypes;
+    private static Map<String, Type> valueTypes;
 
-    public RedisCacheBuildRecorder(RedisCachesBuildTimeConfig buildConfig, RuntimeValue<RedisCachesConfig> redisCacheConfigRV) {
+    public RedisCacheBuildRecorder(RedisCachesBuildTimeConfig buildConfig,
+            RuntimeValue<RedisCachesRuntimeConfig> redisCacheConfigRV) {
         this.buildConfig = buildConfig;
         this.redisCacheConfigRV = redisCacheConfigRV;
     }
@@ -35,13 +38,12 @@ public class RedisCacheBuildRecorder {
             }
 
             @Override
-            @SuppressWarnings({ "rawtypes", "unchecked" })
             public Supplier<CacheManager> get(Context context) {
                 return new Supplier<CacheManager>() {
                     @Override
                     public CacheManager get() {
-                        Set<RedisCacheInfo> cacheInfos = RedisCacheInfoBuilder.build(context.cacheNames(), buildConfig,
-                                redisCacheConfigRV.getValue(), valueTypes);
+                        Set<RedisCacheInfo> cacheInfos = RedisCacheInfoBuilder.build(context.cacheNames(),
+                                redisCacheConfigRV.getValue(), keyTypes, valueTypes);
                         if (cacheInfos.isEmpty()) {
                             return new CacheManagerImpl(Collections.emptyMap());
                         } else {
@@ -55,7 +57,7 @@ public class RedisCacheBuildRecorder {
                                             cacheInfo.valueType);
                                 }
 
-                                RedisCacheImpl cache = new RedisCacheImpl(cacheInfo, buildConfig.clientName);
+                                RedisCacheImpl cache = new RedisCacheImpl(cacheInfo, buildConfig.clientName());
                                 caches.put(cacheInfo.name, cache);
                             }
                             return new CacheManagerImpl(caches);
@@ -66,7 +68,11 @@ public class RedisCacheBuildRecorder {
         };
     }
 
-    public void setCacheValueTypes(Map<String, String> valueTypes) {
+    public void setCacheKeyTypes(Map<String, Type> keyTypes) {
+        RedisCacheBuildRecorder.keyTypes = keyTypes;
+    }
+
+    public void setCacheValueTypes(Map<String, Type> valueTypes) {
         RedisCacheBuildRecorder.valueTypes = valueTypes;
     }
 }

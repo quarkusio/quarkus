@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-jsonb-parent</artifactId>
-    <name>Quarkus - RESTEasy - JSON-B</name>
+    <name>Quarkus - RESTEasy Classic - JSON-B</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

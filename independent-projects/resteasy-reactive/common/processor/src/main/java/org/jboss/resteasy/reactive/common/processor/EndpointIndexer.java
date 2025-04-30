@@ -19,10 +19,13 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
@@ -32,11 +35,13 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -76,6 +81,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR_MONTH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -84,6 +90,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -106,6 +113,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -128,6 +136,9 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -148,7 +159,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             RESOURCE_INFO);
 
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
-            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR);
+            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR, YEAR_MONTH);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
@@ -231,6 +242,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private final List<Predicate<ClassInfo>> validateEndpoint;
+    private final boolean skipNotRestParameters;
+    protected final Set<DotName> alreadyHandledRequestScopedResources;
+
+    private SerializerScanningResult serializerScanningResult;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -247,7 +263,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
-        this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
+        this.annotationStore = new AnnotationStore(builder.index, builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
         this.parameterContainerTypes = builder.parameterContainerTypes;
@@ -255,6 +271,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.targetJavaVersion = builder.targetJavaVersion;
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
+        this.skipNotRestParameters = builder.skipNotRestParameters;
+        this.validateEndpoint = builder.defaultPredicate;
+        this.alreadyHandledRequestScopedResources = builder.alreadyHandledRequestScopedResources;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -271,14 +290,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
                 if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
+                    path = handleTrailingSlash(path);
                 }
                 if (!path.startsWith("/")) {
                     path = "/" + path;
                 }
                 clazz.setPath(sanitizePath(path));
             }
-            if (factoryCreator != null) {
+            if (factoryCreator != null && !classInfo.isInterface() && !classInfo.isAbstract()) {
+                // Most likely an interface or an abstract class in the hierarchy of a sub resource.
+                // The ResourceLocatorHandler does not use the factory to create new instances, but uses the result of the sub resource locator method instead
+                // Interfaces therefore do not need a factory here
+                // Otherwise, when having multiple implementations of the interface or abstract class, an Ambiguous Bean Resolution error occurs,
+                // since io.quarkus.arc.runtime.BeanContainerImpl.createFactory is run, even if the factory is never invoked
                 clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
@@ -303,6 +327,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             if (injectableBean.isInjectionRequired()) {
+                if (path != null) { // we don't want to verify subresources
+                    verifyClassThatRequiresFieldInjection(classInfo);
+                }
                 clazz.setPerRequestResource(true);
             }
 
@@ -312,14 +339,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
-            if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
-                //kinda bogus, but we just ignore failed interfaces for now
-                //they can have methods that are not valid until they are actually extended by a concrete type
-                log.debug("Ignoring interface " + classInfo.name(), e);
-                return Optional.empty();
+            if (e instanceof DeploymentException) {
+                throw (DeploymentException) e;
             }
-            throw new RuntimeException(e);
+            for (Predicate<ClassInfo> predicate : validateEndpoint) {
+                if (predicate.test(classInfo)) {
+                    //kinda bogus, but we just ignore failed interfaces for now
+                    //they can have methods that are not valid until they are actually extended by a concrete type
+                    log.debug("Ignoring interface " + classInfo.name(), e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
+            return Optional.empty();
         }
+
+    }
+
+    protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {
+
     }
 
     private String sanitizePath(String path) {
@@ -415,25 +453,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return ret;
     }
 
-    /**
-     * Return endpoints defined directly on classInfo.
-     *
-     * @param classInfo resource class
-     * @return classInfo endpoint method info
-     */
-    public static Collection<MethodInfo> collectClassEndpoints(ClassInfo classInfo,
-            Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult) {
-        Collection<FoundEndpoint> endpoints = collectEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(), true,
-                httpAnnotationToMethod, index, applicationScanningResult, new AnnotationStore(null));
-        Collection<MethodInfo> ret = new HashSet<>();
-        for (FoundEndpoint endpoint : endpoints) {
-            if (endpoint.classInfo.equals(classInfo)) {
-                ret.add(endpoint.methodInfo);
-            }
-        }
-        return ret;
-    }
-
     private static List<FoundEndpoint> collectEndpoints(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Set<String> seenMethods, Set<String> existingClassNameBindings, boolean considerApplication,
             Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult,
@@ -509,6 +528,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return ret;
     }
 
+    /**
+     * By default, we are not removing the trailing slash.
+     */
     protected String handleTrailingSlash(String path) {
         return path;
     }
@@ -581,14 +603,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Set<String> fileFormNames = new HashSet<>();
             Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
+            String errorLocation = "method %s on class %s";
+            Object[] errorLocationParameters = new Object[] { currentMethodInfo, currentMethodInfo.declaringClass() };
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 PARAM parameterResult = null;
                 boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameterType(i);
-                String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
-                if (skipParameter(anns)) {
+                if (skipParameter(anns) || skipNotRestParameters(skipNotRestParameters).apply(anns)) {
                     parameterResult = createIndexedParam()
                             .setCurrentClassInfo(currentClassInfo)
                             .setActualEndpointInfo(actualEndpointInfo)
@@ -596,7 +619,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             .setAdditionalReaders(additionalReaders)
                             .setAnns(anns)
                             .setParamType(paramType)
-                            .setErrorLocation(errorLocation)
+                            .setErrorLocation(errorLocation, errorLocationParameters)
                             .setField(false)
                             .setHasRuntimeConverters(hasRuntimeConverters)
                             .setPathParameters(pathParameters)
@@ -605,7 +628,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else {
                     parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
                             existingConverters, additionalReaders,
-                            anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
+                            anns, paramType, errorLocation, errorLocationParameters, false, hasRuntimeConverters,
+                            pathParameters,
                             currentMethodInfo.parameterName(i),
                             consumes,
                             methodContext);
@@ -617,11 +641,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 String defaultValue = parameterResult.getDefaultValue();
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
-                    if (bodyParamType != null)
-                        throw new RuntimeException(
-                                "Resource method " + currentMethodInfo + " can only have a single body parameter: "
-                                        + currentMethodInfo.parameterName(i));
+                    if (bodyParamType != null) {
+                        throw new DeploymentException(String.format(
+                                "Resource method '%s#%s' can only have a single body parameter, but has at least 2. A body parameter is a method parameter without any annotations. Last discovered body parameter is '%s'.",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo,
+                                currentMethodInfo.parameterName(i)));
+                    }
                     bodyParamType = paramType;
+                    if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
+                        warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
+                    }
                 }
                 String elementType = parameterResult.getElementType();
                 boolean single = parameterResult.isSingle();
@@ -645,9 +674,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (bodyParamType != null
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
-                    throw new RuntimeException(
-                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    throw new DeploymentException(String.format(
+                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is "
+                                    + "'%s#%s'",
+                            currentMethodInfo.declaringClass().name(), currentMethodInfo));
                 }
                 boolean validConsumes = false;
                 if (consumes != null && consumes.length > 0) {
@@ -660,9 +690,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     }
                     // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
                     if (!validConsumes) {
-                        throw new RuntimeException(
-                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is '"
-                                        + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        throw new DeploymentException(String.format(
+                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is "
+                                        + "'%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
                 }
             }
@@ -672,9 +703,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     : currentMethodInfo.returnType();
             if (REST_RESPONSE.equals(methodContextReturnTypeOrReturnType.name())
                     && (methodContextReturnTypeOrReturnType.kind() == Kind.CLASS)) {
-                log.warn("Method '" + currentMethodInfo.name() + " of Resource class '"
-                        + currentMethodInfo.declaringClass().name()
-                        + "' returns RestResponse but does not declare a generic type. It is strongly advised to define the generic type otherwise the behavior could be unpredictable");
+                log.warnf("Method '%s' of Resource class '%s' returns RestResponse but does not declare a generic type. "
+                        + "It is strongly advised to define the generic type otherwise the behavior could be unpredictable",
+                        currentMethodInfo, currentMethodInfo.declaringClass().name());
             }
             Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
@@ -708,10 +739,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (RESPONSE.equals(nonAsyncReturnType.name())) {
                         throw new DeploymentException(
                                 String.format(
-                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s#%s'",
                                         RESPONSE,
                                         REST_RESPONSE,
-                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                                        currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
 
                     // Handle multipart form data responses
@@ -722,7 +753,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
-            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, defaultBlocking);
+            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
@@ -733,15 +764,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //would be reached for a default
                     blocking = isBlocking(actualMethodInfo,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
-                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo,
+                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo, blocking,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
             }
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
-                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        String.format(
+                                "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
             }
 
             methodContext.put(METHOD_PRODUCES, produces);
@@ -780,10 +812,30 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 method));
             }
             return method;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo.name() + "'", e);
+        } catch (DeploymentException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new RuntimeException(String.format("Failed to process method '%s#%s'. Reason: %s",
+                    currentMethodInfo.declaringClass().name(), currentMethodInfo, e.getMessage()), e);
         }
+    }
+
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        log.warnf("Using a body parameter with %s is strongly discouraged. Offending method is "
+                + "'%s#%s'", httpMethod, methodInfo.declaringClass().name(), methodInfo);
+    }
+
+    private Function<Map<DotName, AnnotationInstance>, Boolean> skipNotRestParameters(boolean skipAllNotMethodParameter) {
+        return new Function<Map<DotName, AnnotationInstance>, Boolean>() {
+            @Override
+            public Boolean apply(Map<DotName, AnnotationInstance> anns) {
+                if (skipAllNotMethodParameter) {
+                    return anns.size() > 0
+                            && JAX_RS_ANNOTATIONS_FOR_FIELDS.stream().noneMatch(dotName -> anns.containsKey(dotName));
+                }
+                return false;
+            }
+        };
     }
 
     protected boolean skipParameter(Map<DotName, AnnotationInstance> anns) {
@@ -817,17 +869,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return value;
     }
 
-    private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
-        boolean isRunOnVirtualThread = false;
+    private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
-
-        //should the Transactional annotation override the annotation @RunOnVirtualThread ?
-        //here it does : it is impossible for a transaction to run on a virtual thread
-        Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
-        if (transactional != null) {
-            return false;
-        }
 
         if (runOnVirtualThreadAnnotation != null) {
             if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
@@ -839,28 +883,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
                         + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
             }
-            isRunOnVirtualThread = true;
-        }
-
-        //BlockingDefault.BLOCKING should mean "block a platform thread" ? here it does
-        if (defaultValue == BlockingDefault.BLOCKING) {
-            return false;
+            if (!blocking) {
+                throw new DeploymentException(
+                        "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                                " methods considered blocking");
+            } else {
+                return true;
+            }
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            isRunOnVirtualThread = true;
-        } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
+            return true;
+        } else {
             return false;
         }
-
-        if (isRunOnVirtualThread && !isBlocking(info, defaultValue)) {
-            throw new DeploymentException(
-                    "Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                            + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
-                            " methods considered blocking");
-        } else if (isRunOnVirtualThread) {
-            return true;
-        }
-
-        return false;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
@@ -894,15 +929,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return false;
         }
         Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
-        if (transactional != null) {
-            return true;
-        }
         if (defaultValue == BlockingDefault.BLOCKING) {
             return true;
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
             return false;
         } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
             return false;
+        } else if (transactional != null) {
+            return true;
         }
         return doesMethodHaveBlockingSignature(info);
     }
@@ -1189,10 +1223,34 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected abstract PARAM createIndexedParam();
 
+    /**
+     * Analyzes an endpoint parameter and encapsulates its details into a `PARAM` object.
+     *
+     * <p>
+     * Steps performed:
+     * </p>
+     * <ul>
+     * <li><b>Initialization:</b> Creates a `PARAM` object with basic information about the class, method, and annotations.</li>
+     * <li><b>Parameter type identification:</b> Retrieves annotations like `@PathParam`, `@QueryParam`, `@FormParam`, etc.
+     * If multiple such annotations are present, an error is thrown. The parameter type is set accordingly.</li>
+     * <li><b>Special processing based on type:</b> Handles collections (`List`, `Set`, `Map`, `Optional`) differently
+     * and applies specific rules for `byte[]`, `SseEventSink`, and `AsyncResponse`.</li>
+     * <li><b>Conversion and compatibility:</b> Searches for registered converters if the parameter is convertible,
+     * configuring handlers for lists, maps, or primitive types.</li>
+     * <li><b>Finalization:</b> Determines if the parameter is single or multiple. If it does not match previous cases,
+     * it is treated as the request body (`@Body`).</li>
+     * </ul>
+     *
+     * <p>
+     * In short, this method identifies, classifies, and configures an endpoint parameter,
+     * ensuring proper conversion and handling.
+     * </p>
+     */
+
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             MethodInfo currentMethodInfo, Map<String, String> existingConverters, AdditionalReaders additionalReaders,
-            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
+            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, Object[] errorLocationParameters,
+            boolean field, boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
             String[] declaredConsumes,
             Map<String, Object> methodContext) {
         PARAM builder = createIndexedParam()
@@ -1202,7 +1260,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setAdditionalReaders(additionalReaders)
                 .setAnns(anns)
                 .setParamType(paramType)
-                .setErrorLocation(errorLocation)
+                .setErrorLocation(errorLocation, errorLocationParameters)
                 .setField(field)
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
@@ -1233,9 +1291,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return builder;
         } else if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
                 restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
-            throw new RuntimeException(
+            throw new DeploymentException(
                     "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
-                            + errorLocation);
+                            + builder.getErrorLocation());
         } else if (pathParam != null) {
             builder.setName(pathParam.value().asString());
             builder.setType(ParameterType.PATH);
@@ -1321,8 +1379,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
-                builder.setErrorLocation(builder.getErrorLocation()
-                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
+                builder.setErrorLocation(builder.getRawErrorLocation()
+                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)",
+                        builder.getErrorLocationParameters());
                 convertible = true;
             } else if (!field && paramType.name().equals(MULTI_PART_DATA_INPUT)) {
                 builder.setType(ParameterType.MULTI_PART_DATA_INPUT);
@@ -1349,21 +1408,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                            currentMethodInfo);
                 }
             } else if (pt.name().equals(SET)) {
                 typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                            currentMethodInfo);
                 }
             } else if (pt.name().equals(SORTED_SET)) {
                 typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                            currentMethodInfo);
                 }
             } else if (pt.name().equals(OPTIONAL)) {
                 typeHandled = true;
@@ -1382,7 +1444,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
-                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             } else if (builder.getType() != ParameterType.BEAN) {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
@@ -1405,21 +1468,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             typeHandled = true;
             builder.setSingle(false);
             if (convertible) {
-                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             }
         } else if (paramType.name().equals(SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic Set type
             elementType = String.class.getName();
             typeHandled = true;
             builder.setSingle(false);
             if (convertible) {
-                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             }
         } else if (paramType.name().equals(SORTED_SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic SortedSet type
             elementType = String.class.getName();
             typeHandled = true;
             builder.setSingle(false);
             if (convertible) {
-                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             }
         } else if (paramType.kind() == Kind.ARRAY) {
             ArrayType at = paramType.asArrayType();
@@ -1431,7 +1497,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             elementType = toClassName(at.constituent(), currentClassInfo, actualEndpointInfo, index);
             if (convertible) {
-                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             }
         }
 
@@ -1441,17 +1508,20 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
                     && type != ParameterType.ASYNC_RESPONSE && type != ParameterType.MULTI_PART_FORM) {
-                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                        currentMethodInfo);
             }
             if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
                 builder.setSse(true);
             }
         }
         if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
-            throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+            throw new DeploymentException(
+                    "Can only inject AsyncResponse on methods marked @Suspended on " + builder.getErrorLocation());
         }
         if (builder.isSingle() && builder.getSeparator() != null) {
-            throw new DeploymentException("Single parameters should not be marked with @Separator");
+            throw new DeploymentException(
+                    "Single parameters should not be marked with @Separator on " + builder.getErrorLocation());
         }
         builder.setElementType(elementType);
         return builder;
@@ -1501,11 +1571,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            PARAM builder, String elementType) {
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType) {
+            boolean hasRuntimeConverters, PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters,
@@ -1516,15 +1586,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            PARAM builder, String elementType) {
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            PARAM builder, String elementType) {
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            PARAM builder, String elementType) {
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     final boolean isContextType(ClassType klass) {
@@ -1576,6 +1646,88 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return result;
     }
 
+    protected boolean hasJson(String[] types) {
+        if (types == null) {
+            return false;
+        }
+        for (String type : types) {
+            if (isJson(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isJson(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.startsWith(MediaType.APPLICATION_JSON);
+    }
+
+    protected boolean hasJson(ResourceMethod method) {
+        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
+    }
+
+    protected boolean hasNoTypesDefined(ResourceMethod method) {
+        return (method.getProduces() == null || method.getProduces().length == 0) &&
+                (method.getConsumes() == null || method.getConsumes().length == 0) &&
+                (method.getStreamElementType() == null);
+    }
+
+    protected boolean isDefaultJson(DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        List<MediaType> mediaTypes = jsonDefaultProducersHandler.handle(context);
+        for (MediaType mediaType : mediaTypes) {
+            if (isJson(mediaType.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected SerializerScanningResult getSerializerScanningResult() {
+        if (serializerScanningResult == null) {
+            serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+        }
+        return serializerScanningResult;
+    }
+
+    protected void warnAboutMissingJsonProviderIfNeeded(ResourceMethod method, MethodInfo info,
+            DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson(jsonDefaultProducersHandler, context))) {
+            if (STRING.toString().equals(method.getSimpleReturnType())) { // when returning string, we assume that the method implementation is actually handling to conversion
+                return;
+            }
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
+            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
+                logMissingJsonWarning(info);
+            }
+        }
+    }
+
+    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
+        boolean appProvidedJsonReaderExists = false;
+        for (ScannedSerializer provider : providers) {
+            for (String mt : provider.getMediaTypeStrings()) {
+                if (isJson(mt)) {
+                    appProvidedJsonReaderExists = true;
+                    break;
+                }
+            }
+            if (appProvidedJsonReaderExists) {
+                break;
+            }
+        }
+        return appProvidedJsonReaderExists;
+    }
+
+    protected void logMissingJsonWarning(MethodInfo info) {
+
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator;
@@ -1592,8 +1744,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
         private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
-        private Collection<AnnotationsTransformer> annotationsTransformers;
+        private Collection<AnnotationTransformation> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
+        private Set<DotName> alreadyHandledRequestScopedResources = new HashSet<>();
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
         private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
@@ -1608,6 +1761,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
+        private List<Predicate<ClassInfo>> defaultPredicate = Arrays.asList(new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return Modifier.isInterface(classInfo.flags())
+                        || Modifier.isAbstract(classInfo.flags());
+            }
+        });
+
+        private boolean skipNotRestParameters = false;
 
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
@@ -1704,8 +1866,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
+        /**
+         * @deprecated use {@link #setAnnotationTransformations(Collection)}
+         */
+        @Deprecated(forRemoval = true)
         public B setAnnotationsTransformers(Collection<AnnotationsTransformer> annotationsTransformers) {
-            this.annotationsTransformers = annotationsTransformers;
+            List<AnnotationTransformation> transformations = new ArrayList<>(annotationsTransformers.size());
+            transformations.addAll(annotationsTransformers);
+            this.annotationsTransformers = transformations;
+            return (B) this;
+        }
+
+        public B setAnnotationTransformations(Collection<AnnotationTransformation> annotationTransformations) {
+            this.annotationsTransformers = annotationTransformations;
             return (B) this;
         }
 
@@ -1728,6 +1901,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public B setSkipMethodParameter(
                 Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
             this.skipMethodParameter = skipMethodParameter;
+            return (B) this;
+        }
+
+        public B setValidateEndpoint(List<Predicate<ClassInfo>> validateEndpoint) {
+            List<Predicate<ClassInfo>> predicates = new ArrayList<>(validateEndpoint.size() + 1);
+            predicates.addAll(validateEndpoint);
+            predicates.addAll(this.defaultPredicate);
+            this.defaultPredicate = predicates;
+            return (B) this;
+        }
+
+        public B skipNotRestParameters(boolean skipNotRestParameters) {
+            this.skipNotRestParameters = skipNotRestParameters;
+            return (B) this;
+        }
+
+        public B alreadyHandledRequestScopedResources(Set<DotName> alreadyHandledRequestScopedResources) {
+            this.alreadyHandledRequestScopedResources = alreadyHandledRequestScopedResources;
             return (B) this;
         }
 

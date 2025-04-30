@@ -30,6 +30,7 @@ public class MyFirstInterceptor implements ServerInterceptor, Prioritized {
             Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
 
         Context ctx = Context.current().withValue(KEY_1, "k1").withValue(KEY_2, counter.incrementAndGet());
+        ctx.attach(); // Make sure the context is attached to the current duplicated context.
         return Contexts.interceptCall(ctx, new ForwardingServerCall.SimpleForwardingServerCall<>(serverCall) {
 
             @Override
@@ -38,7 +39,6 @@ public class MyFirstInterceptor implements ServerInterceptor, Prioritized {
                 super.close(status, trailers);
             }
         }, metadata, serverCallHandler);
-
     }
 
     public long getLastCall() {

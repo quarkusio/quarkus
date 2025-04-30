@@ -43,6 +43,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.Repository;
@@ -55,15 +57,22 @@ public final class DotNames {
             .createSimple(Repository.class.getName());
     public static final DotName SPRING_DATA_CRUD_REPOSITORY = DotName
             .createSimple(CrudRepository.class.getName());
+
+    public static final DotName SPRING_DATA_LIST_CRUD_REPOSITORY = DotName
+            .createSimple(ListCrudRepository.class.getName());
     public static final DotName SPRING_DATA_PAGING_REPOSITORY = DotName
             .createSimple(PagingAndSortingRepository.class.getName());
+
+    public static final DotName SPRING_DATA_LIST_PAGING_REPOSITORY = DotName
+            .createSimple(ListPagingAndSortingRepository.class.getName());
     public static final DotName SPRING_DATA_JPA_REPOSITORY = DotName
             .createSimple(JpaRepository.class.getName());
     public static final DotName SPRING_DATA_REPOSITORY_DEFINITION = DotName
             .createSimple(RepositoryDefinition.class.getName());
 
     public static final Set<DotName> SUPPORTED_REPOSITORIES = new HashSet<>(Arrays.asList(
-            SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
+            SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_LIST_PAGING_REPOSITORY,
+            SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_LIST_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
 
     public static final DotName SPRING_DATA_NO_REPOSITORY_BEAN = DotName
             .createSimple(NoRepositoryBean.class.getName());

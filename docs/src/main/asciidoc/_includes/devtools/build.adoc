@@ -1,8 +1,8 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[source,bash,subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
 ifdef::build-additional-parameters[]
-quarkus build {build-additional-parameters}
+quarkus build quarkus deploy openshift
 endif::[]
 ifndef::build-additional-parameters[]
 quarkus build

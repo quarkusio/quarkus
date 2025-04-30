@@ -1,0 +1,65 @@
+services:
+  broker1:
+    image: quay.io/ogunalp/kafka-native:latest
+    labels:
+      io.quarkus.devservices.compose.config_map.port.9092: kafka.port
+      io.quarkus.devservices.compose.exposed_ports: /tmp/ports
+    command: "./kafka.sh"
+    ports:
+      - "9092"
+    depends_on:
+      - postgres
+    networks:
+      default:
+        aliases:
+          - kafka
+    volumes:
+      - './kafka.sh:/work/kafka.sh'
+    configs:
+      - source: broker
+        target: /server.properties
+  some-rabbit:
+    profiles: ["rabbit"]
+    image: rabbitmq:4.0-management
+    labels:
+      io.quarkus.devservices.compose.wait_for.logs: .*Server startup complete.*
+    entrypoint: ["bash", "-c", "chmod 400 /var/lib/rabbitmq/.erlang.cookie; rabbitmq-server"]
+#    post_start:
+#      - command: ["echo", "rabbitmqctl add_user admin password"]
+    environment:
+      AMQP_USER: admin
+      AMQP_PASSWORD: password
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    ports:
+      - '5672'
+      - '15672'
+    volumes:
+      - './src/test/resources/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json'
+      - './src/test/resources/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf'
+  redis:
+    profiles: ["redis"]
+    image: docker.io/library/redis:7
+    labels:
+      io.quarkus.devservices.compose.config_map.env.REDIS_HOST_PASSWORD: quarkus.redis.password
+    environment:
+      REDIS_HOST_PASSWORD: "qwerty"
+      ALLOW_EMPTY_PASSWORD: "no"
+#      REDIS_ARGS: "--requirepass qwerty"
+    command: ["redis-server", "--requirepass", "qwerty"]
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6379"
+
+configs:
+  broker:
+    content: |
+      broker.id=1
+      listeners=PLAINTEXT://

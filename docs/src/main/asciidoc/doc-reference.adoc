@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: contributing
+:topics: internals,documentation
 
 Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required diataxis structure and composition of Quarkus documentation.
 
@@ -103,7 +104,7 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 
 === Source locations
 
-- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
 - Configuration documentation is generated from JavaDoc comments in Java source files.
 - Java, YAML, and other source files can also be referenced by AsciiDoc files.
 
@@ -137,7 +138,7 @@ Suffix:: Use a suffix that reflects the document type (optional):
 
 - `-concept.adoc` for concept documents
 - `-howto.adoc` for how-to guides
-- `-reference.adoc` for references 
+- `-reference.adoc` for references
 - `-tutorial.adoc` for tutorials
 
 [[doc-structure]]
@@ -226,7 +227,7 @@ If you end up with deeply nested sections, think about the following:
 For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
 - Can the content be reorganized to make it simpler to consume?
 
-See xref:{doc-guides}/doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
+See xref:doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
 ====
 
 == Links
@@ -263,7 +264,6 @@ We use attributes in our cross-references to ensure our docs can be built across
 |Attribute|Description
 |\{code-examples}|Relative path to directory containing collected example source files
 |\{doc-examples}|Relative path to source examples for documentation guides
-|\{doc-guides}|Relative path to documentation adoc files
 |\{generated-dir}|Relative path to generated configuration `*.adoc` files
 |\{imagesdir}|Relative path to directory containing images
 |\{includes}|Relative path to directory containing partial/reusable content
@@ -274,9 +274,9 @@ When cross-referencing content, always use the inter-document `xref:` syntax and
 .Cross-reference example
 [source,asciidoc]
 ----
-xref:{doc-guides}/doc-concept.adoc[Quarkus Documentation concepts] <1>
+xref:doc-concept.adoc[Quarkus Documentation concepts] <1>
 ----
-<1> The cross-reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
+<1> The cross-reference starts with `xref:`, and provides a readable description: `[Quarkus Documentation concepts]`.
 
 [[anchors-reference]]
 === Anchors for in-file and cross-file navigation

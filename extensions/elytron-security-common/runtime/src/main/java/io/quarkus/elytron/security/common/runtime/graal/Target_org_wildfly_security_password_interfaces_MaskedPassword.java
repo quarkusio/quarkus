@@ -1,10 +1,11 @@
 package io.quarkus.elytron.security.common.runtime.graal;
 
-import org.wildfly.common.Assert;
 import org.wildfly.security.password.interfaces.MaskedPassword;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Replace the {@linkplain MaskedPassword} interface due to an issue with char[].clone() failures during native image

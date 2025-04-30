@@ -28,10 +28,12 @@ public class ConfigurationTest extends DevUIJsonRPCTest {
                 Map.of(
                         "name", "quarkus.application.name",
                         "value", "changedByTest"));
+        Assertions.assertNotNull(updatePropertyResponse);
         Assertions.assertTrue(updatePropertyResponse.asBoolean());
 
         // Get the properties to make sure it is changed
         JsonNode allPropertiesResponse = super.executeJsonRPCMethod("getAllValues");
+        Assertions.assertNotNull(allPropertiesResponse);
         String applicationName = allPropertiesResponse.get("quarkus.application.name").asText();
         Assertions.assertEquals("changedByTest", applicationName);
     }

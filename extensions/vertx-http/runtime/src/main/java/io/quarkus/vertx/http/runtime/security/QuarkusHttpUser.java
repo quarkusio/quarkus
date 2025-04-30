@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
+
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
@@ -47,6 +49,7 @@ public class QuarkusHttpUser implements User {
     }
 
     @Override
+    @Deprecated
     public User isAuthorized(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
         resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
         return this;
@@ -92,7 +95,10 @@ public class QuarkusHttpUser implements User {
             return deferred.await().indefinitely();
         }
         if (identityProviderManager != null) {
-            return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            return identityProviderManager
+                    .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), routingContext))
+                    .await()
+                    .indefinitely();
         }
         return null;
     }
@@ -125,8 +131,21 @@ public class QuarkusHttpUser implements User {
             return Uni.createFrom().item(existing.getSecurityIdentity());
         }
         if (identityProviderManager != null) {
-            return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            return identityProviderManager
+                    .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), routingContext));
         }
         return Uni.createFrom().nullItem();
+    }
+
+    static Uni<SecurityIdentity> setIdentity(Uni<SecurityIdentity> identityUni, RoutingContext routingContext) {
+        routingContext.setUser(null);
+        routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, identityUni);
+        return identityUni;
+    }
+
+    public static SecurityIdentity setIdentity(SecurityIdentity identity, RoutingContext routingContext) {
+        routingContext.setUser(new QuarkusHttpUser(identity));
+        routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(identity));
+        return identity;
     }
 }

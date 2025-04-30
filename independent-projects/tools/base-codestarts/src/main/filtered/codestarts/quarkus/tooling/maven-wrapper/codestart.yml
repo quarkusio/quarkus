@@ -1,4 +1,4 @@
-name: maven-wrapper
+name: tooling-maven-wrapper
 type: tooling
 output-strategy:
   "mvnw": "executable"

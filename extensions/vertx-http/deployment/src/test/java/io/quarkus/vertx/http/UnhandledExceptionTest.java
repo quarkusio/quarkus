@@ -242,7 +242,8 @@ public class UnhandledExceptionTest {
                 containsString("<!doctype html>"),
                 containsString("<title>Internal Server Error"),
                 containsString("java.lang.RuntimeException: Simulated failure"),
-                containsString("at " + BeanRegisteringRouteThatThrowsException.class.getName() + "$1.handle"));
+                containsString(BeanRegisteringRouteThatThrowsException.class.getName() + "$1"),
+                containsString(".handle"));
     }
 
     @ApplicationScoped

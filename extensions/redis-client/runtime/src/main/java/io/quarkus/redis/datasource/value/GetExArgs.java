@@ -125,8 +125,8 @@ public class GetExArgs implements RedisCommandExtraArguments {
         return this;
     }
 
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
         if (ex >= 0) {
             args.add("EX");
             args.add(Long.toString(ex));

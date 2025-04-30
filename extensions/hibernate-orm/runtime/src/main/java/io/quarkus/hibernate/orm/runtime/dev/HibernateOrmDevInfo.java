@@ -6,12 +6,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import org.hibernate.LockOptions;
 import org.hibernate.boot.query.NamedHqlQueryDefinition;
 import org.hibernate.boot.query.NamedNativeQueryDefinition;
 import org.hibernate.boot.query.NamedQueryDefinition;
 import org.hibernate.boot.spi.AbstractNamedQueryDefinition;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
@@ -39,23 +43,36 @@ public class HibernateOrmDevInfo {
     }
 
     public static class PersistenceUnit {
-
+        @JsonIgnore
+        private final transient SessionFactoryImplementor sessionFactory;
         private final String name;
         private final List<Entity> managedEntities;
         private final List<Query> namedQueries;
         private final List<Query> namedNativeQueries;
-        private final String createDDL;
-        private final String dropDDL;
+        private String createDDL;
+        private String dropDDL;
+        private String updateDDL;
+        private final Supplier<String> createDDLSupplier;
+        private final Supplier<String> dropDDLSupplier;
+        private final Supplier<String> updateDDLSupplier;
 
-        public PersistenceUnit(String name, List<Entity> managedEntities,
+        public PersistenceUnit(SessionFactoryImplementor sessionFactory, String name, List<Entity> managedEntities,
                 List<Query> namedQueries,
-                List<Query> namedNativeQueries, String createDDL, String dropDDL) {
+                List<Query> namedNativeQueries, Supplier<String> createDDL, Supplier<String> dropDDL,
+                Supplier<String> updateDDLSupplier) {
+            this.sessionFactory = sessionFactory;
             this.name = name;
             this.managedEntities = managedEntities;
             this.namedQueries = namedQueries;
             this.namedNativeQueries = namedNativeQueries;
-            this.createDDL = createDDL;
-            this.dropDDL = dropDDL;
+            this.createDDLSupplier = createDDL;
+            this.dropDDLSupplier = dropDDL;
+            this.updateDDLSupplier = updateDDLSupplier;
+        }
+
+        // Method name must not be `getSessionFactory` to exclude it from JSON serialization
+        public SessionFactoryImplementor sessionFactory() {
+            return sessionFactory;
         }
 
         public String getName() {
@@ -81,24 +98,42 @@ public class HibernateOrmDevInfo {
             return allQueries;
         }
 
-        public String getCreateDDL() {
+        public synchronized String getCreateDDL() {
+            if (createDDL == null) {
+                createDDL = createDDLSupplier.get();
+            }
             return createDDL;
         }
 
-        public String getDropDDL() {
+        public synchronized String getDropDDL() {
+            if (dropDDL == null) {
+                dropDDL = dropDDLSupplier.get();
+            }
             return dropDDL;
+        }
+
+        public synchronized String getUpdateDDL() {
+            if (updateDDL == null) {
+                updateDDL = updateDDLSupplier.get();
+            }
+            return updateDDL;
         }
 
     }
 
     public static class Entity {
-
+        private final String name;
         private final String className;
         private final String tableName;
 
-        public Entity(String className, String tableName) {
+        public Entity(String name, String className, String tableName) {
+            this.name = name;
             this.className = className;
             this.tableName = tableName;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public String getClassName() {
@@ -108,7 +143,6 @@ public class HibernateOrmDevInfo {
         public String getTableName() {
             return tableName;
         }
-
     }
 
     public static class Query {

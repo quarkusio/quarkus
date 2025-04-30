@@ -1,0 +1,62 @@
+{
+  "Records": [
+    {
+      "eventID": "1",
+      "eventVersion": "1.0",
+      "dynamodb": {
+        "Keys": {
+          "Id": {
+            "N": "1"
+          }
+        },
+        "NewImage": {
+          "Message": {
+            "S": "hello"
+          },
+          "ThrowError": {
+            "BOOL": true
+          },
+          "Id": {
+            "N": "1"
+          }
+        },
+        "StreamViewType": "NEW_AND_OLD_IMAGES",
+        "SequenceNumber": "1",
+        "SizeBytes": 26
+      },
+      "awsRegion": "us-west-2",
+      "eventName": "INSERT",
+      "eventSourceARN": "arn:aws:dynamodb:us-east-2:123456789012:table/my-table/stream/2023-06-10T19:26:16.525",
+      "eventSource": "aws:dynamodb"
+    },
+    {
+      "eventID": "2",
+      "eventVersion": "1.0",
+      "dynamodb": {
+        "NewImage": {
+          "Message": {
+            "S": "fail"
+          },
+          "ThrowError": {
+            "BOOL": false
+          },
+          "Id": {
+            "N": "2"
+          }
+        },
+        "SequenceNumber": "2",
+        "Keys": {
+          "Id": {
+            "N": "101"
+          }
+        },
+        "SizeBytes": 59,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "awsRegion": "us-west-2",
+      "eventName": "INSERT",
+      "eventSourceARN": "arn:aws:dynamodb:us-east-2:123456789012:table/my-table/stream/2023-06-10T19:26:16.525",
+      "eventSource": "aws:dynamodb"
+    }
+  ]
+}

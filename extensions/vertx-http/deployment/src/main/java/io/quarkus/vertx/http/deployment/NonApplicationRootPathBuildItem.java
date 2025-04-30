@@ -10,8 +10,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -20,8 +20,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
-
-    // TODO Should be handle the management root path?
 
     /**
      * Normalized of quarkus.http.root-path.
@@ -111,7 +109,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the normalized root path for the mangement endpoints. {@code getNonApplicationRootPath()} if the
+     * @return the normalized root path for the management endpoints. {@code getNonApplicationRootPath()} if the
      *         management interface is disabled.
      */
     public String getManagementRootPath() {
@@ -167,17 +165,17 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
     }
 
-    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode) {
+        return resolveManagementPath(path, managementBuildTimeConfig, mode, true);
+    }
+
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+            LaunchModeBuildItem mode, boolean extensionOverride) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (!managementInterfaceBuildTimeConfig.enabled) {
-            if (managementRootPath != null) {
-                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
-            }
-            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
-        } else {
+        if (managementBuildTimeConfig.enabled() && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {
@@ -185,7 +183,16 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             } else {
                 return prefix + path;
             }
+        } else {
+            if (managementRootPath != null) {
+                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
+            }
+            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
         }
+    }
+
+    public static String getManagementUrlPrefix() {
+        return getManagementUrlPrefix(null);
     }
 
     /**
@@ -196,12 +203,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      */
     public static String getManagementUrlPrefix(LaunchModeBuildItem mode) {
         Config config = ConfigProvider.getConfig();
-        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("0.0.0.0");
+        // These will always be defined except when the configuration is not properly set up
+        // (for instance in NonApplicationRootPathBuildItemTest)
+        // so we default to the safest behavior possible
+        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("localhost");
         var managementPort = config.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
-        if (mode.isTest()) {
+        if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);
         }
-        var isHttps = isTLsConfigured(config);
+        var isHttps = isTlsConfigured(config);
 
         return (isHttps ? "https://" : "http://") + managementHost + ":" + managementPort;
     }
@@ -260,6 +270,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         private final NonApplicationRootPathBuildItem buildItem;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private RouteBuildItem.RouteType routerType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+        private String name;
         private String path;
 
         Builder(NonApplicationRootPathBuildItem buildItem) {
@@ -320,7 +331,13 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 this.path = route;
                 this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
-            super.orderedRoute(this.path, order, routeFunction);
+
+            // we normalize the route name to remove trailing *, this is to be consistent with the path
+            // see RouteImpl#setPath()
+            String routeName = route.charAt(route.length() - 1) == '*' ? route.substring(0, route.length() - 1) : route;
+
+            // we pass a route name for proper identification in the metrics
+            super.orderedRoute(routeName, this.path, order, routeFunction);
             return this;
         }
 
@@ -393,7 +410,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 return null;
             }
             if (isManagement && buildItem.managementRootPath != null) {
-                return null; // Exposed on the management interface, so not exposed.
+                if (notFoundPagePath != null && absolutePath == null) {
+                    absolutePath = getManagementUrlPrefix() + notFoundPagePath;
+                } else {
+                    return null;
+                }
             }
             if (notFoundPagePath == null) {
                 throw new RuntimeException("Cannot display " + routeFunction
@@ -411,6 +432,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
+            return this;
+        }
     }
 
     /**
@@ -419,7 +445,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * @param config the config
      * @return {@code true} if the management interface configuration contains a key or a certificate (indicating TLS)
      */
-    private static boolean isTLsConfigured(Config config) {
+    private static boolean isTlsConfigured(Config config) {
+        // TLS registry
+        var hasTlsConfigurationName = config.getOptionalValue("quarkus.management.tls-configuration-name", String.class)
+                .isPresent();
+        if (hasTlsConfigurationName) {
+            return true;
+        }
+
+        // legacy TLS configuration
         var hasCert = config.getOptionalValue("quarkus.management.ssl.certificate.file", String.class).isPresent();
         var hasKey = config.getOptionalValue("quarkus.management.ssl.certificate.key-file", String.class).isPresent();
 

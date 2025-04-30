@@ -5,16 +5,18 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.timeseries.AddArgs;
 import io.quarkus.redis.datasource.timeseries.Aggregation;
 import io.quarkus.redis.datasource.timeseries.AlterArgs;
-import io.quarkus.redis.datasource.timeseries.BucketTimestamp;
 import io.quarkus.redis.datasource.timeseries.CreateArgs;
 import io.quarkus.redis.datasource.timeseries.DuplicatePolicy;
 import io.quarkus.redis.datasource.timeseries.Filter;
@@ -404,7 +406,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
                 new MRangeArgs().withLabels()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).bucketTimestamp(BucketTimestamp.HIGH)
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000))
                         .groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
@@ -512,7 +514,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         list = ts.tsRange(a, TimeSeriesRange.fromTimeSeries(), new RangeArgs()
                 .align(10).count(2)
-                .aggregation(Aggregation.MIN, Duration.ofMillis(20)).bucketTimestamp(BucketTimestamp.MID));
+                .aggregation(Aggregation.MIN, Duration.ofMillis(20)));
         assertThat(list)
                 .hasSize(2)
                 .contains(new Sample(990, 100), new Sample(1010, 110));
@@ -547,6 +549,31 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
                 .uncompressed().chunkSize(1024).setRetention(Duration.ofDays(1)));
         assertThat(ts.tsGet(key).value()).isEqualTo(10L);
         assertThat(ts.tsGet(key).timestamp()).isEqualTo(1000);
+    }
+
+    @Test
+    void testTimeSeriesWithTypeReference() throws InterruptedException {
+        var ts = ds.timeseries(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        var key = List.of(Person.person1, Person.person2);
+        var key2 = List.of(Person.person0);
+        ts.tsCreate(key);
+        ts.tsCreate(key2, new CreateArgs().setRetention(Duration.of(2678400000L, ChronoUnit.MILLIS)));
+
+        ts.tsAlter(key2, new AlterArgs().chunkSize(1024));
+
+        ts.tsAdd(key, 1626434637914L, 26);
+        ts.tsAdd(key, 27);
+
+        Thread.sleep(1); // Do make sure we have a different timestamp
+        ts.tsMAdd(SeriesSample.from(key, 51), SeriesSample.from(key, 1626434637915L, 52), SeriesSample.from(key2, 22));
+
+        var list = ts.tsRange(key, TimeSeriesRange.fromTimeSeries());
+        assertThat(list).hasSize(4);
+
+        list = ts.tsRange(key2, TimeSeriesRange.fromTimestampToLatest(0));
+        assertThat(list).hasSize(1);
     }
 
 }

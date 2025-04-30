@@ -13,7 +13,10 @@ import io.quarkus.deployment.util.ArtifactInfoUtil;
  * This is scoped to the extension that produced it, to prevent namespace clashes.
  *
  * This value will be evaluated at runtime, so can contain info that is produced from recorders
+ *
+ * @deprecated as part of the removal of the old Dev UI
  */
+@Deprecated
 public final class DevConsoleRuntimeTemplateInfoBuildItem extends MultiBuildItem {
 
     private final String groupId;

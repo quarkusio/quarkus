@@ -16,28 +16,28 @@
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-oracle-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>jakarta.activation</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-db-token-state-manager</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
         </dependency>
         <!-- test dependencies -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-client-common-synced</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -99,9 +99,35 @@
                 </exclusion>
             </exclusions>
         </dependency>
+         <dependency>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-oidc-db-token-state-manager-deployment</artifactId>
+             <version>${project.version}</version>
+             <type>pom</type>
+             <scope>test</scope>
+             <exclusions>
+                 <exclusion>
+                     <groupId>*</groupId>
+                     <artifactId>*</artifactId>
+                 </exclusion>
+             </exclusions>
+         </dependency>
+         <dependency>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-reactive-oracle-client-deployment</artifactId>
+             <version>${project.version}</version>
+             <type>pom</type>
+             <scope>test</scope>
+             <exclusions>
+                 <exclusion>
+                     <groupId>*</groupId>
+                     <artifactId>*</artifactId>
+                 </exclusion>
+             </exclusions>
+         </dependency>
 
         <dependency>
-            <groupId>net.sourceforge.htmlunit</groupId>
+            <groupId>org.htmlunit</groupId>
             <artifactId>htmlunit</artifactId>
             <scope>test</scope>
         </dependency>
@@ -191,9 +217,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -223,6 +246,31 @@
                                                 <url>http://localhost:8180</url>
                                             </http>
                                             <time>100000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <image>
+                                    <name>${oracle.image}</name>
+                                    <run>
+                                        <ports>
+                                            <port>1521:1521</port>
+                                        </ports>
+                                        <env>
+                                            <ORACLE_PASSWORD>oidc_db_token_state_manager_test</ORACLE_PASSWORD>
+                                        </env>
+                                        <log>
+                                            <prefix>Oracle Database:</prefix>
+                                            <date>default</date>
+                                            <color>red</color>
+                                        </log>
+                                        <wait>
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
+                                            <time>60000</time>
+                                            <!-- leverage the healthcheck in the image we use -->
+                                            <healthy>yes</healthy>
+                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
+                                            <!--<log>DATABASE IS READY TO USE!</log>-->
                                         </wait>
                                     </run>
                                 </image>
@@ -258,7 +306,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${basedir}/../../.github/docker-prune.sh</executable>
+                                    <executable>${docker-prune.location}</executable>
                                 </configuration>
                             </execution>
                         </executions>

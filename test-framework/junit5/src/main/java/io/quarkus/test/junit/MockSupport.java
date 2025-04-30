@@ -24,8 +24,8 @@ class MockSupport {
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {
-                if (i instanceof MockedThroughWrapper) {
-                    ((MockedThroughWrapper) i).clearMock();
+                if (i instanceof MockedThroughWrapper m) {
+                    m.clearMock();
                 } else {
                     i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
 
@@ -45,8 +45,8 @@ class MockSupport {
             throw new IllegalStateException("No test in progress");
         }
         try {
-            if (instance instanceof MockedThroughWrapper) {
-                ((MockedThroughWrapper) instance).setMock(mock);
+            if (instance instanceof MockedThroughWrapper m) {
+                m.setMock(mock);
                 inst.add(instance);
             } else {
 

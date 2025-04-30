@@ -57,15 +57,17 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                 invocation.getQuarkusProject().getExtensionManager());
 
         final Collection<Extension> extensions = search == null ? invocation.getExtensionsCatalog().getExtensions()
-                : QuarkusCommandHandlers.select(search, invocation.getExtensionsCatalog().getExtensions(), true)
+                : QuarkusCommandHandlers.listExtensions(search, invocation.getExtensionsCatalog().getExtensions(), true)
                         .getExtensions();
 
         if (extensions.isEmpty()) {
-            log.info("No extension found with pattern '%s'", search);
+            if (!format.equalsIgnoreCase("object")) {
+                log.info("No extension found with pattern '%s'", search);
+            }
             return QuarkusCommandOutcome.success();
         }
 
-        if (!batchMode) {
+        if (!batchMode && !format.equalsIgnoreCase("object")) {
             String extensionStatus = all ? "available" : "installable";
             if (installedOnly)
                 extensionStatus = "installed";
@@ -75,6 +77,9 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
 
         BiConsumer<MessageWriter, DisplayData> currentFormatter;
         switch (format.toLowerCase()) {
+            case "object":
+                currentFormatter = null;
+                break;
             case "id":
             case "name":
                 currentFormatter = this::idFormatter;
@@ -110,11 +115,30 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             categoryFilter = e -> true;
         }
 
-        extensions.stream()
-                .filter(e -> !ExtensionProcessor.of(e).isUnlisted())
-                .filter(categoryFilter)
-                .sorted(Comparator.comparing(e -> e.getArtifact().getArtifactId()))
-                .forEach(e -> display(log, e, installedByKey.get(toKey(e)), all, installedOnly, currentFormatter));
+        if (currentFormatter != null) {
+            extensions.stream()
+                    .filter(e -> !ExtensionProcessor.of(e).isUnlisted())
+                    .filter(categoryFilter)
+                    .sorted(Comparator.comparing(e -> e.getArtifact().getArtifactId()))
+                    .forEach(e -> display(log, e, installedByKey.get(toKey(e)), all, installedOnly, currentFormatter));
+        } else {
+            List<Extension> filteredExtensions = extensions.stream()
+                    .filter(e -> !ExtensionProcessor.of(e).isUnlisted())
+                    .filter(categoryFilter)
+                    .filter(e -> {
+                        ArtifactCoords installed = installedByKey.get(toKey(e));
+                        if (installedOnly && installed == null) {
+                            return false;
+                        }
+                        if (!installedOnly && !all && installed != null) {
+                            return false;
+                        }
+                        return true;
+                    })
+                    .sorted(Comparator.comparing(e -> e.getArtifact().getArtifactId()))
+                    .collect(Collectors.toList());
+            return QuarkusCommandOutcome.success(filteredExtensions);
+        }
 
         return QuarkusCommandOutcome.success();
     }

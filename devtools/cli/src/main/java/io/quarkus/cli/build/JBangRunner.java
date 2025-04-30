@@ -77,7 +77,7 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
@@ -111,6 +111,11 @@ public class JBangRunner implements BuildSystemRunner {
     @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         return prepareAction("build", buildOptions, runMode, params);
+    }
+
+    @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
     }
 
     @Override

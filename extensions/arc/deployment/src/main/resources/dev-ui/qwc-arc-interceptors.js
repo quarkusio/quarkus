@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { interceptors } from 'build-time-data';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 
@@ -11,6 +12,12 @@ import 'qui-badge';
 export class QwcArcInterceptors extends LitElement {
   
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    
         .arctable {
             height: 100%;
             padding-bottom: 10px;
@@ -20,39 +27,42 @@ export class QwcArcInterceptors extends LitElement {
             font-size: 85%;
         }
 
-        .method {
-            color: var(--lumo-primary-text-color);
-        }
-
         .annotation {
             color: var(--lumo-contrast-50pct);
+        }
+    
+        .filterBar {
+            width: 99%;
+            margin-left: 5px;
         }
         `;
 
     static properties = {
-        _interceptors: {attribute: false}
+        _interceptors: {attribute: false},
+        _filteredInterceptors: {attribute: false}
     };
   
     constructor() {
         super();
         this._interceptors = interceptors;
+        this._filteredInterceptors = this._interceptors;
     }
   
     render() {
-        if(this._interceptors){
-            return html`
-            <vaadin-grid .items="${this._interceptors}" class="arctable" theme="no-border">
-              <vaadin-grid-column auto-width
+        if(this._filteredInterceptors){
+            return html`${this._renderFilterBar()}
+            <vaadin-grid .items="${this._filteredInterceptors}" class="arctable" theme="no-border">
+              <vaadin-grid-sort-column path="interceptorClass.name" auto-width
                 header="Interceptor Class"
                 ${columnBodyRenderer(this._classRenderer, [])}
                 resizable>
-              </vaadin-grid-column>
+              </vaadin-grid-sort-column>
 
-              <vaadin-grid-column auto-width
+              <vaadin-grid-sort-column path="priority" auto-width
                 header="Priority"
                 ${columnBodyRenderer(this._priorityRenderer, [])}
                 resizable>
-              </vaadin-grid-column>
+              </vaadin-grid-sort-column>
 
               <vaadin-grid-column auto-width
                 header="Bindings"
@@ -68,6 +78,32 @@ export class QwcArcInterceptors extends LitElement {
             </vaadin-grid>
             `;
         }
+    }
+
+    _renderFilterBar(){
+        return html`<vaadin-text-field
+                        placeholder="Search"
+                        class="filterBar"
+                        @value-changed="${(e) => {
+                            const searchTerm = (e.detail.value || '').trim();
+                            const matchesTerm = (value) => {
+                                if(value){
+                                    return value.toLowerCase().includes(searchTerm.toLowerCase());
+                                }
+                            }
+                            if(searchTerm?.trim()){
+                                this._filteredInterceptors = this._interceptors.filter(
+                                    ({ interceptorClass, priority }) => {
+                                        return !searchTerm ||
+                                            matchesTerm(interceptorClass?.name) ||
+                                            matchesTerm(priority.toString())
+                                });
+                            }else{
+                                this._filteredInterceptors = this._interceptors;
+                            }
+                        }}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                    </vaadin-text-field>`;  
     }
 
     _classRenderer(bean){
@@ -92,20 +128,11 @@ export class QwcArcInterceptors extends LitElement {
     }
 
     _typeRenderer(bean){
-        let i = JSON.stringify(bean.intercepts);
-
         const typeTemplates = [];
-        for (const [key, value] of Object.entries(bean.intercepts)) {
-            typeTemplates.push(html`<code class="annotation">${this._printIntercepterType(key)}</code>`);
-          }
-
+        bean.intercepts.forEach((interceptionType) => typeTemplates.push(html`<code class="annotation">${this._printIntercepterType(interceptionType)}</code>`));
         return html`
         <vaadin-vertical-layout>
             ${typeTemplates}
-            <div>
-                <code>${bean.interceptorClass.simpleName}</code>
-                <code class="method">#${bean.methodName}()</code>
-            </div>
         </vaadin-vertical-layout>`;
     }
 

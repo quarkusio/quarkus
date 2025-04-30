@@ -3,7 +3,6 @@ package org.jboss.resteasy.reactive.server.spi;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Set;
 
 import jakarta.ws.rs.container.ResourceInfo;
 
@@ -20,27 +19,27 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private final String name;
     private final Class<?> declaringClass;
     private final Class[] parameterTypes;
-    private final Set<String> classAnnotationNames;
-    private final Set<String> methodAnnotationNames;
     /**
      * If it's non-blocking method within the runtime that won't always default to blocking
      */
     public final boolean isNonBlocking;
-
-    private volatile Annotation[] classAnnotations;
+    /**
+     * This class name will only differ from {@link this#declaringClass} name when the {@link this#method} was inherited.
+     */
+    private final String actualDeclaringClassName;
     private volatile Method method;
     private volatile Annotation[] annotations;
     private volatile Type returnType;
     private volatile String methodId;
 
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
-            Set<String> classAnnotationNames, Set<String> methodAnnotationNames, boolean isNonBlocking) {
+            boolean isNonBlocking,
+            String actualDeclaringClassName) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
-        this.classAnnotationNames = classAnnotationNames;
-        this.methodAnnotationNames = methodAnnotationNames;
         this.isNonBlocking = isNonBlocking;
+        this.actualDeclaringClassName = actualDeclaringClassName;
     }
 
     public String getName() {
@@ -49,14 +48,6 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
     public Class[] getParameterTypes() {
         return parameterTypes;
-    }
-
-    public Set<String> getClassAnnotationNames() {
-        return classAnnotationNames;
-    }
-
-    public Set<String> getMethodAnnotationNames() {
-        return methodAnnotationNames;
     }
 
     public Method getMethod() {
@@ -75,13 +66,6 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
             }
         }
         return method;
-    }
-
-    public Annotation[] getClassAnnotations() {
-        if (classAnnotations == null) {
-            classAnnotations = declaringClass.getAnnotations();
-        }
-        return classAnnotations;
     }
 
     public Annotation[] getAnnotations() {
@@ -118,5 +102,14 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
             methodId = MethodId.get(name, declaringClass, parameterTypes);
         }
         return methodId;
+    }
+
+    /**
+     * @return declaring class of a method that returns endpoint response
+     * @deprecated if you need the method, please open an issue so that we can document and test your use case
+     */
+    @Deprecated
+    public String getActualDeclaringClassName() {
+        return actualDeclaringClassName;
     }
 }

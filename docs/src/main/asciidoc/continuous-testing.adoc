@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: testing,dev-ui,tooling,dev-mode
 
 Learn how to use continuous testing in your Quarkus Application.
 
@@ -138,9 +139,58 @@ changes the application will still restart. This will still work even if live re
 
 It is possible to run continuous testing without starting dev mode. This can be useful if dev mode will interfere with
 your tests (e.g. running wiremock on the same port), or if you only want to develop using tests. To start continuous testing
-mode run `mvn quarkus:test`.
+mode, run `mvn quarkus:test` or `gradle quarkusTest`.
 
 NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
+
+== Selecting Tests to Run
+
+The configuration properties `quarkus.test.include-pattern` and `quarkus.test.exclude-pattern` can be used to select which tests to run.
+They are regular expressions matched against the fully qualified class name of the test class.
+If `include-patterns` is configured, `exclude-patterns` is ignored.
+
+Alternatively, an approach native to the build system may be used.
+In Maven, that is the `-Dtest=\...` system property, while in Gradle, it is the `--tests \...` command line option.
+These options, when used with `maven quarkus:[dev|test]` or `gradle quarkus[Dev|Test]`, work just like they work with `mvn test` or `gradle test`, except that they filter the set of tests executed during continuous testing.
+When these options are used, the `quarkus.test.[include|exclude]-pattern` configuration is ignored.
+
+=== Maven
+
+The `-Dtest=\...` system property selects given test(s) for continuous testing.
+The format of this configuration property is the same as the Maven Surefire `-Dtest=\...` https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#test[format].
+Specifically: it is a comma (`,`) separated list of globs of class file paths and/or method names.
+Each glob can potentially be prefixed with an exclamation mark (`!`), which makes it an exclusion filter instead of an inclusion filter.
+Exclusions have higher priority than inclusions.
+The class file path glob is separated from the method name glob by the hash sign (`#`) and multiple method name globs may be present, separated by the plus sign (`+`).
+
+For example:
+
+* `Basic*`: all classes starting with `Basic`
+* `???Test`: all classes named with 3 arbitrary characters followed by `Test`
+* `!Unstable*`: all classes except classes starting with `Unstable`
+* `pkg/**/Ci*leTest`: all classes in the package `pkg` and subpackages, starting with `Ci` and ending with `leTest`
+* `*Test#test*One+testTwo?????`: all classes ending with `Test`, and in them, only methods starting with `test` and ending with `One`, or starting with `testTwo` and followed by 5 arbitrary characters
+* `#fast*+slowTest`: all classes, and in them, only methods starting with `fast` or methods named `slowTest`
+
+Note that the syntax `%regex[\...]` and `%ant[\...]` is _NOT_ supported.
+
+=== Gradle
+
+The `--tests \...` command line option selects given test(s) for continuous testing.
+The format is the same as the `gradle test --tests \...` https://docs.gradle.org/current/userguide/java_testing.html#test_filtering[format].
+Specifically: the option can be passed multiple times, and each item is a simple pattern for the test class name and optionally a method name.
+When the pattern starts with an upper case letter, it matches a simple name of the class; otherwise, it matches a fully qualified name of the class.
+After the class name, separated by a period (`.`), a method name pattern may be included.
+The only wildcard character supported is `\*`, which matches an arbitrary number of characters.
+Note that `*` is based purely on text, it doesn't pay extra attention to package delimiters.
+
+For example:
+
+* `com.example.Basic*`: all classes in package `com.example` starting with `Basic`
+* `MyTest*`: all classes whose simple name starts with `MyTest`
+* `\*.pkg.Test*`: all classes in package `pkg` (regardless of the parent packages) starting with `Test`
+* `MyTest.test*`: all classes whose simple name is `MyTest`, and in them, only methods starting with `test`
+* `com.example.IntegTest.fast*`: the class `com.example.IntegTest`, and in it, only methods starting with `fast`
 
 == Multi-module Projects
 
@@ -154,5 +204,5 @@ This is enabled by default, and can be disabled via `quarkus.test.only-test-appl
 Continuous testing supports multiple configuration options that can be used to limit the tests that are run, and
 to control the output. The configuration properties are shown below:
 
-include::{generated-dir}/config/quarkus-test-dev-testing-test-config.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-core_quarkus.test.adoc[opts=optional, leveloffset=+2]
 

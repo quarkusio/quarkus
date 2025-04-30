@@ -6,18 +6,21 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Container Images
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Learn how to build and push container images with Jib, OpenShift or Docker as part of the Quarkus build.
+:summary: Learn how to build and push container images with Jib, OpenShift, Docker, or Podman as part of the Quarkus build.
+:topics: devops,cloud
+:extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-podman,io.quarkus:quarkus-container-image-buildpack
 
 Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
 
 - <<#jib,Jib>>
 - <<#docker,Docker>>
+- <<#podman,Podman>>
 - <<#openshift,OpenShift>>
 - <<#buildpack,Buildpack>>
 
 == Container Image extensions
 
-[#jib]
+[[jib]]
 === Jib
 
 The extension `quarkus-container-image-jib` is powered by https://github.com/GoogleContainerTools/jib[Jib] for performing container image builds.
@@ -45,14 +48,14 @@ For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` 
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
 
-When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` is used), then the `quarkus.jib.jvm-arguments` configuration property can be used in order to
+When the base image has not been changed (and therefore `ubi9/openjdk-17-runtime`, or `ubi9/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-additional-arguments` configuration property can be used in order to
 make the JVM listen on the debug port at startup.
 
 The exact configuration is:
 
 [source,properties]
 ----
-quarkus.jib.jvm-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
+quarkus.jib.jvm-additional-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
 ----
 
 Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set than environment variable when launching the container.
@@ -61,7 +64,7 @@ Other base images might provide launch scripts that enable debugging when an env
 
 The `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
 
-For example, if the base images `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
+For example, if the base images `ubi9/openjdk-17-runtime` or  `ubi9/openjdk-21-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
 
 .Example application.properties
 [source,properties]
@@ -86,7 +89,7 @@ java \
   -jar quarkus-run.jar
 ----
 
-NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi8/openjdk-11-runtime` and `ubi8/openjdk-17-runtime` (https://catalog.redhat.com/software/containers/ubi8/openjdk-17/618bdbf34ae3739687568813?container-tabs=dockerfile[Dockerfile for ubi8/openjdk-17-runtime, window="_blank"])
+NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi9/openjdk-17-runtime` and `ubi9/openjdk-21-runtime` (https://catalog.redhat.com/software/containers/ubi9/openjdk-21-runtime/6501ce769a0d86945c422d5f?container-tabs=dockerfile[Dockerfile for ubi9/openjdk-17-runtime, window="_blank"])
 
 ==== Multi-module projects and layering
 
@@ -104,7 +107,7 @@ this property needs to be known very early on in the build process.
 Quarkus supports generating and including an link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing] archive when generating a container image using Jib.
 See the xref:appcds.adoc[AppCDS documentation] for more details.
 
-[#docker]
+[[docker]]
 === Docker
 
 The extension `quarkus-container-image-docker` is using the Docker binary and the generated Dockerfiles under `src/main/docker` in order to perform Docker builds.
@@ -116,9 +119,34 @@ include::{includes}/devtools/extension-add.adoc[]
 
 The `quarkus-container-image-docker` extension is capable of https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images/[creating multi-platform (or multi-arch)] images using https://docs.docker.com/engine/reference/commandline/buildx_build/[`docker buildx build`]. See the `quarkus.docker.buildx.*` configuration items in the <<#DockerOptions,Docker Options>> section below.
 
-NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
+[NOTE]
+====
+`docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
 
-[#openshift]
+This means that if you want to build images for more than one platform at a time (i.e. `quarkus.docker.buildx.platform=linux/amd64,linux/arm64`), you need to push the images (`quarkus.container-image.push=true`) directly as part of the build process. Docker buildx does not support loading into the local registry when building multi-platform images.
+====
+
+[[podman]]
+=== Podman
+
+The extension `quarkus-container-image-podman` uses https://podman.io/[Podman] and the generated `Dockerfiles` under `src/main/docker` in order to perform container builds.
+
+To use this feature, add the following extension to your project.
+
+:add-extension-extensions: container-image-podman
+include::{includes}/devtools/extension-add.adoc[]
+
+[TIP]
+.When to use Docker vs Podman extension
+====
+The <<#docker,Docker extension>> is and has always been backwards-compatible with Podman because Podman exposes a https://podman.io/docs/installation[Docker-compatible API]. You can build container images with Podman using the Docker extension (see the https://quarkus.io/guides/podman[Using Podman with Quarkus guide]).
+
+Use either the `quarkus-container-image-docker` or `quarkus-container-image-podman` extension when doing things specific to either Docker or Podman, respectively.
+
+For example, building multi-platform images is implemented differently for Docker and Podman. Docker uses https://docs.docker.com/engine/reference/commandline/buildx_build/[the buildx plugin] whereas Podman can build multi-platform images https://docs.podman.io/en/latest/markdown/podman-build.1.html#platform-os-arch-variant[natively]. Because of this, you would need to use the specific extension to perform that function.
+====
+
+[[openshift]]
 === OpenShift
 
 The extension `quarkus-container-image-openshift` is using OpenShift binary builds in order to perform container builds inside the OpenShift cluster.
@@ -135,10 +163,10 @@ OpenShift builds require creating a `BuildConfig` and two `ImageStream` resource
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
 
 
-[#buildpack]
+[[buildpack]]
 === Buildpack
 
-The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds. 
+The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds.
 Under the hood buildpacks will use a Docker daemon for the actual build.
 While buildpacks support alternatives to Docker, this extension will only work with Docker.
 
@@ -202,7 +230,7 @@ NOTE: If no registry is set (using `quarkus.container-image.registry`) then `doc
 
 It does not make sense to use multiple extension as part of the same build. When multiple container image extensions are present, an error will be raised to inform the user. The user can either remove the unneeded extensions or select one using `application.properties`.
 
-For example, if both `container-image-docker` and `container-image-openshift` are present and the user needs to use `container-image-docker`:
+For example, if both `container-image-docker` and `container-image-podman` are present and the user needs to use `container-image-docker`:
 
 [source,properties]
 ----
@@ -211,7 +239,7 @@ quarkus.container-image.builder=docker
 
 == Integrating with `systemd-notify`
 
-If you are building a container image in order to deploy your Quarkus application as a Linux service with Podman and Systemd, you might want to consider including the https://quarkiverse.github.io/quarkiverse-docs/quarkus-systemd-notify/dev/index.html[Quarkus Systemd Notify Extension] as part of your application, with:
+If you are building a container image in order to deploy your Quarkus application as a Linux service with Podman and Systemd, you might want to consider including the https://docs.quarkiverse.io/quarkus-systemd-notify/dev/index.html[Quarkus Systemd Notify Extension] as part of your application, with:
 
 :add-extension-extensions: io.quarkiverse.systemd.notify:quarkus-systemd-notify
 include::{includes}/devtools/extension-add.adoc[]
@@ -246,15 +274,29 @@ In addition to the generic container image options, the `container-image-jib` al
 
 include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
-[#DockerOptions]
+[[DockerOptions]]
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:
 
 include::{generated-dir}/config/quarkus-container-image-docker.adoc[opts=optional, leveloffset=+1]
 
+[[PodmanOptions]]
+=== Podman Options
+
+In addition to the generic container image options, the `container-image-podman` also provides the following options:
+
+include::{generated-dir}/config/quarkus-container-image-podman.adoc[opts=optional, leveloffset=+1]
+
 === OpenShift  Options
 
 In addition to the generic container image options, the `container-image-openshift` also provides the following options:
 
-include::{generated-dir}/config/quarkus-container-image-openshift.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-container-image-openshift_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
+
+[[BuildpackOptions]]
+=== Buildpack Options
+
+In addition to the generic container image options, the `container-image-buildpack` also provides the following options:
+
+include::{generated-dir}/config/quarkus-container-image-buildpack_quarkus.buildpack.adoc[opts=optional,leveloffset=+1]

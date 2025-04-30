@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to interact with an Elasticsearch cluster using the low level REST client or the Elasticsearch Java client.
+:topics: data,search,elasticsearch,nosql
+:extensions: io.quarkus:quarkus-elasticsearch-java-client,io.quarkus:quarkus-elasticsearch-rest-client
 
 Elasticsearch is a well known full text search engine and NoSQL datastore.
 
@@ -19,10 +21,8 @@ Quarkus provides two ways of accessing Elasticsearch:
 
 [WARNING]
 ====
-A third Quarkus extension for the "high level REST Client" exists, but is deprecated and will be removed in a future version,
-as this client has been deprecated by Elastic and has some licensing issues.
-
-It is highly recommended to upgrade to the new Elasticsearch Java client extension.
+A third Quarkus extension for the "high level REST Client" used to exist,
+but was removed as this client has been deprecated by Elastic and has some licensing issues.
 ====
 
 == Prerequisites
@@ -43,10 +43,10 @@ The elements are stored in Elasticsearch.
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: elasticsearch-quickstart
-:create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
+:create-app-extensions: rest-jackson,elasticsearch-rest-client
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive, Jackson, and Elasticsearch low level REST client extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive), Jackson, and Elasticsearch low level REST client extensions.
 
 The Elasticsearch low level REST client comes with the `quarkus-elasticsearch-rest-client` extension
 that has been added to your build file.
@@ -55,7 +55,7 @@ If you want to use the Elasticsearch Java client instead, replace the `quarkus-e
 
 [NOTE]
 ====
-We use the `resteasy-reactive-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
+We use the `rest-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
 to serialize/deserialize our objects to/from Elasticsearch and it uses Jackson under the hood.
 ====
 
@@ -126,10 +126,13 @@ package org.acme.elasticsearch;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -151,13 +154,49 @@ public class FruitService {
         restClient.performRequest(request); //<4>
     }
 
+    public void index(List<Fruit> list) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var fruit : list) {
+
+            entityList.add(new JsonObject().put("index", new JsonObject()//<5>
+                    .put("_index", "fruits").put("_id", fruit.id)));
+            entityList.add(JsonObject.mapFrom(fruit));
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),//<6>
+                ContentType.create("application/x-ndjson")));//<7>
+        restClient.performRequest(request);
+    }
+
+    public void delete(List<String> identityList) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var id : identityList) {
+            entityList.add(new JsonObject().put("delete",
+                    new JsonObject().put("_index", "fruits").put("_id", id)));//<8>
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),
+                ContentType.create("application/x-ndjson")));
+        restClient.performRequest(request);
+    }
+
     public Fruit get(String id) throws IOException {
         Request request = new Request(
                 "GET",
                 "/fruits/_doc/" + id);
         Response response = restClient.performRequest(request);
         String responseBody = EntityUtils.toString(response.getEntity());
-        JsonObject json = new JsonObject(responseBody); //<5>
+        JsonObject json = new JsonObject(responseBody); //<9>
         return json.getJsonObject("_source").mapTo(Fruit.class);
     }
 
@@ -191,13 +230,42 @@ public class FruitService {
         }
         return results;
     }
+
+    private static String toNdJsonString(List<JsonObject> objects) {
+        return objects.stream()
+                .map(JsonObject::encode)
+                .collect(Collectors.joining("\n", "", "\n"));
+    }    
 }
 ----
 <1> We inject an Elasticsearch low level `RestClient` into our service.
 <2> We create an Elasticsearch request.
 <3> We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize your objects to JSON.
 <4> We send the request (indexing request here) to Elasticsearch.
-<5> In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
+<5> As we `index` collection of objects we should use `index`, `create` or `update` action.
+<6> We use `toNdJsonString(entityList)` call to produce output like below
++
+[source, json]
+----
+{"index", {"_index" : "fruits", "_id", "1"}}
+{"id": "1", "name": "apple", "color": "red"}
+...           ...             ...        ...
+{"create", {"_index" : "fruits", "_id", "N"}}
+{"id": "N", "name": "dragonfruit", "color": "pink"}
+
+----
+<7> Pass the content type that is expected by the search backend for bulk requests.
+<8> The bulk API's delete operation JSON already contains all the required information; hence, there is no request body following this operation in the Bulk API request body.
++
+[source, json]
+----
+{"delete", {"_index" : "fruits", "_id", "1"}}
+{"delete", {"_index" : "fruits", "_id", "2"}}
+...           ...             ...        ...
+{"delete", {"_index" : "fruits", "_id", "N"}}
+
+----
+<9> In order to deserialize the object from Elasticsearch, we again use Vert.x JsonObject.
 
 Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 
@@ -205,16 +273,20 @@ Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 ----
 package org.acme.elasticsearch;
 
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import org.jboss.resteasy.reactive.RestQuery;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
 
 @Path("/fruits")
 public class FruitResource {
@@ -229,6 +301,20 @@ public class FruitResource {
         }
         fruitService.index(fruit);
         return Response.created(URI.create("/fruits/" + fruit.id)).build();
+    }
+
+    @Path("bulk")
+    @DELETE
+    public Response delete(List<String> identityList) throws IOException {
+        fruitService.delete(identityList);
+        return Response.ok().build();
+    }
+
+    @Path("bulk")
+    @POST
+    public Response index(List<Fruit> list) throws IOException {
+        fruitService.index(list);
+        return Response.ok().build();
     }
 
     @GET
@@ -352,6 +438,7 @@ If you want to use Docker to run an Elasticsearch instance, you can use the foll
 [source,bash,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
+       -e "cluster.routing.allocation.disk.threshold_enabled=false" -e "xpack.security.enabled=false"\
        --rm -p 9200:9200 {elasticsearch-image}
 ----
 
@@ -381,18 +468,26 @@ Here is a version of the `FruitService` using the Elasticsearch Java Client inst
 
 [source,java]
 ----
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.*;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.acme.elasticsearch.Fruit;
-
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 
 @ApplicationScoped
 public class FruitService {
@@ -405,6 +500,37 @@ public class FruitService {
                 .id(fruit.id)
                 .document(fruit)); // <3>
         client.index(request);  // <4>
+    }
+
+    public void index(List<Fruit> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var fruit : list) {
+            br.operations(op -> op
+                    .index(idx -> idx.index("fruits").id(fruit.id).document(fruit)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
+    }
+
+    public void delete(List<String> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var id : list) {
+            br.operations(op -> op.delete(idx -> idx.index("fruits").id(id)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
     }
 
     public Fruit get(String id) throws IOException {
@@ -478,4 +604,4 @@ Accessing an Elasticsearch cluster from the low level REST client or the Elastic
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-elasticsearch-restclient-lowlevel.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client.adoc[opts=optional, leveloffset=+1]

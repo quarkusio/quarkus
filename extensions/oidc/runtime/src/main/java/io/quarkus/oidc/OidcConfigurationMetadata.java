@@ -8,21 +8,26 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
-    private static final String ISSUER = "issuer";
-    private static final String TOKEN_ENDPOINT = "token_endpoint";
-    private static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
-    private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
-    private static final String JWKS_ENDPOINT = "jwks_uri";
-    private static final String USERINFO_ENDPOINT = "userinfo_endpoint";
-    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
-    private static final String SCOPES_SUPPORTED = "scopes_supported";
+    public static final String ISSUER = "issuer";
+    public static final String TOKEN_ENDPOINT = "token_endpoint";
+    public static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
+    public static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
+    public static final String JWKS_ENDPOINT = "jwks_uri";
+    public static final String USERINFO_ENDPOINT = "userinfo_endpoint";
+    public static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+    private static final String REGISTRATION_ENDPOINT = "registration_endpoint";
+    private static final String REVOCATION_ENDPOINT = "revocation_endpoint";
+    public static final String SCOPES_SUPPORTED = "scopes_supported";
 
+    private final String discoveryUri;
     private final String tokenUri;
     private final String introspectionUri;
     private final String authorizationUri;
     private final String jsonWebKeySetUri;
     private final String userInfoUri;
     private final String endSessionUri;
+    private final String registrationUri;
+    private final String revocationUri;
     private final String issuer;
     private final JsonObject json;
 
@@ -32,22 +37,29 @@ public class OidcConfigurationMetadata {
             String jsonWebKeySetUri,
             String userInfoUri,
             String endSessionUri,
+            String registrationUri,
+            String revocationUri,
             String issuer) {
+        this.discoveryUri = null;
         this.tokenUri = tokenUri;
         this.introspectionUri = introspectionUri;
         this.authorizationUri = authorizationUri;
         this.jsonWebKeySetUri = jsonWebKeySetUri;
         this.userInfoUri = userInfoUri;
         this.endSessionUri = endSessionUri;
+        this.registrationUri = registrationUri;
+        this.revocationUri = revocationUri;
         this.issuer = issuer;
         this.json = null;
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this(wellKnownConfig, null);
+        this(wellKnownConfig, null, null);
     }
 
-    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig) {
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig,
+            String discoveryUri) {
+        this.discoveryUri = discoveryUri;
         this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
                 localMetadataConfig == null ? null : localMetadataConfig.tokenUri);
         this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
@@ -60,6 +72,10 @@ public class OidcConfigurationMetadata {
                 localMetadataConfig == null ? null : localMetadataConfig.userInfoUri);
         this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
                 localMetadataConfig == null ? null : localMetadataConfig.endSessionUri);
+        this.registrationUri = getMetadataValue(wellKnownConfig, REGISTRATION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.registrationUri);
+        this.revocationUri = getMetadataValue(wellKnownConfig, REVOCATION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.revocationUri);
         this.issuer = getMetadataValue(wellKnownConfig, ISSUER,
                 localMetadataConfig == null ? null : localMetadataConfig.issuer);
         this.json = wellKnownConfig;
@@ -69,8 +85,16 @@ public class OidcConfigurationMetadata {
         return localValue != null ? localValue : wellKnownConfig.getString(propertyName);
     }
 
+    public String getDiscoveryUri() {
+        return discoveryUri;
+    }
+
     public String getTokenUri() {
         return tokenUri;
+    }
+
+    public String getRevocationUri() {
+        return revocationUri;
     }
 
     public String getIntrospectionUri() {
@@ -91,6 +115,10 @@ public class OidcConfigurationMetadata {
 
     public String getEndSessionUri() {
         return endSessionUri;
+    }
+
+    public String getRegistrationUri() {
+        return registrationUri;
     }
 
     public List<String> getSupportedScopes() {

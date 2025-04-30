@@ -6,7 +6,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -38,7 +37,6 @@ public class KafkaDevServicesContinuousTestingWorkingAppPropsTestCase {
      * See https://github.com/quarkusio/quarkus/issues/19180.
      */
     @Test
-    @Disabled("flaky")
     public void testContinuousTestingScenario3() {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         var result = utils.waitForNextCompletion();

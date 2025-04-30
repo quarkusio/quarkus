@@ -22,6 +22,7 @@ public class QuarkusExtensionConfiguration {
     private ListProperty<String> runnerParentFirstArtifacts;
     private ListProperty<String> lesserPriorityArtifacts;
     private ListProperty<String> conditionalDependencies;
+    private ListProperty<String> conditionalDevDependencies;
     private ListProperty<String> dependencyCondition;
     private RemovedResources removedResources = new RemovedResources();
     private Capabilities capabilities = new Capabilities();
@@ -41,6 +42,7 @@ public class QuarkusExtensionConfiguration {
         runnerParentFirstArtifacts = project.getObjects().listProperty(String.class);
         lesserPriorityArtifacts = project.getObjects().listProperty(String.class);
         conditionalDependencies = project.getObjects().listProperty(String.class);
+        conditionalDevDependencies = project.getObjects().listProperty(String.class);
         dependencyCondition = project.getObjects().listProperty(String.class);
     }
 
@@ -106,6 +108,14 @@ public class QuarkusExtensionConfiguration {
 
     public void setConditionalDependencies(List<String> conditionalDependencies) {
         this.conditionalDependencies.addAll(conditionalDependencies);
+    }
+
+    public ListProperty<String> getConditionalDevDependencies() {
+        return conditionalDevDependencies;
+    }
+
+    public void setConditionalDevDependencies(List<String> conditionalDependencies) {
+        this.conditionalDevDependencies.addAll(conditionalDependencies);
     }
 
     public ListProperty<String> getDependencyConditions() {

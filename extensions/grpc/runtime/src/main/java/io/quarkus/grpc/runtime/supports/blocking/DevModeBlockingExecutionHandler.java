@@ -1,24 +1,23 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import java.util.concurrent.Callable;
 
-class DevModeBlockingExecutionHandler implements Handler<Promise<Object>> {
+class DevModeBlockingExecutionHandler implements Callable<Void> {
 
     final ClassLoader tccl;
-    final Handler<Promise<Object>> delegate;
+    final Callable<Void> delegate;
 
-    public DevModeBlockingExecutionHandler(ClassLoader tccl, Handler<Promise<Object>> delegate) {
+    public DevModeBlockingExecutionHandler(ClassLoader tccl, Callable<Void> delegate) {
         this.tccl = tccl;
         this.delegate = delegate;
     }
 
     @Override
-    public void handle(Promise<Object> event) {
+    public Void call() throws Exception {
         ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(tccl);
         try {
-            delegate.handle(event);
+            return delegate.call();
         } finally {
             Thread.currentThread().setContextClassLoader(originalTccl);
         }

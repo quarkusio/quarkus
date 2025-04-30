@@ -45,6 +45,11 @@ class TargetAroundInvokeInvocationContext extends InnerInvocationContext {
             }
         } catch (Exception e) {
             Throwable cause = e.getCause();
+
+            // e.getCause() may return null
+            if (cause == null) {
+                cause = e;
+            }
             if (cause instanceof Error) {
                 throw (Error) cause;
             }

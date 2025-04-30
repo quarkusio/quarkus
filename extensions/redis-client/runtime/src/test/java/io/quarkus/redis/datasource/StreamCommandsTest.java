@@ -11,11 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.quarkus.redis.datasource.stream.PendingMessage;
 import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.stream.StreamMessage;
 import io.quarkus.redis.datasource.stream.StreamRange;
@@ -23,6 +27,8 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
+import io.quarkus.redis.datasource.stream.XPendingSummary;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -68,6 +74,23 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
     @Test
     void xAdd() {
+        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
+                .isNotBlank().contains("-");
+
+        long now = System.currentTimeMillis();
+        assertThat(stream.xadd("mystream", new XAddArgs().id(now + 1000 + "-0"),
+                Map.of("sensor-id", 1234, "temperature", 19))).isEqualTo(now + 1000 + "-0");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(stream.xadd("my-second-stream", new XAddArgs().maxlen(5L),
+                    Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank();
+        }
+        assertThat(stream.xlen("my-second-stream")).isEqualTo(5);
+    }
+
+    @Test
+    @RequiresRedis7OrHigher
+    void xAddWithRedis7() {
         assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
                 .isNotBlank().contains("-");
 
@@ -466,6 +489,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xAutoClaim() throws InterruptedException {
         String g1 = "my-group";
         stream.xgroupCreate(key, g1, "$", new XGroupCreateArgs().mkstream());
@@ -526,6 +550,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xTrim() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         for (int i = 0; i < 100; i++) {
@@ -543,12 +568,6 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         assertThat(l).isEqualTo(10);
         assertThat(stream.xlen(key)).isEqualTo(40);
-
-        id = list.get(20).id();
-        l = stream.xtrim(key, new XTrimArgs().minid(id));
-
-        assertThat(l).isEqualTo(10);
-        assertThat(stream.xlen(key)).isEqualTo(30);
     }
 
     @Test
@@ -565,6 +584,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xGroupCreateAndDeleteConsumer() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         for (int i = 0; i < 100; i++) {
@@ -608,6 +628,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void xGroupSetIdWithArgs() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         List<String> ids = new ArrayList<>();
@@ -622,7 +643,189 @@ public class StreamCommandsTest extends DatasourceTestBase {
         stream.xgroupSetId(key, "g1", ids.get(50), new XGroupSetIdArgs().entriesRead(1234));
 
         assertThat(stream.xreadgroup("g1", "c2", key, ">")).hasSize(49);
+    }
 
+    @Test
+    void xPendingSummaryTest() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+
+        stream.xadd(key, payload);
+        stream.xtrim(key, new XTrimArgs().maxlen(0));
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+
+        XPendingSummary summaryEmpty = stream.xpending(key, "my-group");
+        assertThat(summaryEmpty.getPendingCount()).isEqualTo(0);
+        assertThat(summaryEmpty.getHighestId()).isNull();
+        assertThat(summaryEmpty.getLowestId()).isNull();
+        assertThat(summaryEmpty.getConsumers()).isEmpty();
+
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        List<StreamMessage<String, String, Integer>> messages = stream.xreadgroup("my-group", "consumer-123", key, ">");
+        assertThat(messages).hasSize(100);
+
+        XPendingSummary summary = stream.xpending(key, "my-group");
+        assertThat(summary.getPendingCount()).isEqualTo(100L);
+        assertThat(summary.getHighestId()).isNotNull();
+        assertThat(summary.getLowestId()).isNotNull();
+        assertThat(summary.getConsumers()).containsExactly(entry("consumer-123", 100L));
+    }
+
+    @Test
+    void xPendingSummaryTestWithTwoConsumers() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        List<StreamMessage<String, String, Integer>> m1 = stream.xreadgroup("my-group", "consumer-1", key, ">");
+        List<StreamMessage<String, String, Integer>> m2 = stream.xreadgroup("my-group", "consumer-2", key, ">");
+        assertThat(m1.size() + m2.size()).isEqualTo(100);
+
+        XPendingSummary summary = stream.xpending(key, "my-group");
+        assertThat(summary.getPendingCount()).isEqualTo(100L);
+        assertThat(summary.getHighestId()).isNotNull();
+        assertThat(summary.getLowestId()).isNotNull();
+        assertThat(summary.getConsumers()).containsOnlyKeys("consumer-1"); // The second didn't have the chance to poll
+    }
+
+    @Test
+    void xPendingExtendedTest() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        List<StreamMessage<String, String, Integer>> messages = stream.xreadgroup("my-group", "consumer-123", key, ">");
+        assertThat(messages).hasSize(100);
+
+        List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10);
+        assertThat(pending).hasSize(10);
+        assertThat(pending).allSatisfy(msg -> {
+            assertThat(msg.getMessageId()).isNotNull();
+            assertThat(msg.getDeliveryCount()).isEqualTo(1);
+            assertThat(msg.getDurationSinceLastDelivery()).isNotNull();
+            assertThat(msg.getConsumer()).isEqualTo("consumer-123");
+        });
+    }
+
+    @Test
+    void xPendingExtendedWithConsumerTest() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        stream.xreadgroup("my-group", "consumer-123", key, ">");
+        stream.xreadgroup("my-group", "consumer-456", key, ">");
+
+        List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
+                new XPendingArgs().consumer("consumer-123"));
+        assertThat(pending).hasSize(10);
+        assertThat(pending).allSatisfy(msg -> {
+            assertThat(msg.getMessageId()).isNotNull();
+            assertThat(msg.getDeliveryCount()).isEqualTo(1);
+            assertThat(msg.getDurationSinceLastDelivery()).isNotNull();
+            assertThat(msg.getConsumer()).isEqualTo("consumer-123");
+        });
+
+        pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs().consumer("consumer-456"));
+        assertThat(pending).isEmpty();
+
+        pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
+                new XPendingArgs().consumer("consumer-missing"));
+        assertThat(pending).isEmpty();
+    }
+
+    @Test
+    void xPendingExtendedTestWithConsumerAndIdle() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        stream.xreadgroup("my-group", "consumer-123", key, ">");
+        stream.xreadgroup("my-group", "consumer-456", key, ">");
+    }
+
+    @Test
+    @RequiresRedis6OrHigher
+    void xPendingExtendedTestWithConsumerAndIdleWithRedis6() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        stream.xreadgroup("my-group", "consumer-123", key, ">");
+        stream.xreadgroup("my-group", "consumer-456", key, ">");
+
+        AtomicReference<List<PendingMessage>> reference = new AtomicReference<>();
+        await().untilAsserted(() -> {
+            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs()
+                    .idle(Duration.ofSeconds(1))
+                    .consumer("consumer-123"));
+            assertThat(pending).hasSize(10);
+            reference.set(pending);
+        });
+        assertThat(reference.get()).allSatisfy(msg -> {
+            assertThat(msg.getMessageId()).isNotNull();
+            assertThat(msg.getDeliveryCount()).isEqualTo(1);
+            assertThat(msg.getDurationSinceLastDelivery()).isNotNull();
+            assertThat(msg.getConsumer()).isEqualTo("consumer-123");
+        });
+    }
+
+    @Test
+    @RequiresRedis6OrHigher
+    void xPendingExtendedTestWithIdle() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        stream.xreadgroup("my-group", "consumer-123", key, ">");
+
+        AtomicReference<List<PendingMessage>> reference = new AtomicReference<>();
+        await().untilAsserted(() -> {
+            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs()
+                    .idle(Duration.ofSeconds(1)));
+            assertThat(pending).hasSize(10);
+            reference.set(pending);
+        });
+        assertThat(reference.get()).allSatisfy(msg -> {
+            assertThat(msg.getMessageId()).isNotNull();
+            assertThat(msg.getDeliveryCount()).isEqualTo(1);
+            assertThat(msg.getDurationSinceLastDelivery()).isNotNull();
+            assertThat(msg.getConsumer()).isEqualTo("consumer-123");
+        });
+    }
+
+    @Test
+    void streamWithTypeReference() {
+        var stream = ds.stream(new TypeReference<List<Integer>>() {
+            // Empty on purpose
+        });
+        stream.xadd("my-stream", Map.of("duration", List.of(1532), "event-id", List.of(5), "user-id", List.of(77788)));
+        stream.xadd("my-stream", Map.of("duration", List.of(1533), "event-id", List.of(6), "user-id", List.of(77788)));
+        stream.xadd("my-stream", Map.of("duration", List.of(1534), "event-id", List.of(7), "user-id", List.of(77788)));
+
+        List<StreamMessage<String, String, List<Integer>>> messages = stream.xread("my-stream", "0-0");
+        assertThat(messages).hasSize(3)
+                .allSatisfy(m -> {
+                    assertThat(m.key()).isEqualTo("my-stream");
+                    assertThat(m.id()).isNotEmpty().contains("-");
+                    assertThat(m.payload()).contains(entry("user-id", List.of(77788))).containsKey("event-id")
+                            .containsKey("duration");
+                });
     }
 
 }

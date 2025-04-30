@@ -3,10 +3,9 @@ package io.quarkus.deployment.builditem;
 import java.util.Optional;
 import java.util.logging.Formatter;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The log file format build item. Producing this item will cause the logging subsystem to disregard its

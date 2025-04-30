@@ -21,6 +21,11 @@ import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
 import io.quarkus.amazon.lambda.runtime.LambdaOutputWriter;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;
+import io.quarkus.funqy.lambda.config.FunqyAmazonConfig;
+import io.quarkus.funqy.lambda.event.AwsEventInputReader;
+import io.quarkus.funqy.lambda.event.AwsEventOutputWriter;
+import io.quarkus.funqy.lambda.event.EventProcessor;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
@@ -42,11 +47,15 @@ public class FunqyLambdaBindingRecorder {
     private static BeanContainer beanContainer;
     private static LambdaInputReader reader;
     private static LambdaOutputWriter writer;
+    private static EventProcessor eventProcessor;
+    private static FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
 
-    public void init(BeanContainer bc) {
+    public void init(BeanContainer bc, FunqyAmazonBuildTimeConfig buildTimeConfig) {
         beanContainer = bc;
         FunctionConstructor.CONTAINER = bc;
+        amazonBuildTimeConfig = buildTimeConfig;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
+
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
                 JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
@@ -61,12 +70,12 @@ public class FunqyLambdaBindingRecorder {
         }
     }
 
-    public void chooseInvoker(FunqyConfig config) {
+    public void chooseInvoker(FunqyConfig config, FunqyAmazonConfig amazonConfig) {
         // this is done at Runtime so that we can change it with an environment variable.
-        if (config.export.isPresent()) {
-            invoker = FunctionRecorder.registry.matchInvoker(config.export.get());
+        if (config.export().isPresent()) {
+            invoker = FunctionRecorder.registry.matchInvoker(config.export().get());
             if (invoker == null) {
-                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export.get());
+                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export().get());
             }
         } else if (FunctionRecorder.registry.invokers().size() == 0) {
             throw new RuntimeException("There are no functions to process lambda");
@@ -76,35 +85,59 @@ public class FunqyLambdaBindingRecorder {
         } else {
             invoker = FunctionRecorder.registry.invokers().iterator().next();
         }
+
+        ObjectReader objectReader = null;
         if (invoker.hasInput()) {
-            reader = new JacksonInputReader((ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName()));
+            objectReader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+
+            if (amazonBuildTimeConfig.advancedEventHandling().enabled()) {
+                // We create a copy, because the mapper will be reconfigured for the advanced event handling,
+                // and we do not want to adjust the ObjectMapper, which is available in arc context.
+                ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
+                reader = new AwsEventInputReader(objectMapper, objectReader, amazonBuildTimeConfig);
+            } else {
+                reader = new JacksonInputReader(objectReader);
+            }
+
         }
         if (invoker.hasOutput()) {
-            writer = new JacksonOutputWriter((ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName()));
-        }
+            ObjectWriter objectWriter = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
 
+            if (!amazonBuildTimeConfig.advancedEventHandling().enabled()) {
+                writer = new JacksonOutputWriter(objectWriter);
+            }
+        }
+        if (amazonBuildTimeConfig.advancedEventHandling().enabled()) {
+            ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
+            writer = new AwsEventOutputWriter(objectMapper);
+
+            eventProcessor = new EventProcessor(objectReader, amazonBuildTimeConfig, amazonConfig);
+        }
     }
 
     /**
      * Called by JVM handler wrapper
      *
      * @param inputStream
+     *        {@link InputStream} of the AWS SDK {@link com.amazonaws.services.lambda.runtime.RequestStreamHandler}
      * @param outputStream
+     *        {@link OutputStream} of the AWS SDK {@link com.amazonaws.services.lambda.runtime.RequestStreamHandler}
      * @param context
+     *        AWS context information provided to the Lambda
      * @throws IOException
+     *         Is thrown in case the (de)serialization fails
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         Object input = null;
         if (invoker.hasInput()) {
             input = reader.readValue(inputStream);
         }
-        FunqyServerResponse response = dispatch(input);
+        FunqyServerResponse response = dispatch(input, context);
 
         Object value = response.getOutput().await().indefinitely();
         if (value != null) {
             writer.writeValue(outputStream, value);
         }
-
     }
 
     @SuppressWarnings("rawtypes")
@@ -114,7 +147,7 @@ public class FunqyLambdaBindingRecorder {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
-                FunqyServerResponse response = dispatch(input);
+                FunqyServerResponse response = dispatch(input, context);
                 return response.getOutput().await().indefinitely();
             }
 
@@ -141,6 +174,14 @@ public class FunqyLambdaBindingRecorder {
         };
         loop.startPollLoop(context);
 
+    }
+
+    private static FunqyServerResponse dispatch(Object input, Context context) throws IOException {
+        if (eventProcessor != null) {
+            return eventProcessor.handle(input, FunqyLambdaBindingRecorder::dispatch, context);
+        } else {
+            return dispatch(input);
+        }
     }
 
     private static FunqyServerResponse dispatch(Object input) {

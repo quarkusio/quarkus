@@ -17,7 +17,7 @@ public class DefaultPackageWithFastJarPMT {
             .setApplicationName("default-package")
             .setApplicationVersion(Version.getVersion())
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.package.type", "fast-jar");
+            .overrideConfigKey("quarkus.package.jar.type", "fast-jar");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

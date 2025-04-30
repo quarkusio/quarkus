@@ -1,0 +1,34 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for MongoDB
+
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
+What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` nor `quarkus.mongodb.hosts`, Quarkus will automatically start a MongoDB container when
+running tests or in dev mode, and automatically configure the connection.
+
+MongoDB Dev Services is based on link:https://www.testcontainers.org/modules/databases/mongodb/[Testcontainers MongoDB module] that will start a single node replicaset.
+
+When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
+`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
+
+
+== Shared server
+
+Most of the time you need to share the server between applications.
+Dev Services for MongoDB implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for MongoDB starts the container with the `quarkus-dev-service-mongodb` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.mongodb.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `mongodb`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.mongodb.devservices.shared=false`.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]

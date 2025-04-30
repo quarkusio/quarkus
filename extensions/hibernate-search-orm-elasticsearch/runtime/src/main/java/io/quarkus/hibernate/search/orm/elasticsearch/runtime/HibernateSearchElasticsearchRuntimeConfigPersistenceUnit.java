@@ -1,25 +1,19 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 
-import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
-import org.hibernate.search.engine.cfg.spi.ParseUtils;
 import org.hibernate.search.mapper.orm.schema.management.SchemaManagementStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
-import org.hibernate.search.util.common.SearchException;
 
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchRuntimeConfig;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
-import io.smallrye.config.WithParentName;
 import io.smallrye.config.WithUnnamedKey;
 
 @ConfigGroup
@@ -41,13 +35,13 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     Optional<Boolean> active();
 
     /**
-     * Configuration for backends.
+     * Configuration for Elasticsearch/OpenSearch backends.
      */
     @ConfigDocSection
     @WithName("elasticsearch")
     @WithUnnamedKey // The default backend has the null key
     @ConfigDocMapKey("backend-name")
-    Map<String, ElasticsearchBackendRuntimeConfig> backends();
+    Map<String, HibernateSearchBackendElasticsearchRuntimeConfig> backends();
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -78,164 +72,6 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      * Configuration for multi-tenancy.
      */
     MultiTenancyConfig multiTenancy();
-
-    @ConfigGroup
-    interface ElasticsearchBackendRuntimeConfig {
-        /**
-         * The list of hosts of the Elasticsearch servers.
-         */
-        @WithDefault("localhost:9200")
-        List<String> hosts();
-
-        /**
-         * The protocol to use when contacting Elasticsearch servers.
-         * Set to "https" to enable SSL/TLS.
-         */
-        @WithDefault("http")
-        ElasticsearchClientProtocol protocol();
-
-        /**
-         * The username used for authentication.
-         */
-        Optional<String> username();
-
-        /**
-         * The password used for authentication.
-         */
-        Optional<String> password();
-
-        /**
-         * The timeout when establishing a connection to an Elasticsearch server.
-         */
-        @WithDefault("1S")
-        Duration connectionTimeout();
-
-        /**
-         * The timeout when reading responses from an Elasticsearch server.
-         */
-        @WithDefault("30S")
-        Duration readTimeout();
-
-        /**
-         * The timeout when executing a request to an Elasticsearch server.
-         *
-         * This includes the time needed to wait for a connection to be available,
-         * send the request and read the response.
-         *
-         * @asciidoclet
-         */
-        Optional<Duration> requestTimeout();
-
-        /**
-         * The maximum number of connections to all the Elasticsearch servers.
-         */
-        @WithDefault("20")
-        int maxConnections();
-
-        /**
-         * The maximum number of connections per Elasticsearch server.
-         */
-        @WithDefault("10")
-        int maxConnectionsPerRoute();
-
-        /**
-         * Configuration for the automatic discovery of new Elasticsearch nodes.
-         */
-        DiscoveryConfig discovery();
-
-        /**
-         * Configuration for the thread pool assigned to the backend.
-         */
-        ThreadPoolConfig threadPool();
-
-        /**
-         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         *
-         * Set to `false` if the Elasticsearch cluster may not be available on startup.
-         *
-         * @asciidoclet
-         */
-        @WithName("version-check.enabled")
-        @WithDefault("true")
-        boolean versionCheck();
-
-        /**
-         * The default configuration for the Elasticsearch indexes.
-         */
-        @WithParentName
-        ElasticsearchIndexRuntimeConfig indexDefaults();
-
-        /**
-         * Per-index configuration overrides.
-         */
-        @ConfigDocSection
-        @ConfigDocMapKey("index-name")
-        Map<String, ElasticsearchIndexRuntimeConfig> indexes();
-    }
-
-    enum ElasticsearchClientProtocol {
-        /**
-         * Use clear-text HTTP, with SSL/TLS disabled.
-         */
-        HTTP("http"),
-        /**
-         * Use HTTPS, with SSL/TLS enabled.
-         */
-        HTTPS("https");
-
-        public static ElasticsearchClientProtocol of(String value) {
-            return ParseUtils.parseDiscreteValues(
-                    values(),
-                    ElasticsearchClientProtocol::getHibernateSearchString,
-                    (invalidValue, validValues) -> new SearchException(
-                            String.format(
-                                    Locale.ROOT,
-                                    "Invalid protocol: '%1$s'. Valid protocols are: %2$s.",
-                                    invalidValue,
-                                    validValues)),
-                    value);
-        }
-
-        private final String hibernateSearchString;
-
-        ElasticsearchClientProtocol(String hibernateSearchString) {
-            this.hibernateSearchString = hibernateSearchString;
-        }
-
-        public String getHibernateSearchString() {
-            return hibernateSearchString;
-        }
-    }
-
-    @ConfigGroup
-    interface ElasticsearchIndexRuntimeConfig {
-        /**
-         * Configuration for the schema management of the indexes.
-         */
-        ElasticsearchIndexSchemaManagementConfig schemaManagement();
-
-        /**
-         * Configuration for the indexing process that creates, updates and deletes documents.
-         */
-        ElasticsearchIndexIndexingConfig indexing();
-    }
-
-    @ConfigGroup
-    interface DiscoveryConfig {
-
-        /**
-         * Defines if automatic discovery is enabled.
-         */
-        @WithDefault("false")
-        Boolean enabled();
-
-        /**
-         * Refresh interval of the node list.
-         */
-        @WithDefault("10S")
-        Duration refreshInterval();
-
-    }
 
     @ConfigGroup
     interface IndexingConfig {
@@ -335,6 +171,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `IndexingPlanSynchronizationStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
@@ -469,7 +308,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Also, drop indexes and their schema on shutdown.
          * !===
          *
-         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapper-orm-schema-management-strategy[this section of the reference documentation]
+         * See link:{hibernate-search-docs-url}#mapper-orm-schema-management-strategy[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -479,106 +318,6 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         @ConfigDocDefault("drop-and-create-and-drop when using Dev Services; create-or-validate otherwise")
         SchemaManagementStrategyName strategy();
 
-    }
-
-    @ConfigGroup
-    interface ThreadPoolConfig {
-        /**
-         * The size of the thread pool assigned to the backend.
-         *
-         * Note that number is **per backend**, not per index.
-         * Adding more indexes will not add more threads.
-         *
-         * As all operations happening in this thread-pool are non-blocking,
-         * raising its size above the number of processor cores available to the JVM will not bring noticeable performance
-         * benefit.
-         * The only reason to alter this setting would be to reduce the number of threads;
-         * for example, in an application with a single index with a single indexing queue,
-         * running on a machine with 64 processor cores,
-         * you might want to bring down the number of threads.
-         *
-         * Defaults to the number of processor cores available to the JVM on startup.
-         *
-         * @asciidoclet
-         */
-        // We can't set an actual default value here: see comment on this class.
-        OptionalInt size();
-    }
-
-    // We can't set actual default values in this section,
-    // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
-    @ConfigGroup
-    interface ElasticsearchIndexSchemaManagementConfig {
-        /**
-         * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
-         * status] required on startup.
-         *
-         * @asciidoclet
-         */
-        // We can't set an actual default value here: see comment on this class.
-        @ConfigDocDefault("yellow")
-        Optional<IndexStatus> requiredStatus();
-
-        /**
-         * How long we should wait for the status before failing the bootstrap.
-         */
-        // We can't set an actual default value here: see comment on this class.
-        @ConfigDocDefault("10S")
-        Optional<Duration> requiredStatusWaitTimeout();
-    }
-
-    // We can't set actual default values in this section,
-    // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
-    @ConfigGroup
-    interface ElasticsearchIndexIndexingConfig {
-        /**
-         * The number of indexing queues assigned to each index.
-         *
-         * Higher values will lead to more connections being used in parallel,
-         * which may lead to higher indexing throughput,
-         * but incurs a risk of overloading Elasticsearch,
-         * i.e. of overflowing its HTTP request buffers and tripping
-         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
-         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
-         *
-         * @asciidoclet
-         */
-        // We can't set an actual default value here: see comment on this class.
-        @ConfigDocDefault("10")
-        OptionalInt queueCount();
-
-        /**
-         * The size of indexing queues.
-         *
-         * Lower values may lead to lower memory usage, especially if there are many queues,
-         * but values that are too low will reduce the likeliness of reaching the max bulk size
-         * and increase the likeliness of application threads blocking because the queue is full,
-         * which may lead to lower indexing throughput.
-         *
-         * @asciidoclet
-         */
-        // We can't set an actual default value here: see comment on this class.
-        @ConfigDocDefault("1000")
-        OptionalInt queueSize();
-
-        /**
-         * The maximum size of bulk requests created when processing indexing queues.
-         *
-         * Higher values will lead to more documents being sent in each HTTP request sent to Elasticsearch,
-         * which may lead to higher indexing throughput,
-         * but incurs a risk of overloading Elasticsearch,
-         * i.e. of overflowing its HTTP request buffers and tripping
-         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
-         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
-         *
-         * Note that raising this number above the queue size has no effect,
-         * as bulks cannot include more requests than are contained in the queue.
-         *
-         * @asciidoclet
-         */
-        // We can't set an actual default value here: see comment on this class.
-        @ConfigDocDefault("100")
-        OptionalInt maxBulkSize();
     }
 
     @ConfigGroup

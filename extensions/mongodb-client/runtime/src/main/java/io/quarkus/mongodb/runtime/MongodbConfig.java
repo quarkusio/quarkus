@@ -5,31 +5,35 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot(name = MongodbConfig.CONFIG_NAME, phase = ConfigPhase.RUN_TIME)
-public class MongodbConfig {
-    public static final String CONFIG_NAME = "mongodb";
+@ConfigMapping(prefix = "quarkus.mongodb")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface MongodbConfig {
+    String CONFIG_NAME = "mongodb";
     @Deprecated
-    public static final String NATIVE_DNS_LOG_ACTIVITY = "native.dns.log-activity";
-    public static final String DNS_LOG_ACTIVITY = "dns.log-activity";
+    String NATIVE_DNS_LOG_ACTIVITY = "native.dns.log-activity";
+    String DNS_LOG_ACTIVITY = "dns.log-activity";
     @Deprecated
-    public static final String NATIVE_DNS_SERVER_HOST = "native.dns.server-host";
-    public static final String DNS_SERVER_HOST = "dns.server-host";
+    String NATIVE_DNS_SERVER_HOST = "native.dns.server-host";
+    String DNS_SERVER_HOST = "dns.server-host";
     @Deprecated
-    public static final String NATIVE_DNS_SERVER_PORT = "native.dns.server-port";
-    public static final String DNS_SERVER_PORT = "dns.server-port";
+    String NATIVE_DNS_SERVER_PORT = "native.dns.server-port";
+    String DNS_SERVER_PORT = "dns.server-port";
     @Deprecated
-    public static final String NATIVE_DNS_LOOKUP_TIMEOUT = "native.dns.lookup-timeout";
-    public static final String DNS_LOOKUP_TIMEOUT = "dns.lookup-timeout";
+    String NATIVE_DNS_LOOKUP_TIMEOUT = "native.dns.lookup-timeout";
+    String DNS_LOOKUP_TIMEOUT = "dns.lookup-timeout";
 
     /**
      * The default mongo client connection.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public MongoClientConfig defaultMongoClientConfig;
+    @WithParentName
+    MongoClientConfig defaultMongoClientConfig();
 
     /**
      * Configures additional mongo client connections.
@@ -54,8 +58,8 @@ public class MongodbConfig {
      * }
      * </pre>
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, MongoClientConfig> mongoClientConfigs;
+    @WithParentName
+    Map<String, MongoClientConfig> mongoClientConfigs();
 
     /**
      * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
@@ -67,8 +71,9 @@ public class MongodbConfig {
      * @deprecated This resolver is always used
      */
     @Deprecated
-    @ConfigItem(name = "native.dns.use-vertx-dns-resolver", defaultValue = "false")
-    public boolean useVertxDnsResolverInNativeMode;
+    @WithName("native.dns.use-vertx-dns-resolver")
+    @WithDefault("false")
+    boolean useVertxDnsResolverInNativeMode();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server.
@@ -78,15 +83,15 @@ public class MongodbConfig {
      * @deprecated this property has been deprecated in favor of {@link #dnsServer}
      */
     @Deprecated
-    @ConfigItem(name = NATIVE_DNS_SERVER_HOST)
-    public Optional<String> dnsServerInNativeMode;
+    @WithName(NATIVE_DNS_SERVER_HOST)
+    Optional<String> dnsServerInNativeMode();
 
     /**
      * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver} from
      * {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
      */
-    @ConfigItem(name = DNS_SERVER_HOST)
-    public Optional<String> dnsServer;
+    @WithName(DNS_SERVER_HOST)
+    Optional<String> dnsServer();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
@@ -94,13 +99,14 @@ public class MongodbConfig {
      * @deprecated this property has been deprecated in favor of {@link #dnsServerPort}
      */
     @Deprecated
-    @ConfigItem(name = NATIVE_DNS_SERVER_PORT, defaultValue = "53")
-    public OptionalInt dnsServerPortInNativeMode;
+    @WithName(NATIVE_DNS_SERVER_PORT)
+    OptionalInt dnsServerPortInNativeMode();
+
     /**
      * This property configures the DNS server port.
      */
-    @ConfigItem(name = DNS_SERVER_PORT, defaultValue = "53")
-    public OptionalInt dnsServerPort;
+    @WithName(DNS_SERVER_PORT)
+    OptionalInt dnsServerPort();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
@@ -109,15 +115,17 @@ public class MongodbConfig {
      * @deprecated this property has been deprecated in favor of {@link #dnsLookupTimeout}
      */
     @Deprecated
-    @ConfigItem(name = NATIVE_DNS_LOOKUP_TIMEOUT, defaultValue = "5s")
-    public Duration dnsLookupTimeoutInNativeMode;
+    @WithName(NATIVE_DNS_LOOKUP_TIMEOUT)
+    @WithDefault("5s")
+    Duration dnsLookupTimeoutInNativeMode();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
      * duration.
      */
-    @ConfigItem(name = DNS_LOOKUP_TIMEOUT, defaultValue = "5s")
-    public Duration dnsLookupTimeout;
+    @WithName(DNS_LOOKUP_TIMEOUT)
+    @WithDefault("5s")
+    Duration dnsLookupTimeout();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the
@@ -126,12 +134,14 @@ public class MongodbConfig {
      * @deprecated this property has been deprecated in favor of {@link #dnsLookupLogActivity}
      */
     @Deprecated
-    @ConfigItem(name = NATIVE_DNS_LOG_ACTIVITY, defaultValue = "false")
-    public Optional<Boolean> dnsLookupLogActivityInNativeMode;
+    @WithDefault("false")
+    @WithName(NATIVE_DNS_LOG_ACTIVITY)
+    Optional<Boolean> dnsLookupLogActivityInNativeMode();
 
     /**
      * This property enables the logging ot the DNS lookup. It can be useful to understand why the lookup fails.
      */
-    @ConfigItem(name = DNS_LOG_ACTIVITY, defaultValue = "false")
-    public Optional<Boolean> dnsLookupLogActivity;
+    @WithDefault("false")
+    @WithName(DNS_LOG_ACTIVITY)
+    Optional<Boolean> dnsLookupLogActivity();
 }

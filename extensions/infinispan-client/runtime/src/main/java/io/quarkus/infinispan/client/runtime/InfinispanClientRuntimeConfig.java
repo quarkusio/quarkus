@@ -9,13 +9,14 @@ import javax.net.ssl.SSLContext;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * @author Katia Aresti
  */
 @ConfigGroup
-public class InfinispanClientRuntimeConfig {
+public interface InfinispanClientRuntimeConfig {
 
     // @formatter:off
     /**
@@ -23,16 +24,14 @@ public class InfinispanClientRuntimeConfig {
      * If provided {@link #hosts}, {@link #username} and {@link #password} will be ignored.
      */
     // @formatter:on
-    @ConfigItem
-    public Optional<String> uri;
+    Optional<String> uri();
 
     // @formatter:off
     /**
      * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. host1:11222;host2:11222).
      */
     // @formatter:on
-    @ConfigItem
-    public Optional<String> hosts;
+    Optional<String> hosts();
 
     // @formatter:off
     /**
@@ -40,9 +39,8 @@ public class InfinispanClientRuntimeConfig {
      * @deprecated {@link #hosts} should be used to configure the list or uri for an uri connection string.
      */
     // @formatter:on
-    @ConfigItem
     @Deprecated
-    public Optional<String> serverList;
+    Optional<String> serverList();
 
     // @formatter:off
     /**
@@ -57,8 +55,8 @@ public class InfinispanClientRuntimeConfig {
      *              greatly. This is the default.
      */
     // @formatter:on
-    @ConfigItem(defaultValue = "HASH_DISTRIBUTION_AWARE")
-    Optional<String> clientIntelligence;
+    @WithDefault("HASH_DISTRIBUTION_AWARE")
+    Optional<String> clientIntelligence();
 
     // @formatter:off
     /**
@@ -66,118 +64,147 @@ public class InfinispanClientRuntimeConfig {
      * deployments. Default is 'true'.
      */
     // @formatter:on
-    @ConfigItem(defaultValue = "true")
-    Optional<Boolean> useAuth;
+    @WithDefault("true")
+    Optional<Boolean> useAuth();
 
     /**
      * Sets username used by authentication.
      */
-    @ConfigItem
-    Optional<String> username;
+    Optional<String> username();
 
     /**
      * Sets username used by authentication.
      *
      * @deprecated {@link #username} should be used to configure the credentials username.
      */
-    @ConfigItem
     @Deprecated
-    Optional<String> authUsername;
+    Optional<String> authUsername();
 
     /**
      * Sets password used by authentication.
      */
-    @ConfigItem
-    Optional<String> password;
+    Optional<String> password();
 
     /**
      * Sets password used by authentication
      *
      * @deprecated {@link #password} should be used to configure the credentials password.
      */
-    @ConfigItem
     @Deprecated
-    Optional<String> authPassword;
+    Optional<String> authPassword();
 
     /**
      * Sets realm used by authentication
      */
-    @ConfigItem(defaultValue = "default")
-    Optional<String> authRealm;
+    @WithDefault("default")
+    Optional<String> authRealm();
 
     /**
      * Sets server name used by authentication
      */
-    @ConfigItem(defaultValue = "infinispan")
-    Optional<String> authServerName;
+    @WithDefault("infinispan")
+    Optional<String> authServerName();
 
     // @formatter:off
     /**
      * Sets SASL mechanism used by authentication.
      * Available values:
-     * * `DIGEST-MD5` - Uses the MD5 hashing algorithm in addition to nonces to encrypt credentials. This is the default.
+     * * `DIGEST-SHA-512` - Uses the SHA-512 hashing algorithm to securely hash and verify credentials. This is the default.
+     * * `DIGEST-MD5` - Uses the MD5 hashing algorithm in addition to nonces to encrypt credentials.
      * * `EXTERNAL` - Uses client certificates to provide valid identities to Infinispan Server and enable encryption.
      * * `PLAIN` - Sends credentials in plain text (unencrypted) over the wire in a way that is similar to HTTP BASIC
      *             authentication. You should use `PLAIN` authentication only in combination with TLS encryption.
      */
     // @formatter:on
-    @ConfigItem(defaultValue = "DIGEST-MD5")
-    Optional<String> saslMechanism;
+    @WithDefault("DIGEST-SHA-512")
+    Optional<String> saslMechanism();
+
+    /**
+     * Specifies the filename of a keystore to use to create the {@link SSLContext}.
+     * You also need to specify a keyStorePassword.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    Optional<String> keyStore();
+
+    /**
+     * Specifies the password needed to open the keystore. You also need to specify a keyStore.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    Optional<String> keyStorePassword();
+
+    /**
+     * Specifies the type of the keyStore, such as PKCS12.
+     */
+    Optional<String> keyStoreType();
+
+    /**
+     * Sets the unique name used to identify a specific key pair in a keystore for secure connections.
+     */
+    Optional<String> keyAlias();
 
     /**
      * Specifies the filename of a truststore to use to create the {@link SSLContext}.
      * You also need to specify a trustStorePassword.
      * Setting this property implicitly enables SSL/TLS.
      */
-    @ConfigItem
-    Optional<String> trustStore;
+    Optional<String> trustStore();
 
     /**
      * Specifies the password needed to open the truststore You also need to specify a trustStore.
      * Setting this property implicitly enables SSL/TLS.
      */
-    @ConfigItem
-    Optional<String> trustStorePassword;
+    Optional<String> trustStorePassword();
 
     /**
      * Specifies the type of the truststore, such as JKS or JCEKS. Defaults to JKS if trustStore is enabled.
      */
-    @ConfigItem
-    Optional<String> trustStoreType;
+    Optional<String> trustStoreType();
 
     /**
      * Configures the secure socket protocol.
      * Setting this property implicitly enables SSL/TLS.
      */
-    @ConfigItem
-    Optional<String> sslProtocol;
+    Optional<String> sslProtocol();
 
     /**
      * Sets the ssl provider. For example BCFIPS
      * Setting this implicitly enables SSL/TLS.
      */
-    @ConfigItem
-    Optional<String> sslProvider;
+    Optional<String> sslProvider();
 
     /**
      * Configures the ciphers.
      * Setting this property implicitly enables SSL/TLS.
      */
-    @ConfigItem
-    Optional<List<String>> sslCiphers;
+    Optional<List<String>> sslCiphers();
+
+    /**
+     * Do SSL hostname validation.
+     * Defaults to true.
+     */
+    Optional<Boolean> sslHostNameValidation();
+
+    /**
+     * SNI host name. Mandatory when SSL is enabled and host name validation is true.
+     */
+    Optional<String> sniHostName();
+
+    /**
+     * Configures the socket timeout.
+     */
+    Optional<Integer> socketTimeout();
 
     /**
      * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
      * By default the propagation of the context is propagated from the client to the Infinispan Server.
      */
-    @ConfigItem(name = "tracing.propagation.enabled")
-    public Optional<Boolean> tracingPropagationEnabled;
+    @WithName("tracing.propagation.enabled")
+    Optional<Boolean> tracingPropagationEnabled();
 
     /**
      * Configures caches from the client with the provided configuration.
      */
-    @ConfigItem
-    public Map<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache;
+    Map<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache();
 
     /**
      * // @formatter:off
@@ -189,11 +216,10 @@ public class InfinispanClientRuntimeConfig {
      * </code>
      * // @formatter:on
      */
-    @ConfigItem
-    public Map<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster;
+    Map<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster();
 
     @ConfigGroup
-    public static class RemoteCacheConfig {
+    public interface RemoteCacheConfig {
 
         // @formatter:off
         /**
@@ -203,8 +229,7 @@ public class InfinispanClientRuntimeConfig {
          * quarkus.infinispan-client.cache.bookscache.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache>
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<String> configuration;
+        Optional<String> configuration();
 
         // @formatter:off
         /**
@@ -213,14 +238,12 @@ public class InfinispanClientRuntimeConfig {
          * quarkus.infinispan-client.cache.bookscache.configuration-uri=cacheConfig.xml
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<String> configurationUri;
+        Optional<String> configurationUri();
 
         /**
          * The maximum number of entries to keep locally for the specified cache.
          */
-        @ConfigItem
-        public Optional<Integer> nearCacheMaxEntries;
+        Optional<Integer> nearCacheMaxEntries();
 
         // @formatter:off
         /**
@@ -231,8 +254,7 @@ public class InfinispanClientRuntimeConfig {
          *                   invalidation messages will be sent to clients to remove them from the near cache.
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<NearCacheMode> nearCacheMode;
+        Optional<NearCacheMode> nearCacheMode();
 
         // @formatter:off
         /**
@@ -241,19 +263,17 @@ public class InfinispanClientRuntimeConfig {
          * invalidation messages.
          */
         // @formatter:on
-        @ConfigItem
-        public Optional<Boolean> nearCacheUseBloomFilter;
+        Optional<Boolean> nearCacheUseBloomFilter();
     }
 
     @ConfigGroup
-    public static class BackupClusterConfig {
+    public interface BackupClusterConfig {
         // @formatter:off
         /**
          * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. hostA:11222;hostB:11222).
          */
         // @formatter:on
-        @ConfigItem
-        public String hosts;
+        String hosts();
 
         // @formatter:off
         /**
@@ -268,14 +288,18 @@ public class InfinispanClientRuntimeConfig {
          *              greatly. This is the default.
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "HASH_DISTRIBUTION_AWARE")
-        Optional<String> clientIntelligence;
-    }
+        @WithDefault("HASH_DISTRIBUTION_AWARE")
+        Optional<String> clientIntelligence();
 
-    @Override
-    public String toString() {
-        return "InfinispanClientRuntimeConfig{" +
-                "hosts=" + hosts +
-                '}';
+        // @formatter:off
+        /**
+         * Enables or disables Protobuf generated schemas upload to the backup.
+         * Set it to 'false' when you need to handle the lifecycle of the Protobuf Schemas on Server side yourself.
+         * Default is 'true'.
+         * This setting will be ignored if the Global Setting is set up to false.
+         */
+        // @formatter:on
+        @WithDefault("true")
+        Optional<Boolean> useSchemaRegistration();
     }
 }

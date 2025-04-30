@@ -3,9 +3,8 @@ package io.quarkus.vertx.http.management;
 import java.io.File;
 import java.util.function.Consumer;
 
-import javax.inject.Singleton;
-
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
@@ -20,22 +19,29 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.restassured.RestAssured;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class ManagementWithPemTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.management.enabled=true\n" +
-            "quarkus.management.root-path=/management\n" +
-            "quarkus.management.ssl.certificate.files=server-cert.pem\n" +
-            "quarkus.management.ssl.certificate.key-files=server-key.pem\n";
+
+    private static final String configuration = """
+            quarkus.management.enabled=true
+            quarkus.management.root-path=/management
+            quarkus.management.ssl.certificate.files=server.crt
+            quarkus.management.ssl.certificate.key-files=server.key
+            """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-key.pem"), "server-key.pem")
-                    .addAsResource(new File("src/test/resources/conf/server-cert.pem"), "server-cert.pem")
+                    .addAsResource(new StringAsset(configuration), "application.properties")
+                    .addAsResource(new File("target/certs/ssl-management-interface-test.key"), "server.key")
+                    .addAsResource(new File("target/certs/ssl-management-interface-test.crt"), "server.crt")
                     .addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -74,8 +80,9 @@ public class ManagementWithPemTest {
     @Test
     public void testSslWithPem() {
         RestAssured.given()
-                .relaxedHTTPSValidation()
-                .get("https://0.0.0.0:9001/management/my-route")
+                .given()
+                .trustStore(new File("target/certs/ssl-management-interface-test-truststore.jks"), "secret")
+                .get("https://localhost:9001/management/my-route")
                 .then().statusCode(200).body(Matchers.equalTo("ssl"));
     }
 

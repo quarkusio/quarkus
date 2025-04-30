@@ -29,8 +29,8 @@ public class XGroupSetIdArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
         if (entriesRead > 0) {
             args.add("ENTRIESREAD");
             args.add(Long.toString(entriesRead));

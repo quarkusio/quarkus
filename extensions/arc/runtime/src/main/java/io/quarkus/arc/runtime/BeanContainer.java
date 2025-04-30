@@ -1,73 +1,62 @@
 package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
+import java.util.function.Supplier;
 
 import io.quarkus.arc.ManagedContext;
 
 /**
  * Represents a CDI bean container.
+ * <p/>
+ * Extensions using this API can also leverage arbitrary methods from running {@link io.quarkus.arc.ArcContainer}
+ * which can be obtained by invoking a static method {@link io.quarkus.arc.Arc#container()}.
  */
 public interface BeanContainer {
 
     /**
-     * Returns a bean instance for given bean type and qualifiers.
+     * Resolves a bean instance for given bean type and qualifiers.
      * <p/>
-     * This method follows standard CDI rules meaning that if there are two or more eligible beans, an ambiguous
-     * dependency exception is thrown.
-     * Note that the method is allowed to return {@code null} if there is no matching bean which allows
-     * for fallback implementations.
+     * Performs standard CDI resolution meaning it either returns a bean instance or throws a corresponding exception
+     * if the dependency is either unsatisfied or ambiguous.
      *
-     * @param type
-     * @param qualifiers
-     * @return a bean instance or {@code null} if no matching bean is found
+     * @param beanType type of the bean
+     * @param beanQualifiers bean qualifiers
+     * @return a bean instance; never {@code null}
      */
-    default <T> T beanInstance(Class<T> type, Annotation... qualifiers) {
-        return beanInstanceFactory(type, qualifiers).create().get();
-    }
-
-    /**
-     * This method is deprecated and will be removed in future versions.
-     * Use {@link #beanInstance(Class, Annotation...)} instead.
-     * </p>
-     * As opposed to {@link #beanInstance(Class, Annotation...)}, this method does <b>NOT</b> follow CDI
-     * resolution rules and in case of ambiguous resolution performs a choice based on the class type parameter.
-     *
-     * @param type
-     * @param qualifiers
-     * @return a bean instance or {@code null} if no matching bean is found
-     */
-    @Deprecated
-    default <T> T instance(Class<T> type, Annotation... qualifiers) {
-        return instanceFactory(type, qualifiers).create().get();
-    }
+    <T> T beanInstance(Class<T> beanType, Annotation... beanQualifiers);
 
     /**
      * Returns an instance factory for given bean type and qualifiers.
      * <p/>
-     * This method follows standard CDI rules meaning that if there are two or more beans, an ambiguous dependency
-     * exception is thrown.
-     * Note that the factory itself is still allowed to return {@code null} if there is no matching bean which allows
-     * for fallback implementations.
+     * This method performs CDI ambiguous dependency resolution and throws and exception if there are two or more beans
+     * with given type and qualifiers.
+     * <p/>
+     * If no matching bean is found, uses a default fallback factory that will attempt to instantiate a non-CDI object
+     * of the given class via no-args constructor.
+     * <p/>
+     * If you need custom factory behavior, take a look at {@link #beanInstanceFactory(Supplier, Class, Annotation...)}
      *
-     * @param type
-     * @param qualifiers
+     * @param type bean type
+     * @param qualifiers bean qualifiers
      * @return a bean instance factory, never {@code null}
      */
     <T> Factory<T> beanInstanceFactory(Class<T> type, Annotation... qualifiers);
 
     /**
-     * This method is deprecated and will be removed in future versions.
-     * Use {@link #beanInstanceFactory(Class, Annotation...)} instead.
-     * </p>
-     * As opposed to {@link #beanInstanceFactory(Class, Annotation...)}, this method does <b>NOT</b> follow CDI
-     * resolution rules and in case of ambiguous resolution performs a choice based on the class type parameter.
+     * Returns an instance factory for given bean type and qualifiers.
+     * <p/>
+     * This method performs CDI ambiguous dependency resolution and throws and exception if there are two or more beans
+     * with given type and qualifiers.
+     * <p/>
+     * If no matching bean is found, delegates all calls to the supplied factory fallback.
      *
-     * @param type
-     * @param qualifiers
+     * @param fallbackSupplier supplier to delegate to if there is no bean
+     * @param type bean type
+     * @param qualifiers bean qualifiers
      * @return a bean instance factory, never {@code null}
      */
-    @Deprecated
-    <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
+    <T> Factory<T> beanInstanceFactory(Supplier<Factory<T>> fallbackSupplier, Class<T> type,
+            Annotation... qualifiers);
 
     /**
      * <pre>

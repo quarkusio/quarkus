@@ -8,11 +8,23 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Simplified reactive ORM layer based on Hibernate Reactive.
 :config-file: application.properties
+:topics: data,hibernate-reactive,panache,sql
+:extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
 
 link:https://hibernate.org/reactive/[Hibernate Reactive] is the only reactive Jakarta Persistence (formerly known as JPA) implementation and offers you the full
 breadth of an Object Relational Mapper allowing you to access your database over reactive drivers.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate Reactive with Panache focuses on making your entities trivial and fun to write in Quarkus.
+
+[NOTE]
+====
+Hibernate Reactive is not a replacement for xref:hibernate-orm-panache.adoc[Hibernate ORM] or the future of Hibernate ORM.
+It is a different stack tailored for reactive use cases where you need high-concurrency.
+
+Furthermore, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use Quarkus REST with Hibernate ORM,
+and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
+====
 
 == First: an example
 
@@ -57,38 +69,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-reactive-panache-quickstart` {quickstarts-tree-url}/hibernate-reactive-panache-quickstart[directory].
-
-[NOTE]
-====
-If your project is already configured to use other annotation processors, you will need to additionally add the Panache annotation processor:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-        <parameters>${maven.compiler.parameters}</parameters>
-        <annotationProcessorPaths>
-            <!-- Your existing annotation processor(s)... -->
-            <path>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-common</artifactId>
-                <version>${quarkus.platform.version}</version>
-            </path>
-        </annotationProcessorPaths>
-    </configuration>
-</plugin>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-annotationProcessor("io.quarkus:quarkus-panache-common")
-----
-====
+The solution is located in the `hibernate-reactive-panache-quickstart` link:{quickstarts-tree-url}/hibernate-reactive-panache-quickstart[directory].
 
 == Setting up and configuring Hibernate Reactive with Panache
 
@@ -506,22 +487,23 @@ The `Sort` class has plenty of methods for adding columns and specifying sort di
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
 at the end.
 
-If your select query does not start with `from`, we support the following additional forms:
+If your select query does not start with `from`, `select` or `with`, we support the following additional forms:
 
 - `order by ...` which will expand to `from EntityName order by ...`
-- `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `from EntityName where <singleAttribute> = ?`
+- `where <query>` will expand to `from EntityName where <query>`
 - `<query>` will expand to `from EntityName where <query>`
 
 If your update query does not start with `update`, we support the following additional forms:
 
-- `from EntityName ...` which will expand to `update from EntityName ...`
-- `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
-- `set? <update-query>` will expand to `update from EntityName set <update-query>`
+- `from EntityName ...` which will expand to `update EntityName ...`
+- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?`
+- `set? <update-query>` will expand to `update EntityName set <update-query>`
 
 If your delete query does not start with `delete`, we support the following additional forms:
 
 - `from EntityName ...` which will expand to `delete from EntityName ...`
-- `<singleColumnName>` (and single parameter) which will expand to `delete from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
 - `<query>` will expand to `delete from EntityName where <query>`
 
 NOTE: You can also write your queries in plain
@@ -571,8 +553,8 @@ public class Person extends PanacheEntity {
 
 [WARNING]
 ====
-Named queries can only be defined inside your Jakarta Persistence entity classes (being the Panache entity class, or the repository parameterized type),
-or on one of its super classes.
+Named queries can only be defined inside your Jakarta Persistence entity classes,
+or on one of their super classes.
 ====
 
 === Query parameters
@@ -678,6 +660,37 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+In case you want to project an entity in a class with nested classes, you can use the `@NestedProjectedClass` annotation on those nested classes.
+
+[source,java]
+----
+
+@RegisterForReflection
+public class DogDto {
+    public String name;
+    public PersonDto owner;
+
+    public DogDto(String name, PersonDto owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
+    @NestedProjectedClass // <1>
+    public static class PersonDto {
+        public String name;
+
+        public PersonDto(String name) {
+            this.name = name;
+        }
+    }
+}
+
+PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
+----
+
+<1> This annotation can be used when you want to project `@Embedded` entity or `@ManyToOne`, `@OneToOne` relation.
+It does not support `@OneToMany` or `@ManyToMany` relation.
+
 It is also possible to specify a HQL query with a select clause. In this case, the projection class must have a constructor
 matching the values returned by the select clause:
 
@@ -685,7 +698,7 @@ matching the values returned by the select clause:
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection 
+@RegisterForReflection
 public class RaceWeight {
     public final String race;
     public final Double weight
@@ -725,7 +738,7 @@ Hibernate Reactive in Quarkus currently does not support multiple persistence un
 
 First of all, most of the methods of a Panache entity must be invoked within the scope of a reactive `Mutiny.Session`.
 In some cases, the session is opened automatically on demand.
-For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-resteasy-reactive` extension.
+For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-rest` extension.
 For other cases, there are both a declarative and a programmatic way to ensure the session is opened.
 You can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
 The method will be intercepted and the returned `Uni` will be triggered within a scope of a reactive session.
@@ -736,7 +749,7 @@ NOTE: Note that a Panache entity may not be used from a blocking thread. See als
 Also make sure to wrap methods that modify the database or involve multiple queries (e.g. `entity.persist()`) within a transaction.
 You can annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
 The method will be intercepted and the returned `Uni` is triggered within a transaction boundary.
-Alternatively, you can use the `Panache.withTransaction()` method for the same effect. 
+Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
 IMPORTANT: You cannot use the `@Transactional` annotation with Hibernate Reactive for your transactions: you must use `@WithTransaction`, and your annotated method must return a `Uni` to be non-blocking.
 
@@ -871,9 +884,9 @@ public class SomeTest {
 
     @Test
     @RunOnVertxContext
-    public void testEntity(TransactionalUniAsserter asserter) { 
+    public void testEntity(TransactionalUniAsserter asserter) {
         asserter.execute(() -> new MyEntity().persist()); <1>
-        asserter.assertEquals(() -> MyEntity.count(), 1l); <2> 
+        asserter.assertEquals(() -> MyEntity.count(), 1l); <2>
         asserter.execute(() -> MyEntity.deleteAll()); <3>
     }
 }
@@ -1062,7 +1075,7 @@ public class PanacheFunctionalityTest {
     @RunOnVertxContext // <1>
     @Test
     public void testPanacheRepositoryMocking(UniAsserter asserter) { // <2>
-        
+
         // Mocked classes always return a default value
         asserter.assertEquals(() -> mockablePersonRepository.count(), 0l);
 
@@ -1091,7 +1104,7 @@ public class PanacheFunctionalityTest {
         });
         asserter.assertThat(() -> mockablePersonRepository.findById(12l), p -> Assertions.assertSame(p, asserter.getData(key)));
         asserter.assertNull(() -> mockablePersonRepository.findById(42l));
-        
+
         // Mock throwing
         asserter.execute(() -> Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException()));
         asserter.assertFailedWith(() -> {
@@ -1113,14 +1126,14 @@ public class PanacheFunctionalityTest {
             Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
             Mockito.verifyNoMoreInteractions(mockablePersonRepository);
         });
-        
+
         // IMPORTANT: We need to execute the asserter within a reactive session
         asserter.surroundWith(u -> Panache.withSession(() -> u));
     }
 }
 ----
 <1> Make sure the test method is run on the Vert.x event loop.
-<2> The injected `UniAsserter` agrument is used to make assertions.
+<2> The injected `UniAsserter` argument is used to make assertions.
 
 == How and why we simplify Hibernate Reactive mappings
 
@@ -1161,36 +1174,10 @@ That's all there is to it: with Panache, Hibernate Reactive has never looked so 
 
 == Defining entities in external projects or jars
 
-Hibernate Reactive with Panache relies on compile-time bytecode enhancements to your entities.
+Hibernate Reactive with Panache relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine.
 
-It attempts to identify archives with Panache entities (and consumers of Panache entities)
-by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
-annotation processor that will automatically create this file in archives that depend on
-Panache (even indirectly). If you have disabled annotation processors you may need to create
-this file manually in some cases.
+If the entities come from external projects
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
 
-WARNING: If you include the jpa-modelgen annotation processor this will exclude the Panache
-annotation processor by default. If you do this you should either create the marker file
-yourself, or add the `quarkus-panache-common` as well, as shown below:
-
-[source,xml]
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-      <annotationProcessorPaths>
-        <annotationProcessorPath>
-          <groupId>org.hibernate</groupId>
-          <artifactId>hibernate-jpamodelgen</artifactId>
-          <version>${hibernate.version}</version>
-        </annotationProcessorPath>
-        <annotationProcessorPath>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-panache-common</artifactId>
-          <version>${quarkus.platform.version}</version>
-        </annotationProcessorPath>
-      </annotationProcessorPaths>
-    </configuration>
-</plugin>
-----
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.

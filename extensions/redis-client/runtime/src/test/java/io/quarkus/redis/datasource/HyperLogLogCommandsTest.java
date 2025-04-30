@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -114,6 +117,19 @@ public class HyperLogLogCommandsTest extends DatasourceTestBase {
         hll.pfmerge(k2, k0, k1);
 
         assertThat(hll.pfcount(k2)).isEqualTo(3);
+    }
+
+    @Test
+    void pfaddWithTypeReference() {
+        String k = getKey();
+        var hll = ds.hyperloglog(new TypeReference<List<Person>>() {
+            // Empty on purpose
+        });
+        var l1 = List.of(Person.person1, Person.person2);
+        var l2 = List.of(Person.person3, Person.person2);
+        assertThat(hll.pfadd(k, l1, l2)).isTrue();
+        assertThat(hll.pfadd(k, l1, l1)).isFalse();
+        Assertions.assertThat(hll.pfadd(k, l1)).isFalse();
     }
 
 }

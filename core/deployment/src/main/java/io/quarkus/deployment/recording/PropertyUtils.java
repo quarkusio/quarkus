@@ -2,7 +2,9 @@
 package io.quarkus.deployment.recording;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +21,12 @@ final class PropertyUtils {
     private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
         @Override
         public Property[] apply(Class<?> type) {
+            if (type.isRecord()) {
+                RecordComponent[] recordComponents = type.getRecordComponents();
+                return Arrays.stream(recordComponents)
+                        .map(rc -> new Property(rc.getName(), rc.getAccessor(), null, rc.getType())).toArray(Property[]::new);
+            }
+
             List<Property> ret = new ArrayList<>();
             Method[] methods = type.getMethods();
 
@@ -35,7 +43,7 @@ final class PropertyUtils {
                     if (existingGetter == null || existingGetter.getReturnType().isAssignableFrom(i.getReturnType())) {
                         getters.put(name, i);
                     }
-                } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
+                } else if (i.getName().startsWith("is") && i.getName().length() > 2 && i.getParameterCount() == 0
                         && (i.getReturnType() == boolean.class || i.getReturnType() == Boolean.class)) {
                     String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
                     isGetters.put(name, i);

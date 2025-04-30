@@ -1,9 +1,6 @@
 package io.quarkus.runtime;
 
 import java.net.BindException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * An exception that is meant to stand in for {@link BindException} and provide information
@@ -11,39 +8,33 @@ import java.util.stream.Collectors;
  */
 public class QuarkusBindException extends BindException {
 
-    private final List<Integer> ports;
+    private final String host;
+    private final int port;
 
-    private static String createMessage(List<Integer> ports) {
-        return "Port(s) already bound: " + ports.stream().map(i -> Integer.toString(i)).collect(Collectors.joining(", "));
+    public QuarkusBindException(String host, int port, BindException e) {
+        super(createMessage(host, port) + ": " + e.getMessage());
+        this.host = host;
+        this.port = port;
     }
 
-    private static void assertPortsNotEmpty(List<Integer> ports) {
-        if (ports.isEmpty()) {
-            throw new IllegalStateException("ports must not be empty");
+    private static String createMessage(String host, int port) {
+        // in all these cases, the only thing that can cause a bind exception is the port being in use
+        if (isKnownHost(host)) {
+            return "Port already bound: " + port;
+        } else {
+            return "Unable to bind to host: " + host + " and port: " + port;
         }
     }
 
-    public QuarkusBindException(Integer... ports) {
-        this(Arrays.asList(ports));
+    public static boolean isKnownHost(String host) {
+        return "localhost".equals(host) || "127.0.0.1".equals(host) || "0.0.0.0".equals(host);
     }
 
-    public QuarkusBindException(List<Integer> ports) {
-        super(createMessage(ports));
-        assertPortsNotEmpty(ports);
-        this.ports = ports;
+    public String getHost() {
+        return host;
     }
 
-    public QuarkusBindException(BindException e, Integer... ports) {
-        this(e, Arrays.asList(ports));
-    }
-
-    public QuarkusBindException(BindException e, List<Integer> ports) {
-        super(createMessage(ports) + ": " + e.getMessage());
-        assertPortsNotEmpty(ports);
-        this.ports = ports;
-    }
-
-    public List<Integer> getPorts() {
-        return ports;
+    public int getPort() {
+        return port;
     }
 }

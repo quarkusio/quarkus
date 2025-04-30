@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +17,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
@@ -53,11 +55,15 @@ public class AmazonLambdaRecorder {
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         Method handlerMethod = discoverHandlerMethod(handlerClass);
         Class<?> parameterType = handlerMethod.getParameterTypes()[0];
+
         if (parameterType.equals(S3Event.class)) {
             objectReader = new S3EventInputReader(objectMapper);
+        } else if (Collection.class.isAssignableFrom(parameterType)) {
+            objectReader = new CollectionInputReader<>(objectMapper, handlerMethod);
         } else {
             objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
         }
+
         objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
     }
 
@@ -114,12 +120,12 @@ public class AmazonLambdaRecorder {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
-        if (config.handler.isPresent()) {
-            handlerClass = namedHandlerClasses.get(config.handler.get());
-            handlerStreamClass = namedStreamHandlerClasses.get(config.handler.get());
+        if (config.handler().isPresent()) {
+            handlerClass = namedHandlerClasses.get(config.handler().get());
+            handlerStreamClass = namedStreamHandlerClasses.get(config.handler().get());
 
             if (handlerClass == null && handlerStreamClass == null) {
-                String errorMessage = "Unable to find handler class with name " + config.handler.get()
+                String errorMessage = "Unable to find handler class with name " + config.handler().get()
                         + " make sure there is a handler class in the deployment with the correct @Named annotation";
                 throw new RuntimeException(errorMessage);
             }

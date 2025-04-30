@@ -26,6 +26,7 @@ import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
@@ -189,6 +190,16 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     @Override
     public SocketAddress remoteAddress() {
         return forwardedParser.remoteAddress();
+    }
+
+    @Override
+    public HostAndPort authority() {
+        return forwardedParser.authority();
+    }
+
+    @Override
+    public boolean isValidAuthority() {
+        return forwardedParser.authority() != null;
     }
 
     @Override

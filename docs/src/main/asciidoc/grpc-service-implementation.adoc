@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to implement gRPC services in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 gRPC service implementations exposed as CDI beans are automatically registered and served by quarkus-grpc.
 
@@ -213,7 +215,7 @@ If you wish to scale your server, you can set the number of server instances by 
 
 == Server Configuration
 
-include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.server.adoc[opts=optional, leveloffset=+1]
 
 IMPORTANT: When you disable `quarkus.grpc.server.use-separate-server`, you are then using the new Vert.x gRPC server implementation
 which uses the existing HTTP server. Which means that the server port is now `8080` (or the port configured with `quarkus.http.port`).
@@ -238,6 +240,7 @@ quarkus.grpc.server.ssl.key=tls/server.key
 
 NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
 
+[[tls-with-mutual-auth]]
 === TLS with Mutual Auth
 
 To use TLS with mutual authentication, use the following configuration:
@@ -249,6 +252,46 @@ quarkus.grpc.server.ssl.key=tls/server.key
 quarkus.grpc.server.ssl.trust-store=tls/ca.jks
 quarkus.grpc.server.ssl.trust-store-password=*****
 quarkus.grpc.server.ssl.client-auth=REQUIRED
+----
+
+=== Custom server building
+
+When Quarkus builds a gRPC server instance, users can apply their own Server(Builder) customizers. The customizers are applied by `priority`, the higher the number the later customizer is applied. The customizers are applied before Quarkus applies user's server configuration; e.g. ideal for some initial defaults.
+
+There are two `customize` methods, the first one uses gRPC's `ServerBuilder` as a parameter - to be used with Quarkus' legacy gRPC support, where the other uses `GrpcServerOptions` - to be used with the new Vert.x gRPC support. User should implement the right `customize` method per gRPC support type usage, or both if the customizer is gRPC type neutral.
+
+[source, java]
+----
+public interface ServerBuilderCustomizer<T extends ServerBuilder<T>> {
+
+    /**
+     * Customize a ServerBuilder instance.
+     *
+     * @param config server's configuration
+     * @param builder Server builder instance
+     */
+    default void customize(GrpcServerConfiguration config, T builder) {
+    }
+
+    /**
+     * Customize a GrpcServerOptions instance.
+     *
+     * @param config server's configuration
+     * @param options GrpcServerOptions instance
+     */
+    default void customize(GrpcServerConfiguration config, GrpcServerOptions options) {
+    }
+
+    /**
+     * Priority by which the customizers are applied.
+     * Higher priority is applied later.
+     *
+     * @return the priority
+     */
+    default int priority() {
+        return 0;
+    }
+}
 ----
 
 == Server Interceptors
@@ -328,6 +371,21 @@ public class MyInterceptor implements ServerInterceptor, Prioritized {
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
 
+There is also a support to inject Vert.x `RoutingContext` instance into your gRPC service, if / when needed.
+Quarkus doesn't do that by default, you will need to add `RoutingContextGrpcInterceptor` to your gRPC service.
+
+[source, java]
+----
+@GrpcService
+@RegisterInterceptor(RoutingContextGrpcInterceptor.class)
+public class HelloWorldService extends GreeterGrpc.GreeterImplBase {
+
+    @Inject
+    RoutingContext context;
+
+    // ...
+}
+----
 
 == Testing your services
 
@@ -357,7 +415,7 @@ public class HelloServiceTest implements Greeter {
 
 == Trying out your services manually
 In the dev mode, you can try out your gRPC services in the Quarkus Dev UI.
-Just go to http://localhost:8080/q/dev-v1 and click on _Services_ under the gRPC tile.
+Just go to http://localhost:8080/q/dev-ui and click on _Services_ under the gRPC tile.
 
 Please note that your application needs to expose the "normal" HTTP port for the Dev UI to be accessible. If your application does not expose any HTTP endpoints, you can create a dedicated profile with a dependency on `quarkus-vertx-http`:
 [source,xml]
@@ -371,8 +429,8 @@ Please note that your application needs to expose the "normal" HTTP port for the
                     <artifactId>quarkus-vertx-http</artifactId>
                 </dependency>
             </dependencies>
-        </profiles>
-    </profile>
+        </profile>
+    </profiles>
 ----
 Having it, you can run the dev mode with: `mvn quarkus:dev -Pdevelopment`.
 
@@ -420,4 +478,213 @@ To disable the gRPC server metrics when `quarkus-micrometer` is used, add the fo
 [source, properties]
 ----
 quarkus.micrometer.binder.grpc-server.enabled=false
+----
+
+=== Use virtual threads
+
+To use virtual threads in your gRPC service implementation, check the dedicated xref:./grpc-virtual-threads.adoc[guide].
+
+== gRPC Server authorization
+
+Quarkus includes built-in security to allow xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[authorization using annotations] when the Vert.x gRPC support, which uses existing Vert.x HTTP server, is enabled.
+
+=== Add the Quarkus Security extension
+
+Security capabilities are provided by the Quarkus Security extension, therefore make sure your `pom.xml` file contains following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security</artifactId>
+</dependency>
+----
+
+To add the Quarkus Security extension to an existing Maven project, run the following command from your project base directory:
+
+:add-extension-extensions: security
+include::{includes}/devtools/extension-add.adoc[]
+
+=== Overview of supported authentication mechanisms
+
+Some supported authentication mechanisms are built into Quarkus, while others require you to add an extension.
+The following table maps specific authentication requirements to a supported mechanism that you can use in Quarkus:
+
+.Authentication requirements and mechanisms
+[options="header"]
+|====
+|Authentication requirement |Authentication mechanism
+
+|Username and password |<<basic-auth-mechanism>>
+
+|Client certificate |<<mutual-tls-auth-mechanism>>
+
+|Custom requirements |<<custom-auth-mechanism>>
+
+|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+
+|====
+
+Do not forget to install at least one extension that provides an `IdentityProvider` based on selected authentication requirements.
+Please refer to the xref:security-basic-authentication-howto.adoc[Basic authentication guide] for example how to provide the `IdentityProvider` based on username and password.
+
+TIP: If you use separate HTTP server to serve gRPC requests, <<custom-auth-mechanism>> is your only option.
+Set the `quarkus.grpc.server.use-separate-server` configuration property to `false` so that you can use other mechanisms.
+
+=== Secure gRPC service
+
+The gRPC services can be secured with the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[standard security annotations] like in the example below:
+
+[source, java]
+----
+package org.acme.grpc.auth;
+
+import hello.Greeter;
+import io.quarkus.grpc.GrpcService;
+import jakarta.annotation.security.RolesAllowed;
+
+@GrpcService
+public class HelloService implements Greeter {
+
+    @RolesAllowed("admin")
+    @Override
+    public Uni<HelloReply> sayHello(HelloRequest request) {
+        return Uni.createFrom().item(() ->
+                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
+        );
+    }
+}
+----
+
+Most of the examples of the supported mechanisms sends authentication headers, please refer to the xref:grpc-service-consumption.adoc[gRPC Headers]
+section of the Consuming a gRPC Service guide for more information about the gRPC headers.
+
+[[basic-auth-mechanism]]
+=== Basic authentication
+
+Quarkus Security provides built-in authentication support for the xref:security-basic-authentication.adoc[Basic authentication].
+
+[source,properties]
+----
+quarkus.grpc.server.use-separate-server=false
+quarkus.http.auth.basic=true <1>
+----
+<1> Enable the Basic authentication.
+
+[source, java]
+----
+package org.acme.grpc.auth;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import org.acme.proto.Greeter;
+import org.acme.proto.HelloRequest;
+import io.grpc.Metadata;
+import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.GrpcClientUtils;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+public class GreeterServiceTest {
+
+    private static final Metadata.Key<String> AUTHORIZATION = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+    @GrpcClient
+    Greeter greeterClient;
+
+    @Test
+    void shouldReturnHello() throws ExecutionException, InterruptedException, TimeoutException {
+        Metadata headers = new Metadata();
+
+        // Set the headers - Basic auth for testing
+        headers.put(AUTHORIZATION, "Basic YWxpY2U6YWxpY2U="); // alice:alice with "admin" role
+        var client = GrpcClientUtils.attachHeaders(greeterClient, headers);
+
+        // Call the client
+        CompletableFuture<String> message = new CompletableFuture<>();
+        client.sayHello(HelloRequest.newBuilder().setName("Quarkus").build())
+                .subscribe().with(reply -> message.complete(reply.getMessage()));
+
+        // Get the values
+        String theValue = message.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertThat(theValue, is("Hello Quarkus"));
+    }
+}
+----
+
+[[mutual-tls-auth-mechanism]]
+=== Mutual TLS authentication
+
+Quarkus provides mutual TLS (mTLS) authentication so that you can authenticate users based on their X.509 certificates.
+The simplest way to enforce authentication for all your gRPC services is described in the <<tls-with-mutual-auth>> section of this guide.
+However, the Quarkus Security supports role mapping that you can use to perform even more fine-grained access control.
+
+[source,properties]
+----
+quarkus.grpc.server.use-separate-server=false
+quarkus.http.insecure-requests=disabled
+quarkus.http.ssl.certificate.files=tls/server.pem
+quarkus.http.ssl.certificate.key-files=tls/server.key
+quarkus.http.ssl.certificate.trust-store-file=tls/ca.jks
+quarkus.http.ssl.certificate.trust-store-password=**********
+quarkus.http.ssl.client-auth=required
+quarkus.http.auth.certificate-role-properties=role-mappings.txt     <1>
+quarkus.native.additional-build-args=-H:IncludeResources=.*\\.txt
+----
+<1> Adds certificate role mapping.
+
+.Example of the role mapping file
+[source,properties]
+----
+testclient=admin <1>
+----
+<1> Map the `testclient` certificate CN (Common Name) to the `SecurityIdentity` role `admin`.
+
+[[custom-auth-mechanism]]
+=== Custom authentication
+
+You can always implement one or more `GrpcSecurityMechanism` bean if above-mentioned mechanisms provided by Quarkus do no meet your needs.
+
+.Example of custom `GrpcSecurityMechanism`
+[source, java]
+----
+package org.acme.grpc.auth;
+
+import jakarta.inject.Singleton;
+
+import io.grpc.Metadata;
+import io.quarkus.security.credential.PasswordCredential;
+import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+
+@Singleton
+public class CustomGrpcSecurityMechanism implements GrpcSecurityMechanism {
+
+    private static final Metadata.Key<String> AUTHORIZATION = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+    @Override
+    public boolean handles(Metadata metadata) {
+        String authString = metadata.get(AUTHORIZATION);
+        return authString != null && authString.startsWith("Custom ");
+    }
+
+    @Override
+    public AuthenticationRequest createAuthenticationRequest(Metadata metadata) {
+        final String authString = metadata.get(AUTHORIZATION);
+        final String userName;
+        final String password;
+        // here comes your application logic that transforms 'authString' to user name and password
+        return new UsernamePasswordAuthenticationRequest(userName, new PasswordCredential(password));
+    }
+}
 ----

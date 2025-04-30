@@ -14,6 +14,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Contains tests that we expect to pass with both quarkus:dev and quarkus:test
@@ -34,7 +35,8 @@ public abstract class LaunchMojoTestBase extends RunAndCheckMojoTestBase {
         ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
 
         //check that the tests in both modules run
-        assertEquals(2, results.getTestsPassed());
+        assertEquals(2, results.getTestsPassed(),
+                "Did not meet expectation for number of tests passed, actual results " + results);
 
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
@@ -61,7 +63,8 @@ public abstract class LaunchMojoTestBase extends RunAndCheckMojoTestBase {
         var testSource = new File(testDir, "rest/src/test/java/org/acme/test/SimpleTest.java");
         filter(testSource, Collections.singletonMap("Assertions.assertTrue(true);", "Assertions.assertTrue(false);"));
         results = testingTestUtils.waitForNextCompletion();
-        assertEquals(2, results.getTotalTestsFailed());
+        assertEquals(2, results.getTotalTestsFailed(),
+                "Did not meet expectation for number of tests failed, actual results " + results);
         //fix it again
         filter(testSource, Collections.singletonMap("Assertions.assertTrue(false);", "Assertions.assertTrue(true);"));
         results = testingTestUtils.waitForNextCompletion();
@@ -70,4 +73,17 @@ public abstract class LaunchMojoTestBase extends RunAndCheckMojoTestBase {
 
     }
 
+    @Test
+    public void testSelection() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/test-selection");
+        run(true, "-Dtest=Ba*ic,Enabled?Test,NotEnabled*#executeAnyway*,!NotEnabledHardDisabled,#alwaysExecute,!#neverExecute");
+
+        if (getDefaultLaunchMode() == LaunchMode.DEVELOPMENT) {
+            // ignore outcome, just wait for the application to start
+            devModeClient.getHttpResponse();
+        }
+
+        ContinuousTestingMavenTestUtils.TestStatus tests = getTestingTestUtils().waitForNextCompletion();
+        assertEquals(7, tests.getTestsPassed());
+    }
 }

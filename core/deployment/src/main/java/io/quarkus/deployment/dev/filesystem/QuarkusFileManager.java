@@ -18,6 +18,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         try {
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
+            if (context.getGeneratedSourcesDirectory() != null) {
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+            }
+            if (context.getAnnotationProcessorPaths() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
+                ensureDirectories(context.getAnnotationProcessorPaths());
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot initialize file manager", e);
         }
@@ -29,8 +37,27 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         try {
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
+            if (context.getGeneratedSourcesDirectory() != null) {
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+            }
+            if (context.getAnnotationProcessorPaths() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
+                ensureDirectories(context.getAnnotationProcessorPaths());
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot reset file manager", e);
+        }
+    }
+
+    private void ensureDirectories(Iterable<File> directories) {
+        for (File directory : directories) {
+            if (!directory.exists()) {
+                final boolean success = directory.mkdirs();
+                if (!success) {
+                    throw new RuntimeException("Cannot create directory " + directory);
+                }
+            }
         }
     }
 
@@ -44,13 +71,24 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final Set<File> reloadableClassPath;
         private final File outputDirectory;
         private final Charset sourceEncoding;
+        private final boolean ignoreModuleInfo;
+        private final File generatedSourcesDirectory;
+        private final Set<File> annotationProcessorPaths;
 
         public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, Charset sourceEncoding) {
+                File outputDirectory, File generatedSourcesDirectory, Set<File> annotationProcessorPaths,
+                Charset sourceEncoding, boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding;
+            this.ignoreModuleInfo = ignoreModuleInfo;
+            this.generatedSourcesDirectory = generatedSourcesDirectory;
+            this.annotationProcessorPaths = annotationProcessorPaths;
+        }
+
+        public Set<File> getAnnotationProcessorPaths() {
+            return annotationProcessorPaths;
         }
 
         public Set<File> getClassPath() {
@@ -67,6 +105,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
 
         public Charset getSourceEncoding() {
             return sourceEncoding;
+        }
+
+        public boolean ignoreModuleInfo() {
+            return ignoreModuleInfo;
+        }
+
+        public File getGeneratedSourcesDirectory() {
+            return generatedSourcesDirectory;
         }
     }
 }

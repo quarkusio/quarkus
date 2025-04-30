@@ -31,6 +31,41 @@ public class ForwardedHeaderTest {
     }
 
     @Test
+    public void testWithoutTrustedProxyHeader() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .get("/trusted-proxy")
+                .then()
+                .body(Matchers.equalTo("https|somehost|backend:4444|null"));
+    }
+
+    @Test
+    public void testThatTrustedProxyHeaderCannotBeForged() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "true")
+                .get("/trusted-proxy")
+                .then()
+                .body(Matchers.equalTo("https|somehost|backend:4444|null"));
+
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "hello")
+                .get("/trusted-proxy")
+                .then()
+                .body(Matchers.equalTo("https|somehost|backend:4444|null"));
+
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "false")
+                .get("/trusted-proxy")
+                .then()
+                .body(Matchers.equalTo("https|somehost|backend:4444|null"));
+    }
+
+    @Test
     public void testForwardedForWithSequenceOfProxies() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 

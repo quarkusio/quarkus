@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Keycloak Admin Client
-
 include::_attributes.adoc[]
+:categories: security
+:keywords: sso oidc security keycloak
+:topics: security,authentication,authorization,keycloak,sso
+:extensions: io.quarkus:quarkus-keycloak-admin-rest-client,io.quarkus:quarkus-keycloak-admin-resteasy-client
 
 The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
 
@@ -17,7 +20,7 @@ To learn more about the Keycloak Admin Client, please refer to its https://www.k
 
 :prerequisites-docker:
 include::{includes}/prerequisites.adoc[]
-* https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
+* https://www.keycloak.org[Keycloak]
 
 == Creating the Project
 
@@ -25,15 +28,15 @@ First, we need a new project.
 Create a new project with the following command:
 
 :create-app-artifact-id: security-keycloak-admin-client
-:create-app-extensions: keycloak-admin-client-reactive,resteasy-reactive-jackson
+:create-app-extensions: keycloak-admin-rest-client,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project which imports the `keycloak-admin-client-reactive` and `resteasy-reactive-jackson` extensions.
+This command generates a project which imports the `keycloak-admin-rest-client` and `rest-jackson` extensions.
 
-If you already have your Quarkus project configured, you can add the `keycloak-admin-client-reactive` and `resteasy-reactive-jackson` extensions
+If you already have your Quarkus project configured, you can add the `keycloak-admin-rest-client` and `rest-jackson` extensions
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: keycloak-admin-client-reactive,resteasy-reactive-jackson
+:add-extension-extensions: keycloak-admin-rest-client,rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -43,19 +46,19 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+    <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-keycloak-admin-client-reactive")
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-keycloak-admin-rest-client")
+implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
 We also are going to need a simple resource with a `Keycloak` injected as request scoped CDI bean.
@@ -121,8 +124,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import jakarta.annotations.PostConstruct;
-import jakarta.annotations.PreConstruct;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import java.util.List;
@@ -191,6 +194,37 @@ quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS <1>
 <1> Use `client_credentials` grant type.
 
 NOTE: Note that the xref:security-openid-connect-client.adoc[OidcClient] can also be used to acquire tokens.
+
+== Configuring TLS
+
+To configure a TLS connection for the Keycloak Admin Client, use the TLS Registry extension and point the Keycloak Admin Client to respective TLS configuration.
+For example, you can configure mutual TLS (mTLS) like this:
+
+[source,properties]
+----
+quarkus.keycloak.admin-client.tls-configuration-name=kc-mtls
+quarkus.tls.kc-mtls.key-store.p12.path=client-keystore.p12
+quarkus.tls.kc-mtls.key-store.p12.password=secret
+quarkus.tls.kc-mtls.trust-store.p12.path=client-truststore.p12
+quarkus.tls.kc-mtls.trust-store.p12.password=secret
+----
+
+== Testing
+
+The preferred approach for testing Keycloak Admin Client against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
+`Dev Services for Keycloak` will start and initialize a test container.
+Then, it will create a `quarkus` realm and a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
+
+For example, by default, a test container will be available at a randomly allocated port but you can make both Keycloak Admin Client and the container use the same port as follows:
+
+[source,properties]
+----
+%test.quarkus.keycloak.devservices.port=${kc.admin.port.test:45180} <1>
+%test.quarkus.keycloak.admin-client.server-url=http://localhost:${kc.admin.port.test:45180}/ <2>
+----
+
+<1> Configure the Keycloak container to listen on the `45180` port by default
+<2> Configure the Keycloak Admin Client to use the same port
 
 [[keycloak-admin-client-configuration-reference]]
 == Quarkus Keycloak Admin Client Configuration Reference

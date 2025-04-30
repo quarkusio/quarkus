@@ -4,13 +4,15 @@ import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
+
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
 
 class AbstractHyperLogLogCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractHyperLogLogCommands(RedisCommandExecutor api, Class<K> k, Class<V> v) {
+    AbstractHyperLogLogCommands(RedisCommandExecutor api, Type k, Type v) {
         super(api, new Marshaller(k, v));
     }
 

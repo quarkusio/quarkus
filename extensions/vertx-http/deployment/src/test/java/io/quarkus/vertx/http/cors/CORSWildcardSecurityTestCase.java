@@ -21,7 +21,7 @@ import io.quarkus.vertx.http.security.PathHandler;
 public class CORSWildcardSecurityTestCase {
 
     private static final String APP_PROPS = "" +
-            "quarkus.http.cors=true\n" +
+            "quarkus.http.cors.enabled=true\n" +
             "quarkus.http.cors.origins=*\n" +
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
@@ -57,7 +57,8 @@ public class CORSWildcardSecurityTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -68,7 +69,8 @@ public class CORSWildcardSecurityTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -79,7 +81,8 @@ public class CORSWildcardSecurityTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -90,20 +93,20 @@ public class CORSWildcardSecurityTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Credentials", "false");
     }
 
     @Test
     @DisplayName("Handles a direct CORS request correctly")
     public void corsNoPreflightTest() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "GET, POST";
-        String headers = "X-Custom";
         given().header("Origin", origin)
                 .when()
                 .get("/test").then()
                 .statusCode(401)
-                .header("Access-Control-Allow-Origin", origin);
+                .header("Access-Control-Allow-Origin", origin)
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .when()
@@ -111,20 +114,23 @@ public class CORSWildcardSecurityTestCase {
                 .get("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
-                .body(Matchers.equalTo("test:/test"));
+                .body(Matchers.equalTo("test:/test"))
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .when()
                 .auth().basic("test", "wrongpassword")
                 .get("/test").then()
                 .statusCode(401)
-                .header("Access-Control-Allow-Origin", origin);
+                .header("Access-Control-Allow-Origin", origin)
+                .header("Access-Control-Allow-Credentials", "false");
 
         given().header("Origin", origin)
                 .when()
                 .auth().basic("user", "user")
                 .get("/test").then()
                 .statusCode(403)
-                .header("Access-Control-Allow-Origin", origin);
+                .header("Access-Control-Allow-Origin", origin)
+                .header("Access-Control-Allow-Credentials", "false");
     }
 }

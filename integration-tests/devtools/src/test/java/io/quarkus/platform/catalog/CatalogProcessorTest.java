@@ -1,7 +1,9 @@
 package io.quarkus.platform.catalog;
 
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.newFakeExtensionCatalog;
+import static io.quarkus.platform.catalog.processor.CatalogProcessor.getMinimumJavaVersion;
 import static io.quarkus.platform.catalog.processor.CatalogProcessor.getProcessedCategoriesInOrder;
+import static io.quarkus.platform.catalog.processor.CatalogProcessor.getRecommendedJavaVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Objects;
@@ -28,7 +30,15 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
     }
 
     @Test
+    void testJavaVersions() {
+        final ExtensionCatalog catalog = newFakeExtensionCatalog();
+        assertThat(getMinimumJavaVersion(catalog)).isEqualTo("11");
+        assertThat(getRecommendedJavaVersion(catalog)).isEqualTo("17");
+    }
+
+    @Test
     void testExtensionsOrder() {
+        // this test is using an older version of the catalog so resteasy-reactive is still a thing
         final ExtensionCatalog catalog = newFakeExtensionCatalog();
         assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions())
                 .map(Extension::getArtifact)

@@ -2,42 +2,47 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
 @ConfigGroup
-public class DataSourceRuntimeConfig {
+public interface DataSourceRuntimeConfig {
+
+    /**
+     * Whether this datasource should be active at runtime.
+     *
+     * See xref:datasource.adoc#datasource-active[this section of the documentation].
+     *
+     * @asciidoclet
+     */
+    @ConfigDocDefault("`true` if the URL is set, `false` otherwise")
+    Optional<Boolean> active();
 
     /**
      * The datasource username
      */
-    @ConfigItem
-    public Optional<String> username = Optional.empty();
+    Optional<String> username();
 
     /**
      * The datasource password
      */
-    @ConfigItem
-    public Optional<String> password = Optional.empty();
+    Optional<String> password();
 
     /**
      * The credentials provider name
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProvider = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
      * <p>
-     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
-     * CredentialsProvider beans are available.
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
      * <p>
-     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProviderName = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
 }

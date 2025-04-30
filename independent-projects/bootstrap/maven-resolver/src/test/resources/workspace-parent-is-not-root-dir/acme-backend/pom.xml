@@ -8,9 +8,9 @@
 
 	<parent>
 		<groupId>org.acme</groupId>
-		<artifactId>acme-parent</artifactId>
+		<artifactId>acme-backend-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>../acme-parent</relativePath>
+		<relativePath>acme-backend-parent/</relativePath>
 	</parent>
 
 	<artifactId>acme-backend</artifactId>
@@ -18,6 +18,8 @@
 
 	<modules>
 		<module>acme-backend-rest-api</module>
+		<module>acme-backend-parent</module>
+		<module>acme-backend-lib</module>
 	</modules>
 
 </project>

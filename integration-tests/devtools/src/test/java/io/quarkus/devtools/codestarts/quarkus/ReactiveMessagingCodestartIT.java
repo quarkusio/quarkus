@@ -14,27 +14,27 @@ public class ReactiveMessagingCodestartIT {
 
     @RegisterExtension
     public static QuarkusCodestartTest kafkaCodestartTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-smallrye-reactive-messaging-kafka"))
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-messaging-kafka"))
             .languages(JAVA)
             .build();
 
     @RegisterExtension
     public static QuarkusCodestartTest amqpCodestartTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-smallrye-reactive-messaging-amqp"))
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-messaging-amqp"))
             .languages(JAVA)
             .build();
 
     @Test
     void testKafkaContent() throws Throwable {
-        kafkaCodestartTest.checkGeneratedSource("org.acme.MyReactiveMessagingApplication");
-        kafkaCodestartTest.checkGeneratedTestSource("org.acme.MyReactiveMessagingApplicationTest");
+        kafkaCodestartTest.checkGeneratedSource("org.acme.MyMessagingApplication");
+        kafkaCodestartTest.checkGeneratedTestSource("org.acme.MyMessagingApplicationTest");
         kafkaCodestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/application.properties");
     }
 
     @Test
     void testAMQPContent() throws Throwable {
-        amqpCodestartTest.checkGeneratedSource("org.acme.MyReactiveMessagingApplication");
-        amqpCodestartTest.checkGeneratedTestSource("org.acme.MyReactiveMessagingApplicationTest");
+        amqpCodestartTest.checkGeneratedSource("org.acme.MyMessagingApplication");
+        amqpCodestartTest.checkGeneratedTestSource("org.acme.MyMessagingApplicationTest");
         amqpCodestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/application.properties");
     }
 

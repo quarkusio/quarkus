@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+            <artifactId>quarkus-rest-spi-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -36,12 +36,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-links-deployment</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-links-deployment</artifactId>
+            <artifactId>quarkus-rest-links-deployment</artifactId>
             <optional>true</optional>
         </dependency>
 

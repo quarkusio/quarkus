@@ -67,7 +67,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
         final String platformKey = propertyName.substring(PROPERTY_PREFIX.length(), platformKeyStreamSep);
         final String streamId = propertyName.substring(platformKeyStreamSep + 1, streamVersionSep);
         final String version = propertyName.substring(streamVersionSep + 1);
-        allPlatformInfo.computeIfAbsent(platformKey, k -> new PlatformInfo(k)).getOrCreateStream(streamId).addIfNotPresent(
+        allPlatformInfo.computeIfAbsent(platformKey, PlatformInfo::new).getOrCreateStream(streamId).addIfNotPresent(
                 version,
                 () -> {
                     final PlatformReleaseInfo ri = new PlatformReleaseInfo(platformKey, streamId, version, propertyValue);
@@ -81,8 +81,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
                 version);
-        platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport()).descriptorFound = true;
-        platformBoms.add(bomCoords);
+        platformImports.computeIfAbsent(bomCoords, this::newPlatformImport).descriptorFound = true;
     }
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,
@@ -91,25 +90,39 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
                 version);
-        platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport());
-        importedPlatformBoms.computeIfAbsent(groupId, g -> new ArrayList<>()).add(bomCoords);
+        platformImports.computeIfAbsent(bomCoords, this::newPlatformImport);
+        importedPlatformBoms.computeIfAbsent(groupId, g -> new ArrayList<>());
+        if (!importedPlatformBoms.get(groupId).contains(bomCoords)) {
+            importedPlatformBoms.get(groupId).add(bomCoords);
 
-        final Properties props = new Properties();
-        try (InputStream is = Files.newInputStream(propsPath)) {
-            props.load(is);
-        } catch (IOException e) {
-            throw new AppModelResolverException("Failed to read properties from " + propsPath, e);
-        }
-        for (Map.Entry<?, ?> prop : props.entrySet()) {
-            final String name = String.valueOf(prop.getKey());
-            if (name.startsWith(BootstrapConstants.PLATFORM_PROPERTY_PREFIX)) {
-                if (isPlatformReleaseInfo(name)) {
-                    addPlatformRelease(name, String.valueOf(prop.getValue()));
-                } else {
-                    collectedProps.putIfAbsent(name, String.valueOf(prop.getValue().toString()));
+            final Properties props = new Properties();
+            try (InputStream is = Files.newInputStream(propsPath)) {
+                props.load(is);
+            } catch (IOException e) {
+                throw new AppModelResolverException("Failed to read properties from " + propsPath, e);
+            }
+            for (Map.Entry<?, ?> prop : props.entrySet()) {
+                final String name = String.valueOf(prop.getKey());
+                if (name.startsWith(BootstrapConstants.PLATFORM_PROPERTY_PREFIX)) {
+                    if (isPlatformReleaseInfo(name)) {
+                        addPlatformRelease(name, String.valueOf(prop.getValue()));
+                    } else {
+                        collectedProps.putIfAbsent(name, String.valueOf(prop.getValue().toString()));
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * This method is meant to be called when a new platform BOM import was detected.
+     *
+     * @param bom platform BOM coordinates
+     * @return new platform import instance
+     */
+    private PlatformImport newPlatformImport(ArtifactCoords bom) {
+        platformBoms.add(bom);
+        return new PlatformImport();
     }
 
     public void setPlatformProperties(Map<String, String> platformProps) {

@@ -9,17 +9,19 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.gradle.BuildResult;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
 
     public static final String NATIVE_IMAGE_NAME = "foo-1.0.0-SNAPSHOT-runner";
+    private DevModeClient devModeClient = new DevModeClient();
 
     @Test
     public void shouldBuildNativeImage() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar");
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
@@ -33,7 +35,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");
@@ -46,8 +48,9 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     @Test
     public void shouldBuildNativeImageWithCustomName() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar",
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
                 "-Dquarkus.package.output-name=test");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
@@ -63,7 +66,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");
@@ -76,9 +79,10 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     @Test
     public void shouldBuildNativeImageWithCustomNameWithoutSuffix() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar",
-                "-Dquarkus.package.output-name=test", "-Dquarkus.package.add-runner-suffix=false");
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
+                "-Dquarkus.package.output-name=test", "-Dquarkus.package.jar.add-runner-suffix=false");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
@@ -93,7 +97,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");

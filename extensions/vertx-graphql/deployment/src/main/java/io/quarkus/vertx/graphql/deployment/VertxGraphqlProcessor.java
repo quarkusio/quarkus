@@ -14,6 +14,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.*;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -58,28 +59,35 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
+    NativeImageResourceDirectoryBuildItem produceNativeResourceDirectory(LaunchModeBuildItem launchMode,
+            VertxGraphqlConfig config) {
+        if (doNotIncludeVertxGraphqlUi(launchMode, config)) {
+            return null;
+        }
+        return new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql");
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
-            BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode,
+    void registerVertxGraphqlUI(VertxGraphqlRecorder recorder, VertxGraphqlConfig config,
+            LaunchModeBuildItem launchMode, CoreVertxBuildItem coreVertxBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<RouteBuildItem> routes,
             BodyHandlerBuildItem bodyHandler) {
 
-        boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
-        if (!includeVertxGraphqlUi) {
+        if (doNotIncludeVertxGraphqlUi(launchMode, config)) {
             return;
         }
 
-        Matcher matcher = TRAILING_SLASH_SUFFIX_REGEX.matcher(config.ui.path);
+        Matcher matcher = TRAILING_SLASH_SUFFIX_REGEX.matcher(config.ui().path());
         String path = matcher.replaceAll("");
         if (path.isEmpty()) {
             throw new ConfigurationException(
-                    "quarkus.vertx-graphql.ui.path was set to \"" + config.ui.path
+                    "quarkus.vertx-graphql.ui.path was set to \"" + config.ui().path()
                             + "\", this is not allowed as it blocks the application from serving anything else.");
         }
 
-        Handler<RoutingContext> handler = recorder.handler();
+        Handler<RoutingContext> handler = recorder.handler(coreVertxBuildItem.getVertx());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(path)
                 .handler(handler)
@@ -90,7 +98,14 @@ class VertxGraphqlProcessor {
                         .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler()))
                         .handler(handler)
                         .build());
+    }
 
-        nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
+    private static boolean doNotIncludeVertxGraphqlUi(LaunchModeBuildItem launchMode, VertxGraphqlConfig config) {
+        return !launchMode.getLaunchMode().isDevOrTest() && !config.ui().alwaysInclude();
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("graphql.util.IdGenerator"));
     }
 }

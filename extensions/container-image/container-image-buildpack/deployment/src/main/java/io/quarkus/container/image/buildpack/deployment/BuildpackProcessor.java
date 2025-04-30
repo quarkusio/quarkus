@@ -5,22 +5,30 @@ import static io.quarkus.container.image.deployment.util.EnablementUtil.pushCont
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.PushResponseItem;
 
-import dev.snowdrop.buildpack.Buildpack;
-import dev.snowdrop.buildpack.BuildpackBuilder;
+import dev.snowdrop.buildpack.BuildConfig;
+import dev.snowdrop.buildpack.BuildConfigBuilder;
+import dev.snowdrop.buildpack.BuildConfigFluent.DockerConfigNested;
+import dev.snowdrop.buildpack.config.ImageReference;
+import dev.snowdrop.buildpack.config.RegistryAuthConfig;
+import dev.snowdrop.buildpack.config.RegistryAuthConfigBuilder;
 import dev.snowdrop.buildpack.docker.DockerClientUtils;
+import dev.snowdrop.buildpack.docker.DockerClientUtils.HostAndSocket;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
@@ -33,11 +41,10 @@ import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -63,7 +70,6 @@ public class BuildpackProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, BuildpackBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, BuildpackConfig buildpackConfig,
-            PackageConfig packageConfig,
             ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,
             MainClassBuildItem mainClass,
@@ -72,7 +78,7 @@ public class BuildpackProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            Optional<AppCDSResultBuildItem> appCDSResult,
+            Optional<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchiveResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
@@ -172,9 +178,70 @@ public class BuildpackProcessor {
         String targetImageName = containerImage.getImage();
         log.debug("Using Destination image of " + targetImageName);
 
-        Map<String, String> envMap = new HashMap<>(buildpackConfig.builderEnv);
+        Map<String, String> envMap = new HashMap<>(buildpackConfig.builderEnv());
         if (!envMap.isEmpty()) {
-            log.info("Using builder environment of " + envMap);
+            log.info("Using builder environment with vars " + envMap.keySet());
+        }
+
+        List<RegistryAuthConfig> authConfigs = new ArrayList<>();
+
+        //read in any configured per-registry auth info.
+        Map<String, String> registryUserMap = new HashMap<>(buildpackConfig.registryUser());
+        Map<String, String> registryPasswordMap = new HashMap<>(buildpackConfig.registryPassword());
+        Map<String, String> registryTokenMap = new HashMap<>(buildpackConfig.registryToken());
+
+        Set<String> registries = new HashSet<>();
+        registries.addAll(registryUserMap.keySet());
+        registries.addAll(registryPasswordMap.keySet());
+        registries.addAll(registryTokenMap.keySet());
+
+        //combine per-registry auth arguments into authConfig objects to use during the build.
+        for (String registry : registries) {
+            authConfigs.add(RegistryAuthConfig.builder().accept(RegistryAuthConfigBuilder.class, a -> {
+                a.withRegistryAddress(registry);
+                if (registryUserMap.containsKey(registry)) {
+                    log.debug("adding username to auth credential for " + registry);
+                    a.withUsername(registryUserMap.get(registry));
+                }
+                if (registryPasswordMap.containsKey(registry)) {
+                    log.debug("adding password to auth credential for " + registry);
+                    a.withPassword(registryPasswordMap.get(registry));
+                }
+                if (registryTokenMap.containsKey(registry)) {
+                    log.debug("adding token to auth credential for " + registry);
+                    a.withRegistryToken(registryTokenMap.get(registry));
+                }
+            }).build());
+        }
+
+        //add authConfig for container-image credential properties, if present.
+        if (containerImageConfig.username().isPresent() &&
+                containerImageConfig.password().isPresent()) {
+
+            String registry = null;
+            //user has supplied user&pwd, need to determine registry address.
+            if (!containerImageConfig.registry().isPresent()) {
+                //attempt to retrieve registry from image name
+                registry = containerImage.getRegistry().orElseGet(() -> {
+                    log.info("No container image registry was set, so 'docker.io' will be used");
+                    return "docker.io";
+                });
+            } else {
+                //use supplied registry address
+                registry = containerImageConfig.registry().get();
+            }
+
+            if (registry != null &&
+                    !registries.contains(registry)) {
+                //add registry creds if set via quarkus main properties.
+                //note buildpack specific creds take precedence if duplicated registry is present.
+                log.debug("Adding auth creds from container-image properties");
+                authConfigs.add(RegistryAuthConfig.builder()
+                        .withUsername(containerImageConfig.username().get())
+                        .withPassword(containerImageConfig.password().get())
+                        .withRegistryAddress(registry)
+                        .build());
+            }
         }
 
         // Let's explicitly disable build and push during the build to avoid inception style builds
@@ -183,64 +250,101 @@ public class BuildpackProcessor {
 
         if (buildContainerImage) {
             log.info("Initiating Buildpack build");
-            Buildpack buildpack = Buildpack.builder()
-                    .addNewFileContent(dirs.get(ProjectDirs.ROOT).toFile())
-                    .withFinalImage(targetImageName)
+            int exitCode = BuildConfig.builder()
+                    .addNewFileContentApplication(dirs.get(ProjectDirs.ROOT).toFile())
+                    .withOutputImage(new ImageReference(targetImageName))
+                    .withNewPlatformConfig()
                     .withEnvironment(envMap)
-                    .withLogLevel(buildpackConfig.logLevel)
-                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                    .endPlatformConfig()
+                    .withNewLogConfig()
                     .withLogger(new BuildpackLogger())
-                    .accept(BuildpackBuilder.class, b -> {
+                    .withLogLevel(buildpackConfig.logLevel())
+                    .withUseTimestamps(buildpackConfig.getUseTimestamps())
+                    .endLogConfig()
+                    .withNewDockerConfig()
+                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds())
+                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds())
+                    .withPullRetryCount(buildpackConfig.pullRetryCount())
+                    .withDockerNetwork(buildpackConfig.dockerNetwork().orElse(null))
+                    .withUseDaemon(buildpackConfig.useDaemon())
+                    .withAuthConfigs(authConfigs)
+                    .endDockerConfig()
+                    .accept(BuildConfigBuilder.class, b -> {
 
+                        //swap to native image if present and if building native.
                         if (isNativeBuild) {
-                            buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                            buildpackConfig.nativeBuilderImage().ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
                         } else {
-                            buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                            b.withBuilderImage(new ImageReference(buildpackConfig.jvmBuilderImage()));
                         }
 
-                        if (buildpackConfig.runImage.isPresent()) {
-                            log.info("Using Run image of " + buildpackConfig.runImage.get());
-                            b.withRunImage(buildpackConfig.runImage.get());
-                        }
-                        if (buildpackConfig.dockerHost.isPresent()) {
-                            log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
-                            b.withDockerHost(buildpackConfig.dockerHost.get());
+                        //add run image if present
+                        if (buildpackConfig.runImage().isPresent()) {
+                            log.info("Using Run image of " + buildpackConfig.runImage().get());
+                            b.withRunImage(new ImageReference(buildpackConfig.runImage().get()));
                         }
 
-                    }).build();
+                        //ask for image to be trusted
+                        if (buildpackConfig.trustBuilderImage().isPresent()) {
+                            log.info("Setting trusted image to " + buildpackConfig.trustBuilderImage().get());
+                            b.editPlatformConfig().withTrustBuilder(buildpackConfig.trustBuilderImage().get())
+                                    .endPlatformConfig();
+                        }
 
-            if (buildpack.getExitCode() != 0) {
+                        //configure dockerhost/socket if required
+                        DockerConfigNested<BuildConfigBuilder> dc = b.editDockerConfig();
+                        buildpackConfig.dockerHost().ifPresent(dh -> dc.withDockerHost(dh));
+                        buildpackConfig.dockerSocket().ifPresent(ds -> dc.withDockerSocket(ds));
+                        dc.endDockerConfig();
+
+                        //configure lifecycle override image if present
+                        buildpackConfig.lifecycleImage()
+                                .ifPresent(
+                                        li -> b.editPlatformConfig().withLifecycleImage(new ImageReference(li))
+                                                .endPlatformConfig());
+
+                        //force platform level, if present.
+                        buildpackConfig.platformLevel()
+                                .ifPresent(
+                                        pl -> b.editPlatformConfig().withPlatformLevel(pl).endPlatformConfig());
+
+                    })
+                    .build()
+                    .getExitCode();
+
+            if (exitCode != 0) {
                 throw new IllegalStateException("Buildpack build failed");
             }
 
             log.info("Buildpack build complete");
         }
 
-        if (pushContainerImage) {
-            var registry = containerImage.getRegistry()
-                    .orElseGet(() -> {
-                        log.info("No container image registry was set, so 'docker.io' will be used");
-                        return "docker.io";
-                    });
-            AuthConfig authConfig = new AuthConfig();
-            authConfig.withRegistryAddress(registry);
-            containerImageConfig.username.ifPresent(u -> authConfig.withUsername(u));
-            containerImageConfig.password.ifPresent(p -> authConfig.withPassword(p));
-
-            log.info("Pushing image to " + authConfig.getRegistryAddress());
+        //if we built with registry mode, the build happened directly to the remote registry, so there is no need to publish
+        //otherwise, now process the local image & publish to registry.
+        if (pushContainerImage && Boolean.TRUE.equals(buildpackConfig.useDaemon())) {
+            log.info("Pushing image to registry");
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
-                //If no dockerHost is specified use empty String. The util will take care of the rest.
-                String dockerHost = buildpackConfig.dockerHost.orElse("");
-                ResultCallback.Adapter<PushResponseItem> callback = DockerClientUtils.getDockerClient(dockerHost)
-                        .pushImageCmd(i).start();
+
+                HostAndSocket hns = DockerClientUtils.probeContainerRuntime(
+                        new HostAndSocket(buildpackConfig.dockerHost().orElse(""), buildpackConfig.dockerSocket().orElse("")));
+                DockerClient dockerClient = DockerClientUtils.getDockerClient(hns, authConfigs);
+
+                ResultCallback.Adapter<PushResponseItem> callback = new ResultCallback.Adapter<>() {
+                    @Override
+                    public void onNext(PushResponseItem object) {
+                        log.info(object.toString());
+                    }
+                };
+                dockerClient.pushImageCmd(i).exec(callback);
                 try {
                     callback.awaitCompletion();
-                    log.info("Push complete");
                 } catch (Exception e) {
-                    throw new IllegalStateException(e);
+                    log.error(e);
                 }
+
             });
         }
         return targetImageName;
     }
+
 }

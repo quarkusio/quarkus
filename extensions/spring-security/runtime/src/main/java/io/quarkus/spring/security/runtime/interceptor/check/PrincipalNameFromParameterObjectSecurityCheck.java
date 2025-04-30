@@ -23,22 +23,24 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
     private final Class<?> expectedParameterClass;
     private final Class<? extends StringPropertyAccessor> stringPropertyAccessorClass;
     private final String propertyName;
+    private final CheckType checkType;
 
     private PrincipalNameFromParameterObjectSecurityCheck(int index, String expectedParameterClass,
-            String stringPropertyAccessorClass, String propertyName) throws ClassNotFoundException {
+            String stringPropertyAccessorClass, String propertyName, CheckType checkType) throws ClassNotFoundException {
         this.index = index;
         this.expectedParameterClass = Class.forName(expectedParameterClass, false,
                 Thread.currentThread().getContextClassLoader());
         this.stringPropertyAccessorClass = (Class<? extends StringPropertyAccessor>) Class.forName(stringPropertyAccessorClass,
                 false, Thread.currentThread().getContextClassLoader());
         this.propertyName = propertyName;
+        this.checkType = checkType;
     }
 
     public static PrincipalNameFromParameterObjectSecurityCheck of(int index, String expectedParameterClass,
-            String stringPropertyAccessorClass, String propertyName) {
+            String stringPropertyAccessorClass, String propertyName, CheckType checkType) {
         try {
             return new PrincipalNameFromParameterObjectSecurityCheck(index, expectedParameterClass, stringPropertyAccessorClass,
-                    propertyName);
+                    propertyName, checkType);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -70,8 +72,14 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
         }
 
         String name = identity.getPrincipal().getName();
-        if (!name.equals(parameterValueStr)) {
-            throw new ForbiddenException();
+        if (checkType == CheckType.EQ) {
+            if (!name.equals(parameterValueStr)) {
+                throw new ForbiddenException();
+            }
+        } else if (checkType == CheckType.NEQ) {
+            if (name.equals(parameterValueStr)) {
+                throw new ForbiddenException();
+            }
         }
     }
 
@@ -83,5 +91,10 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
         return new IllegalStateException(
                 "PrincipalNameFromParameterObjectSecurityCheck with index " + index + " cannot be applied to '" + className
                         + "#" + methodName + "'");
+    }
+
+    public enum CheckType {
+        EQ,
+        NEQ
     }
 }

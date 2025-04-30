@@ -33,6 +33,14 @@ public class CodestartFileStrategy implements Predicate<String> {
                 return true;
             }
         }
+        int index = filter.indexOf("*");
+        if (index != -1 && filter.length() > 1) {
+            String part1 = filter.substring(0, index);
+            String part2 = filter.substring(index + 1);
+            if (t.startsWith(part1) && t.endsWith(part2)) {
+                return true;
+            }
+        }
         return filter.equals(t);
     }
 

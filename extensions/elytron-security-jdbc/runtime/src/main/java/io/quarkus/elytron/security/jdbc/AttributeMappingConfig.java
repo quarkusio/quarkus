@@ -1,31 +1,24 @@
 package io.quarkus.elytron.security.jdbc;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.jdbc.mapper.AttributeMapper}
  */
 @ConfigGroup
-public class AttributeMappingConfig {
+public interface AttributeMappingConfig {
 
     /**
      * The index (1 based numbering) of column to map
      */
-    @ConfigItem
-    public int index;
+    @WithDefault("0")
+    int index();
 
     /**
      * The target attribute name
      */
-    @ConfigItem
-    public String to;
+    String to();
 
-    @Override
-    public String toString() {
-        return "AttributeMappingConfig{" +
-                "index=" + index +
-                ", to='" + to + '\'' +
-                '}';
-    }
+    String toString();
 }

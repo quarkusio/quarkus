@@ -23,10 +23,10 @@ class SmallRyeJwtBuildProcessor {
     @BuildStep
     void addClassesForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class).methods().fields().build());
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(KeyEncryptionAlgorithm.class).methods().fields().build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(JwtProviderImpl.class).methods().fields().build());
+                .produce(ReflectiveClassBuildItem
+                        .builder(SignatureAlgorithm.class, KeyEncryptionAlgorithm.class, JwtProviderImpl.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     /**

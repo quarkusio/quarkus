@@ -16,7 +16,7 @@ Additionally, you can generate a native image and run the tests for this native 
 mvn verify -Dtest-containers -Dstart-containers -Dnative
 ```
 
-If you don't want to run DB2 as a Docker container, you can start your own DB2 server. It needs to listen on the default port (50000) and have a database called `hreact` accessible to the user `hreact` with the password `hreact`.
+If you don't want to run DB2 as a Docker container, you can start your own DB2 server. It needs to listen on the default port (50005) and have a database called `hreact` accessible to the user `hreact` with the password `hreact`.
 
 You can then run the tests as follows (either with `-Dnative` or not):
 

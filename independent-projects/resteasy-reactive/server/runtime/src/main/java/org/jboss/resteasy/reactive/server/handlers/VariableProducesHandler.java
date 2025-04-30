@@ -44,8 +44,18 @@ public class VariableProducesHandler implements ServerRestHandler {
             //TODO?
             return;
         }
-        MediaType res = mediaTypeList.negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT))
-                .getKey();
+        MediaType res = null;
+        List<String> accepts = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
+        for (String accept : accepts) {
+            res = mediaTypeList.negotiateProduces(accept).getKey();
+            if (res != null) {
+                break;
+            }
+        }
+        if (res == null) { // fallback to ensure that MessageBodyWriter is passed the proper media type
+            res = mediaTypeList.negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT))
+                    .getKey();
+        }
         if (res == null) {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())

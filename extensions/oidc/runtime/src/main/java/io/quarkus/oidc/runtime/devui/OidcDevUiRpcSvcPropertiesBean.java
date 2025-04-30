@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime.devui;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ public class OidcDevUiRpcSvcPropertiesBean {
     private final String oidcGrantType;
     private final boolean introspectionIsAvailable;
     private final String keycloakAdminUrl;
-    private final Object keycloakRealms;
+    private final List<String> keycloakRealms;
     private final boolean swaggerIsAvailable;
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;
@@ -33,7 +34,7 @@ public class OidcDevUiRpcSvcPropertiesBean {
             Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType,
             String oidcGrantType, boolean introspectionIsAvailable, String keycloakAdminUrl,
-            Object keycloakRealms, boolean swaggerIsAvailable, boolean graphqlIsAvailable,
+            List<String> keycloakRealms, boolean swaggerIsAvailable, boolean graphqlIsAvailable,
             String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload) {
         this.authorizationUrl = authorizationUrl;
         this.tokenUrl = tokenUrl;
@@ -95,7 +96,7 @@ public class OidcDevUiRpcSvcPropertiesBean {
         return keycloakAdminUrl;
     }
 
-    Object getKeycloakRealms() {
+    List<String> getKeycloakRealms() {
         return keycloakRealms;
     }
 

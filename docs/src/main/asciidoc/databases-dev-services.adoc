@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services for Databases
 :categories: data, tooling
 include::_attributes.adoc[]
+:topics: dev-services,data,database,datasource,dev-mode,testing
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.
 Depending on your database type you may need Docker installed in order to use this feature.
@@ -56,8 +58,81 @@ An example file is shown below:
 .src/main/resources/container-license-acceptance.txt
 ----
 ibmcom/db2:11.5.0.0a
-mcr.microsoft.com/mssql/server:2017-CU12
+mcr.microsoft.com/mssql/server:2022-latest
 ----
+
+=== Capturing Logs
+
+By default, logs of the underlying database are not exposed.
+By capturing the logs, they become visible amongst other log statements:
+
+[source,properties]
+----
+quarkus.datasource.devservices.show-logs=true
+----
+
+[[reuse]]
+== Reusing Dev Services
+
+[[reuse-within-execution]]
+=== General case
+
+Within a dev mode session or test suite execution,
+Quarkus will always reuse database Dev Services as long as their configuration
+(username, password, environment, port bindings, ...) did not change.
+
+When the configuration of any database Dev Services changes,
+Quarkus will always restart all database Dev Services.
+
+When a dev mode session or test suite execution ends,
+Quarkus will (by default) stop all database Dev Services.
+
+[[reuse-across-executions]]
+=== Reusing Dev Service containers across runs
+
+Assuming you rely on Dev Services based on containers (unlike H2 or Derby),
+if you want to keep Dev Service containers running *after a dev mode session or test suite execution*
+to reuse them in the next dev mode session or test suite execution,
+this is possible as well.
+Just enable https://java.testcontainers.org/features/reuse/[TestContainers reuse]
+by inserting this line in one of your
+https://java.testcontainers.org/features/configuration/[TestContainers configuration file]
+(generally `~/.testcontainers.properties` or `C:/Users/myuser/.testcontainers.properties`):
+
+[source,properties]
+----
+testcontainers.reuse.enable=true
+----
+
+[NOTE]
+====
+Even with container reuse enabled, containers will only be reused if their startup command did not change:
+same environment variables (username/password in particular), same port bindings, same volume mounts, ...
+====
+
+[WARNING]
+====
+Reusing containers implies reusing their internal state,
+including the database schema and the content of tables.
+
+If that's not what you want -- and if your tests write to the database, that's probably not what you want --
+consider xref:hibernate-orm.adoc#dev-mode[configuring Hibernate ORM appropriately],
+or using xref:flyway.adoc[Flyway] or xref:liquibase.adoc[Liquibase].
+====
+
+[WARNING]
+====
+With container reuse enabled, old containers (especially with obsolete configuration)
+might be left running indefinitely, even after starting a new Quarkus dev mode session or test suite execution.
+
+In that case, you will need to stop and remove these containers manually.
+====
+
+If you want to reuse containers for some Quarkus applications but not all of them,
+or some Dev Services but not all of them,
+you can disable this feature for a specific Dev Service by setting the configuration property
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-reuse[`quarkus.datasource.devservices.reuse`/`quarkus.datasource."datasource-name".devservices.reuse`]
+to `false`.
 
 == Mapping volumes into Dev Services for Database
 
@@ -65,7 +140,7 @@ Mapping volumes from the Docker host's filesystem to the containers is handy to 
 
 [NOTE]
 ====
-Mapping volumes will only work in Dev Services with a container-based database like PostgreSQL. 
+Mapping volumes will only work in Dev Services with a container-based database like PostgreSQL.
 ====
 
 Dev Services volumes can be mapped to the filesystem or the classpath:
@@ -81,7 +156,7 @@ quarkus.datasource.devservices.volumes."classpath:./file"=/container/to <2>
 <1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
 <2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
 
-IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission. 
+IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission.
 
 === Example of mapping volumes to persist the database data
 
@@ -93,7 +168,7 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
 ----
 
-The appropriate in-container location varies depending on the database vendor. For PostgresSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
+The appropriate in-container location varies depending on the database vendor. For PostgreSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
 
 [source,properties]
 ----
@@ -101,12 +176,12 @@ quarkus.datasource.db-kind=mysql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
 ----
 
-When starting Dev Services (for example, in tests or in DEV mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand. 
+When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same Dev Services, this data will contain all the data you might have created beforehand.
 
 [IMPORTANT]
 ====
 When using Dev Services with Hibernate ORM, by default Quarkus will wipe out the database on application startup, which will wipe out the database data on your Docker host's filesystem.
-Configure `quarkus.hibernate-orm.database.generation=none` or `quarkus.hibernate-orm.database.generation=validate` to avoid this behavior.
+Configure `quarkus.hibernate-orm.schema-management.strategy=none` or `quarkus.hibernate-orm.schema-management.strategy=validate` to avoid this behavior.
 
 Also, using Flyway to migrate your schema when starting the application will modify the database data on your Docker hosts's file system.
 ====
@@ -125,7 +200,7 @@ Overriding the MariaDB/MySQL configuration would be done as follows:
 quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
 ----
 
-This support is database specific and needs to be implemented in each dev service specifically.
+This support is database specific and needs to be implemented in each Dev Service specifically.
 
 == Connect To Database Run as a Dev Service
 
@@ -137,9 +212,9 @@ Login credentials are the same for most databases, except when the database requ
 |Database |Username |Password |Database name
 
 |PostgreSQL, MariaDB, MySQL, IBM Db2, H2
+|`quarkus`
+|`quarkus`
 |`quarkus` for the default datasource or name of the datasource
-|`quarkus`
-|`quarkus`
 
 |Microsoft SQL Server
 |`SA`
@@ -223,4 +298,4 @@ Dev Services have been started.
 
 Dev Services for Databases support the following configuration options:
 
-include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]
+include::{generated-dir}/config/quarkus-datasource_quarkus.datasource.devservices.adoc[opts=optional,leveloffset=+1]

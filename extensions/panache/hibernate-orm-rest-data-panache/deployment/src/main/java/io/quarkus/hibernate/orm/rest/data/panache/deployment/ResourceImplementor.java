@@ -45,8 +45,9 @@ class ResourceImplementor {
      * Implements {@link io.quarkus.rest.data.panache.RestDataResource} interfaces defined in a user application.
      * Instances of this class are registered as beans and are later used in the generated JAX-RS controllers.
      */
-    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, String resourceType,
+    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, ClassInfo resourceInterface,
             String entityType, List<ClassInfo> resourceMethodListeners) {
+        String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
         ClassCreator classCreator = ClassCreator.builder()
@@ -118,9 +119,11 @@ class ResourceImplementor {
      */
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", int.class,
-                Page.class);
+                Page.class, String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
-        methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page));
+        ResultHandle query = methodCreator.getMethodParam(1);
+        ResultHandle queryParams = methodCreator.getMethodParam(2);
+        methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page, query, queryParams));
         methodCreator.close();
     }
 

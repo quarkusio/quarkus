@@ -25,6 +25,8 @@ public final class DialectVersions {
         // This must never be removed
         public static final String H2 = "2.3.230";
 
+        public static final String HSQLDB = "2.7.4";
+
         private Defaults() {
         }
     }

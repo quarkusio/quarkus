@@ -186,6 +186,11 @@ public final class HibernateOrmProcessor {
                 // Using our own default version is extra important for H2
                 // See https://github.com/quarkusio/quarkus/issues/1886
                 DialectVersions.Defaults.H2));
+
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.HSQLDB, "HyperSQL",
+                Set.of("org.hibernate.dialect.HSQLDialect"),
+                DialectVersions.Defaults.HSQLDB));
+
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MARIADB, "MariaDB",
                 Set.of("org.hibernate.dialect.MariaDBDialect"),
                 DialectVersions.Defaults.MARIADB));

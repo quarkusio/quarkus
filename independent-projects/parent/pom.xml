@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
-    <version>999-SNAPSHOT</version>
+    <version>3.22.1</version>
 
     <name>Quarkus - Parent POM</name>
     <description>Quarkus Parent POM</description>
@@ -62,7 +62,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Make the builds reproducible - see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-        <project.build.outputTimestamp>2024-01-01T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-04-30T06:55:22Z</project.build.outputTimestamp>
 
         <!--
             Options to override the compiler arguments directly on the compiler argument line to separate between what

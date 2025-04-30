@@ -1189,7 +1189,8 @@ jobs:
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
-      max-parallel: ${{ fromJson(needs.configure.outputs.config).maxParallel || 12 }}
+      # fully disable for now as we have issues with RunsOn and it might come from the value being defined (even if set to 999)
+      #max-parallel: ${{ fromJson(needs.configure.outputs.config).maxParallel || 12 }}
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:

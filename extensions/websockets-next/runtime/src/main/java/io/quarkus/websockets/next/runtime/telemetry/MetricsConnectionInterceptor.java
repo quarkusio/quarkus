@@ -2,26 +2,26 @@ package io.quarkus.websockets.next.runtime.telemetry;
 
 import java.util.Map;
 
-import io.micrometer.core.instrument.Counter;
+import io.quarkus.websockets.next.runtime.spi.telemetry.WebSocketMetricsInterceptorProducer.WebSocketMetricsInterceptor;
 
 final class MetricsConnectionInterceptor implements ConnectionInterceptor {
 
-    private final Counter connectionOpenCounter;
-    private final Counter connectionOnOpenErrorsCounter;
+    private final WebSocketMetricsInterceptor interceptor;
+    private final String path;
 
-    MetricsConnectionInterceptor(Counter connectionOpenCounter, Counter connectionOpeninigFailedCounter) {
-        this.connectionOpenCounter = connectionOpenCounter;
-        this.connectionOnOpenErrorsCounter = connectionOpeninigFailedCounter;
+    MetricsConnectionInterceptor(WebSocketMetricsInterceptor interceptor, String path) {
+        this.interceptor = interceptor;
+        this.path = path;
     }
 
     @Override
     public void connectionOpened() {
-        connectionOpenCounter.increment();
+        interceptor.onConnectionOpened(path);
     }
 
     @Override
     public void connectionOpeningFailed(Throwable cause) {
-        connectionOnOpenErrorsCounter.increment();
+        interceptor.onConnectionOpeningFailed(path);
     }
 
     @Override

@@ -52,6 +52,10 @@
             <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next-spi</artifactId>
+        </dependency>
 
         <!-- Optional Dependencies -->
         <dependency>

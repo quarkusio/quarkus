@@ -1,9 +1,6 @@
 package io.quarkus.websockets.next.test.telemetry;
 
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CONNECTION_CLIENT_ATTR_KEY;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CONNECTION_ENDPOINT_ATTR_KEY;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CONNECTION_ID_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -176,13 +173,13 @@ public class OpenTelemetryWebSocketsTest {
     private String getConnectionIdAttrVal(SpanData connectionOpenedSpan) {
         return connectionOpenedSpan
                 .getAttributes()
-                .get(AttributeKey.stringKey(CONNECTION_ID_ATTR_KEY));
+                .get(AttributeKey.stringKey("connection.id"));
     }
 
     private String getClientIdAttrVal(SpanData connectionOpenedSpan) {
         return connectionOpenedSpan
                 .getAttributes()
-                .get(AttributeKey.stringKey(CONNECTION_CLIENT_ATTR_KEY));
+                .get(AttributeKey.stringKey("connection.client.id"));
     }
 
     private String getUriAttrVal(SpanData connectionOpenedSpan) {
@@ -192,7 +189,7 @@ public class OpenTelemetryWebSocketsTest {
     private String getEndpointIdAttrVal(SpanData connectionOpenedSpan) {
         return connectionOpenedSpan
                 .getAttributes()
-                .get(AttributeKey.stringKey(CONNECTION_ENDPOINT_ATTR_KEY));
+                .get(AttributeKey.stringKey("connection.endpoint.id"));
     }
 
     private void waitForTracesToArrive(int expectedTracesCount) {

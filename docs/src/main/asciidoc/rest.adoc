@@ -2881,17 +2881,19 @@ However, you can change this default behavior and constrain a provider to:
 === Parameter mapping
 
 All <<request-parameters,Request Parameters>> can be declared as link:{jdkapi}/java/lang/String.html[`String`],
-but also any of the following types:
+but also as any of the following types:
 
-- Types for which a link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
+1. Types for which a link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverter.html[`ParamConverter`] is available via a registered
 link:{jaxrsapi}/jakarta/ws/rs/ext/ParamConverterProvider.html[`ParamConverterProvider`].
-- Primitive types.
-- Types that have a constructor that accepts a single link:{jdkapi}/java/lang/String.html[`String`] argument.
-- Types that have a static method named `valueOf` or `fromString` with a single link:{jdkapi}/java/lang/String.html[`String`] argument
+2. Primitive types.
+3. Types that have a constructor that accepts a single link:{jdkapi}/java/lang/String.html[`String`] argument.
+4. Types that have a static method named `valueOf` or `fromString` with a single link:{jdkapi}/java/lang/String.html[`String`] argument
 that return an instance of the type. If both methods are present then `valueOf` will be used unless
 the type is an `enum` in which case `fromString` will be used.
-- link:{jdkapi}/java/util/List.html[`List<T>`], link:{jdkapi}/java/util/Set.html[`Set<T>`], or
-link:{jdkapi}/java/util/SortedSet.html[`SortedSet<T>`], where `T` satisfies any above criterion.
+5. link:{jdkapi}/java/util/List.html[`List<T>`], link:{jdkapi}/java/util/Set.html[`Set<T>`], or
+link:{jdkapi}/java/util/SortedSet.html[`SortedSet<T>`], where `T` satisfies 1, 3 or 4 above.
+
+For 3 and 4, constructor instantiation is prioritesed above method instantiation. Public, protected, and package private constructors and methods are supported for instantiation.
 
 The following example illustrates all those possibilities:
 

@@ -264,7 +264,7 @@ class SecurityConfigFilterTest {
 
         @Override
         public boolean mergeSchemaExamples() {
-            return false;
+            return true;
         }
     }
 }

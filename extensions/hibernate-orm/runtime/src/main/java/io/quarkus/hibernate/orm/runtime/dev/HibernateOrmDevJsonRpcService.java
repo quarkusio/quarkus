@@ -178,8 +178,7 @@ public class HibernateOrmDevJsonRpcService {
         String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
 
         try {
-            if (
-                    jdbcUrl.startsWith("jdbc:h2:mem:")
+            if (jdbcUrl.startsWith("jdbc:h2:mem:")
                     || jdbcUrl.startsWith("jdbc:h2:file:")
                     || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
                     || (allowedHost != null && !allowedHost.isBlank()

@@ -25,6 +25,7 @@ import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -70,7 +71,8 @@ public class PayloadPermissionCheckerTest {
             // shouldn't close as user declared @OnError
             client.waitForMessages(2);
             // can't see product 1
-            assertEquals("forbidden:user", client.getMessages().get(1).toString());
+            assertEquals("forbidden:user,endpointId:io.quarkus.websockets.next.test.security.ProductEndpoint",
+                    client.getMessages().get(1).toString());
             // can see product 2
             client.sendAndAwait("2");
             client.waitForMessages(3);
@@ -236,9 +238,9 @@ public class PayloadPermissionCheckerTest {
         }
 
         @PermissionChecker("perm2")
-        boolean hasPerm2(SecurityIdentity securityIdentity) {
+        Uni<Boolean> hasPerm2(SecurityIdentity securityIdentity) {
             String principalName = securityIdentity.getPrincipal().getName();
-            return principalName.equals("user") || principalName.equals("almighty");
+            return Uni.createFrom().item(Boolean.valueOf(principalName.equals("user") || principalName.equals("almighty")));
         }
 
     }

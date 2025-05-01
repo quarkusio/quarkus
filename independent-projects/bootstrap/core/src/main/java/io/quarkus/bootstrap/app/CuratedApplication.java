@@ -68,6 +68,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     final ApplicationModel appModel;
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
+    private boolean eligibleForReuse = false;
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -75,6 +76,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         this.curationResult = curationResult;
         this.appModel = curationResult.getApplicationModel();
         this.configuredClassLoading = configuredClassLoading;
+    }
+
+    public void setEligibleForReuse(boolean eligible) {
+        this.eligibleForReuse = eligible;
     }
 
     public boolean isFlatClassPath() {
@@ -146,7 +151,22 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
     }
 
-    private synchronized void processCpElement(ResolvedDependency artifact, Consumer<ClassPathElement> consumer) {
+    /**
+     * Turns a resolved dependency into a classpath element and calls a consumer to process it.
+     * The consumer will add the classpath element to a {@link QuarkusClassLoader} instance.
+     *
+     * TODO: useCpeCache argument is a quick workaround to avoid the risk of sharing classpath elements
+     * among multiple instances of deployment and runtime classloaders. When these shared classpath elements
+     * happen to be JARs, when the first deployment classloader is closed, its JAR classpath elements will
+     * get closed as well but will remain cached, so the next deployment classloader will be initialized
+     * with the closed JAR classpath elements.
+     *
+     * @param artifact resolved dependency
+     * @param consumer classpath element consumer
+     * @param useCpeCache whether to re-use cached classpath elements
+     */
+    private synchronized void processCpElement(ResolvedDependency artifact, Consumer<ClassPathElement> consumer,
+            boolean useCpeCache) {
         if (!artifact.isJar()) {
             //avoid the need for this sort of check in multiple places
             consumer.accept(ClassPathElement.EMPTY);
@@ -162,7 +182,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 }
             };
         }
-        ClassPathElement cpe = augmentationElements.get(artifact.getKey());
+        ClassPathElement cpe = useCpeCache ? augmentationElements.get(artifact.getKey()) : null;
         if (cpe != null) {
             consumer.accept(cpe);
             return;
@@ -172,9 +192,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             consumer.accept(ClassPathElement.EMPTY);
             return;
         }
-        cpe = ClassPathElement.fromDependency(artifact);
+        cpe = ClassPathElement.fromDependency(contentTree, artifact);
         consumer.accept(cpe);
-        augmentationElements.put(artifact.getKey(), cpe);
+        if (useCpeCache) {
+            augmentationElements.put(artifact.getKey(), cpe);
+        }
     }
 
     private void addCpElement(QuarkusClassLoader.Builder builder, ResolvedDependency dep, ClassPathElement element) {
@@ -204,13 +226,13 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             //this will load any deployment artifacts from the parent CL if they are present
             for (ResolvedDependency i : appModel.getDependencies()) {
                 if (configuredClassLoading.isRemovedArtifact(i.getKey())) {
-                    processCpElement(i, builder::addBannedElement);
+                    processCpElement(i, builder::addBannedElement, true);
                     continue;
                 }
                 if (configuredClassLoading.isReloadableArtifact(i.getKey())) {
                     continue;
                 }
-                processCpElement(i, element -> addCpElement(builder, i, element));
+                processCpElement(i, element -> addCpElement(builder, i, element), true);
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
@@ -297,7 +319,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
                 if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
-                    processCpElement(dependency, builder::addBannedElement);
+                    processCpElement(dependency, builder::addBannedElement, true);
                     continue;
                 }
                 if (!dependency.isRuntimeCp()
@@ -307,7 +329,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
                     continue;
                 }
-                processCpElement(dependency, element -> addCpElement(builder, dependency, element));
+                processCpElement(dependency, element -> addCpElement(builder, dependency, element), true);
             }
 
             baseRuntimeClassLoader = builder.build();
@@ -358,7 +380,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 continue;
             }
             if (isReloadableRuntimeDependency(dependency)) {
-                processCpElement(dependency, element -> addCpElement(builder, dependency, element));
+                processCpElement(dependency, element -> addCpElement(builder, dependency, element), false);
             }
         }
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
@@ -389,7 +411,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 + getClassLoaderNameSuffix()
                                 + " restart no:"
                                 + runtimeClassLoaderCount.getAndIncrement(),
-                        getOrCreateBaseRuntimeClassLoader(), false)
+                        base, false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setCuratedApplication(this)
                 .setAggregateParentResources(true);
@@ -412,7 +434,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 continue;
             }
             if (isReloadableRuntimeDependency(dependency)) {
-                processCpElement(dependency, element -> addCpElement(builder, dependency, element));
+                processCpElement(dependency, element -> addCpElement(builder, dependency, element), false);
             }
         }
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
@@ -440,6 +462,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+    }
+
+    public boolean isEligibleForReuse() {
+        return eligibleForReuse;
     }
 
     /**

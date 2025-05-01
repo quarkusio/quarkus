@@ -10,12 +10,14 @@ import java.util.regex.Pattern;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClients;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -45,29 +47,39 @@ public class LiquibaseMongodbFactory {
     }
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
+        var rootAccessor = new CompositeResourceAccessor();
+        return ImageMode.current().isNativeImage()
+                ? nativeImageResourceAccessor(rootAccessor)
+                : defaultResourceAccessor(rootAccessor);
+    }
 
-        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
-        compositeResourceAccessor
-                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+    private ResourceAccessor defaultResourceAccessor(CompositeResourceAccessor rootAccessor)
+            throws FileNotFoundException {
+
+        rootAccessor.addResourceAccessor(
+                new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
         if (!liquibaseMongodbBuildTimeConfig.changeLog().startsWith("filesystem:")
                 && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
-            return compositeResourceAccessor;
+            return rootAccessor;
         }
 
         if (liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
-            compositeResourceAccessor.addResourceAccessor(
+            return rootAccessor.addResourceAccessor(
                     new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
+                            Paths.get(StringUtil
+                                    .changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
                                     .getParent()));
-            return compositeResourceAccessor;
         }
 
         for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath().get()) {
-            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
+            rootAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
+        return rootAccessor;
+    }
 
-        return compositeResourceAccessor;
+    private ResourceAccessor nativeImageResourceAccessor(CompositeResourceAccessor rootAccessor) {
+        return rootAccessor.addResourceAccessor(new NativeImageResourceAccessor());
     }
 
     private String parseChangeLog(String changeLog) {

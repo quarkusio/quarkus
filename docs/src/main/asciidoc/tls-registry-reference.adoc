@@ -795,7 +795,7 @@ After a `TlsConfiguration` has been reloaded, servers and clients using this con
 The recommended approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
 To do so, inject a CDI event of this type and fire it when a reload occurs.
 
-. Manually triggering a reload and firing a `CertificateUpdatedEvent`:
+.An example of manually reloading a TLS configuration and notifying components by firing a `CertificateUpdatedEvent` and reacting to it:
 [source,java]
 ----
 // in the class that performs the reload
@@ -849,7 +849,8 @@ quarkus.tls.http.key-store.pem.0.key=tls.key
 [IMPORTANT]
 ====
 Impacted servers and clients may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
-This is automatically done for the Quarkus HTTP server, such as the Quarkus REST server, gRPC server, and WebSocket server, as well as the management interface if it is enabled.
+This is automatically done for the Quarkus HTTP server, as well as the Quarkus REST server, gRPC server, and WebSocket server, as well as the management interface if it is enabled.
+On the client side, Quarkus REST Client automatically handles certificate update events.
 ====
 
 NOTE: In Quarkus dev mode, when files are touched, it will trigger the `CertificateUpdatedEvent` much more frequently.

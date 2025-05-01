@@ -261,7 +261,7 @@ public class DefaultTenantConfigResolver {
             @Override
             public Uni<? extends TenantConfigContext> apply(OidcTenantConfig tenantConfig) {
                 if (tenantConfig != null) {
-                    var tenantId = tenantConfig.getTenantId()
+                    var tenantId = tenantConfig.tenantId()
                             .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
                     var tenantContext = tenantConfigBean.getDynamicTenant(tenantId);
                     if (tenantContext == null) {

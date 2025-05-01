@@ -40,7 +40,7 @@ public interface KeycloakDevServicesConfig {
      * ends with `-legacy`.
      * Override with `quarkus.keycloak.devservices.keycloak-x-image`.
      */
-    @WithDefault("quay.io/keycloak/keycloak:26.1.3")
+    @WithDefault("quay.io/keycloak/keycloak:26.2.0")
     String imageName();
 
     /**
@@ -75,7 +75,7 @@ public interface KeycloakDevServicesConfig {
      *
      * Applicable only in dev mode.
      */
-    @WithDefault("quarkus")
+    @WithDefault("keycloak")
     String serviceName();
 
     /**
@@ -204,11 +204,11 @@ public interface KeycloakDevServicesConfig {
     Map<String, String> containerEnv();
 
     /**
-     * Memory limit for Keycloak container
+     * Memory limit for Keycloak container, up to {@code Long.MAX_VALUE} bytes.
      * </p>
-     * If not specified, 750MiB is the default memory limit.
+     * If not specified, 1250MiB is the default memory limit.
      */
-    @WithDefault("750M")
+    @WithDefault("1250M")
     MemorySize containerMemoryLimit();
 
     /**

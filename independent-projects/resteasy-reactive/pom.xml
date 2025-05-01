@@ -45,9 +45,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.2.7</jandex.version>
+        <jandex.version>3.3.0</jandex.version>
         <bytebuddy.version>1.15.11</bytebuddy.version>
-        <junit5.version>5.10.5</junit5.version>
+        <junit5.version>5.12.2</junit5.version>
         <maven.version>3.9.9</maven.version>
         <assertj.version>3.27.3</assertj.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
@@ -57,20 +57,20 @@
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>2.8.0</mutiny.version>
-        <smallrye-common.version>2.11.0</smallrye-common.version>
-        <vertx.version>4.5.13</vertx.version>
+        <smallrye-common.version>2.12.0</smallrye-common.version>
+        <vertx.version>4.5.14</vertx.version>
         <rest-assured.version>5.5.1</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.18.3</jackson-bom.version>
-        <smallrye-stork.version>2.7.2</smallrye-stork.version>
+        <smallrye-stork.version>2.7.3</smallrye-stork.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <awaitility.version>4.3.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>3.18.1</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <mockito.version>5.12.0</mockito.version>
-        <wiremock.version>3.12.1</wiremock.version>
+        <mockito.version>5.17.0</mockito.version>
+        <wiremock.version>3.13.0</wiremock.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
 
         <!-- Forbidden API checks -->
@@ -92,6 +92,15 @@
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- Mockito dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

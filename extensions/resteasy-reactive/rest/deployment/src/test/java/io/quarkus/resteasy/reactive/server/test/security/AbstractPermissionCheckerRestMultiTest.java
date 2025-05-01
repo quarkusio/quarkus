@@ -10,22 +10,14 @@ import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestMulti;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.test.utils.TestIdentityController;
-import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
 
 public abstract class AbstractPermissionCheckerRestMultiTest {
-
-    @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestIdentityController.class,
-                    TestIdentityProvider.class));
 
     @BeforeAll
     public static void setupUsers() {

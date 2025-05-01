@@ -156,7 +156,7 @@ public final class EngineBuilder {
                 ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
                 ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
                 ValueResolvers.arrayResolver(), ValueResolvers.plusResolver(), ValueResolvers.minusResolver(),
-                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver());
+                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver(), ValueResolvers.equalsResolver());
     }
 
     /**

@@ -1002,13 +1002,14 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
 
         /**
          * A map of required claims and their expected values.
-         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id` claim to
-         * be present and set to `org_xyz`.
-         * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
-         * complex claims.
+         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id`
+         * claim to be present and set to `org_xyz`. On the other hand, if it was set to `org_xyz,org_abc`,
+         * the `org_id` claim would need to have both `org_xyz` and `org_abc` values.
+         * Strings and arrays of strings are currently the only supported types.
+         * Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or complex claims.
          */
         @ConfigDocMapKey("claim-name")
-        Map<String, String> requiredClaims();
+        Map<String, Set<@WithConverter(TrimmedStringConverter.class) String>> requiredClaims();
 
         /**
          * Expected token type

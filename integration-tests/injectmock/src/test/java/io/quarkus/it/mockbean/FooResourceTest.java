@@ -9,13 +9,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.mockito.MockitoConfig;
 
 @QuarkusTest
 class FooResourceTest {
 
-    @InjectMock(returnsDeepMocks = true)
+    @InjectMock
+    @MockitoConfig(returnsDeepMocks = true)
     FooService fooService;
 
     @Test

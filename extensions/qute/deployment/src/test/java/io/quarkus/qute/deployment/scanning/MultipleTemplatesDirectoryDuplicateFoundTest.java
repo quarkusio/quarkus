@@ -17,6 +17,7 @@ public class MultipleTemplatesDirectoryDuplicateFoundTest {
             .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hello!"), "templates/hello.html"))
             .withAdditionalDependency(
                     d -> d.addAsResource(new StringAsset("Hi!"), "templates/hello.html"))
+            .overrideConfigKey("quarkus.qute.duplicit-templates-strategy", "fail")
             .assertException(t -> {
                 Throwable e = t;
                 IllegalStateException ise = null;

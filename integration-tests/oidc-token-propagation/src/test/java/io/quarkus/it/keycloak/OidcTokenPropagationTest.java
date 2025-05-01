@@ -51,7 +51,7 @@ public class OidcTokenPropagationTest {
                 .when().get("/frontend/access-token-propagation")
                 .then()
                 .statusCode(500)
-                .body(containsString("Unsupported grant_type"));
+                .body(containsString("Standard token exchange is not enabled for the requested client"));
     }
 
     @Test

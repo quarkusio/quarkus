@@ -90,7 +90,8 @@ public class TestHTTPResourceManager {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource.ssl() || resource.tls()) {
+                    if (resource.ssl() || resource.tls() || ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.http.test-ssl-enabled", Boolean.class).orElse(false)) {
                         if (management) {
                             if (path.startsWith("/")) {
                                 val = getManagementSslUri() + path;

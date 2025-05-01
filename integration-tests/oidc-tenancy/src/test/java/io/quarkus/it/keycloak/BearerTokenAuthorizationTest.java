@@ -1,6 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.it.keycloak.BearerTokenStepUpAuthenticationTest.getAccessTokenWithAcr;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -748,6 +751,40 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testMultipleTokenIntrospectionRequiredClaims() {
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+
+        // Expected to fail now because its introspection does include the expected required claim, but value is "1"
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Expected to fail now because its introspection does include the expected required claim, but value is ["1"]
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Expected to fail now because its introspection does not include the expected required claim
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(401);
+
+        // Successful request with opaque token 3 because the required claim is ["1","2"]
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice, required_claim:1,2"));
+
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+    }
+
+    @Test
     public void testResolveStaticTenantsByPathPatterns() {
         // default tenant path pattern is more specific, therefore it wins over tenant-b pattern that is also matched
         assertStaticTenantSuccess("a", "default", "tenant-b/default");
@@ -875,6 +912,76 @@ public class BearerTokenAuthorizationTest {
         }
     }
 
+    @Test
+    public void testStepUpAuthUsingRequiredClaimsConfigProperty() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
+
+        // for this tenant, 3 'acr' values are required: alpha, beta, gamma
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("alpha"))
+                .header("www-authenticate", containsString("beta"))
+                .header("www-authenticate", containsString("gamma"));
+        // 'gamma' acr value is missing -> 401
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta")))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("alpha"))
+                .header("www-authenticate", containsString("beta"))
+                .header("www-authenticate", containsString("gamma"));
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta", "gamma")))
+                .when().get("/tenants/step-up-auth-required-claims/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice:service"));
+    }
+
+    @Test
+    public void testStepUpAuthUsingCustomValidatorRequiringAcrValues() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
+
+        // for this tenant, 3 'acr' values are required: delta, epsilon, zeta
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("delta"))
+                .header("www-authenticate", containsString("epsilon"))
+                .header("www-authenticate", containsString("zeta"));
+        // 'gamma' acr value is missing -> 401
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("alpha", "beta")))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(401)
+                .header("www-authenticate", containsString("insufficient_user_authentication"))
+                .header("www-authenticate", containsString("acr_values"))
+                .header("www-authenticate", containsString("delta"))
+                .header("www-authenticate", containsString("epsilon"))
+                .header("www-authenticate", containsString("zeta"));
+        RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of("delta", "epsilon", "zeta")))
+                .when().get("/tenants/step-up-auth-custom-validator/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice:service"));
+    }
+
     private String getAccessToken(String userName, String clientId) {
         return getAccessToken(userName, clientId, clientId);
     }
@@ -926,6 +1033,15 @@ public class BearerTokenAuthorizationTest {
         String json = RestAssured
                 .when()
                 .post("/oidc/opaque-token2")
+                .body().asString();
+        JsonObject object = new JsonObject(json);
+        return object.getString("access_token");
+    }
+
+    private String getOpaqueAccessToken3FromSimpleOidc() {
+        String json = RestAssured
+                .when()
+                .post("/oidc/opaque-token3")
                 .body().asString();
         JsonObject object = new JsonObject(json);
         return object.getString("access_token");

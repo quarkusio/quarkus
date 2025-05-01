@@ -37,6 +37,7 @@ public class QuarkusComponentTestExtensionBuilder {
     private boolean addNestedClassesAsComponents = true;
     private int configSourceOrdinal = QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL;
     private Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
+    private boolean buildShouldFail;
 
     /**
      * The initial set of components under test is derived from the test class. The types of all fields annotated with
@@ -152,6 +153,11 @@ public class QuarkusComponentTestExtensionBuilder {
         return new MockBeanConfiguratorImpl<>(this, beanClass);
     }
 
+    QuarkusComponentTestExtensionBuilder buildShouldFail() {
+        this.buildShouldFail = true;
+        return this;
+    }
+
     /**
      *
      * @return a new extension instance
@@ -168,7 +174,7 @@ public class QuarkusComponentTestExtensionBuilder {
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
                 Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer));
+                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer), buildShouldFail);
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

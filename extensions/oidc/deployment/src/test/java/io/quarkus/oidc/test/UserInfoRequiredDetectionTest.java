@@ -107,7 +107,7 @@ public class UserInfoRequiredDetectionTest {
         @Path("default-tenant-random")
         @GET
         public String getDefaultTenantName() {
-            if (!tenantConfigBean.getDefaultTenant().oidcConfig().authentication.userInfoRequired.orElse(false)) {
+            if (!tenantConfigBean.getDefaultTenant().oidcConfig().authentication().userInfoRequired().orElse(false)) {
                 throw new IllegalStateException("Default tenant user info should be required");
             }
             String tenantId = routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE);
@@ -126,7 +126,7 @@ public class UserInfoRequiredDetectionTest {
         @Path("named-tenant-random")
         @GET
         public String getNamedTenantName() {
-            if (!getNamedTenantConfig("named").authentication.userInfoRequired.orElse(false)) {
+            if (!getNamedTenantConfig("named").authentication().userInfoRequired().orElse(false)) {
                 throw new IllegalStateException("Named tenant user info should be required");
             }
             String tenantId = routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE);
@@ -142,14 +142,14 @@ public class UserInfoRequiredDetectionTest {
         @Path("named-tenant-2")
         @GET
         public boolean getNamed2TenantUserInfoRequired() {
-            return getNamedTenantConfig("named-2").authentication.userInfoRequired.orElse(false);
+            return getNamedTenantConfig("named-2").authentication().userInfoRequired().orElse(false);
         }
 
         @PermissionsAllowed("openid")
         @Path("named-tenant-3")
         @GET
         public boolean getNamed3TenantUserInfoRequired() {
-            return getNamedTenantConfig("named-3").authentication.userInfoRequired.orElse(false);
+            return getNamedTenantConfig("named-3").authentication().userInfoRequired().orElse(false);
         }
 
         private OidcTenantConfig getNamedTenantConfig(String configName) {

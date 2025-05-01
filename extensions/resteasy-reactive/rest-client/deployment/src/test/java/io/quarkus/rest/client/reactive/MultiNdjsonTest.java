@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,7 @@ import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
+import wiremock.org.apache.hc.client5.http.utils.Base64;
 
 public class MultiNdjsonTest {
     @RegisterExtension
@@ -108,6 +110,21 @@ public class MultiNdjsonTest {
         assertThat(collected).hasSize(4).containsAll(expected);
     }
 
+    @Test
+    void shouldReadLargeNdjsonPojoAsMulti() throws InterruptedException {
+        var client = createClient(uri);
+        var collected = new CopyOnWriteArrayList<Message>();
+        var completionLatch = new CountDownLatch(1);
+        client.readLargePojo().onCompletion().invoke(completionLatch::countDown)
+                .subscribe().with(collected::add);
+
+        if (!completionLatch.await(5, TimeUnit.SECONDS)) {
+            fail("Streaming did not complete in time");
+        }
+
+        assertThat(collected).hasSize(4);
+    }
+
     private Client createClient(URI uri) {
         return QuarkusRestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
                 .build(Client.class);
@@ -133,6 +150,12 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         Multi<Message> readPojoSingle();
+
+        @GET
+        @Path("/large-pojo")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        Multi<Message> readLargePojo();
 
     }
 
@@ -200,6 +223,27 @@ public class MultiNdjsonTest {
                 result.append("\n");
             }
             return result.toString();
+        }
+
+        @GET
+        @Path("/large-pojo")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        public Multi<Message> readLargePojo() {
+            return Multi.createFrom().emitter(
+                    em -> {
+                        byte[] bytes = new byte[4 * 1024];
+                        Random random = new Random();
+                        random.nextBytes(bytes);
+                        String value = Base64.encodeBase64String(bytes);
+                        em.emit(Message.of("one", value));
+                        em.emit(Message.of("two", value));
+                        em.emit(Message.of("three", value));
+                        vertx.setTimer(100, id -> {
+                            em.emit(Message.of("four", value));
+                            em.complete();
+                        });
+                    });
         }
     }
 

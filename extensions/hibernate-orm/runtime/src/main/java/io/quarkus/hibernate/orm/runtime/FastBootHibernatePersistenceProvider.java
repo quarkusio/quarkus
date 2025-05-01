@@ -137,7 +137,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        // Avoid processing the reactive descriptors
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder
+                .getPersistenceUnitDescriptors()
+                .stream()
+                .filter(d -> !d.isReactive())
+                .toList();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 
@@ -190,7 +195,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
-                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
+                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
+                    true);
         }
 
         log.debug("Found no matching persistence units");
@@ -398,12 +404,15 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             Builder runtimeSettingsBuilder) {
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
-                persistenceUnitConfig.database().generation().generation());
+                persistenceUnitConfig.database().generation().generation()
+                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
-                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()));
+                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()
+                        .orElse(persistenceUnitConfig.schemaManagement().createSchemas())));
 
-        if (persistenceUnitConfig.database().generation().haltOnError()) {
+        if (persistenceUnitConfig.database().generation().haltOnError()
+                .orElse(persistenceUnitConfig.schemaManagement().haltOnError())) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 

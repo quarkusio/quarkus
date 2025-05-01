@@ -103,7 +103,7 @@ include::{includes}/opentelemetry-config.adoc[]
 
 === Disable all or parts of the OpenTelemetry extension
 
-Once you add the dependency, the extension will generate tracing data by default. To enable metrics or disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference bellow):
+Once you add the dependency, the extension will generate tracing data by default. To enable metrics or disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
 
 |===
 |Affected Signal | Property name |Default value |Description

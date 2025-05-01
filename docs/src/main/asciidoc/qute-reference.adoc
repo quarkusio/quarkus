@@ -399,27 +399,31 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 |===
 |Name |Description	|Examples
 
-|Elvis Operator
+|Elvis Operator: `?:`
 |Outputs the default value if the previous part cannot be resolved or resolves to `null`.
 |`{person.name ?: 'John'}`, `{person.name or 'John'}`, `{person.name.or('John')}`
 
-|orEmpty
+|`orEmpty`
 |Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
 |`{pets.orEmpty.size}` outputs `0` if `pets` is not resolvable or `null`
 
-|Ternary Operator
+|Ternary Operator: `condition ? ifTrue : ifFalse`
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 
-|Logical AND Operator
+|Logical AND Operator: `&&`
 |Outputs `true` if both parts are not `falsy` as described in the <<if_section>>.
 The parameter is only evaluated if needed.
 |`{person.isActive && person.hasStyle}`
 
-|Logical OR Operator
+|Logical OR Operator: `\|\|`
 |Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>.
 The parameter is only evaluated if needed.
 |`{person.isActive \|\| person.hasStyle}`
+
+|Equals Operator: `==`/`eq`/`is`
+|Outputs `true` if the base object is equal to the argument.
+|`{obj1 is obj2 ? 'Equal' : 'Inequal'}`, `{obj1 == obj2 ? 'Equal' : 'Inequal'}`, `{obj1.eq(obj2) ? 'Equal' : 'Inequal'}`
 
 |===
 
@@ -2263,9 +2267,9 @@ NOTE: Superfluous matching conditions are ignored. The conditions sorted by prio
 
 An extension method may declare parameters.
 If no namespace is specified then the first parameter that is not annotated with `@TemplateAttribute` is used to pass the base object, i.e. `org.acme.Item` in the first example.
-If matching any name or using a regular expression, then a string method parameter needs to be used to pass the property name.
+If matching any name or using a regular expression, then a string method parameter (not not annotated with `@TemplateAttribute`) needs to be used to pass the property name.
 Parameters annotated with `@TemplateAttribute` are obtained via `TemplateInstance#getAttribute()`.
-All other parameters are resolved when rendering the template and passed to the extension method.
+All other parameters are treated as virtual method parameters and resolved when rendering the template and passed to the extension method.
 
 .Multiple Parameters Example
 [source,java]
@@ -2273,12 +2277,13 @@ All other parameters are resolved when rendering the template and passed to the 
 @TemplateExtension
 class BigDecimalExtensions {
 
-    static BigDecimal scale(BigDecimal val, int scale, RoundingMode mode) { <1>
+    @TemplateExtension(matchNames = {"scale", "setScale"})
+    static BigDecimal scale(BigDecimal val, String ignoredName, int scale, RoundingMode mode) { <1>
         return val.setScale(scale, mode);
     }
 }
 ----
-<1> This method matches an expression with base object of the type `BigDecimal.class`, with the `scale` virtual method name and two virtual method parameters.
+<1> This method matches an expression with base object of the type `BigDecimal.class`, with the `scale()`/`setScale()` virtual method name and two virtual method parameters - `scale` and `mode`.
 
 [source,html]
 ----

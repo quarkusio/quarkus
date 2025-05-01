@@ -24,6 +24,7 @@ import org.eclipse.aether.transfer.TransferListener;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
@@ -337,6 +338,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
     private static MavenArtifactResolver newResolver(MavenArtifactResolver resolver, List<RemoteRepository> aggregatedRepos,
             RegistryConfig config, MessageWriter log) {
         try {
+            final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
             final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(
                     BootstrapMavenContext.config()
                             .setRepositorySystem(resolver.getSystem())
@@ -344,7 +346,9 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
                             .setRemoteRepositoryManager(resolver.getRemoteRepositoryManager())
                             .setRemoteRepositories(aggregatedRepos)
                             .setLocalRepository(resolver.getMavenContext().getLocalRepo())
-                            .setCurrentProject(resolver.getMavenContext().getCurrentProject()));
+                            .setCurrentProject(currentProject)
+                            // if the currentProject is null, workspace discovery should still be disabled
+                            .setWorkspaceDiscovery(currentProject != null));
             return new MavenArtifactResolver(mvnCtx);
         } catch (BootstrapMavenException e) {
             throw new IllegalStateException("Failed to initialize Maven context", e);

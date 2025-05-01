@@ -20,6 +20,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
+import io.quarkus.qute.deployment.EffectiveTemplatePathsBuildItem;
 import io.quarkus.qute.deployment.ImplicitValueResolverBuildItem;
 import io.quarkus.qute.deployment.TemplateDataBuildItem;
 import io.quarkus.qute.deployment.TemplateExtensionMethodBuildItem;
@@ -33,7 +34,7 @@ public class QuteDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void pages(
-            List<TemplatePathBuildItem> templatePaths,
+            EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
             List<CheckedTemplateBuildItem> checkedTemplates,
             TemplateVariantsBuildItem variants,
             TemplatesAnalysisBuildItem templatesAnalysis,
@@ -45,7 +46,7 @@ public class QuteDevUIProcessor {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        List<TemplatePathBuildItem> sortedTemplatePaths = templatePaths.stream()
+        List<TemplatePathBuildItem> sortedTemplatePaths = effectiveTemplatePaths.getTemplatePaths().stream()
                 .sorted(Comparator.comparing(tp -> tp.getPath().toLowerCase())).collect(Collectors.toList());
         pageBuildItem.addBuildTimeData("templates",
                 createTemplatesJson(sortedTemplatePaths, checkedTemplates, templatesAnalysis, variants));

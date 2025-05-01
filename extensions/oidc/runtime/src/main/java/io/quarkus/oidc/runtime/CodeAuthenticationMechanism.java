@@ -1040,10 +1040,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         } else if (accessTokenExpiresInSecs != null) {
             builder.expiresIn(accessTokenExpiresInSecs);
         }
-        builder.audience(context.oidcConfig().getClientId().get());
+        builder.audience(context.oidcConfig().clientId().get());
 
         JwtSignatureBuilder sigBuilder = builder.jws().header(INTERNAL_IDTOKEN_HEADER, true);
-        String clientOrJwtSecret = OidcCommonUtils.getClientOrJwtSecret(context.oidcConfig().credentials);
+        String clientOrJwtSecret = OidcCommonUtils.getClientOrJwtSecret(context.oidcConfig().credentials());
         if (clientOrJwtSecret != null) {
             LOG.debug("Signing internal ID token with a configured client secret");
             return sigBuilder.sign(KeyUtils.createSecretKeyFromSecret(clientOrJwtSecret));

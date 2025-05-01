@@ -1,6 +1,5 @@
 package io.quarkus.runtime;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
@@ -9,7 +8,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
@@ -170,35 +168,30 @@ public class ApplicationLifecycleManager {
             Throwable rootCause = ExceptionUtil.getRootCause(e);
             if (exitCodeHandler == null) {
                 Logger applicationLogger = Logger.getLogger(Application.class);
-                if (rootCause instanceof QuarkusBindException) {
-                    List<Integer> ports = ((QuarkusBindException) rootCause).getPorts();
-                    if (ports.size() == 1) {
+                if (rootCause instanceof QuarkusBindException qbe) {
+                    String host = qbe.getHost();
+                    int port = qbe.getPort();
+                    if (QuarkusBindException.isKnownHost(host)) {
                         applicationLogger.errorf("Port %d seems to be in use by another process. " +
-                                "Quarkus may already be running or the port is used by another application.", ports.get(0));
-                    } else {
-                        applicationLogger.errorf(
-                                "One or more of the following ports: %s seem to be in use by another process. " +
-                                        "Quarkus may already be running or one of the ports is used by another application.",
-                                ports.stream().map(
-                                        Object::toString).collect(Collectors.joining(",")));
-                    }
-                    if (IS_WINDOWS) {
-                        applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
-                        applicationLogger.warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
-                    } else if (IS_MAC) {
-                        for (Integer port : ports) {
+                                "Quarkus may already be running or the port is used by another application.", port);
+                        if (IS_WINDOWS) {
+                            applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                            applicationLogger
+                                    .warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                        } else if (IS_MAC) {
                             applicationLogger
                                     .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
-                        }
-                        applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
-                    } else {
-                        for (Integer port : ports) {
+                            applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
+                        } else {
                             applicationLogger
                                     .warnf("Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
                                             port);
+                            applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                         }
-                        applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
+                    } else {
+                        applicationLogger.errorf("Unable to bind to host: %s and port: %d.", host, port);
                     }
+
                 } else if (rootCause instanceof ConfigurationException || rootCause instanceof ConfigValidationException) {
                     System.err.println(rootCause.getMessage());
                 } else if (rootCause instanceof PreventFurtherStepsException

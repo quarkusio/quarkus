@@ -82,7 +82,7 @@ public class SubResourceGenericsTest {
                     .build(TranslationSubResource.class);
         } catch (Exception e) {
             assertThat(e.getMessage()).endsWith(
-                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$TranslationSubResource : Type variable R of the sub resource locator method's return type io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$EnglishSubResource<R> subResource() could not be resolved.");
+                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$TranslationSubResource : Type variable R of method io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$EnglishSubResource<R> subResource() in class io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$TranslationSubResource could not be resolved.");
             return;
         }
         Assertions.fail("Should have thrown an exception");
@@ -95,7 +95,7 @@ public class SubResourceGenericsTest {
             QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081")).build(HelloSubResource.class);
         } catch (Exception e) {
             assertThat(e.getMessage()).endsWith(
-                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource : Type variable V of the return type of method V get() could not be resolved.");
+                    "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource : Type variable V of method V get() in class io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource could not be resolved.");
             return;
         }
         Assertions.fail("Should have thrown an exception");

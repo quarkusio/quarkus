@@ -297,7 +297,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 clazz.setPath(sanitizePath(path));
             }
-            if (factoryCreator != null) {
+            if (factoryCreator != null && !classInfo.isInterface() && !classInfo.isAbstract()) {
+                // Most likely an interface or an abstract class in the hierarchy of a sub resource.
+                // The ResourceLocatorHandler does not use the factory to create new instances, but uses the result of the sub resource locator method instead
+                // Interfaces therefore do not need a factory here
+                // Otherwise, when having multiple implementations of the interface or abstract class, an Ambiguous Bean Resolution error occurs,
+                // since io.quarkus.arc.runtime.BeanContainerImpl.createFactory is run, even if the factory is never invoked
                 clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
@@ -636,11 +641,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 String defaultValue = parameterResult.getDefaultValue();
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
-                    if (bodyParamType != null)
-                        throw new RuntimeException(String.format(
-                                "Resource method '%s#%s' can only have a single body parameter: '%s'",
+                    if (bodyParamType != null) {
+                        throw new DeploymentException(String.format(
+                                "Resource method '%s#%s' can only have a single body parameter, but has at least 2. A body parameter is a method parameter without any annotations. Last discovered body parameter is '%s'.",
                                 currentMethodInfo.declaringClass().name(), currentMethodInfo,
                                 currentMethodInfo.parameterName(i)));
+                    }
                     bodyParamType = paramType;
                     if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
                         warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
@@ -668,7 +674,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (bodyParamType != null
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
-                    throw new RuntimeException(String.format(
+                    throw new DeploymentException(String.format(
                             "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is "
                                     + "'%s#%s'",
                             currentMethodInfo.declaringClass().name(), currentMethodInfo));
@@ -684,7 +690,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     }
                     // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
                     if (!validConsumes) {
-                        throw new RuntimeException(String.format(
+                        throw new DeploymentException(String.format(
                                 "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is "
                                         + "'%s#%s'",
                                 currentMethodInfo.declaringClass().name(), currentMethodInfo));
@@ -806,9 +812,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 method));
             }
             return method;
-        } catch (Exception e) {
-            throw new RuntimeException(String.format("Failed to process method '%s#%s'",
-                    currentMethodInfo.declaringClass().name(), currentMethodInfo), e);
+        } catch (DeploymentException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new RuntimeException(String.format("Failed to process method '%s#%s'. Reason: %s",
+                    currentMethodInfo.declaringClass().name(), currentMethodInfo, e.getMessage()), e);
         }
     }
 
@@ -1283,9 +1291,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return builder;
         } else if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
                 restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
-            throw new RuntimeException(
+            throw new DeploymentException(
                     "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
-                            + errorLocation);
+                            + builder.getErrorLocation());
         } else if (pathParam != null) {
             builder.setName(pathParam.value().asString());
             builder.setType(ParameterType.PATH);
@@ -1508,10 +1516,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
-            throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+            throw new DeploymentException(
+                    "Can only inject AsyncResponse on methods marked @Suspended on " + builder.getErrorLocation());
         }
         if (builder.isSingle() && builder.getSeparator() != null) {
-            throw new DeploymentException("Single parameters should not be marked with @Separator");
+            throw new DeploymentException(
+                    "Single parameters should not be marked with @Separator on " + builder.getErrorLocation());
         }
         builder.setElementType(elementType);
         return builder;

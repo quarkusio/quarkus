@@ -28,6 +28,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
@@ -87,6 +89,7 @@ import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -104,8 +107,6 @@ import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableRemovalTrail
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
 import io.quarkus.rest.client.reactive.CertificateUpdateEventListener;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
-import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
-import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
@@ -114,7 +115,6 @@ import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
-import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 class RestClientReactiveProcessor {
@@ -122,7 +122,9 @@ class RestClientReactiveProcessor {
     private static final Logger log = Logger.getLogger(RestClientReactiveProcessor.class);
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
+    private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
+    private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
@@ -196,18 +198,12 @@ class RestClientReactiveProcessor {
             RestClientRecorder restClientRecorder) {
         restClientRecorder.setRestClientBuilderResolver();
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(HeaderContainer.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CertificateUpdateEventListener.class));
     }
 
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class, ClientLogger.class);
-    }
-
-    @BuildStep
-    void setupRequestCollectingFilter(BuildProducer<ContainerRequestFilterBuildItem> filters) {
-        filters.produce(new ContainerRequestFilterBuildItem(HeaderCapturingServerFilter.class.getName()));
     }
 
     @BuildStep
@@ -482,10 +478,23 @@ class RestClientReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientsBuildTimeConfig clientsBuildConfig,
+            LaunchModeBuildItem launchMode,
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+
+        Set<DotName> requestedRestClientMocks = Collections.emptySet();
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            // we need to determine which RestClient interfaces have been marked for mocking
+            requestedRestClientMocks = combinedIndexBuildItem.getIndex().getAnnotations(INJECT_MOCK)
+                    .stream()
+                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.FIELD)
+                    .map(ai -> ai.target().asField())
+                    .filter(f -> f.hasAnnotation(REST_CLIENT))
+                    .map(f -> f.type().name())
+                    .collect(Collectors.toSet());
+        }
 
         Map<String, String> configKeys = new HashMap<>();
         var annotationsStore = new AnnotationStore(index, restClientAnnotationsTransformerBuildItem.stream()
@@ -561,6 +570,8 @@ class RestClientReactiveProcessor {
                 Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
 
                 ResultHandle baseUriHandle = constructor.load(baseUri.isPresent() ? baseUri.get() : "");
+                boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
+                        || requestedRestClientMocks.contains(jaxrsInterface.name());
                 constructor.invokeSpecialMethod(
                         MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
                                 String.class, boolean.class),
@@ -568,7 +579,7 @@ class RestClientReactiveProcessor {
                         constructor.loadClassFromTCCL(jaxrsInterface.toString()),
                         baseUriHandle,
                         configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
-                        constructor.load(scope.getDotName().equals(REQUEST_SCOPED)));
+                        constructor.load(lazyDelegate));
                 constructor.returnValue(null);
 
                 // METHODS:

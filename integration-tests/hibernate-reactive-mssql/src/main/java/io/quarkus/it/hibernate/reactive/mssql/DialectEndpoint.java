@@ -8,20 +8,23 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 
 @Path("/dialect/version")
 @Produces(MediaType.TEXT_PLAIN)
 public class DialectEndpoint {
     @Inject
-    SessionFactory sessionFactory;
+    Mutiny.SessionFactory sessionFactory;
 
     @GET
     public String test() throws IOException {
-        var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        var version = ((MutinySessionFactoryImpl) ClientProxy.unwrap(sessionFactory)).getServiceRegistry()
+                .requireService(JdbcServices.class).getDialect().getVersion();
         return DialectVersions.toString(version);
     }
 

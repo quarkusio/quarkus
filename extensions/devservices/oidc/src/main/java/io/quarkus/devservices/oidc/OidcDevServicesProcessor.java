@@ -145,10 +145,6 @@ public class OidcDevServicesProcessor {
             LOG.debug("Not starting Dev Services for OIDC as it has been disabled in the config");
             return true;
         }
-        if (devServicesConfig.enabled().isEmpty() && dockerStatusBuildItem.isContainerRuntimeAvailable()) {
-            LOG.debug("Not starting Dev Services for OIDC as detected support the container functionality");
-            return true;
-        }
         if (!isOidcEnabled()) {
             LOG.debug("Not starting Dev Services for OIDC as OIDC extension has been disabled in the config");
             return true;
@@ -165,7 +161,27 @@ public class OidcDevServicesProcessor {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
             return true;
         }
+        if (devServicesConfig.enabled().isEmpty()) {
+            if (isDockerAvailable(dockerStatusBuildItem)) {
+                LOG.debug(
+                        "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started."
+                                + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
+                return true;
+            } else {
+                LOG.debug(
+                        "Starting Dev Services for OIDC as a container runtime is not available."
+                                + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
+            }
+        }
         return false;
+    }
+
+    private static boolean isDockerAvailable(DockerStatusBuildItem dockerStatusBuildItem) {
+        try {
+            return dockerStatusBuildItem.isContainerRuntimeAvailable();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     private static void updateDevSvcConfigProperties() {
@@ -539,12 +555,12 @@ public class OidcDevServicesProcessor {
         String clientId = rc.request().formAttributes().get("client_id");
         String username = rc.request().formAttributes().get("username");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token request");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         if (username == null || username.isEmpty()) {
-            LOG.warn("Invalid username, denying token request");
+            LOG.warn("Username is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
@@ -569,7 +585,7 @@ public class OidcDevServicesProcessor {
         String scope = rc.request().formAttributes().get("scope");
         String clientId = rc.request().formAttributes().get("client_id");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token request");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
@@ -592,19 +608,19 @@ public class OidcDevServicesProcessor {
         String clientSecret = rc.request().formAttributes().get("client_secret");
         String scope = rc.request().formAttributes().get("scope");
         if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Invalid client ID, denying token refresh");
+            LOG.warn("Client id is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         if (clientSecret == null || clientSecret.isEmpty()) {
-            LOG.warn("Invalid client secret, denying token refresh");
+            LOG.warn("Client secret is not present, denying token request");
             invalidTokenResponse(rc);
             return;
         }
         String refreshToken = rc.request().formAttributes().get("refresh_token");
         UserAndRoles userAndRoles = decode(refreshToken);
         if (userAndRoles == null) {
-            LOG.warn("Received invalid refresh token, denying token refresh");
+            LOG.warnf("Received invalid refresh token, denying token refresh: %s", refreshToken);
             invalidTokenResponse(rc);
             return;
         }
@@ -713,9 +729,9 @@ public class OidcDevServicesProcessor {
                 .audience(clientId)
                 .subject(user)
                 .upn(user)
-                .claim("name", capitalize(user))
-                .claim(Claims.preferred_username, user + "@example.com")
-                .claim(Claims.email, user + "@example.com")
+                .claim("name", buildNameClaimValue(user))
+                .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                .claim(Claims.email, buildEmailClaimValue(user))
                 .groups(roles)
                 .jws()
                 .keyId(kid)
@@ -730,13 +746,27 @@ public class OidcDevServicesProcessor {
                 .subject(user)
                 .scope(scope)
                 .upn(user)
-                .claim("name", capitalize(user))
-                .claim(Claims.preferred_username, user + "@example.com")
-                .claim(Claims.email, user + "@example.com")
+                .claim("name", buildNameClaimValue(user))
+                .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                .claim(Claims.email, buildEmailClaimValue(user))
                 .groups(roles)
                 .jws()
                 .keyId(kid)
                 .sign(kp.getPrivate());
+    }
+
+    private static String buildNameClaimValue(String user) {
+        if (user.contains("@")) {
+            return capitalize(user.split("@")[0]);
+        }
+        return capitalize(user);
+    }
+
+    private static String buildEmailClaimValue(String user) {
+        if (user.contains("@")) {
+            return user;
+        }
+        return user + "@example.com";
     }
 
     /*
@@ -800,13 +830,13 @@ public class OidcDevServicesProcessor {
                         {
                             "preferred_username": "%1$s",
                             "sub": "%2$s",
-                            "name": "%2$s",
-                            "family_name": "%2$s",
-                            "given_name": "%2$s",
-                            "email": "%3$s"
+                            "name": "%3$s",
+                            "family_name": "%3$s",
+                            "given_name": "%3$s",
+                            "email": "%4$s"
                         }
                         """.formatted(claims.getString(Claims.preferred_username.name()),
-                        claims.getString(Claims.sub.name()), claims.getString(Claims.email.name()));
+                        claims.getString(Claims.sub.name()), claims.getString("name"), claims.getString(Claims.email.name()));
                 rc.response()
                         .putHeader("Content-Type", "application/json")
                         .endAndForget(data);

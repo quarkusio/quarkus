@@ -321,6 +321,17 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         + requiredTestClass.getClassLoader()
                         + " This should not happen, but changing directory names or class layout may help work around the issue.");
             } else {
+                boolean isSurefire = System.getProperty("surefire.real.class.path") != null;
+                if (isSurefire) {
+                    boolean isSurefire3 = System.getProperty("surefire.real.class.path").contains("_3.jar");
+                    if (!isSurefire3) {
+                        throw new RuntimeException("The test class " + requiredTestClass
+                                + " should have been loaded with a QuarkusClassLoader, but instead it was loaded with "
+                                + requiredTestClass.getClassLoader()
+                                + ". Is the version of the Surefire plugin at least 3.x?");
+                    }
+                }
+
                 throw new RuntimeException("Internal error. The test class " + requiredTestClass
                         + " should have been loaded with a QuarkusClassLoader, but instead it was loaded with "
                         + requiredTestClass.getClassLoader()
@@ -616,6 +627,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
         boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
+
+        QuarkusClassLoader cl = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
+
+        CuratedApplication curatedApplication = runningQuarkusApplication != null
+                ? ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader())
+                        .getCuratedApplication()
+                : null;
+        boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+        cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
+
         // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
         // we could try to start and application which has already been started, and fail with a mysterious error about
         // null shutdown contexts; we should try and detect that case, and give a friendlier error message

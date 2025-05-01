@@ -43,6 +43,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-required-claims")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminRequiredClaims() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-azure")
     @GET
     @Authenticated

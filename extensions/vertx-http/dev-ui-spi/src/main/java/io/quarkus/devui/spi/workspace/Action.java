@@ -85,7 +85,7 @@ public class Action<T, R> {
 
     @Override
     public String toString() {
-        return "Page {\n\tid=" + getId()
+        return "Action {\n\tid=" + getId()
                 + ", \n\tlabel=" + label
                 + ", \n\tnamespace=" + namespace
                 + ", \n\tfilter=" + filter

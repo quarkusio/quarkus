@@ -2222,7 +2222,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
          * complex claims.
          */
-        public Map<String, String> requiredClaims = new HashMap<>();
+        public Map<String, Set<String>> requiredClaims = new HashMap<>();
 
         /**
          * Expected token type
@@ -2507,11 +2507,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.decryptionKeyLocation = Optional.of(decryptionKeyLocation);
         }
 
-        public Map<String, String> getRequiredClaims() {
+        public Map<String, Set<String>> getRequiredClaims() {
             return requiredClaims;
         }
 
-        public void setRequiredClaims(Map<String, String> requiredClaims) {
+        public void setRequiredClaims(Map<String, Set<String>> requiredClaims) {
             this.requiredClaims = requiredClaims;
         }
 
@@ -2596,7 +2596,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
-        public Map<String, String> requiredClaims() {
+        public Map<String, Set<String>> requiredClaims() {
             return requiredClaims;
         }
 

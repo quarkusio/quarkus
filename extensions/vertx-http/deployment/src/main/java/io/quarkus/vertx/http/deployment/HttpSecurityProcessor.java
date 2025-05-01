@@ -69,6 +69,7 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -83,6 +84,7 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.Authenticatio
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
+import io.quarkus.vertx.http.runtime.security.VertxSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
@@ -255,9 +257,11 @@ public class HttpSecurityProcessor {
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
+            var authConfig = httpBuildTimeConfig.auth();
             authenticationHandlerProducer.produce(
                     new HttpAuthenticationHandlerBuildItem(
-                            recorder.authenticationMechanismHandler(httpBuildTimeConfig.auth().proactive())));
+                            recorder.authenticationMechanismHandler(authConfig.proactive(),
+                                    authConfig.propagateSecurityIdentity())));
         }
     }
 
@@ -606,6 +610,17 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
+    AdditionalBeanBuildItem createSecurityIdentityAssociation() {
+        return AdditionalBeanBuildItem.unremovableOf(VertxSecurityIdentityAssociation.class);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
+    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext(HttpSecurityRecorder recorder) {
+        return new IgnoredContextLocalDataKeysBuildItem(recorder.getSecurityIdentityContextKeySupplier());
+    }
+
     private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target) {
         if (target.kind() == AnnotationTarget.Kind.METHOD) {
             var method = target.asMethod();
@@ -644,7 +659,7 @@ public class HttpSecurityProcessor {
         return !ClientAuth.NONE.equals(httpBuildTimeConfig.tlsClientAuth());
     }
 
-    private static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
+    public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
         return classes
                 .stream()
                 .filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c))
@@ -655,14 +670,14 @@ public class HttpSecurityProcessor {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
+    public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
         return methods
                 .stream()
                 .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 
-    private static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
+    public static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
             Predicate<ClassInfo> filter) {
         return instances
                 .stream()
@@ -826,6 +841,20 @@ public class HttpSecurityProcessor {
 
         private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
             this.handler = handler;
+        }
+    }
+
+    static final class AlwaysPropagateSecurityIdentity implements BooleanSupplier {
+
+        private final boolean alwaysPropagateSecurityIdentity;
+
+        AlwaysPropagateSecurityIdentity(VertxHttpBuildTimeConfig buildTimeConfig) {
+            this.alwaysPropagateSecurityIdentity = buildTimeConfig.auth().propagateSecurityIdentity();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return alwaysPropagateSecurityIdentity;
         }
     }
 }

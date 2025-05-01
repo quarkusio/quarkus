@@ -34,17 +34,24 @@ public class KafkaAdminManager {
     AdminClient admin;
 
     @Startup
-    void startup() throws ExecutionException, InterruptedException {
+    void startup() {
         admin = createAdmin(bs);
-        if (!admin.listTopics().names().get().contains("test")) {
-            admin.createTopics(List.of(new NewTopic("test", 2, (short) 1),
-                    new NewTopic("test-consumer", 3, (short) 1))).all().get();
-        }
     }
 
     @PreDestroy
     void cleanup() {
         admin.close();
+    }
+
+    public void createTopic(String topic, int partitions) {
+        try {
+            if (!admin.listTopics().names().get(2000, TimeUnit.MILLISECONDS).contains(topic)) {
+                admin.createTopics(List.of(new NewTopic(topic, partitions, (short) 1))).all()
+                        .get(2000, TimeUnit.MILLISECONDS);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public int partitions(String topic) {

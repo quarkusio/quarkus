@@ -29,7 +29,7 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.2.7</jandex.version>
+        <jandex.version>3.3.0</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
@@ -96,7 +96,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.1.3</keycloak.server.version>
+        <keycloak.server.version>26.2.0</keycloak.server.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -105,17 +105,17 @@
 
         <assertj.version>3.27.3</assertj.version>
 
-        <wiremock.version>3.12.1</wiremock.version>
+        <wiremock.version>3.13.0</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.40.0</artemis.version>
+        <artemis.version>2.41.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.45.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
         <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
@@ -275,6 +275,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc-test-supplement</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -23,11 +23,11 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
 
     @Test
     public void schema() {
-        assertThat(SchemaUtil.getColumnNames(ormSessionFactory, EntityWithTimezones.class))
+        assertThat(SchemaUtil.getColumnNames(EntityWithTimezones.class, mappingMetamodel()))
                 .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
-        assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "zonedDateTime"))
+        assertThat(SchemaUtil.getColumnTypeName(EntityWithTimezones.class, "zonedDateTime", mappingMetamodel()))
                 .isEqualTo("TIMESTAMP_UTC");
-        assertThat(SchemaUtil.getColumnTypeName(ormSessionFactory, EntityWithTimezones.class, "offsetDateTime"))
+        assertThat(SchemaUtil.getColumnTypeName(EntityWithTimezones.class, "offsetDateTime", mappingMetamodel()))
                 .isEqualTo("TIMESTAMP_UTC");
     }
 

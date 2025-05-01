@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -53,11 +54,13 @@ public class ResteasyReactiveCDIProcessor {
 
     @BuildStep
     AutoInjectAnnotationBuildItem contextInjection(
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer) {
         additionalBeanBuildItemBuildProducer
                 .produce(AdditionalBeanBuildItem.builder()
                         .addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
                         .build());
+        unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(HttpHeaders.class));
         return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));
     }

@@ -14,6 +14,7 @@
 
     <properties>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
+        <postgres.blocking.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.blocking.url>
     </properties>
 
     <dependencies>
@@ -85,12 +86,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-deployment</artifactId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

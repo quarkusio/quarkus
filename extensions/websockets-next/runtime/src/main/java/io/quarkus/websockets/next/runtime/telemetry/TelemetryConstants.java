@@ -26,7 +26,7 @@ public final class TelemetryConstants {
     /**
      * Counts number of times that opening of a WebSocket server connection resulted in error.
      */
-    public static final String SERVER_CONNECTION_OPENED_ERROR = "quarkus.websockets.server.connections.opened.errors";
+    public static final String SERVER_CONNECTION_ON_OPEN_ERROR = "quarkus.websockets.server.connections.onopen.errors";
 
     /**
      * Counts number of times that opening of a WebSocket client connection resulted in error.

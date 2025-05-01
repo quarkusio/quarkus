@@ -25,6 +25,8 @@ import io.quarkus.fs.util.ZipUtils;
 
 public final class TestClassIndexer {
 
+    public static final String TEST_CLASSES_IDX = "test-classes.idx";
+
     private TestClassIndexer() {
     }
 
@@ -55,7 +57,7 @@ public final class TestClassIndexer {
     }
 
     public static void writeIndex(Index index, Path testClassLocation, Class<?> testClass) {
-        try (FileOutputStream fos = new FileOutputStream(indexPath(testClassLocation, testClass).toFile(), false)) {
+        try (FileOutputStream fos = new FileOutputStream(indexPath(testClassLocation).toFile(), false)) {
             IndexWriter indexWriter = new IndexWriter(fos);
             indexWriter.write(index);
         } catch (IOException ignored) {
@@ -69,7 +71,7 @@ public final class TestClassIndexer {
     }
 
     public static Index readIndex(Path testClassLocation, Class<?> testClass) {
-        Path path = indexPath(testClassLocation, testClass);
+        Path path = indexPath(testClassLocation);
         if (path.toFile().exists()) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
@@ -86,15 +88,22 @@ public final class TestClassIndexer {
     }
 
     private static Path indexPath(Class<?> testClass) {
-        return indexPath(PathTestHelper.getTestClassesLocation(testClass), testClass);
+        return indexPath(PathTestHelper.getTestClassesLocation(testClass));
     }
 
-    private static Path indexPath(Path testClassLocation, Class<?> testClass) {
-        return testClassLocation.resolve(testClass.getSimpleName() + ".idx");
+    /**
+     * Returns a test classes index file for a given test class location,
+     * which is resolved by adding {@link #TEST_CLASSES_IDX} to the test class location.
+     *
+     * @param testClassLocation test class location
+     * @return test classes index file for a given test class location
+     */
+    private static Path indexPath(Path testClassLocation) {
+        return testClassLocation.resolve(TEST_CLASSES_IDX);
     }
 
     private static void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {
-        Files.walkFileTree(testClassesLocation, new FileVisitor<Path>() {
+        Files.walkFileTree(testClassesLocation, new FileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                     throws IOException {

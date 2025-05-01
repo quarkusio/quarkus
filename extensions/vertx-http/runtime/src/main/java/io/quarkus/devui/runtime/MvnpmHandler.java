@@ -11,8 +11,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -44,7 +47,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
         }
 
         try {
-            URL url = mvnpmLoader.getResource(BASE_DIR + fullPath);
+            URL url = getUrl(fullPath);
             if (url != null) {
                 URLConnection openConnection = url.openConnection();
                 long lastModified = openConnection.getLastModified();
@@ -65,6 +68,35 @@ public class MvnpmHandler implements Handler<RoutingContext> {
             throw new UncheckedIOException(ex);
         }
         event.next();
+    }
+
+    private URL getUrl(String fullPath) {
+        URL url = mvnpmLoader.getResource(BASE_DIR + fullPath);
+        if (url != null)
+            return url;
+
+        // HACK: If url is null, it might be that the content is actually available under a package folder, ex
+        // /_static/lang-java/6.0.1/dist/index.js vs
+        // /_static/lang-java/6.0.1/package/dist/index.js
+        // This is due to a bug in mvnpm that at the time synced a few libraries packaged incorrectly
+        // This will eventually never run anymore, if newer versions of js packages in question updates
+        fullPath = insertPackageSegment(fullPath);
+        return mvnpmLoader.getResource(BASE_DIR + fullPath);
+    }
+
+    private String insertPackageSegment(String path) {
+        String[] parts = path.split(SLASH);
+        List<String> modifiedParts = new ArrayList<>();
+
+        IntStream.range(0, parts.length)
+                .forEach(i -> {
+                    modifiedParts.add(parts[i]);
+                    if (i == 3) { // After the version segment
+                        modifiedParts.add("package");
+                    }
+                });
+
+        return String.join(SLASH, modifiedParts);
     }
 
     private String formatDate(long m) {

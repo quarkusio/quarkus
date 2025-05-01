@@ -388,6 +388,10 @@ public class SmallRyeGraphQLProcessor {
             switch (extraScalar) {
                 case UUID:
                     Scalars.addUuid();
+                case OBJECT:
+                    Scalars.addObject();
+                case JSON:
+                    Scalars.addJson();
             }
         }
     }

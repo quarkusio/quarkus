@@ -480,9 +480,12 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             runtimeClassLoaders.put(key, startupAction);
 
             return startupAction.getClassLoader();
+        } catch (RuntimeException e) {
+            // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
+            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
-            // TODO what's the best way to do this?
             e.printStackTrace();
             throw new RuntimeException(e);
         }
@@ -555,28 +558,16 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 
-        ClassLoader original = Thread.currentThread()
-                .getContextClassLoader();
-        try {
-            // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
-            Thread.currentThread()
-                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+        QuarkusClassLoader loader = startupAction.getClassLoader();
 
-            QuarkusClassLoader loader = startupAction.getClassLoader();
+        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
 
-            Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
+        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
+        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor()
+                .newInstance();
 
-            Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-            Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
-                    .newInstance(loader);
-
-            configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
-                    .invoke(null,
-                            testConfigProviderResolver);
-        } finally {
-            Thread.currentThread()
-                    .setContextClassLoader(original);
-        }
+        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
+                .invoke(null, testConfigProviderResolver);
 
         return startupAction;
 

@@ -24,11 +24,14 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 
 @QuarkusTest
+@TestProfile(BasicTest.TestProfile.class)
 public class BasicTest {
 
     @TestHTTPResource("/apples")
@@ -288,5 +291,12 @@ public class BasicTest {
                         "CLIENT".equals(stringObjectMap.get("kind")) &&
                         ((String) stringObjectMap.get("attr_url.full")).startsWith(httpUrl))
                 .collect(Collectors.toList());
+    }
+
+    public static class TestProfile implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("w-fault-tolerance-int/mp-rest/url", "${test.url}");
+        }
     }
 }

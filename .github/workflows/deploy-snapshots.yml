@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx6g -XX:MaxMetaspaceSize=2g
     steps:
       - uses: actions/checkout@v4
         with:

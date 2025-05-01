@@ -13,7 +13,7 @@ public interface ResteasyReactiveConfig {
 
     /**
      * The amount of memory that can be used to buffer input before switching to
-     * blocking IO.
+     * blocking IO, up to {@code Long.MAX_VALUE} bytes.
      */
     @WithDefault("10k")
     MemorySize inputBufferSize();

@@ -109,7 +109,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the normalized root path for the mangement endpoints. {@code getNonApplicationRootPath()} if the
+     * @return the normalized root path for the management endpoints. {@code getNonApplicationRootPath()} if the
      *         management interface is disabled.
      */
     public String getManagementRootPath() {

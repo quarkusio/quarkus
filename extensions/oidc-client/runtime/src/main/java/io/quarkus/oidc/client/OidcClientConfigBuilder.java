@@ -11,7 +11,9 @@ import java.util.Optional;
 
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
+import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * Builder for the {@link io.quarkus.oidc.client.runtime.OidcClientConfig}. This builder is not thread-safe.
@@ -103,6 +105,13 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
     }
 
+    /**
+     * {@link OidcClientConfig} with documented defaults.
+     * Cached here so that we avoid building the SmallRye Config again and again when no-args builder constructors
+     * are used.
+     */
+    private static volatile OidcClientConfig configWithDefaults = null;
+
     private final Map<String, String> headers = new HashMap<>();
     private boolean earlyTokensAcquisition;
     private final Map<String, Map<String, String>> grantOptions = new HashMap<>();
@@ -114,6 +123,13 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> refreshTokenTimeSkew;
     private boolean clientEnabled;
     private Optional<String> id;
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
+     */
+    public OidcClientConfigBuilder() {
+        this(getConfigWithDefaults());
+    }
 
     /**
      * @param config created either by this builder or SmallRye Config; config methods must never return null
@@ -339,7 +355,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private String refreshExpiresInProperty;
 
         public GrantBuilder() {
-            this(OidcClientConfig.builder());
+            this(new OidcClientConfigBuilder());
         }
 
         public GrantBuilder(OidcClientConfigBuilder builder) {
@@ -404,5 +420,17 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         public Grant build() {
             return new GrantImpl(type, accessTokenProperty, refreshTokenProperty, expiresInProperty, refreshExpiresInProperty);
         }
+    }
+
+    private static OidcClientConfig getConfigWithDefaults() {
+        if (configWithDefaults == null) {
+            final OidcClientsConfig clientsConfig = new SmallRyeConfigBuilder()
+                    .addDiscoveredConverters()
+                    .withMapping(OidcClientsConfig.class)
+                    .build()
+                    .getConfigMapping(OidcClientsConfig.class);
+            configWithDefaults = OidcClientsConfig.getDefaultClient(clientsConfig);
+        }
+        return configWithDefaults;
     }
 }

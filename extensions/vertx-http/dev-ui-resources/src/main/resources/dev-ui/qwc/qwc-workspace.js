@@ -15,7 +15,7 @@ import '@vaadin/confirm-dialog';
 import '@vaadin/progress-bar';
 import MarkdownIt from 'markdown-it';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { dialogFooterRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { dialogHeaderRenderer, dialogFooterRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import { notifier } from 'notifier';
@@ -83,11 +83,9 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         _filteredActions: {state: true},
         _selectedWorkspaceItem: {state: true},
         _changeToWorkspaceItem: {state: true},
-        _actionResultContent: {state:true},
-        _actionResultDisplay: {state:true},
-        _actionResultDisplayType: {state:true},
+        _actionResult: {state: true},
         _showActionProgress: {state: true},
-        _confirmDialogOpened: {state: true}
+        _confirmDialogOpened: {state: true},
     };
 
     constructor() { 
@@ -122,9 +120,8 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         this._workspaceActions = [];
         this._filteredActions = this._workspaceActions;
         this._clearActionResult();
-        
-        this._loadWorkspaceItems();
         this._loadWorkspaceActions();
+        this._loadWorkspaceItems();
     }
 
     disconnectedCallback() {
@@ -193,14 +190,16 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                                     <vaadin-button title="Copy" slot="prefix" theme="icon" aria-label="Copy" @click="${this._copySelectedWorkspaceItem}">
                                       <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
                                     </vaadin-button>
+                                    
+            
+                                    ${this._renderActions()}
+
                                     <qui-ide-link slot="suffix" title="Open in IDE" style="cursor: pointer;"
                                         fileName="${this._selectedWorkspaceItem.path}"
                                         lineNumber="0"
                                         noCheck>
                                         <vaadin-icon icon="font-awesome-solid:up-right-from-square"></vaadin-icon>      
                                     </qui-ide-link>
-            
-                                    ${this._renderActions()}
 
                                     <vaadin-tabs slot="tabs">
                                       <vaadin-tab id="${this._selectedWorkspaceItem.path}" title="${this._selectedWorkspaceItem.path}">${this._selectedWorkspaceItem.name.split('/').pop()}</vaadin-tab>
@@ -217,7 +216,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
     
     _renderResultSplitView(){
-        if(this._actionResultContent && this._actionResultDisplay === "split"){
+        if(this._actionResult && this._actionResult.content && this._actionResult.display === "split"){
             return html`<detail-content style="width: 50%;">
                 <div class="actionSplitScreen">
                     <div class="actionButtonBar">
@@ -233,36 +232,54 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
     
     _renderResultDialog(){
-        if(this._actionResultContent && this._actionResultDisplay === "dialog"){
-            return html`<vaadin-dialog
+        if(this._actionResult && this._actionResult.content && this._actionResult.display === "dialog"){
+            return html`<vaadin-dialog style="min-width=50vw;"
+                            header-title="${this._actionResult?.name ?? this._actionResult?.path}"
                             resizable
                             draggable
-                            .opened=true
+                            .opened=${true}
+                            ${dialogHeaderRenderer(
+                                () => html`
+                                <vaadin-button theme="tertiary" @click="${this._clearActionResult}">
+                                  <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                                </vaadin-button>
+                              `,
+                              []
+                            )}
                             ${dialogRenderer(this._renderActionResult, [])}
+                            ${dialogFooterRenderer(
+                            () => html`
+                                <vaadin-button theme="primary" @click="${this._saveActionResult}">
+                                    Save
+                                </vaadin-button>
+                                <vaadin-button theme="tertiary" @click="${this._copyActionResult}">Copy</vaadin-button>
+                                `,
+                                []
+                            )}
                         ></vaadin-dialog>`;
         }
     }
     
     _renderActionResult(){
-        if(this._actionResultContent && this._actionResultDisplayType === "raw"){
-            return html`${this._actionResultContent}`;
-        }else if(this._actionResultContent && this._actionResultDisplayType === "code"){
+        if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "raw"){
+            return html`${this._actionResult.content}`;
+        }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "code"){
             // TODO: We can not assume the mode is the same as the input
             // Maybe return name|content ?
             return html`<qui-code-block id="code" class='codeBlock'
-                                    mode='${this._getMode(this._selectedWorkspaceItem.name)}' 
+                                    mode='${this._getMode(this._actionResult?.name ?? this._actionResult?.path)}' 
                                     theme='${themeState.theme.name}'
-                                    .content='${this._actionResultContent}'
+                                    .content='${this._actionResult.content}'
                                     showLineNumbers>
                                 </qui-code-block>`;
-        }else if(this._actionResultContent && this._actionResultDisplayType === "markdown"){
-            const htmlContent = this.md.render(this._actionResultContent);
+        }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "markdown"){
+            const htmlContent = this.md.render(this._actionResult.content);
             return html`${unsafeHTML(htmlContent)}`; 
-        }else if(this._actionResultContent && this._actionResultDisplayType === "html"){
-            return html`${unsafeHTML(this._actionResultContent)}`; 
-        }else if(this._actionResultContent && this._actionResultDisplayType === "image"){
-            let imgurl = `data:image/png;base64,${this._actionResultContent}`;
-            return html`<img src="${imgurl}" alt="${this._selectedWorkspaceItem.name}" style="max-width: 100%;"/>`;
+        }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "html"){
+            return html`${unsafeHTML(this._actionResult.content)}`; 
+        }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "image"){
+            let imgurl = `data:image/png;base64,${this._actionResult.content}`;
+            return html`<img src="${imgurl}" alt="${this._actionResult?.name ?? this._actionResult?.path}" style="max-width: 100%;"/>`;
         }
     }
     
@@ -366,24 +383,25 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         if(codeElement){
             newWorkspaceItemValue = codeElement.getAttribute('value');
         }
-        
         this.jsonRpc.executeAction({actionId:actionId,
                                     name:this._selectedWorkspaceItem.name,
                                     path:this._selectedWorkspaceItem.path,
                                     content:newWorkspaceItemValue,
                                     type:this._selectedWorkspaceItem.type}).then(jsonRpcResponse => { 
+            
             if(e.detail.value.display === "notification"){
                 notifier.showInfoMessage(jsonRpcResponse.result.result);
             }else if(e.detail.value.display === "replace"){
-                // TODO: This does not take Markdown into context....
-                // TODO: Use result
-                this._selectedWorkspaceItem.content = jsonRpcResponse.result.result;
+                this._selectedWorkspaceItem.content = jsonRpcResponse.result.result.content;
                 this._selectedWorkspaceItem.type = e.detail.value.displayType;
-                //this._selectedWorkspaceItem.path = 
+                this._selectedWorkspaceItem.path = jsonRpcResponse.result.path;
+                this._selectedWorkspaceItem.isDirty = true;
             }else if(e.detail.value.display !== "nothing"){
-                this._actionResultContent = jsonRpcResponse.result.result;
-                this._actionResultDisplay = e.detail.value.display;
-                this._actionResultDisplayType = e.detail.value.displayType;
+                this._actionResult = jsonRpcResponse.result.result;
+                this._actionResult.name = this._actionResult.path;
+                this._actionResult.path = jsonRpcResponse.result.path;
+                this._actionResult.display = e.detail.value.display;
+                this._actionResult.displayType = e.detail.value.displayType;
             }
             this._showActionProgress = false;
         });
@@ -423,18 +441,9 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
 
     _saveSelectedWorkspaceItem(){
-        
         let newWorkspaceItemValue = this._getChangedContent();
         if(newWorkspaceItemValue){
-            this.jsonRpc.saveWorkspaceItemContent({content:newWorkspaceItemValue, path:this._selectedWorkspaceItem.path}).then(jsonRpcResponse => { 
-                if(jsonRpcResponse.result.success){
-                    notifier.showInfoMessage(jsonRpcResponse.result.path + " saved successfully");
-                    this._selectedWorkspaceItem = { ...this._selectedWorkspaceItem, content: newWorkspaceItemValue, isDirty: false };
-                    super.forceRestart();
-                }else {
-                    notifier.showErrorMessage(jsonRpcResponse.result.path + " NOT saved. " + jsonRpcResponse.result.errorMessage);
-                }
-            });
+            this._saveContent(newWorkspaceItemValue, this._selectedWorkspaceItem.path);
         }
     }
     
@@ -445,6 +454,35 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         if(changedContent)content = changedContent;
         
         const path = this._selectedWorkspaceItem?.path;
+        this._copyContent(content, path);
+    }
+    
+    _saveActionResult(){
+        if(this._actionResult && this._actionResult.content){
+            this._saveContent(this._actionResult.content, this._actionResult.path, false);
+        }
+    }
+    
+    _copyActionResult(){
+        if(this._actionResult && this._actionResult.content){
+            this._copyContent(this._actionResult.content, this._actionResult.path);
+        }
+    }
+    
+    _saveContent(content, path, select=true){
+        this.jsonRpc.saveWorkspaceItemContent({content:content, path:path}).then(jsonRpcResponse => { 
+            if(jsonRpcResponse.result.success){
+                notifier.showInfoMessage(jsonRpcResponse.result.path + " saved successfully");
+                if(select) this._selectedWorkspaceItem = { ...this._selectedWorkspaceItem, content: content, isDirty: false };
+                //super.forceRestart();
+            }else {
+                notifier.showErrorMessage(jsonRpcResponse.result.path + " NOT saved. " + jsonRpcResponse.result.errorMessage);
+            }
+        });
+        
+    }
+    
+    _copyContent(content, path){
         if (!content) {
             notifier.showWarningMessage(path + " has no content");
             return;
@@ -469,10 +507,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
     
     _clearActionResult(){
-        this._actionResultContent = null;
-        this._actionResultDisplay = null;
-        this._actionResultDisplayType = null;
-        this._showActionProgress = false;
+        this._actionResult = null;
     }
     
     _selectWorkspaceItem(workspaceItem){
@@ -501,9 +536,11 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         this._filterActions(workspaceItem.name);
 
         this._clearActionResult();
+        this._showActionProgress = false;
     }
     
     shouldConfirmAwayNavigation(){
+        if(this._selectedWorkspaceItem.isDirty) return true;
         let changedContent = this._getChangedContent();
         if(changedContent){
             return true;
@@ -513,11 +550,15 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _getChangedContent(){
         if(this._selectedWorkspaceItem.content){
-            let codeElement = this.shadowRoot.getElementById('code');
-            if(codeElement){
-                let newWorkspaceItemValue = codeElement.getAttribute('value');
-                if(newWorkspaceItemValue!==this._selectedWorkspaceItem.content){
-                    return newWorkspaceItemValue;
+            if(this._selectedWorkspaceItem.isDirty){
+                return this._selectedWorkspaceItem.content;
+            }else {
+                let codeElement = this.shadowRoot.getElementById('code');
+                if(codeElement){
+                    let newWorkspaceItemValue = codeElement.getAttribute('value');
+                    if(newWorkspaceItemValue!==this._selectedWorkspaceItem.content){
+                        return newWorkspaceItemValue;
+                    }
                 }
             }
         }

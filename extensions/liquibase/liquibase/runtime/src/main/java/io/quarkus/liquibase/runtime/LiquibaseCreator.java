@@ -40,6 +40,7 @@ class LiquibaseCreator {
         config.cleanAtStart = liquibaseRuntimeConfig.cleanAtStart();
         config.validateOnMigrate = liquibaseRuntimeConfig.validateOnMigrate();
         config.allowDuplicatedChangesetIdentifiers = liquibaseRuntimeConfig.allowDuplicatedChangesetIdentifiers();
+        config.secureParsing = liquibaseRuntimeConfig.secureParsing();
         return new LiquibaseFactory(config, dataSource, dataSourceName);
     }
 }

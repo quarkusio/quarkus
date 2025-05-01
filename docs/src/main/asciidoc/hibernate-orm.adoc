@@ -89,7 +89,7 @@ quarkus.datasource.username = hibernate
 quarkus.datasource.password = hibernate
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 
-quarkus.hibernate-orm.database.generation=drop-and-create <2>
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create <2>
 ----
 <1> xref:datasource.adoc[Configure the datasource].
 <2> Drop and create the database at startup (use `update` to only update the schema).
@@ -346,7 +346,7 @@ For instance, the following snippet defines a default datasource and a default p
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 ----
 
 Using a map based approach, it is possible to define named persistence units:
@@ -359,11 +359,11 @@ quarkus.datasource."users".jdbc.url=jdbc:h2:mem:users;DB_CLOSE_DELAY=-1
 quarkus.datasource."inventory".db-kind=h2 <2>
 quarkus.datasource."inventory".jdbc.url=jdbc:h2:mem:inventory;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm."users".database.generation=drop-and-create <3>
+quarkus.hibernate-orm."users".schema-management.strategy=drop-and-create <3>
 quarkus.hibernate-orm."users".datasource=users <4>
 quarkus.hibernate-orm."users".packages=org.acme.model.user <5>
 
-quarkus.hibernate-orm."inventory".database.generation=drop-and-create <6>
+quarkus.hibernate-orm."inventory".schema-management.strategy=drop-and-create <6>
 quarkus.hibernate-orm."inventory".datasource=inventory
 quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 ----
@@ -403,10 +403,10 @@ Using the `packages` configuration property is simple:
 
 [source,properties]
 ----
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 quarkus.hibernate-orm.packages=org.acme.model.defaultpu
 
-quarkus.hibernate-orm."users".database.generation=drop-and-create
+quarkus.hibernate-orm."users".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."users".datasource=users
 quarkus.hibernate-orm."users".packages=org.acme.model.user
 ----
@@ -520,7 +520,7 @@ For example, with the following configuration:
 ----
 quarkus.hibernate-orm."pg".packages=org.acme.model.shared
 quarkus.hibernate-orm."pg".datasource=pg
-quarkus.hibernate-orm."pg".database.generation=drop-and-create
+quarkus.hibernate-orm."pg".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."pg".active=false
 quarkus.datasource."pg".db-kind=h2
 quarkus.datasource."pg".active=false
@@ -528,7 +528,7 @@ quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
 
 quarkus.hibernate-orm."oracle".packages=org.acme.model.shared
 quarkus.hibernate-orm."oracle".datasource=oracle
-quarkus.hibernate-orm."oracle".database.generation=drop-and-create
+quarkus.hibernate-orm."oracle".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."oracle".active=false
 quarkus.datasource."oracle".db-kind=oracle
 quarkus.datasource."oracle".active=false
@@ -728,7 +728,7 @@ Quarkus development mode is really useful for applications that mix front end or
 
 There are a few common approaches to make the best of it.
 
-The first choice is to use `quarkus.hibernate-orm.database.generation=drop-and-create` in conjunction with `import.sql`.
+The first choice is to use `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` in conjunction with `import.sql`.
 
 That way for every change to your app and in particular to your entities, the database schema will be properly recreated
 and your data fixture (stored in `import.sql`) will be used to repopulate it from scratch.
@@ -741,7 +741,7 @@ By default, in `dev` and `test` modes, Hibernate ORM, upon boot, will read and e
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
 ====
 
-The second approach is to use `quarkus.hibernate-orm.database.generation=update`.
+The second approach is to use `quarkus.hibernate-orm.schema-management.strategy=update`.
 This approach is best when you do many entity changes but
 still need to work on a copy of the production data
 or if you want to reproduce a bug that is based on specific database entries.
@@ -750,7 +750,7 @@ including altering your database structure which could lead to data loss.
 For example if you change structures which violate a foreign key constraint, Hibernate ORM might have to bail out.
 But for development, these limitations are acceptable.
 
-The third approach is to use `quarkus.hibernate-orm.database.generation=none`.
+The third approach is to use `quarkus.hibernate-orm.schema-management.strategy=none`.
 This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
 Or if you use a database schema migration tool like xref:flyway.adoc[Flyway] or xref:liquibase.adoc[Liquibase].
 
@@ -1204,7 +1204,7 @@ CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In t
 
 [source,properties]
 ----
-quarkus.hibernate-orm.database.generation=none <1>
+quarkus.hibernate-orm.schema-management.strategy=none <1>
 
 quarkus.hibernate-orm.multitenant=SCHEMA <2>
 
@@ -1273,7 +1273,7 @@ If the list of tenants needs to change at runtime, you must <<programmatically-r
 
 [source,properties]
 ----
-quarkus.hibernate-orm.database.generation=none <1>
+quarkus.hibernate-orm.schema-management.strategy=none <1>
 
 quarkus.hibernate-orm.multitenant=DATABASE <2>
 quarkus.hibernate-orm.datasource=base <3>
@@ -1435,9 +1435,9 @@ to your `SessionFactory` by simply defining a CDI bean with the appropriate qual
 [source,java]
 ----
 @PersistenceUnitExtension // <1>
-public static class MyInterceptor extends EmptyInterceptor { // <2>
+public static class MyInterceptor implements Interceptor, Serializable { // <2>
     @Override
-    public boolean onLoad(Object entity, Serializable id, Object[] state, // <3>
+    public boolean onLoad(Object entity, Object id, Object[] state, // <3>
             String[] propertyNames, Type[] types) {
         // ...
         return false;
@@ -1448,8 +1448,7 @@ public static class MyInterceptor extends EmptyInterceptor { // <2>
 to tell Quarkus it should be used in the default persistence unit.
 +
 For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
-<2> Either extend `org.hibernate.EmptyInterceptor` or implement `org.hibernate.Interceptor` directly.
-<3> Implement methods as necessary.
+<2> Implement methods of `org.hibernate.Interceptor` as necessary.
 
 [TIP]
 ====
@@ -1569,3 +1568,212 @@ Format mappers *must* have both `@PersistenceUnitExtension` and either `@JsonFor
 
 Having multiple JSON (or XML) format mappers registered for the same persistence unit will result in an exception, because of the ambiguity.
 ====
+
+[[validator_integration]]
+== Validation modes and Hibernate Validator integration
+
+Hibernate Validator integration into Hibernate ORM opens up the following capabilities:
+
+- performing entity validation on lifecycle events
+- applying constraint information from entities to DDL
+
+From Quarkus's perspective, this is controlled by the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
+The available validation modes are:
+
+- `auto` -- the default option; works the same as `callback` and `ddl` enabled simultaneously
+when the application uses `quarkus-hibernate-validator`,
+and as `none` otherwise.
+- `callback` -- Hibernate Validator will perform the lifecycle event validation.
+- `ddl` -- Hibernate Validator constraints will be considered for the <<dev-mode,DDL operations>>
+- `none` -- Hibernate Validator integration will be disabled.
+
+While all constraints with corresponding Jakarta Validation rules will apply during the `callback` validation,
+in the `ddl` mode, only a subset of constraints is used to influence the DDL.
+In the Hibernate Validator documentation, you can find link:{hibernate-validator-docs-url}#section-builtin-constraints[the list of available constraints] and their impact on the DDL generation.
+
+Let's consider having a simple entity with some constraints applied to its properties:
+
+[source,java]
+----
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Entity
+public class MyEntity {
+    @Id
+    public long id;
+
+    @NotNull
+    @NotEmpty
+    @Size(max = 50)
+    public String name;
+
+    public String value;
+}
+----
+
+With the `ddl` mode enabled, the resulting schema would be expected to have the following constraints:
+[source,sql]
+----
+create table myentity
+(
+    id    bigint      not null  primary key,
+    name  varchar(50) not null, // <1>
+    value varchar(255),         // <2>
+);
+----
+<1> The `name` column has a `not null` constraint because of the `@NotNull` constraint,
+and the length of the values is limited to `50` because of the `@Size(max=50)` constraint.
++
+<2> Since the `value` property in the entity has no constraints, there are no additional constraints in the DDL,
+and the `255` length limit comes from the default `jakarta.persistence.Column#lenght()`.
+
+With the `callback` mode, expect getting a `jakarta.validation.ConstraintViolationException` thrown:
+
+[source,java]
+----
+try {
+    MyEntity entity = new MyEntity();
+    entity.setName(veryLongName);
+    em.persist(entity);
+    em.flush();
+} catch (ConstraintViolationException exception) {
+    // handle the constraint violations somehow
+}
+----
+
+Since Quarkus has built-in exception mappers for `jakarta.validation.ConstraintViolationException`,
+explicitly handling these exceptions might be redundant. See the xref:validation.adoc#rest-end-point-validation[REST end point validation]
+section of the Hibernate Validator guide for more details.
+
+[[jakarta-data]]
+== Static metamodel and Jakarta Data
+
+Both static metamodel and Jakarta Data capabilities of Hibernate ORM are available in Quarkus
+through the `hibernate-jpamodelgen` annotation processor. Since it is an annotation processor,
+you must configure the annotation processor in your build tool:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<plugin>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-jpamodelgen</artifactId>
+                <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
+            </path>
+            <!-- other processors that may be required by your app -->
+        </annotationProcessorPaths>
+        <!-- Other compiler plugin configuration options -->
+    </configuration>
+</plugin>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Enforce the version management of your annotation processor dependencies,
+// so that there's no need to define an explicit version of the hibernate-jpamodelgen
+annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+annotationProcessor 'org.hibernate.orm:hibernate-jpamodelgen'
+----
+
+=== Static metamodel
+
+The generated static metamodel allows for building queries in a type-safe manner.
+Let's consider having a simple entity:
+
+[source,java]
+----
+@Entity
+public class MyEntity {
+    @Id
+    @GeneratedValue
+    public Integer id;
+
+    @Column(unique = true)
+    public String name;
+}
+----
+
+A query created with the help of static metamodel may look as:
+
+[source,java]
+----
+var builder = session.getCriteriaBuilder();
+var criteria = builder.createQuery(MyEntity.class);
+var e = criteria.from(MyEntity_.class);
+criteria.where(e.get(MyEntity_.name).equalTo(name));
+var query = session.createQuery(criteria);
+var result = query.list();
+----
+
+For a more detailed overview of static metamodel, please refer to the link:{jakarta-persistence-spec-url}#a6072[Jakarta Persistence specification].
+
+=== Jakarta Data
+
+Jakarta Data requires, besides having the `hibernate-jpamodelgen` annotation processor in place, one extra dependency to be added:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>jakarta.data</groupId>
+    <artifactId>jakarta.data-api</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation 'jakarta.data:jakarta.data-api'
+----
+
+With this dependency, and the annotation processor in place you could simply create your repositories as follows:
+
+[source,java]
+----
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> { // <1>
+
+    @Query("select e from MyEntity e where e.name like :name") // <2>
+    List<MyEntity> findByName(String name);
+
+    @Delete // <3>
+    void delete(String name);
+
+}
+----
+1. To skip the boilerplate definition of CRUD operations,
+we can use one of the available interfaces (e.g. `CrudRepository` or `BasicRepository`).
+2. Adding custom queries with parameters is as easy as providing your query string to the `@Query` annotation.
+3. If the basic CRUD operations from the Jakarta Data interfaces are not enough,
+we can always add a custom one, in this case a delete operation that removes `MyEntity`s by name.
+
+And then the repository can be used as any other bean:
+
+[source,java]
+----
+public class MyEntityResource {
+
+    @Inject
+    MyRepository repository;
+
+    @POST
+    @Transactional
+    public void create(MyEntity entity) {
+        repository.insert(entity);
+    }
+
+	// ...
+
+}
+----
+
+Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
+and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
+guides to learn what else they have to offer.

@@ -82,10 +82,19 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         if (properties == null)
             properties = new HashMap<Object, Object>();
         // These are pre-parsed during image generation:
-        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
-        for (PersistenceUnitDescriptor unit : units) {
-            //if the provider is not set, don't use it as people might want to use Hibernate ORM
+        // We might have multiple persistence unit descriptors of different kinds when using reactive and orm together
+        // In this case this provider should take care only of reactive units
+        // Luckily we can return null in this API to use the next provider for the other one
+        // See jakarta.persistence.Persistence.createEntityManagerFactory(java.lang.String, java.util.Map)
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder
+                .getPersistenceUnitDescriptors()
+                .stream()
+                .filter(u -> u.getName().equals(emName))
+                .filter(u -> u.isReactive()) // we don't support orm units here
+                .toList();
+
+        for (QuarkusPersistenceUnitDescriptor unit : units) {
             if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
                     unit.getProviderClassName() == null) {
                 EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);
@@ -110,7 +119,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        // Processing only the reactive descriptors
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors()
+                .stream()
+                .filter(d -> d.isReactive())
+                .toList();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 
@@ -203,7 +216,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
-                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
+                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
+                    PersistenceUnitsHolder.getPersistenceUnitDescriptors().size() == 1);
         }
 
         log.debug("Found no matching persistence units");
@@ -307,12 +321,15 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             Builder runtimeSettingsBuilder) {
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
-                persistenceUnitConfig.database().generation().generation());
+                persistenceUnitConfig.database().generation().generation()
+                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
-                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()));
+                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()
+                        .orElse(persistenceUnitConfig.schemaManagement().createSchemas())));
 
-        if (persistenceUnitConfig.database().generation().haltOnError()) {
+        if (persistenceUnitConfig.database().generation().haltOnError()
+                .orElse(persistenceUnitConfig.schemaManagement().haltOnError())) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 

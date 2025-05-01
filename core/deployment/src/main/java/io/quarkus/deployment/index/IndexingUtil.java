@@ -44,8 +44,8 @@ public class IndexingUtil {
 
     private static final int JAVA_VERSION;
 
-    // At least Jandex 2.1 is needed
-    private static final int REQUIRED_INDEX_VERSION = 8;
+    // At least Jandex 3.0 is needed
+    private static final int REQUIRED_INDEX_VERSION = 11;
 
     static {
         int version = 8;
@@ -71,7 +71,7 @@ public class IndexingUtil {
 
     public static Index indexTree(OpenPathTree tree, Set<String> removed) throws IOException {
         if (removed == null) {
-            final Index i = tree.apply(JANDEX_INDEX, MetaInfJandexReader.getInstance());
+            final Index i = tree.apply(JANDEX_INDEX, new MetaInfJandexReader(tree.toString()));
             if (i != null) {
                 return i;
             }
@@ -88,17 +88,19 @@ public class IndexingUtil {
             if (existing != null && removed == null) {
                 try (InputStream in = jarFile.getInputStream(existing)) {
                     IndexReader reader = new IndexReader(in);
-                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                        log.warnf(
-                                "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                file);
-                        return indexJar(jarFile, removed);
-                    } else {
-                        try {
-                            return reader.read();
-                        } catch (UnsupportedVersion e) {
-                            throw new UnsupportedVersion("Can't read Jandex index from " + file + ": " + e.getMessage());
+                    try {
+                        int indexVersion = reader.getIndexVersion();
+                        if (indexVersion < REQUIRED_INDEX_VERSION) {
+                            log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
+                                    + " to index an application dependency (index version is %s)", file, indexVersion);
+                            return indexJar(jarFile, removed);
                         }
+                        return reader.read();
+                    } catch (UnsupportedVersion e) {
+                        log.warnf("Reindexing %s, the index format is too new for the Jandex version"
+                                + " used by your application. Please report it to the author of this JAR (%s)",
+                                file, e.getMessage());
+                        return indexJar(jarFile, removed);
                     }
                 }
             }
@@ -273,10 +275,10 @@ public class IndexingUtil {
     }
 
     private static class MetaInfJandexReader implements Function<PathVisit, Index> {
-        private static MetaInfJandexReader instance;
+        private final String treeDescription;
 
-        private static MetaInfJandexReader getInstance() {
-            return instance == null ? instance = new MetaInfJandexReader() : instance;
+        MetaInfJandexReader(String treeDescription) {
+            this.treeDescription = treeDescription;
         }
 
         @Override
@@ -287,19 +289,22 @@ public class IndexingUtil {
             try (InputStream in = Files.newInputStream(visit.getPath())) {
                 IndexReader reader = new IndexReader(in);
                 try {
-                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                        log.warnf(
-                                "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                visit.getPath());
+                    int indexVersion = reader.getIndexVersion();
+                    if (indexVersion < REQUIRED_INDEX_VERSION) {
+                        log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
+                                + " to index an application dependency (index version is %s)",
+                                treeDescription, indexVersion);
                         return null;
                     }
                     return reader.read();
                 } catch (UnsupportedVersion e) {
-                    throw new UnsupportedVersion(
-                            "Can't read Jandex index from " + visit.getPath() + ": " + e.getMessage());
+                    log.warnf("Reindexing %s, the index format is too new for the Jandex version"
+                            + " used by your application. Please report it to the author of this JAR (%s)",
+                            treeDescription, e.getMessage());
+                    return null;
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException("Can't read Jandex index from " + visit.getPath(), e);
+                throw new UncheckedIOException("Can't read Jandex index from " + treeDescription, e);
             }
         }
     }

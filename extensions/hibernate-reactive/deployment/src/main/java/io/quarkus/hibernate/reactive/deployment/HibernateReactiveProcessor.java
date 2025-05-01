@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.ValidationMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -34,7 +35,6 @@ import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
@@ -76,8 +77,8 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
-import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -95,23 +96,10 @@ public final class HibernateReactiveProcessor {
     };
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            LOG.warnf("Skip registration of the %s bean - no JPA entities were found",
-                    ReactiveSessionFactoryProducer.class.getSimpleName());
-            return;
-        }
-        if (descriptors.size() == 1) {
-            // Only register the bean if their EMF dependency is also available, so use the same guard as the ORM extension
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
-        } else {
-            throw new ConfigurationException(
-                    "The Hibernate Reactive extension requires exactly one persistence unit configured: " + descriptors
-                            .stream()
-                            .map(PersistenceUnitDescriptorBuildItem::getPersistenceUnitName).collect(Collectors.toList()));
-        }
+    void registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
+        services.produce(new ServiceProviderBuildItem(
+                "io.vertx.core.spi.VertxServiceProvider",
+                "org.hibernate.reactive.context.impl.ContextualDataStorage"));
     }
 
     @BuildStep
@@ -132,6 +120,7 @@ public final class HibernateReactiveProcessor {
     public void buildReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig, CombinedIndexBuildItem index,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
@@ -182,37 +171,46 @@ public final class HibernateReactiveProcessor {
                     "The default datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
                     Set.of("quarkus.datasource.db-kind", "quarkus.datasource.username",
                             "quarkus.datasource.password"));
-        } else {
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
-            QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
-                    dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
-                    launchMode.getLaunchMode(),
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
-
-            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
-            jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
-                    .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-            xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
-                    .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-
-            //Some constant arguments to the following method:
-            // - this is Reactive
-            // - we don't support starting Hibernate Reactive from a persistence.xml
-            // - we don't support Hibernate Envers with Hibernate Reactive
-            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
-                    new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                            dbKindOptional, Optional.empty(),
-                            persistenceUnitConfig.dialect().dialect(),
-                            io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
-                            hibernateOrmConfig.database().ormCompatibilityVersion(),
-                            persistenceUnitConfig.unsupportedProperties()),
-                    null,
-                    jpaModel.getXmlMappings(reactivePU.getName()),
-                    true, false,
-                    isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
         }
+
+        // We only support Hibernate Reactive with a reactive data source, otherwise we don't configure the PU
+        DataSourcesReactiveBuildTimeConfig.DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
+                .dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+
+        if (dataSourceReactiveBuildTimeConfig == null || !dataSourceReactiveBuildTimeConfig.reactive().enabled()) {
+            LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
+            return;
+        }
+
+        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
+        QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
+                hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
+                dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
+                launchMode.getLaunchMode(),
+                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
+
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+
+        //Some constant arguments to the following method:
+        // - this is Reactive
+        // - we don't support starting Hibernate Reactive from a persistence.xml
+        // - we don't support Hibernate Envers with Hibernate Reactive
+        persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
+                new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        dbKindOptional, Optional.empty(),
+                        persistenceUnitConfig.dialect().dialect(),
+                        io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
+                        hibernateOrmConfig.database().ormCompatibilityVersion(),
+                        persistenceUnitConfig.unsupportedProperties()),
+                null,
+                jpaModel.getXmlMappings(reactivePU.getName()),
+                false,
+                isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
     }
 
     @BuildStep
@@ -299,7 +297,8 @@ public final class HibernateReactiveProcessor {
                 HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME, persistenceUnitConfigName,
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
                 new ArrayList<>(modelClassesAndPackages),
-                new Properties());
+                new Properties(),
+                true);
 
         setDialectAndStorageEngine(dbKindOptional, explicitDialect, explicitDbMinVersion, dbKindDialectBuildItems,
                 persistenceUnitConfig.dialect().storageEngine(), systemProperties, desc);
@@ -435,6 +434,17 @@ public final class HibernateReactiveProcessor {
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
             p.put(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+        }
+
+        if (!persistenceUnitConfig.validation().enabled()) {
+            desc.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+        } else {
+            desc.getProperties().setProperty(
+                    AvailableSettings.JAKARTA_VALIDATION_MODE,
+                    persistenceUnitConfig.validation().mode()
+                            .stream()
+                            .map(Enum::name)
+                            .collect(Collectors.joining(",")));
         }
 
         return desc;

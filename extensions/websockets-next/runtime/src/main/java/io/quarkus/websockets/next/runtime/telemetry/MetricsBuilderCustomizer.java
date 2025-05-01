@@ -6,8 +6,8 @@ import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CL
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_ENDPOINT_COUNT_ERRORS;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.DIRECTION_TAG_KEY;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_CLOSED;
+import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_ON_OPEN_ERROR;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_OPENED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_OPENED_ERROR;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_ENDPOINT_COUNT_ERRORS;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction.INBOUND;
 import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction.OUTBOUND;
@@ -98,7 +98,7 @@ public final class MetricsBuilderCustomizer implements Consumer<WebSocketTelemet
                     .withRegistry(meterRegistry);
 
             private final Meter.MeterProvider<Counter> connectionOpeningFailedCounter = Counter
-                    .builder(SERVER_CONNECTION_OPENED_ERROR)
+                    .builder(SERVER_CONNECTION_ON_OPEN_ERROR)
                     .description("Number of failures occurred when opening server connection failed.")
                     .withRegistry(meterRegistry);
 

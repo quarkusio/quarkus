@@ -70,6 +70,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
@@ -194,9 +195,12 @@ public class QuarkusComponentTestExtension
 
     private final QuarkusComponentTestConfiguration baseConfiguration;
 
+    private final boolean buildShouldFail;
+    private final AtomicReference<Throwable> buildFailure;
+
     // Used for declarative registration
     public QuarkusComponentTestExtension() {
-        this(QuarkusComponentTestConfiguration.DEFAULT);
+        this(QuarkusComponentTestConfiguration.DEFAULT, false);
     }
 
     /**
@@ -208,16 +212,27 @@ public class QuarkusComponentTestExtension
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
         this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses),
                 List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of(), List.of(), null));
+                List.of(), List.of(), null), false);
     }
 
-    QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration) {
+    QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration, boolean startShouldFail) {
         this.baseConfiguration = baseConfiguration;
+        this.buildShouldFail = startShouldFail;
+        this.buildFailure = new AtomicReference<>();
+    }
+
+    Throwable getBuildFailure() {
+        return buildFailure.get();
     }
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
+        if (context.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            // There is no callback that runs after all tests in a test class but before any @Nested test classes run
+            // Therefore we need to discard the existing container here
+            cleanup(context);
+        }
         buildContainer(context);
         startContainer(context, Lifecycle.PER_CLASS);
         LOG.debugf("beforeAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
@@ -235,18 +250,22 @@ public class QuarkusComponentTestExtension
     public void beforeEach(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
         startContainer(context, Lifecycle.PER_METHOD);
-        // Activate the request context
-        Arc.container().requestContext().activate();
+        if (getContainerState(context) == ContainerState.STARTED) {
+            // Activate the request context
+            Arc.container().requestContext().activate();
+        }
         LOG.debugf("beforeEach: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
-        // Terminate the request context
-        Arc.container().requestContext().terminate();
-        // Destroy @Dependent beans injected as test method parameters correctly
-        destroyDependentTestMethodParams(context);
+        if (getContainerState(context) == ContainerState.STARTED) {
+            // Terminate the request context
+            Arc.container().requestContext().terminate();
+            // Destroy @Dependent beans injected as test method parameters correctly
+            destroyDependentTestMethodParams(context);
+        }
         // Stop the container if Lifecycle.PER_METHOD is used
         stopContainer(context, Lifecycle.PER_METHOD);
         LOG.debugf("afterEach: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
@@ -373,38 +392,43 @@ public class QuarkusComponentTestExtension
                 .update(context.getRequiredTestClass());
         store(context).put(KEY_TEST_CLASS_CONFIG, testClassConfiguration);
         ClassLoader oldTccl = initArcContainer(context, testClassConfiguration);
-        store(context).put(KEY_OLD_TCCL, oldTccl);
-        setContainerState(context, ContainerState.INITIALIZED);
+        if (buildFailure.get() == null) {
+            store(context).put(KEY_OLD_TCCL, oldTccl);
+            setContainerState(context, ContainerState.INITIALIZED);
+        } else {
+            setContainerState(context, ContainerState.BUILD_FAILED);
+        }
     }
 
     @SuppressWarnings("unchecked")
     private void cleanup(ExtensionContext context) {
-        if (getContainerState(context) != ContainerState.STOPPED) {
-            return;
-        }
-        ClassLoader oldTccl = store(context).get(KEY_OLD_TCCL, ClassLoader.class);
-        Thread.currentThread().setContextClassLoader(oldTccl);
-        store(context).remove(KEY_OLD_TCCL);
-        store(context).remove(KEY_CONFIG_MAPPINGS);
-        Set<Path> generatedResources = store(context).get(KEY_GENERATED_RESOURCES, Set.class);
-        for (Path path : generatedResources) {
-            try {
-                LOG.debugf("Delete generated %s", path);
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                LOG.errorf("Unable to delete the generated resource %s: ", path, e.getMessage());
+        if (getContainerState(context).requiresCleanup()) {
+            ClassLoader oldTccl = store(context).get(KEY_OLD_TCCL, ClassLoader.class);
+            if (oldTccl != null) {
+                Thread.currentThread().setContextClassLoader(oldTccl);
             }
+            store(context).remove(KEY_OLD_TCCL);
+            store(context).remove(KEY_CONFIG_MAPPINGS);
+            Set<Path> generatedResources = store(context).get(KEY_GENERATED_RESOURCES, Set.class);
+            if (generatedResources != null) {
+                for (Path path : generatedResources) {
+                    try {
+                        LOG.debugf("Delete generated %s", path);
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        LOG.errorf("Unable to delete the generated resource %s: ", path, e.getMessage());
+                    }
+                }
+            }
+            store(context).remove(KEY_GENERATED_RESOURCES);
+            setContainerState(context, ContainerState.UNINITIALIZED);
         }
-        store(context).remove(KEY_GENERATED_RESOURCES);
-        setContainerState(context, ContainerState.UNINITIALIZED);
     }
 
     @SuppressWarnings("unchecked")
     private void stopContainer(ExtensionContext context, Lifecycle testInstanceLifecycle) throws Exception {
-        if (testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))) {
-            if (getContainerState(context) != ContainerState.STARTED) {
-                return;
-            }
+        if (testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))
+                && getContainerState(context) == ContainerState.STARTED) {
             for (FieldInjector fieldInjector : (List<FieldInjector>) store(context)
                     .get(KEY_INJECTED_FIELDS, List.class)) {
                 fieldInjector.unset();
@@ -431,8 +455,13 @@ public class QuarkusComponentTestExtension
     enum ContainerState {
         UNINITIALIZED,
         INITIALIZED,
+        BUILD_FAILED,
         STARTED,
-        STOPPED
+        STOPPED;
+
+        boolean requiresCleanup() {
+            return this == STOPPED || this == BUILD_FAILED;
+        }
     }
 
     private ContainerState getContainerState(ExtensionContext context) {
@@ -451,7 +480,9 @@ public class QuarkusComponentTestExtension
         ContainerState state = getContainerState(context);
         if (state == ContainerState.UNINITIALIZED) {
             throw new IllegalStateException("Container not initialized");
-        } else if (state == ContainerState.STARTED) {
+        } else if (state == ContainerState.STARTED
+                // The build was expected to fail
+                || state == ContainerState.BUILD_FAILED) {
             return;
         }
         // Init ArC
@@ -605,7 +636,7 @@ public class QuarkusComponentTestExtension
             AtomicReference<BeanResolver> beanResolver = new AtomicReference<>();
 
             // Collect all @Inject and @InjectMock test class injection points to define a bean removal exclusion
-            List<Field> injectFields = findInjectFields(testClass);
+            List<Field> injectFields = findInjectFields(testClass, true);
             List<Parameter> injectParams = findInjectParams(testClass);
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
@@ -903,10 +934,18 @@ public class QuarkusComponentTestExtension
             Thread.currentThread().setContextClassLoader(testClassLoader);
 
         } catch (Throwable e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+            if (buildShouldFail) {
+                buildFailure.set(e);
             } else {
-                throw new RuntimeException(e);
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
+        } finally {
+            if (buildShouldFail && buildFailure.get() == null) {
+                throw new AssertionError("The container build was expected to fail!");
             }
         }
         return oldTccl;
@@ -1051,21 +1090,49 @@ public class QuarkusComponentTestExtension
 
     private List<FieldInjector> injectFields(Class<?> testClass, Object testInstance) throws Exception {
         List<FieldInjector> injectedFields = new ArrayList<>();
-        for (Field field : findInjectFields(testClass)) {
+        for (Field field : findInjectFields(testClass, false)) {
             injectedFields.add(new FieldInjector(field, testInstance));
         }
         return injectedFields;
     }
 
-    private List<Field> findInjectFields(Class<?> testClass) {
+    private List<Field> findInjectFields(Class<?> testClass, boolean scanEnclosingClasses) {
         List<Class<? extends Annotation>> injectAnnotations;
-        Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
-        if (deprecatedInjectMock != null) {
-            injectAnnotations = List.of(Inject.class, InjectMock.class, deprecatedInjectMock);
+
+        Class<? extends Annotation> injectSpy = loadInjectSpy();
+        if (injectSpy != null) {
+            injectAnnotations = List.of(Inject.class, InjectMock.class, injectSpy);
         } else {
             injectAnnotations = List.of(Inject.class, InjectMock.class);
         }
-        return findFields(testClass, injectAnnotations);
+
+        List<Field> found = findFields(testClass, injectAnnotations);
+        if (scanEnclosingClasses) {
+            Class<?> enclosing = testClass.getEnclosingClass();
+            while (enclosing != null) {
+                // @Nested test class
+                found.addAll(findFields(enclosing, injectAnnotations));
+                enclosing = enclosing.getEnclosingClass();
+            }
+        }
+
+        if (injectSpy != null) {
+            List<Field> injectSpies = found.stream().filter(f -> f.isAnnotationPresent(injectSpy)).toList();
+            if (!injectSpies.isEmpty()) {
+                throw new IllegalStateException("@InjectSpy is not supported by QuarkusComponentTest: " + injectSpies);
+            }
+        }
+
+        return found;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Class<? extends Annotation> loadInjectSpy() {
+        try {
+            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectSpy");
+        } catch (Throwable e) {
+            return null;
+        }
     }
 
     private List<Parameter> findInjectParams(Class<?> testClass) {
@@ -1233,15 +1300,6 @@ public class QuarkusComponentTestExtension
         unsetHandles.addAll(handles);
         return isTypeArgumentInstanceHandle(requiredType) ? handles
                 : handles.stream().map(InstanceHandle::get).collect(Collectors.toUnmodifiableList());
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<? extends Annotation> loadDeprecatedInjectMock() {
-        try {
-            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectMock");
-        } catch (Throwable e) {
-            return null;
-        }
     }
 
     private static boolean isListRequiredType(java.lang.reflect.Type type) {

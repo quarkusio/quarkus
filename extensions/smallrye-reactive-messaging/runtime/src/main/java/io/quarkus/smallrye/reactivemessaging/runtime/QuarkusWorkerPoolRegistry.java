@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.smallrye.reactive.messaging.providers.connectors.WorkerPoolRegistry;
@@ -60,7 +61,11 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(100) @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (!workerExecutors.isEmpty()) {
             for (WorkerExecutor executor : workerExecutors.values()) {
-                executor.close();
+                if (Infrastructure.canCallerThreadBeBlocked()) {
+                    executor.closeAndAwait();
+                } else {
+                    executor.closeAndForget();
+                }
             }
         }
     }

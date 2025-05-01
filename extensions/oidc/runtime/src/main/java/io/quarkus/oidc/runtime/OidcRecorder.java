@@ -1,9 +1,9 @@
 package io.quarkus.oidc.runtime;
 
-import static io.quarkus.oidc.runtime.OidcConfig.getDefaultTenant;
-import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
+import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -40,6 +40,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class OidcRecorder {
 
+    public static final String ACR_VALUES_TO_MAX_AGE_SEPARATOR = "@#$%@";
     static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
@@ -134,6 +135,45 @@ public class OidcRecorder {
         };
     }
 
+    public Function<String, Consumer<RoutingContext>> authenticationContextInterceptorCreator() {
+        StepUpAuthenticationPolicy.markAsEnabled();
+        return new Function<String, Consumer<RoutingContext>>() {
+            @Override
+            public Consumer<RoutingContext> apply(String annotationBinding) {
+                int separatorIndex = annotationBinding.indexOf(ACR_VALUES_TO_MAX_AGE_SEPARATOR);
+                String acrValues = annotationBinding.substring(0, separatorIndex);
+                String maxAgeAsStr = annotationBinding.substring(separatorIndex + ACR_VALUES_TO_MAX_AGE_SEPARATOR.length());
+                final Duration maxAgeDuration;
+                if (maxAgeAsStr.isEmpty()) {
+                    maxAgeDuration = null;
+                } else {
+                    maxAgeDuration = parseDuration(maxAgeAsStr);
+                }
+                StepUpAuthenticationPolicy policy = new StepUpAuthenticationPolicy(acrValues, maxAgeDuration);
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        String requestPath = routingContext.request().path();
+                        OidcTenantConfig tenantConfig = routingContext.get(OidcTenantConfig.class.getName());
+                        if (tenantConfig != null || routingContext.user() != null) {
+                            throw new AuthenticationFailedException("""
+                                    Authentication has happened before the '@AuthenticationContext' annotation was
+                                    matched with the HTTP request path '%s'. It can happen when the authentication
+                                    is required by an HTTP Security Policy before the JAX-RS chain is run. In such
+                                    cases, please set the 'quarkus.http.auth.permission."permissions".applies-to=JAXRS'
+                                    to all HTTP Security Policies which secure the same REST endpoints as the ones
+                                    annotated with the '@AuthenticationContext' annotation.
+                                    """.formatted(requestPath));
+                        }
+                        LOG.debugf("The '@AuthenticationContext' annotation set required 'acr' values '%s' "
+                                + "and max age '%s' for the request path '%s'", acrValues, maxAgeAsStr, requestPath);
+                        policy.storeSelfOnContext(routingContext);
+                    }
+                };
+            }
+        };
+    }
+
     private static final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider
             implements TenantIdentityProvider {
 
@@ -144,12 +184,7 @@ public class OidcRecorder {
             super(Arc.container().instance(DefaultTenantConfigResolver.class).get(),
                     Arc.container().instance(BlockingSecurityExecutor.class).get());
             this.blockingExecutor = Arc.container().instance(BlockingSecurityExecutor.class).get();
-            if (tenantId.equals(DEFAULT_TENANT_ID)) {
-                OidcConfig config = Arc.container().instance(OidcConfig.class).get();
-                this.tenantId = getDefaultTenant(config).tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
-            } else {
-                this.tenantId = tenantId;
-            }
+            this.tenantId = tenantId;
         }
 
         @Override

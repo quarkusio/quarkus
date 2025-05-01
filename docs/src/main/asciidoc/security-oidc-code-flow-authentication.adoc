@@ -794,10 +794,10 @@ For more information about using the default token cache or registering a custom
 For information about the claim verification, including the `iss` (issuer) claim, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-jwt-claim-verification[JSON Web Token claim verification] section.
 It applies to ID tokens and also to access tokens in a JWT format, if the `web-app` application has requested the access token verification.
 
-[[jose4j-validator]]
+[[jose4j-validator-code]]
 ==== Jose4j Validator
 
-You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
+You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator-bearer[Jose4j] section for more information.
 
 === Proof Key for Code Exchange (PKCE)
 
@@ -1655,6 +1655,64 @@ public class ServiceResource {
 <2> Revoke the authorization code flow access token.
 <3> Revoke the authorization code flow refresh token.
 
+You can also revoke tokens in the security event listeners.
+
+For example, when your application supports a standard <<user-initiated-logout>>, you can catch a logout event and revoke tokens:
+
+[source,java]
+----
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
+
+@ApplicationScoped
+public class SecurityEventListener {
+
+    public CompletionStage<Void> processSecurityEvent(@ObservesAsync SecurityEvent event) {
+        if (SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED == event.getEventType()) { <1>
+	    return revokeTokens(event.getSecurityIdentity()).subscribeAsCompletionStage();
+	}
+	return CompletableFuture.completedFuture(null);
+    }
+    private Uni<Void> revokeTokens(SecurityIdentity securityIdentity) {
+        return Uni.join().all(
+                   revokeAccessToken(securityIdentity),
+	           revokeRefreshToken(securityIdentity)
+               ).andCollectFailures()
+                .replaceWithVoid()
+                .onFailure().recoverWithUni(t -> logFailure(t));
+    }
+
+    private static Uni<Boolean> revokeAccessToken(SecurityIdentity securityIdentity) { <2>
+        OidcProviderClient oidcProvider = securityIdentity.getAttribute(OidcProviderClient.class.getName());
+        String accessToken = securityIdentity.getCredential(AccessTokenCredential.class).getToken();
+        return oidcProvider.revokeAccessToken(accessToken);
+    }
+
+    private static Uni<Boolean> revokeRefreshToken(SecurityIdentity securityIdentity) { <3>
+        OidcProviderClient oidcProvider = securityIdentity.getAttribute(OidcProviderClient.class.getName());
+        String refreshToken = securityIdentity.getCredential(RefreshToken.class).getToken();
+        return oidcProvider.revokeRefreshToken(refreshToken);
+    }
+
+    private static Uni<Void> logFailure(Throwable t) {
+        // Log failure as required
+        return Uni.createFrom().voidItem();
+    }
+}
+----
+<1> Revoke tokens if an RP-initiated logout event is observed.
+<2> Revoke the authorization code flow access token.
+<3> Revoke the authorization code flow refresh token.
+
 === Propagating tokens to downstream services
 
 For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.
@@ -2177,6 +2235,7 @@ section of the OpenID Connect Multi-Tenancy guide.
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
+* xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
 * xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 client and filters reference guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]

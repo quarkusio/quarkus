@@ -104,13 +104,13 @@ public class LocalProject {
         return loadWorkspace(ctx, null);
     }
 
-    public static LocalProject loadWorkspace(BootstrapMavenContext ctx, Function<Path, Model> modelProvider)
+    public static LocalProject loadWorkspace(BootstrapMavenContext ctx, List<WorkspaceModulePom> providedModules)
             throws BootstrapMavenException {
         final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
         if (currentProjectPom == null) {
             return null;
         }
-        final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom, modelProvider);
+        final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom, providedModules);
         final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
         if (rootProjectBaseDir != null && !rootProjectBaseDir.equals(currentProjectPom.getParent())) {
             wsLoader.setWorkspaceRootPom(rootProjectBaseDir.resolve(POM_XML));
@@ -144,31 +144,46 @@ public class LocalProject {
     }
 
     private final Model rawModel;
+    private final Model effectiveModel;
+    private final ModelBuildingResult modelBuildingResult;
     private final ArtifactKey key;
     private String version;
     private final Path dir;
     private final LocalWorkspace workspace;
-    final List<LocalProject> modules = new ArrayList<>(0);
-    private final ModelBuildingResult modelBuildingResult;
     private volatile LocalProject parent;
     private volatile WorkspaceModule module;
 
+    /**
+     * TODO: linking LocalProject to a ModelBuildingResult is probably not a good idea.
+     * Perhaps, the result should be cached in the MavenModelBuilder instead.
+     *
+     * @param modelBuildingResult model building result
+     * @param workspace workspace
+     */
     LocalProject(ModelBuildingResult modelBuildingResult, LocalWorkspace workspace) {
+        this.modelBuildingResult = modelBuildingResult;
         this.rawModel = modelBuildingResult.getRawModel();
-        final Model effectiveModel = modelBuildingResult.getEffectiveModel();
+        this.effectiveModel = modelBuildingResult.getEffectiveModel();
         this.key = ArtifactKey.ga(effectiveModel.getGroupId(), effectiveModel.getArtifactId());
         this.version = effectiveModel.getVersion();
         this.dir = effectiveModel.getProjectDirectory().toPath();
-        this.modelBuildingResult = modelBuildingResult;
         this.workspace = workspace;
         if (workspace != null) {
             workspace.addProject(this);
+            if (!version.equals(ModelUtils.getRawVersion(rawModel))) {
+                workspace.setResolvedVersion(version);
+            }
         }
     }
 
     LocalProject(Model rawModel, LocalWorkspace workspace) {
-        this.modelBuildingResult = null;
+        this(rawModel, null, workspace);
+    }
+
+    LocalProject(Model rawModel, Model effectiveModel, LocalWorkspace workspace) {
         this.rawModel = rawModel;
+        this.effectiveModel = effectiveModel;
+        this.modelBuildingResult = null;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
         this.key = ArtifactKey.ga(ModelUtils.getGroupId(rawModel), rawModel.getArtifactId());
@@ -185,6 +200,10 @@ public class LocalProject {
         } else if (version == null && rawVersionIsUnresolved) {
             throw UnresolvedVersionException.forGa(key.getGroupId(), key.getArtifactId(), rawVersion);
         }
+    }
+
+    public ModelBuildingResult getModelBuildingResult() {
+        return modelBuildingResult;
     }
 
     protected long getPomLastModified() {
@@ -231,9 +250,9 @@ public class LocalProject {
     }
 
     public Path getOutputDir() {
-        return modelBuildingResult == null
+        return effectiveModel == null
                 ? resolveRelativeToBaseDir(configuredBuildDir(this, BuildBase::getDirectory), "target")
-                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getDirectory());
+                : Path.of(effectiveModel.getBuild().getDirectory());
     }
 
     public Path getCodeGenOutputDir() {
@@ -245,21 +264,21 @@ public class LocalProject {
     }
 
     public Path getClassesDir() {
-        return modelBuildingResult == null
+        return effectiveModel == null
                 ? resolveRelativeToBuildDir(configuredBuildDir(this, Build::getOutputDirectory), "classes")
-                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getOutputDirectory());
+                : Path.of(effectiveModel.getBuild().getOutputDirectory());
     }
 
     public Path getTestClassesDir() {
-        return modelBuildingResult == null
+        return effectiveModel == null
                 ? resolveRelativeToBuildDir(configuredBuildDir(this, Build::getTestOutputDirectory), "test-classes")
-                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getTestOutputDirectory());
+                : Path.of(effectiveModel.getBuild().getTestOutputDirectory());
     }
 
     public Path getSourcesSourcesDir() {
-        return modelBuildingResult == null
+        return effectiveModel == null
                 ? resolveRelativeToBaseDir(configuredBuildDir(this, Build::getSourceDirectory), "src/main/java")
-                : Path.of(modelBuildingResult.getEffectiveModel().getBuild().getSourceDirectory());
+                : Path.of(effectiveModel.getBuild().getSourceDirectory());
     }
 
     public Path getTestSourcesSourcesDir() {
@@ -294,12 +313,12 @@ public class LocalProject {
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
-    public ModelBuildingResult getModelBuildingResult() {
-        return modelBuildingResult;
-    }
-
     public Model getRawModel() {
         return rawModel;
+    }
+
+    public Model getEffectiveModel() {
+        return effectiveModel;
     }
 
     public LocalWorkspace getWorkspace() {
@@ -311,7 +330,7 @@ public class LocalProject {
     }
 
     public String getPackaging() {
-        return modelBuildingResult == null ? rawModel.getPackaging() : modelBuildingResult.getEffectiveModel().getPackaging();
+        return effectiveModel == null ? rawModel.getPackaging() : effectiveModel.getPackaging();
     }
 
     public ResolvedDependency getAppArtifact() {
@@ -349,6 +368,11 @@ public class LocalProject {
             }
             if (project.rawModel.getBuild() != null) {
                 dir = f.apply(project.rawModel.getBuild());
+                // in case the "raw" model is passed in from the reactor by the QuarkusBootstrapProvider,
+                // the Build will contain an effective config, so we need to take the relative path
+                if (dir != null) {
+                    // TODO
+                }
             }
         }
         return dir;
@@ -369,7 +393,7 @@ public class LocalProject {
                 .setBuildFile(getRawModel().getPomFile().toPath())
                 .setBuildDir(getOutputDir());
 
-        final Model model = modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel();
+        final Model model = effectiveModel == null ? rawModel : effectiveModel;
         if (!ArtifactCoords.TYPE_POM.equals(getPackaging())) {
             final List<Plugin> plugins = model.getBuild() == null ? List.of() : model.getBuild().getPlugins();
             boolean addDefaultSourceSet = addSourceSetsFromPlugins(plugins, moduleBuilder);

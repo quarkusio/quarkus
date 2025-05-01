@@ -7,11 +7,11 @@ import io.micrometer.core.instrument.Counter;
 final class MetricsConnectionInterceptor implements ConnectionInterceptor {
 
     private final Counter connectionOpenCounter;
-    private final Counter connectionOpeninigFailedCounter;
+    private final Counter connectionOnOpenErrorsCounter;
 
     MetricsConnectionInterceptor(Counter connectionOpenCounter, Counter connectionOpeninigFailedCounter) {
         this.connectionOpenCounter = connectionOpenCounter;
-        this.connectionOpeninigFailedCounter = connectionOpeninigFailedCounter;
+        this.connectionOnOpenErrorsCounter = connectionOpeninigFailedCounter;
     }
 
     @Override
@@ -21,7 +21,7 @@ final class MetricsConnectionInterceptor implements ConnectionInterceptor {
 
     @Override
     public void connectionOpeningFailed(Throwable cause) {
-        connectionOpeninigFailedCounter.increment();
+        connectionOnOpenErrorsCounter.increment();
     }
 
     @Override

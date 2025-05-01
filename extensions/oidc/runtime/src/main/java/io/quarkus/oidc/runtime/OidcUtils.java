@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
@@ -43,6 +44,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
@@ -54,7 +56,6 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
-import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -208,12 +209,40 @@ public final class OidcUtils {
                 : tenantIdSuffix;
     }
 
+    public static boolean isServiceApp(Optional<ApplicationType> applicationType) {
+        return ApplicationType.SERVICE.equals(applicationType.orElse(ApplicationType.SERVICE));
+    }
+
     public static boolean isServiceApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.SERVICE.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
+        return isServiceApp(oidcConfig.applicationType());
+    }
+
+    public static boolean shouldSetRefreshExpired(Optional<ApplicationType> applicationType, Token token) {
+        return !OidcUtils.isServiceApp(applicationType) && token.refreshTokenTimeSkew().isPresent();
+    }
+
+    public static boolean shouldEnableUserInfo(Roles roles, Token token, Authentication authentication,
+            Optional<ApplicationType> applicationType) {
+        if (authentication.userInfoRequired().isEmpty()) {
+            if (roles.source().orElse(null) == io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source.userinfo) {
+                return true;
+            }
+            if (token.verifyAccessTokenWithUserInfo().orElse(false) && !OidcUtils.isWebApp(applicationType)) {
+                return true;
+            }
+            if (!authentication.idTokenRequired().orElse(true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isWebApp(Optional<ApplicationType> applicationType) {
+        return ApplicationType.WEB_APP.equals(applicationType.orElse(ApplicationType.SERVICE));
     }
 
     public static boolean isWebApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
+        return isWebApp(oidcConfig.applicationType());
     }
 
     public static boolean isEncryptedToken(String token) {
@@ -490,95 +519,99 @@ public final class OidcUtils {
      * @return merged configuration
      */
     static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
-        if (tenant.tenantId().isEmpty()) {
-            // OidcRecorder sets it before the merge operation
-            throw new IllegalStateException();
-        }
+        var tenantBuilder = OidcTenantConfig.builder(tenant);
+        mergeTenantConfig(tenantBuilder, tenant, provider);
+        return tenantBuilder.build();
+    }
+
+    public static void mergeTenantConfig(OidcTenantConfigBuilder tenantBuilder,
+            io.quarkus.oidc.runtime.OidcTenantConfig tenant, OidcTenantConfig provider) {
         // root properties
-        if (tenant.authServerUrl().isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl();
+        if (tenant.authServerUrl().isEmpty() && provider.authServerUrl().isPresent()) {
+            tenantBuilder.authServerUrl(provider.authServerUrl().get());
         }
-        if (tenant.applicationType().isEmpty()) {
-            tenant.applicationType = provider.applicationType;
+        if (tenant.applicationType().isEmpty() && provider.applicationType().isPresent()) {
+            tenantBuilder.applicationType(provider.applicationType().get());
         }
-        if (tenant.discoveryEnabled().isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled();
+        if (tenant.discoveryEnabled().isEmpty() && provider.discoveryEnabled().isPresent()) {
+            tenantBuilder.discoveryEnabled(provider.discoveryEnabled().get());
         }
-        if (tenant.authorizationPath().isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath();
+        if (tenant.authorizationPath().isEmpty() && provider.authorizationPath().isPresent()) {
+            tenantBuilder.authorizationPath(provider.authorizationPath().get());
         }
-        if (tenant.jwksPath().isEmpty()) {
-            tenant.jwksPath = provider.jwksPath();
+        if (tenant.jwksPath().isEmpty() && provider.jwksPath().isPresent()) {
+            tenantBuilder.jwksPath(provider.jwksPath().get());
         }
-        if (tenant.tokenPath().isEmpty()) {
-            tenant.tokenPath = provider.tokenPath();
+        if (tenant.tokenPath().isEmpty() && provider.tokenPath().isPresent()) {
+            tenantBuilder.tokenPath(provider.tokenPath().get());
         }
-        if (tenant.userInfoPath().isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath();
+        if (tenant.userInfoPath().isEmpty() && provider.userInfoPath().isPresent()) {
+            tenantBuilder.userInfoPath(provider.userInfoPath().get());
         }
 
         // authentication
-        if (tenant.authentication().idTokenRequired().isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
+        var providerAuth = provider.authentication();
+        var authBuilder = tenantBuilder.authentication();
+        var authentication = tenant.authentication();
+        if (authentication.idTokenRequired().isEmpty() && providerAuth.idTokenRequired().isPresent()) {
+            authBuilder.idTokenRequired(providerAuth.idTokenRequired().get());
         }
-        if (tenant.authentication().userInfoRequired().isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
+        if (authentication.userInfoRequired().isEmpty() && providerAuth.userInfoRequired().isPresent()) {
+            authBuilder.userInfoRequired(providerAuth.userInfoRequired().get());
         }
-        if (tenant.authentication().pkceRequired().isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
+        if (authentication.pkceRequired().isEmpty() && providerAuth.pkceRequired().isPresent()) {
+            authBuilder.pkceRequired(providerAuth.pkceRequired().get());
         }
-        if (tenant.authentication().scopes().isEmpty()) {
-            tenant.authentication.scopes = provider.authentication().scopes();
+        if (authentication.scopes().isEmpty() && providerAuth.scopes().isPresent()) {
+            authBuilder.scopes(providerAuth.scopes().get());
         }
-        if (tenant.authentication().scopeSeparator().isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
+        if (authentication.scopeSeparator().isEmpty() && providerAuth.scopeSeparator().isPresent()) {
+            authBuilder.scopeSeparator(providerAuth.scopeSeparator().get());
         }
-        if (tenant.authentication().addOpenidScope().isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
+        if (authentication.addOpenidScope().isEmpty() && providerAuth.addOpenidScope().isPresent()) {
+            authBuilder.addOpenidScope(providerAuth.addOpenidScope().get());
         }
-        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
+        if (authentication.forceRedirectHttpsScheme().isEmpty() && providerAuth.forceRedirectHttpsScheme().isPresent()) {
+            authBuilder.forceRedirectHttpsScheme(providerAuth.forceRedirectHttpsScheme().get());
         }
-        if (tenant.authentication().responseMode().isEmpty()) {
-            tenant.authentication.responseMode = provider.authentication.responseMode;
+        if (authentication.responseMode().isEmpty() && providerAuth.responseMode().isPresent()) {
+            authBuilder.responseMode(providerAuth.responseMode().get());
         }
-        if (tenant.authentication().redirectPath().isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication().redirectPath();
+        if (authentication.redirectPath().isEmpty() && providerAuth.redirectPath().isPresent()) {
+            authBuilder.redirectPath(providerAuth.redirectPath().get());
         }
+        authBuilder.end();
 
         // credentials
-        if (tenant.credentials().clientSecret().method().isEmpty()) {
-            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
+        var credentialsBuilder = tenantBuilder.credentials();
+        var credentials = tenant.credentials();
+        if (credentials.clientSecret().method().isEmpty()
+                && provider.credentials().clientSecret().method().isPresent()) {
+            credentialsBuilder.clientSecret().method(provider.credentials().clientSecret().method().get()).end();
         }
-        if (tenant.credentials().jwt().audience().isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
+        if (credentials.jwt().audience().isEmpty() && provider.credentials().jwt().audience().isPresent()) {
+            credentialsBuilder.jwt().audience(provider.credentials().jwt().audience().get()).end();
         }
-        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
+        if (credentials.jwt().signatureAlgorithm().isEmpty()
+                && provider.credentials().jwt().signatureAlgorithm().isPresent()) {
+            credentialsBuilder.jwt().signatureAlgorithm(provider.credentials().jwt().signatureAlgorithm().get()).end();
         }
+        credentialsBuilder.end();
 
         // token
-        if (tenant.token().issuer().isEmpty()) {
-            tenant.token.issuer = provider.token().issuer();
+        var tokenBuilder = tenantBuilder.token();
+        var token = tenant.token();
+        if (token.issuer().isEmpty() && provider.token().issuer().isPresent()) {
+            tokenBuilder.issuer(provider.token().issuer().get());
         }
-        if (tenant.token().principalClaim().isEmpty()) {
-            tenant.token.principalClaim = provider.token().principalClaim();
+        if (token.principalClaim().isEmpty() && provider.token().principalClaim().isPresent()) {
+            tokenBuilder.principalClaim(provider.token().principalClaim().get());
         }
-        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
+        if (token.verifyAccessTokenWithUserInfo().isEmpty()
+                && provider.token().verifyAccessTokenWithUserInfo().isPresent()) {
+            tokenBuilder.verifyAccessTokenWithUserInfo(provider.token().verifyAccessTokenWithUserInfo().get());
         }
-
-        return tenant;
-    }
-
-    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
-            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
-                    KnownOidcProviders.provider(oidcTenantConfig.provider().get()));
-        } else {
-            return oidcTenantConfig;
-        }
-
+        tokenBuilder.end();
     }
 
     public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {

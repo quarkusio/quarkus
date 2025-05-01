@@ -53,6 +53,16 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     private final boolean ready;
 
+    TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig) {
+        this.oidcConfig = oidcConfig;
+        this.ready = tenantConfigContext.ready();
+        this.provider = tenantConfigContext.provider();
+        this.tokenEncSecretKey = tenantConfigContext.getTokenEncSecretKey();
+        this.stateSecretKey = tenantConfigContext.getStateEncryptionKey();
+        this.internalIdTokenGeneratedKey = tenantConfigContext.getInternalIdTokenSecretKey();
+        this.redirectFilters = tenantConfigContext.getLocationToRedirectFilters();
+    }
+
     TenantConfigContextImpl(OidcProvider client, OidcTenantConfig config) {
         this(client, config, true);
     }
@@ -252,5 +262,10 @@ final class TenantConfigContextImpl implements TenantConfigContext {
             combined.addAll(all);
             return combined;
         }
+    }
+
+    @Override
+    public Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters() {
+        return redirectFilters;
     }
 }

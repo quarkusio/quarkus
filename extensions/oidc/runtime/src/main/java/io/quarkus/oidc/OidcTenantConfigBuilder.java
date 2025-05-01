@@ -1,5 +1,8 @@
 package io.quarkus.oidc;
 
+import static io.quarkus.oidc.runtime.OidcUtils.shouldEnableUserInfo;
+import static io.quarkus.oidc.runtime.OidcUtils.shouldSetRefreshExpired;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,6 +34,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -666,8 +670,18 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         if (tenantId.isEmpty()) {
             tenantId(OidcUtils.DEFAULT_TENANT_ID);
         }
-        var mapping = new OidcTenantConfigImpl(this);
-        return io.quarkus.oidc.OidcTenantConfig.of(mapping);
+
+        if (provider.isPresent()) {
+            OidcUtils.mergeTenantConfig(this, new OidcTenantConfigImpl(this), KnownOidcProviders.provider(provider.get()));
+        }
+        if (shouldSetRefreshExpired(applicationType, token)) {
+            token().refreshExpired().end();
+        }
+        if (shouldEnableUserInfo(roles, token, authentication, applicationType)) {
+            authentication().userInfoRequired().end();
+        }
+
+        return new io.quarkus.oidc.OidcTenantConfig(new OidcTenantConfigImpl(this));
     }
 
     /**

@@ -24,17 +24,17 @@ final class OidcImpl implements Oidc {
     @Override
     public void create(OidcTenantConfig tenantConfig) {
         Objects.requireNonNull(tenantConfig);
-        putStaticTenantConfig(tenantConfig);
+        putStaticTenantConfig(OidcTenantConfig.of(tenantConfig));
     }
 
     @Override
     public void createServiceApp(String authServerUrl) {
-        create(OidcTenantConfig.authServerUrl(authServerUrl).applicationType(SERVICE).build());
+        putStaticTenantConfig(OidcTenantConfig.authServerUrl(authServerUrl).applicationType(SERVICE).build());
     }
 
     @Override
     public void createWebApp(String authServerUrl, String clientId, String clientSecret) {
-        create(OidcTenantConfig.authServerUrl(authServerUrl).clientId(clientId).applicationType(WEB_APP)
+        putStaticTenantConfig(OidcTenantConfig.authServerUrl(authServerUrl).clientId(clientId).applicationType(WEB_APP)
                 .credentials(clientSecret).build());
     }
 
@@ -56,14 +56,16 @@ final class OidcImpl implements Oidc {
     }
 
     private static Map<String, OidcTenantConfig> getStaticTenants(OidcConfig config) {
+        if (config.namedTenants().isEmpty()) {
+            return Map.of();
+        }
         Map<String, OidcTenantConfig> tenantConfigs = new HashMap<>();
         for (var tenant : config.namedTenants().entrySet()) {
             String tenantKey = tenant.getKey();
             if (OidcConfig.DEFAULT_TENANT_KEY.equals(tenantKey)) {
                 continue;
             }
-            var namedTenantConfig = OidcTenantConfig.of(tenant.getValue());
-            tenantConfigs.put(tenantKey, namedTenantConfig);
+            tenantConfigs.put(tenantKey, OidcTenantConfig.of(tenant.getValue()));
         }
         return tenantConfigs;
     }

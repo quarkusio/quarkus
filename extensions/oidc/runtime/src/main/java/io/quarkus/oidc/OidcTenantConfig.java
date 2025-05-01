@@ -21,16 +21,19 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 public class OidcTenantConfig extends OidcClientCommonConfig implements io.quarkus.oidc.runtime.OidcTenantConfig {
 
+    private final boolean createdWithBuilder;
+
     /**
      * @deprecated Use {@link #builder()} to create this config
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public OidcTenantConfig() {
-
+        this.createdWithBuilder = false;
     }
 
-    private OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
+    OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         super(mapping);
+        this.createdWithBuilder = true;
         tenantId = mapping.tenantId();
         tenantEnabled = mapping.tenantEnabled();
         applicationType = mapping.applicationType().map(Enum::toString).map(ApplicationType::valueOf);
@@ -3024,14 +3027,19 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
-     * the {@link #builder()} method if you don't need to modify the {@code mapping}.
+     * Creates {@link OidcTenantConfig} from the {@code mapping}.
      *
      * @param mapping tenant config as returned from the SmallRye Config; must not be null
      * @return OidcTenantConfig
      */
     public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
-        return new OidcTenantConfig(mapping);
+        if (mapping == null) {
+            return null;
+        }
+        if (mapping instanceof OidcTenantConfig instanceOfThisClass && instanceOfThisClass.createdWithBuilder) {
+            return instanceOfThisClass;
+        }
+        return builder(mapping).build();
     }
 
     /**
@@ -3063,5 +3071,4 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public static OidcTenantConfigBuilder tokenPath(String tokenPath) {
         return builder().tokenPath(tokenPath);
     }
-
 }

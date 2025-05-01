@@ -1,17 +1,19 @@
 package io.quarkus.grpc.stubs;
 
+import java.util.function.Function;
+
+import org.jboss.logging.Logger;
+
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.arc.Arc;
 import io.quarkus.grpc.ExceptionHandlerProvider;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 import io.smallrye.mutiny.subscription.Cancellable;
-import org.jboss.logging.Logger;
-
-import java.util.function.Function;
 
 public class ServerCalls {
     private static final Logger log = Logger.getLogger(ServerCalls.class);
@@ -58,7 +60,7 @@ public class ServerCalls {
                 return;
             }
             StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
-            handleSubscription(returnValue.subscribe().with(
+            handleSubscription(returnValue.runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
                     flowHandler::onNext,
                     throwable -> onError(flowHandler, throwable),
                     () -> onCompleted(flowHandler)), response);
@@ -120,7 +122,7 @@ public class ServerCalls {
                 return null;
             }
             StreamObserverFlowHandler<O> flowHandler = new StreamObserverFlowHandler<>(response);
-            handleSubscription(multi.subscribe().with(
+            handleSubscription(multi.runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
                     flowHandler::onNext,
                     failure -> onError(flowHandler, failure),
                     () -> onCompleted(flowHandler)), response);

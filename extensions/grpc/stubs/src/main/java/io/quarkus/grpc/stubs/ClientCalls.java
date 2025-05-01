@@ -10,6 +10,7 @@ import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.Subscriptions;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.smallrye.mutiny.subscription.UniEmitter;
 
@@ -58,7 +59,7 @@ public class ClientCalls {
     private static <I> void subscribeToUpstreamAndForwardToStreamObserver(Multi<I> items,
             AtomicReference<Flow.Subscription> cancellable,
             StreamObserver<I> request) {
-        items.subscribe().with(
+        items.runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
                 new Consumer<Flow.Subscription>() {
                     @Override
                     public void accept(Flow.Subscription subscription) {

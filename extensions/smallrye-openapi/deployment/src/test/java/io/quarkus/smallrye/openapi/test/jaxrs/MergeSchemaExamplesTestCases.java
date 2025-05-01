@@ -68,34 +68,33 @@ abstract class MergeSchemaExamplesTestCases {
                         .addClasses(Resource.class, Bean.class));
 
         MergeSchemaExamplesDefaultTestCase() {
+            super(null, new String[] { "New example 1", "New example 2", "Deprecated example" });
+        }
+    }
+
+    static class MergeSchemaExamplesQuarkusFalseTestCase extends MergeSchemaExamplesTestCases {
+        @RegisterExtension
+        static QuarkusUnitTest runner = new QuarkusUnitTest()
+                .withApplicationRoot((jar) -> jar
+                        .addClasses(Resource.class, Bean.class)
+                        .addAsResource(new StringAsset("quarkus.smallrye-openapi.merge-schema-examples=false\n"),
+                                "application.properties"));
+
+        MergeSchemaExamplesQuarkusFalseTestCase() {
             super("Deprecated example", new String[] { "New example 1", "New example 2" });
         }
     }
 
-    static class MergeSchemaExamplesQuarkusTrueTestCase extends MergeSchemaExamplesTestCases {
+    static class MergeSchemaExamplesSmallRyeFalseTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
         static QuarkusUnitTest runner = new QuarkusUnitTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(Resource.class, Bean.class)
-                        .addAsResource(new StringAsset("quarkus.smallrye-openapi.merge-schema-examples=true\n"),
+                        .addAsResource(new StringAsset(SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES + "=false\n"),
                                 "application.properties"));
 
-        MergeSchemaExamplesQuarkusTrueTestCase() {
-            super(null, new String[] { "New example 1", "New example 2", "Deprecated example" });
+        MergeSchemaExamplesSmallRyeFalseTestCase() {
+            super("Deprecated example", new String[] { "New example 1", "New example 2" });
         }
     }
-
-    static class MergeSchemaExamplesSmallRyeTrueTestCase extends MergeSchemaExamplesTestCases {
-        @RegisterExtension
-        static QuarkusUnitTest runner = new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(Resource.class, Bean.class)
-                        .addAsResource(new StringAsset(SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES + "=true\n"),
-                                "application.properties"));
-
-        MergeSchemaExamplesSmallRyeTrueTestCase() {
-            super(null, new String[] { "New example 1", "New example 2", "Deprecated example" });
-        }
-    }
-
 }

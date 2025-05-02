@@ -4,6 +4,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,6 +36,25 @@ public class ClientAssertionProviderTest {
 
             Awaitility.await().atMost(Duration.ofSeconds(10))
                     .untilAsserted(() -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getClientAssertion()));
+        } finally {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
+    }
+
+    @Test
+    public void EmptyBearerTokenFileShouldReturnNullClientAssertion() {
+        Vertx vertx = Vertx.vertx();
+        Path emptyTokenPath = Path.of("target").resolve("empty-jwt-bearer-token.json");
+
+        storeNewJwtBearerToken(emptyTokenPath, "");
+        try (var clientAssertionProvider = new ClientAssertionProvider(vertx, emptyTokenPath)) {
+            assertNull(clientAssertionProvider.getClientAssertion());
+
+            String validToken = createJwtBearerToken();
+            storeNewJwtBearerToken(emptyTokenPath, validToken);
+
+            Awaitility.await().atMost(Duration.ofSeconds(10))
+                    .untilAsserted(() -> assertEquals(validToken, clientAssertionProvider.getClientAssertion()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }

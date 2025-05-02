@@ -38,27 +38,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-websockets-next-kotlin</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next-spi</artifactId>
+        </dependency>
         <!-- Quarkus Security API -->
         <dependency>
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
-        </dependency>
-        <!-- Dependencies used for integration with OpenTelemetry extension -->
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.semconv</groupId>
-            <artifactId>opentelemetry-semconv</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <!-- Dependencies used for integration with Micrometer extension -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-            <optional>true</optional>
         </dependency>
         <!-- Test dependencies -->
         <dependency>

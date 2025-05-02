@@ -49,6 +49,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.websockets.WebSocketTracesInterceptorImpl;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -217,6 +218,14 @@ public class TracerProcessor {
                     .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_SUCCESS, "updateEndUserAttributes"));
             observerProducer
                     .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_FAILURE, "updateEndUserAttributes"));
+        }
+    }
+
+    @BuildStep
+    void registerWebSocketTracesInterceptor(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketTracesInterceptorImpl.class));
         }
     }
 

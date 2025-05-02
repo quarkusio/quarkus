@@ -1,19 +1,8 @@
 package io.quarkus.websockets.next.test.telemetry;
 
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_BYTES;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_CONNECTION_CLOSED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_CONNECTION_OPENED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_COUNT;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.CLIENT_ENDPOINT_COUNT_ERRORS;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_BYTES;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_CLOSED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_ON_OPEN_ERROR;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_CONNECTION_OPENED;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_COUNT;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.SERVER_ENDPOINT_COUNT_ERRORS;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction.INBOUND;
-import static io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction.OUTBOUND;
 import static io.quarkus.websockets.next.test.telemetry.AbstractWebSocketsOnMessageTest.getMetrics;
+import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.Direction.INBOUND;
+import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.Direction.OUTBOUND;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -24,9 +13,24 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 
-import io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction;
-
 public final class MetricsAsserter {
+
+    private static final String CLIENT_CONNECTION_OPENED = "quarkus.websockets.client.connections.opened";
+    private static final String SERVER_CONNECTION_OPENED = "quarkus.websockets.server.connections.opened";
+    private static final String SERVER_CONNECTION_ON_OPEN_ERROR = "quarkus.websockets.server.connections.onopen.errors";
+    private static final String CLIENT_CONNECTION_CLOSED = "quarkus.websockets.client.connections.closed";
+    private static final String SERVER_CONNECTION_CLOSED = "quarkus.websockets.server.connections.closed";
+    private static final String SERVER_ENDPOINT_COUNT_ERRORS = "quarkus.websockets.server.endpoint.count.errors";
+    private static final String CLIENT_ENDPOINT_COUNT_ERRORS = "quarkus.websockets.client.endpoint.count.errors";
+    private static final String SERVER_COUNT = "quarkus.websockets.server.count";
+    private static final String SERVER_BYTES = "quarkus.websockets.server.bytes";
+    private static final String CLIENT_COUNT = "quarkus.websockets.client.count";
+    private static final String CLIENT_BYTES = "quarkus.websockets.client.bytes";
+
+    public enum Direction {
+        INBOUND,
+        OUTBOUND
+    }
 
     int serverSentCount;
     int serverReceivedCount;

@@ -44,6 +44,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -129,6 +130,7 @@ public class KeycloakDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-keycloak";
     private static final ContainerLocator KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR = locateContainerWithLabels(KEYCLOAK_PORT,
             DEV_SERVICE_LABEL);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(KeycloakDevServicesProcessor.class);
 
     private static volatile RunningDevService devService;
     private static volatile KeycloakDevServicesConfig capturedDevServicesConfiguration;
@@ -764,15 +766,30 @@ public class KeycloakDevServicesProcessor {
             realm.getClients().add(clientRep);
 
             if (clientRoles.isPresent()) {
-                List<RoleRepresentation> clientRolesReps = realm.getRoles().getClient().get(clientRep.getId());
-                clientRolesReps.addAll(
-                        clientRoles.get().stream()
-                                .map((String roleStr) -> {
-                                    RoleRepresentation role = new RoleRepresentation();
-                                    role.setName(roleStr);
-                                    return role;
-                                })
-                                .toList());
+                //getClient() is null here. Setting client roles.
+                log.info("Client id: {}", clientRep.getClientId());
+                realm.getRoles().setClient(
+                        Map.of(
+                                clientRep.getClientId(),
+                                clientRoles.get().stream()
+                                        .map((String roleStr) -> {
+                                            RoleRepresentation role = new RoleRepresentation();
+                                            role.setName(roleStr);
+                                            role.setDescription("Client role" + roleStr);
+                                            return role;
+                                        })
+                                        .toList()));
+                
+                                //TODO:: cleanup, didn't work (getClient() returns null)
+//                List<RoleRepresentation> clientRolesReps = realm.getRoles().getClient().get(clientRep.getClientId());
+//                clientRolesReps.addAll(
+//                        clientRoles.get().stream()
+//                                .map((String roleStr) -> {
+//                                    RoleRepresentation role = new RoleRepresentation();
+//                                    role.setName(roleStr);
+//                                    return role;
+//                                })
+//                                .toList());
             }
         }
         for (Map.Entry<String, String> entry : users.entrySet()) {

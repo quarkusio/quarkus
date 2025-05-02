@@ -743,6 +743,22 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testKotlinDataEcho() {
+        RestAssured
+                .with()
+                .body("{\"access_token\":\"ABC\",\"expires_in\":3600}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/kotlin-data-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("access_token", Matchers.is("ABC"))
+                .body("expires_in", Matchers.is(3600))
+                .extract()
+                .asString();
+    }
+
+    @Test
     public void testNullMapEcho() {
         RestAssured
                 .with()

@@ -138,6 +138,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/kotlin-data-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public TokenResponse echoKotlinData(TokenResponse tokenResponse) {
+        return tokenResponse;
+    }
+
+    @POST
     @Path("/null-map-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public MapWrapper echoNullMap(MapWrapper mapWrapper) {

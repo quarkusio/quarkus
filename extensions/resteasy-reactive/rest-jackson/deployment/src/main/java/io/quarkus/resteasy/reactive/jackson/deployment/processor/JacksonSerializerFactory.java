@@ -220,8 +220,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     private boolean serializeFields(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             SerializationContext ctx, Set<String> serializedFields) {
+        MethodInfo constructor = findConstructor(classInfo).orElse(null);
+
         for (FieldInfo fieldInfo : classFields(classInfo)) {
-            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, fieldInfo);
+            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, constructor, fieldInfo);
             if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.isIgnoredField()) {
                     continue;

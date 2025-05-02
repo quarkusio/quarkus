@@ -25,7 +25,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.VoidType;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -219,9 +218,19 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 .addException(IOException.class)
                 .addException(JacksonException.class);
 
-        DeserializationData deserData = new DeserializationData(classInfo, classCreator, deserialize,
+        Optional<MethodInfo> ctorOpt = findConstructor(classInfo);
+        if (ctorOpt.isEmpty()) {
+            return false;
+        }
+
+        MethodInfo ctor = ctorOpt.get();
+        DeserializationData deserData = new DeserializationData(classInfo, ctor, classCreator, deserialize,
                 getJsonNode(deserialize), parseTypeParameters(classInfo, classCreator), new HashSet<>());
-        ResultHandle deserializedHandle = createDeserializedObject(deserData);
+
+        ResultHandle deserializedHandle = ctor.parametersCount() == 0
+                ? deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()))
+                : createDeserializedObject(deserData);
+
         if (deserializedHandle == null) {
             return false;
         }
@@ -242,26 +251,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
-        var ctorOpt = deserData.classInfo.constructors().stream()
-                .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctor.hasAnnotation(JsonCreator.class))
-                .findFirst();
-
-        if (ctorOpt.isEmpty()) {
-            if (deserData.classInfo.hasNoArgsConstructor() && !deserData.classInfo.isRecord()) {
-                return deserData.methodCreator
-                        .newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()));
-            }
-            ctorOpt = deserData.classInfo.isRecord() ? Optional.of(deserData.classInfo.canonicalRecordConstructor())
-                    : deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
-            if (ctorOpt.isEmpty()) {
-                return null;
-            }
-        }
-
-        MethodInfo ctor = ctorOpt.get();
-        ResultHandle[] params = new ResultHandle[ctor.parameters().size()];
+        ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
         int i = 0;
-        for (MethodParameterInfo paramInfo : ctor.parameters()) {
+        for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
             FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo);
             deserData.constructorFields.add(fieldSpecs.jsonName);
             ResultHandle fieldValue = deserData.methodCreator.invokeVirtualMethod(
@@ -271,7 +263,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
         }
-        return deserData.methodCreator.newInstance(ctor, params);
+        return deserData.methodCreator.newInstance(deserData.constructor, params);
     }
 
     private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
@@ -344,7 +336,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
             if (!deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromField(deserData.classInfo, fieldInfo), valid))
+                    deserializedFields, strSwitch, fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo),
+                    valid))
                 return false;
         }
 
@@ -529,7 +522,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return super.shouldGenerateCodeFor(classInfo) && classInfo.hasNoArgsConstructor();
     }
 
-    private record DeserializationData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator methodCreator,
+    private record DeserializationData(ClassInfo classInfo, MethodInfo constructor, ClassCreator classCreator,
+            MethodCreator methodCreator,
             ResultHandle jsonNode, Map<String, Integer> typeParametersIndex, Set<String> constructorFields) {
     }
 }

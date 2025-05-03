@@ -99,6 +99,7 @@ import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
@@ -470,6 +471,14 @@ public class OidcBuildStep {
                 .forEach(c -> registerClassSecurityCheckProducer.produce(
                         new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
                                 .builder(Authenticated.class).buildWithTarget(c))));
+    }
+
+    @BuildStep
+    void supportIdentityUpdateForWebSocketConnections(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketIdentityUpdateProvider.class));
+        }
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

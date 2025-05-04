@@ -142,8 +142,11 @@ public class GrpcServerRecorder {
         if (configuration.useSeparateServer()) {
             if (provider == null) {
                 LOGGER.warn(
-                        "Using legacy gRPC support, with separate new HTTP server instance. " +
-                                "Switch to single HTTP server instance usage with quarkus.grpc.server.use-separate-server=false property");
+                        """
+                                Using legacy gRPC support with a separate HTTP server instance. This is the current default to maintain compatibility.
+                                You can switch to the new unified HTTP server by setting quarkus.grpc.server.use-separate-server=false
+                                This change is recommended for new applications and will become the default in future versions.
+                                """);
             }
 
             if (launchMode == LaunchMode.DEVELOPMENT) {

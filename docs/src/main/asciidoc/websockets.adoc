@@ -3,14 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using WebSockets
+= Using WebSockets with Undertow
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. Because it’s the canonical web socket application, we are going to create a simple chat application.
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets,io.quarkus:quarkus-websockets-client
 
-This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
+This guide explains how your Quarkus application can utilize web sockets to create interactive web applications,
+in the context of an Undertow-based Quarkus application, or if you rely on https://jakarta.ee/specifications/websocket/[Jakarta WebSocket].
+
+[TIP]
+====
+If you don't use Undertow or https://jakarta.ee/specifications/websocket/[Jakarta WebSocket],
+it is recommended to use the more modern xref:websockets-next-tutorial.adoc[WebSockets Next extensions].
+====
+
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.
 
 == Prerequisites

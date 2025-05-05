@@ -145,6 +145,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/json-value")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public ItemId echoJsonValue(int body) {
+        return new ItemId(body);
+    }
+
+    @POST
     @Path("/null-map-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public MapWrapper echoNullMap(MapWrapper mapWrapper) {

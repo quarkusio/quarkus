@@ -759,6 +759,21 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testJsonValue() {
+        RestAssured
+                .with()
+                .body("1234")
+                .contentType("text/plain")
+                .post("/simple/json-value")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body(Matchers.is("\"1234\""))
+                .extract()
+                .asString();
+    }
+
+    @Test
     public void testNullMapEcho() {
         RestAssured
                 .with()

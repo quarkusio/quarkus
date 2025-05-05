@@ -11,12 +11,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.io.SerializedString;
@@ -135,7 +137,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     @Override
     public Collection<String> create(Collection<ClassInfo> classInfos) {
-        Collection<String> createdClasses = super.create(classInfos);
+        // @JsonValue means that a specific field or method is used to serialize the class - for now just ignore these
+        // We could in the future generate very specific serializers
+        Collection<String> createdClasses = super.create(
+                classInfos.stream().filter(ci -> !ci.hasAnnotation(JsonValue.class)).collect(Collectors.toSet()));
         createFieldNamesClass();
         return createdClasses;
     }

@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -107,11 +108,17 @@ public class StaticResourcesProcessor {
      */
     private Set<StaticResourcesBuildItem.Entry> getClasspathResources() {
         Set<StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
+        final String prefix = StaticResourcesRecorder.META_INF_RESOURCES;
         visitRuntimeMetaInfResources(visit -> {
-            if (!Files.isDirectory(visit.getPath())) {
-                knownPaths.add(new StaticResourcesBuildItem.Entry(
-                        visit.getRelativePath().substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
-                        false));
+            Path visitPath = visit.getPath();
+            if (!Files.isDirectory(visitPath)) {
+                String rel = visit.getRelativePath();
+                // Ensure that the relative path starts with the prefix before calling substring
+                if (rel.startsWith(prefix)) {
+                    // Strip the "META-INF/resources/" prefix and add the remainder
+                    String subPath = rel.substring(prefix.length());
+                    knownPaths.add(new StaticResourcesBuildItem.Entry(subPath, false));
+                }
             }
         });
         return knownPaths;

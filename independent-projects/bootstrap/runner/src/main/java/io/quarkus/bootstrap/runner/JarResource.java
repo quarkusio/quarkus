@@ -93,18 +93,13 @@ public class JarResource implements ClassLoadingResource {
         private static final JarResourceURLProvider INSTANCE = new JarResourceURLProvider();
 
         @Override
-        public URL apply(JarFile jarFile, Path path, String res) {
-            JarEntry entry = jarFile.getJarEntry(res);
+        public URL apply(JarFile jarFile, Path path, String resource) {
+            JarEntry entry = jarFile.getJarEntry(resource);
             if (entry == null) {
                 return null;
             }
             try {
-                String realName = JarEntries.getRealName(entry);
-                // Avoid ending the URL with / to avoid breaking compatibility
-                if (realName.endsWith("/")) {
-                    realName = realName.substring(0, realName.length() - 1);
-                }
-                final URL resUrl = getUrl(path, realName);
+                final URL resUrl = getUrl(path, getRealName(entry, resource));
                 // wrap it up into a "jar" protocol URL
                 //horrible hack to deal with '?' characters in the URL
                 //seems to be the only way, the URI constructor just does not let you handle them in a sane way
@@ -122,6 +117,25 @@ public class JarResource implements ClassLoadingResource {
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        private static String getRealName(JarEntry entry, String resource) {
+            String realName = JarEntries.getRealName(entry);
+            // Make sure directories are returned with a / when the resource was requested with a /
+            if (resource.endsWith("/") && entry.isDirectory()) {
+                if (realName.endsWith("/")) {
+                    return realName;
+                } else {
+                    return realName + "/";
+                }
+            }
+
+            // this shouldn't be necessary but the previous implementation was doing it forcibly so keeping it for safety
+            if (realName.endsWith("/")) {
+                return realName.substring(0, realName.length() - 1);
+            }
+
+            return realName;
         }
 
         private static URL getUrl(Path jarPath, String realName) throws MalformedURLException, URISyntaxException {

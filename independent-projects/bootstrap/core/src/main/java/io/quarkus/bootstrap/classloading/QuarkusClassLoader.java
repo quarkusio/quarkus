@@ -539,45 +539,51 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         boolean interrupted = Thread.interrupted();
         try {
             ClassPathResourceIndex classPathResourceIndex = getClassPathResourceIndex();
-            synchronized (getClassLoadingLock(name)) {
-                Class<?> c = findLoadedClass(name);
-                if (c != null) {
-                    return c;
-                }
-                String resourceName = fromClassNameToResourceName(name);
-                if (classPathResourceIndex.isBanned(resourceName)) {
-                    throw new ClassNotFoundException(name);
-                }
-                boolean parentFirst = parentFirst(resourceName, classPathResourceIndex);
-                if (parentFirst) {
-                    try {
-                        return parent.loadClass(name);
-                    } catch (ClassNotFoundException ignore) {
-                        log.tracef("Class %s not found in parent first load from %s", name, parent);
-                    }
-                }
-                ClassPathElement classPathElement = classPathResourceIndex.getFirstClassPathElement(resourceName);
-                if (classPathElement != null) {
-                    final ClassPathResource classPathElementResource = classPathElement.getResource(resourceName);
-                    if (classPathElementResource != null) { //can happen if the class loader was closed
-                        byte[] data = classPathElementResource.getData();
-                        definePackage(name, classPathElement);
-                        Class<?> cl = defineClass(name, data, 0, data.length,
-                                protectionDomains.computeIfAbsent(classPathElement,
-                                        ClassPathElement::getProtectionDomain));
-                        if (Driver.class.isAssignableFrom(cl)) {
-                            driverLoaded = true;
-                        }
-                        return cl;
-                    }
-                }
-
-                if (!parentFirst) {
-                    return parent.loadClass(name);
-                }
-
+            Class<?> c = findLoadedClass(name);
+            if (c != null) {
+                return c;
+            }
+            String resourceName = fromClassNameToResourceName(name);
+            if (classPathResourceIndex.isBanned(resourceName)) {
                 throw new ClassNotFoundException(name);
             }
+            boolean parentFirst = parentFirst(resourceName, classPathResourceIndex);
+            if (parentFirst) {
+                try {
+                    return parent.loadClass(name);
+                } catch (ClassNotFoundException ignore) {
+                    log.tracef("Class %s not found in parent first load from %s", name, parent);
+                }
+            }
+            ClassPathElement classPathElement = classPathResourceIndex.getFirstClassPathElement(resourceName);
+            if (classPathElement != null) {
+                final ClassPathResource classPathElementResource = classPathElement.getResource(resourceName);
+                if (classPathElementResource != null) { //can happen if the class loader was closed
+                    byte[] data = classPathElementResource.getData();
+                    definePackage(name, classPathElement);
+                    Class<?> cl;
+                    try {
+                        cl = defineClass(name, data, 0, data.length,
+                                protectionDomains.computeIfAbsent(classPathElement,
+                                        ClassPathElement::getProtectionDomain));
+                    } catch (LinkageError e) {
+                        cl = findLoadedClass(name);
+                        if (cl == null) {
+                            throw e;
+                        }
+                    }
+                    if (Driver.class.isAssignableFrom(cl)) {
+                        driverLoaded = true;
+                    }
+                    return cl;
+                }
+            }
+
+            if (!parentFirst) {
+                return parent.loadClass(name);
+            }
+
+            throw new ClassNotFoundException(name);
 
         } finally {
             if (interrupted) {
@@ -592,21 +598,31 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //we can't use getPackage here
         //if can return a package from the parent
         if ((pkgName != null) && definedPackages.get(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (definedPackages.get(pkgName) == null) {
-                    ManifestAttributes manifest = classPathElement.getManifestAttributes();
-                    if (manifest != null) {
-                        definedPackages.put(pkgName, definePackage(pkgName, manifest.getSpecificationTitle(),
-                                manifest.getSpecificationVersion(),
-                                manifest.getSpecificationVendor(),
-                                manifest.getImplementationTitle(),
-                                manifest.getImplementationVersion(),
-                                manifest.getImplementationVendor(), null));
-                        return;
+            ManifestAttributes manifest = classPathElement.getManifestAttributes();
+            if (manifest != null) {
+                try {
+                    definedPackages.put(pkgName, definePackage(pkgName, manifest.getSpecificationTitle(),
+                            manifest.getSpecificationVersion(),
+                            manifest.getSpecificationVendor(),
+                            manifest.getImplementationTitle(),
+                            manifest.getImplementationVersion(),
+                            manifest.getImplementationVendor(), null));
+                } catch (IllegalArgumentException e) {
+                    var loaded = definedPackages.get(pkgName);
+                    if (loaded == null) {
+                        throw e;
                     }
+                }
+                return;
+            }
 
-                    // this could certainly be improved to use the actual manifest
-                    definedPackages.put(pkgName, definePackage(pkgName, null, null, null, null, null, null, null));
+            // this could certainly be improved to use the actual manifest
+            try {
+                definedPackages.put(pkgName, definePackage(pkgName, null, null, null, null, null, null, null));
+            } catch (IllegalArgumentException e) {
+                var loaded = definedPackages.get(pkgName);
+                if (loaded == null) {
+                    throw e;
                 }
             }
         }

@@ -46,10 +46,11 @@ public class VertxUtil {
         }
 
         // ResteasyUriInfo expects a context path to start with a "/" character
-        if (!contextPath.startsWith("/")) {
+        if (contextPath.isEmpty()) {
+            contextPath = "/";
+        } else if (contextPath.charAt(0) != '/') {
             contextPath = "/" + contextPath;
         }
-
         return new ResteasyUriInfo(uriString, contextPath);
     }
 
@@ -106,7 +107,6 @@ public class VertxUtil {
 
     public static MultivaluedMap<String, String> extractRequestHeaders(HttpServerRequest request) {
         Headers<String> requestHeaders = new Headers<String>();
-
         for (Map.Entry<String, String> header : request.headers()) {
             requestHeaders.add(header.getKey(), header.getValue());
         }

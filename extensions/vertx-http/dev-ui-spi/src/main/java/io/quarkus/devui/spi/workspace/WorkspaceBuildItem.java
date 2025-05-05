@@ -11,8 +11,10 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class WorkspaceBuildItem extends SimpleBuildItem {
     private final List<WorkspaceItem> workspaceItems;
+    private final Path rootPath;
 
-    public WorkspaceBuildItem(List<WorkspaceItem> workspaceItems) {
+    public WorkspaceBuildItem(Path rootPath, List<WorkspaceItem> workspaceItems) {
+        this.rootPath = rootPath;
         this.workspaceItems = workspaceItems;
     }
 
@@ -24,6 +26,10 @@ public final class WorkspaceBuildItem extends SimpleBuildItem {
         return workspaceItems.stream()
                 .map(WorkspaceBuildItem.WorkspaceItem::path)
                 .collect(Collectors.toList());
+    }
+
+    public Path getRootPath() {
+        return this.rootPath;
     }
 
     public static record WorkspaceItem(String name, Path path) {

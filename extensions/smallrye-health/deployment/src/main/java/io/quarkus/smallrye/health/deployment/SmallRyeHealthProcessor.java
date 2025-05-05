@@ -215,7 +215,7 @@ class SmallRyeHealthProcessor {
                 .route(healthConfig.rootPath())
                 .routeConfigKey("quarkus.smallrye-health.root-path")
                 .handler(new SmallRyeHealthHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Check")
                 .build());
 
         // Register the liveness handler
@@ -223,7 +223,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.livenessPath())
                 .handler(new SmallRyeLivenessHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Liveness Check")
                 .build());
 
         // Register the readiness handler
@@ -231,7 +231,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.readinessPath())
                 .handler(new SmallRyeReadinessHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Readiness Check")
                 .build());
 
         // Register the health group handlers
@@ -239,7 +239,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.groupPath())
                 .handler(new SmallRyeHealthGroupHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Group Check")
                 .build());
 
         SmallRyeIndividualHealthGroupHandler handler = new SmallRyeIndividualHealthGroupHandler();
@@ -247,7 +247,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.groupPath() + "/*")
                 .handler(handler)
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Group Check")
                 .build());
 
         // Register the wellness handler
@@ -255,7 +255,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.wellnessPath())
                 .handler(new SmallRyeWellnessHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Wellness Check")
                 .build());
 
         // Register the startup handler
@@ -263,7 +263,7 @@ class SmallRyeHealthProcessor {
                 .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath(), healthConfig.startupPath())
                 .handler(new SmallRyeStartupHandler())
-                .displayOnNotFoundPage()
+                .displayOnNotFoundPage("Health Started Check")
                 .build());
 
     }

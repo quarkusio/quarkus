@@ -96,7 +96,7 @@ public class WorkspaceProcessor {
             }
 
             sortWorkspaceItems(workspaceItems);
-            workspaceProducer.produce(new WorkspaceBuildItem(workspaceItems));
+            workspaceProducer.produce(new WorkspaceBuildItem(projectRoot, workspaceItems));
         }
     }
 
@@ -185,7 +185,7 @@ public class WorkspaceProcessor {
                     String content = params.get("content");
                     Path path = Paths.get(URI.create(params.get("path")));
                     writeContent(path, content);
-                    return new SavedResult(path, true, null);
+                    return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true, null);
                 }
                 return new SavedResult(null, false, "Invalid input");
             });
@@ -283,7 +283,7 @@ public class WorkspaceProcessor {
         return fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "";
     }
 
-    static record SavedResult(Path path, boolean success, String errorMessage) {
+    static record SavedResult(String path, boolean success, String errorMessage) {
     }
 
     static record WorkspaceContent(String type, String content, boolean isBinary) {

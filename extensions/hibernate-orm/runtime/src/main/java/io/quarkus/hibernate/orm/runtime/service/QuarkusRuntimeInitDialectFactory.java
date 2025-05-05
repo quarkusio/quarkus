@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.service;
 
-import static org.hibernate.internal.HEMLogging.messageLogger;
+import static org.hibernate.internal.CoreLogging.messageLogger;
 
 import java.sql.SQLException;
 import java.util.Locale;
@@ -13,7 +13,7 @@ import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfoSource;
-import org.hibernate.internal.EntityManagerMessageLogger;
+import org.hibernate.internal.CoreMessageLogger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -27,7 +27,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * @see QuarkusStaticInitDialectFactory
  */
 public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
-    private static final EntityManagerMessageLogger LOG = messageLogger(QuarkusRuntimeInitDialectFactory.class);
+    private static final CoreMessageLogger LOG = messageLogger(QuarkusRuntimeInitDialectFactory.class);
     private final String persistenceUnitName;
     private final boolean isFromPersistenceXml;
     private final Dialect dialect;
@@ -99,15 +99,14 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     }
 
     private Optional<DatabaseVersion> retrieveDbVersion(DialectResolutionInfoSource resolutionInfoSource) {
-        var databaseMetadata = resolutionInfoSource == null ? null
-                : resolutionInfoSource.getDialectResolutionInfo().getDatabaseMetadata();
-        if (databaseMetadata == null) {
+        var resolutionInfo = resolutionInfoSource == null ? null
+                : resolutionInfoSource.getDialectResolutionInfo();
+        if (resolutionInfo == null) {
             return Optional.empty();
         }
         try {
             triedToRetrieveDbVersion = true;
-            return Optional.of(DatabaseVersion.make(databaseMetadata.getDatabaseMajorVersion(),
-                    databaseMetadata.getDatabaseMinorVersion()));
+            return Optional.of(dialect.determineDatabaseVersion(resolutionInfo));
         } catch (RuntimeException | SQLException e) {
             LOG.warnf(e, "Persistence unit %1$s: Could not retrieve the database version to check it is at least %2$s",
                     persistenceUnitName, buildTimeDbVersion);

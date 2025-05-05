@@ -36,9 +36,8 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
                 // TODO change the default to "always enabled" when we solve version detection problems
                 //   See https://github.com/quarkusio/quarkus/issues/43703
                 //   See https://github.com/quarkusio/quarkus/issues/42255
-                // TODO disable the check by default when offline startup is opted in
-                //   See https://github.com/quarkusio/quarkus/issues/13522
-                .orElse(recordedConfig.getExplicitDialect().isEmpty());
+                // Disable on offline startup
+                .orElse(!runtimePuConfig.database().startOffline() && recordedConfig.getExplicitDialect().isEmpty());
     }
 
     @Override

@@ -18,6 +18,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -228,8 +229,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
+        // Allow detection of driver/database capabilities on runtime init if required
+        // (was disabled during static init)
+        runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT,
+                String.valueOf(!persistenceUnitConfig.database().startOffline()));
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

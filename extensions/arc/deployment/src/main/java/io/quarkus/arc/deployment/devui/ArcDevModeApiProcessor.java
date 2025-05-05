@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -28,6 +30,14 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
 
 public class ArcDevModeApiProcessor {
+
+    private static final Logger LOG = Logger.getLogger(ArcDevModeApiProcessor.class);
+
+    /**
+     * If a dependency graph exceeds the limit then we apply the {@link DevBeanInfos#MAX_DEPENDENCY_LEVEL} and if still exceeds
+     * the limit it's skipped completely, i.e. dependency graph is not available
+     */
+    private static final int DEPENCENY_GRAPH_LIMIT = 30;
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void collectBeanInfo(ArcConfig config, ValidationPhaseBuildItem validationPhaseBuildItem,
@@ -85,6 +95,22 @@ public class ArcDevModeApiProcessor {
                 DependencyGraph dependencyGraph = buildDependencyGraph(bean, validationContext, resolver, beanInfos,
                         allInjectionPoints, declaringToProducers,
                         directDependents);
+                if (dependencyGraph.links.isEmpty()) {
+                    // Skip the graph if no links exist
+                    continue;
+                }
+                if (dependencyGraph.nodes.size() > DEPENCENY_GRAPH_LIMIT) {
+                    DependencyGraph visibleGraph = dependencyGraph.forLevel(DevBeanInfos.DEFAULT_MAX_DEPENDENCY_LEVEL);
+                    if (visibleGraph.nodes.size() > DEPENCENY_GRAPH_LIMIT) {
+                        LOG.debugf("Skip dependency graph for %s - too many visible nodes: %s", bean,
+                                visibleGraph.nodes.size());
+                        continue;
+                    } else {
+                        LOG.debugf("Dependency graph for %s was reduced to visible nodes: %s", bean,
+                                dependencyGraph.nodes.size());
+                        dependencyGraph = visibleGraph;
+                    }
+                }
                 beanInfos.addDependencyGraph(bean.getIdentifier(), dependencyGraph);
                 // id -> [dep1Id, dep2Id]
                 beanDependenciesMap.put(bean.getIdentifier(),

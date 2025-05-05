@@ -34,10 +34,15 @@ public class ArcDevModeApiProcessor {
     private static final Logger LOG = Logger.getLogger(ArcDevModeApiProcessor.class);
 
     /**
+     * Do not generate dependency graphs for apps with more than N beans
+     */
+    private static final int DEPENCENY_GRAPH_BEANS_LIMIT = 1000;
+
+    /**
      * If a dependency graph exceeds the limit then we apply the {@link DevBeanInfos#MAX_DEPENDENCY_LEVEL} and if still exceeds
      * the limit it's skipped completely, i.e. dependency graph is not available
      */
-    private static final int DEPENCENY_GRAPH_LIMIT = 30;
+    private static final int DEPENCENY_GRAPH_NODES_LIMIT = 30;
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void collectBeanInfo(ArcConfig config, ValidationPhaseBuildItem validationPhaseBuildItem,
@@ -75,7 +80,7 @@ public class ArcDevModeApiProcessor {
 
         // Build dependency graphs
         Map<String, List<String>> beanDependenciesMap = new HashMap<>();
-        if (config.devMode().generateDependencyGraphs()) {
+        if (generateDependencyGraphs(config, beanInfos)) {
             BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
             Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
             Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();
@@ -99,9 +104,9 @@ public class ArcDevModeApiProcessor {
                     // Skip the graph if no links exist
                     continue;
                 }
-                if (dependencyGraph.nodes.size() > DEPENCENY_GRAPH_LIMIT) {
+                if (dependencyGraph.nodes.size() > DEPENCENY_GRAPH_NODES_LIMIT) {
                     DependencyGraph visibleGraph = dependencyGraph.forLevel(DevBeanInfos.DEFAULT_MAX_DEPENDENCY_LEVEL);
-                    if (visibleGraph.nodes.size() > DEPENCENY_GRAPH_LIMIT) {
+                    if (visibleGraph.nodes.size() > DEPENCENY_GRAPH_NODES_LIMIT) {
                         LOG.debugf("Skip dependency graph for %s - too many visible nodes: %s", bean,
                                 visibleGraph.nodes.size());
                         continue;
@@ -208,6 +213,15 @@ public class ArcDevModeApiProcessor {
                         devBeanInfos, directDependents);
             }
         }
+    }
+
+    private boolean generateDependencyGraphs(ArcConfig config, DevBeanInfos beanInfos) {
+        return switch (config.devMode().generateDependencyGraphs()) {
+            case TRUE -> true;
+            case FALSE -> false;
+            case AUTO -> beanInfos.getBeans().size() < DEPENCENY_GRAPH_BEANS_LIMIT;
+            default -> throw new IllegalArgumentException("Unexpected value: " + config.devMode().generateDependencyGraphs());
+        };
     }
 
 }

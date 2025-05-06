@@ -77,6 +77,8 @@ public class KotlinCompilationProvider implements CompilationProvider {
         context.getReloadableClasspath().forEach(file -> classpathJoiner.add(file.getAbsolutePath()));
 
         compilerArguments.setClasspath(classpathJoiner.toString());
+        compilerArguments.setFriendPaths(new String[] { context.getOutputDirectory().getAbsolutePath() });
+
         compilerArguments.setDestination(context.getOutputDirectory().getAbsolutePath());
         compilerArguments.setFreeArgs(filesToCompile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
 

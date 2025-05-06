@@ -894,6 +894,8 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 } else {
                     tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
                 }
+                // Always return from the matching block so that other matching methods are not used
+                paramMatchScope.returnVoid();
             }
         }
 

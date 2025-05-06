@@ -212,6 +212,10 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public TlsConfig getTlsConfig() {
+        return tlsConfig;
+    }
+
     @Override
     public ClientImpl build() {
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))

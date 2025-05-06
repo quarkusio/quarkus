@@ -821,14 +821,14 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         boolean stringLiteralDouble = false;
         short composite = 0;
         byte brackets = 0;
-        boolean space = false;
+        boolean whitespace = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
 
         for (int i = 0; i < content.length(); i++) {
             char c = content.charAt(i);
-            if (c == ' ') {
-                if (!space) {
+            if (Character.isWhitespace(c)) {
+                if (!whitespace) {
                     if (!stringLiteralSingle
                             && !stringLiteralDouble
                             && composite == 0
@@ -837,7 +837,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
                         }
-                        space = true;
+                        whitespace = true;
                     } else {
                         buffer.append(c);
                     }
@@ -854,7 +854,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 } else if (!stringLiteralSingle
                         && !stringLiteralDouble
                         && isCompositeStart(c)
-                        && (i == 0 || space || composite > 0
+                        && (i == 0 || whitespace || composite > 0
                                 || (buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == '!'))) {
                     composite++;
                 } else if (!stringLiteralSingle
@@ -871,7 +871,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         && Parser.isRightBracket(c) && brackets > 0) {
                     brackets--;
                 }
-                space = false;
+                whitespace = false;
                 buffer.append(c);
             }
         }

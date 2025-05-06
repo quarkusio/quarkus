@@ -158,6 +158,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             public boolean isTrustAll() {
                 return tlsConfiguration.isTrustAll();
             }
+
+            @Override
+            public Optional<String> getName() {
+                return Optional.ofNullable(tlsConfiguration.getName());
+            }
         });
         return this;
     }
@@ -561,8 +566,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             }
         }
 
-        ClientImpl client = clientBuilder.build();
-        WebTargetImpl target = (WebTargetImpl) client.target(uri);
+        ClientImpl clientImpl = clientBuilder.build();
+        TlsConfig tlsConfig = clientBuilder.getTlsConfig();
+        if (tlsConfig != null && tlsConfig.getName().isPresent()) {
+            RestClientRecorder.registerReloadableHttpClient(tlsConfig.getName().get(), clientImpl.getVertxHttpClient());
+        }
+        WebTargetImpl target = (WebTargetImpl) clientImpl.target(uri);
         target.setParamConverterProviders(paramConverterProviders);
         try {
             return target.proxy(aClass);

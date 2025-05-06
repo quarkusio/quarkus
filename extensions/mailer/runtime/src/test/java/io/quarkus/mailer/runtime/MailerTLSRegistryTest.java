@@ -39,6 +39,11 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
                 return jksOptions;
             }
 
+            @Override
+            public String getName() {
+                return "test";
+            }
+
         });
         startServer(new File("target/certs/mailer-certs-keystore.p12").getAbsolutePath());
         mailer.send(getMail()).await().indefinitely();
@@ -52,6 +57,11 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
             @Override
             public boolean isTrustAll() {
                 return true;
+            }
+
+            @Override
+            public String getName() {
+                return "test";
             }
         });
         startServer(SERVER_JKS);
@@ -71,6 +81,11 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
             @Override
             public boolean isTrustAll() {
                 return true;
+            }
+
+            @Override
+            public String getName() {
+                return "test";
             }
         });
         startServer(SERVER_JKS);
@@ -92,7 +107,10 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
         });
         startServer(SERVER_JKS);
         ReactiveMailer mailer = getMailer(mailersConfig, "my-mailer", new BaseTlsConfiguration() {
-
+            @Override
+            public String getName() {
+                return "test";
+            }
         });
 
         Assertions.assertThatThrownBy(() -> mailer.send(getMail()).await().indefinitely())
@@ -116,6 +134,11 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
                 jksOptions.setPath("target/certs/mailer-certs-truststore.p12");
                 jksOptions.setPassword("password");
                 return jksOptions;
+            }
+
+            @Override
+            public String getName() {
+                return "test";
             }
 
         })).hasMessageContaining("missing-mailer-configuration");

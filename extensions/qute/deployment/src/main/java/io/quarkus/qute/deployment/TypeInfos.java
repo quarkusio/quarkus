@@ -221,8 +221,13 @@ final class TypeInfos {
         }
 
         @Override
-        public boolean isLiteralSeparator(char candidate) {
-            return candidate == '<' || candidate == '>';
+        public boolean isLiteralSeparatorStart(char candidate) {
+            return candidate == '<';
+        }
+
+        @Override
+        public boolean isLiteralSeparatorEnd(char startSeparator, char candidate) {
+            return candidate == '>';
         }
 
     };

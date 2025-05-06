@@ -243,4 +243,24 @@ public class UserTagTest {
         assertEquals("foo=\"true\"",
                 engine.parse("{#arg foo=true 'foo and bar' /}").render());
     }
+
+    @Test
+    public void testArgumentsWhitespace() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("arg", "arg-tag"))
+                .addResultMapper(new HtmlEscaper(List.of("text/html")))
+                .build();
+        engine.putTemplate("arg-tag", engine.parse("{_args.asHtmlAttributes}::{hash}"));
+        assertEquals("class=\"rounded\" hash=\"ia3andy\"::ia3andy",
+                engine.parse("""
+                        {#arg hash='ia3andy'  \n\t
+                            class='rounded' /}
+                        """).render().trim());
+        assertEquals("class=\"rounded\" hash=\"ia3andy\"::ia3andy",
+                engine.parse("""
+                        {#arg hash='ia3andy'\n\tclass='rounded' /}
+                        """).render().trim());
+    }
 }

@@ -85,7 +85,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         _changeToWorkspaceItem: {state: true},
         _actionResult: {state: true},
         _showActionProgress: {state: true},
-        _confirmDialogOpened: {state: true},
+        _confirmDialogOpened: {state: true}
     };
 
     constructor() { 
@@ -474,7 +474,6 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             if(jsonRpcResponse.result.success){
                 notifier.showInfoMessage(jsonRpcResponse.result.path + " saved successfully");
                 if(select) this._selectedWorkspaceItem = { ...this._selectedWorkspaceItem, content: content, isDirty: false };
-                //super.forceRestart();
             }else {
                 notifier.showErrorMessage(jsonRpcResponse.result.path + " NOT saved. " + jsonRpcResponse.result.errorMessage);
             }

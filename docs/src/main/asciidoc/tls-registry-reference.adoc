@@ -55,6 +55,12 @@ Each named TLS configuration, or "TLS bucket," must provide its own properties.
 For instance, `quarkus.tls.reload-period` will only be applied to the default TLS configuration.
 ====
 
+[IMPORTANT]
+====
+As described in detail  link:https://github.com/quarkusio/quarkus/blob/main/adr/0004-using-the-tls-registry-for-clients.adoc#configuring-clients-with-the-tls-registry[here], Quarkus client extensions (REST, GRPC, etc) ignore properties, defined in default (ie unnamed) TLS configuration.
+The only exception is `quarkus.tls.trust-all` property.
+====
+
 === Configuring HTTPS for a HTTP server
 
 To ensure secure client-server communication, the client is often required to verify the server's authenticity.

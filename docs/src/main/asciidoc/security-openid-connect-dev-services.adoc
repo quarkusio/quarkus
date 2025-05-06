@@ -42,6 +42,11 @@ KeyCloak Dev Services Starting:
 2021-11-02 17:14:44,170 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-10) Dev Services for Keycloak started.
 ----
 
+[NOTE]
+====
+Adding the `quarkus.keycloak.devservices.java-opts=-XX:UseSVE=0` configuration property may help to workaround Keycloak Dev Services startup problems on some Mac OS systems.
+====
+
 [IMPORTANT]
 ====
 When logging in to the Keycloak admin console, the username is `admin`, and the password is `admin`.

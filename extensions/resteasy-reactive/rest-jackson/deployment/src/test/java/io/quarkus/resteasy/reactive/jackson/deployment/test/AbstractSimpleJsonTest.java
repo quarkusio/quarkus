@@ -797,6 +797,16 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonValue() {
+        RestAssured.given()
+                .queryParam("value", 240)
+                .post("/simple/json-value")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo('\"' + new ItemId(240).format() + '\"'));
+    }
+
+    @Test
     public void testPojoWithJsonCreator() {
         RestAssured
                 .with()

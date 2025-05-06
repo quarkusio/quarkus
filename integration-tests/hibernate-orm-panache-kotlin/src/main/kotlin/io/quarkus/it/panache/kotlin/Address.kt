@@ -9,7 +9,7 @@ import jakarta.persistence.Id
 @Entity
 open class Address : PanacheEntityBase {
     companion object : PanacheCompanionBase<Address, Int> {
-        override fun count(query: String, params: Map<String, Any>): Long {
+        override fun count(query: String, params: Map<String, Any?>): Long {
             AddressDao.shouldBeOverridden()
         }
     }

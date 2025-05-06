@@ -27,7 +27,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession(): Uni<Mutiny.Session> = AbstractJpaOperations.getSession()
+    @CheckReturnValue fun getSession(): Uni<Mutiny.Session> = AbstractJpaOperations.getSession()
 
     @CheckReturnValue
     fun persist(entity: Entity): Uni<Entity> = INSTANCE.persist(entity).map { entity }
@@ -81,7 +81,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun findById(id: Id): Uni<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun findById(id: Id): Uni<Entity?> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -92,7 +92,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun findById(id: Id, lockModeType: LockModeType): Uni<Entity> =
+    fun findById(id: Id, lockModeType: LockModeType): Uni<Entity?> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -442,7 +442,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     fun persist(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-        INSTANCE.persist(listOf(firstEntity) + listOf(*entities))
+        INSTANCE.persist(listOf(firstEntity, *entities))
 
     /**
      * Update all entities of this type matching the given query, with optional indexed parameters.

@@ -20,6 +20,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -506,6 +507,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         item.setNameExtended("Name-Extended");
         item.setEmailExtended("E-mail-Extended");
         return item;
+    }
+
+    @POST
+    @Path("/json-value")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemId generate(@RestQuery int value) {
+        return new ItemId(value);
     }
 
     @POST

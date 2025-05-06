@@ -14,6 +14,7 @@ import org.eclipse.microprofile.openapi.models.Paths;
 import org.eclipse.microprofile.openapi.models.media.Content;
 import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
+import org.eclipse.microprofile.openapi.models.tags.Tag;
 
 /**
  * Create OpenAPI entries (if configured)
@@ -78,6 +79,11 @@ public class HealthOpenAPIFilter implements OASFilter {
         if (openAPI.getPaths() == null) {
             openAPI.setPaths(OASFactory.createPaths());
         }
+
+        Tag tag = OASFactory.createTag();
+        tag.setName(MICROPROFILE_HEALTH_TAG.get(0));
+        tag.setDescription("Check the health of the application");
+        openAPI.addTag(tag);
 
         final Paths paths = openAPI.getPaths();
 

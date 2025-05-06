@@ -110,10 +110,10 @@ public class ContextLocalPropagationTest {
             // We will need a proper solution soon, but as we need to have a proper way to
             // set contextual information in Quarkus 3.20 (LTS), we can't risk breaking
             // client code everywhere, so for now we will tell people to check the context
-            Optional<Object> maybeParentContext = ContextLocals.get("__PARENT_CONTEXT__");
+            var maybeParentContext = ContextLocals.getParentContext();
             Context effectiveContext;
-            if (maybeParentContext.isPresent()) {
-                effectiveContext = (Context) maybeParentContext.get();
+            if (maybeParentContext != null) {
+                effectiveContext = maybeParentContext;
             } else {
                 effectiveContext = Vertx.currentContext();
             }

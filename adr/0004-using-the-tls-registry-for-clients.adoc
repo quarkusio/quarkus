@@ -26,7 +26,7 @@ The TLS registry is an extension processing the `quarkus.tls` configuration and 
 Note that the configuration and the runtime API are different.
 The configuration is used to define the TLS settings, while the runtime API is used to access these pre-processed settings.
 
-hen using the options directly under `quarkus.tls.`, one configures the default (_unamed_) configuration, while using options under `quarkus.tls.<name>.` configures a _named_ configuration.
+When using the options directly under `quarkus.tls.`, one configures the default (_unnamed_) configuration, while using options under `quarkus.tls.<name>.` configures a _named_ configuration.
 For each configuration, trust stores and key stores can be defined, as well as the default protocol, cipher suites, etc.
 More details can be found in the https://quarkus.io/version/main/guides/tls-registry-reference[documentation] and in the https://github.com/quarkusio/quarkus/blob/main/extensions/tls-registry/runtime/src/main/java/io/quarkus/tls/runtime/config/TlsBucketConfig.java[code].
 

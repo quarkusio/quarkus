@@ -35,7 +35,8 @@ public class DevServicesProcessor {
         addToMap(combined, devServiceDescriptions);
         addToMap(combined, otherDevServices);
 
-        devServicesPages.addBuildTimeData("devServices", combined.values());
+        devServicesPages.addBuildTimeData("devServices", combined.values(),
+                "All the DevServices started by this Quarkus app, including information on container (if any) and the config that is being set automatically");
 
         return devServicesPages;
 

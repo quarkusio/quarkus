@@ -5,15 +5,15 @@ package io.quarkus.devui.runtime.comms;
  *
  * @param <T> The type of the response object
  */
-public class JsonRpcMessage<T> {
+public class JsonRpcResponseMessage<T> {
     private T response;
     private MessageType messageType;
     private boolean alreadySerialized = false;
 
-    public JsonRpcMessage() {
+    public JsonRpcResponseMessage() {
     }
 
-    public JsonRpcMessage(T response, MessageType messageType) {
+    public JsonRpcResponseMessage(T response, MessageType messageType) {
         this.response = response;
         this.messageType = messageType;
     }

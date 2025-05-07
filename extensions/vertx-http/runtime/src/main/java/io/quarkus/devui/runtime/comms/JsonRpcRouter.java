@@ -17,10 +17,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
-import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -28,74 +26,58 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Route JsonRPC message to the correct method
  */
 public class JsonRpcRouter {
 
-    private final Map<Integer, Cancellable> subscriptions = new ConcurrentHashMap<>();
+    private final Map<Integer, Cancellable> activeSubscriptions = new ConcurrentHashMap<>();
 
     // Map json-rpc method to java in runtime classpath
-    private final Map<String, ReflectionInfo> jsonRpcToRuntimeClassPathJava = new HashMap<>();
+    private Map<String, JsonRpcMethod> runtimeMethodsMap;
+    // Map json-rpc subscriptions to java in runtime classpath
+    private Map<String, JsonRpcMethod> runtimeSubscriptionMap;
 
     // Map json-rpc method to java in deployment classpath
-    private final List<String> jsonRpcMethodToDeploymentClassPathJava = new ArrayList<>();
+    private Map<String, JsonRpcMethod> deploymentMethodsMap;
     // Map json-rpc subscriptions to java in deployment classpath
-    private final List<String> jsonRpcSubscriptionToDeploymentClassPathJava = new ArrayList<>();
-    // Map json-rpc methods responses that is recorded
-    private final Map<String, RuntimeValue> recordedValues = new HashMap<>();
+    private Map<String, JsonRpcMethod> deploymentSubscriptionsMap;
 
-    private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
+    // Map json-rpc methods responses that is recorded
+    private Map<String, JsonRpcMethod> recordedMethodsMap;
+    // Map json-rpc subscriptions responses that is recorded
+    private Map<String, JsonRpcMethod> recordedSubscriptionsMap;
+
+    private static final List<JsonRpcResponseWriter> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
 
     /**
-     * This gets called on build to build into of the classes we are going to call in runtime
+     * This gets populated at build time so the the routes knows all json-rpc endpoints.
      *
-     * @param extensionMethodsMap
+     * @param runtimeMethods
+     * @param runtimeSubscriptions
+     * @param deploymentMethods
+     * @param deploymentSubscriptions
+     * @param recordedMethods
+     * @param recordedSubscriptions
      */
-    public void populateJsonRPCRuntimeMethods(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
-        for (Map.Entry<String, Map<JsonRpcMethodName, JsonRpcMethod>> extension : extensionMethodsMap.entrySet()) {
-            String extensionName = extension.getKey();
-            Map<JsonRpcMethodName, JsonRpcMethod> jsonRpcMethods = extension.getValue();
-            for (Map.Entry<JsonRpcMethodName, JsonRpcMethod> method : jsonRpcMethods.entrySet()) {
-                JsonRpcMethodName methodName = method.getKey();
-                JsonRpcMethod jsonRpcMethod = method.getValue();
+    public void populateJsonRpcEndpoints(Map<String, JsonRpcMethod> runtimeMethods,
+            Map<String, JsonRpcMethod> runtimeSubscriptions,
+            Map<String, JsonRpcMethod> deploymentMethods,
+            Map<String, JsonRpcMethod> deploymentSubscriptions,
+            Map<String, JsonRpcMethod> recordedMethods,
+            Map<String, JsonRpcMethod> recordedSubscriptions) {
 
-                @SuppressWarnings("unchecked")
-                Object providerInstance = Arc.container().select(jsonRpcMethod.getClazz()).get();
+        this.runtimeMethodsMap = enchangeRuntimeJsonRpcEndpoints(runtimeMethods);
+        this.runtimeSubscriptionMap = enchangeRuntimeJsonRpcEndpoints(runtimeSubscriptions);
 
-                try {
-                    Method javaMethod;
-                    Map<String, Class> params = null;
-                    if (jsonRpcMethod.hasParams()) {
-                        params = jsonRpcMethod.getParams();
-                        javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getMethodName(),
-                                params.values().toArray(new Class[] {}));
-                    } else {
-                        javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getMethodName());
-                    }
-                    ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
-                            params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
-                    String jsonRpcMethodName = extensionName + SLASH + methodName;
-                    jsonRpcToRuntimeClassPathJava.put(jsonRpcMethodName, reflectionInfo);
-                } catch (NoSuchMethodException | SecurityException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }
-    }
+        this.deploymentMethodsMap = deploymentMethods;
+        this.deploymentSubscriptionsMap = deploymentSubscriptions;
 
-    public void setJsonRPCDeploymentActions(List<String> methods, List<String> subscriptions) {
-        this.jsonRpcMethodToDeploymentClassPathJava.clear();
-        this.jsonRpcMethodToDeploymentClassPathJava.addAll(methods);
-        this.jsonRpcSubscriptionToDeploymentClassPathJava.clear();
-        this.jsonRpcSubscriptionToDeploymentClassPathJava.addAll(subscriptions);
-    }
-
-    public void setRecordedValues(Map<String, RuntimeValue> recordedValues) {
-        this.recordedValues.clear();
-        this.recordedValues.putAll(recordedValues);
+        this.recordedMethodsMap = recordedMethods;
+        this.recordedSubscriptionsMap = recordedSubscriptions;
     }
 
     public void initializeCodec(JsonMapper jsonMapper) {
@@ -103,143 +85,140 @@ public class JsonRpcRouter {
     }
 
     public void addSocket(ServerWebSocket socket) {
-        SESSIONS.add(socket);
+        WsResponseWriter writer = new WsResponseWriter(socket);
+        SESSIONS.add(writer);
         socket.textMessageHandler((e) -> {
             JsonRpcRequest jsonRpcRequest = codec.readRequest(e);
-            route(jsonRpcRequest, socket);
+            route(jsonRpcRequest, writer);
         }).closeHandler((e) -> {
             purge();
         });
         purge();
     }
 
+    public void addSseSession(RoutingContext ctx) {
+        SseResponseWriter writer = new SseResponseWriter(ctx.response());
+        SESSIONS.add(writer);
+
+        ctx.request().handler(buffer -> {
+            JsonRpcRequest jsonRpcRequest = codec.readRequest(buffer.toString());
+            route(jsonRpcRequest, writer);
+        });
+
+        ctx.request().connection().closeHandler(v -> purge());
+
+        purge();
+    }
+
+    public Map<String, JsonRpcMethod> getRuntimeMethodsMap() {
+        return runtimeMethodsMap;
+    }
+
+    public Map<String, JsonRpcMethod> getRuntimeSubscriptionMap() {
+        return runtimeSubscriptionMap;
+    }
+
+    public Map<String, JsonRpcMethod> getDeploymentMethodsMap() {
+        return deploymentMethodsMap;
+    }
+
+    public Map<String, JsonRpcMethod> getDeploymentSubscriptionsMap() {
+        return deploymentSubscriptionsMap;
+    }
+
+    public Map<String, JsonRpcMethod> getRecordedMethodsMap() {
+        return recordedMethodsMap;
+    }
+
+    public Map<String, JsonRpcMethod> getRecordedSubscriptionsMap() {
+        return recordedSubscriptionsMap;
+    }
+
     void onStart(@Observes StartupEvent ev) {
         purge();
-        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
-            if (!s.isClosed()) {
-                codec.writeResponse(s, -1, LocalDateTime.now().toString(), MessageType.HotReload);
+        for (JsonRpcResponseWriter jrrw : new ArrayList<>(SESSIONS)) {
+            if (!jrrw.isClosed()) {
+                codec.writeResponse(jrrw, -1, LocalDateTime.now().toString(), MessageType.HotReload);
             }
         }
     }
 
     private void purge() {
-        for (ServerWebSocket s : new ArrayList<>(SESSIONS)) {
-            if (s.isClosed()) {
-                SESSIONS.remove(s);
-            }
-        }
+        SESSIONS.removeIf(JsonRpcResponseWriter::isClosed);
     }
 
     @Inject
     Logger logger;
 
     @SuppressWarnings("unchecked")
-    private void route(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void route(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
-        if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) {// First check some internal methods
-            this.routeUnsubscribe(jsonRpcRequest, s);
-        } else if (this.jsonRpcToRuntimeClassPathJava.containsKey(jsonRpcMethodName)) { // Route to extension (runtime)
-            this.routeToRuntime(jsonRpcRequest, s);
-        } else if (this.jsonRpcMethodToDeploymentClassPathJava.contains(jsonRpcMethodName)
-                || this.jsonRpcSubscriptionToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to extension (deployment)
-            this.routeToDeployment(jsonRpcRequest, s);
+        if (jsonRpcMethodName.equalsIgnoreCase(UNSUBSCRIBE)) {
+            // This is a Dev UI subscription that terminated
+            this.routeUnsubscribe(jsonRpcRequest, jrrw);
+        } else if (jsonRpcMethodName.equalsIgnoreCase(INITIALIZE)) {
+            // This is a MCP server that connects
+            jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":\"ok\"}");
+            //codec.writeResponse(jrrw, jsonRpcRequest.getId(), "ok", null);
+        } else if (this.runtimeMethodsMap.containsKey(jsonRpcMethodName)) {
+            // This is a Runtime method that needs to route to the extension
+            this.routeToRuntimeMethod(jsonRpcRequest, jrrw);
+        } else if (this.runtimeSubscriptionMap.containsKey(jsonRpcMethodName)) {
+            // This is a Runtime subscription that needs to route to the extension
+            this.routeToRuntimeSubscription(jsonRpcRequest, jrrw);
+        } else if (this.deploymentMethodsMap.containsKey(jsonRpcMethodName)
+                || this.deploymentSubscriptionsMap.containsKey(jsonRpcMethodName)
+                || this.recordedMethodsMap.containsKey(jsonRpcMethodName)
+                || this.recordedSubscriptionsMap.containsKey(jsonRpcMethodName)) {
+            // This is Deployment method that needs to route to the extension
+            this.routeToDeployment(jsonRpcRequest, jrrw);
         } else {
-            // Method not found
-            codec.writeMethodNotFoundResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName);
+            // This is an error. Method not found
+            codec.writeMethodNotFoundResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName);
         }
     }
 
-    private void routeUnsubscribe(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
-        if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
-            Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
+    private void routeUnsubscribe(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
+        if (this.activeSubscriptions.containsKey(jsonRpcRequest.getId())) {
+            Cancellable cancellable = this.activeSubscriptions.remove(jsonRpcRequest.getId());
             cancellable.cancel();
         }
-        codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
+        codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
     }
 
-    private void routeToRuntime(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
-        String jsonRpcMethodName = jsonRpcRequest.getMethod();
-        ReflectionInfo reflectionInfo = this.jsonRpcToRuntimeClassPathJava.get(jsonRpcMethodName);
-        Object target = Arc.container().select(reflectionInfo.bean).get();
+    private void routeToRuntimeMethod(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
+        JsonRpcMethod runtimeJsonRpcMethod = this.runtimeMethodsMap.get(jsonRpcRequest.getMethod());
+        Object target = Arc.container().select(runtimeJsonRpcMethod.getBean()).get(); // Lookup bean
 
-        if (reflectionInfo.isReturningMulti()) {
-            this.routeToRuntimeSubscription(jsonRpcRequest, s, jsonRpcMethodName, reflectionInfo, target);
-        } else {
-            // The invocation will return a Uni<JsonObject>
-            this.routeToRuntimeMethod(jsonRpcRequest, s, jsonRpcMethodName, reflectionInfo, target);
-        }
-    }
-
-    private void routeToRuntimeSubscription(JsonRpcRequest jsonRpcRequest, ServerWebSocket s, String jsonRpcMethodName,
-            ReflectionInfo reflectionInfo, Object target) {
-
-        if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
-            // Cancel and resubscribe
-            Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
-            cancellable.cancel();
-        }
-
-        Multi<?> multi;
-        try {
-            if (jsonRpcRequest.hasParams()) {
-                Object[] args = getArgsAsObjects(reflectionInfo.params, jsonRpcRequest);
-                multi = (Multi<?>) reflectionInfo.method.invoke(target, args);
-            } else {
-                multi = (Multi<?>) reflectionInfo.method.invoke(target);
-            }
-        } catch (Exception e) {
-            logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
-                    jsonRpcRequest);
-            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
-            return;
-        }
-
-        Cancellable cancellable = multi.subscribe()
-                .with(
-                        item -> {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
-                        },
-                        failure -> {
-                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
-                            this.subscriptions.remove(jsonRpcRequest.getId());
-                        },
-                        () -> this.subscriptions.remove(jsonRpcRequest.getId()));
-
-        this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-        codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
-    }
-
-    private void routeToRuntimeMethod(JsonRpcRequest jsonRpcRequest, ServerWebSocket s, String jsonRpcMethodName,
-            ReflectionInfo reflectionInfo, Object target) {
         Uni<?> uni;
         try {
             if (jsonRpcRequest.hasParams()) {
-                Object[] args = getArgsAsObjects(reflectionInfo.params, jsonRpcRequest);
-                uni = invoke(reflectionInfo, target, args);
+                Object[] args = getArgsAsObjects(runtimeJsonRpcMethod.getParameters(), jsonRpcRequest);
+                uni = invoke(runtimeJsonRpcMethod, target, args);
             } else {
-                uni = invoke(reflectionInfo, target, new Object[0]);
+                uni = invoke(runtimeJsonRpcMethod, target, new Object[0]);
             }
         } catch (Exception e) {
-            logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcMethodName,
+            logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcRequest.getMethod(),
                     jsonRpcRequest);
-            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
+            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcRequest.getMethod(), e);
             return;
         }
         uni.subscribe()
                 .with(item -> {
-                    if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
-                        JsonRpcMessage<?> jsonRpcMessage = (JsonRpcMessage<?>) item;
+                    if (item != null && JsonRpcResponseMessage.class.isAssignableFrom(item.getClass())) {
+                        JsonRpcResponseMessage<?> jsonRpcMessage = (JsonRpcResponseMessage<?>) item;
                         Object response = jsonRpcMessage.getResponse();
                         if (jsonRpcMessage.isAlreadySerialized()) {
                             // The message response was already serialized, write text directly to socket
-                            s.writeTextMessage("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
+                            jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
                                     + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
                         } else {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
+                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
                         }
                     } else {
-                        codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.Response);
+                        codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.Response);
                     }
                 }, failure -> {
                     Throwable actualFailure;
@@ -254,22 +233,64 @@ public class JsonRpcRouter {
                     } else {
                         actualFailure = failure;
                     }
-                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
+                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcRequest.getMethod(), actualFailure);
                 });
     }
 
-    private void routeToDeployment(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
+    private void routeToRuntimeSubscription(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
+        JsonRpcMethod runtimeJsonRpcSubscription = this.runtimeSubscriptionMap.get(jsonRpcRequest.getMethod());
+        Object target = Arc.container().select(runtimeJsonRpcSubscription.getBean()).get(); // Lookup bean
+
+        if (this.activeSubscriptions.containsKey(jsonRpcRequest.getId())) {
+            // Cancel and resubscribe
+            Cancellable cancellable = this.activeSubscriptions.remove(jsonRpcRequest.getId());
+            cancellable.cancel();
+        }
+
+        Multi<?> multi;
+        try {
+            if (jsonRpcRequest.hasParams()) {
+                Object[] args = getArgsAsObjects(runtimeJsonRpcSubscription.getParameters(), jsonRpcRequest);
+                multi = (Multi<?>) runtimeJsonRpcSubscription.getJavaMethod().invoke(target, args);
+            } else {
+                multi = (Multi<?>) runtimeJsonRpcSubscription.getJavaMethod().invoke(target);
+            }
+        } catch (Exception e) {
+            logger.errorf(e, "Unable to invoke method %s using JSON-RPC, request was: %s", jsonRpcRequest.getMethod(),
+                    jsonRpcRequest);
+            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcRequest.getMethod(), e);
+            return;
+        }
+
+        Cancellable cancellable = multi.subscribe()
+                .with(
+                        item -> {
+                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+                        },
+                        failure -> {
+                            codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcRequest.getMethod(), failure);
+                            this.activeSubscriptions.remove(jsonRpcRequest.getId());
+                        },
+                        () -> this.activeSubscriptions.remove(jsonRpcRequest.getId()));
+
+        this.activeSubscriptions.put(jsonRpcRequest.getId(), cancellable);
+        codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
+    }
+
+    private void routeToDeployment(JsonRpcRequest jsonRpcRequest, JsonRpcResponseWriter jrrw) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
 
-        if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
+        if (this.activeSubscriptions.containsKey(jsonRpcRequest.getId())) {
             // Cancel and resubscribe
-            Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
+            Cancellable cancellable = this.activeSubscriptions.remove(jsonRpcRequest.getId());
             cancellable.cancel();
         }
 
         Object returnedObject = null;
-        if (this.recordedValues.containsKey(jsonRpcMethodName)) {
-            returnedObject = this.recordedValues.get(jsonRpcMethodName).getValue();
+        if (this.recordedMethodsMap.containsKey(jsonRpcMethodName)) {
+            returnedObject = this.recordedMethodsMap.get(jsonRpcMethodName).getRuntimeValue().getValue();
+        } else if (this.recordedSubscriptionsMap.containsKey(jsonRpcMethodName)) {
+            returnedObject = this.recordedSubscriptionsMap.get(jsonRpcMethodName).getRuntimeValue().getValue();
         } else {
             returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
         }
@@ -282,37 +303,37 @@ public class JsonRpcRouter {
                 Cancellable cancellable = Multi.createFrom().publisher(publisher).subscribe()
                         .with(
                                 item -> {
-                                    codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+                                    codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
                                 },
                                 failure -> {
-                                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
-                                    this.subscriptions.remove(jsonRpcRequest.getId());
+                                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+                                    this.activeSubscriptions.remove(jsonRpcRequest.getId());
                                 },
-                                () -> this.subscriptions.remove(jsonRpcRequest.getId()));
+                                () -> this.activeSubscriptions.remove(jsonRpcRequest.getId()));
 
-                this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
-                codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
+                this.activeSubscriptions.put(jsonRpcRequest.getId(), cancellable);
+                codec.writeResponse(jrrw, jsonRpcRequest.getId(), null, MessageType.Void);
             } else if (returnedObject instanceof CompletionStage) {
                 CompletionStage<?> future = (CompletionStage) returnedObject;
                 future.thenAccept(r -> {
-                    codec.writeResponse(s, jsonRpcRequest.getId(), r,
+                    codec.writeResponse(jrrw, jsonRpcRequest.getId(), r,
                             MessageType.Response);
                 }).exceptionally(throwable -> {
-                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
+                    codec.writeErrorResponse(jrrw, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
                     return null;
                 });
             } else {
-                codec.writeResponse(s, jsonRpcRequest.getId(), returnedObject,
+                codec.writeResponse(jrrw, jsonRpcRequest.getId(), returnedObject,
                         MessageType.Response);
             }
         }
     }
 
-    private Uni<?> invoke(ReflectionInfo info, Object target, Object[] args) {
-        if (info.isReturningUni()) {
+    private Uni<?> invoke(JsonRpcMethod runtimeJsonRpcMethod, Object target, Object[] args) {
+        if (runtimeJsonRpcMethod.isReturningUni()) {
             try {
-                Uni<?> uni = ((Uni<?>) info.method.invoke(target, args));
-                if (info.isExplicitlyBlocking()) {
+                Uni<?> uni = ((Uni<?>) runtimeJsonRpcMethod.getJavaMethod().invoke(target, args));
+                if (runtimeJsonRpcMethod.isIsExplicitlyBlocking()) {
                     return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
                 } else {
                     return uni;
@@ -321,8 +342,9 @@ public class JsonRpcRouter {
                 return Uni.createFrom().failure(e);
             }
         } else {
-            Uni<?> uni = Uni.createFrom().item(Unchecked.supplier(() -> info.method.invoke(target, args)));
-            if (!info.isExplicitlyNonBlocking()) {
+            Uni<?> uni = Uni.createFrom()
+                    .item(Unchecked.supplier(() -> runtimeJsonRpcMethod.getJavaMethod().invoke(target, args)));
+            if (!runtimeJsonRpcMethod.isIsExplicitlyNonBlocking()) {
                 return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
             } else {
                 return uni;
@@ -330,11 +352,11 @@ public class JsonRpcRouter {
         }
     }
 
-    private Object[] getArgsAsObjects(Map<String, Class> params, JsonRpcRequest jsonRpcRequest) {
+    private Object[] getArgsAsObjects(Map<String, JsonRpcMethod.Parameter> parameters, JsonRpcRequest jsonRpcRequest) {
         List<Object> objects = new ArrayList<>();
-        for (Map.Entry<String, Class> expectedParams : params.entrySet()) {
+        for (Map.Entry<String, JsonRpcMethod.Parameter> expectedParams : parameters.entrySet()) {
             String paramName = expectedParams.getKey();
-            Class paramType = expectedParams.getValue();
+            Class<?> paramType = expectedParams.getValue().getType();
             Object param = jsonRpcRequest.getParam(paramName, paramType);
             objects.add(param);
         }
@@ -352,7 +374,45 @@ public class JsonRpcRouter {
         return codec.getJsonMapper();
     }
 
-    private static final String SLASH = "/";
     private static final String UNSUBSCRIBE = "unsubscribe";
+    private static final String INITIALIZE = "initialize";
+
+    /**
+     * This goes though all runtime endpoints and get the correct Java method
+     */
+    private Map<String, JsonRpcMethod> enchangeRuntimeJsonRpcEndpoints(
+            Map<String, JsonRpcMethod> runtimeMethods) {
+        for (Map.Entry<String, JsonRpcMethod> method : runtimeMethods.entrySet()) {
+            JsonRpcMethod jsonRpcMethod = method.getValue();
+
+            @SuppressWarnings("unchecked")
+            Object providerInstance = Arc.container().select(jsonRpcMethod.getBean()).get(); // This is just here so that we can get the methods
+
+            try {
+                Method javaMethod;
+                if (jsonRpcMethod.hasParameters()) {
+                    Class<?>[] types = jsonRpcMethod.getParameters().values().stream()
+                            .map(p -> p.getType())
+                            .toArray(Class<?>[]::new);
+
+                    javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getJavaMethodName(), types);
+
+                    // TODO: jsonRpcParams.put(jsonRpcMethodName, params);
+                } else {
+                    javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getJavaMethodName());
+                    // TODO: jsonRpcParams.put(jsonRpcMethodName, Map.of());
+                }
+
+                //jsonRpcMethod.setInstance(providerInstance); // TODO: Do we need the instance ? We should look it up
+                jsonRpcMethod.setJavaMethod(javaMethod);
+
+                // runtimeMethods.put(jsonRpcMethod.getMethodName(),jsonRpcMethod); // TODO: Is this needed ?
+
+            } catch (NoSuchMethodException | SecurityException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return runtimeMethods;
+    }
 
 }

@@ -3,7 +3,8 @@ package io.quarkus.devui.runtime;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -13,36 +14,12 @@ import io.vertx.ext.web.RoutingContext;
  * Handler to return the "static" content created a build time
  */
 public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
-    private Map<String, String> urlAndPath;
-    private String basePath; // Like /q/dev-ui
-
-    public DevUIBuildTimeStaticHandler() {
-
-    }
-
-    public DevUIBuildTimeStaticHandler(String basePath, Map<String, String> urlAndPath) {
-        this.basePath = basePath;
-        this.urlAndPath = urlAndPath;
-    }
-
-    public Map<String, String> getUrlAndPath() {
-        return urlAndPath;
-    }
-
-    public void setUrlAndPath(Map<String, String> urlAndPath) {
-        this.urlAndPath = urlAndPath;
-    }
-
-    public String getBasePath() {
-        return basePath;
-    }
-
-    public void setBasePath(String basePath) {
-        this.basePath = basePath;
-    }
 
     @Override
     public void handle(RoutingContext event) {
+
+        DevUIBuildTimeStaticService buildTimeStaticService = CDI.current().select(DevUIBuildTimeStaticService.class).get();
+
         String normalizedPath = event.normalizedPath();
         if (normalizedPath.contains(SLASH)) {
             int si = normalizedPath.lastIndexOf(SLASH) + 1;
@@ -50,8 +27,9 @@ public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
             String fileName = normalizedPath.substring(si);
             // TODO: Handle params ?
 
-            if (path.startsWith(basePath) && this.urlAndPath.containsKey(fileName)) {
-                String pathOnDisk = this.urlAndPath.get(fileName);
+            if (path.startsWith(buildTimeStaticService.getBasePath())
+                    && buildTimeStaticService.getUrlAndPath().containsKey(fileName)) {
+                String pathOnDisk = buildTimeStaticService.getUrlAndPath().get(fileName);
 
                 try {
                     byte[] content = Files.readAllBytes(Path.of(pathOnDisk));

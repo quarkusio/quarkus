@@ -24,7 +24,7 @@ import io.smallrye.mutiny.tuples.Functions;
  * @see Counted
  */
 @Interceptor
-@MicrometerCounted
+@Counted
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 public class MicrometerCountedInterceptor {
 
@@ -58,7 +58,7 @@ public class MicrometerCountedInterceptor {
     @AroundInvoke
     @SuppressWarnings("unchecked")
     Object countedMethod(ArcInvocationContext context) throws Exception {
-        MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
+        Counted counted = context.findIterceptorBinding(Counted.class);
         if (counted == null) {
             return context.proceed();
         }
@@ -103,7 +103,7 @@ public class MicrometerCountedInterceptor {
         }
     }
 
-    private void recordCompletionResult(MicrometerCounted counted, Tags commonTags, Throwable throwable) {
+    private void recordCompletionResult(Counted counted, Tags commonTags, Throwable throwable) {
         if (throwable != null) {
             record(counted, commonTags, throwable);
         } else if (!counted.recordFailuresOnly()) {
@@ -111,7 +111,7 @@ public class MicrometerCountedInterceptor {
         }
     }
 
-    private void record(MicrometerCounted counted, Tags commonTags, Throwable throwable) {
+    private void record(Counted counted, Tags commonTags, Throwable throwable) {
         Counter.Builder builder = Counter.builder(counted.value())
                 .tags(commonTags)
                 .tags(counted.extraTags())
